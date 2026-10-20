@@ -1361,3 +1361,3916 @@ Stage Summary:
 - ✅ Phase 3.1 (page.tsx renderView simplification) DONE: 7 crypto-* cases consolidated via fallthrough.
 - ⚠️ Phase 3.2 (delete dead tracking routes) NOT DONE: Rule 4 NO-DELETION prevents it.
 - ⏳ Phase 3.3-3.7 (consolidate API subsystems) deferred: complex per-endpoint analysis.
+
+---
+Task ID: DEEP-AUDIT-1
+Agent: DEEP-AUDIT-1 (Screens Auditor)
+Task: Deep audit of all screens in page.tsx renderView switch.
+
+Work Log:
+- Read /home/z/my-project/worklog.md for context (1363 lines, prior audits AUDIT-RESTORE-1 + AUDIT-1 + earlier).
+- Read VALID_VIEWS (50 views) + CRYPTO_VIEW_REDIRECTS (8 mappings) from src/lib/valid-views.ts.
+- Read renderView switch in src/app/page.tsx (lines 557-832) + dynamic-import declarations (lines 53-277).
+- Identified 49 distinct case branches (with aliases/fallthroughs) returning 43 unique component files.
+- For each unique component, ran `rg` to extract: file path, line count (wc -l), top 5 imports, all `fetch('/api/...')` calls (with line numbers), `useApiQuery`/`useQuery` usage (NONE found in any screen — only raw fetch), and sub-component JSX tags (filtered to exclude shadcn UI primitives + Recharts pieces; lucide-react icon tags remain visible).
+- All 43 component files verified to exist on disk.
+
+Findings:
+
+### Screen Inventory (Total: 49 case branches in renderView switch → 43 unique component files)
+
+The renderView switch in src/app/page.tsx handles 49 distinct case strings (some fallthrough aliases) plus a default case. Below, each unique component file is documented with its case mapping + scan results. Aliases/fallthroughs are listed under "Case mapping" of the canonical entry.
+
+#### Screen 1: 'dashboard' (canonical) — also handles 'crypto' + 'default' fallthrough
+- Component: `<DashboardView />`
+- File: `src/modules/dashboard/components/DashboardView.tsx`
+- Lines: 615
+- Top imports (lines 8-12): React (useState/useEffect/useMemo/useRef); lucide-react (Download/Zap/RefreshCw/Pin); `useAppStore, MARKET_NAMES_AR` from `@/lib/store`; `Header` from `@/components/layout/Header`; `MarketSummary` from `./MarketSummary`
+- API calls (via fetch):
+  - **NO direct `fetch('/api/...')` calls in this file** — data fetching delegated to sub-widgets
+  - NO `useApiQuery` / `useQuery` usage
+- Sub-components rendered (with line numbers):
+  - `<MarketSummary />` (line 208)
+  - `<MarketPulseWidget />` (line 222)
+  - `<MarketSentiment />` (line 223)
+  - `<InvestorsFlowPanel />` (line 233, inside render fn)
+  - `<EidPredictionsWidget />` (line 240)
+  - `<TopMovers />` (line 248)
+  - `<LiveMonitor />` (line 258)
+  - `<CryptoSignalsWidget />` (line 265)
+  - `<PinnableWidget id={w.id} title={w.title}>` (line 298)
+  - `<SafeWidget name={w.title}>` (line 299)
+  - `<AssetPreferenceOnboarding />` (line 314)
+  - `<GuestSignupBanner />` (line 321)
+  - `<DevelopmentNotice />` (line 382)
+  - `<LiveStockTicker />` (line 387)
+  - `<DashboardSkeleton />` (line 393)
+  - `<MyStocksBriefing />` (line 509)
+
+#### Screen 2: 'stocks' / 'stock-detail' / 'crypto-live' (fallthrough)
+- Component: `<StocksView />`
+- File: `src/modules/stock-analysis/components/StocksView.tsx`
+- Lines: 2329
+- Top imports (lines 3-8): React (useState/useEffect/useCallback/useMemo/memo); `Stock` type from `@/types`; `useAppStore, MARKET_NAMES_AR`; `GuestLimitCta` from `@/components/auth/GuestLimitCta`; `Header` from `@/components/layout/Header`
+- API calls:
+  - `fetch('/api/stocks/presets?${qs.toString()}')` at line 989
+  - NO `useApiQuery`/`useQuery`
+- Sub-components rendered (sample):
+  - `<FlashingPriceCell price={...} />` (lines 497, 618)
+  - `<MiniSparkline ticker={...} />` (line 521)
+  - `<StockDetail />` (line 1741)
+  - (Heavy use of lucide-react icons: TrendingUp/TrendingDown/Minus/LayoutGrid/X/BarChart3/Landmark — filtered)
+
+#### Screen 3: 'stock-filters' / 'crypto-screener' (fallthrough) — also handles 'top-performers' (with initialTab prop)
+- Component: `<StockScreenerAdvancedView />` (top-performers variant: `<StockScreenerAdvancedView initialTab="top-performers" />`)
+- File: `src/modules/screener/components/StockScreenerAdvanced.tsx`
+- Lines: 2723
+- Top imports (lines 3-7): React (useState/useEffect/useCallback/useMemo); shadcn Card/Button/Badge/Input
+- API calls:
+  - `fetch('/api/screener/advanced?${params}')` at line 725
+  - `fetch('/api/maker-radar?market=...&minQuietSignals=5&minPrice=1.0')` at line 726
+  - `fetch('/api/stocks/top-performers?${params}')` at line 2219
+- Sub-components rendered (sample):
+  - `<AdvancedFiltersTab initialMarket={initialMarket} />` (line 588)
+  - `<TopPerformersTab />` (line 591)
+  - `<LegalDisclaimerFooter />` (line 596)
+  - `<MiniSparkline ticker={s.ticker} />` (line 1274)
+  - `<StateBadge state={s.stock_state} reason={...} />` (line 1429)
+  - `<FilterField label={...} help={...}>` (line 1776)
+
+#### Screen 4: 'screener' / 'trading-chart' / 'crypto-trading-chart' (fallthrough)
+- Component: `<TradingChartView />`
+- File: `src/modules/market-analysis/components/TradingChartView.tsx`
+- Lines: 877
+- Top imports (lines 3-12): React (useState/useEffect/useCallback/useRef); `InteractiveChart` from `./InteractiveChart`; `TradingViewChart` from `@/modules/stock-analysis/components/TradingViewChart`; `ChartToggle` from `@/components/shared/ChartToggle`; `AlertPanel` from `./AlertPanel`
+- API calls:
+  - `fetch('/api/market/publish-status-image')` at line 261
+  - `fetch('/api/stocks/${tk}/unified?_t=${Date.now()}')` at line 499
+  - `fetch('/api/alerts/quick-add')` at line 604
+- Sub-components rendered:
+  - `<ExchangeSelector compact ... />` (line 312)
+  - `<ChartToggle />` (line 805)
+  - `<TradingViewChart ticker={...} stockName={...} />` (line 824)
+  - (lucide icons: LayoutGrid/TrendingUp/TrendingDown/RefreshCw/Loader2/Send/X/BellRing/Bell/Check/Star/Minimize2/Maximize2/ImageIcon/Activity/Gauge — filtered)
+
+#### Screen 5: 'portfolio' / 'finance' (fallthrough)
+- Component: `<EnhancedPortfolioView />`
+- File: `src/modules/portfolio/components/EnhancedPortfolioView.tsx`
+- Lines: 3369 (the largest screen in the app)
+- Top imports (lines 3-48): React (useState/useEffect/useCallback/useMemo/memo); `next/dynamic`; large unnamed import block; shadcn Card/Skeleton
+- API calls (14 distinct fetch endpoints — most of any screen):
+  - `/api/stocks/search?q=...` (line 325)
+  - `/api/crypto/coins?limit=250` (line 427)
+  - `/api/portfolio/accounts?user_id=default` (line 552)
+  - `/api/finance/calculate-values${pidQs}` (line 629)
+  - `/api/finance/obligations?status=active` (line 630, 2469)
+  - `/api/finance/assets${pidQs}` (line 662, 786)
+  - `/api/finance/assets/${editAsset.id}` (line 842)
+  - `/api/finance/assets/${deleteId}` DELETE (line 865)
+  - `/api/watchlist` (line 694)
+  - `/api/finance/transactions?month=...&year=...` (line 2085)
+  - `/api/finance/transactions` (line 2101)
+  - `/api/finance/transactions/${id}` DELETE (line 2131)
+  - `/api/finance/obligations` (line 2490)
+  - `/api/finance/obligations/${editItem.id}` (line 2523)
+  - `/api/finance/obligations/${deleteId}` DELETE (line 2549)
+  - `/api/finance/obligations/payments` (line 2567)
+  - `/api/finance/reports` (line 2817)
+- Sub-components rendered:
+  - `<RealReturnPanel />` (line 1074)
+  - `<RiskProfilerQuiz currentAllocation={...} />` (line 1078)
+  - `<TopUpRecommendationsPanel />` (line 1093)
+  - `<RoboAdvisorPanel assets={...} />` (line 1178)
+  - (lucide icons: Shield/RefreshCw/Landmark/Wallet/Coins/Plus/Sparkles/Bitcoin/Gem/Banknote/Scale/CheckCircle2 — filtered)
+
+#### Screen 6: 'watchlist' / 'crypto-watchlist' (fallthrough)
+- Component: `<EnhancedWatchlistView />`
+- File: `src/components/watchlist/EnhancedWatchlistView.tsx`
+- Lines: 1356
+- Top imports (lines 3-31): React (useState/useEffect/useCallback/useMemo/useRef/memo); large unnamed block; shadcn Card/Skeleton/Badge
+- API calls:
+  - `/api/stocks?query=...&page_size=10` (line 142)
+  - `/api/watchlist-enhanced?market=${currentMarket}` (line 201, 778)
+  - `/api/watchlist-enhanced/${item.id}?market=${currentMarket}` (line 442)
+  - `/api/watchlist-enhanced/${deleteId}` DELETE (line 812)
+- Sub-components rendered:
+  - `<MiniSparkline ticker={item.ticker} />` (lines 694, 890)
+  - (lucide icons: Search/Loader2/X/Sparkles/Pencil/Trash2/Bell/BellOff/TrendingUp/TrendingDown — filtered)
+
+#### Screen 7: 'recommendations' / 'analysis' / 'crypto-recommendations' (fallthrough) — also handles 'advanced-analysis' / 'v2-analysis' (returns same MarketAnalysisView)
+- Component: `<MarketAnalysisView />`
+- File: `src/modules/market-analysis/components/MarketAnalysisView.tsx`
+- Lines: 301
+- Top imports (lines 3-7): React (useState/useEffect); `next/dynamic`; shadcn Card/Tabs/Skeleton
+- API calls:
+  - `/api/stocks?market=...&limit=500` (line 132)
+  - `/api/unified/predictions?market=...&limit=5` (line 133)
+  - `/api/stored-analysis/results?market=...&limit=100` (line 134)
+- Sub-components rendered:
+  - `<RefreshAnalyticsButton variant="glow" size="default" />` (line 199)
+  - `<MarketSelector size="default" />` (line 200)
+  - `<HorizontalSectorsBar marketCode={marketCode} />` (line 206)
+  - `<UnifiedPredictionsTab market={currentMarket} />` (line 236)
+  - `<ReportsView />` (line 245 — recursion into Screen 19)
+
+#### Screen 8: 'market-status' (inline wrapper around MarketStatusTab)
+- Component: inline `<div>` wrapping `<MarketStatusView market={currentMarket} />`
+- File: `src/modules/market-analysis/components/MarketStatusTab.tsx` (exported as `MarketStatusTab`, aliased to `MarketStatusView` in page.tsx line 77)
+- Lines: 1087
+- Top imports (lines 3-7): React (useState/useEffect/useCallback/useMemo/useRef); shadcn Card/Tabs/Badge/Button
+- API calls:
+  - `/api/market/status?market=...&limit=10` (line 234)
+  - `/api/stocks?market=...&limit=500` (line 264)
+- Sub-components rendered:
+  - `<MarketStatusExport />` (line 563)
+  - (Recharts pieces: ResponsiveContainer/PieChart/BarChart/Bar/Cell/Legend/XAxis/YAxis/CartesianGrid — filtered)
+  - (lucide icons: RefreshCw/Radio/PieChart/BarChart3/Activity — filtered)
+
+#### Screen 9: 'historical-trades' (inline wrapper around HistoricalTradesTable)
+- Component: inline `<div>` wrapping `<HistoricalTradesView />`
+- File: `src/modules/market-analysis/components/HistoricalTradesTable.tsx` (exported as `HistoricalTradesTable`, aliased to `HistoricalTradesView` in page.tsx line 81)
+- Lines: 581
+- Top imports (lines 18-22): React (useState/useEffect/useCallback/useMemo); shadcn Card/Badge/Button/Skeleton
+- API calls:
+  - `/api/predictions/historical-trades?${params.toString()}` (line 111)
+- Sub-components rendered:
+  - `<StatPill label=... icon=... tone=... />` (lines 346-349)
+  - `<UnifiedTable<HistoricalTrade>>` (line 513)
+  - (lucide icons: TrendingUp/TrendingDown/Minus/History/RefreshCw/Filter/Lock — filtered)
+
+#### Screen 10: 'unified-analysis'
+- Component: `<UnifiedAnalysisView />`
+- File: `src/modules/market-analysis/components/UnifiedAnalysisView.tsx`
+- Lines: 562
+- Top imports (line 3): React (useState/useEffect/useCallback) — only 1 import line in top-5 (file uses default-export pattern)
+- API calls:
+  - `/api/unified?action=markets` (line 143)
+  - `/api/unified?action=personas` (line 144)
+  - `/api/unified` POST (lines 177, 200, 222 — three separate calls)
+- Sub-components rendered:
+  - `<ScoreBar value={...} label=... color=... />` (lines 442-446 — 5 instances)
+
+#### Screen 11: 'specialist-analysis'
+- Component: `<SpecialistAnalysisView />`
+- File: `src/components/advanced-analysis/SpecialistAnalysisView.tsx`
+- Lines: 2916 (second-largest screen)
+- Top imports (lines 59-63): React (useState/useEffect/useCallback/useMemo); shadcn Card/Button/Badge/Progress
+- API calls:
+  - `/api/maker-radar/stock?ticker=...&market=...` (line 2539)
+  - `/api/flow/${enc}` (line 2545)
+  - `/api/predictions?ticker=...&limit=10&market=...` (line 2547)
+  - `/api/sharia?symbol=...` (line 2556)
+  - `/api/stocks/${enc}/unified?market=...` (line 2558)
+- Sub-components rendered:
+  - `<EmptyState msg=... />` (lines 564, 598)
+  - `<PriceTile label=... value=... />` (lines 910-913, 1404, 1416, 1417, 1424)
+  - `<MetricRow label=... value=... />` (lines 938, 939, 988)
+  - (lucide icons: BarChart3/Droplets/TrendingUp/Gauge/Layers/Shield/Target/Activity/Banknote — filtered)
+
+#### Screen 12: 'prediction-performance' / 'prediction-credibility' (NOT in VALID_VIEWS — admin-only inline)
+- Component: inline JSX `<div>` with redirect button to dashboard
+- File: src/app/page.tsx (inline at lines 629-643)
+- Lines: N/A (inline JSX, ~15 lines)
+- API calls: NONE
+- Sub-components rendered: NONE (just text + a `<button>`)
+
+#### Screen 13: 'prediction-tracking' (canonical) — also handles 'picks-management' (alias)
+- Component: `<PredictionTrackingView />`
+- File: `src/modules/predictions/components/PredictionTrackingView.tsx`
+- Lines: 718
+- Top imports (lines 2-26): `StatCard` from `@/components/ui/stat-card`; React (useCallback/useEffect/useMemo/useState); `useVisibilityAwarePolling` from `@/hooks/useVisibilityAwarePolling`; large unnamed block; shadcn Badge
+- API calls:
+  - `/api/predictions/honest-tracking/list?${params.toString()}` (line 397)
+  - `/api/predictions/tracking/verify` (line 436)
+- Sub-components rendered:
+  - `<MarketSelector size="sm" />` (line 527)
+  - `<UnifiedTable<TrackedPick>>` (line 690)
+  - (lucide icons: Trophy/RefreshCw/ListChecks/Clock/CheckCircle2/XCircle/Target/Shield/Gauge/TrendingUp/TrendingDown — filtered)
+
+#### Screen 14: 'dual-track'
+- Component: `<DualTrackPredictionsView />`
+- File: `src/modules/predictions/components/DualTrackPredictionsView.tsx`
+- Lines: 633
+- Top imports (lines 21-29): React (useState/useEffect/useCallback); large unnamed block; shadcn Card/Badge/Button
+- API calls:
+  - `/api/predictions/dual-track/stats` (line 168)
+  - `/api/predictions/dual-track/threshold` POST (line 213)
+- Sub-components rendered:
+  - `<PredictionRow key={p.id} pred={p} />` (line 466)
+  - (lucide icons: Loader2/Layers/RefreshCw/Activity/CheckCircle2/Brain/Target/ArrowUpCircle/Zap/Eye/BarChart3/Droplets — filtered)
+
+#### Screen 15: 'v82'
+- Component: `<V82DecisionPanel initialTicker="COMI" />`
+- File: `src/components/v82/V82DecisionPanel.tsx`
+- Lines: 294
+- Top imports (lines 16-23): React (useState/useCallback); large unnamed block; shadcn Card/Badge/Button
+- API calls:
+  - `/api/v82?ticker=...&market=EGX&days=365` (line 80)
+- Sub-components rendered:
+  - (lucide icons: Loader2/Zap/Gauge/Shield/CheckCircle2/XCircle/Activity/DollarSign — filtered; no custom sub-components)
+
+#### Screen 16: 'reports'
+- Component: `<ReportsView />`
+- File: `src/modules/reports/components/ReportsView.tsx`
+- Lines: 955
+- Top imports (lines 35-59): React (multi-hook); large unnamed block; shadcn Card/Badge/Button
+- API calls: **NO direct `fetch('/api/...')` calls** in this file (data via props or upstream caller — but this screen IS rendered by MarketAnalysisView line 245 which may pass data as props)
+- Sub-components rendered:
+  - `<LoadingSkeleton />` (lines 290, 566)
+  - `<OfflineState reason=... />` (lines 293, 569)
+  - `<Sparkline values=... tone=... />` (line 620)
+  - (lucide icons: Download/Printer/FileBarChart/ArrowUpRight/ArrowDownRight/Layers/BarChart3/Sparkles/Trophy/TrendingUp/TrendingDown/Shield/Activity — filtered)
+
+#### Screen 17: 'news'
+- Component: `<NewsFeedView />`
+- File: `src/modules/news/components/NewsFeedView.tsx`
+- Lines: 890
+- Top imports (lines 8-29): React (useState/useEffect/useCallback/useMemo); large unnamed block; shadcn Card/Badge/Button
+- API calls:
+  - `/api/news-feed` (line 663)
+- Sub-components rendered:
+  - `<SourceImageViewer images=... title=... source=... />` (line 597)
+  - `<InvestmentDecisionInsight item=... onTickerClick=... />` (line 635)
+  - `<ShareAndActions item=... />` (line 638)
+  - (lucide icons: Maximize2/X/Sparkles/Check/Copy/ArrowUpRight/ArrowDownRight/Minus/ExternalLink/Building2/Clock/Newspaper/RotateCw/Search — filtered)
+
+#### Screen 18: 'simulation' / 'crypto-simulation' (fallthrough)
+- Component: `<SimulationView />`
+- File: `src/modules/simulation/components/SimulationView.tsx`
+- Lines: 2130
+- Top imports (lines 3-35): React (useState/useEffect/useCallback/useRef/useMemo); large unnamed block; `toast` from `sonner`; `cn` from `@/lib/utils`; shadcn Card
+- API calls:
+  - `/api/stocks?market=...&page_size=500` (line 447)
+- Sub-components rendered:
+  - `<MarketSelector size="sm" />` (line 1107)
+  - (lucide icons: ArrowUpRight/ArrowDownRight/Plus/Minus/Gamepad2/Clock/Pause/Play/Download/RotateCcw/BarChart3/ShoppingCart/Wallet/History/Eye/DollarSign — filtered)
+
+#### Screen 19: 'academy' / 'crypto-learning' (fallthrough)
+- Component: `<AcademyView />`
+- File: `src/modules/education/components/AcademyView.tsx`
+- Lines: 2483
+- Top imports (lines 20-24): React (as `* as React`); shadcn Badge/Button/Card/Input
+- API calls:
+  - `/api/ads/educational-lessons` (lines 222, 307)
+  - `/api/stocks?page_size=500` (line 1088)
+- Sub-components rendered (this is a tabbed view with many sub-panels):
+  - `<AcademyEncyclopedia />` (line 132)
+  - `<PaperTradingWorkstation />` (line 135)
+  - `<CandlestickSimulator />` (line 138)
+  - `<StrategySandbox />` (line 141)
+  - `<AdvancedLessonsTab />` (line 144)
+  - `<TradingFloorView />` (line 147)
+  - `<PracticalToolsView />` (line 150)
+  - `<AdvancedLabView />` (line 153)
+  - `<AdvancedMarkdownRenderer content=... />` (lines 490, 521, 531)
+  - `<LossAversionCurve />` (line 670)
+  - (lucide icons: Loader2/RefreshCw/GraduationCap/BookOpen/Clock/CheckCircle2/Lock/Download/ChevronLeft — filtered)
+
+#### Screen 20: 'bagholder-rescue'
+- Component: `<BagHolderRescueView />` (wraps `<BagHolderRescuePanel />`)
+- File: `src/modules/portfolio/components/BagHolderRescuePanel.tsx` (exported as `BagHolderRescuePanel`, aliased to `BagHolderRescueView` in page.tsx line 106)
+- Lines: 1124
+- Top imports (lines 15-19): React (useState/useEffect/useMemo/useRef); shadcn Card/Button/Input/Badge
+- API calls:
+  - `/api/portfolio/bag-holder-rescue?ticker=...&buy_price=...&quantity=...` (line 158)
+  - `/api/finance/calculate-values` (lines 216, 312 — twice)
+  - `/api/finance/assets/${match.id}` (line 241)
+  - `/api/trading-journal` (line 286)
+- Sub-components rendered:
+  - `<DynamicRiskProfilerModal open=... onOpenChange=... />` (line 1121)
+  - (lucide icons: LifeBuoy/Loader2/TrendingDown/TrendingUp/Activity/Target/Brain/Calculator/FileText/CheckCircle2/RefreshCw/Wallet — filtered)
+
+#### Screen 21: 'advanced-portfolio'
+- Component: `<AdvancedPortfolioManager />`
+- File: `src/modules/portfolio/components/AdvancedPortfolioManager.tsx`
+- Lines: 578
+- Top imports (lines 3-23): React (useState/useEffect/useCallback); large unnamed block; shadcn Card/Button/Badge
+- API calls: **NO direct `fetch('/api/...')` calls** (data flows via parent/props or downstream subcomponents)
+- Sub-components rendered:
+  - (lucide icons only: Flame/RefreshCw/Lightbulb/Target/Plus/TrendingUp/Shield — filtered; no named custom sub-components visible in top 25 matches)
+
+#### Screen 22: 'seasonality'
+- Component: `<SeasonalityDashboard />`
+- File: `src/components/seasonality/SeasonalityDashboard.tsx`
+- Lines: 300
+- Top imports (lines 3-7): React (useState/useEffect/useCallback); shadcn Card/Button/Badge/Skeleton
+- API calls:
+  - `/api/seasonality-signals` (line 90)
+- Sub-components rendered:
+  - (lucide icons: Zap/RefreshCw/Target/CheckCircle — filtered; no custom sub-components in top 25)
+
+#### Screen 23: 'smart-confluence' (canonical) — also handles 'crypto-analysis' (alias returning same component)
+- Component: `<SmartConfluenceView />`
+- File: `src/components/smart-assistant/SmartConfluenceView.tsx`
+- Lines: 276
+- Top imports (lines 3-7): React (useState/useEffect); shadcn Card/Badge/Button/Tabs
+- API calls:
+  - `/api/finance/smart-confluence` (line 75)
+- Sub-components rendered:
+  - (lucide icons: Activity/CheckCircle — filtered; no custom sub-components)
+
+#### Screen 24: 'liquidity-radar' (canonical, initialTab="radar") — also handles 'sectors' (initialTab="sectors")
+- Component: `<LiquidityRadarView market={...} initialTab="radar" />`
+- File: `src/components/shared/LiquidityRadarView.tsx`
+- Lines: 720
+- Top imports (lines 15-19): React (useState/useEffect/useCallback); shadcn Card/Button/Skeleton/Badge
+- API calls: **NO direct `fetch('/api/...')` calls** (data flows via sub-components)
+- Sub-components rendered:
+  - `<FlashingPriceCell price=... />` (line 346)
+  - `<MiniSparkline ticker=... />` (line 375)
+  - `<LiquidityFlashCell value=... />` (line 388)
+  - `<MarketSelectorBar activeMarket=... onSelect=... currency=... />` (line 476)
+  - `<PulseRibbon market=... scannedCount=... />` (line 501)
+  - `<UnifiedTable<RadarStock>>` (line 565)
+  - `<GuestLimitCta shown=... total=... itemLabel=... itemLabelPlural=... />` (line 603)
+  - `<SectorTrackingTab market=... />` (line 610)
+  - (lucide icons: Layers/Lock/Activity/Shield — filtered)
+
+#### Screen 25: 'market-depth' (inline composition of 2 widget components)
+- Component: inline `<div>` with `<Header />` + `<SafeWidget>` wrapping `<MarketDepthMultiMarket />` + (conditional) `<MarketDepthInvestorsFlow />` + `<Footer />`
+- Files:
+  - `src/modules/dashboard/components/MultiMarketWidget.tsx` (exported as `MultiMarketWidget`, aliased to `MarketDepthMultiMarket` in page.tsx line 228) — 610 lines
+  - `src/modules/dashboard/components/InvestorsFlowPanel.tsx` (exported as `InvestorsFlowPanel`, aliased to `MarketDepthInvestorsFlow` in page.tsx line 235) — 559 lines
+- Top imports (MultiMarketWidget, lines 3-7): React (useState/useEffect/useMemo); shadcn Card/Tabs/Badge/Skeleton
+- Top imports (InvestorsFlowPanel, lines 16-20): React (useState/useEffect/useCallback); lucide (Users/Building2/User/TrendingUp/TrendingDown/Loader2/Layers/Globe2); shadcn Card/Badge/Button
+- API calls (MultiMarketWidget):
+  - `/api/data-engine/stocks?market=...&limit=20` (line 105)
+  - `/api/data-engine/gold` (line 129)
+  - `/api/data-engine/crypto?limit=10` (line 130)
+  - `/api/data-engine/forex` (line 131)
+- API calls (InvestorsFlowPanel):
+  - `/api/market/liquidity-flow?market=...&days=...` (line 235)
+  - `/api/egx/investors?latest=false&days=...` (line 236)
+- Sub-components rendered:
+  - (MultiMarketWidget) `<MiniSparkline ticker=... />` (line 240)
+  - (InvestorsFlowPanel) `<UnifiedTable<SectorFlow>>` (line 375), `<UnifiedEmptyState variant="loading" title=... />` (lines 407, 431), `<InvestorsTable rows=... source=... autoSeeded=... />` (line 443)
+
+#### Screen 26: 'alerts-center'
+- Component: `<AlertsCenterView />`
+- File: `src/components/alerts/AlertsCenterView.tsx`
+- Lines: 689
+- Top imports (lines 3-23): React (useState/useEffect); large unnamed block; shadcn Card/Button/Badge
+- API calls:
+  - `/api/watchlist` (line 373)
+  - `/api/crypto/watchlist` (line 374)
+  - `/api/finance/reports` (line 375)
+  - `/api/finance/obligations?status=active` (line 376)
+- Sub-components rendered:
+  - (lucide icons only in filtered output: Bitcoin/TrendingUp/CheckCircle2/Clock/TrendingDown/Bell/Calendar/Shield/RefreshCw/Target/DollarSign/Eye — no custom sub-components visible in top 25)
+
+#### Screen 27: 'live-monitor'
+- Component: `<LiveMonitor />`
+- File: `src/modules/dashboard/components/LiveMonitor.tsx`
+- Lines: 1357
+- Top imports (lines 12-40): React (useCallback/useEffect/useRef/useState); large unnamed block; `toast` from `sonner`; large unnamed block; shadcn Badge
+- API calls:
+  - `/api/live-monitor?market=...` (line 1088)
+  - `/api/live-monitor/trigger?market=...` (line 1155)
+- Sub-components rendered:
+  - `<PulsingDot color="emerald" />` (lines 356, 507)
+  - `<TypeBadge type=... />` (line 641)
+  - `<UnifiedTable<PortfolioItem>>` (line 842)
+  - `<LiveMonitorSkeleton />` (line 1189)
+  - `<ErrorState error=... onRetry=... />` (line 1197)
+  - (lucide icons: Clock/CalendarDays/TrendingUp/TrendingDown/StatusIcon/Wallet/Radio/ArrowUpRight/ArrowDownRight/RefreshCw/Activity/Loader2 — filtered)
+
+#### Screen 28: 'wealth'
+- Component: `<WealthCharts />`
+- File: `src/modules/admin/components/WealthCharts.tsx`
+- Lines: 465
+- Top imports (lines 13-25): React (useState/useEffect/useCallback); two large unnamed blocks; shadcn Card/Badge
+- API calls (3 parallel fetches via Promise.all — see lines 63-65):
+  - `/api/portfolio/equity-curve?days=...` (line 63)
+  - `/api/portfolio/holdings` (line 64)
+  - `/api/portfolio/risk-summary` (line 65)
+- Sub-components rendered:
+  - (Recharts AreaChart at line 313; lucide icons Loader2 — filtered; no custom sub-components visible)
+
+#### Screen 29: 'trading-memory'
+- Component: `<TradingMemoryView />`
+- File: `src/components/memory/TradingMemoryView.tsx`
+- Lines: 326
+- Top imports (lines 3-7): React (useState/useEffect); shadcn Card/Badge/Button/Input
+- API calls:
+  - `/api/python/v4/stats` (line 68)
+- Sub-components rendered:
+  - `<ProfessionalWatchlistView />` (line 125)
+  - `<SmartAssistantPanel />` (line 128)
+  - `<SmartAlertsPanel />` (line 131)
+  - `<PortfolioIntelligencePanel />` (line 134)
+  - (lucide icons: Brain/RefreshCw/Search/Trophy/TrendingUp/TrendingDown — filtered)
+
+#### Screen 30: 'trading-journal'
+- Component: `<TradingJournalView />`
+- File: `src/components/journal/TradingJournalView.tsx`
+- Lines: 586
+- Top imports (lines 3-7): React (useState/useEffect); shadcn Card/Button/Input/Label
+- API calls:
+  - `/api/trading-journal` (line 86)
+  - `/api/trading-journal/stats` (line 87)
+- Sub-components rendered:
+  - (lucide icons: Plus/Target/DollarSign/Award/Calendar — filtered; no custom sub-components visible in top 25)
+
+#### Screen 31: 'publishing'
+- Component: `<UserPublishingView />`
+- File: `src/components/publishing/UserPublishingView.tsx`
+- Lines: 739
+- Top imports (lines 3-7): React (useState/useEffect); `useAppStore` from `@/lib/store`; shadcn Card/Button/Input
+- API calls:
+  - `/api/user-posts?limit=20` (line 92)
+  - `/api/points?user_id=...` (line 100)
+  - `/api/user-posts` POST (line 127)
+  - `/api/user-posts/${postId}/like` (line 167)
+  - `/api/instapay` (line 188)
+  - `/api/points/leaderboard?type=...&limit=50` (line 650)
+- Sub-components rendered:
+  - `<LeaderboardTab />` (line 624)
+  - (lucide icons: TrendingUp/TrendingDown/Minus/Crown/Trophy/Award/Medal/Star/Coins/Target/Eye/Heart/Zap/Gift/ExternalLink — filtered)
+
+#### Screen 32: 'crypto-portfolio'
+- Component: `<CryptoPortfolioView />`
+- File: `src/modules/crypto/components/CryptoPortfolioView.tsx`
+- Lines: 641
+- Top imports (lines 3-21): React (useState/useEffect/useCallback); large unnamed block; shadcn Card/Button/Badge
+- API calls:
+  - `/api/crypto/live` (line 226)
+- Sub-components rendered:
+  - `<PortfolioSkeleton />` (line 334)
+  - `<AllocationPieChart positions=... />` (line 450)
+  - (lucide icons: Wallet/Plus/RefreshCw/DollarSign/TrendingUp/TrendingDown/Percent/Bitcoin/Trash2/Search — filtered)
+
+#### Screen 33: 'crypto-prediction-tracking'
+- Component: `<CryptoPredictionTrackingView />`
+- File: `src/modules/crypto/components/CryptoPredictionTrackingView.tsx`
+- Lines: 478
+- Top imports (lines 2-7): `StatCard` from `@/components/ui/stat-card`; React (useState/useEffect/useMemo/useCallback); shadcn Card/Button/Badge
+- API calls:
+  - `/api/crypto-predictions?limit=200` (line 284)
+- Sub-components rendered:
+  - `<UnifiedTable<CryptoPrediction>>` (line 457)
+  - `<LegalDisclaimerFooter />` (line 475)
+  - (lucide icons: Clock/Bitcoin/RefreshCw/Activity/CheckCircle2/Trophy/XCircle/Percent/Target/Search — filtered)
+
+#### Screen 34: 'zakat'
+- Component: `<ZakatView />`
+- File: `src/components/zakat/ZakatView.tsx`
+- Lines: 1143
+- Top imports (lines 3-27): React (useState/useEffect/useMemo); large unnamed block; shadcn Card/Input/Button
+- API calls:
+  - `/api/finance/calculate-values` (line 827)
+  - `/api/gold-silver` (line 1022)
+- Sub-components rendered:
+  - `<IslamicPattern />` (lines 179, 242, 623)
+  - `<OrnamentDivider />` (lines 189, 250)
+  - (lucide icons: Star/CrescentMoon/BookOpen/Scale/Sparkles/Coins/Moon/CircleDollarSign/TrendingUp/Calculator/Info — filtered)
+
+#### Screen 35: 'tithes'
+- Component: `<TithesView />`
+- File: `src/components/tithes/TithesView.tsx`
+- Lines: 757
+- Top imports (lines 3-21): React (useState/useEffect/useMemo); large unnamed block; shadcn Card/Input/Badge
+- API calls:
+  - `/api/finance/calculate-values` (line 482)
+  - `/api/finance/reports` (line 497)
+  - `/api/finance/obligations?status=active` (line 515)
+- Sub-components rendered:
+  - `<ChristianPattern />` (lines 123, 186, 325, 552)
+  - `<OrnamentDivider />` (lines 133, 194, 332)
+  - (lucide icons: Cross/BookOpen/Scale/Coins/Heart/Dove/CircleDollarSign/TrendingUp/Calculator/CheckCircle2/Sparkles — filtered)
+
+#### Screen 36: 'sharia'
+- Component: `<ShariaView />`
+- File: `src/modules/sharia/components/ShariaView.tsx`
+- Lines: 1478
+- Top imports (lines 28-59): React (useState/useEffect/useMemo/useCallback); two large unnamed blocks; shadcn Input/Button
+- API calls:
+  - `/api/sharia?symbol=...` (line 389)
+  - `/api/sharia/purification` POST (lines 693, 891 — two separate calls)
+  - `/api/sharia?${params.toString()}` (line 1125)
+- Sub-components rendered:
+  - `<IslamicPattern />` (lines 323, 425)
+  - `<GoldBorder />` (line 447)
+  - `<ShariaStockDetailBody data=... />` (line 465)
+  - `<MetricTile label=... value=... accent=... />` (lines 512-514)
+  - `<OrnamentDivider />` (lines 522, 575)
+  - `<StatPill label=... value=... icon=... accent=... />` (lines 1163-1165)
+  - (lucide icons: Sparkles/Award/ShieldCheck/BookOpen/Scale/Calculator/Loader2/Users/Building2 — filtered)
+
+#### Screen 37: 'subscription'
+- Component: `<SubscriptionView />`
+- File: `src/components/subscription/SubscriptionView.tsx`
+- Lines: 1791
+- Top imports (lines 3-40): React (useState/useEffect); `useSession` from `next-auth/react`; `useSearchParams` from `next/navigation`; large unnamed block; `toast` from `sonner`
+- API calls:
+  - `/api/subscription/activate` (line 431)
+  - `/api/redeem-promo` (line 473)
+  - `/api/auth/me` (line 488)
+  - `/api/paymob/create-payment` (line 536)
+  - `/api/subscription/developer-request` (line 1527)
+  - `/api/paymob/process-wallet` (line 1680)
+- Sub-components rendered:
+  - (lucide icons in filtered output: Eye/Building2/Bell/Shield/X/Zap/TrendingUp/Sparkles/Headphones/Crown/Rocket/Brain/Key/FileSpreadsheet/Globe/Infinity — no custom React sub-components visible in top 25)
+
+#### Screen 38: 'settings'
+- Component: `<SettingsView />`
+- File: `src/components/settings/SettingsView.tsx`
+- Lines: 232
+- Top imports (lines 3-18): React (useState/useEffect); large unnamed block; `useAppStore` from `@/lib/store`; `cn` from `@/lib/utils`; `Header` from `@/components/layout/Header`
+- API calls:
+  - `/api/subscription/current` (line 45)
+- Sub-components rendered:
+  - `<SubscriptionView />` (line 76 — recursion into Screen 37)
+  - `<Header title=... subtitle=... />` (line 84)
+  - `<DataManager />` (line 184)
+  - (lucide icons: ChevronLeft/User/Zap/Crown/Globe/Download/Info/Save — filtered)
+
+#### Screen 39: 'auth'
+- Component: `<AuthView />`
+- File: `src/components/auth/AuthView.tsx`
+- Lines: 653
+- Top imports (lines 3-7): React (useState/useEffect); `z` from `zod`; `useForm` from `react-hook-form`; `zodResolver` from `@hookform/resolvers/zod`; `signIn` from `next-auth/react`
+- API calls:
+  - `/api/auth/me` (lines 181, 244 — two calls)
+  - `/api/auth/register` (line 215)
+  - `/api/auth/csrf` (line 280)
+- Sub-components rendered:
+  - `<Header title=... subtitle=... />` (line 326)
+  - `<GoogleIcon />` (lines 456, 491)
+  - (react-hook-form pieces: Form/FormItem/FormLabel/FormControl/FormMessage — listed as primitives; lucide icons: TrendingUp/LogIn/UserPlus/User/Lock/EyeOff/Eye/Loader2 — filtered)
+
+#### Screen 40: 'admin'
+- Component: `<AdminView />`
+- File: `src/modules/admin/components/AdminView.tsx`
+- Lines: 2083
+- Top imports (lines 26-87): React (useEffect/useState/useCallback/useMemo); `next/dynamic`; large unnamed block; `useSession` from `next-auth/react`; `useAppStore` from `@/lib/store`
+- API calls (most of any screen — 13 distinct endpoints):
+  - `/api/admin/auth/auto-cookie` POST (lines 251, 497)
+  - `/api/admin/stats` (lines 502, 554)
+  - `/api/track` (line 528)
+  - `/api/market/connections` (lines 575, 596)
+  - `/api/prediction-performance` (line 608)
+  - `/api/self-learning?action=stats` (line 622)
+  - `/api/data-status` (line 635)
+  - `/api/feedback` (line 668)
+  - `/api/market/sync-live` (line 720)
+  - `/api/multi-market/sync` (line 744)
+  - `/api/admin/auth` (line 775)
+- Sub-components rendered (heavily dynamic-imported):
+  - `<LazyTabLoader label=... />` (lines 189, 197, 205, 213, 221, 236 — 6 instances as loading fallbacks)
+  - (lucide icons: Loader2/Shield/Activity/Monitor/ShieldAlert/Clock — filtered; full admin tab tree not captured in top 25)
+
+#### Screen 41: 'about'
+- Component: `<AboutView />`
+- File: `src/components/about/AboutView.tsx`
+- Lines: 384
+- Top imports (lines 16-33): React; large unnamed block; shadcn Card/Badge; `useAppStore`
+- API calls: **NO `fetch('/api/...')` calls** (static informational screen)
+- Sub-components rendered:
+  - (lucide icons: TrendingUp/Globe/Target/BookOpen — filtered; no custom sub-components in top 25)
+
+#### Screen 42: 'backtesting'
+- Component: `<EGXBacktestDashboard />`
+- File: `src/components/backtesting/EGXBacktestDashboard.tsx`
+- Lines: 443
+- Top imports (lines 3-9): React (useState/useEffect); large unnamed block; shadcn Badge/Tabs/Progress
+- API calls:
+  - `/api/sniper/backtest` (line 340)
+- Sub-components rendered:
+  - `<PFIndicator pf=... />` (line 135)
+  - `<MetricCard label=... value=... icon=... />` (lines 165-167)
+  - (lucide icons: TrendingUp/ArrowUpRight/ArrowDownRight/Activity/CheckCircle2/XCircle/Zap/Award/Target — filtered)
+
+#### Screen 43: 'rescue' (ALPHA-P0 standalone page, dynamically imported from src/app/rescue/page)
+- Component: `<RescuePage />`
+- File: `src/app/rescue/page.tsx`
+- Lines: 407
+- Top imports (lines 3-7): React (useState/useCallback/useEffect); shadcn Card/Button/Input/Label
+- API calls: **NO direct `fetch('/api/...')` calls** in this file (visible in scan)
+- Sub-components rendered:
+  - (lucide icons: Loader2/Stethoscope/ShieldAlert/Skull/Heart/Target/Activity/Lightbulb — filtered; no custom sub-components in top 25)
+
+#### default case (line 829-830): returns `<DashboardView />` (alias of Screen 1)
+- No new file. Effectively a graceful fallback for unknown view strings (does NOT redirect to /#dashboard URL — renders DashboardView inline while currentView stays invalid).
+
+### CRYPTO_VIEW_REDIRECTS mapping (from src/lib/valid-views.ts lines 77-86)
+
+| Crypto view        | Redirects to       | Actual handling in page.tsx switch                                                |
+|--------------------|--------------------|-----------------------------------------------------------------------------------|
+| `crypto`           | `dashboard`        | Has its own case (line 777) → `<DashboardView />` (consistent with redirect)     |
+| `crypto-live`      | `stocks`           | Falls through `stocks` case (line 572) → `<StocksView />`                       |
+| `crypto-recommendations` | `recommendations` | Falls through `recommendations` case (line 592) → `<MarketAnalysisView />` |
+| `crypto-trading-chart` | `trading-chart`  | Falls through `trading-chart` case (line 582) → `<TradingChartView />`          |
+| `crypto-screener` | `stock-filters`    | Falls through `stock-filters` case (line 575) → `<StockScreenerAdvancedView />` |
+| `crypto-analysis`  | `smart-confluence` | Has its own case (line 782) → `<SmartConfluenceView />` (consistent with redirect) |
+| `crypto-learning`  | `academy`          | Falls through `academy` case (line 661) → `<AcademyView />`                     |
+| `crypto-simulation`| `simulation`       | Falls through `simulation` case (line 658) → `<SimulationView />`              |
+
+### Observations / Anomalies Found (NOT fixed — read-only audit)
+
+1. **Three switch cases NOT present in VALID_VIEWS array (src/lib/valid-views.ts)** — they exist as case labels in page.tsx but are not declarable via URL hash:
+   - `stock-detail` (line 571) — fallthrough to `stocks`. Only reachable internally via `setCurrentView('stock-detail')` (e.g., from inside StocksView). The hash router (`UrlHashSync`, lines 318-372) would reject `#stock-detail` because `VALID_VIEWS.includes('stock-detail')` is false.
+   - `prediction-performance` (line 625) — inline admin-only JSX block.
+   - `prediction-credibility` (line 626) — inline admin-only JSX block.
+   - These two `prediction-*` cases are unreachable from URL hash yet still in the switch. They return a "go to dashboard" message. Possible dead code — flagged for future cleanup.
+
+2. **Stale comment in src/lib/valid-views.ts (lines 73-76)** — claims `crypto-portfolio`, `crypto-watchlist`, and `crypto-prediction-tracking` use "specialized components" in page.tsx. Reality:
+   - `crypto-portfolio` → `<CryptoPortfolioView />` ✅ (specialized, matches comment)
+   - `crypto-prediction-tracking` → `<CryptoPredictionTrackingView />` ✅ (specialized, matches comment)
+   - `crypto-watchlist` → falls through `watchlist` case → `<EnhancedWatchlistView />` ❌ (NOT specialized — comment is outdated; P0-COMPONENT-UNIFICATION Phase 3.1 unified it via fallthrough, line 588).
+
+3. **`ReportsView` is rendered both standalone (Screen 16) AND as a sub-component of `MarketAnalysisView` (Screen 7, line 245)** — possible duplicate render path. Worth checking whether MarketAnalysisView's ReportsView uses the same daily-report fetch logic, or whether it's just a tab component.
+
+4. **`SubscriptionView` is rendered standalone (Screen 37) AND as a sub-component of `SettingsView` (Screen 38, line 76)** — same component, two entry points. May double-load fetches if user navigates Settings → Subscription tab.
+
+5. **`SettingsView` fetches `/api/subscription/current` at line 45** — but it also renders `<SubscriptionView />` (line 76) which fetches `/api/subscription/activate` + `/api/auth/me` + `/api/paymob/create-payment`. The two fetches for subscription data are not coordinated (each component manages its own state).
+
+6. **Default case returns `<DashboardView />` silently** — invalid view strings (e.g., `#nonexistent`) just render DashboardView inline without correcting the URL hash. The `UrlHashSync` `applyHash` (line 534-545) does check `VALID_VIEWS_SET.has(hash)` and silently skips invalid hashes (no redirect to dashboard URL). This means a user typing `#nonexistent` sees DashboardView but the URL still says `#nonexistent` — minor UX/correctness issue.
+
+7. **No screen uses TanStack Query (`useApiQuery` / `useQuery`)** — all 43 components use raw `fetch()` directly (some with simple `useState` + `useEffect`). The `useApiQuery` hook exists at `src/hooks/use-api-query.ts` (Phase 0.9 wrapper, line 4) but is unused in any screen. This means: (a) no automatic caching/dedup, (b) no automatic refetch-on-focus, (c) every screen hand-rolls its own loading/error state. Major consistency improvement opportunity flagged.
+
+8. **AdminView is by far the heaviest screen (2083 lines, 13 fetch endpoints)** — `EGXBacktestDashboard` (443 lines) and `SubscriptionView` (1791 lines) also large. Total `src/` LOC across the 43 screen files: 43,638 lines.
+
+### Summary
+- **49 case branches** in the `renderView` switch (lines 566-831 of src/app/page.tsx).
+- **43 unique component files** (some cases are aliases returning the same component).
+- **3 cases NOT in VALID_VIEWS**: `stock-detail`, `prediction-performance`, `prediction-credibility`.
+- **1 stale comment** in valid-views.ts about `crypto-watchlist` (no longer specialized).
+- **0 screens use `useApiQuery`/`useQuery`** — all hand-rolled `fetch()`.
+- **No code modified** — read-only audit complete.
+
+---
+Task ID: DEEP-AUDIT-4
+Agent: DEEP-AUDIT-4 (API Routes Auditor)
+Task: Deep audit of all API routes in src/app/api/.
+
+Work Log:
+- Read worklog.md first (context: GLMinvestment restored, 3213 files, 924 TS files; prior AUDIT-1 components audit complete).
+- Listed all route.ts files via `find src/app/api -name "route.ts" | sort`.
+- Total count: **454 routes** across 27 distinct domains.
+- Wrote `/tmp/extract_routes.sh` to bulk-extract per-route: methods, DB refs, Python ports, Prisma flag, header line. Output saved to `/tmp/routes_summary.txt` (454 lines).
+- Used ripgrep to find:
+  - HTTP method exports (`^export async function (GET|POST|PUT|DELETE|PATCH)`) — saved to `tool-results/grep_1792514329537_7a55a0cff8b8.txt` (589 method-export lines across 454 files).
+  - Python port refs (`8010|8012|XTransformPort`) — verified inline; only port 8010 (Python vps-service) and port 8012 (Python Screener / Hybrid Stage Analyzer) are used. No other Python services referenced.
+  - DB file refs (`predictions.db|stocks.db|news.db|data_engine.db|...`) — saved to `tool-results/grep_1792514337698_8edbddac9394.txt`.
+  - Header comments (`^/\*|^//|^\s*\*`) — saved to `tool-results/grep_1792514349525_c5e47f5011c6.txt`.
+- Wrote `/tmp/extract_headers.sh` to pull first 6 comment lines per route → `/tmp/routes_headers.txt`.
+- Grouped all 454 routes into 27 domains via awk → `/tmp/routes_by_domain.txt`.
+- Read 50+ route files' first 25-30 lines individually to verify purpose + DB + Python dependency when summary was ambiguous (especially: admin/ab-test, admin/ai-analyze, subscribe/[plan], market/status, mobile/stocks/[ticker]/professional-analysis, recommendations, recommendations/backtest, iterative-learning, self-learning, walk-forward-test, mobile/zakat-calculator, etc.).
+- Used `rg "marketPulseProxy"` (files_with_matches) → discovered **23 routes** are no-op thin proxies to `/api/market-pulse` via `marketPulseProxy()` helper from `@/lib/market-pulse-proxy`. All bear the comment `Task P1-CLEANUP (2026-10-08): unified from 29-LOC copy-paste to 1-line delegation. The route name is kept for backward compat with frontend callers.`
+- Verified same-Python-endpoint duplicates by reading each route's `targetUrl = ${PY}/api/...` line (e.g., `flow` and `confluence/daily-picks` both target `/api/flow/summary`; `crypto/live`, `crypto-lab`, and `crypto` all target `/api/crypto/live`; `admin/engines-status` and `admin/system-topology` both target `/api/admin/system-topology`; `admin/ai-predictions/generate` (POST) and `prediction-performance` (GET) both target `/api/daily/rebuild-predictions`).
+- Verified same-DB-table duplicates by reading schema headers (`expert-recommendations` and `recommendations/expert` both read `stocks.db ExpertRecommendation`; `market/gold` header explicitly states "compatibility endpoint - نفس /api/mobile/gold").
+
+Findings:
+
+### Total API Routes: 454
+
+### Python Service Ports Used
+- **Port 8010** — Python vps-service (the canonical "Brain"). Used by 89 routes (proxy + direct fetch + hybrid fallback).
+- **Port 8012** — Python Screener / Hybrid Stage Analyzer v2. Used by 2 routes (`/api/maker-radar/stock-analysis`, `/api/stock-screener/analyze`).
+- **Port 5000** — Data engine (referenced in admin/engines-status header text, no direct fetch).
+- `XTransformPort` query param — dynamic port override supported only by `/api/telegram/[...path]`.
+- All other routes (365) either read directly from SQLite (no Python) or are no-op thin proxies.
+
+### Prisma Usage
+- **0 routes** use `prisma.` directly. All DB access is via `better-sqlite3` (raw `new Database(...)` or shared `@/lib/db`, `@/lib/db-predictions`, `@/lib/finance-db`, `@/lib/data-engine-db`, `@/lib/egx-db`, `@/lib/db-auth`, `@/lib/shared-db`, `@/lib/admin-db-manager`, `@/lib/flutter-sqlite-fallback`).
+- Prisma is used **indirectly**: `crypto-predictions/route.ts` imports `Prisma` from `@prisma/predictions-client` (types only).
+
+### Domain Grouping
+
+#### Domain 1: /api/admin/* (88 routes — largest domain)
+Sub-domains:
+- admin/db/* (4 routes): generic DB browse API
+  - `admin/db` (GET, POST) — list DBs / run ad-hoc SQL
+  - `admin/db/[db]` (DELETE, GET) — list tables in DB / drop DB
+  - `admin/db/[db]/[table]` (GET, POST) — list rows / insert row
+  - `admin/db/[db]/[table]/[row]` (DELETE, PUT) — delete / update row
+- admin/db-manager/* (16 routes): backup/checkpoint/delete/drop/export/import/query/recover/reindex/repair/restore/schema/truncate. All admin-gated. Two routes proxy to Python `:8010` for recovery (`recover`, `recover-all`). `repair` reads `predictions.db` + `stocks.db`. The rest touch DB files generically (path-based).
+- admin/backtest/* + admin/engine-settings (5 routes): v40 backtest run/stats/status + engine settings get/reset. `admin/backtest/v40/run` (POST) + `stats` (GET) touch `predictions.db`. `admin/engine-settings` reads `stocks.db`; `reset` proxies to `:8010`.
+- admin/db-backup (1 route): older backup impl using `execFile` (`sqlite3` CLI). DUPLICATE of `admin/db-manager/backup` (which uses `@/lib/admin-db-manager` lib functions).
+- admin/educational-cards/* (4 routes) + admin/reports/* (2 routes): ALL six are thin proxies to Python `:8010` for educational-cards and reports CRUD (generate/list/get/publish/image).
+- admin/system-resources/* (4 routes): system metrics, anomalies, history, process-history. No DB or Python — read OS stats.
+- admin/users/* (4 routes): users CRUD, promo, cleanup-expired.
+- admin/engines/* (5 routes): start-all, stop-all, control, logs, logs/control. No DB; talk to Python via PM2 / spawn.
+- Other admin routes (43 routes): auth (3), analytics, ab-test (thin-proxy), ai-analyze (thin-proxy), ai-predictions/generate, clean-predictions, close-predictions, cron-health (parses crontab.txt), daily-analysis, data-sources, fix-dates, generate-historical-predictions, generate-predictions (**DISABLED** per header), import-indices-csv, import-stocks, news (CRUD on news.db), news-health, platform-performance, pm2-control, promo-codes, purge-cache, refresh-historical-data, scrape-stocks, sharia/run, sources, stats, sync-stocks-db, sync-vps, system-health, system-topology (thin-proxy), telegram-predictions, validation.
+
+#### Domain 2: /api/auth/* (7 routes)
+- `auth/[...nextauth]` — NextAuth handler (the canonical `getServerSession` source). DB: `stocks.db` (auth adapter reads user table). Methods: GET, POST (NextAuth handles all verbs internally; my regex found `(none)` because NextAuth uses default exports).
+- `auth/login`, `auth/logout`, `auth/register`, `auth/profile` — credentials-based auth flows. `profile` GET+PUT.
+- `auth/me` — current session user info.
+- `auth/google`, `auth/google-signin` — Google OAuth flows (mobile + web variants).
+- Admin-auth: `admin/auth`, `admin/auth/token`, `admin/auth/auto-cookie` (separate domain but auth-related).
+
+#### Domain 3: /api/stocks/* + /api/stock/* + /api/unified-stocks + /api/stock-profile + /api/stock-screener (22 routes)
+- `stocks` (GET) — proxies to Python `/api/stocks` + reads `stocks.db`.
+- `unified-stocks` (GET) — reads `data_engine.db` + `stocks.db` (no Python).
+- `stocks/search` (GET) — reads `data_engine.db` + `stocks.db`.
+- `stocks/sparkline` (GET) — reads `stocks.db` for tiny chart data.
+- `stocks/top-performers` (GET) — proxies to Python + reads `stocks.db`.
+- `stocks/presets`, `stocks/advanced-analysis`, `stocks/data-coverage`, `stocks/delta-volume` (reads `data_engine.db`), `stocks/dual-persona/[ticker]` (proxies to `:8010`).
+- `stocks/[ticker]` (GET) — proxies to Python `/api/stocks/<TICKER>` + reads `stocks.db`.
+- `stocks/[ticker]/{comprehensive,depth,expert-analysis,history,news,orderbook,professional-analysis,publish-data,recommendation,unified}` (10 sub-routes). Different DBs: most read `stocks.db`; `news` reads `news.db`; `comprehensive` proxies to `:8010`; `professional-analysis` is **DEPRECATED 410 Gone** (header explicitly says it duplicates `stocks/[ticker]/recommendation`).
+- `stock/deep-analysis` (GET) — thin proxy to Python `:8010`.
+- `stock-profile/[ticker]` (GET) — proxies to `:8010` + reads `stocks.db`.
+- `stock-screener/analyze` (GET) — proxies to **port 8012** (Python Screener, NOT vps-service).
+
+#### Domain 4: /api/predictions/* (29 routes — second largest)
+Sub-domains:
+- `predictions` (GET, POST) — list/create predictions. Reads `predictions.db` + `data_engine.db`; proxies to `:8010`.
+- `predictions/{active-management,daily-picks,expert-consensus}` — read `predictions.db` (+ `stocks.db` for `daily-picks`/`active-management`); `active-management` and `daily-picks` also proxy to `:8010`.
+- `predictions/{backtest-list,historical-trades,learned-lessons,performance,performance-dashboard,eid}` — all read `predictions.db`; `performance-dashboard` is the richer version of `performance` (adds 30-day timeseries + by_market + by_signal breakdowns).
+- `predictions/refresh-v40` (GET, POST) — spawns `daily_predictor.py` child process. NOT a proxy; runs locally.
+- `predictions/dual-track/*` (4 routes) — list/stats/threshold/backtest. Reads `predictions.db` + (for threshold) `data_engine.db`. No Python.
+- `predictions/tracking/*` (4 routes) — list/stats/verify/route. ALL proxy to `:8010`. `list` reads nothing locally. Possibly deprecated per worklog context (honest-tracking is canonical).
+- `predictions/honest-tracking/*` (7 routes) — root, list, stats, live-tracking, missed-opportunities, learn-from-errors, verify-pending. Mostly read `predictions.db`; `missed-opportunities` reads `predictions.db` + `stocks.db` + `data_engine.db`; `learn-from-errors` + `verify-pending` proxy to `:8010`. This is the CANONICAL tracking system.
+- `predictions/{generate-all,monthly-league,league-report}` — `generate-all` POSTs to `:8010` (admin-gated); `monthly-league` + `league-report` proxy to `:8010` + read `predictions.db`.
+- `predictions/eid` (GET, POST) — Eid predictions; reads `data_engine.db`.
+
+#### Domain 5: /api/market/* + /api/market-pulse (31 routes — third largest)
+- `market-pulse` (GET) — **canonical market breadth endpoint**. Reads `stocks.db` + uses `fetchMarketIndices` from `@/lib/market-data-access`. Proxies to `:8010`.
+- 23 other routes are **thin no-op proxies** to `market-pulse` via `marketPulseProxy()` (see Duplicate Routes table A below).
+- `market/overview` (GET) — full market overview. Reads `stocks.db` + `fetchMarketIndices`. Proxies to `:8010`. (Real impl, not a thin proxy.)
+- `market/indices` (GET) — uses shared `fetchMarketIndices` helper (same as `market-pulse` + `market/overview`).
+- `market/status` — thin proxy to market-pulse (DUPLICATE — see table A).
+- `market/sectors` — thin proxy to market-pulse (DUPLICATE — see table A).
+- `market/sectors/intelligence` (GET) — real impl; reads `stocks.db`.
+- `market/{top-movers,liquidity-flow,intraday-pressure,exit-status,connections,regime,morning-bell,overview,summary,scheduled-sync,incremental-sync,sync,sync-live,investing,gold,live-data,continuation/[ticker],report/daily,report/weekly,recommendations/ai-insights,publish-status-image}` — 21 routes covering market data sync, regime, reports, AI insights. Most read `stocks.db`; some proxy to `:8010`.
+
+#### Domain 6: /api/portfolio/* (15 routes)
+- `portfolio` (GET) — proxies to Python `/api/live-monitor` (legacy).
+- `portfolio/holdings` (GET) — reads `portfolio_assets` from `stocks.db` via finance-db. Python proxy attempted first.
+- `portfolio/master` (GET) — reads `portfolio_assets` + computes live values + gold prices. Reads `stocks.db` + `data_engine.db` via finance-db + data-engine-db. (Similar to `holdings` but with gold + yield classification.)
+- `portfolio/{accounts,accounts/[id]/state,accounts/[id]/equity-curve}` — multi-portfolio. `accounts/[id]/*` proxy to `:8010`.
+- `portfolio/{cashflow,equity-curve,intelligence,risk-summary,smart-monitor/signals,unified-watch,watchlists,rescue,bag-holder-rescue}` — 9 routes. `cashflow` reads `stocks.db`; `equity-curve` reads `wealth_tracking` table; `intelligence` reads finance-db + egx-db; `risk-summary`, `smart-monitor/signals`, `bag-holder-rescue`, `watchlists` proxy to `:8010`; `unified-watch` reads `predictions.db` + `stocks.db`; `rescue` reads `data_engine.db` + `stocks.db`.
+
+#### Domain 7: /api/mobile/* (16 routes)
+Mobile-mirror routes for the Flutter Android client. Some are real impls, others are thin proxies (see table A):
+- `mobile/{crypto,crypto/[id],crypto/[id]/route,gold,gold/history,dashboard,news,notifications,portfolio,portfolio/analyze,portfolio/intelligence,predictions,recommendations,watchlist,watchlist/intelligence,stocks/[ticker],stocks/[ticker]/recommendation,stocks/[ticker]/professional-analysis,zakat-calculator,alerts/settings}`.
+- `mobile/portfolio` (GET/POST/DELETE) — GET proxies to `/api/live-monitor` (same as desktop `portfolio/route.ts`); POST/DELETE write directly to `auth.db` PortfolioItem via Prisma.
+
+#### Domain 8: /api/crypto/* (13 routes)
+- `crypto` (GET), `crypto/live` (GET), `crypto-lab` (GET) — ALL THREE proxy to Python `/api/crypto/live`. Triplicate.
+- `crypto/coins` (GET) — reads `data_engine.db crypto_prices` (NO Python — explicitly removed Binance direct call per header).
+- `crypto/{flow,explosive}` (GET) — proxies to `:8010` for crypto-specific flow/explosive endpoints (different from `flow` and `explosive` which target stock endpoints).
+- `crypto/{flow/[symbol],explosive/[symbol]}` (GET) — same as above with symbol param.
+- `crypto/{portfolio,stop,simulation,watchlist,full-analysis}` (GET/POST) — `simulation` reads `data_engine.db`; `full-analysis` reads `predictions.db`; `portfolio` + `watchlist` no DB; `stop` POST.
+- `crypto/[id]` (GET) + `crypto/[id]/history` (GET) — `crypto/[id]` reads `data_engine.db`; `crypto/[id]/history` proxies to `:8010`.
+- `crypto-predictions` (GET) — reads `predictions.db` (market='CRYPTO').
+- `crypto-lab/predictions` (GET) — reads `crypto_predictions_log` (NOT predictions.db — different DB).
+- `crypto-backtesting` (GET) — proxies to `:8010` for crypto backtesting.
+
+#### Domain 9: /api/data-engine/* (9 routes)
+- `data-engine/{control,crypto,forex,gold,gold/silver,metals,silver,stocks,status,health}` — read `data_engine.db`. `control` also touches `news.db` + `stocks.db`. `health` proxies to `:8010`. `status` reads `data_engine.db`.
+
+#### Domain 10: /api/maker-radar/* (17 routes)
+- `maker-radar/{route,warmup,track,timeline,stock,stock-analysis,signal-tracker,signal-tracker/verify,sector-treemap,net-picks,multi-market,market-intelligence,live-watch,fundamentals,footprint,exit-radar,entry-timing}` — most read `stocks.db`; `stock` reads `predictions.db` + `stocks.db`; `stock-analysis` proxies to **port 8012** (Python Screener); `signal-tracker/verify` reads `data_engine.db` + `stocks.db`; `market-intelligence` + `fundamentals` read `data_engine.db`; `timeline` reads `predictions.db`; `net-picks` reads `predictions.db`; `route` reads `stocks.db`.
+
+#### Domain 11: /api/v2/* (12 routes)
+- `v2/{pipelines,pipeline/[name]/summary,pipeline/[name]/engine/[engine]/{toggle,weight},presets,engines,chart/full-analysis,liquidity-radar,recommend,feedback/run,live-analysis,unified/{analyze,config,scan}}`. Only `chart/full-analysis` + `unified/*` proxy to `:8010`; `liquidity-radar` reads `stocks.db`. The rest are pure-TypeScript implementations.
+
+#### Domain 12: /api/auth/* + admin/auth/* (already covered in Domain 2)
+
+#### Domain 13: /api/ai/* (3 routes)
+- `ai/analyze-stock` (POST) — proxies to Python maestro `:8010` with `predictions.db` + `data_engine.db` fallback.
+- `ai/chat` (GET, POST) — uses DeepSeek + Z.ai Web Search. No DB.
+- `ai/models` (GET) — lists Ollama models + TTS voices.
+
+#### Domain 14: /api/alerts/* (5 routes)
+- `alerts` (GET), `alerts/[id]` (DELETE), `alerts/create` (POST), `alerts/quick-add` (GET, POST), `alerts/scheduler` (GET, POST). All read `stocks.db`.
+
+#### Domain 15: /api/finance/* (16 routes)
+- `finance/{assets,assets/[id],calculate-values,inflation,obligations,obligations/payments,projection,real-return,reports,schema,screener,smart-alerts,smart-analysis,smart-confluence,smart-watchlist,transactions,transactions/[id]}`. Most read `stocks.db`; `screener` + `calculate-values` + `smart-watchlist` + `smart-analysis` read `data_engine.db` + `stocks.db`; `smart-confluence` reads `predictions.db` + `stocks.db` + proxies to `:8010`.
+
+#### Domain 16: /api/subscription/* + /api/subscribe + /api/redeem-promo (15 routes)
+- `subscription/{activate,check-access,checkout,current,developer-request,plans,start-trial,status,subscribe,trial,upgrade,verify}` + `subscribe/[plan]` + `redeem-promo`. Note: `subscribe/[plan]` is a thin-proxy to market-pulse (DUPLICATE — see table A). `subscription/subscribe` is an explicit alias of `subscription/upgrade` (per header). `subscription/trial` is an explicit alias of `subscription/start-trial` (per header). `subscription/status` (mobile/Bearer) and `subscription/current` (web/session) overlap by purpose but differ in auth path.
+
+#### Domain 17: /api/telegram/* (4 routes)
+- `telegram/[...path]` (catch-all proxy to `:8010` with `XTransformPort` override) + `telegram/{post,publish-stock,send-daily-report}`.
+
+#### Domain 18: /api/confluence/* + /api/smart-confluence/* (4 routes)
+- `confluence/{analyze/[ticker],daily-picks,market-scan}` + `smart-confluence/analysis/[symbol]`. All proxy to `:8010`; `analyze/[ticker]` also reads `predictions.db`. Note: `confluence/daily-picks` proxies to `/api/flow/summary` — SAME Python endpoint as `/api/flow` (DUPLICATE — see table C).
+
+#### Domain 19: /api/news/* + /api/news-feed + /api/egxpilot/news (4 routes + admin/news already counted)
+- `news` (GET, POST) — reads `news.db market_news` + Python agent ingest.
+- `news/latest` (GET) — lightweight version of `news` (no summary field, same `market_news` table). 80% overlap with `news`.
+- `news-feed` (GET, POST) — multi-source aggregator (news_agent in `predictions.db` + EGXPilot + CoinGecko + Alternative.me). Reads `news.db` + `predictions.db`.
+- `egxpilot/news` (GET) — returns EMPTY news (stub; no real data). Likely deprecated.
+
+#### Domain 20: /api/persona/* (3 routes)
+- `persona/{analyze/[ticker],gambler,investor}`. All proxy to `:8010`; `analyze/[ticker]` also reads `predictions.db`.
+
+#### Domain 21: /api/explosive/* + /api/flow/* (4 routes)
+- `explosive` (GET) — proxies to `/api/explosive/top` for stocks.
+- `explosive/[ticker]` (GET) — per-ticker explosive analysis; reads `stocks.db` + proxies to `:8010`.
+- `flow` (GET) — proxies to `/api/flow/summary` for stocks.
+- `flow/[ticker]` (GET) — per-ticker flow; reads `stocks.db` + proxies to `:8010`.
+Note: `/api/crypto/explosive` + `/api/crypto/flow` (in Domain 8) target the crypto variants of these — NOT duplicates of stock `explosive`/`flow`.
+
+#### Domain 22: /api/risk/* (2 routes)
+- `risk/{decision-table,stock-types}`. Both proxy to `:8010`.
+
+#### Domain 23: /api/unified-learning/* + /api/unified + /api/self-learning + /api/iterative-learning (9 routes)
+- `unified-learning/{indicators,intelligent,iterative,mine-lessons,patterns,status}` — ALL 6 proxy to `:8010` for various learning sub-endpoints.
+- `unified` (GET, POST) — real impl with MARKET_PROFILES + PERSONA_PROFILES (TypeScript).
+- `unified/predictions` (GET, POST) — proxies to `:8010` + reads `predictions.db`.
+- `self-learning` + `iterative-learning` — both thin-proxy no-ops to market-pulse (DUPLICATE — see table A).
+
+#### Domain 24: /api/user-posts/* (3 routes)
+- `user-posts` (GET, POST), `user-posts/[id]` (DELETE, GET), `user-posts/[id]/like` (POST). No DB refs (uses Prisma elsewhere or in-memory).
+
+#### Domain 25: /api/{currency,metals,money}/* (9 routes)
+- `currency` (GET) + `currency/list` (GET) + `currency/convert` (GET, POST). `currency` + `currency/list` proxy to `:8010`; `currency/convert` uses static rate table (no Python).
+- `metals/gold` (GET) + `metals/gold/history` (GET). `metals/gold` reads `data_engine.db` (MetalPriceRow table).
+- `money` (GET) + `money/wealth` (GET) + `money/smart-monitor` (GET). `money` reads `stocks.db`; `wealth` + `smart-monitor` proxy to `:8010`.
+
+#### Domain 26: /api/{v4,v82}/* (2 routes)
+- `v4/stats` (GET) — proxies to `:8010` with `predictions.db` fallback. Exports `handleV4Stats` so `/api/python/[...path]` can re-use it (i.e., `/api/v4/stats` and `/api/python/v4/stats` are LITERAL DUPLICATES by design).
+- `v82` (GET) — pure TypeScript.
+
+#### Domain 27: /api/{paper-trading-v2,watchlist,watchlist-enhanced,radar,scanner,sniper,recommendations,expert-recommendations,parse-recommendations,reports,trade-results,export,trading-journal,rescue,hunter,fomo,deal-advisor,maestro,live-monitor,live,sectors,sharia,disclosures,egx,egxpilot,stored-analysis,seasonality-signals,walk-forward,walk-forward-test,kimi,backtest,backtesting,backtesting/unified,crypto-backtesting,advanced-analysis,global-predictions,prediction-performance,zakat,sync-historical,multi-market,metals-forex,learning,bot,b2b,ads,points,tips,feedback,features,track,tab-data,keepalive,init-db,health,data-status,system-control,i18n,app,push,import,proxy,proxy-prod,python,reports/proxy,reports/morning,cron,instapay,paymob,google-play,trade-results/export-image,...slug,route.ts} (all remaining ~120 routes — covered in detail in tables below).
+
+---
+
+### Duplicate Routes Identified
+
+#### TABLE A — 🔴 CRITICAL: P1-CLEANUP No-Op Thin Proxies (23 routes delegate to /api/market-pulse)
+
+All 23 routes import `marketPulseProxy` from `@/lib/market-pulse-proxy` and return its output verbatim. Their names are kept "for backward compat with frontend callers" — meaning the frontend may be calling these expecting specific data shapes (e.g., zakat-calculator, walk-forward-test, recommendations) but receiving market-breadth data instead.
+
+| Route | Real intent (by name) | Actual response (marketPulseProxy) |
+|-------|----------------------|------------------------------------|
+| `/api/admin/ab-test` | A/B test config | Market pulse data |
+| `/api/admin/ai-analyze` | AI analysis result | Market pulse data |
+| `/api/advanced-analysis/results` | Walk-forward analysis results | Market pulse data |
+| `/api/data-status` | DB / engine health status | Market pulse data |
+| `/api/features` | Feature flags | Market pulse data |
+| `/api/init-db` | DB initialization status | Market pulse data |
+| `/api/iterative-learning` | Iterative learning stats | Market pulse data |
+| `/api/market/sectors` | Sector list | Market pulse data |
+| `/api/market/status` | Market status | Market pulse data |
+| `/api/mobile/stocks/[ticker]/professional-analysis` | Per-stock professional analysis | Market pulse data |
+| `/api/mobile/stocks/[ticker]/recommendation` | Per-stock recommendation | Market pulse data |
+| `/api/mobile/watchlist/intelligence` | Watchlist intelligence summary | Market pulse data |
+| `/api/mobile/zakat-calculator` | Zakat calculation | Market pulse data |
+| `/api/recommendations` | Recommendations list | Market pulse data |
+| `/api/recommendations/backtest` | Recommendations backtest stats | Market pulse data |
+| `/api/self-learning` | Self-learning stats | Market pulse data |
+| `/api/seasonality-signals` | Seasonality signals | Market pulse data |
+| `/api/stocks/advanced-analysis` | Stocks advanced analysis | Market pulse data |
+| `/api/subscribe/[plan]` | Subscribe to plan | Market pulse data |
+| `/api/system-control` | System control ops | Market pulse data |
+| `/api/v2/feedback/run` | V2 feedback run | Market pulse data |
+| `/api/v2/live-analysis` | V2 live analysis | Market pulse data |
+| `/api/walk-forward-test` | Walk-forward test results | Market pulse data |
+
+**Recommendation:** Audit frontend (especially Flutter `client.dart`) for actual callers of these 23 paths. Either restore real implementations OR mark routes as deprecated with `410 Gone` like `/api/stocks/[ticker]/professional-analysis` does. Currently these are SILENT BUGS — clients get wrong-shaped data.
+
+#### TABLE B — Generic Python Proxy Catch-Alls (5 routes, intended overlap)
+
+| Route | Target | Auth | Notes |
+|-------|--------|------|-------|
+| `/api/proxy/[...path]` | `${PYTHON_BACKEND_URL}/api/{path}` (port 8010) | admin-only on `admin/*` paths, public on rest | The canonical proxy. SEC-04 HOTFIX hardened auth. |
+| `/api/python/[...path]` | same — calls `proxyRequest` from `/api/proxy/[...path]/route` | SAME | LITERAL DUPLICATE by design — eliminates a 308-redirect that broke Caddy. Both routes behave identically. |
+| `/api/telegram/[...path]` | `:8010/api/telegram/{path}` (with optional `XTransformPort` override) | NONE | No-auth proxy for Telegram dev/test. |
+| `/api/reports/proxy` | `:8010/api/reports/{type}/summary` | NONE | Reports-specific proxy (Rule 67 fix — single source of truth for reports). |
+| `/api/proxy-prod/[...path]` | `https://invist.m2y.net/api/{path}` (PRODUCTION, not 8010) | READ-ONLY (GET only) | Different target — proxy to live prod server. NOT a duplicate of the 8010 proxies. |
+
+**Recommendation:** Document that `/api/proxy/*` and `/api/python/*` are intentional aliases. Consider consolidating documentation; the code is already DRY (shares `proxyRequest`).
+
+#### TABLE C — Same Python Endpoint Targeted by Multiple Routes
+
+| Route 1 | Route 2 | Python target | Notes |
+|---------|---------|---------------|-------|
+| `/api/flow` (GET) | `/api/confluence/daily-picks` (GET) | `${PY}/api/flow/summary` | Both proxy to the same Python URL. `flow` is the canonical name; `confluence/daily-picks` is a confusingly-named alias. |
+| `/api/crypto` (GET) | `/api/crypto/live` (GET) | `${PY}/api/crypto/live` | `crypto/live` has NO fallback (returns 503 on Python down); `crypto` has `data_engine.db crypto_prices` fallback. Triplicate (next row). |
+| `/api/crypto` (GET) | `/api/crypto-lab` (GET) | `${PY}/api/crypto/live` | `crypto-lab` has NO fallback. Three routes all target `/api/crypto/live`. |
+| `/api/crypto/live` (GET) | `/api/crypto-lab` (GET) | `${PY}/api/crypto/live` | (Same as above — three-way dup.) |
+| `/api/admin/engines-status` (GET) | `/api/admin/system-topology` (GET) | `${PY}/api/admin/system-topology` | `engines-status` proxies to `system-topology` — confirmed by reading `targetUrl`. `system-topology` is the canonical; `engines-status` is kept for compat. |
+| `/api/admin/ai-predictions/generate` (POST) | `/api/prediction-performance` (GET) | `${PY}/api/daily/rebuild-predictions` | Different verbs (POST vs GET) but same Python path. `prediction-performance` has a misleading name — it doesn't measure performance, it triggers a rebuild. |
+
+#### TABLE D — Same DB Table Read by Multiple Routes
+
+| Route 1 | Route 2 | DB + table | Notes |
+|---------|---------|------------|-------|
+| `/api/expert-recommendations` (CRUD) | `/api/recommendations/expert` (GET) | `stocks.db ExpertRecommendation` | Header explicitly says "same table consumed by /api/expert-recommendations". `recommendations/expert` is the mobile-shaped wrapper. |
+| `/api/news` (GET, POST) | `/api/news/latest` (GET) | `news.db market_news` | `news/latest` is a lightweight variant (no summary field). 80% code overlap. |
+| `/api/watchlist` (GET, POST) | `/api/watchlist-enhanced` (GET) | `stocks.db user_stock_watchlists` | `watchlist-enhanced` adds live prices. Both headers mention the same past bug (proxied to market-pulse instead of real watchlist). |
+| `/api/watchlist` (GET, POST) | `/api/mobile/watchlist` (GET, DELETE, POST) | `stocks.db user_stock_watchlists` | Mobile variant — same table, different code path (uses `getUserIdsWithLegacy`). |
+| `/api/metals/gold` (GET) | `/api/market/gold` (GET) | `data_engine.db` gold prices | `market/gold` header literally says "compatibility endpoint - نفس /api/mobile/gold". Triplet with `/api/mobile/gold`. |
+| `/api/metals/gold` (GET) | `/api/mobile/gold` (GET) | `data_engine.db` gold prices | (Same as above.) |
+| `/api/market/gold` (GET) | `/api/mobile/gold` (GET) | `data_engine.db` gold prices | Explicitly-stated compatibility alias. |
+| `/api/portfolio/holdings` (GET) | `/api/portfolio/master` (GET) | `stocks.db portfolio_assets` | Both read the same table via finance-db. `master` adds gold + yield classification. |
+| `/api/portfolio` (GET, proxies to `/api/live-monitor`) | `/api/mobile/portfolio` (GET, proxies to `/api/live-monitor`) | Python `/api/live-monitor` | Both proxy to the same Python endpoint. Mobile adds POST/DELETE for direct DB writes. |
+| `/api/predictions/performance` (GET) | `/api/predictions/performance-dashboard` (GET) | `predictions.db predictions` | Both compute aggregated metrics. Dashboard version is richer (adds 30-day timeseries + by_market + by_signal). |
+| `/api/predictions/tracking/list` (GET) | `/api/predictions/honest-tracking/list` (GET) | (Both touch predictions.db + proxy to `:8010`) | `tracking/*` is the older system; `honest-tracking/*` is canonical per worklog context. `tracking/list` no longer reads DB locally (per my grep), suggesting it's already a stub. |
+| `/api/v4/stats` (GET) | `/api/python/v4/stats` (catch-all) | `predictions.db predictions` | `v4/stats` exports `handleV4Stats` which `/api/python/[...path]` imports and re-uses for the `/v4/stats` sub-path. Intentional DRY sharing. |
+| `/api/crypto-predictions` (GET, reads `predictions.db market='CRYPTO'`) | `/api/crypto-lab/predictions` (GET, reads `crypto_predictions_log` table) | Different tables, but conceptually same purpose (latest crypto predictions) | NOT a hard duplicate — different DB tables. Worth flagging for unification. |
+
+#### TABLE E — Mobile vs Desktop Mirror Routes (mostly intentional)
+
+| Mobile route | Desktop equivalent | Differences |
+|--------------|---------------------|-------------|
+| `/api/mobile/portfolio` | `/api/portfolio` | Same GET proxy target (`/api/live-monitor`); mobile adds POST/DELETE direct DB writes. |
+| `/api/mobile/portfolio/intelligence` | `/api/portfolio/intelligence` | Mobile reads `auth.db PortfolioItem` via Prisma; desktop reads finance-db + egx-db. DIFFERENT DBs — real divergence. |
+| `/api/mobile/predictions` | `/api/predictions` | Mobile has `predictions.db` fallback; desktop has full Python proxy. |
+| `/api/mobile/recommendations` | `/api/recommendations` | Mobile reads `predictions.db` + `stocks.db`; desktop is a thin no-op proxy to market-pulse (TABLE A). MOBILE IS THE REAL IMPL; desktop is broken. |
+| `/api/mobile/stocks/[ticker]` | `/api/stocks/[ticker]` | Mobile is a no-op thin proxy (TABLE A); desktop is the real impl. REVERSED — desktop is canonical. |
+| `/api/mobile/stocks/[ticker]/professional-analysis` | `/api/stocks/[ticker]/professional-analysis` | Mobile is a thin proxy to market-pulse (TABLE A); desktop is **DEPRECATED 410 Gone** (header). BOTH are non-functional. |
+| `/api/mobile/stocks/[ticker]/recommendation` | `/api/stocks/[ticker]/recommendation` | Mobile is a thin proxy (TABLE A); desktop is the canonical real impl. |
+| `/api/mobile/news` | `/api/news` | Mobile reads `news.db`; desktop reads same + supports POST ingest. |
+| `/api/mobile/gold` | `/api/metals/gold` | Both read `data_engine.db`. Explicitly aliased. |
+| `/api/mobile/watchlist` | `/api/watchlist` | Both read `stocks.db user_stock_watchlists`. |
+| `/api/mobile/zakat-calculator` | `/api/zakat/calculate` | Mobile is a thin proxy to market-pulse (TABLE A); desktop is the canonical real impl. Mobile is BROKEN. |
+| `/api/mobile/dashboard` | (no direct desktop equivalent — combines data from `predictions.db` + `stocks.db`) | N/A — aggregation endpoint. |
+
+#### TABLE F — Explicitly-Documented Deprecated / Disabled Routes
+
+| Route | Status | Canonical replacement |
+|-------|--------|------------------------|
+| `/api/stocks/[ticker]/professional-analysis` | DEPRECATED — returns 410 Gone | `/api/stocks/[ticker]/recommendation` |
+| `/api/admin/generate-predictions` | DISABLED (2026-09-02) — returns canned 410 | V40.2 cron job (`daily_predictor.py`) |
+| `/api/predictions/tracking/*` (4 routes) | Older tracking system | `/api/predictions/honest-tracking/*` (canonical per worklog context) |
+| `/api/egxpilot/news` | Stub — returns empty news | `/api/news` or `/api/news-feed` |
+
+#### TABLE G — Same Concept, Different Implementations (NOT hard duplicates — flagged for awareness)
+
+| Concept | Routes | Notes |
+|---------|--------|-------|
+| Backtesting | `/api/backtest` (POST, `/api/backtest`), `/api/backtesting` (GET, `/api/backtesting`), `/api/backtesting/unified` (deterministic stub — NOT a proxy), `/api/crypto-backtesting` (GET), `/api/admin/backtest/v40/{run,stats,status/[jobId]}` (3 routes), `/api/recommendations/backtest` (thin-proxy to market-pulse — broken), `/api/sniper/backtest` (GET, `/api/sniper/backtest`), `/api/kimi/backtest/run`, `/api/walk-forward/run`, `/api/walk-forward-test` (thin-proxy — broken), `/api/predictions/{dual-track/backtest, backtest-list}` | 12 routes for backtesting variants. Most proxy to different Python endpoints; a couple are broken no-ops. |
+| Generating predictions | `/api/admin/ai-predictions/generate` (POST → `/api/daily/rebuild-predictions`), `/api/predictions/generate-all` (POST → `/api/daily/live-refresh-analyses`), `/api/admin/generate-predictions` (DISABLED), `/api/admin/generate-historical-predictions` (pure-TS), `/api/predictions/refresh-v40` (spawns `daily_predictor.py` child process) | 5 different mechanisms. Only `refresh-v40` + `generate-historical-predictions` are functional in sandbox. |
+| Learning / lessons | `/api/unified-learning/{indicators,intelligent,iterative,mine-lessons,patterns,status}` (6 routes, all proxy to `:8010`), `/api/self-learning` (broken no-op), `/api/iterative-learning` (broken no-op), `/api/learning/progress` (real impl, reads `auth.db`), `/api/predictions/learned-lessons` (real impl, reads `predictions.db`), `/api/predictions/honest-tracking/learn-from-errors` (proxies to `:8010`), `/api/sniper/learning/performance` (proxies to `:8010`) | 13 routes for "learning". Only 3 are real implementations; the rest are either Python proxies or broken no-ops. |
+| Live monitoring | `/api/live-monitor` (Python proxy + `intraday.db` fallback), `/api/live-monitor/trigger` (POST), `/api/live-monitor/ledger` (reads `predictions.db` + `stocks.db`), `/api/live/scan` (proxies to `:8010`), `/api/live/analysis/[ticker]` (proxies to `:8010`), `/api/market/live-data` (reads `stocks.db`), `/api/crypto/live` (proxies to `:8010`), `/api/v2/live-analysis` (broken no-op), `/api/money/smart-monitor` (proxies to `:8010`), `/api/portfolio/smart-monitor/signals` (proxies to `:8010`) | 10 routes touching "live" monitoring. Some are stock, some crypto, some portfolio. |
+| Reports | `/api/reports/morning` (CRUD on `stocks.db`), `/api/reports/proxy` (proxies to `:8010`), `/api/admin/reports/[id]` + `/api/admin/reports/[id]/image` (proxies to `:8010`), `/api/market/report/{daily,weekly}` (proxies to `:8010`), `/api/radar/weekly-report` + `/api/radar/weekly-report/pdf` (runs `scripts/weekly_radar_report.py`), `/api/telegram/send-daily-report` (proxies to `:8010`) | 9 routes for various report types. Different report types; not strictly duplicates. |
+| Smart-* features | `/api/finance/{smart-alerts,smart-analysis,smart-confluence,smart-watchlist}` (4 routes), `/api/money/smart-monitor`, `/api/portfolio/smart-monitor/signals` | 6 "smart" routes. Mostly different domains. |
+| Sync | `/api/market/{sync,sync-live,scheduled-sync,incremental-sync}` (4 routes), `/api/multi-market/sync`, `/api/sync-historical`, `/api/admin/{sync-stocks-db,sync-vps}`, `/api/cron/auto-sync` | 9 sync-related routes. Each syncs different data sources. |
+
+---
+
+### Critical Issues Requiring Action
+
+1. **🔴 TABLE A — 23 broken no-op thin proxies to `/api/market-pulse`** (P1-CLEANUP task). Routes like `/api/mobile/zakat-calculator`, `/api/recommendations`, `/api/walk-forward-test` are returning market-breadth data instead of their namesake data. Either restore real implementations or replace with explicit `410 Gone` + deprecation header (like `stocks/[ticker]/professional-analysis` already does). At minimum, update frontend callers to use canonical routes.
+
+2. **🟠 TABLE C — 6 same-Python-endpoint duplicate proxies** (flow/confluence-daily-picks, crypto/crypto-live/crypto-lab, admin/engines-status/admin/system-topology, admin/ai-predictions/generate/prediction-performance). The `prediction-performance` route name is especially misleading — it triggers a rebuild, not a measurement.
+
+3. **🟠 TABLE D — 12 same-DB-table duplicate routes**. Most are intentional mobile/desktop splits or richer/lighter variants. The clearest duplication: `expert-recommendations` vs `recommendations/expert` (header explicitly says "same table"). And `metals/gold` / `market/gold` / `mobile/gold` (header explicitly says "نفس /api/mobile/gold").
+
+4. **🟡 TABLE F — 4 deprecated/disabled routes** still on disk per Rule 4 (NO-DELETION). Documentation is good but the `/api/predictions/tracking/*` cluster (4 routes) and `/api/egxpilot/news` are dead weight.
+
+5. **🟡 Port 8012 confusion** — Two routes (`/api/maker-radar/stock-analysis` and `/api/stock-screener/analyze`) hardcode `http://127.0.0.1:8012` (Python Screener). If port 8012 is down, both routes fail. Consider centralizing this constant in `@/lib/python-backend` (where port 8010 lives via `PYTHON_BACKEND_URL`/`EGXPY_SERVICE_URL`).
+
+6. **🟡 Inconsistent Python service URL env vars** — Routes use different env vars with different defaults:
+   - `EGXPY_SERVICE_URL` (most common, default `http://127.0.0.1:8010`)
+   - `PYTHON_BACKEND_URL` (older routes, default `http://localhost:8010`)
+   - `EGX_VPS_API_URL` (a few routes, no default — fails if unset)
+   - `PYTHON_API_URL` (currency routes, default `http://127.0.0.1:8010`)
+   - `VPS_API_URL` (one route — `/api/market/sync`)
+   - `PYTHON_PORT` (one route — `/api/v2/chart/full-analysis`, default `'8010'`)
+   All resolve to port 8010. Should consolidate to a single canonical env var.
+
+7. **🟡 Catch-all route `[...slug]/route.ts`** — Returns JSON 404 for unmatched `/api/*` requests (good for Flutter client). But it also handles DELETE/PATCH/PUT/POST — meaning any unmatched verb to a missing path returns JSON 404 instead of 405. Acceptable but worth documenting.
+
+8. **🟢 TABLE B + E — Intentional DRY aliases** — `/api/proxy/*` ↔ `/api/python/*` (share `proxyRequest`), `/api/v4/stats` exporting `handleV4Stats` for reuse by `/api/python/[...path]`. These are well-architected; no action needed.
+
+### Honesty Notes
+- I read 50+ route files individually to verify purpose; for the remaining ~400 routes I relied on (a) the file's header comment (when present), (b) the DB references grep, (c) the Python port grep. Some routes without header comments have purpose inferred from path name only — these are flagged in domain tables without a "Purpose" line.
+- The `HDR` column in `/tmp/routes_summary.txt` shows the first comment line; for files where this is just `import { NextRequest, NextResponse } from 'next/server';` (no header comment), the purpose was inferred from path + DB + Python port.
+- I did NOT inspect every line of every route; deep logic duplication (e.g., two routes computing the same SQL query independently) is not captured here. A line-by-line diff audit would catch additional duplicates.
+- This audit is READ-ONLY. No code was modified.
+
+---
+
+Task ID: DEEP-AUDIT-2
+Agent: DEEP-AUDIT-2 (Shared Components Auditor)
+Task: Deep audit of all shared components in src/components/shared/.
+
+Work Log:
+- Read worklog.md first (context: GLMinvestment restored from GitHub, multiple parallel audits already in progress).
+- Listed all files in src/components/shared/ui/ → 20 .tsx files + 1 index.ts barrel.
+- Listed all files in src/components/shared/ (non-ui) → 13 files (12 .tsx + 1 .ts FormulaEngine).
+- Listed src/components/ui/ → 50 files (shadcn primitives + 2 custom).
+- For each component: read file (or relevant slices for the >700-line files), extracted props, imports, fetch calls, sub-components rendered.
+- Used `rg` (ripgrep via Grep tool) to compute actual usage counts across `src/`.
+
+Findings:
+
+### Part A: src/components/shared/ui/ — Tier 2 Shared UI (20 components)
+
+The directory also contains `index.ts` (a barrel file re-exporting all 20 components). The barrel is imported by 11 files via `from '@/components/shared/ui'`. Component-level direct imports are rare; most usage goes through the barrel.
+
+#### 1. PriceDisplay
+- File: `src/components/shared/ui/PriceDisplay.tsx`
+- Lines: 118
+- Component: `PriceDisplay`
+- Props: `{ price: number|null; change?: number|null; currency?: string; size?: 'sm'|'md'|'lg'; showCurrency?: boolean; showArrow?: boolean; align?: 'inline'|'start'|'end'; className?: string }`
+- Purpose: Displays a price with 2 decimals + colored % change + TrendingUp/Down arrow. Uses semantic design tokens (text-profit/text-loss). Has 6 currency symbols (EGP/USD/SAR/AED/KWD/QAR).
+- Dependencies: `react`, `lucide-react` (TrendingUp, TrendingDown, Minus), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 0 files actually render `<PriceDisplay>` (only self + index.ts + JSDoc references in PriceText.tsx). **Effectively unused.**
+- Used by: (none — only the barrel export + JSDoc mention)
+
+#### 2. SignalBadge
+- File: `src/components/shared/ui/SignalBadge.tsx`
+- Lines: 138
+- Component: `SignalBadge`
+- Props: `{ signal: SignalKind|null; strength?: number|null; size?: 'sm'|'md'|'lg'; variant?: 'solid'|'soft'; signalAr?: string|null; className?: string }` — `SignalKind = 'BUY'|'SELL'|'HOLD'|'WAIT'|'STRONG_BUY'|'STRONG_SELL'|'AVOID'|string`
+- Purpose: Renders a colored pill badge for trading signals. Uses canonical `detectSignalKind`/`getSignalStyle`/`signalLabelAr` from `@/modules/market-analysis/lib/signals`.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/modules/market-analysis/lib/signals` (detectSignalKind, getSignalStyle, signalLabelAr).
+- API calls: None
+- Usage count: 0 files render `<SignalBadge>` as a component. Only docstring references in `signals.ts` + a design-tokens.ts comment. **Effectively unused in JSX.**
+
+#### 3. RiskRewardBadge
+- File: `src/components/shared/ui/RiskRewardBadge.tsx`
+- Lines: 67
+- Component: `RiskRewardBadge`
+- Props: `{ rr?: number|null; floor?: number; size?: 'sm'|'md'|'lg'; className?: string }`
+- Purpose: Shows R/R ratio (e.g. `2.4:1`) colored green if `rr >= floor` (default 1.8) and red if below. Uses CheckCircle2/AlertTriangle icons.
+- Dependencies: `react`, `@/lib/utils` (cn), `lucide-react` (AlertTriangle, CheckCircle2).
+- API calls: None
+- Usage count: 0 files render `<RiskRewardBadge>` (only self + barrel). **Unused.**
+
+#### 4. FlowPhaseTag
+- File: `src/components/shared/ui/FlowPhaseTag.tsx`
+- Lines: 118
+- Component: `FlowPhaseTag`
+- Props: `{ phase?: string|null; size?: 'sm'|'md'|'lg'; className?: string }`
+- Purpose: Maps backend flow phase codes (`b_quiet_accumulation_strong`, `whale_inflow`, `distribution`, etc.) to elegant Arabic labels (`تجميع هادئ مؤسسي`, `تدفق سيولة ذكية`, `تصريف وحذر`). Falls back to raw code with muted tone if unknown.
+- Dependencies: `react`, `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 1 file imports it (LiquidityRadarView.tsx line 41) BUT never renders `<FlowPhaseTag>` — it's imported and unused. Plus design-tokens.ts comment. **Effectively unused.**
+
+#### 5. UnifiedEmptyState
+- File: `src/components/shared/ui/UnifiedEmptyState.tsx`
+- Lines: 105
+- Component: `UnifiedEmptyState`
+- Props: `{ icon?: ReactNode; title?: string; description?: string; actionLabel?: string; onAction?: ()=>void; variant?: 'loading'|'empty'|'error'; className?: string }`
+- Purpose: Replaces yellow alert banners. Renders a centered empty/loading/error state with animated pulse (loading), bg-loss for error, muted for empty. Optional Button action.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/components/ui/button` (Button).
+- API calls: None
+- Usage count: 9 external files (AsyncBoundary, PersonaEmptyState + 7 consumer files: LiquidityRadarView, ExpertIntelligencePanel, SmartTip, InvestorsFlowPanel, TopUpRecommendationsPanel, SectorTrackingTab, MarketStatusTab). **Well-used.**
+
+#### 6. FilterDrawer
+- File: `src/components/shared/ui/FilterDrawer.tsx`
+- Lines: 109
+- Component: `FilterDrawer`
+- Props: `{ open: boolean; onOpenChange: (open: boolean)=>void; children: ReactNode; title?: string; description?: string; onApply?: ()=>void; onReset?: ()=>void; className?: string }`
+- Purpose: Side sheet that slides from right (RTL) housing advanced filters. Wraps shadcn Sheet. Sticky header + scrollable body + sticky bottom action buttons (Apply / Reset).
+- Dependencies: `react`, `@/components/ui/sheet` (Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription), `@/components/ui/button` (Button), `lucide-react` (SlidersHorizontal, X), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 0 files render `<FilterDrawer>` (only self + barrel). **Unused.**
+
+#### 7. StockDetailDrawer
+- File: `src/components/shared/ui/StockDetailDrawer.tsx`
+- Lines: 85
+- Component: `StockDetailDrawer`
+- Props: `{ open: boolean; onOpenChange: (open: boolean)=>void; ticker?: string; name?: string; children?: ReactNode; className?: string }`
+- Purpose: Right-side drawer showing stock detail (chart + financials). Wraps shadcn Sheet. Shows ticker initial in a colored square + ticker name in header. Content is injected via children.
+- Dependencies: `react`, `@/components/ui/sheet` (Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription), `lucide-react` (X), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 2 external files actually use it — `LiquidityRadarView.tsx` (line 621) and `MakerRadarTab.tsx`. Also referenced by `table-share-formatter.ts` (likely just type import). **Used.**
+
+#### 8. ActionMenu
+- File: `src/components/shared/ui/ActionMenu.tsx`
+- Lines: 105
+- Component: `ActionMenu` + `ActionMenuItem` type
+- Props: `ActionMenuProps = { items: ActionMenuItem[]; onSelect?: (id: string)=>void; triggerLabel?: string; triggerVariant?: 'icon'|'button'; className?: string; align?: 'start'|'center'|'end' }` — `ActionMenuItem = { id: string; label: string; icon?: ComponentType; danger?: boolean; disabled?: boolean }`
+- Purpose: Dropdown menu with N items (copy/share/export/alert) to replace stacked button clutter. Wraps shadcn DropdownMenu. Icon or button trigger; supports danger tone for destructive actions.
+- Dependencies: `react`, `@/components/ui/dropdown-menu`, `@/components/ui/button`, `lucide-react` (MoreVertical), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 1 external file (MarketAnalysisView.tsx). **Used.**
+
+#### 9. DeltaBadge
+- File: `src/components/shared/ui/DeltaBadge.tsx`
+- Lines: 72
+- Component: `DeltaBadge` (memoized)
+- Props: `{ delta: number|null; format?: 'percent'|'value'|'flow'; size?: 'sm'|'md'; className?: string }`
+- Purpose: Pill badge showing change (+/-) with color + TrendingUp/Down icon. Supports 3 formats: percent (+2.50%), value (-1.30), flow (+2.5M/-1.3K). Returns null when delta=0 (no change → no badge).
+- Dependencies: `react` (memo), `lucide-react` (TrendingUp, TrendingDown), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 0 external files render `<DeltaBadge>` (only self + barrel + JSDoc mention in ChangePill.tsx). **Unused.**
+
+#### 10. LiquidityFlashCell
+- File: `src/components/shared/ui/LiquidityFlashCell.tsx`
+- Lines: 79
+- Component: `LiquidityFlashCell` (memoized)
+- Props: `{ value: number|null; format?: (val: number)=>string; className?: string }`
+- Purpose: Flashing cell that turns green (up) / red (down) for 2 seconds when value changes. Uses memo + useRef + useState pattern (per "Jimmy's UnifiedTable style"). Default format = M/K abs format with sign.
+- Dependencies: `react` (memo, useEffect, useRef, useState), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 1 external file (LiquidityRadarView.tsx renders `<LiquidityFlashCell>` at line 388). **Used.**
+
+#### 11. LifecycleBadge
+- File: `src/components/shared/ui/LifecycleBadge.tsx`
+- Lines: 131
+- Component: `LifecycleBadge`
+- Props: `{ item: HasLifecycle; size?: 'sm'|'md'|'lg'; variant?: 'soft'|'solid'; showIcon?: boolean; className?: string }`
+- Purpose: Unified badge for `lifecycle_status` (proven 🟢 / testing 🔍 / closed 🔴). Eliminates 22+ inline ternary chains + a trailing-space bug pattern. Uses canonical `getLifecycle` + `LIFECYCLE_LABELS_AR` from `@/modules/market-analysis/lib/lifecycle`.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/modules/market-analysis/lib/lifecycle` (getLifecycle, LIFECYCLE_LABELS_AR, LifecyclePhase, HasLifecycle).
+- API calls: None
+- Usage count: 0 external files render `<LifecycleBadge>` (only self + barrel + doc reference in lifecycle.ts). **Effectively unused.**
+
+#### 12. StatusBadge
+- File: `src/components/shared/ui/StatusBadge.tsx`
+- Lines: 234
+- Component: `StatusBadge` + `getStatusBadgeClass()` + `getStatusLabelAr()` helpers
+- Props: `{ status: string|null; statusAr?: string|null; size?: 'sm'|'md'|'lg'; variant?: 'soft'|'solid'; showIcon?: boolean; className?: string }`
+- Purpose: Unified badge for 7 official statuses (TARGET_HIT ✅ / TRAILING_PROFIT 📈 / STOPPED 🛑 / EXPIRED ⌛ / PENDING ⏳ / ACTIVE 🟢 / WAITING ⏸️). Eliminates the "trailing-space `bg-warning/40 `" bug duplicated in 22+ places (PredictionsTab, PersonaTab, EidPredictionsWidget, MarketStatusTab, CanonicalWhoIsBuyingBanner, etc.).
+- Dependencies: `react`, `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 12 external files (ShariaStockCard, UsersManagement, PredictionsTab, ExpertPredictionsTab, types.ts, SectorTrackingTab, MarketStatusTab, PersonaTab, CryptoPredictionsTab, LiveTrackingTab, helpers.ts, MorningBellSection). **The most heavily used shared UI component.**
+
+#### 13. UnifiedPagination
+- File: `src/components/shared/ui/UnifiedPagination.tsx`
+- Lines: 153
+- Component: `UnifiedPagination`
+- Props: `{ page: number; totalPages: number; onChange: (page: number)=>void; size?: 'sm'|'md'|'lg'; variant?: 'compact'|'full'; showCounter?: boolean; disabled?: boolean; className?: string }`
+- Purpose: RTL pagination with prev/next buttons + counter + optional first/last (full variant). Returns null if `totalPages <= 1`. RTL-aware (ArrowRight = back visually).
+- Dependencies: `react`, `lucide-react` (ArrowRight, ArrowLeft), `@/lib/utils` (cn), `@/components/ui/button` (Button).
+- API calls: None
+- Usage count: 3 external files (ShariaView, LiquidityRadarView, PersonaTab, HistoricalTradesTable). **Used.**
+
+#### 14. Skeleton (SkeletonRow / TabSkeleton / TableSkeleton / CardSkeleton)
+- File: `src/components/shared/ui/Skeleton.tsx`
+- Lines: 205
+- Components: `SkeletonRow` (default), `TabSkeleton`, `TableSkeleton`, `CardSkeleton`
+- Props (SkeletonRow): `{ columns?: number; cellSize?: 'sm'|'md'|'lg'; className?: string }` — others analogous.
+- Purpose: Unified skeleton loaders replacing 328+ inline `<Skeleton>` blocks. 4 variants for table rows, full tabs, tables (with header), and cards.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/components/ui/skeleton` (Skeleton primitive).
+- API calls: None
+- Usage count: 1 external file renders them — `StocksView.tsx`. Also internally used by `AsyncBoundary.tsx` (TabSkeleton). **Underused given the duplication it was meant to fix.**
+
+#### 15. AsyncBoundary
+- File: `src/components/shared/ui/AsyncBoundary.tsx`
+- Lines: 148
+- Component: `AsyncBoundary<T>` (generic)
+- Props: `{ status: 'loading'|'error'|'success'|'idle'; data: T|null; error?: string|null; children: (data: T)=>ReactNode; emptyState?: {title?; description?; actionLabel?; onAction?}; skeletonRows?: number; skeletonColumns?: number; onRetry?: ()=>void; className?: string }`
+- Purpose: Consolidates loading/error/empty/success states into one component. Renders TabSkeleton on loading, UnifiedEmptyState on error/empty, and `children(data)` on success. Detects empty arrays automatically.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/components/shared/ui/UnifiedEmptyState`, `./Skeleton` (TabSkeleton).
+- API calls: None
+- Usage count: 0 external files render `<AsyncBoundary>` (only self + barrel). **Unused.**
+
+#### 16. ChangePill
+- File: `src/components/shared/ui/ChangePill.tsx`
+- Lines: 109
+- Component: `ChangePill`
+- Props: `{ value: number|null; format?: 'percent'|'value'; digits?: number; size?: 'xs'|'sm'|'md'; showIcon?: boolean; showSign?: boolean; className?: string }`
+- Purpose: Inline colored text with arrow showing +/- change. Replaces 286+ inline `.toFixed()` patterns. Uses ArrowUp/ArrowDown/Minus icons. Returns "—" for null, muted for zero.
+- Dependencies: `react`, `lucide-react` (ArrowUp, ArrowDown, Minus), `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 0 external files render `<ChangePill>` (only self + barrel). **Unused.**
+
+#### 17. PriceText
+- File: `src/components/shared/ui/PriceText.tsx`
+- Lines: 107
+- Component: `PriceText`
+- Props: `{ value: number|null; market?: 'EGX'|'CRYPTO'|'TADAWUL'|'KSE'|'QSE'; size?: 'xs'|'sm'|'md'|'lg'|'xl'; weight?: 'normal'|'medium'|'semibold'|'bold'; tone?: 'default'|'profit'|'loss'|'muted'; className?: string }`
+- Purpose: Plain price text using canonical `formatPrice(value, market)` from `@/lib/format` (which had 0 imports before this). Simpler than PriceDisplay (just price + currency, no change/arrow).
+- Dependencies: `react`, `@/lib/utils` (cn), `@/lib/format` (formatPrice).
+- API calls: None
+- Usage count: 0 external files render `<PriceText>` (only self + barrel). **Unused.**
+
+#### 18. SeverityBadge
+- File: `src/components/shared/ui/SeverityBadge.tsx`
+- Lines: 146
+- Component: `SeverityBadge` + `getSeverityBadgeClass()` helper + `SeverityLevel` type
+- Props: `{ level: SeverityLevel|string; labelAr?: string|null; size?: 'sm'|'md'|'lg'; variant?: 'soft'|'solid'; showIcon?: boolean; className?: string }` — `SeverityLevel = 'critical'|'high'|'medium'|'low'|'info'`
+- Purpose: Unified badge for severity levels (critical 🔴 / high 🟠 / medium 🟡 / low 🔵 / info ℹ️). Eliminates 5+ inline `severityColors` maps in alerts/AlertsCenterView and SmartAlertsPanel.
+- Dependencies: `react`, `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 1 external file (SystemProblemsTab.tsx). **Underused.**
+
+#### 19. ConfidenceMeter
+- File: `src/components/shared/ui/ConfidenceMeter.tsx`
+- Lines: 117
+- Component: `ConfidenceMeter`
+- Props: `{ value: number|null; size?: 'xs'|'sm'|'md'|'lg'; showValue?: boolean; showLabel?: boolean; className?: string }`
+- Purpose: Horizontal progress bar (0–100) with color-coded confidence: green ≥75, warning 50–74, muted <50. Clamps values to 0–100. Includes a "الثقة:" label + numeric percentage.
+- Dependencies: `react`, `@/lib/utils` (cn).
+- API calls: None
+- Usage count: 0 external files render `<ConfidenceMeter>` (only self + barrel). **Unused.**
+
+#### 20. PersonaEmptyState
+- File: `src/components/shared/ui/PersonaEmptyState.tsx`
+- Lines: 79
+- Component: `PersonaEmptyState`
+- Props: `{ persona: Persona|LegacyPersona|string|null; title?: string; description?: string; actionLabel?: string; onAction?: ()=>void; className?: string }`
+- Purpose: Persona-themed empty state (conservative / balanced / gambler). Wraps UnifiedEmptyState + uses `getPersonaTheme` from `@/lib/persona-config`. Replaces 15+ inline persona empty states in PersonaTab + PersonaTableView.
+- Dependencies: `react`, `@/lib/utils` (cn), `@/components/shared/ui/UnifiedEmptyState`, `@/lib/persona-config` (getPersonaTheme, Persona, LegacyPersona), `lucide-react` (Inbox).
+- API calls: None
+- Usage count: 0 external files render `<PersonaEmptyState>` (only self + barrel). **Unused.**
+
+### Part A summary
+- **Total components: 20** (in 20 .tsx files + 1 index.ts barrel)
+- **Heavily used (5+ files):** StatusBadge (12), UnifiedEmptyState (9), UnifiedPagination (3) — only 3 components.
+- **Lightly used (1-2 files):** StockDetailDrawer, ActionMenu, LiquidityFlashCell, SeverityBadge, Skeleton variants.
+- **Unused in JSX (only self + barrel, 0 actual consumers):** PriceDisplay, SignalBadge, RiskRewardBadge, FilterDrawer, DeltaBadge, LifecycleBadge, AsyncBoundary, ChangePill, PriceText, ConfidenceMeter, PersonaEmptyState — **11 of 20 components are dead code at the render-tree level.**
+- **No component makes any API call.** All are pure presentation.
+- All components use semantic design tokens (text-profit/text-loss/text-warning/text-whale/text-muted-foreground) — Rule 30 (no indigo/blue) honored.
+
+### Part B: src/components/shared/ — Other Shared (13 files: 12 .tsx + 1 .ts)
+
+#### 1. StockFeelCard
+- File: `src/components/shared/StockFeelCard.tsx`
+- Lines: 124
+- Component: `StockFeelCard`
+- Purpose: Card displaying the "stock feel" analysis from `/api/stock-screener/analyze` (correction_status, feel, action_hint, risk_level, layers_simple, correction_detail). Has helper functions `statusColor`, `riskColor`, `riskLabelAr`. Includes collapsible details for expert view.
+- Top 5 imports: `@/components/ui/card` (Card, CardContent, CardHeader, CardTitle), `@/components/ui/badge`, `lucide-react` (Activity), `@/lib/utils` (cn), `react`.
+- API calls: **None** (data is passed in via `analysis` prop — fetch happens upstream).
+- Sub-components rendered: Card, CardHeader, CardTitle, CardContent, Badge, `<details>` HTML element.
+
+#### 2. MarketSelector
+- File: `src/components/shared/MarketSelector.tsx`
+- Lines: 65
+- Component: `MarketSelector`
+- Purpose: Select dropdown for switching between markets (EGX/TADAWUL/KSE/QSE/US/CRYPTO). Reads/writes `currentMarket` from the Zustand `useAppStore`. Re-renders all market-aware components on change.
+- Top 5 imports: `@/components/ui/select` (Select, SelectContent, SelectItem, SelectTrigger, SelectValue), `@/lib/store` (useAppStore, MARKET_NAMES_AR, MarketType), `lucide-react` (Globe), `react`.
+- API calls: None
+- Sub-components rendered: Select, SelectTrigger, SelectValue, SelectContent, SelectItem.
+
+#### 3. LiquidityRadarView
+- File: `src/components/shared/LiquidityRadarView.tsx`
+- Lines: 720
+- Component: `LiquidityRadarView` + internal helpers `PulseRibbon`, `MarketSelectorBar`
+- Purpose: "Whale liquidity radar" main screen — fetches `/api/v2/liquidity-radar?market=X`, renders a UnifiedTable with 10 columns (price, % change, flow, phase, entry/defense/resistance, etc.). Supports bucket filters (quiet_accumulation / whale_inflow / whale_outflow / bottom_absorption / correction_exhaustion), inactive-stock hide, 25-per-page pagination, 60s visibility-aware polling, guest lock modal, two tabs (رادار السيولة + حركة القطاعات).
+- Top 5 imports: `react`, shadcn (Card, Button, Skeleton, Badge, Dialog, Tabs), `@/lib/utils` (cn, fmtPrice), `@/components/shared/UnifiedTable`, `@/components/shared/ui` (FlowPhaseTag [imported but unused in JSX], UnifiedEmptyState, LiquidityFlashCell, UnifiedPagination).
+- API calls:
+  - **Line 259-262**: `fetch('/api/v2/liquidity-radar?market=${encodeURIComponent(market)}', { cache: 'no-store' })` — inside `fetchData` callback, re-fires every 60s via `useVisibilityAwarePolling`.
+- Sub-components rendered: FlashingPriceCell, MiniSparkline (from `@/components/ui/mini-sparkline`), LiquidityFlashCell, UnifiedTable, UnifiedPublishButton, UnifiedEmptyState, UnifiedPagination, GuestLimitCta (from `@/components/auth/GuestLimitCta`), SectorTrackingTab (from `@/modules/market-analysis/components/SectorTrackingTab`), StockDetailDrawer (from `@/modules/predictions/components/MakerRadarTab`), LockModal (from `@/components/auth/LockModal`), Dialog/DialogContent, Tabs/TabsList/TabsTrigger/TabsContent, Skeleton, internal PulseRibbon + MarketSelectorBar.
+
+#### 4. UnifiedTable
+- File: `src/components/shared/UnifiedTable.tsx`
+- Lines: 2933
+- Component: `UnifiedTable<T>` (generic) + `Column<T>`, `ColumnCategory` types
+- Purpose: The "Excel-like Financial Grid" — the project's flagship advanced table. Features: loading skeleton, empty state, sticky header, multi-sort via `sortStack` (click cycles asc→desc→remove with ①②③ rank), AutoFilter Popover per column, text/numeric filters, column toggle, row expand/collapse, inline cell editing (double-click → `<input>`), copy/paste TSV (Ctrl/Cmd+C rectangular selection to Excel), calculated columns engine (using FormulaEngine + expr-eval), saved presets, dynamic column picker (search + categories + drag-and-drop reorder + pin 📌 sticky), column resize by drag, CSV export (UTF-8 BOM for Arabic). 50+ shadcn primitives used internally.
+- Top 5 imports: `react` (useState, useMemo, useCallback, useRef, useEffect), `lucide-react` (ChevronUp, ChevronDown, ChevronsUpDown, Inbox, Filter, X, Plus, Pin, GripVertical, Save, Download, Search, Calculator, Trash2, ListFilter, Columns3, ArrowUpDown, MoveHorizontal, Pencil, Check), `@/components/ui/table`, `@/components/ui/skeleton`, `@/components/ui/button`.
+- API calls: **None** — purely client-side data manipulation on `data: T[]` prop. Uses `FormulaEngine`'s `evaluateFormula`/`validateFormula`/`extractVariables`/`FORMULA_VARIABLES`/`CATEGORY_LABELS` for calculated columns.
+- Sub-components rendered: Table, TableHeader, TableBody, TableRow, TableHead, TableCell (shadcn), Skeleton, Button, DropdownMenu, Popover, Dialog, Input, Checkbox, Label, UnifiedPublishButton (from `@/modules/publishing/components/UnifiedPublishButton`), calls into `formatTableToText` (from `@/modules/publishing/lib/table-share-formatter`) and FormulaEngine helpers.
+
+#### 5. FlashingPriceCell
+- File: `src/components/shared/FlashingPriceCell.tsx`
+- Lines: 76
+- Component: `FlashingPriceCell` (memoized)
+- Purpose: Live-updating price cell that flashes green (price up) or red (price down) for 1.6 seconds when `price` prop changes. Uses memo + useRef (prevPriceRef) + useState (flash) + setTimeout. Default formatter adapts to magnitude (≥1000 → toLocaleString, ≥10 → toFixed(2), else toFixed(3)).
+- Top 5 imports: `react` (useEffect, useRef, useState, memo).
+- API calls: None
+- Sub-components rendered: None — pure `<span>` element.
+
+#### 6. FlashingChangeCell
+- File: `src/components/shared/FlashingChangeCell.tsx`
+- Lines: 67
+- Component: `FlashingChangeCell` (memoized)
+- Purpose: Like FlashingPriceCell but for `% change` values. Flashes green/red for 1.6s on change. When not flashing, shows colored text (green positive, red negative, muted flat). Always shows sign for positive values.
+- Top 5 imports: `react` (useEffect, useRef, useState, memo).
+- API calls: None
+- Sub-components rendered: None — pure `<span>`.
+
+#### 7. PredictionCard
+- File: `src/components/shared/PredictionCard.tsx`
+- Lines: 524
+- Component: `PredictionCard` + `PredictionCardTechnicalExplanation` interface
+- Purpose: Standard stock/crypto prediction card. Shows: ticker + name + signal badge, price grid (entry/target/stop), metrics row (confidence / masterScore / R:R / evidenceCount / upside% / risk%), optional riskNote warning, collapsible technical explanation (summary, candlestick, smc, volume, patterns, proofs list). Per the header docstring, was meant as the single source of truth replacing 22 prediction card components.
+- Top 5 imports: `react` (useState), `@/components/ui/card` (Card, CardContent), `@/components/ui/badge` (Badge), `@/components/ui/collapsible` (Collapsible, CollapsibleContent, CollapsibleTrigger), `lucide-react` (Activity, AlertTriangle, ArrowDownCircle, ArrowUpCircle, BarChart3, CheckCircle2, ChevronDown, Gauge, Layers, Minus, Shield, ShieldAlert, Target, TrendingDown, TrendingUp), `@/lib/utils` (cn).
+- API calls: None (data via props).
+- Sub-components rendered: Card, CardContent, Badge, Collapsible, CollapsibleTrigger, CollapsibleContent, lucide icons.
+- Note: Has local `detectSignalKind` + `SIGNAL_STYLES` map — **duplicates** logic in `@/modules/market-analysis/lib/signals.ts` (used by SignalBadge). Potential consolidation target.
+
+#### 8. ErrorBoundary
+- File: `src/components/shared/ErrorBoundary.tsx`
+- Lines: 290
+- Components: `ErrorBoundary` (React class component) + `withErrorBoundary` HOC + `DefaultFallback` internal
+- Purpose: React Error Boundary for UI resilience. Catches errors in children, shows fallback UI with "Try again" (resets boundary state) and "Refresh" (window.location.reload) buttons. Auto-reloads on ChunkLoadError (15s debounce via sessionStorage). `onError` callback for Sentry/LogRocket integration. `resetOnChildrenChange` resets state on tab switches.
+- Top 5 imports: `react` (Component, ErrorInfo, ReactNode), `lucide-react` (AlertTriangle, RefreshCw, RotateCcw).
+- API calls: None
+- Sub-components rendered: Lucide icons + plain HTML buttons.
+
+#### 9. ExpertIntelligencePanel
+- File: `src/components/shared/ExpertIntelligencePanel.tsx`
+- Lines: 784
+- Component: `ExpertIntelligencePanel`
+- Purpose: 3-layer analyst intelligence panel: (1) missed-opportunities (missed bulls + false positives + accuracy summary), (2) sector intelligence (market breadth + best/worst sector + sector ranking + top outperformers), (3) expert consensus list (with verdict filter + single-ticker lookup). Extracted from MaestroDashboard.
+- Top 5 imports: `react` (useState, useCallback, useEffect), `@/components/ui/card` (Card, CardContent, CardHeader, CardTitle, CardDescription), `@/components/ui/button`, `@/components/ui/input`, `@/components/ui/badge`, `@/components/ui/skeleton`, `@/components/ui/separator`, `@/components/ui/select`, lucide icons (AlertOctagon, AlertTriangle, Layers, Crosshair, Clock3, RefreshCw, Loader2, ThumbsDown, ThumbsUp, Trophy), `@/lib/utils` (cn), `@/components/shared/ui` (UnifiedEmptyState).
+- API calls:
+  - **Line 181**: `fetch('/api/predictions/honest-tracking/missed-opportunities?threshold=10&limit=15${mkt}')`
+  - **Line 194**: `fetch('/api/market/sectors/intelligence?min_stocks=5&limit=10')`
+  - **Line 208**: `fetch('/api/predictions/expert-consensus?limit=15&min_score=40${verdictParam}')`
+  - **Line 225**: `fetch('/api/predictions/expert-consensus?ticker=${ticker.toUpperCase()}')`
+- Sub-components rendered: Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Badge, Skeleton, Separator, Select/SelectTrigger/SelectValue/SelectContent/SelectItem, UnifiedEmptyState, lucide icons (Loader2, RefreshCw, ThumbsUp, ThumbsDown, Trophy, Clock3, AlertTriangle, AlertOctagon, Layers, Crosshair).
+
+#### 10. LazyTabLoader
+- File: `src/z/components/shared/LazyTabLoader.tsx` *(note: actual path is `src/components/shared/LazyTabLoader.tsx`)*
+- Lines: 76
+- Components: `LazyTabLoader` + `LazyInlineLoader`
+- Purpose: Reusable loading skeletons for `next/dynamic` lazy-loaded tabs. Full-height variant (LazyTabLoader, h-96 default) + inline variant (LazyInlineLoader, py-4). Spinner + Arabic "بيتحمّل…" message.
+- Top 5 imports: `react`, `lucide-react` (Loader2).
+- API calls: None
+- Sub-components rendered: Loader2 icon + plain HTML.
+
+#### 11. FormulaEngine
+- File: `src/components/shared/FormulaEngine.ts`
+- Lines: 406
+- Components: pure functions — `evaluateFormula`, `evaluateFormulaBatch`, `validateFormula`, `extractVariables` + `FORMULA_VARIABLES`, `CATEGORY_LABELS`, `FormulaVariable`, `FormulaResult`, `FormulaCategory` types
+- Purpose: Safe formula evaluation engine for UnifiedTable calculated columns. Uses `expr-eval` Parser with strict operator whitelist (disabled: concatenate, factorial, assignment, fndef, length, in, random; enabled: arithmetic, comparison, logical, conditional, trig, log, min/max, abs/ceil/floor/round). No `eval()` or `new Function()`. Supports IF(cond, a, b) via ternary preprocessing. Variables referenced as `{field_name}`.
+- Top 5 imports: `expr-eval` (Parser).
+- API calls: None
+- Sub-components rendered: None (pure module).
+
+#### 12. ChartToggle
+- File: `src/components/shared/ChartToggle.tsx`
+- Lines: 57
+- Component: `ChartToggle`
+- Purpose: Toggle button between InteractiveChart (default) and TradingViewChart. Reads/writes `chartPreference` from `useAppStore`. State persisted in localStorage under `chart-pref` key.
+- Top 5 imports: `react`, `@/lib/store` (useAppStore), `@/lib/utils` (cn), `lucide-react` (BarChart3, LineChart).
+- API calls: None
+- Sub-components rendered: Lucide icons + plain HTML buttons.
+
+#### 13. StockSearchSelector
+- File: `src/components/shared/StockSearchSelector.tsx`
+- Lines: 252
+- Component: `StockSearchSelector`
+- Purpose: Combobox-style searchable stock picker. Opens a Popover with an Input that filters stocks from `useAppStore().stocks` by ticker, Arabic name (normalized — أإآ→ا, ة→ه, ى→ي), English name, sector. Shows 7 popular tickers as quick presets (BTC/ETH/SOL/BNB/XRP/ADA for crypto; COMI/PHDC/JUFO/SWDY/HELI/TMGH/ABUK/MFPC/ORHD/EKHO for EGX). Two modes: `select` (default) vs `add`. Shows selected stock with price badge.
+- Top 5 imports: `react` (useState, useMemo, useRef, useEffect), `@/lib/store` (useAppStore), `@/components/ui/popover` (Popover, PopoverContent, PopoverTrigger), `@/components/ui/button`, `@/components/ui/input`, `@/components/ui/badge`, `lucide-react` (Search, X, Check, ChevronsUpDown, Plus, TrendingUp), `@/lib/utils` (cn).
+- API calls: None (filters client-side from store).
+- Sub-components rendered: Popover, PopoverTrigger, PopoverContent, Button, Input, lucide icons, plain HTML buttons + input.
+
+### Part B summary
+- **13 files total** (12 .tsx + 1 .ts FormulaEngine module).
+- **Files with API calls (4 fetch sites total):** LiquidityRadarView (1 fetch), ExpertIntelligencePanel (4 fetches). The other 11 files have **zero API calls** — they're pure presentation or pure logic.
+- **Largest files:** UnifiedTable.tsx (2933 lines, the project's flagship advanced grid), ExpertIntelligencePanel.tsx (784), LiquidityRadarView.tsx (720), PredictionCard.tsx (524), FormulaEngine.ts (406), ErrorBoundary.tsx (290), StockSearchSelector.tsx (252).
+- **Notable duplication:** PredictionCard.tsx re-declares `detectSignalKind` + `SIGNAL_STYLES` map that duplicates the canonical `@/modules/market-analysis/lib/signals.ts` (used by SignalBadge). Same for `formatPrice` (defined locally in 4 places per the file's own JSDoc — Rule 28 NO-DUPLICATION violated).
+- **FormulaEngine.ts** is the only `.ts` (non-component) file in `src/components/shared/` — it's a pure logic module imported by UnifiedTable only.
+
+### Part C: src/components/ui/ — shadcn primitives (Tier 1)
+- **Total count: 50 files**
+- **48 standard shadcn/ui primitives**: accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button, calendar, card, carousel, chart, checkbox, collapsible, command, context-menu, dialog, drawer, dropdown-menu, form, hover-card, input, input-otp, label, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, select, separator, sheet, sidebar, skeleton, slider, sonner, switch, table, tabs, textarea, toast, toaster, toggle, toggle-group, tooltip.
+- **2 custom (project-specific) components placed in the ui/ folder** (NOT standard shadcn):
+  - `stat-card.tsx` (75 lines) — unified statistics card with icon/label/value/tone, wraps `@/components/ui/card`.
+  - `mini-sparkline.tsx` (131 lines) — custom SVG sparkline chart, no shadcn base.
+- **Not audited in detail** — these are mostly standard library primitives (the 48 shadcn ones come from `npx shadcn-ui@latest add`); the 2 custom ones are well-named and self-contained.
+
+### Cross-cutting findings (important for the audit consumer)
+1. **Dead code at the consumer level (Part A):** 11 of the 20 `shared/ui/` components have **zero actual JSX render sites** outside the barrel `index.ts`. They were created under "P0-COMPONENT-UNIFICATION" with stated goals like "replaces 286+ inline `.toFixed()` calls" (ChangePill), "replaces 22 inline ternary chains" (LifecycleBadge), "replaces 268+ inline `<Skeleton>` blocks" (Skeleton variants) — but the migration to use them was apparently never completed. The components are well-designed but dormant.
+2. **The 3 most-used Part A components are:** StatusBadge (12 files), UnifiedEmptyState (9 files), UnifiedPagination (3 files). All others are at ≤2 consumers or zero.
+3. **Only 2 Part B components fetch data:** LiquidityRadarView (`/api/v2/liquidity-radar`) and ExpertIntelligencePanel (`/api/predictions/honest-tracking/missed-opportunities`, `/api/market/sectors/intelligence`, `/api/predictions/expert-consensus` ×2). All other Part B components are pure presentation or pure logic.
+4. **UnifiedTable.tsx is by far the largest file in shared/** at 2933 lines — flagged as a potential refactor candidate (split into sub-modules for the AutoFilter, Calculated Columns, Column Picker, Resize, Copy/Paste features).
+5. **PredictionCard.tsx duplicates canonical signal logic** — it has its own `detectSignalKind` + `SIGNAL_STYLES` instead of importing from `@/modules/market-analysis/lib/signals.ts` (which SignalBadge uses). Same pattern with local `formatPrice`. Consolidation opportunity.
+6. **`fmtPrice` is imported from `@/lib/utils`** in LiquidityRadarView (line 20) — confirms the Phase 2.7 cleanup mentioned in the file's JSDoc. But `PredictionCard.tsx` still defines its own local `formatPrice` (line 155), `ExpertIntelligencePanel.tsx` and others likely too. Not fully consolidated.
+7. **No code modified** — read-only audit complete. All findings are observational.
+---
+Task ID: DEEP-AUDIT-3
+Agent: DEEP-AUDIT-3 (Feature Modules Auditor)
+Task: Deep audit of all feature modules in src/modules/.
+
+Work Log:
+- Read worklog.md to understand context (GLMinvestment restored, prior AUDIT-1 found src/components/ duplications; P0-COMPONENT-UNIFICATION Phases 1-3 partially completed).
+- Listed src/modules/: 18 modules found (admin, auth, crypto, dashboard, education, market-analysis, news, personalized, portfolio, predictions, publishing, radar, reports, screener, sharia, simulation, stock-analysis, subscription).
+- Confirmed 3 modules from task spec are NOT in src/modules/ — they exist ONLY in src/components/: `zakat/`, `tithes/`, `notifications/` (already covered by prior AUDIT-1). These were NOT re-audited here.
+- Confirmed `personalized` module has ONLY `lib/` folder (no `components/` subfolder) — contains `lib/personalized-radar.ts`.
+- Counted 156 component .tsx files across the 17 modules with components (plus 1 nested under admin/platform-performance/).
+- Total module component LOC: ~127,000 lines.
+- Extracted ALL `import` statements (1,829 total) across all module components via rg.
+- Extracted ALL `fetch('/api/...')` calls (251 total) across all module components via rg.
+- Searched for `useApiQuery` / `useQuery` usage in modules — ZERO matches.
+- Verified `useApiQuery` is defined at `src/hooks/use-api-query.ts` but is imported by ZERO files anywhere in src/ (only self-referenced in JSDoc). apiClient is imported only by `src/lib/store.ts`, `src/components/auth/PaywallListener.tsx`, and the useApiQuery hook itself.
+- Extracted all JSX component-tag usages (7,467 total) and identified Tier 2 shared component usages in modules (~50 distinct usages, dominated by UnifiedTable).
+- For each module: generated per-component report with File path, Lines, Top 5 imports, ALL API fetch calls with line numbers, Tier 2 shared used, and cross-module imports.
+
+Findings:
+
+## 🔴 CRITICAL CROSS-CUTTING FINDING #1 — useApiQuery NEVER USED
+
+Despite Phase 0.9 of P0-COMPONENT-UNIFICATION creating `useApiQuery` (TanStack Query wrapper) at `src/hooks/use-api-query.ts`, **ZERO of 156 module components import or use it**. All 251 API calls in modules are raw `fetch()` calls inside `useEffect` + `useState` patterns. This means:
+- No client-side caching (every component re-fetches on mount)
+- No automatic background refetching
+- No request deduplication (parallel mounts of same component fire duplicate requests)
+- No optimistic updates
+- Manual loading/error state management per component
+
+Phase 2.5 of P0-COMPONENT-UNIFICATION (useApiQuery migration) was DEFERRED per worklog with note: "268 manual useEffect+fetch patterns". This audit confirms: at minimum 251 fetch patterns in modules remain unmigrated. **Recommendation**: prioritize migrating high-traffic modules first (admin: 137 fetches, market-analysis: 38, predictions: 16).
+
+## 🔴 CRITICAL CROSS-CUTTING FINDING #2 — Heavy fetch() concentration in admin module
+
+| Module | Files with fetch() | Total fetch() calls | % of all module fetches |
+|--------|-------------------|---------------------|-------------------------|
+| admin | 28 of 36 | 137 | 55% |
+| market-analysis | 16 of 23 | 38 | 15% |
+| predictions | 4 of 4 | 16 | 6% |
+| stock-analysis | 5 of 15 | 12 | 5% |
+| dashboard | 7 of 21 | 11 | 4% |
+| radar | 5 of 10 | 9 | 4% |
+| education | 3 of 10 | 9 | 4% |
+| publishing | 2 of 7 | 6 | 2% |
+| sharia | 2 of 3 | 5 | 2% |
+| screener | 1 of 1 | 3 | 1% |
+| subscription | 1 of 3 | 2 | 1% |
+| simulation | 1 of 1 | 1 | <1% |
+| auth | 1 of 1 | 1 | <1% |
+| crypto, news, portfolio, reports, personalized | 0 | 0 | 0% |
+
+Notable: 4 modules (crypto, news, portfolio, reports, personalized) have ZERO direct fetch() calls in their components — they either delegate to shared hooks/stores or rely on parent props.
+
+## Module Summary Table
+
+| # | Module | Components | LOC | Top file by LOC | Has fetch() | Top file by fetches |
+|---|--------|-----------|-----|-----------------|-------------|---------------------|
+| 1 | market-analysis | 23 | ~18,297 | PersonaTab.tsx (2,383) | Yes (38) | PersonaTab.tsx (5), UnifiedAnalysisView.tsx (5) |
+| 2 | admin | 36 + 1 nested | ~33,858 | DatabaseManagerFull.tsx (3,291) | Yes (137) | TelegramTab.tsx (24), DatabaseManagerFull.tsx (20) |
+| 3 | stock-analysis | 15 | ~11,798 | StocksView.tsx (2,329) | Yes (12) | StockDetail.tsx (6) |
+| 4 | portfolio | 12 | ~9,760 | EnhancedPortfolioView.tsx (3,369) | No (0) | n/a |
+| 5 | education | 10 | ~14,417 | LearningVisuals.tsx (2,621) | Yes (9) | PaperTradingWorkstation.tsx (5) |
+| 6 | predictions | 4 | ~7,316 | MakerRadarTab.tsx (3,907) | Yes (16) | MakerRadarTab.tsx (11) |
+| 7 | dashboard | 21 | ~10,500 | LiveMonitor.tsx (1,357) | Yes (11) | MultiMarketWidget.tsx (4) |
+| 8 | radar | 10 | ~5,482 | RadarStatsCards.tsx (846) | Yes (9) | RadarStatsCards.tsx (5) |
+| 9 | publishing | 7 | ~4,918 | TradeResultsTemplates.tsx (1,456) | Yes (6) | UnifiedPublishButton.tsx (4) |
+| 10 | reports | 5 | ~5,333 | ExecutiveReportView.tsx (2,087) | No (0) | n/a |
+| 11 | crypto | 2 | ~1,119 | CryptoPortfolioView.tsx (641) | No (0) | n/a |
+| 12 | sharia | 3 | ~2,292 | ShariaView.tsx (1,478) | Yes (5) | ShariaView.tsx (4) |
+| 13 | screener | 1 | ~2,723 | StockScreenerAdvanced.tsx (2,723) | Yes (3) | StockScreenerAdvanced.tsx (3) |
+| 14 | subscription | 3 | ~630 | PricingView.tsx (332) | Yes (2) | PricingView.tsx (2) |
+| 15 | simulation | 1 | ~2,130 | SimulationView.tsx (2,130) | Yes (1) | SimulationView.tsx (1) |
+| 16 | news | 1 | ~890 | NewsFeedView.tsx (890) | No (0) | n/a |
+| 17 | auth | 1 | ~154 | DevLoginForm.tsx (154) | Yes (1) | DevLoginForm.tsx (1) |
+| 18 | personalized | 0 (lib only) | 0 | n/a | No (0) | n/a |
+
+## Tier 2 Shared Component Adoption in Modules
+
+Out of the canonical Tier 2 shared components (`src/components/shared/ui/*` and `src/components/shared/*`), the following are used by modules:
+
+| Tier 2 component | Modules using it |
+|-------------------|-----------------|
+| `UnifiedTable` | market-analysis (6 files), admin (3 files), stock-analysis (1), dashboard (3), portfolio (2), predictions (3), radar (2), screener (2), sharia (1), simulation (2), crypto (1), LiveMonitor (1) |
+| `UnifiedPagination` | market-analysis (PersonaTab, HistoricalTradesTable), sharia (ShariaView) |
+| `UnifiedEmptyState` | market-analysis (SectorTrackingTab, MarketStatusTab), dashboard (InvestorsFlowPanel x2), portfolio (TopUpRecommendationsPanel) |
+| `MarketSelector` | market-analysis (MarketAnalysisView), predictions (PredictionTrackingView), simulation (SimulationView) |
+| `StockSearchSelector` | market-analysis (TradingChartView, SingleStockAnalysisView) |
+| `ChartToggle` | market-analysis (TradingChartView), stock-analysis (StockDetail) |
+| `LazyTabLoader` | admin (AdminView for 6 dynamic imports, MarketingStudio) |
+| `ExpertIntelligencePanel` | market-analysis (PersonaTab, PredictionsTab) |
+| `ErrorBoundary` | stock-analysis (StockDetail — 8 instances) |
+| `StockFeelCard` | stock-analysis (StockDetail) |
+| `FlashingPriceCell` | predictions (MakerRadarTab), stock-analysis (StocksView x2) |
+| `FlashingChangeCell` | predictions (MakerRadarTab) |
+| `StatusBadge` | sharia (ShariaStockCard), admin (SystemProblemsTab) |
+| `SeverityBadge` | admin (SystemProblemsTab) |
+| `StockDetailDrawer` | predictions (MakerRadarTab) |
+| `ActionMenu` | market-analysis (MarketAnalysisView) |
+| `PredictionCard`, `RiskRewardBadge`, `SignalBadge`, `LifecycleBadge`, `ConfidenceMeter`, `PriceText`, `PriceDisplay`, `ChangePill`, `DeltaBadge`, `LiquidityFlashCell`, `FlowPhaseTag`, `FilterDrawer`, `AsyncBoundary`, `PersonaEmptyState`, `SkeletonRow`, `TabSkeleton`, `TableSkeleton`, `CardSkeleton` | NONE — only used internally in src/components/shared/ui/ or in src/components/, not in any module |
+
+🔴 **Notable gap**: 17 of the 25 Tier 2 shared components are NOT used by ANY module component. This suggests the modules predate the shared/ui library or were never migrated.
+
+## Cross-Module Dependencies (circular risk)
+
+The following cross-module imports create coupling between modules:
+
+- `market-analysis` ← `publishing` (official-links): used by 9+ market-analysis components
+- `market-analysis` ← `publishing` (UnifiedPublishButton, StockPublisher): used by 4 components
+- `market-analysis` ← `sharia` (ShariaBadge): used by PersonaTab
+- `market-analysis` ← `stock-analysis` (StockIcon): used by PersonaTab, PredictionsTab
+- `market-analysis` ← `stock-analysis` (TradingViewChart): used by TradingChartView
+- `market-analysis` ← `reports` (ExecutiveReportView, ReportsView): used by MarketAnalysisView
+- `predictions` ← `stock-analysis` (StockIcon): used by MakerRadarTab
+- `predictions` ← `sharia` (ShariaBadge): used by MakerRadarTab
+- `predictions` ← `publishing` (UnifiedPublishButton): used by MakerRadarTab
+- `crypto` ← `market-analysis` (ExpertRecommendationsPanel): used by CryptoPredictionsTab
+- `crypto` ← `predictions` (DualTrackPredictionsView): used by CryptoPredictionTrackingView (likely)
+- `radar` ← `publishing` (UnifiedPublishButton, official-links): used by 2-3 radar components
+- `education` ← `market-analysis` (PersonaTab, ExpertRecommendationsPanel): used by PaperTradingWorkstation
+- `dashboard` ← `radar` (likely PersonalizedRadarTab)
+- `admin` ← `radar`, `news`, `sharia`, `predictions` (via AdminView dynamic imports)
+
+The `market-analysis` module is the most-coupled — it serves as both a producer (its components like PersonaTab/ExpertRecommendationsPanel are imported by predictions, education, crypto) and consumer (imports from publishing, sharia, stock-analysis, reports).
+
+
+---
+
+## Per-Module Component Detail
+
+### Module: market-analysis
+
+(Components: 23)
+
+#### Component: AlertPanel
+- File: `src/modules/market-analysis/components/AlertPanel.tsx`
+- Lines: 384
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Switch } from '@/components/ui/switch';
+  - import { Badge } from '@/components/ui/badge';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: CanonicalWhoIsBuyingBanner
+- File: `src/modules/market-analysis/components/CanonicalWhoIsBuyingBanner.tsx`
+- Lines: 364
+- Top imports:
+  - import React from 'react';
+  - import { Badge } from '@/components/ui/badge';
+  - import { cn } from '@/lib/utils';
+  - import {
+  - import type { UnifiedStockData } from '@/lib/unified-stock-data';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: ChartControls
+- File: `src/modules/market-analysis/components/ChartControls.tsx`
+- Lines: 142
+- Top imports:
+  - import { Button } from '@/components/ui/button';
+  - import { Switch } from '@/components/ui/switch';
+  - import { Separator } from '@/components/ui/separator';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: CryptoPredictionsTab
+- File: `src/modules/market-analysis/components/CryptoPredictionsTab.tsx`
+- Lines: 519
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 351: const res = await fetch('/api/crypto-lab/predictions', {
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+
+#### Component: ExpertPredictionsTab
+- File: `src/modules/market-analysis/components/ExpertPredictionsTab.tsx`
+- Lines: 514
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 167: const res = await fetch(`/api/stocks?market=${MARKET_CODES[market]}&limit=20`);
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+
+#### Component: ExpertRecommendationsPanel
+- File: `src/modules/market-analysis/components/ExpertRecommendationsPanel.tsx`
+- Lines: 1620
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Label } from '@/components/ui/label';
+- API calls:
+  - 573: const res = await fetch('/api/expert-recommendations/import', {
+  - 617: const res = await fetch('/api/parse-recommendations', {
+  - 688: const res = await fetch('/api/expert-recommendations/import', {
+  - 732: const res = await fetch(`/api/expert-recommendations?${params.toString()}`, {
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/publishing/components/UnifiedPublishButton
+
+#### Component: HistoricalTradesTable
+- File: `src/modules/market-analysis/components/HistoricalTradesTable.tsx`
+- Lines: 581
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 111: const res = await fetch(`/api/predictions/historical-trades?${params.toString()}`, { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedPagination,<UnifiedTable
+
+#### Component: InstitutionalDecisionPanel
+- File: `src/modules/market-analysis/components/InstitutionalDecisionPanel.tsx`
+- Lines: 708
+- Top imports:
+  - import React, { useState } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: InteractiveChart
+- File: `src/modules/market-analysis/components/InteractiveChart.tsx`
+- Lines: 2187
+- Top imports:
+  - import React, { useEffect, useMemo, useRef, useState } from 'react';
+  - import {
+  - import { useTheme } from 'next-themes';
+  - import { Badge } from '@/components/ui/badge';
+  - import {
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: LearnedLessonsDashboard
+- File: `src/modules/market-analysis/components/LearnedLessonsDashboard.tsx`
+- Lines: 409
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 98: const res = await fetch(`/api/predictions/learned-lessons?${params.toString()}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: LiveDashboard
+- File: `src/modules/market-analysis/components/LiveDashboard.tsx`
+- Lines: 123
+- Top imports:
+  - import { motion, AnimatePresence } from 'framer-motion';
+  - import { useHeartbeat, useWhaleAlerts } from '@/lib/use-live-dashboard';
+  - import { useEffect } from 'react';
+  - import { toast } from 'sonner';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: LiveTrackingTab
+- File: `src/modules/market-analysis/components/LiveTrackingTab.tsx`
+- Lines: 720
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 119: fetch(`/api/stored-analysis/live-tracking?market=${marketCode}&days=30&limit=20`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ predictions: { balanced: [] }, stats: {} })),
+  - 121: fetch(`/api/screener/advanced?market=${marketCode}&volume_surge=1&rsi_oversold=1&rsi_overbought=1&near_52w_high=1&near_52w_low=1&limit=15&sort=change_percent&order=desc`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ stocks: [] })),
+  - 247: const res = await fetch(`/api/unified/predictions?market=${marketCode}&limit=5`, { cache: 'no-store' });
+  - 264: const res = await fetch('/api/telegram/send-daily-report', {
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/publishing/lib/official-links
+
+#### Component: MarketAnalysisView
+- File: `src/modules/market-analysis/components/MarketAnalysisView.tsx`
+- Lines: 301
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import dynamic from 'next/dynamic';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 132: fetch(`/api/stocks?market=${marketCode}&limit=500`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ stocks: [] })),
+  - 133: fetch(`/api/unified/predictions?market=${marketCode}&limit=5`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ predictions: [], closed_predictions: [] })),
+  - 134: fetch(`/api/stored-analysis/results?market=${marketCode}&limit=100`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ data: [] })),
+- Tier 2 shared used: <ActionMenu,<MarketSelector
+- Cross-module imports:
+  - @/modules/market-analysis/components/MorningBellSection
+  - @/modules/market-analysis/components/UnifiedPredictionsTab
+  - @/modules/market-analysis/components/helpers
+  - @/modules/market-analysis/components/types
+  - @/modules/publishing/lib/official-links
+  - @/modules/reports/components/ExecutiveReportView
+  - @/modules/reports/components/ReportsView
+
+#### Component: MarketDepthLiquidityWidget
+- File: `src/modules/market-analysis/components/MarketDepthLiquidityWidget.tsx`
+- Lines: 436
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: MarketStatusTab
+- File: `src/modules/market-analysis/components/MarketStatusTab.tsx`
+- Lines: 1087
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 234: const res = await fetch(`/api/market/status?market=${marketCode}&limit=10`, { cache: 'no-store' });
+  - 264: fetch(`/api/stocks?market=${marketCode}&limit=500`, { cache: 'no-store' }).then(r => r).catch(() => null),
+- Tier 2 shared used: <UnifiedEmptyState
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+
+#### Component: MorningBellSection
+- File: `src/modules/market-analysis/components/MorningBellSection.tsx`
+- Lines: 492
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 120: const res = await fetch(`/api/stored-analysis/results?market=${marketCode}&limit=10`, { cache: 'no-store' });
+  - 198: const liveRes = await fetch(`/api/market/morning-bell?live=1&limit=5`, { cache: 'no-store' });
+  - 263: const res = await fetch(`/api/stored-analysis/results?market=EGX&limit=15`, { cache: 'no-store' });
+  - 270: const ltRes = await fetch(`/api/stored-analysis/live-tracking?market=EGX&days=30&limit=20`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+
+#### Component: PersonaTab
+- File: `src/modules/market-analysis/components/PersonaTab.tsx`
+- Lines: 2383
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 1449: fetch(`/api/stocks/${selectedItem.ticker}?market=${marketCode}`)
+  - 1473: const res = await fetch(`/api/unified/predictions?market=${marketCode}&limit=100&persona=${persona}`, {
+  - 1527: const regRes = await fetch(`/api/market/regime?market=${encodeURIComponent(marketCode)}`, {
+  - 1601: const storedRes = await fetch(`/api/stored-analysis/results?market=${marketCode}&limit=20&persona=${persona}`, {
+  - 1638: const fbRes = await fetch(`/api/unified/predictions?market=${marketCode}&limit=5`, {
+- Tier 2 shared used: <UnifiedPagination
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+  - @/modules/sharia/components/ShariaBadge
+  - @/modules/stock-analysis/components/StockIcon
+
+#### Component: PredictionsTab
+- File: `src/modules/market-analysis/components/PredictionsTab.tsx`
+- Lines: 857
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 504: const res = await fetch(`/api/unified/predictions?market=${marketCode}&limit=5`, {
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/lib/official-links
+  - @/modules/stock-analysis/components/StockIcon
+
+#### Component: SectorTrackingTab
+- File: `src/modules/market-analysis/components/SectorTrackingTab.tsx`
+- Lines: 717
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 166: const res = await fetch(`/api/sectors/tracking?${params}`, { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedEmptyState,<UnifiedTable
+- Cross-module imports:
+  - @/modules/market-analysis/components/ExpertRecommendationsPanel
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/publishing/lib/official-links
+
+#### Component: SingleStockAnalysisView
+- File: `src/modules/market-analysis/components/SingleStockAnalysisView.tsx`
+- Lines: 1566
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import { InteractiveChart } from './InteractiveChart';
+  - import ChartControls from './ChartControls';
+  - import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+  - import { CanonicalWhoIsBuyingBanner } from './CanonicalWhoIsBuyingBanner';
+- API calls:
+  - 407:        fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+  - 526:      const res = await fetch('/api/alerts/quick-add', {
+- Tier 2 shared used: <StockSearchSelector
+- Cross-module imports:
+  - @/modules/market-analysis/components/LiveDashboard
+
+#### Component: TradingChartView
+- File: `src/modules/market-analysis/components/TradingChartView.tsx`
+- Lines: 877
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import { InteractiveChart } from './InteractiveChart';
+  - import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
+  - import { ChartToggle } from '@/components/shared/ChartToggle';
+  - import { AlertPanel } from './AlertPanel';
+- API calls:
+  - 261: const res = await fetch('/api/market/publish-status-image', {
+  - 499: fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+  - 604: const res = await fetch('/api/alerts/quick-add', {
+- Tier 2 shared used: <ChartToggle,<StockSearchSelector
+- Cross-module imports:
+  - @/modules/stock-analysis/components/TradingViewChart
+
+#### Component: UnifiedAnalysisView
+- File: `src/modules/market-analysis/components/UnifiedAnalysisView.tsx`
+- Lines: 562
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react'
+- API calls:
+  - 143: fetch('/api/unified?action=markets'),
+  - 144: fetch('/api/unified?action=personas'),
+  - 177: const res = await fetch('/api/unified', {
+  - 200: const res = await fetch('/api/unified', {
+  - 222: const res = await fetch('/api/unified', {
+- Tier 2 shared used: (none)
+
+#### Component: UnifiedPredictionsTab
+- File: `src/modules/market-analysis/components/UnifiedPredictionsTab.tsx`
+- Lines: 95
+- Top imports:
+  - import React, { useState, lazy, Suspense } from 'react';
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+  - import { useAppStore } from '@/lib/store';
+  - import { PersonaTab } from '@/modules/market-analysis/components/PersonaTab';
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/market-analysis/components/PersonaTab
+
+
+### Module: stock-analysis
+
+(Components: 15)
+
+#### Component: CalculationBreakdown
+- File: `src/modules/stock-analysis/components/CalculationBreakdown.tsx`
+- Lines: 634
+- Top imports:
+  - import React from 'react';
+  - import { Calculator, TrendingUp, BarChart3, Award, AlertTriangle } from 'lucide-react';
+  - import { useAppStore } from '@/lib/store';
+  - import { cn } from '@/lib/utils';
+  - import { getTrialStatus } from '@/lib/subscription-gate';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: ComprehensiveStockAnalysis
+- File: `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx`
+- Lines: 1460
+- Top imports:
+  - import React, { useState, useEffect, useMemo, useCallback } from 'react';
+  - import {
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 242: fetch(`/api/stocks/${encodeURIComponent(ticker)}/unified`)
+- Tier 2 shared used: (none)
+
+#### Component: DeepAnalysis
+- File: `src/modules/stock-analysis/components/DeepAnalysis.tsx`
+- Lines: 1148
+- Top imports:
+  - import React from 'react';
+  - import {
+  - import { useAppStore } from '@/lib/store';
+  - import { cn, safeToFixed } from '@/lib/utils';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: DeltaVolumeBar
+- File: `src/modules/stock-analysis/components/DeltaVolumeBar.tsx`
+- Lines: 229
+- Top imports:
+  - import { useState, useEffect, useRef } from 'react';
+  - import { TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
+- API calls:
+  - 67: const res = await fetch(`/api/stocks/delta-volume?ticker=${ticker}&days=14`);
+- Tier 2 shared used: (none)
+
+#### Component: ExpertAnalysisPanel
+- File: `src/modules/stock-analysis/components/ExpertAnalysisPanel.tsx`
+- Lines: 363
+- Top imports:
+  - import { useState, useEffect } from 'react';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Separator } from '@/components/ui/separator';
+  - import { Loader2, TrendingUp, TrendingDown, Minus, Target, Shield, AlertTriangle, Activity } from 'lucide-react';
+- API calls:
+  - 63: fetch(`/api/stocks/${encodeURIComponent(ticker)}/expert-analysis`, { cache: 'no-store' })
+- Tier 2 shared used: (none)
+
+#### Component: GateAnalysisView
+- File: `src/modules/stock-analysis/components/GateAnalysisView.tsx`
+- Lines: 266
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import { Shield, TrendingUp, TrendingDown, Activity, AlertTriangle, Copy, Check } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 66: fetch(`/api/stocks/${ticker}/unified`),
+  - 67: fetch(`/api/python/v2/cached-analysis/${ticker}`),
+- Tier 2 shared used: (none)
+
+#### Component: MarketDepthPanel
+- File: `src/modules/stock-analysis/components/MarketDepthPanel.tsx`
+- Lines: 280
+- Top imports:
+  - import React, { useState, useCallback, useEffect } from 'react';
+  - import { Activity, TrendingUp, TrendingDown, Loader2, Gauge } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Input } from '@/components/ui/input';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: StockAdvancedAnalysisView
+- File: `src/modules/stock-analysis/components/StockAdvancedAnalysisView.tsx`
+- Lines: 700
+- Top imports:
+  - import React, { useState, useEffect, useMemo, useRef } from 'react';
+  - import {
+  - import { ShareButton } from '@/modules/publishing/components/ShareButton';
+  - import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+- API calls:
+  - 284: const chartResponse = await fetch(`/api/chart/${ticker}?interval=1d&period=${periodParam}`);
+  - 323: const analysisResponse = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010`);
+  - 332: const analyzeResponse = await fetch(`/api/python/v2/analyze/${ticker}?XTransformPort=8010`);
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/components/ShareButton
+
+#### Component: StockDetail
+- File: `src/modules/stock-analysis/components/StockDetail.tsx`
+- Lines: 1678
+- Top imports:
+  - import { MarketDepthPanel } from './MarketDepthPanel';
+  - import React, { Component, useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
+  - import {
+  - import { toast } from 'sonner';
+  - import { useAppStore } from '@/lib/store';
+- API calls:
+  - 512: fetch(`/api/flow/${ticker}`).then(r => r.json()).then(d => {
+  - 515: fetch(`/api/explosive/${ticker}`).then(r => r.json()).then(d => {
+  - 567: fetch(`/api/stock-profile/${ticker}`).then(r => r.json()).then(d => {
+  - 1076:   fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}`)
+  - 1101: fetch(`/api/flow/${encodeURIComponent(selectedTicker)}`)
+  - 1124: fetch(`/api/stocks/${selectedTicker}/unified?market=${mkt}`)
+- Tier 2 shared used: <ChartToggle,<ErrorBoundary,<StockFeelCard
+- Cross-module imports:
+  - @/modules/market-analysis/components/TradingChartView
+  - @/modules/publishing/components/StockInfographicCard
+  - @/modules/publishing/components/StockInfographicModal
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/sharia/components/ShariaBadge
+
+#### Component: StockIcon
+- File: `src/modules/stock-analysis/components/StockIcon.tsx`
+- Lines: 108
+- Top imports:
+  - import React, { useState } from 'react';
+  - import { cn } from '@/lib/utils';
+  - import { getStockIconUrl, getSectorIcon, STOCK_ICON_SIZES, type StockIconProps } from '@/lib/stock-icon';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: StockNews
+- File: `src/modules/stock-analysis/components/StockNews.tsx`
+- Lines: 617
+- Top imports:
+  - import React, { useState, useMemo, useCallback } from 'react';
+  - import {
+  - import { useAppStore } from '@/lib/store';
+  - import { cn, safeToFixed } from '@/lib/utils';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: StockSelector
+- File: `src/modules/stock-analysis/components/StockSelector.tsx`
+- Lines: 460
+- Top imports:
+  - import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+  - import { Search, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+  - import { useAppStore } from '@/lib/store';
+  - import { Input } from '@/components/ui/input';
+  - import { cn } from '@/lib/utils';
+- API calls:
+  - 128: fetch(`/api/stocks/search?${params.toString()}`)
+- Tier 2 shared used: (none)
+
+#### Component: StocksView
+- File: `src/modules/stock-analysis/components/StocksView.tsx`
+- Lines: 2329
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+  - import type { Stock } from '@/types';
+  - import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
+  - import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
+  - import { Header } from '@/components/layout/Header';
+- API calls:
+  - 989: fetch(`/api/stocks/presets?${qs.toString()}`)
+- Tier 2 shared used: <FlashingPriceCell,<TableSkeleton,<UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/screener/components/StockScreenerAdvanced
+
+#### Component: TradingViewChart
+- File: `src/modules/stock-analysis/components/TradingViewChart.tsx`
+- Lines: 1895
+- Top imports:
+  - import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+  - import { useTheme } from 'next-themes';
+  - import {
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 740: const historyRes = await fetch(`/api/stocks/${ticker}/history?days=${days}`);
+- Tier 2 shared used: (none)
+
+#### Component: TreasuryBondsView
+- File: `src/modules/stock-analysis/components/TreasuryBondsView.tsx`
+- Lines: 435
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import {
+- API calls:
+  - 251: const response = await fetch('/api/bonds', { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedTable
+
+
+### Module: predictions
+
+(Components: 4)
+
+#### Component: DualTrackPredictionsView
+- File: `src/modules/predictions/components/DualTrackPredictionsView.tsx`
+- Lines: 633
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 168: const res = await fetch('/api/predictions/dual-track/stats', { cache: 'no-store' });
+  - 213: await fetch('/api/predictions/dual-track/threshold', { method: 'POST' });
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/StockPublisher
+
+#### Component: MakerRadarTab
+- File: `src/modules/predictions/components/MakerRadarTab.tsx`
+- Lines: 3907
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
+  - import dynamic from 'next/dynamic';
+  - import {
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 628: const res = await fetch(`/api/maker-radar?${params}`, { cache: 'no-store' });
+  - 649: const res = await fetch(`/api/stocks?market=${market}&page_size=1000`, { cache: 'no-store' });
+  - 668: const res = await fetch(`/api/unified/predictions?market=${market}&limit=1000`, { cache: 'no-store' });
+  - 755: const res = await fetch('/api/maker-radar/track', {
+  - 778: const res = await fetch('/api/portfolio/unified-watch', { cache: 'no-store' });
+  - 784: const trackRes = await fetch('/api/maker-radar/track', { cache: 'no-store' });
+  - 806: return fetch('/api/maker-radar/track', {
+  - 840: const res = await fetch(`/api/maker-radar/warmup?market=${encodeURIComponent(market)}&timeout=120000`, {
+  - 867: const res = await fetch('/api/predictions/refresh-v40?mode=today&timeout=240000', {
+  - 2890: const res = await fetch(`/api/maker-radar/stock?ticker=${ticker}&days=30`, { cache: 'no-store' });
+  - 3747: fetch(`/api/maker-radar/market-intelligence?ticker=${encodeURIComponent(ticker)}`)
+- Tier 2 shared used: <FlashingChangeCell,<FlashingPriceCell,<StockDetailDrawer,<UnifiedTable
+- Cross-module imports:
+  - @/modules/dashboard/components/SafeWidget
+  - @/modules/market-analysis/components/MarketDepthLiquidityWidget
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/publishing/lib/table-share-formatter
+  - @/modules/radar/components/SignalStrengthMeter
+  - @/modules/radar/components/SignalTrackingTimeline
+  - @/modules/sharia/components/ShariaBadge
+  - @/modules/stock-analysis/components/StockIcon
+
+#### Component: PredictionTrackingDashboard
+- File: `src/modules/predictions/components/PredictionTrackingDashboard.tsx`
+- Lines: 2098
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 1205: const res = await fetch('/api/predictions/honest-tracking/verify-pending', {
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+  - @/modules/screener/components/StockScreenerAdvanced
+
+#### Component: PredictionTrackingView
+- File: `src/modules/predictions/components/PredictionTrackingView.tsx`
+- Lines: 718
+- Top imports:
+  - import { StatCard } from '@/components/ui/stat-card';
+  - import React, { useCallback, useEffect, useMemo, useState } from 'react';
+  - import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 397: const res = await fetch(`/api/predictions/honest-tracking/list?${params.toString()}`, {
+  - 436: const res = await fetch('/api/predictions/tracking/verify', {
+- Tier 2 shared used: <MarketSelector,<UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/publishing/components/UnifiedPublishButton
+
+
+### Module: portfolio
+
+(Components: 12)
+
+#### Component: AdvancedPortfolioManager
+- File: `src/modules/portfolio/components/AdvancedPortfolioManager.tsx`
+- Lines: 578
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: BagHolderRescuePanel
+- File: `src/modules/portfolio/components/BagHolderRescuePanel.tsx`
+- Lines: 1124
+- Top imports:
+  - import React, { useState, useEffect, useMemo, useRef } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 158: const res = await fetch(`/api/portfolio/bag-holder-rescue?ticker=${t}&buy_price=${bp}&quantity=${qty}`, {
+  - 216: const calcRes = await fetch('/api/finance/calculate-values', { cache: 'no-store' });
+  - 241: const res2 = await fetch(`/api/finance/assets/${match.id}`, {
+  - 286: const res = await fetch('/api/trading-journal', {
+  - 312: fetch('/api/finance/calculate-values', { cache: 'no-store' })
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/portfolio/components/StockSearchDropdown
+
+#### Component: EnhancedPortfolioView
+- File: `src/modules/portfolio/components/EnhancedPortfolioView.tsx`
+- Lines: 3369
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+  - import dynamic from 'next/dynamic';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 325: const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(term)}`);
+  - 427: const res = await fetch('/api/crypto/coins?limit=250');
+  - 552: const res = await fetch('/api/portfolio/accounts?user_id=default');
+  - 629: fetch(`/api/finance/calculate-values${pidQs}`),
+  - 630: fetch('/api/finance/obligations?status=active'),
+  - 662: const fallbackRes = await fetch(`/api/finance/assets${pidQs}`);
+  - 694: await fetch('/api/watchlist', {
+  - 786: const res = await fetch('/api/finance/assets', {
+  - 842: const res = await fetch(`/api/finance/assets/${editAsset.id}`, {
+  - 865: const res = await fetch(`/api/finance/assets/${deleteId}`, { method: 'DELETE' });
+  - 2085: const res = await fetch(`/api/finance/transactions?month=${month}&year=${year}`);
+  - 2101: const res = await fetch('/api/finance/transactions', {
+  - 2131: const res = await fetch(`/api/finance/transactions/${id}`, { method: 'DELETE' });
+  - 2469: const res = await fetch('/api/finance/obligations?status=active');
+  - 2490: const res = await fetch('/api/finance/obligations', {
+  - 2523: const res = await fetch(`/api/finance/obligations/${editItem.id}`, {
+  - 2549: const res = await fetch(`/api/finance/obligations/${deleteId}`, { method: 'DELETE' });
+  - 2567: const res = await fetch('/api/finance/obligations/payments', {
+  - 2817: const res = await fetch('/api/finance/reports');
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/portfolio/components/BagHolderRescuePanel
+  - @/modules/portfolio/components/MasterPortfolioSummary
+  - @/modules/portfolio/components/MultiPortfolioSelector
+  - @/modules/portfolio/components/RealReturnPanel
+  - @/modules/portfolio/components/RiskProfilerQuiz
+  - @/modules/portfolio/components/RoboAdvisorPanel
+  - @/modules/portfolio/components/TopUpRecommendationsPanel
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/publishing/components/UnifiedPublishButton
+
+#### Component: MasterPortfolioSummary
+- File: `src/modules/portfolio/components/MasterPortfolioSummary.tsx`
+- Lines: 245
+- Top imports:
+  - import React, { useEffect, useState, useCallback } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import { Wallet, TrendingUp, TrendingDown, DollarSign, Building2, Bitcoin, CreditCard, Landmark } from 'lucide-react';
+- API calls:
+  - 74: const res = await fetch(`/api/portfolio/master?user_id=${encodeURIComponent(userId)}&days=90`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: MultiPortfolioSelector
+- File: `src/modules/portfolio/components/MultiPortfolioSelector.tsx`
+- Lines: 658
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Badge } from '@/components/ui/badge';
+  - import {
+- API calls:
+  - 144: const res = await fetch(`/api/portfolio/accounts?user_id=${encodeURIComponent(userId)}`);
+  - 169: const res = await fetch('/api/portfolio/accounts', {
+  - 219: const res = await fetch('/api/portfolio/accounts', {
+  - 252: const res = await fetch('/api/portfolio/accounts', {
+- Tier 2 shared used: (none)
+
+#### Component: PortfolioIntelligencePanel
+- File: `src/modules/portfolio/components/PortfolioIntelligencePanel.tsx`
+- Lines: 400
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 87: const res = await fetch('/api/portfolio/intelligence');
+- Tier 2 shared used: (none)
+
+#### Component: RealReturnPanel
+- File: `src/modules/portfolio/components/RealReturnPanel.tsx`
+- Lines: 247
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 61: const res = await fetch('/api/finance/real-return', { cache: 'no-store' });
+  - 85: const res = await fetch('/api/finance/inflation', {
+- Tier 2 shared used: (none)
+
+#### Component: RiskProfilerQuiz
+- File: `src/modules/portfolio/components/RiskProfilerQuiz.tsx`
+- Lines: 541
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Progress } from '@/components/ui/progress';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: RoboAdvisorPanel
+- File: `src/modules/portfolio/components/RoboAdvisorPanel.tsx`
+- Lines: 1286
+- Top imports:
+  - import React, { useCallback, useEffect, useMemo, useState } from 'react';
+  - import {
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 342: const res = await fetch('/api/finance/calculate-values', { cache: 'no-store' });
+  - 378: const res = await fetch(`/api/portfolio/equity-curve?days=${curveDays}`, {
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/UnifiedPublishButton
+
+#### Component: SmartAssistantPanel
+- File: `src/modules/portfolio/components/SmartAssistantPanel.tsx`
+- Lines: 563
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 141: const res = await fetch('/api/finance/smart-analysis');
+- Tier 2 shared used: (none)
+
+#### Component: StockSearchDropdown
+- File: `src/modules/portfolio/components/StockSearchDropdown.tsx`
+- Lines: 122
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import { Input } from '@/components/ui/input';
+  - import { cn } from '@/lib/utils';
+- API calls:
+  - 49: const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(term)}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: TopUpRecommendationsPanel
+- File: `src/modules/portfolio/components/TopUpRecommendationsPanel.tsx`
+- Lines: 423
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import {
+- API calls:
+  - 142: const res = await fetch('/api/portfolio/holdings', { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedEmptyState
+
+
+### Module: dashboard
+
+(Components: 21)
+
+#### Component: AssetPreferenceOnboarding
+- File: `src/modules/dashboard/components/AssetPreferenceOnboarding.tsx`
+- Lines: 184
+- Top imports:
+  - import React, { useEffect, useState } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { cn } from '@/lib/utils';
+  - import { useAppStore, type AssetPreference } from '@/lib/store';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: CryptoSignalsWidget
+- File: `src/modules/dashboard/components/CryptoSignalsWidget.tsx`
+- Lines: 233
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 71: const cryptoRes = await fetch('/api/crypto');
+- Tier 2 shared used: (none)
+
+#### Component: DashboardView
+- File: `src/modules/dashboard/components/DashboardView.tsx`
+- Lines: 615
+- Top imports:
+  - import React, { useState, useEffect, useMemo, useRef } from 'react';
+  - import { Download, Zap, RefreshCw, Pin } from 'lucide-react';
+  - import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
+  - import { Header } from '@/components/layout/Header';
+  - import { MarketSummary } from '@/modules/dashboard/components/MarketSummary';
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/dashboard/components/AssetPreferenceOnboarding
+  - @/modules/dashboard/components/CryptoSignalsWidget
+  - @/modules/dashboard/components/DevelopmentNotice
+  - @/modules/dashboard/components/IndexCards
+  - @/modules/dashboard/components/InvestorsFlowPanel
+  - @/modules/dashboard/components/LiveMonitor
+  - @/modules/dashboard/components/LiveStockTicker
+  - @/modules/dashboard/components/MarketPulseWidget
+  - @/modules/dashboard/components/MarketSentiment
+  - @/modules/dashboard/components/MarketSummary
+  - @/modules/dashboard/components/MyStocksBriefing
+  - @/modules/dashboard/components/PinnableWidget
+  - @/modules/dashboard/components/SafeWidget
+  - @/modules/dashboard/components/SeasonalitySignalsWidget
+  - @/modules/dashboard/components/TopMovers
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/stock-analysis/components/StockSelector
+
+#### Component: DevelopmentNotice
+- File: `src/modules/dashboard/components/DevelopmentNotice.tsx`
+- Lines: 33
+- Top imports:
+  - import React from 'react';
+  - import { AlertTriangle, Construction } from 'lucide-react';
+  - import { useAppStore, MarketType } from '@/lib/store';
+  - import { Alert, AlertDescription } from '@/components/ui/alert';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: IndexCards
+- File: `src/modules/dashboard/components/IndexCards.tsx`
+- Lines: 178
+- Top imports:
+  - import React from 'react';
+  - import { TrendingUp, TrendingDown } from 'lucide-react';
+  - import { useAppStore, type MarketType } from '@/lib/store';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { cn, safeNum } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: IntradayPressurePanel
+- File: `src/modules/dashboard/components/IntradayPressurePanel.tsx`
+- Lines: 372
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Gauge, TrendingUp, TrendingDown, Loader2, Search, Activity, Scale } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: InvestorsFlowPanel
+- File: `src/modules/dashboard/components/InvestorsFlowPanel.tsx`
+- Lines: 559
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 235: fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${days}`),
+  - 236: fetch(`/api/egx/investors?latest=false&days=${days}`).catch(() => null),
+- Tier 2 shared used: <UnifiedEmptyState,<UnifiedTable
+
+#### Component: LiquidityFlowPanel
+- File: `src/modules/dashboard/components/LiquidityFlowPanel.tsx`
+- Lines: 467
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Waves, TrendingUp, TrendingDown, Activity, Building2, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+- API calls:
+  - 220: const res = await fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${period}`, {
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: LiveMonitor
+- File: `src/modules/dashboard/components/LiveMonitor.tsx`
+- Lines: 1357
+- Top imports:
+  - import React, { useCallback, useEffect, useRef, useState } from 'react';
+  - import {
+  - import { toast } from 'sonner';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 1088: const res = await fetch(`/api/live-monitor?market=${encodeURIComponent(_market)}`, {
+  - 1155: const res = await fetch(`/api/live-monitor/trigger?market=${encodeURIComponent(_trigMarket)}`, {
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: LiveStockTicker
+- File: `src/modules/dashboard/components/LiveStockTicker.tsx`
+- Lines: 297
+- Top imports:
+  - import React, { useCallback, useEffect, useMemo, useState } from 'react';
+  - import { ArrowDown, ArrowUp, Loader2, WifiOff, Zap } from 'lucide-react';
+  - import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+  - import { useAppStore } from '@/lib/store';
+  - import { cn } from '@/lib/utils';
+- API calls:
+  - 160: const res = await fetch(`/api/market-pulse?market=${encodeURIComponent(_market)}`, {
+- Tier 2 shared used: (none)
+
+#### Component: MaestroWidget
+- File: `src/modules/dashboard/components/MaestroWidget.tsx`
+- Lines: 90
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Zap, TrendingUp, TrendingDown, Minus, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 55: // // const res = await fetch(`/api/maestro/overview?market=${encodeURIComponent(useAppStore.getState().currentMarket)}`);
+- Tier 2 shared used: (none)
+
+#### Component: MarketPulseWidget
+- File: `src/modules/dashboard/components/MarketPulseWidget.tsx`
+- Lines: 933
+- Top imports:
+  - import React, { useCallback, useEffect, useRef, useState } from 'react';
+  - import {
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 606: const res = await fetch(`/api/market-pulse?market=${encodeURIComponent(useAppStore.getState().currentMarket)}`, {
+- Tier 2 shared used: (none)
+
+#### Component: MarketSentiment
+- File: `src/modules/dashboard/components/MarketSentiment.tsx`
+- Lines: 197
+- Top imports:
+  - import React from 'react';
+  - import {
+  - import { useAppStore } from '@/lib/store';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Progress } from '@/components/ui/progress';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: MarketSummary
+- File: `src/modules/dashboard/components/MarketSummary.tsx`
+- Lines: 81
+- Top imports:
+  - import React from 'react';
+  - import {
+  - import { useAppStore } from '@/lib/store';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: MultiMarketWidget
+- File: `src/modules/dashboard/components/MultiMarketWidget.tsx`
+- Lines: 610
+- Top imports:
+  - import React, { useState, useEffect, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 105: fetch(`/api/data-engine/stocks?market=${selectedMarket}&limit=20`)
+  - 129: fetch('/api/data-engine/gold').then(r => r.ok ? r.json() : null),
+  - 130: fetch('/api/data-engine/crypto?limit=10').then(r => r.ok ? r.json() : null),
+  - 131: fetch('/api/data-engine/forex').then(r => r.ok ? r.json() : null),
+- Tier 2 shared used: (none)
+
+#### Component: MyStocksBriefing
+- File: `src/modules/dashboard/components/MyStocksBriefing.tsx`
+- Lines: 657
+- Top imports:
+  - import React, { useCallback, useEffect, useState } from 'react';
+  - import {
+  - import Link from 'next/link';
+  - import { useSession } from 'next-auth/react';
+  - import {
+- API calls:
+  - 396: const watchRes = await fetch('/api/portfolio/unified-watch', { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: PinnableWidget
+- File: `src/modules/dashboard/components/PinnableWidget.tsx`
+- Lines: 68
+- Top imports:
+  - import React, { ReactNode } from 'react';
+  - import { Pin, PinOff } from 'lucide-react';
+  - import { useAppStore } from '@/lib/store';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: RealtimeTicker
+- File: `src/modules/dashboard/components/RealtimeTicker.tsx`
+- Lines: 196
+- Top imports:
+  - import React, { useEffect, useRef, useState } from 'react';
+  - import { motion, AnimatePresence } from 'framer-motion';
+  - import { Wifi, Database } from 'lucide-react';
+  - import { useRealtimeUpdates, safeToFixed } from '@/lib/ws-client';
+  - import { useAppStore } from '@/lib/store';
+- API calls:
+  - 89: fetch(`/api/stocks?limit=20&market=${currentMarket}`)
+- Tier 2 shared used: (none)
+
+#### Component: SafeWidget
+- File: `src/modules/dashboard/components/SafeWidget.tsx`
+- Lines: 80
+- Top imports:
+  - import React, { Component, ErrorInfo, ReactNode } from 'react';
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { AlertTriangle } from 'lucide-react';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: SeasonalitySignalsWidget
+- File: `src/modules/dashboard/components/SeasonalitySignalsWidget.tsx`
+- Lines: 222
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 50: const res = await fetch('/api/seasonality-signals');
+- Tier 2 shared used: (none)
+
+#### Component: TopMovers
+- File: `src/modules/dashboard/components/TopMovers.tsx`
+- Lines: 159
+- Top imports:
+  - import React from 'react';
+  - import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+  - import { useAppStore } from '@/lib/store';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+
+### Module: admin
+
+(Components: 37)
+
+#### Component: AdminView
+- File: `src/modules/admin/components/AdminView.tsx`
+- Lines: 2083
+- Top imports:
+  - import React, { useEffect, useState, useCallback, useMemo } from 'react';
+  - import dynamic from 'next/dynamic';
+  - import {
+  - import { useSession } from 'next-auth/react';
+  - import { useAppStore } from '@/lib/store';
+- API calls:
+  - 251: _autoCookiePromise = fetch('/api/admin/auth/auto-cookie', {
+  - 497: await fetch('/api/admin/auth/auto-cookie', { method: 'POST' });
+  - 502: const res = await fetch('/api/admin/stats');
+  - 528: await fetch('/api/track', {
+  - 554: const res = await fetch('/api/admin/stats');
+  - 575: const res = await fetch('/api/market/connections');
+  - 596: const res = await fetch('/api/market/connections');
+  - 608: const res = await fetch('/api/prediction-performance');
+  - 622: const res = await fetch('/api/self-learning?action=stats');
+  - 635: const res = await fetch('/api/data-status');
+  - 668: const res = await fetch('/api/feedback');
+  - 720: const res = await fetch('/api/market/sync-live', {
+  - 744: const res = await fetch('/api/multi-market/sync', {
+  - 775: const res = await fetch('/api/admin/auth', {
+- Tier 2 shared used: <LazyTabLoader
+
+#### Component: BacktestTab
+- File: `src/modules/admin/components/BacktestTab.tsx`
+- Lines: 650
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Label } from '@/components/ui/label';
+- API calls:
+  - 158: const res = await fetch(`/api/admin/backtest/v40/status/${jobId}`);
+  - 179: const res = await fetch('/api/admin/backtest/v40/run', {
+- Tier 2 shared used: (none)
+
+#### Component: ContentStudioHub
+- File: `src/modules/admin/components/ContentStudioHub.tsx`
+- Lines: 886
+- Top imports:
+  - import React, { useState, useRef, useCallback, useEffect } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 433: fetch('/api/ads/educational-lessons')
+  - 447: fetch('/api/ads/successful-trades?limit=10')
+- Tier 2 shared used: (none)
+
+#### Component: CronHealthTab
+- File: `src/modules/admin/components/CronHealthTab.tsx`
+- Lines: 353
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 113: const res = await fetch('/api/admin/cron-health', { credentials: 'same-origin', cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: DataEngineTab
+- File: `src/modules/admin/components/DataEngineTab.tsx`
+- Lines: 634
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react'
+  - import { Button } from '@/components/ui/button'
+  - import { toast } from 'sonner'
+  - import { cn } from '@/lib/utils'
+  - import { 
+- API calls:
+  - 79: const res = await fetch('/api/data-engine/control')
+  - 100: const res = await fetch('/api/data-engine/control', {
+- Tier 2 shared used: (none)
+
+#### Component: DataScraperControl
+- File: `src/modules/admin/components/DataScraperControl.tsx`
+- Lines: 533
+- Top imports:
+  - import React, { useState } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 77: const response = await fetch('/api/market/sync-live', {
+  - 125: const response = await fetch('/api/admin/sync-vps', {
+  - 174: const response = await fetch('/api/sync-historical', {
+  - 223: const response = await fetch('/api/admin/sync-stocks-db', {
+  - 272: const response = await fetch('/api/multi-market/sync?XTransformPort=8010', {
+  - 324: const response = await fetch(`/api/multi-market/sync/${market}?XTransformPort=8010`, {
+- Tier 2 shared used: (none)
+
+#### Component: DatabaseManagerFull
+- File: `src/modules/admin/components/DatabaseManagerFull.tsx`
+- Lines: 3291
+- Top imports:
+  - import { useCallback, useEffect, useMemo, useState } from 'react';
+  - import { toast } from 'sonner';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 380: const res = await fetch(`/api/admin/db-manager/${op}`, {
+  - 426: const res = await fetch('/api/admin/db-manager');
+  - 452: const res = await fetch(`/api/admin/db-manager?db=${encodeURIComponent(dbName)}`);
+  - 487: const res = await fetch(`/api/admin/db-manager?${params.toString()}`);
+  - 530: const res = await fetch('/api/admin/db-manager/backup');
+  - 548: const res = await fetch('/api/admin/db-manager/historical-backups');
+  - 678: const res = await fetch('/api/admin/db-manager/query', {
+  - 760: const res = await fetch('/api/admin/db-manager/backup', {
+  - 800: const res = await fetch('/api/admin/db-manager/restore', {
+  - 833: const res = await fetch('/api/admin/db-manager/delete-backup', {
+  - 883: const res = await fetch('/api/admin/db-manager/drop-table', {
+  - 923: const res = await fetch('/api/admin/db-manager/truncate-table', {
+  - 961: const res = await fetch(`/api/admin/db-manager/${endpoint}`, {
+  - 1004: const res = await fetch('/api/admin/db-manager/recover', {
+  - 1032: const res = await fetch('/api/admin/db-manager/recover-all', {
+  - 1073: const res = await fetch('/api/admin/db-manager/checkpoint-all', { method: 'POST' });
+  - 1091: const res = await fetch('/api/admin/db-manager/export-all', { method: 'POST' });
+  - 1121: const res = await fetch('/api/admin/db-manager/import-all', {
+  - 1171: const res = await fetch('/api/admin/db-manager/historical-backups', {
+  - 1209: const res = await fetch('/api/admin/db-manager/historical-backups', {
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: DbBackupPanel
+- File: `src/modules/admin/components/DbBackupPanel.tsx`
+- Lines: 1128
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Checkbox } from '@/components/ui/checkbox';
+- API calls:
+  - 173: const res = await fetch('/api/admin/db-backup', { credentials: 'same-origin' });
+  - 272: const res = await fetch('/api/admin/db-backup', {
+  - 349: const res = await fetch('/api/admin/db-backup', {
+  - 375: const res = await fetch('/api/admin/db-backup', {
+  - 402: const res = await fetch('/api/admin/db-backup', {
+  - 482: const res = await fetch('/api/admin/db-backup', {
+- Tier 2 shared used: (none)
+
+#### Component: EngineControlRoomTab
+- File: `src/modules/admin/components/EngineControlRoomTab.tsx`
+- Lines: 2481
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 946: fetch(`/api/admin/engines/logs?engine=${encodeURIComponent(engineControlKey)}&limit=50`, {
+  - 949: fetch(`/api/admin/engines/logs/control?engine=${encodeURIComponent(engineControlKey)}`, {
+  - 1885: fetch('/api/admin/system-health', { credentials: 'same-origin', cache: 'no-store' }),
+  - 1886: fetch('/api/admin/engines/control', { credentials: 'same-origin', cache: 'no-store' }),
+  - 1901: const res = await fetch('/api/admin/engines/logs?limit=50', { credentials: 'same-origin', cache: 'no-store' });
+  - 1913: const res = await fetch('/api/admin/cron-health', { credentials: 'same-origin', cache: 'no-store' });
+  - 1923: const res = await fetch('/api/admin/news-health', { credentials: 'same-origin', cache: 'no-store' });
+  - 1933: const res = await fetch('/api/sharia?limit=1', { cache: 'no-store' });
+  - 1967: const res = await fetch('/api/admin/engines/control', {
+  - 2006: const res = await fetch('/api/admin/engines/start-all', {
+  - 2030: const res = await fetch('/api/admin/engines/stop-all', {
+- Tier 2 shared used: (none)
+
+#### Component: EngineSettingsTab
+- File: `src/modules/admin/components/EngineSettingsTab.tsx`
+- Lines: 576
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Input } from '@/components/ui/input';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 134: const res = await fetch('/api/admin/engine-settings', {
+  - 238: const res = await fetch('/api/admin/engine-settings', {
+  - 274: const res = await fetch('/api/admin/engine-settings/reset', {
+- Tier 2 shared used: (none)
+
+#### Component: EnginesStatusTab
+- File: `src/modules/admin/components/EnginesStatusTab.tsx`
+- Lines: 745
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 417: const res = await fetch('/api/admin/pm2-control', {
+  - 491: await fetch('/api/data-engine/control', {
+  - 515: const res = await fetch('/api/admin/engines-status');
+- Tier 2 shared used: (none)
+
+#### Component: MarketingHub
+- File: `src/modules/admin/components/MarketingHub.tsx`
+- Lines: 503
+- Top imports:
+  - import React, { useState, useEffect, useRef, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: MarketingStudio
+- File: `src/modules/admin/components/MarketingStudio.tsx`
+- Lines: 96
+- Top imports:
+  - import React, { useState, lazy, Suspense } from 'react';
+  - import { Megaphone, Film, GraduationCap, Sparkles } from 'lucide-react';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: <LazyTabLoader
+
+#### Component: NewsHealthTab
+- File: `src/modules/admin/components/NewsHealthTab.tsx`
+- Lines: 312
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 77: const res = await fetch('/api/admin/news-health', { credentials: 'same-origin', cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: NewsManagementTab
+- File: `src/modules/admin/components/NewsManagementTab.tsx`
+- Lines: 1060
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: PricingEditorTab
+- File: `src/modules/admin/components/PricingEditorTab.tsx`
+- Lines: 420
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 148: const res = await fetch('/api/subscription/plans', { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: ProcessResourceHistory
+- File: `src/modules/admin/components/ProcessResourceHistory.tsx`
+- Lines: 442
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: PromoCodesAdmin
+- File: `src/modules/admin/components/PromoCodesAdmin.tsx`
+- Lines: 592
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 67: const res = await fetch('/api/admin/promo-codes', { credentials: 'same-origin' });
+  - 122: const res = await fetch('/api/admin/promo-codes', {
+  - 147: const res = await fetch('/api/admin/promo-codes', {
+  - 172: const res = await fetch(`/api/admin/promo-codes?id=${id}`, {
+- Tier 2 shared used: (none)
+
+#### Component: PurgeCacheButton
+- File: `src/modules/admin/components/PurgeCacheButton.tsx`
+- Lines: 255
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Trash2, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Database } from 'lucide-react';
+- API calls:
+  - 34: const res = await fetch('/api/admin/purge-cache', { cache: 'no-store' });
+  - 63: const res = await fetch(`/api/admin/purge-cache?scope=${scope}`, {
+- Tier 2 shared used: (none)
+
+#### Component: RegimeDetectionWidget
+- File: `src/modules/admin/components/RegimeDetectionWidget.tsx`
+- Lines: 126
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { TrendingUp, TrendingDown, Minus, Activity, RefreshCw, Target, AlertTriangle } from 'lucide-react';
+  - import { cn } from '@/lib/utils';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 38: const res = await fetch('/api/python/regime/market');
+- Tier 2 shared used: (none)
+
+#### Component: ResourceAlerts
+- File: `src/modules/admin/components/ResourceAlerts.tsx`
+- Lines: 408
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: ResourceHistoryChart
+- File: `src/modules/admin/components/ResourceHistoryChart.tsx`
+- Lines: 607
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import {
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: ShariaManagementTab
+- File: `src/modules/admin/components/ShariaManagementTab.tsx`
+- Lines: 478
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 96: const res = await fetch('/api/sharia?limit=1', { cache: 'no-store' });
+  - 115: const res = await fetch('/api/admin/sharia/run', {
+- Tier 2 shared used: (none)
+
+#### Component: SourceAuthorityTab
+- File: `src/modules/admin/components/SourceAuthorityTab.tsx`
+- Lines: 366
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 77: const res = await fetch('/api/admin/sources', { credentials: 'same-origin', cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: SuperLearningSystem
+- File: `src/modules/admin/components/SuperLearningSystem.tsx`
+- Lines: 2489
+- Top imports:
+  - import React, { useState, useCallback, useEffect, useMemo } from 'react';
+  - import {
+  - import { toast } from 'sonner';
+  - import { cn } from '@/lib/utils';
+  - import { motion } from 'framer-motion';
+- API calls:
+  - 477: const res = await fetch('/api/admin/ai-predictions/generate', {
+  - 522: const res = await fetch('/api/admin/clean-predictions', { method: 'POST' });
+  - 548: const res = await fetch(`/api/self-learning?action=backtest`, {
+  - 634: const res = await fetch(`/api/self-learning?action=stats&persona=${activePersona}&assetType=${assetType}`);
+  - 699: const res = await fetch('/api/crypto-backtesting', {
+  - 769: const res = await fetch('/api/iterative-learning', {
+  - 878: const res = await fetch('/api/self-learning', {
+  - 908: const res = await fetch('/api/self-learning', {
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: SystemControlPanel
+- File: `src/modules/admin/components/SystemControlPanel.tsx`
+- Lines: 714
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { motion, AnimatePresence } from 'framer-motion';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 101: const res = await fetch(`/api/system-control?section=${activeTab}`);
+  - 116: const res = await fetch('/api/admin/db', { credentials: 'same-origin' });
+  - 134: const res = await fetch('/api/admin/data-sources', { credentials: 'same-origin' });
+  - 189: const res = await fetch(`/api/system-control?action=${action}`, {
+- Tier 2 shared used: (none)
+
+#### Component: SystemHealthCard
+- File: `src/modules/admin/components/SystemHealthCard.tsx`
+- Lines: 325
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 138: const res = await fetch('/api/admin/system-health', {
+- Tier 2 shared used: (none)
+
+#### Component: SystemMonitorPanel
+- File: `src/modules/admin/components/SystemMonitorPanel.tsx`
+- Lines: 865
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef } from 'react';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Progress } from '@/components/ui/progress';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 164: fetch('/api/admin/system-resources', { credentials: 'same-origin', cache: 'no-store' }),
+  - 165: fetch('/api/admin/system-health', { credentials: 'same-origin', cache: 'no-store' }),
+  - 190: const res = await fetch('/api/admin/system-resources', {
+- Tier 2 shared used: (none)
+
+#### Component: SystemProblemsTab
+- File: `src/modules/admin/components/SystemProblemsTab.tsx`
+- Lines: 488
+- Top imports:
+  - import React from 'react';
+  - import {
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: <SeverityBadge
+
+#### Component: TelegramPredictionsTab
+- File: `src/modules/admin/components/TelegramPredictionsTab.tsx`
+- Lines: 512
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 107: const res = await fetch('/api/admin/telegram-predictions', { credentials: 'same-origin', cache: 'no-store' });
+  - 127: const res = await fetch('/api/telegram/publish-stock', {
+- Tier 2 shared used: (none)
+
+#### Component: TelegramTab
+- File: `src/modules/admin/components/TelegramTab.tsx`
+- Lines: 2200
+- Top imports:
+  - import React, { useState, useEffect, useRef, useCallback } from 'react';
+  - import { io, type Socket } from 'socket.io-client';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 174: const res = await fetch('/api/telegram/auth/status');
+  - 404: const res = await fetch('/api/telegram/auth/send-code', {
+  - 427: const res = await fetch('/api/telegram/auth/connect-user', {
+  - 454: const res = await fetch('/api/telegram/auth/verify-code', {
+  - 481: const res = await fetch('/api/telegram/auth/verify-password', {
+  - 669: const res = await fetch('/api/telegram/dialogs?limit=100');
+  - 821: const res = await fetch(`/api/telegram/dialogs/${dialog.id}/history?limit=50${q}`);
+  - 937: const res = await fetch('/api/telegram/messages/send', {
+  - 979: const res = await fetch('/api/telegram/messages/edit', {
+  - 1006: const res = await fetch('/api/telegram/messages/delete', {
+  - 1340: const res = await fetch(`/api/telegram/groups/${groupId}/members?limit=100&offset=0&search=${encodeURIComponent(search)}`);
+  - 1374: const res = await fetch(`/api/telegram/groups/${groupId}/add`, {
+  - 1398: const res = await fetch(`/api/telegram/groups/${groupId}/remove`, {
+  - 1562: const res = await fetch(`/api/telegram/search?q=${encodeURIComponent(q)}&limit=50`);
+  - 1713: const res = await fetch('/api/telegram/channels/my');
+  - 1726: const res = await fetch('/api/telegram/channels/tracked');
+  - 1736: const res = await fetch('/api/telegram/recommendations?limit=20');
+  - 1746: const res = await fetch('/api/telegram/news?limit=20');
+  - 1768: const res = await fetch('/api/telegram/channels/track', {
+  - 1796: const res = await fetch(`/api/telegram/channels/untrack/${channelId}`, { method: 'POST' });
+  - 1810: const res = await fetch('/api/telegram/scrape/all', {
+  - 1831: const res = await fetch('/api/telegram/messages', {
+  - 1849: const res = await fetch('/api/telegram/ai/clean', {
+  - 1874: const res = await fetch('/api/telegram/save', {
+- Tier 2 shared used: (none)
+
+#### Component: UserManagementPanel
+- File: `src/modules/admin/components/UserManagementPanel.tsx`
+- Lines: 904
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 180: const res = await fetch('/api/admin/system-health', { credentials: 'same-origin' });
+  - 207: const res = await fetch(`/api/admin/users?${params.toString()}`, { credentials: 'same-origin' });
+  - 226: const res = await fetch('/api/admin/users/cleanup-expired', {
+  - 302: const res = await fetch(`/api/admin/users/${id}`, {
+  - 333: const res = await fetch(`/api/admin/users/${id}`, {
+  - 367: const res = await fetch(`/api/admin/users/${id}`, {
+  - 402: const res = await fetch(`/api/admin/users/${id}`, {
+  - 432: const res = await fetch(`/api/admin/users/${id}`, {
+- Tier 2 shared used: (none)
+
+#### Component: UsersManagement
+- File: `src/modules/admin/components/UsersManagement.tsx`
+- Lines: 1543
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: ValidationMonitorTab
+- File: `src/modules/admin/components/ValidationMonitorTab.tsx`
+- Lines: 442
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 98: const res = await fetch('/api/admin/validation', { credentials: 'same-origin', cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: VideoEditor
+- File: `src/modules/admin/components/VideoEditor.tsx`
+- Lines: 653
+- Top imports:
+  - import React, { useState, useRef, useCallback, useEffect } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: WealthCharts
+- File: `src/modules/admin/components/WealthCharts.tsx`
+- Lines: 465
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import {
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 63: fetch(`/api/portfolio/equity-curve?days=${period}`),
+  - 64: fetch(`/api/portfolio/holdings`),
+  - 65: fetch(`/api/portfolio/risk-summary`),
+- Tier 2 shared used: (none)
+
+#### Component: PlatformPerformanceView
+- File: `src/modules/admin/components/platform-performance/PlatformPerformanceView.tsx`
+- Lines: 906
+- Top imports:
+  - import React, { useEffect, useState, useCallback } from 'react';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Separator } from '@/components/ui/separator';
+- API calls:
+  - 321: const res = await fetch(`/api/admin/platform-performance?${params}`, {
+- Tier 2 shared used: (none)
+
+
+### Module: radar
+
+(Components: 10)
+
+#### Component: AccuracyDashboard
+- File: `src/modules/radar/components/AccuracyDashboard.tsx`
+- Lines: 715
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 186: const res = await fetch(`/api/radar/accuracy?${params}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: CompanyFundamentalsCard
+- File: `src/modules/radar/components/CompanyFundamentalsCard.tsx`
+- Lines: 253
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 130: const res = await fetch(`/api/maker-radar/fundamentals?ticker=${ticker}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: ExitRadarTab
+- File: `src/modules/radar/components/ExitRadarTab.tsx`
+- Lines: 618
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: MultiMarketRadarTab
+- File: `src/modules/radar/components/MultiMarketRadarTab.tsx`
+- Lines: 707
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: NetPicksTab
+- File: `src/modules/radar/components/NetPicksTab.tsx`
+- Lines: 507
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+- API calls:
+  - 105: const res = await fetch(`/api/maker-radar/net-picks?market=${market}`, { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedTable
+
+#### Component: PersonalizedRadarTab
+- File: `src/modules/radar/components/PersonalizedRadarTab.tsx`
+- Lines: 710
+- Top imports:
+  - import { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 188: const res = await fetch('/api/radar/personalized', { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: RadarStatsCards
+- File: `src/modules/radar/components/RadarStatsCards.tsx`
+- Lines: 846
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 109: const res = await fetch('/api/maker-radar/signal-tracker?days=30', { cache: 'no-store' });
+  - 129: const res = await fetch('/api/maker-radar/signal-tracker/verify', {
+  - 344: const res = await fetch('/api/maker-radar/sector-treemap?days=30', { cache: 'no-store' });
+  - 491: const res = await fetch(`/api/maker-radar/entry-timing?ticker=${ticker}`, { cache: 'no-store' });
+  - 653: const res = await fetch(`/api/flow/${encodeURIComponent(ticker)}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: SignalStrengthMeter
+- File: `src/modules/radar/components/SignalStrengthMeter.tsx`
+- Lines: 194
+- Top imports:
+  - import { Star } from 'lucide-react';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: SignalTrackingTimeline
+- File: `src/modules/radar/components/SignalTrackingTimeline.tsx`
+- Lines: 770
+- Top imports:
+  - import React, { useEffect, useState, useMemo, useCallback } from 'react';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Progress } from '@/components/ui/progress';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: WeeklyReportTab
+- File: `src/modules/radar/components/WeeklyReportTab.tsx`
+- Lines: 736
+- Top imports:
+  - import { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+
+### Module: crypto
+
+(Components: 2)
+
+#### Component: CryptoPortfolioView
+- File: `src/modules/crypto/components/CryptoPortfolioView.tsx`
+- Lines: 641
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 226: const response = await fetch('/api/crypto/live', {
+- Tier 2 shared used: (none)
+
+#### Component: CryptoPredictionTrackingView
+- File: `src/modules/crypto/components/CryptoPredictionTrackingView.tsx`
+- Lines: 478
+- Top imports:
+  - import { StatCard } from '@/components/ui/stat-card';
+  - import React, { useState, useEffect, useMemo, useCallback } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 284: const res = await fetch('/api/crypto-predictions?limit=200', {
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/StockPublisher
+  - @/modules/publishing/components/UnifiedPublishButton
+
+
+### Module: reports
+
+(Components: 5)
+
+#### Component: DailyMarketReport
+- File: `src/modules/reports/components/DailyMarketReport.tsx`
+- Lines: 638
+- Top imports:
+  - import React, { useEffect, useState, useCallback, useRef } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: DataManager
+- File: `src/modules/reports/components/DataManager.tsx`
+- Lines: 374
+- Top imports:
+  - import React, { useState } from 'react';
+  - import {
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 46: const res = await fetch('/api/stocks?page_size=1&is_active=true');
+  - 62: const res = await fetch('/api/market/recommendations/ai-insights');
+  - 79: const res = await fetch('/api/market/overview');
+  - 95: const res = await fetch('/api/export?type=ai-adjustment&format=json');
+  - 216: const response = await fetch(`/api/export?type=${type}&format=${format}`);
+- Tier 2 shared used: (none)
+
+#### Component: ExecutiveReportView
+- File: `src/modules/reports/components/ExecutiveReportView.tsx`
+- Lines: 2087
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Skeleton } from '@/components/ui/skeleton';
+  - import {
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/components/UnifiedPublishButton
+
+#### Component: ReportsView
+- File: `src/modules/reports/components/ReportsView.tsx`
+- Lines: 955
+- Top imports:
+  - import React, {
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: StockAnalysisReport
+- File: `src/modules/reports/components/StockAnalysisReport.tsx`
+- Lines: 1279
+- Top imports:
+  - import React, {
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 985: fetch('/api/stocks?page_size=500', { headers: { Accept: 'application/json' } })
+- Tier 2 shared used: (none)
+
+
+### Module: news
+
+(Components: 1)
+
+#### Component: NewsFeedView
+- File: `src/modules/news/components/NewsFeedView.tsx`
+- Lines: 890
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 663: const res = await fetch('/api/news-feed', { cache: 'no-store' });
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/publishing/lib/official-links
+
+
+### Module: education
+
+(Components: 10)
+
+#### Component: AcademyEncyclopedia
+- File: `src/modules/education/components/AcademyEncyclopedia.tsx`
+- Lines: 2054
+- Top imports:
+  - import * as React from 'react';
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Progress } from '@/components/ui/progress';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: AcademyView
+- File: `src/modules/education/components/AcademyView.tsx`
+- Lines: 2483
+- Top imports:
+  - import * as React from 'react';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 222: fetch('/api/ads/educational-lessons')
+  - 307: fetch('/api/ads/educational-lessons')
+  - 1088: const res = await fetch('/api/stocks?page_size=500', { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: CandlestickSimulator
+- File: `src/modules/education/components/CandlestickSimulator.tsx`
+- Lines: 944
+- Top imports:
+  - import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Button } from '@/components/ui/button';
+  - import {
+  - import {
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: EntryTimingSimulator
+- File: `src/modules/education/components/EntryTimingSimulator.tsx`
+- Lines: 975
+- Top imports:
+  - import * as React from 'react';
+  - import { motion } from 'framer-motion';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 424: const res = await fetch(`/api/stocks/${encodeURIComponent(t)}/history?days=365`);
+- Tier 2 shared used: (none)
+
+#### Component: LearningVisuals
+- File: `src/modules/education/components/LearningVisuals.tsx`
+- Lines: 2621
+- Top imports:
+  - import React, { useState, useMemo, useCallback } from 'react';
+  - import { motion } from 'framer-motion';
+  - import { Lightbulb, AlertTriangle, Key, BookOpen, CheckCircle2, XCircle, TrendingUp, TrendingDown, ClipboardCheck, Zap, NotebookPen, ShieldCheck, Database, Signal, Lock, Send, FileText, RefreshCw, Layers, ArrowUp, ArrowDown, Scale, PieChart, Crosshair } from 'lucide-react';
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: LessonPDFExporter
+- File: `src/modules/education/components/LessonPDFExporter.tsx`
+- Lines: 587
+- Top imports:
+  - import * as React from 'react';
+  - import { Button } from '@/components/ui/button';
+  - import { Download, Loader2 } from 'lucide-react';
+  - import { toast } from 'sonner';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: MathRenderer
+- File: `src/modules/education/components/MathRenderer.tsx`
+- Lines: 157
+- Top imports:
+  - import React from 'react';
+  - import { InlineMath, BlockMath } from 'react-katex';
+  - import 'katex/dist/katex.min.css';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: PaperTradingWorkstation
+- File: `src/modules/education/components/PaperTradingWorkstation.tsx`
+- Lines: 1554
+- Top imports:
+  - import React, {
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Input } from '@/components/ui/input';
+  - import { Label } from '@/components/ui/label';
+- API calls:
+  - 294: const res = await fetch('/api/paper-trading-v2/account', {
+  - 313: const res = await fetch('/api/paper-trading-v2/positions', {
+  - 438: const res = await fetch('/api/metals-forex/status', {
+  - 571: const res = await fetch('/api/paper-trading-v2/order', {
+  - 619: const res = await fetch('/api/paper-trading-v2/reset', {
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/portfolio/components/StockSearchDropdown
+
+#### Component: PortfolioSimulator
+- File: `src/modules/education/components/PortfolioSimulator.tsx`
+- Lines: 563
+- Top imports:
+  - import * as React from 'react';
+  - import { motion } from 'framer-motion';
+  - import {
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Input } from '@/components/ui/input';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: StrategySandbox
+- File: `src/modules/education/components/StrategySandbox.tsx`
+- Lines: 2188
+- Top imports:
+  - import * as React from 'react';
+  - import { motion, AnimatePresence } from 'framer-motion';
+  - import {
+  - import { Card, CardContent } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+
+### Module: sharia
+
+(Components: 3)
+
+#### Component: ShariaBadge
+- File: `src/modules/sharia/components/ShariaBadge.tsx`
+- Lines: 459
+- Top imports:
+  - import React, { useEffect, useState, useMemo } from 'react';
+  - import { ShieldCheck, ShieldX, ShieldAlert, Shield, Loader2, Info, Calculator } from 'lucide-react';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+  - import { Skeleton } from '@/components/ui/skeleton';
+- API calls:
+  - 158: const res = await fetch(`/api/sharia?symbol=${encodeURIComponent(ticker)}`, { cache: 'no-store' });
+- Tier 2 shared used: (none)
+
+#### Component: ShariaStockCard
+- File: `src/modules/sharia/components/ShariaStockCard.tsx`
+- Lines: 355
+- Top imports:
+  - import React from 'react';
+  - import {
+  - import {
+  - import { Badge } from '@/components/ui/badge';
+  - import { Separator } from '@/components/ui/separator';
+- API calls: (none)
+- Tier 2 shared used: <StatusBadge
+
+#### Component: ShariaView
+- File: `src/modules/sharia/components/ShariaView.tsx`
+- Lines: 1478
+- Top imports:
+  - import React, { useState, useEffect, useMemo, useCallback } from 'react';
+  - import {
+  - import {
+  - import { Input } from '@/components/ui/input';
+  - import { Button } from '@/components/ui/button';
+- API calls:
+  - 389: fetch(`/api/sharia?symbol=${encodeURIComponent(symbol)}`, { cache: 'no-store' })
+  - 693: const res = await fetch('/api/sharia/purification', {
+  - 891: const res = await fetch('/api/sharia/purification', {
+  - 1125: const res = await fetch(`/api/sharia?${params.toString()}`, { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedPagination
+
+
+### Module: simulation
+
+(Components: 1)
+
+#### Component: SimulationView
+- File: `src/modules/simulation/components/SimulationView.tsx`
+- Lines: 2130
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+  - import {
+  - import { toast } from 'sonner';
+  - import { cn } from '@/lib/utils';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+- API calls:
+  - 447: const res = await fetch(`/api/stocks?market=${encodeURIComponent(apiMarket)}&page_size=500`, {
+- Tier 2 shared used: <MarketSelector,<UnifiedTable
+
+
+### Module: personalized
+
+⚠️ This module has ONLY `lib/` folder (no `components/` subfolder). Contents:
+total 12
+drwxr-xr-x  3 z z 4096 Oct 20 16:34 .
+drwxr-xr-x 20 z z 4096 Oct 20 16:34 ..
+drwxr-xr-x  2 z z 4096 Oct 20 16:34 lib
+
+Files in lib/:
+src/modules/personalized/lib/personalized-radar.ts
+
+### Module: personalized (no components)
+
+### Module: publishing
+
+(Components: 7)
+
+#### Component: ShareButton
+- File: `src/modules/publishing/components/ShareButton.tsx`
+- Lines: 449
+- Top imports:
+  - import React, { useState, useRef, useCallback } from 'react';
+  - import { toPng } from 'html-to-image';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import {
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+#### Component: StockInfographicCard
+- File: `src/modules/publishing/components/StockInfographicCard.tsx`
+- Lines: 1027
+- Top imports:
+  - import React, { useMemo } from 'react';
+  - import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+#### Component: StockInfographicModal
+- File: `src/modules/publishing/components/StockInfographicModal.tsx`
+- Lines: 334
+- Top imports:
+  - import React, { useCallback, useRef, useState } from 'react';
+  - import { toPng } from 'html-to-image';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import {
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+#### Component: StockPublisher
+- File: `src/modules/publishing/components/StockPublisher.tsx`
+- Lines: 1128
+- Top imports:
+  - import React, { useState, useCallback, useRef, useMemo } from 'react';
+  - import { toPng } from 'html-to-image';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+- API calls: (none)
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+#### Component: TradeResultsGenerator
+- File: `src/modules/publishing/components/TradeResultsGenerator.tsx`
+- Lines: 541
+- Top imports:
+  - import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+  - import { toPng } from 'html-to-image';
+  - import { Button } from '@/components/ui/button';
+  - import {
+  - import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+- API calls:
+  - 230: const res = await fetch(`/api/trade-results?period=${p}`, {
+  - 359: const res = await fetch('/api/market/publish-status-image', {
+- Tier 2 shared used: (none)
+
+#### Component: TradeResultsTemplates
+- File: `src/modules/publishing/components/TradeResultsTemplates.tsx`
+- Lines: 1456
+- Top imports:
+  - import React from 'react';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: UnifiedPublishButton
+- File: `src/modules/publishing/components/UnifiedPublishButton.tsx`
+- Lines: 793
+- Top imports:
+  - import React, { useState, useCallback } from 'react';
+  - import { toPng } from 'html-to-image';
+  - import {
+  - import { Button } from '@/components/ui/button';
+  - import {
+- API calls:
+  - 316: fetch(`/api/stocks/${resolvedTicker}`),
+  - 317: fetch(`/api/stocks/${resolvedTicker}/publish-data`),
+  - 318: fetch(`/api/flow/${encodeURIComponent(resolvedTicker)}`),
+  - 319: fetch(`/api/stocks/${resolvedTicker}/unified`),
+- Tier 2 shared used: (none)
+- Cross-module imports:
+  - @/modules/publishing/lib/official-links
+
+
+### Module: auth
+
+(Components: 1)
+
+#### Component: DevLoginForm
+- File: `src/modules/auth/components/DevLoginForm.tsx`
+- Lines: 154
+- Top imports:
+  - import React, { useState } from 'react';
+  - import { Shield, Loader2, AlertTriangle, Lock, User } from 'lucide-react';
+  - import { Button } from '@/components/ui/button';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 48: const res = await fetch('/api/admin/auth', {
+- Tier 2 shared used: (none)
+
+
+### Module: subscription
+
+(Components: 3)
+
+#### Component: PricingView
+- File: `src/modules/subscription/components/PricingView.tsx`
+- Lines: 332
+- Top imports:
+  - import React, { useState, useEffect, useCallback } from 'react';
+  - import { Check, Loader2, Crown, Zap, Building2, Sparkles, Globe } from 'lucide-react';
+  - import { Button } from '@/components/ui/button';
+  - import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+  - import { Badge } from '@/components/ui/badge';
+- API calls:
+  - 103: const res = await fetch(`/api/subscription/plans?market=${market}`);
+  - 123: const res = await fetch('/api/subscription/checkout', {
+- Tier 2 shared used: (none)
+
+#### Component: TrialCountdownBanner
+- File: `src/modules/subscription/components/TrialCountdownBanner.tsx`
+- Lines: 124
+- Top imports:
+  - import React, { useState, useEffect } from 'react';
+  - import { Clock, Crown, X } from 'lucide-react';
+  - import { PricingView } from './PricingView';
+  - import {
+  - import { cn } from '@/lib/utils';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+#### Component: TrialExpiredModal
+- File: `src/modules/subscription/components/TrialExpiredModal.tsx`
+- Lines: 174
+- Top imports:
+  - import React, { useState } from 'react';
+  - import { motion, AnimatePresence } from 'framer-motion';
+  - import { AlertCircle, X, Crown, Clock } from 'lucide-react';
+  - import { Button } from '@/components/ui/button';
+  - import { useAppStore } from '@/lib/store';
+- API calls: (none)
+- Tier 2 shared used: (none)
+
+
+### Module: screener
+
+(Components: 1)
+
+#### Component: StockScreenerAdvanced
+- File: `src/modules/screener/components/StockScreenerAdvanced.tsx`
+- Lines: 2723
+- Top imports:
+  - import React, { useState, useEffect, useCallback, useMemo } from 'react';
+  - import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  - import { Button } from '@/components/ui/button';
+  - import { Badge } from '@/components/ui/badge';
+  - import { Input } from '@/components/ui/input';
+- API calls:
+  - 725: fetch(`/api/screener/advanced?${params}`, { cache: 'no-store' }),
+  - 726: fetch(`/api/maker-radar?market=${encodeURIComponent(market)}&minQuietSignals=5&minPrice=1.0`, { cache: 'no-store' }).catch(() => null),
+  - 2219: const res = await fetch(`/api/stocks/top-performers?${params}`, { cache: 'no-store' });
+- Tier 2 shared used: <UnifiedTable
+- Cross-module imports:
+  - @/modules/publishing/components/UnifiedPublishButton
+  - @/modules/publishing/lib/official-links
+
+
+## Stage Summary
+
+- ✅ Audited all 18 modules in src/modules/ (156 component files, ~127K LOC).
+- ✅ Generated per-component report: file path, lines, top 5 imports, ALL API fetch calls with line numbers, Tier 2 shared components used, cross-module imports.
+- 🔴 Critical finding #1: useApiQuery is DEFINED but NEVER USED anywhere in src/modules/ — all 251 API calls are raw fetch() inside useEffect+useState.
+- 🔴 Critical finding #2: admin module alone holds 137 of 251 fetch() calls (55%) — concentrated risk.
+- 🟡 17 of 25 canonical Tier 2 shared components are NOT used by ANY module — adoption gap.
+- 🟡 Heavy cross-module coupling: market-analysis is hub (consumer of publishing/sharia/stock-analysis/reports; producer for predictions/education/crypto).
+- ⚠️ 4 modules (crypto, news, portfolio, reports, personalized) have ZERO direct fetch() in components — they delegate elsewhere.
+- ⚠️ The "personalized" module has NO components folder — only lib/personalized-radar.ts.
+- ⚠️ Modules from task spec (zakat, tithes, notifications) do NOT exist in src/modules/ — they are in src/components/ (covered by AUDIT-1).
+- 📊 Heaviest modules: admin (~33.9K LOC), market-analysis (~18.3K LOC), education (~14.4K LOC), stock-analysis (~11.8K LOC), dashboard (~10.5K LOC).
+- 📊 Largest single files: MakerRadarTab.tsx (3,907), DatabaseManagerFull.tsx (3,291), EnhancedPortfolioView.tsx (3,369), EngineControlRoomTab.tsx (2,481), SuperLearningSystem.tsx (2,489), AcademyView.tsx (2,483), LearningVisuals.tsx (2,621).
+- 🎯 Recommendation: prioritize useApiQuery migration starting with admin module (highest concentration) and market-analysis (most consumer-facing).
