@@ -48,28 +48,28 @@ def get_active_intraday_tickers(min_volume: int = 10000) -> List[Dict[str, Any]]
     if not INTRADAY_DB.exists():
         return []
     try:
+        # BRAVO-FIX: استخدم direct sqlite3.connect + try/finally بدل __enter__ بدون __exit__
+        # الـ bug القديم: db_manager.connection().__enter__() بدون __exit__ بـ يـسبب "closed database"
+        conn = sqlite3.connect(str(INTRADAY_DB), timeout=10.0)
+        conn.row_factory = sqlite3.Row
         try:
-            from core.db_manager import db_manager
-            conn = db_manager.connection('intraday', writable=False).__enter__()
-        except Exception:
-            conn = sqlite3.connect(str(INTRADAY_DB), timeout=5.0)
-        today_str = datetime.now().strftime('%Y-%m-%d')
-        # تحقق من وجود بيانات اليوم أو أحدث يوم متاح
-        latest_date_row = conn.execute("SELECT MAX(SUBSTR(timestamp, 1, 10)) FROM stock_intraday").fetchone()
-        scan_date = latest_date_row[0] if latest_date_row and latest_date_row[0] else today_str
-        
-        rows = conn.execute('''
-            SELECT ticker, COUNT(*) as bars_count, MAX(price) as high_p, 
-                   MIN(price) as low_p, MAX(volume) as max_vol,
-                   (SELECT price FROM stock_intraday s2 WHERE s2.ticker = s1.ticker ORDER BY timestamp DESC LIMIT 1) as last_p,
-                   (SELECT price FROM stock_intraday s3 WHERE s3.ticker = s1.ticker ORDER BY timestamp ASC LIMIT 1) as first_p
-            FROM stock_intraday s1
-            WHERE SUBSTR(timestamp, 1, 10) = ?
-            GROUP BY ticker
-            HAVING max_vol >= ? AND bars_count >= 5
-            ORDER BY max_vol DESC
-        ''', (scan_date, min_volume)).fetchall()
-        conn.close()
+            today_str = datetime.now().strftime('%Y-%m-%d')
+            latest_date_row = conn.execute("SELECT MAX(SUBSTR(timestamp, 1, 10)) FROM stock_intraday").fetchone()
+            scan_date = latest_date_row[0] if latest_date_row and latest_date_row[0] else today_str
+            
+            rows = conn.execute('''
+                SELECT ticker, COUNT(*) as bars_count, MAX(price) as high_p, 
+                       MIN(price) as low_p, MAX(volume) as max_vol,
+                       (SELECT price FROM stock_intraday s2 WHERE s2.ticker = s1.ticker ORDER BY timestamp DESC LIMIT 1) as last_p,
+                       (SELECT price FROM stock_intraday s3 WHERE s3.ticker = s1.ticker ORDER BY timestamp ASC LIMIT 1) as first_p
+                FROM stock_intraday s1
+                WHERE SUBSTR(timestamp, 1, 10) = ?
+                GROUP BY ticker
+                HAVING max_vol >= ? AND bars_count >= 5
+                ORDER BY max_vol DESC
+            ''', (scan_date, min_volume)).fetchall()
+        finally:
+            conn.close()
 
         result = []
         for r in rows:
@@ -128,13 +128,12 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
     sector_name = None
     sector_perf = {}
     try:
+        # BRAVO-FIX: direct sqlite3.connect + try/finally (بدل __enter__ بدون __exit__)
+        conn = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
         try:
-            from core.db_manager import db_manager
-            conn = db_manager.connection('stocks', writable=False).__enter__()
-        except Exception:
-            conn = sqlite3.connect(str(STOCKS_DB), timeout=3.0)
-        s_row = conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
-        conn.close()
+            s_row = conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
+        finally:
+            conn.close()
         if s_row and s_row[0]:
             sector_name = s_row[0]
             sector_perf = get_sector_performance(sector_name)
@@ -306,23 +305,22 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                 if pid:
                     saved_count += 1
                     try:
+                        # BRAVO-FIX: direct sqlite3.connect + try/finally
+                        conn_p = sqlite3.connect(str(PREDICTIONS_DB), timeout=10.0)
                         try:
-                            from core.db_manager import db_manager
-                            conn_p = db_manager.connection('predictions', writable=True).__enter__()
-                        except Exception:
-                            conn_p = sqlite3.connect(str(PREDICTIONS_DB), timeout=5.0)
-                        conn_p.execute("""
-                            UPDATE predictions 
-                            SET entry_price_min = ?, entry_price_max = ?, support_level = ?, support_level_2 = ?, resistance_level = ?, resistance_level_2 = ?
-                            WHERE id = ?
-                        """, (
-                            p.get('entry_price_min'), p.get('entry_price_max'),
-                            p.get('support_level'), p.get('support_level_2'),
-                            p.get('resistance_level'), p.get('resistance_level_2'),
-                            pid
-                        ))
-                        conn_p.commit()
-                        conn_p.close()
+                            conn_p.execute("""
+                                UPDATE predictions 
+                                SET entry_price_min = ?, entry_price_max = ?, support_level = ?, support_level_2 = ?, resistance_level = ?, resistance_level_2 = ?
+                                WHERE id = ?
+                            """, (
+                                p.get('entry_price_min'), p.get('entry_price_max'),
+                                p.get('support_level'), p.get('support_level_2'),
+                                p.get('resistance_level'), p.get('resistance_level_2'),
+                                pid
+                            ))
+                            conn_p.commit()
+                        finally:
+                            conn_p.close()
                     except Exception:
                         pass
             print(f"  💾 تم حفظ {saved_count} توقع لحظي في {PREDICTIONS_DB}", flush=True)
@@ -333,11 +331,8 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
             # The cached_analysis (stocks.db) update that follows still runs (different table).
             SKIP_STORED_ANALYSES_WRITE = True
             try:
-                try:
-                    from core.db_manager import db_manager
-                    conn_sa = db_manager.connection('predictions', writable=True).__enter__()
-                except Exception:
-                    conn_sa = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
+                # BRAVO-FIX: direct sqlite3.connect + try/finally
+                conn_sa = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
                 cur_sa = conn_sa.cursor()
                 # ضمان وجود جميع الأعمدة اللازمة في سيرفر الإنتاج بدون أخطاء schema
                 for col_name, col_type in [
@@ -358,13 +353,12 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                     logo_url = ''
                     name_ar = p['ticker']
                     try:
+                        # BRAVO-FIX: direct sqlite3.connect + try/finally
+                        conn_s = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
                         try:
-                            from core.db_manager import db_manager
-                            conn_s = db_manager.connection('stocks', writable=False).__enter__()
-                        except Exception:
-                            conn_s = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
-                        s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
-                        conn_s.close()
+                            s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
+                        finally:
+                            conn_s.close()
                         if s_r:
                             logo_url = s_r[0] or ''
                             name_ar = s_r[1] or p['ticker']
@@ -440,11 +434,8 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
 
                 # تحديث cached_analysis في stocks.db لإزالة تحذير الكاش القديم
                 try:
-                    try:
-                        from core.db_manager import db_manager
-                        conn_ca = db_manager.connection('stocks', writable=True).__enter__()
-                    except Exception:
-                        conn_ca = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+                    # BRAVO-FIX: direct sqlite3.connect + try/finally
+                    conn_ca = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
                     cur_ca = conn_ca.cursor()
                     for p in top_picks:
                         cur_ca.execute('''

@@ -68700,3 +68700,31 @@ Stage Summary:
 - ✅ MaxDD bug اتحل (cumprod equity curve).
 - ⚠️ 2024 لسه مش edge — Regime Filter بسيط مش كفاية. محتاج filter أقوى (volatility/ADX-based).
 - 🎯 جاهز لـ Paper Trading بـ position sizing صارم.
+
+---
+Task ID: BRAVO-INTRADAY-DB-FIX-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — إصلاح باج الـ "closed database" في intraday_scanner.py (طلب برافو الموقوف).
+
+Work Log:
+- محسن أمر برافو يوقف لمس الـ Node (مش شغله). رجّعت utils.ts (fmtPrice/formatNumber) + globals.css (conflict markers) لأصلها.
+- audit: lقيته الـ bug في vps-service/jobs/intraday_scanner.py — 6 مواقع بتعمل `db_manager.connection(...).__enter__()` بدون `__exit__()`.
+  * الـ `connection()` generator لازم تتـستخدم بـ `with` statement. الـ `__enter__()` بدون `__exit__()` بـ يـترك الـ connection مفتوح من الـ pool.
+  * ده الـ root cause بتاع "closed database" / "database is locked".
+- FIX: استبدلت الـ 6 مواقع بـ `sqlite3.connect() + try/finally` (pattern أأمن + مش بـ يـسبب connection leak).
+  * line 46-72: get_active_intraday_tickers (intraday.db)
+  * line 128-141: analyze_intraday_opportunity sector lookup (stocks.db)
+  * line 305-325: UPDATE predictions entry levels (predictions.db)
+  * line 333-336: stored_analyses connection (predictions.db)
+  * line 355-361: stocks logo lookup (stocks.db)
+  * line 437-439: cached_analysis update (stocks.db)
+- VERIFICATION:
+  * syntax check: ✓
+  * import test: ✓
+  * get_active_intraday_tickers returned 327 tickers (no "closed database" error) ✓
+
+Stage Summary:
+- ✅ باج الـ "closed database" اتحل — 6 مواقع connection leak.
+- ✅ الـ pattern الجديد (sqlite3.connect + try/finally) أأمن + مش بـ يـسبب leaks.
+- ✅ اختبار: 327 سهم رجعوا من غير error.
+- ⚠️ ملاحظة: برافو رجّع تعديلات الـ TS (utils.ts + globals.css) لأصلها — دي مش شغله.
