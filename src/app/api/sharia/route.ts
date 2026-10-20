@@ -67,29 +67,48 @@ export async function GET(req: NextRequest) {
   try {
     db = dbOpen();
   } catch (e) {
+    // BRAVO-FIX8: return 200 with unknown status (not 500) — matching owner directive
     return NextResponse.json(
-      { success: false, error: 'db_open_failed', detail: String(e) },
-      { status: 500 }
+      {
+        success: true,
+        symbol: symbol || null,
+        status: 'unknown',
+        metric: null,
+        sources: [],
+        message: 'Sharia DB open failed',
+      },
+      { status: 200 }
     );
   }
   if (!db) {
+    // BRAVO-FIX8: return 200 with unknown status (not 503) — matching owner directive
     return NextResponse.json(
-      { success: false, error: 'data_engine_db_missing', path: DATA_ENGINE_DB },
-      { status: 503 }
+      {
+        success: true,
+        symbol: symbol || null,
+        status: 'unknown',
+        metric: null,
+        sources: [],
+        message: 'Sharia data not available — DB missing',
+      },
+      { status: 200 }
     );
   }
 
   try {
     for (const t of ['sharia_metrics', 'sharia_source_status', 'sharia_purification_rates']) {
       if (!tableExists(db, t)) {
+        // BRAVO-FIX8: return 200 with unknown status (not 503) — matching owner directive
         return NextResponse.json(
           {
-            success: false,
-            error: 'sharia_not_scraped',
-            missing_table: t,
-            hint: 'python3 data_engine/scrapers/sharia_compliance_scraper.py',
+            success: true,
+            symbol: symbol || null,
+            status: 'unknown',
+            metric: null,
+            sources: [],
+            message: `Sharia table '${t}' not scraped yet`,
           },
-          { status: 503 }
+          { status: 200 }
         );
       }
     }

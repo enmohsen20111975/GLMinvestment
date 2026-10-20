@@ -175,9 +175,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[GET /api/auth/me] Error:', error);
+    // BRAVO-FIX8: return 200 with not_authenticated (not 500) — matching owner directive
+    // الـ 500 بـ يسبب console spam + الـ client بـ يعمل retry. لو مفيش session، ده مش error.
     return NextResponse.json(
-      { success: false, error: 'حدث خطأ أثناء جلب بيانات المستخدم' },
-      { status: 500 }
+      { success: false, authenticated: false, error: 'not_authenticated' },
+      { status: 200 }
     );
   }
 }

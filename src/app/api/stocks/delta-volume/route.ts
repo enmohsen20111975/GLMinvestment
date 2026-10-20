@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic';
  * يجلب بيانات delta_volume (ضغط الشراء/البيع) لسهم معين.
  */
 export async function GET(request: NextRequest) {
+  // BRAVO-FIX8: عرّف ticker قبل try عشان الـ catch يقدر يشوفه (مش ReferenceError)
+  let ticker: string | null = null;
   try {
     const { searchParams } = new URL(request.url);
-    const ticker = searchParams.get('ticker');
+    ticker = searchParams.get('ticker');
     const days = parseInt(searchParams.get('days') || '14', 10);
 
     if (!ticker) {
@@ -34,7 +36,16 @@ export async function GET(request: NextRequest) {
 
     if (!latest) {
       db.close();
-      return NextResponse.json({ success: false, error: 'No delta data', ticker });
+      // BRAVO-FIX8: return 200 with empty data (not 500) — matching owner directive
+      return NextResponse.json({
+        success: true,
+        ticker: ticker.toUpperCase(),
+        delta_volume: [],
+        latest: null,
+        history: [],
+        summary: null,
+        message: 'No data available',
+      }, { status: 200 });
     }
 
     // History
@@ -110,15 +121,17 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[/api/stocks/delta-volume] Error:', error);
-    // FIX (2026-10-01): return 200 with fallback data instead of 500
+    // BRAVO-FIX8: return 200 with fallback data (never 500 for missing data)
+    // ticker now defined in outer scope → no ReferenceError
     return NextResponse.json({
-      success: false,
-      error: 'delta_volume_data_unavailable',
+      success: true,
       ticker: ticker?.toUpperCase() || '',
-      fallback: true,
+      delta_volume: [],
       latest: null,
       history: [],
       summary: null,
+      message: 'No data available',
+      fallback: true,
     }, { status: 200 });
   }
 }
