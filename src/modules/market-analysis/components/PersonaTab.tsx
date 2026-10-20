@@ -18,7 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPagination } from '@/components/shared/ui';
+import { UnifiedPagination, StatusBadge } from '@/components/shared/ui';
 // ALPHA-WHALE-RADAR-HUNTER-MODE: IncubatorSection (The Stalking Radar)
 // بيـعرض الأسهم اللي محققة 4/6 أو 5/6 شروط + مستنية trigger.
 import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
