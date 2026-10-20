@@ -68627,3 +68627,36 @@ Stage Summary:
 - ✅ مفيش scripts مخالفة في scripts/ (الـ 3 اتمسحوا).
 - ✅ شغل الفرق التانية (ألفا c1568e2 + audit d62f04c/0051fbe) محفوظ ومش متلمس.
 - ⚠️ برافو اتعلم الدرس: لازم يقرأ الدستور قبل أي شغل، ويسأل المالك لو مش متأكد، ويتحقق قبل أي تغيير جوهري.
+
+---
+Task ID: BRAVO-LIFECYCLE-STATUS-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — تنفيذ lifecycle_status column جديد (دستوري) لدعم شغل ألفا (ALPHA-API-STATUS-1) من غير لمس status الرسمية.
+
+Work Log:
+- audit: الـ DBs كلها مفرودة (data_engine/intraday/price_history/predictions). schema predictions سليم (75 columns، مفيش lifecycle_status).
+- STEP 1 — backup: predictions.db.pre-lifecycle-status-migration.<ts>.
+- STEP 2 — ALTER TABLE (دستوري §قاعدة 2: ADD COLUMN مسموح):
+  * ALTER TABLE predictions ADD COLUMN lifecycle_status TEXT
+  * columns: 75 → 76 ✓
+- STEP 3 — populate (transaction):
+  * UPDATE → lifecycle_status='closed' WHERE outcome_date IS NOT NULL → 1428 rows
+  * UPDATE → lifecycle_status='proven' WHERE outcome_date IS NULL → 63 rows
+  * status محفوظة (محدش لمسها): EXPIRED:1058, TARGET_HIT:298, STOPPED:134, active:1
+- STEP 4 — engine writes lifecycle_status='testing' on new predictions:
+  * prediction_tracker.py: 3 INSERT paths (primary + 2 fallbacks) في record_prediction — أضفت lifecycle_status='testing'.
+  * test INSERT: تأكد إن lifecycle_status='testing' بيتكتب صح ✓
+- STEP 5 — closer writes lifecycle_status='closed' on exit:
+  * daily_closer.py: _mark_closed UPDATE — أضفت lifecycle_status='closed'.
+  * telegram_target_hit_tracker.py: SET status='TARGET_HIT' UPDATE — أضفت lifecycle_status='closed'.
+- VERIFICATION:
+  * 3 ملفات py_compile → ✓ (0 syntax errors).
+  * DB: lifecycle_status (closed:1428 + proven:63) + status (محفوظة).
+  * INSERT test: lifecycle_status='testing' ✓.
+
+Stage Summary:
+- ✅ lifecycle_status column جديد (دستوري) — مش لمست status الرسمية.
+- ✅ migration: 1428 closed + 63 proven (based on outcome_date logic).
+- ✅ engine: التوقعات الجديدة بتبدأ lifecycle_status='testing'.
+- ✅ closer: لما يقفل، بيكتب lifecycle_status='closed'.
+- ⏳ شغل ألفا: تقرأ lifecycle_status للـ segmentation بدل status. برومبت جاهز.

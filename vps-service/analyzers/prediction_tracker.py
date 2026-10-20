@@ -733,8 +733,8 @@ class PredictionTracker:
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
                     evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    risk_reward, who_is_buying, lifecycle_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing')
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -773,8 +773,8 @@ class PredictionTracker:
                         notes, persona, created_at, atr_at_entry,
                         target_price_2, explosive_score, explosive_label,
                         evidence_count, morning_bell, kill_filter_result,
-                        risk_reward, who_is_buying
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        risk_reward, who_is_buying, lifecycle_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing')
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),
@@ -800,8 +800,8 @@ class PredictionTracker:
                         ticker, signal, signal_type,
                         prediction_date, entry_price, target_price, stop_loss, master_score,
                         technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                        notes, persona, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        notes, persona, created_at, lifecycle_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing')
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),

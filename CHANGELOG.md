@@ -1,3 +1,24 @@
+## [BRAVO-LIFECYCLE-STATUS-1] — 2026-10-20: lifecycle_status column جديد (دستوري)
+
+**السياق:** ألفا عملت ALPHA-API-STATUS-1 (migration TS routes لـ proven/testing/closed). برافو رجّع الـ status الرسمية (TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED/PENDING). الحل الدستوري: column جديد منفصل.
+
+**التغيير:**
+- `ALTER TABLE predictions ADD COLUMN lifecycle_status TEXT` (دستوري §قاعدة 2: ADD COLUMN مسموح).
+- migration: `outcome_date NOT NULL → 'closed'` (1428 rows)، `NULL → 'proven'` (63 rows).
+- `status` محفوظة بالكامل (محدش لمسها).
+- `prediction_tracker.py`: 3 INSERT paths بيكتبوا `lifecycle_status='testing'` على التوقعات الجديدة.
+- `daily_closer.py` + `telegram_target_hit_tracker.py`: بيكتبوا `lifecycle_status='closed'` عند الإغلاق.
+
+**الـ contract النهائي:**
+- `status`: القيم الرسمية (TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED/PENDING) — محمي دستوريًا.
+- `lifecycle_status`: 'testing' | 'proven' | 'closed' — للـ UI segmentation.
+- outcome detail: hit_target (0/1) + hit_stop (0/1) + exit_type (string).
+
+**الـ lifecycle:**
+- توقع جديد (INSERT) → lifecycle_status='testing' (staging)
+- ترقية (promotion job) → lifecycle_status='proven' (main)
+- إغلاق (daily_closer) → lifecycle_status='closed' (history)
+
 ## [BRAVO-REVERT-1] — 2026-10-20: تراجع عن شغل برافو الخاطئ (مخالف للدستور)
 
 **السياق:** برافو اشتغل بأسلوب "ارمي طوب" من غير قراءة 00-CONSTITUTION.md. اكتشف محسن المخالفات وأمر بالتراجع.

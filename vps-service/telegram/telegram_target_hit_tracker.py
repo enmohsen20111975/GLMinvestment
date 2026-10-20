@@ -939,7 +939,8 @@ def record_target_hit_in_db(item: Dict) -> bool:
                     exit_reason = ?,
                     is_correct = 1,
                     closed_at = ?,
-                    notes = ?
+                    notes = ?,
+                    lifecycle_status = 'closed'
                 WHERE id = ?
             """, (
                 today_str,

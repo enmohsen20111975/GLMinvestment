@@ -3035,7 +3035,8 @@ class DailyCloser:
                     exit_type = ?,
                     highest_price_reached = ?,
                     lowest_price_reached = ?,
-                    status = ?
+                    status = ?,
+                    lifecycle_status = 'closed'
                 WHERE id = ?
             """, (
                 close_date,
