@@ -56,7 +56,6 @@ import { ExpertRecommendationsPanel } from '@/modules/market-analysis/components
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import { DailyPicksPoster } from '@/components/daily-picks/DailyPicksPoster';
 import { PreviousPredictionsArchive } from './PredictionsTab';
-import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 // Task 23-C Deliverable 2 — inline Sharia badge next to each stock ticker.
 import { ShariaBadge } from '@/modules/sharia/components/ShariaBadge';
@@ -2454,10 +2453,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
  )}
 
- {/* 🔭 رادار التربص وقيد التسخين (الحاضنة) — إظهار عقل النظام والأسهم تحت المراقبة اللحظية */}
- <div className="my-5">
- <IncubatorSection market={market} />
- </div>
+
 
  {/* P6-PREDICTIONS: أرشيف التوقعات السابقة — اتنقل هنا من التبويب العام */}
  <PreviousPredictionsArchive
