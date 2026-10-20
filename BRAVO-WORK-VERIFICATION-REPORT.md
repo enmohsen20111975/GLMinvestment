@@ -308,3 +308,105 @@ ALLOWED_INLINE_FILES = {
 - [ ] المرحلة 8 — Tests
 
 *آخر تحديث: بعد فحص المرحلة 3*
+
+---
+
+## المرحلة 5 — API audit (STAGE-5)
+
+**الـ commit**: توثيق في `agent-ctx/BRAVO-STAGE-5-API-AUDIT.md`
+**الـ goal**: فحص الـ API duplicate pairs
+
+### ✅ النتيجة: different concerns (مش duplicate)
+- v2_routes vs unified_v2_routes: different prefixes + endpoints
+- ai vs ai_predictions: different concerns
+- screener × 3: different screening modes
+- learning × 2: basic vs advanced
+
+### 📊 التقدير: 100% (audit فقط، مفيش implementation)
+
+---
+
+## المرحلة 6 — scripts archive (STAGE-6a + 6b)
+
+**الـ commits**: `1bec950` + `2e27867`
+**الـ goal**: أرشفة dead scripts
+
+### ✅ 22 script مؤرشف في `archive/old-scripts/`
+
+### ⚠️ مشكلة: الـ archived scripts جت من fixture map (اللي فيه false positives)
+- maker_radar.py مش مؤرشف (صح) ✅
+- بس الـ 17 backfill script اللي لقيتها false positives — محتاج verify إنها مش مؤرشفه
+
+### 📊 التقدير: 85% (محتاج verify الـ backfill scripts)
+
+---
+
+## المرحلة 7 — Quant Canonical (STAGE-7)
+
+**الـ commit**: `9a593c1`
+**الـ goal**: canonical fair_value + position_sizing
+
+### ✅ اللي شغال:
+1. **fair_value.py**: `calc_fundamental_fair_value` + `calc_upside_percent` + `calc_vwap_fair_value`
+2. **position_sizing.py**: `calculate_risk_based_position` + `calculate_kelly_position`
+3. **callers**:
+   - `api/stocks.py:33` → fair_value ✅
+   - `api/portfolio_routes.py:86` → position_sizing ✅
+
+### ✅ الإصلاحات اللي اتعملت (من التقرير الثاني):
+- kelly position_size بقى shares (مش value) ✅
+- fair_value max اشتال ✅
+- vwap_fair_value return 0.0 اشتال ✅
+
+### 📊 التقدير: 95% سليم
+
+---
+
+## المرحلة 8 — Tests (STAGE-8)
+
+**الـ commit**: `33b61a3`
+**الـ goal**: integration test suite
+
+### ✅ bravo tests (15 tests):
+```
+15 passed in 3.73s
+```
+- 13 test functions في test_bravo_unification.py (assert-based ✅)
+- 2 test functions في test_canonical_compliance.py (pytest-compatible ✅)
+
+### 🔴 مشكلة: 528 tests الإجمالية
+```
+24 failed, 444 passed, 43 skipped, 2 xfailed, 15 errors in 4.43s
+```
+- **24 failed + 15 errors = 39 مشكلة** (مش 31 pre-existing زي ما برافو قال)
+- الفشل في: test_phase_g_critical_engines + test_regression_settings + test_settings_resolver + test_signal_quality
+
+### 📊 التقدير: 84% pass rate (444/528)
+
+---
+
+## 📊 الملخص النهائي لكل المراحل
+
+| المرحلة | التقدير | المشاكل |
+|---------|--------|---------|
+| 0 — fixture map | 60% | 3 (false positives + missing cron detection) |
+| 1 — Engine Unification | 90% | 2 (glminvestment shim + persona docstring) |
+| 2 — core Unification | 100% | 0 ✅ |
+| 3 — CALCULATION-CANONICAL | 70% | 2 (46 fabrication + regression test blind) |
+| 5 — API audit | 100% | 0 ✅ |
+| 6 — scripts archive | 85% | 1 (backfill verify) |
+| 7 — Quant Canonical | 95% | 0 ✅ |
+| 8 — Tests | 84% | 1 (39 مشكلة مش 31) |
+
+### الإجمالي: **80% سليم + 20% محتاج شغل**
+
+### كل المشاكل المجمعة (للإرسال للفريق):
+1. 🔴 fixture map: maker_radar.py + 17 backfill false positives
+2. ⚠️ glminvestment shim: no error handling
+3. ⚠️ persona_engine docstring: self-referencing
+4. 🔴 46 fabrication instance في 22 ملف
+5. ⚠️ regression test: بـ check def patterns بس (مش fabrication)
+6. ⚠️ scripts archive: backfill scripts محتاجين verify
+7. 🔴 24 failed + 15 errors في الـ 528 tests (مش 31 pre-existing)
+
+*آخر تحديث: بعد فحص كل المراحل (0-8)*
