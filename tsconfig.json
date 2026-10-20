@@ -16,21 +16,14 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-<<<<<<< HEAD
     "jsx": "preserve",
-=======
-    "jsx": "react-jsx",
->>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
     "incremental": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
-<<<<<<< HEAD
     "baseUrl": ".",
-=======
->>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
     "paths": {
       "@/*": [
         "./src/*"
