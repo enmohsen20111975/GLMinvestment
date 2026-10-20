@@ -15,11 +15,15 @@ engine/ — COMPATIBILITY SHIM (BRAVO STAGE-1 ENGINE-UNIFY)
     from engines.flow_system import ...
     from engines.crypto_engine import ...
 
-الـ shim بيـ import كل module من engines/ ويعمل re-export. لو الـ module
-مش موجود في engines/، الـ import هيـ fail (عمدًا — عشان نكتشف الـ regressions).
+الـ shim بيـ import كل module من engines/ ويعمل re-export. لو الـ import
+فشل، بـ يسجّل الـ error في logging (مش silent swallow) عشان الـ debug يكون
+سهل. الـ failure مش بيكسر الـ package كله — بس الـ module ده بالذات هيكون None.
 """
 import importlib
+import logging
 import sys
+
+logger = logging.getLogger(__name__)
 
 # قائمة الـ modules اللي اتـ نقلوا من engine/ لـ engines/
 _MOVED_MODULES = [
@@ -34,7 +38,8 @@ _MOVED_MODULES = [
 
 
 def _reexport():
-    """اعمل re-export لكل module من engines/."""
+    """اعمل re-export لكل module من engines/ — سجّل الأخطاء بدلاً من silent swallow."""
+    failed = []
     for mod_name in _MOVED_MODULES:
         try:
             # import من engines/ (canonical)
@@ -43,8 +48,18 @@ def _reexport():
             sys.modules[f'engine.{mod_name}'] = canonical
             setattr(sys.modules[__name__], mod_name, canonical)
         except Exception as e:
-            # لو الـ import فشل، سجّله بس — ما تكسرش الـ package
-            pass
+            # سجّل الـ error صراحةً (مش silent swallow) عشان الـ debug يكون سهل
+            logger.error(
+                "engine shim: failed to re-export engine.%s from engines.%s: %s",
+                mod_name, mod_name, e, exc_info=True
+            )
+            failed.append(mod_name)
+    if failed:
+        logger.warning(
+            "engine shim: %d/%d modules failed to re-export: %s",
+            len(failed), len(_MOVED_MODULES), ", ".join(failed)
+        )
+    return failed
 
 
 _reexport()

@@ -9,9 +9,11 @@ Regression test — Rule 67 (CALCULATION-CANONICAL) compliance.
 
 الاستثناءات المسموحة (backward-compat wrappers):
 - لو الـ function بـ import canonical وبتـ delegate ليها → OK.
-- لو الـ function اسمها `def rsi_signal` (مش calculation) → OK.
+- لو الـ function اسمها `rsi_signal` (مش calculation) → OK.
 
-Usage:
+Usage (pytest-compatible):
+    python3 -m pytest tests/unit/test_canonical_compliance.py -v
+    # أو كـ script:
     python3 tests/unit/test_canonical_compliance.py
 """
 import re
@@ -22,7 +24,6 @@ ROOT = Path(__file__).resolve().parents[2]  # vps-service/
 INDICATORS_DIR = ROOT / "analyzers" / "indicators"
 
 # Patterns للكشف عن inline calculation functions
-# نـ exclude: rsi_signal, atr_stop, atr_risk (مش calculations)
 INLINE_PATTERNS = [
     (r"^\s*def\s+calc_rsi\s*\(", "RSI"),
     (r"^\s*def\s+calc_atr\s*\(", "ATR"),
@@ -36,8 +37,7 @@ INLINE_PATTERNS = [
     (r"^\s*def\s+calc_volume_profile\s*\(", "Volume Profile"),
 ]
 
-# الملفات المسموح لها بـ inline (backward-compat wrappers / series versions)
-# دي ملفات بـ delegate لـ canonical بالفعل أو بـ series versions محتاجة فحص يدوي.
+# الملفات المسموح لها بـ inline (canonical source + backward-compat wrappers)
 ALLOWED_INLINE_FILES = {
     # analyzers/indicators/ نفسها (canonical source)
     "analyzers/indicators/rsi.py",
@@ -54,8 +54,8 @@ ALLOWED_INLINE_FILES = {
 }
 
 
-def check_no_new_inline() -> int:
-    """ارجع عدد الـ inline violations الجديدة."""
+def check_no_new_inline() -> list:
+    """ارجع list بالـ inline violations الجديدة (مفروض تكون فاضية)."""
     violations = []
     py_files = list(ROOT.rglob("*.py"))
 
@@ -100,6 +100,7 @@ def check_no_new_inline() -> int:
 
 
 def main():
+    """Script-mode entry — للاستخدام بدون pytest."""
     print("=" * 70)
     print("Rule 67 — CALCULATION-CANONICAL compliance test")
     print("=" * 70)
@@ -120,6 +121,40 @@ def main():
     if len(violations) > 20:
         print(f"   ... and {len(violations) - 20} more")
     return 1
+
+
+# ============================================================================
+# pytest-compatible test functions
+# ============================================================================
+
+def test_no_new_inline_indicator_calculations():
+    """pytest test — يفشل لو فيه inline violations جديدة خارج canonical."""
+    violations = check_no_new_inline()
+    assert not violations, (
+        f"Found {len(violations)} inline indicator calculation(s) outside "
+        f"analyzers/indicators/ (Rule 67 violation):\n"
+        + "\n".join(
+            f"  {v['file']}:{v['line']} — {v['indicator']}: {v['snippet']}"
+            for v in violations[:10]
+        )
+        + (f"\n  ... and {len(violations) - 10} more" if len(violations) > 10 else "")
+    )
+
+
+def test_canonical_indicators_module_importable():
+    """pytest test — يتأكد إن analyzers/indicators/ package بيـ import بنجاح."""
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from analyzers.indicators import (
+        calc_rsi, calc_atr, calc_srsi, sma, ema, macd,
+        calc_bollinger, calc_bollinger_series,
+        calc_mfi, calc_adx, calc_vwap, calc_vwap_premium, calc_volume_profile,
+    )
+    # كلهم لازم يكونوا callable
+    for func in [calc_rsi, calc_atr, calc_srsi, sma, ema, macd,
+                 calc_bollinger, calc_bollinger_series,
+                 calc_mfi, calc_adx, calc_vwap, calc_vwap_premium, calc_volume_profile]:
+        assert callable(func), f"{func} is not callable"
 
 
 if __name__ == "__main__":
