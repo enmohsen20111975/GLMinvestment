@@ -83,6 +83,8 @@ interface PredictionRow {
   status: string | null;
   confidence: number | null;
   market: string | null;
+  hit_target: number | null;
+  hit_stop: number | null;
 }
 
 // MAESTRO-CANCER-1: removed tryPythonProxy — was calling /api/maestro/stock/ (contradictory recs).
@@ -108,7 +110,8 @@ function fetchRecentPredictions(db: any, ticker: string, limit: number): Predict
       SELECT id, ticker, signal, signal_type, prediction_date, entry_price,
              target_price, stop_loss, master_score, technical_score,
              fundamental_score, ai_pattern_score, sentiment_score,
-             outcome_date, exit_price, actual_return, status, confidence, market
+             outcome_date, exit_price, actual_return, status, confidence, market,
+             hit_target, hit_stop
       FROM predictions
       WHERE ticker = ? COLLATE NOCASE
       ORDER BY prediction_date DESC
@@ -120,7 +123,8 @@ function fetchRecentPredictions(db: any, ticker: string, limit: number): Predict
         SELECT id, ticker, signal_type, prediction_date, entry_price,
                target_price, stop_loss, master_score, technical_score,
                fundamental_score, ai_pattern_score, sentiment_score,
-               outcome_date, exit_price, actual_return, status, confidence, market
+               outcome_date, exit_price, actual_return, status, confidence, market,
+               hit_target, hit_stop
         FROM predictions
         WHERE ticker = ? COLLATE NOCASE
         ORDER BY prediction_date DESC
@@ -143,9 +147,9 @@ function computePredictionStats(preds: PredictionRow[]) {
       returnsSum += ret;
       returnsCount++;
     }
-    if (['TARGET_HIT', 'closed_win', 'WIN', 'win'].includes(status)) wins++;
-    else if (['closed_stop', 'STOPPED', 'LOSS', 'loss'].includes(status)) losses++;
-    else if (['EXPIRED', 'expired', 'CLOSED'].includes(status)) expired++;
+    if (p.hit_target === 1) wins++;
+    else if (p.hit_stop === 1) losses++;
+    else if (status === 'closed') expired++;
     else pending++;
   }
   const resolved = wins + losses;

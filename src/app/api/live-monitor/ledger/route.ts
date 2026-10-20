@@ -230,7 +230,7 @@ export async function GET() {
              target_price, stop_loss, master_score, confidence,
              morning_bell, market, status
       FROM predictions
-      WHERE status IN ('active', 'ACTIVE', 'PENDING', 'pending')
+      WHERE status IN ('proven', 'testing')
          OR (status IS NULL AND actual_return IS NULL)
       ORDER BY prediction_date DESC
       LIMIT 20
@@ -255,7 +255,7 @@ export async function GET() {
          OR actual_exit_price IS NOT NULL
          OR hit_target = 1
          OR hit_stop = 1
-         OR UPPER(status) IN ('CLOSED', 'EXPIRED')
+         OR status = 'closed'
       ORDER BY COALESCE(outcome_date, closed_at, prediction_date) DESC
     `).all() as Record<string, unknown>[];
 

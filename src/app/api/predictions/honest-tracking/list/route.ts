@@ -679,8 +679,8 @@ export async function GET(request: NextRequest) {
     const sortCol = sortBy;
     const sortDir = sortOrder.toUpperCase() === 'ASC' ? 1 : -1;
     predictions.sort((a: any, b: any) => {
-      const aClosed = a.status !== 'PENDING' ? 0 : 1;
-      const bClosed = b.status !== 'PENDING' ? 0 : 1;
+      const aClosed = a.status === 'closed' ? 0 : 1;
+      const bClosed = b.status === 'closed' ? 0 : 1;
       if (aClosed !== bClosed) return aClosed - bClosed;
 
       let av = a[sortCol];

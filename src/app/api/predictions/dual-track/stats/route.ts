@@ -38,9 +38,16 @@ function openDb(path: string, readonly = true): Database.Database {
   return new Database(path, { readonly }) as Database.Database;
 }
 
-const WIN_STATUSES = new Set(['TARGET_HIT', 'closed_win']);
-const LOSS_STATUSES = new Set(['closed_stop', 'STOPPED']);
-const EXPIRED_STATUSES = new Set(['EXPIRED', 'expired', 'CLOSED']);
+function ensureTrackColumn(db: Database.Database): void {
+  try {
+    const cols = (db.prepare('PRAGMA table_info(predictions)').all() as Array<SqlRow>).map(c => String(c.name));
+    if (!cols.includes('track')) {
+      db.prepare("ALTER TABLE predictions ADD COLUMN track TEXT DEFAULT 'full_analysis'").run();
+    }
+  } catch (e) {
+    console.warn('[ensureTrackColumn]', e);
+  }
+}
 
 /** Generic SQL row returned by better-sqlite3. */
 type SqlRow = Record<string, unknown>;
@@ -57,20 +64,9 @@ interface TrackStats {
   weight: number;
 }
 
-function ensureTrackColumn(db: Database.Database): void {
-  try {
-    const cols = (db.prepare('PRAGMA table_info(predictions)').all() as Array<SqlRow>).map(c => String(c.name));
-    if (!cols.includes('track')) {
-      db.prepare("ALTER TABLE predictions ADD COLUMN track TEXT DEFAULT 'full_analysis'").run();
-    }
-  } catch (e) {
-    console.warn('[ensureTrackColumn]', e);
-  }
-}
-
 function calculateTrackStats(db: Database.Database, track: string, weight: number): TrackStats {
   // CUMULATIVE-RETURN-FIX: استخدم actual_return للحساب، مش status بس
-  // لأن كتير من التوقعات status='active' بس actual_return موجود (تم الإغلاق فعلاً)
+  // لأن كتير من التوقعات status='proven'/'testing' بس actual_return موجود (تم الإغلاق فعلاً)
   let query = `
     SELECT
       COUNT(*) as total,
@@ -119,9 +115,9 @@ function getMarketStats(db: Database.Database): Array<SqlRow> {
     return db.prepare(`
       SELECT market,
              COUNT(*) as total,
-             SUM(CASE WHEN status IN ('TARGET_HIT','closed_win') THEN 1 ELSE 0 END) as wins,
-             SUM(CASE WHEN status IN ('closed_stop','STOPPED') THEN 1 ELSE 0 END) as losses,
-             SUM(CASE WHEN status IN ('EXPIRED','expired','CLOSED') THEN 1 ELSE 0 END) as expired,
+             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as wins,
+             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as losses,
+             SUM(CASE WHEN status = 'closed' AND hit_target = 0 AND hit_stop = 0 THEN 1 ELSE 0 END) as expired,
              AVG(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN actual_return END) as avg_return
       FROM predictions
       WHERE market IS NOT NULL
@@ -137,8 +133,8 @@ function getTopTickers(db: Database.Database, limit = 10): Array<SqlRow> {
     return db.prepare(`
       SELECT ticker, market,
              COUNT(*) as total,
-             SUM(CASE WHEN status IN ('TARGET_HIT','closed_win') THEN 1 ELSE 0 END) as wins,
-             SUM(CASE WHEN status IN ('closed_stop','STOPPED') THEN 1 ELSE 0 END) as losses,
+             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as wins,
+             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as losses,
              AVG(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN actual_return END) as avg_return
       FROM predictions
       WHERE market IS NOT NULL AND ticker IS NOT NULL

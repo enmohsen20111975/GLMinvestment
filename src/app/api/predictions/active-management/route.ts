@@ -6,7 +6,7 @@
  * No mock data (Rule 27).
  *
  * Tries Python /api/predictions/active-management first (5s timeout).
- * On failure, returns predictions WHERE status = 'ACTIVE' with current_price
+ * On failure, returns predictions WHERE status IN ('proven', 'testing') with current_price
  * joined from stocks.db.stocks and unrealized_pnl_pct computed.
  *
  * Shape: { success, source: 'sqlite_fallback', positions: [...], count }
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
     const limitRaw = Number(url.searchParams.get('limit') || 100);
     const limit = Math.max(1, Math.min(500, Number.isFinite(limitRaw) ? limitRaw : 100));
 
-    const where: string[] = ["status = 'ACTIVE'", 'market = ?'];
+    const where: string[] = ["status IN ('proven', 'testing')", 'market = ?'];
     const params: unknown[] = [market];
 
     if (persona && persona !== 'all') {

@@ -279,7 +279,7 @@ function computeKPIs(allTrades: Trade[]): KPIs {
   const measured = validTrades.filter((t) => t.actual_return !== null && t.actual_return !== 0);
   const nValid = measured.length;
   const excluded = allTrades.filter((t) => !t.valid);
-  const nOpen = allTrades.filter((t) => t.status === 'active' || t.status === 'ACTIVE' || t.status === 'PENDING').length;
+  const nOpen = allTrades.filter((t) => t.status === 'proven' || t.status === 'testing').length;
 
   // استبعاد breakdown
   const exclusionBreakdown: Record<string, number> = {};
@@ -312,7 +312,7 @@ function computeKPIs(allTrades: Trade[]): KPIs {
   // wins = actual_return > 0, losses = actual_return < 0 (سالب)
   const wins = measured.filter((t) => t.actual_return > 0);
   const losses = measured.filter((t) => t.actual_return < 0);
-  const expired = allTrades.filter((t) => t.status === 'EXPIRED' && t.hit_target === 0 && t.hit_stop === 0);
+  const expired = allTrades.filter((t) => t.status === 'closed' && t.hit_target === 0 && t.hit_stop === 0);
   const tpHits = validTrades.filter((t) => t.hit_target === 1);
   const stopHits = validTrades.filter((t) => t.hit_stop === 1);
   const hardCapped = measured.filter((t) => t.capped);
