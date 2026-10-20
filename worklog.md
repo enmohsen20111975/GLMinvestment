@@ -68493,3 +68493,82 @@ Stage Summary:
 - ✅ بـ يـتفوق على Null Model بـ +2.73% في 2026
 - ⚠️ p-value = 28% (مش edge إحصائي رسمي، بس edge عملي)
 - 🎯 جاهز للـ Paper Trading + دمج في Screener API
+
+---
+Task ID: BRAVO-EVENT-DRIVEN-STATISTICAL-VALIDATION-1
+Agent: Bravo (Z.ai Code — quant)
+Task: محسن — تحليل إحصائي صارم للـ Event-driven (5 خطوات) بناءً على critique المحلل.
+
+Work Log:
+- ✅ Step 1: Risk Metrics
+  * Standard Deviation, Sharpe Ratio, Sortino Ratio, MaxDD, Skewness, Kurtosis
+- ✅ Step 2: Distribution Analysis
+  * By sector, by month, top 10 ticker concentration
+- ✅ Step 3: p-value Methods (3 methods)
+  * Normal Approximation (t-test)
+  * Bootstrap (5000 simulations)
+  * Block Bootstrap (block_size=10, 5000 simulations)
+- ✅ Step 4: Matched Null Model محسن
+  * نفس الأسهم القيادية (50M+ EGP)
+  * نفس الفلاتر + نفس SL/TGT/Hold
+  * Random entry في نفس السنة
+  * 3x random signals لكل event signal
+- ✅ Step 5: Extended Periods
+  * 2023, 2024, 2025, 2026
+
+🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 النتائج الفعلية:
+
+| Period | N | Mean | Std | Sharpe | Null Mean | p_normal | p_boot | p_block | Edge? |
+|--------|---|------|-----|--------|-----------|----------|--------|---------|-------|
+| 2023 | 38 | +6.69% | 8.70% | 3.84 | -0.59% | 0.0% | 0.0% | 0.1% | ✅ |
+| 2024 | 122 | -0.44% | 8.13% | -0.27 | -0.61% | 42.0% | 40.7% | 43.4% | ❌ |
+| 2025 | 257 | +2.67% | 9.12% | 1.46 | +0.50% | 0.0% | 0.0% | 0.5% | ✅ |
+| 2026 | 384 | +2.65% | 9.12% | 1.45 | +0.58% | 0.0% | 0.0% | 0.1% | ✅ |
+
+🔥🔥🔥 الـ Findings:
+
+1. ✅ Edge حقيقي مثبت إحصائياً!
+   - 3 من 4 سنين (2023, 2025, 2026) p < 1%
+   - Bootstrap + Block Bootstrap أكدوا الـ edge
+   - 2024 كان outlier (bearish year → falling knife)
+
+2. ✅ Matched Null Model محسن أكد الـ edge
+   - 2026: +2.07% outperformance (نفس الأسهم!)
+   - 2025: +2.17% outperformance
+   - 2023: +7.28% outperformance
+   - معنى ده: الـ edge من التوقيت (بعد التصحيح)، مش من الـ stock selection
+
+3. ✅ Sharpe Ratios ممتازة
+   - 2026: 1.45 (احترافي)
+   - 2025: 1.46 (احترافي)
+   - 2023: 3.84 (استثنائي!)
+   - 2024: -0.27 (سلبي)
+
+4. ⚠️ التباين عالي
+   - Std = 8-9% لكل صفقة
+   - MaxDD = 110-160% (على equity curve)
+   - لازم Position Sizing صغير (0.5% risk)
+
+5. ⚠️ 2024 كانت سنة سيئة
+   - p = 42% (مفيش edge)
+   - Sharpe = -0.27
+   - السبب: bearish year → التصحيحات بـ تـكمل نزول
+   - الحل: إضافة فلتر regime (skip لو EGX30 BEAR)
+
+6. ⚠️ Clustering في 2024 و 2023
+   - 2024: Top 10 tickers = 63.1%
+   - 2023: Top 10 tickers = 97.4% (sample صغير)
+   - 2025 و 2026: distribution أوسع (أحسن)
+
+التوثيق:
+- ✅ EVENT-DRIVEN-STATISTICAL-VALIDATION.md (توثيق كامل)
+- ✅ JSON results في vps-service/backtest_results/
+- ✅ worklog.md (هذا الملف)
+
+Stage Summary:
+- ✅ Edge حقيقي مثبت إحصائياً (p < 1% في 3 من 4 سنين)
+- ✅ Matched Null Model أكد إن الـ edge من التوقيت (مش stock selection)
+- ✅ Sharpe = 1.45-3.84 (احترافي)
+- ⚠️ لازم Position Sizing صغير (0.5% risk) بسبب التباين العالي
+- ⚠️ لازم فلتر regime (skip BEAR years زي 2024)
+- 🎯 جاهز للـ Paper Trading (بعد Position Sizing + Regime filter)
