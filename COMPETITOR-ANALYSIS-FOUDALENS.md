@@ -240,3 +240,57 @@ FoudaLens منافس قوي بس **عندنا 3 ميزات قاتلة** ما ع�
 **الاستراتيجية**: ننافس على الـ UI + شفافية النتائج + نروج للميزات الفريدة.
 
 جيمي، ده التحليل الكامل. قوللي نبدأ بإيه — الـ UI polish ولا صفحة المنهجية ولا Daily Track Record؟
+
+---
+
+## 🔍 إضافة برافو — تفكيك كامل للموقع (86 route)
+
+برافو فكك الموقع بالكامل بـ curl (الـ browser كان blocked بـ Cloudflare). لقى:
+
+### الـ Tech Stack
+- **Framework:** Next.js (App Router) — نفس بتاعنا
+- **Hosting:** على الأرجح Vercel
+- **CDN/WAF:** Cloudflare
+
+### نموذج الاشتراك (3 tiers)
+| Tier | المميزات |
+|---|---|
+| **Free** | الأسعار بتأخير 15 دقيقة + تحليل فني أساسي |
+| **Pro** | جدول العرض والطلب (bids/asks) |
+| **Premium** | أسعار لحظية + عمق السوق (order-book depth) + كل المميزات |
+
+### الصفحات (86 route!)
+- **التحليل والأسعار**: /dashboard, /stocks, /screener, /market-heatmap, /market-pulse, /pre-market, /top-gainers, /whale-trades, /order-book
+- **التوقعات**: /predictions, /signals, /smart-signals, /trading-bot, /backtest, /track-record
+- **السيولة**: /egx-market-flow, /egx-trading-flow, /my-flow
+- **أسواق أخرى**: /crypto, /commodities, /global-markets, /indices, /fear-greed
+- **الأسعار**: /rates/gold, /rates/silver, /rates/banks, /rates/certificates, /gold-vs-certificates
+- **أدوات**: /tools/stock-profit, /tools/dca, /tools/zakat, /compare, /correlation, /benchmark, /allocation
+- **التعليم**: /learn, /articles, /news, /guide
+
+### المقارنة الكاملة
+
+| الميزة | FoudaLens | عندنا |
+|---|---|---|
+| **السوق** | EGX فقط | ✅ EGX + TADAWUL + KSE + QSE + US + Crypto + Gold |
+| **التوقعات** | ✅ | ✅ (V40.2 + event-driven) |
+| **رادار السيولة** | ✅ (market-flow) | ✅ (maker_radar) |
+| **عمق السوق (order-book)** | ✅ (Premium) | ❌ محتاج تطوير |
+| **صفقات الحيتان** | ✅ | ❌ محتاج تطوير |
+| **الـ backtest** | ✅ | ✅ |
+| **الأكاديمية** | ✅ | ✅ |
+| **بوت التداول** | ✅ | ❌ محتاج تطوير |
+| **AI assistant** | ✅ | ❌ (news_agent معطل) |
+| **الـ SEO** | ✅ (86 صفحة + OG images) | ⚠️ محتاج تقوية |
+
+### 4 ميزات ناقصنا (من برافو)
+1. **عمق السوق (order-book)** — عرض الـ bids/asks كاملة
+2. **صفقات الحيتان (whale-trades)** — صفقات كبيرة من المؤسسات
+3. **AI assistant** — chatbot للاستفسارات
+4. **بوت التداول (trading-bot)** — تنفيذ آلي
+
+### 4 ميزات عندنا ما عندهمش
+1. **multi-market** (TADAWUL/KSE/QSE/US/Crypto) — أكبر ميزة!
+2. **event-driven strategy** (مثبتة إحصائيًا p<1%)
+3. **lifecycle_status** (testing → proven → closed)
+4. **distribution_list** (تصريف صانع السوق)

@@ -483,3 +483,197 @@ button,
   padding: 0 4px;
   transition: background-color 0.2s;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🎨 UI POLISH — "دلع المنصة" (per جيمي's directive — outshine FoudaLens)
+   ═══════════════════════════════════════════════════════════════════════════
+   - Glow effects for important numbers (profit/loss)
+   - Smooth micro-interactions on hover
+   - Premium gradient borders for cards
+   - Animated price flashes (already there, enhanced)
+   - Skeleton shimmer for loading states
+   - Premium badge styles for scores
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* === Glow effects for profit/loss numbers === */
+.glow-profit {
+  text-shadow: 0 0 12px hsl(var(--profit) / 0.6);
+}
+.glow-loss {
+  text-shadow: 0 0 12px hsl(var(--loss) / 0.6);
+}
+.glow-primary {
+  text-shadow: 0 0 12px hsl(var(--primary) / 0.5);
+}
+
+/* === Premium gradient borders === */
+.gradient-border {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: var(--radius);
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsl(var(--profit) / 0.4), hsl(var(--primary) / 0.4), hsl(var(--whale) / 0.4));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* === Shimmer loading skeleton === */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === Premium score badge (for Fouda Score competitor) === */
+.score-badge-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.score-badge-premium::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  animation: score-shine 3s infinite;
+}
+@keyframes score-shine {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+.score-badge-premium.high {
+  background: hsl(var(--profit) / 0.15);
+  color: hsl(var(--profit));
+  border: 1px solid hsl(var(--profit) / 0.3);
+  text-shadow: 0 0 8px hsl(var(--profit) / 0.4);
+}
+.score-badge-premium.mid {
+  background: hsl(var(--warning) / 0.15);
+  color: hsl(var(--warning));
+  border: 1px solid hsl(var(--warning) / 0.3);
+}
+.score-badge-premium.low {
+  background: hsl(var(--loss) / 0.15);
+  color: hsl(var(--loss));
+  border: 1px solid hsl(var(--loss) / 0.3);
+}
+
+/* === Smooth focus ring === */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.5);
+}
+
+/* === Premium table row hover === */
+table tbody tr {
+  transition: background-color 0.15s ease;
+}
+table tbody tr:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* === Animated pulse for live indicators === */
+.live-pulse {
+  position: relative;
+}
+.live-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: hsl(var(--profit));
+  opacity: 0.6;
+  animation: live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes live-ping {
+  0% { transform: scale(1); opacity: 0.6; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+/* === Premium button hover lift === */
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+  transition: transform 0.15s ease;
+}
+button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* === Number ticker animation (for price changes) === */
+.number-ticker {
+  transition: color 0.3s ease, transform 0.3s ease;
+  display: inline-block;
+}
+.number-ticker.up {
+  color: hsl(var(--profit));
+  animation: ticker-up 0.4s ease;
+}
+.number-ticker.down {
+  color: hsl(var(--loss));
+  animation: ticker-down 0.4s ease;
+}
+@keyframes ticker-up {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes ticker-down {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* === Glassmorphism for sticky headers === */
+.glass-header {
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* === Premium card with subtle gradient === */
+.card-premium {
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.95) 100%);
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+}
+.dark .card-premium {
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(160 5% 7%) 100%);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* === Smooth page transitions === */
+.page-transition {
+  animation: page-enter 0.3s ease-out;
+}
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
