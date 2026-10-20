@@ -5463,3 +5463,47 @@ Stage Summary:
 - ✅ كل الاختبارات نجحت
 - 🎯 الـ Stalking Radar جاهز — المنصة دلوقتي بـ تورّي العميل "غرفة الطبخ والتربص"
 - 📝 "النتيجة هتكون شاشة تنطق هيبة وتخلي العميل مشدود 24 ساعة"
+
+---
+Task ID: MERGE-REVIEW-BRAVO-WORK
+Agent: Z.ai Code (الفاحص التقني + مراجع)
+Task: محسن — "ممكن تراجعى شغلك لان فريق الفا عمل الشغل الخاص بية ورفعة". مراجعة + merge شغل Bravo.
+
+Work Log:
+- git fetch origin: وجدت 45 commit جديدة على origin/main (0ac5b31..ad09cd0).
+- git merge origin/main: 3 conflicts:
+  * educational-cards/page.tsx — قبلت نسخة Bravo (rewrite شامل 1477 line vs نسختي 26 line)
+  * reports/page.tsx — قبلت نسخة Bravo (156 line vs نسختي 81 line)
+  * worklog.md — أبقيت نسختي (5465 line — فيه كل الـ audit + Phase 0-3 work)
+- 12 binary backup files (data/db_backup_*.zip.part) — قبلت الحذف (origin حذفهم).
+
+Post-merge dedup (commit 632e812):
+- اكتشفت DUPLICATE functions من parallel implementation:
+  * scripts/maker_radar.py: عندي extract_missing_trigger + _build_incubator_candidates + نسخة Bravo build_incubator_candidates
+  * daily_predictor.py: عندي _integrate_whale_radar_predictions (called from run_generator) + نسخة Bravo inject_whale_radar_picks (called from main)
+  * JSON output: duplicate 'incubator_candidates' key (هـ cause NameError)
+- الحل: شيلت نسختي بالكامل من maker_radar.py (lines 664-866) + شيلت call site بتاعي من daily_predictor.py (lines 4398-4445) + شيلت duplicate JSON key.
+- أبقيت: نسختي من _integrate_whale_radar_predictions function definition (dead code — harmless) + IncubatorSection.tsx + /api/radar/incubator endpoint.
+
+Bravo's 45 commits:
+- BRAVO-INCUBATOR (614d3c1): incubator engine — متـحقق منها على real EGX data (30 stocks scan)
+- BRAVO-WHALE-RADAR (e1f1120, c9b80c6): whale radar integration في daily_predictor + API
+- BRAVO-FIX2 through BRAVO-FIX6: 31+ test fixes + quant fabrication fixes
+- BRAVO-STALE-FIX: sealed empty-branch stale predictions leak
+- BRAVO-ENGINES-ENCYCLOPEDIA: detailed engine reference docs
+- Multiple audit reports (Stage 0-3 + final)
+
+Verification بعد الـ merge + dedup:
+- ✅ python3 py_compile scripts/maker_radar.py: valid
+- ✅ python3 py_compile vps-service/jobs/daily_predictor.py: valid
+- ✅ bun run lint: exit 0
+- ✅ bunx next build --no-lint: SUCCESS
+- ✅ GET / HTTP 200 (0.25s)
+- ✅ GET /api/radar/incubator?market=EGX HTTP 200 (0.02s)
+
+Stage Summary:
+- ✅ merge complete (commit d4015a2)
+- ✅ dedup complete (commit 632e812)
+- ✅ كل الاختبارات نجحت بعد الـ merge + dedup
+- 🎯 نسخة Bravo هي الـ canonical (متـحقق منها على real data) — نسختي اتـشالت
+- 🎯 Alpha work (IncubatorSection.tsx + /api/radar/incubator endpoint) متـوافق مع Bravo's contract
