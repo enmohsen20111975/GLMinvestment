@@ -88,7 +88,11 @@ export async function GET(req: NextRequest) {
       const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
       const db = new Database(dbPath, { readonly: true });
       const activePreds = db.prepare(
-        "SELECT ticker, entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date FROM predictions WHERE status IN ('active','ACTIVE') ORDER BY id DESC"
+        // LIFECYCLE-MIGRATION: open/active predictions now detected via
+        // `lifecycle_status IN ('proven', 'testing')` instead of the
+        // legacy `status IN ('active','ACTIVE')`. The `status` column is
+        // also SELECTed for outcome display (kept by the API response).
+        "SELECT ticker, entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date, status, lifecycle_status FROM predictions WHERE lifecycle_status IN ('proven', 'testing') ORDER BY id DESC"
       ).all() as any[];
       for (const p of activePreds) {
         predictionsMap[p.ticker] = p;

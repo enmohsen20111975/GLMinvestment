@@ -81,6 +81,10 @@ interface PredictionRow {
   exit_price: number | null;
   actual_return: number | null;
   status: string | null;
+  // LIFECYCLE-MIGRATION: new lifecycle + outcome-detail columns.
+  lifecycle_status: string | null;
+  hit_target: number | null;
+  hit_stop: number | null;
   confidence: number | null;
   market: string | null;
 }
@@ -104,11 +108,16 @@ function fetchStoredAnalysis(db: any, ticker: string): StoredAnalysisRow | null 
 
 function fetchRecentPredictions(db: any, ticker: string, limit: number): PredictionRow[] {
   try {
+    // LIFECYCLE-MIGRATION: also SELECT `lifecycle_status` + `hit_target`
+    // + `hit_stop` so the local stats logic can segment by lifecycle / win
+    // / loss without relying on the legacy `status` string values.
     return db.prepare(`
       SELECT id, ticker, signal, signal_type, prediction_date, entry_price,
              target_price, stop_loss, master_score, technical_score,
              fundamental_score, ai_pattern_score, sentiment_score,
-             outcome_date, exit_price, actual_return, status, confidence, market
+             outcome_date, exit_price, actual_return, status,
+             lifecycle_status, hit_target, hit_stop,
+             confidence, market
       FROM predictions
       WHERE ticker = ? COLLATE NOCASE
       ORDER BY prediction_date DESC
@@ -120,7 +129,9 @@ function fetchRecentPredictions(db: any, ticker: string, limit: number): Predict
         SELECT id, ticker, signal_type, prediction_date, entry_price,
                target_price, stop_loss, master_score, technical_score,
                fundamental_score, ai_pattern_score, sentiment_score,
-               outcome_date, exit_price, actual_return, status, confidence, market
+               outcome_date, exit_price, actual_return, status,
+               lifecycle_status, hit_target, hit_stop,
+               confidence, market
         FROM predictions
         WHERE ticker = ? COLLATE NOCASE
         ORDER BY prediction_date DESC
@@ -137,15 +148,19 @@ function computePredictionStats(preds: PredictionRow[]) {
   let returnsSum = 0, returnsCount = 0;
   for (const p of preds) {
     total++;
-    const status = String(p.status || '').trim();
     const ret = safeNum(p.actual_return);
     if (ret !== 0) {
       returnsSum += ret;
       returnsCount++;
     }
-    if (['TARGET_HIT', 'closed_win', 'WIN', 'win'].includes(status)) wins++;
-    else if (['closed_stop', 'STOPPED', 'LOSS', 'loss'].includes(status)) losses++;
-    else if (['EXPIRED', 'expired', 'CLOSED'].includes(status)) expired++;
+    // LIFECYCLE-MIGRATION: prefer the new outcome-detail columns
+    // (`hit_target` / `hit_stop`) and `lifecycle_status` over the legacy
+    // `status` string. The official `status` column is still SELECTed for
+    // outcome display, but the win/loss/expired/pending buckets here are
+    // driven by the canonical new columns.
+    if (p.hit_target === 1) wins++;
+    else if (p.hit_stop === 1) losses++;
+    else if (p.lifecycle_status === 'closed') expired++;
     else pending++;
   }
   const resolved = wins + losses;

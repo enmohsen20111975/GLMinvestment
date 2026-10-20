@@ -116,12 +116,15 @@ function calculateTrackStats(db: Database.Database, track: string, weight: numbe
 
 function getMarketStats(db: Database.Database): Array<SqlRow> {
   try {
+    // LIFECYCLE-MIGRATION: win/loss now derived from `hit_target` / `hit_stop`
+    // (outcome detail) and expired from `lifecycle_status='closed'` with no
+    // hit. The legacy multi-value `status IN (...)` checks are replaced.
     return db.prepare(`
       SELECT market,
              COUNT(*) as total,
-             SUM(CASE WHEN status IN ('TARGET_HIT','closed_win') THEN 1 ELSE 0 END) as wins,
-             SUM(CASE WHEN status IN ('closed_stop','STOPPED') THEN 1 ELSE 0 END) as losses,
-             SUM(CASE WHEN status IN ('EXPIRED','expired','CLOSED') THEN 1 ELSE 0 END) as expired,
+             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as wins,
+             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as losses,
+             SUM(CASE WHEN lifecycle_status = 'closed' AND hit_target = 0 AND hit_stop = 0 THEN 1 ELSE 0 END) as expired,
              AVG(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN actual_return END) as avg_return
       FROM predictions
       WHERE market IS NOT NULL
@@ -134,11 +137,12 @@ function getMarketStats(db: Database.Database): Array<SqlRow> {
 
 function getTopTickers(db: Database.Database, limit = 10): Array<SqlRow> {
   try {
+    // LIFECYCLE-MIGRATION: same win/loss/expired mapping as getMarketStats.
     return db.prepare(`
       SELECT ticker, market,
              COUNT(*) as total,
-             SUM(CASE WHEN status IN ('TARGET_HIT','closed_win') THEN 1 ELSE 0 END) as wins,
-             SUM(CASE WHEN status IN ('closed_stop','STOPPED') THEN 1 ELSE 0 END) as losses,
+             SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as wins,
+             SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as losses,
              AVG(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN actual_return END) as avg_return
       FROM predictions
       WHERE market IS NOT NULL AND ticker IS NOT NULL

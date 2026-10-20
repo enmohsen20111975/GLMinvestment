@@ -233,12 +233,17 @@ export async function GET(request: NextRequest) {
       // ticker, NOT just the limited set (was 5). The limited set might all be
       // negative (most recent ones), giving 0% accuracy even though the real
       // accuracy across 191 predictions is 80%.
+      // LIFECYCLE-MIGRATION: closed predictions now detected via
+      // `lifecycle_status = 'closed'` (Bravo's new column) instead of the
+      // legacy `status IN ('EXPIRED', 'STOPPED', 'TARGET_HIT')` values.
+      // The official `status` column is still SELECTed above for outcome
+      // display (TARGET_HIT = success, STOPPED = loss).
       const accQuery = `
         SELECT COUNT(*) as total,
                SUM(CASE WHEN actual_return > 0 THEN 1 ELSE 0 END) as hits
         FROM predictions
         WHERE ticker = ?
-          AND status IN ('EXPIRED', 'STOPPED', 'TARGET_HIT')
+          AND lifecycle_status = 'closed'
           AND actual_return IS NOT NULL
           ${marketClause}`;
       const accRow = db.prepare(accQuery).get(ticker, ...marketParams) as { total: number; hits: number } | undefined;
@@ -250,9 +255,11 @@ export async function GET(request: NextRequest) {
       db.close();
 
       // closed/hits from the limited set (for display only)
+      // LIFECYCLE-MIGRATION: prefer `lifecycle_status === 'closed'` for the
+      // closed check; keep the actual_return / outcome_date fallbacks for
+      // legacy rows that haven't been migrated yet.
       const closed = validated.filter((p) => {
-        const st = (p.status || '').toUpperCase();
-        return st === 'EXPIRED' || st === 'STOPPED' || st === 'TARGET_HIT'
+        return p.lifecycle_status === 'closed'
           || p.actual_return != null || p.outcome_date != null;
       });
       const hits = closed.filter((p) => (p.actual_return ?? 0) > 0).length;
@@ -382,6 +389,7 @@ export async function GET(request: NextRequest) {
         is_correct,
         holding_days,
         lifecycle_status,
+        status,
         created_at,
         analysis_json
       FROM predictions

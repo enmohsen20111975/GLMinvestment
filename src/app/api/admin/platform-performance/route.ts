@@ -47,6 +47,7 @@ interface Trade {
   hit_target: 0 | 1;
   hit_stop: 0 | 1;
   status: string;
+  lifecycle_status: string;
   holding_days: number | null;
   outcome_date: string | null;
   highest_price: number | null;
@@ -279,7 +280,10 @@ function computeKPIs(allTrades: Trade[]): KPIs {
   const measured = validTrades.filter((t) => t.actual_return !== null && t.actual_return !== 0);
   const nValid = measured.length;
   const excluded = allTrades.filter((t) => !t.valid);
-  const nOpen = allTrades.filter((t) => t.status === 'active' || t.status === 'ACTIVE' || t.status === 'PENDING').length;
+  // LIFECYCLE-MIGRATION: open/active now detected via `lifecycle_status`
+  // IN ('proven', 'testing') (Bravo's new column) instead of the legacy
+  // `status` string values 'active'/'ACTIVE'/'PENDING'.
+  const nOpen = allTrades.filter((t) => t.lifecycle_status === 'proven' || t.lifecycle_status === 'testing').length;
 
   // استبعاد breakdown
   const exclusionBreakdown: Record<string, number> = {};
@@ -312,7 +316,10 @@ function computeKPIs(allTrades: Trade[]): KPIs {
   // wins = actual_return > 0, losses = actual_return < 0 (سالب)
   const wins = measured.filter((t) => t.actual_return > 0);
   const losses = measured.filter((t) => t.actual_return < 0);
-  const expired = allTrades.filter((t) => t.status === 'EXPIRED' && t.hit_target === 0 && t.hit_stop === 0);
+  // LIFECYCLE-MIGRATION: `expired` now derived from `lifecycle_status =
+  // 'closed'` (no hit_target / hit_stop). The legacy `status ===
+  // 'EXPIRED'` string check is replaced.
+  const expired = allTrades.filter((t) => t.lifecycle_status === 'closed' && t.hit_target === 0 && t.hit_stop === 0);
   const tpHits = validTrades.filter((t) => t.hit_target === 1);
   const stopHits = validTrades.filter((t) => t.hit_stop === 1);
   const hardCapped = measured.filter((t) => t.capped);
@@ -457,10 +464,14 @@ export async function GET(request: NextRequest) {
     const db = openDb(dbPath);
 
     // Build query
+    // LIFECYCLE-MIGRATION: `lifecycle_status` is now SELECTed alongside
+    // `status` so KPIs can segment by proven/testing/closed without
+    // relying on the legacy `status` string (which keeps its 5 official
+    // values for outcome display).
     let sql = `
       SELECT id, ticker, persona, morning_bell, prediction_date, entry_price,
              target_price, target_price_2, stop_loss, exit_price, actual_exit_price,
-             actual_return, hit_target, hit_stop, status, holding_days,
+             actual_return, hit_target, hit_stop, status, lifecycle_status, holding_days,
              outcome_date, closed_at, highest_price, lowest_price, signal, market
       FROM predictions
       WHERE 1=1
@@ -529,6 +540,7 @@ export async function GET(request: NextRequest) {
         hit_target: (Number(row.hit_target || 0)) as 0 | 1,
         hit_stop: (Number(row.hit_stop || 0)) as 0 | 1,
         status: String(row.status || ''),
+        lifecycle_status: String(row.lifecycle_status || ''),
         holding_days: computeHoldingDays(row),
         outcome_date: (row.outcome_date as string) || null,
         highest_price: safeNum(row.highest_price),

@@ -7,8 +7,8 @@
  * Tries Python /api/v4/stats first (5s timeout).
  * On failure, computes stats from the predictions table:
  *   - total predictions
- *   - wins (status = 'TARGET_HIT')
- *   - losses (status = 'STOPPED')
+ *   - wins (hit_target = 1)
+ *   - losses (hit_stop = 1)
  *   - win_rate
  *   - avg_return (mean of actual_return across closed predictions)
  *   - by_persona breakdown (count + win_rate per persona)
@@ -97,11 +97,16 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
 
     const overall = db
       .prepare(
+        // LIFECYCLE-MIGRATION: wins/losses now derived from outcome detail
+        // columns (`hit_target` / `hit_stop`). Pending (open) uses
+        // `lifecycle_status = 'proven'` (Bravo's new canonical 'active'
+        // lifecycle value) — the legacy `status = 'ACTIVE'` string check
+        // is replaced.
         `SELECT
            COUNT(*) AS total_predictions,
-           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
-           SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS pending,
+           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN lifecycle_status = 'proven' THEN 1 ELSE 0 END) AS pending,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions`
       )
@@ -129,11 +134,12 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
 
     const personaRows = db
       .prepare(
+        // LIFECYCLE-MIGRATION: same win/loss mapping as the overall query.
         `SELECT
            COALESCE(NULLIF(persona, ''), 'unspecified') AS persona,
            COUNT(*) AS total,
-           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions
          GROUP BY COALESCE(NULLIF(persona, ''), 'unspecified')
@@ -167,11 +173,12 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
 
     const tickerRows = db
       .prepare(
+        // LIFECYCLE-MIGRATION: same win/loss mapping as the overall query.
         `SELECT
            ticker,
            COUNT(*) AS total,
-           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions
          GROUP BY ticker

@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     const rows = db.prepare(`
       SELECT id, ticker, signal, signal_type, prediction_date,
              entry_price, target_price, target_price_2, stop_loss,
-             status, actual_return, hit_target, hit_stop, market,
+             status, lifecycle_status, actual_return, hit_target, hit_stop, market,
              confidence, risk_reward, master_score,
              COALESCE(track, 'full_analysis') as track,
              notes
@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
         AND prediction_date >= datetime('now', ?)
         ${trackClause}
       ORDER BY
-        CASE WHEN status = 'active' OR status = 'ACTIVE' THEN 0
-             WHEN status IN ('TARGET_HIT','closed_win') THEN 1
+        CASE WHEN lifecycle_status IN ('proven', 'testing') THEN 0
+             WHEN hit_target = 1 THEN 1
              ELSE 2
         END,
         prediction_date DESC
@@ -114,14 +114,18 @@ export async function GET(request: NextRequest) {
     } catch { /* table may not exist yet */ }
 
     // Group by track for summary
+    // LIFECYCLE-MIGRATION: byTrack summary now uses `hit_target` / `hit_stop`
+    // for win/loss and `lifecycle_status` for the active count. The legacy
+    // string-status comparisons (WIN_STATUSES.has(r.status), etc.) are
+    // replaced with direct column checks.
     const byTrack: any = {};
     for (const r of rows) {
       const t = r.track;
       if (!byTrack[t]) byTrack[t] = { total: 0, wins: 0, losses: 0, active: 0 };
       byTrack[t].total++;
-      if (WIN_STATUSES.has(r.status)) byTrack[t].wins++;
-      else if (LOSS_STATUSES.has(r.status)) byTrack[t].losses++;
-      else if (r.status === 'active' || r.status === 'ACTIVE') byTrack[t].active++;
+      if (r.hit_target === 1) byTrack[t].wins++;
+      else if (r.hit_stop === 1) byTrack[t].losses++;
+      else if (r.lifecycle_status === 'proven' || r.lifecycle_status === 'testing') byTrack[t].active++;
     }
 
     db.close();
@@ -143,6 +147,7 @@ export async function GET(request: NextRequest) {
         target_price_2: r.target_price_2,
         stop_loss: r.stop_loss,
         status: r.status,
+        lifecycle_status: r.lifecycle_status,
         actual_return: r.actual_return,
         hit_target: r.hit_target,
         hit_stop: r.hit_stop,

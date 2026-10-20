@@ -391,6 +391,11 @@ export async function GET(request: NextRequest) {
       ? `${whereClause} AND ${freshnessGate}`
       : `WHERE ${freshnessGate}`;
     // Fetch predictions — CLOSED first (more interesting), then PENDING by date
+    // LIFECYCLE-MIGRATION: `lifecycle_status` is now SELECTed alongside
+    // `status` so the UI can read it for lifecycle segmentation. The
+    // downstream `inferStatus` function still derives the normalized status
+    // string from outcome fields, but the raw `lifecycle_status` is now
+    // available for the response object.
     allRows = db.prepare(`
       SELECT
         id, ticker, market, signal, signal_type, prediction_date,
@@ -400,7 +405,7 @@ export async function GET(request: NextRequest) {
         outcome_date, exit_price, actual_return, exit_reason,
         hit_target, hit_stop, is_correct, holding_days,
         notes, created_at, highest_price_reached, lowest_price_reached,
-        atr_at_entry, risk_reward, exit_type, status, pnl_pct, closed_at,
+        atr_at_entry, risk_reward, exit_type, status, lifecycle_status, pnl_pct, closed_at,
         persona${targetPrice2Sel}${v40Sel}
         ${hasV40Fields ? ', analysis_json' : ''}
       FROM predictions
@@ -514,6 +519,11 @@ export async function GET(request: NextRequest) {
         fundamental_score: r.fundamental_score !== null ? Number(r.fundamental_score) : null,
         prediction_date: r.prediction_date,
         status: pStatus,
+        // LIFECYCLE-MIGRATION: expose the raw `lifecycle_status` column so
+        // the UI can segment by proven/testing/closed without relying on
+        // the normalized `status` string (which is the legacy outcome
+        // display value — TARGET_HIT, STOPPED, EXPIRED, PENDING).
+        lifecycle_status: r.lifecycle_status ?? null,
         final_price: r.exit_price !== null ? Number(r.exit_price) : null,
         profit_loss_percent: actualReturn,
         actual_return: actualReturn,

@@ -123,6 +123,11 @@ interface Prediction {
   fundamental_score: number | null;
   prediction_date: string;
   status: string;
+  // LIFECYCLE-MIGRATION: expose the raw `lifecycle_status` column from the
+  // API response (proven/testing/closed) so the UI can segment by lifecycle
+  // without relying on the legacy `status` string (which keeps its 5
+  // official values for outcome display — TARGET_HIT = success, etc.).
+  lifecycle_status?: string | null;
   final_price: number | null;
   profit_loss_percent: number | null;
   actual_return: number | null;

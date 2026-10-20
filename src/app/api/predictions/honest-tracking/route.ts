@@ -21,12 +21,16 @@ export async function GET() {
   }
 
   try {
+    // LIFECYCLE-MIGRATION: wins/losses now derived from outcome detail
+    // columns (`hit_target` / `hit_stop`) instead of the legacy `status`
+    // string. Pending (open) uses `lifecycle_status = 'proven'` (the new
+    // canonical "active" lifecycle value).
     const summary = db.prepare(`
       SELECT
         COUNT(*) as total,
-        SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) as wins,
-        SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) as losses,
-        SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending
+        SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as wins,
+        SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as losses,
+        SUM(CASE WHEN lifecycle_status = 'proven' THEN 1 ELSE 0 END) as pending
       FROM predictions
     `).get() as any;
 

@@ -34,6 +34,7 @@ interface ActivePosition {
   market: string;
   signal: string;
   status: string | null;
+  lifecycle_status: string | null;
   persona: string | null;
   entry_price: number;
   target_price: number;
@@ -110,7 +111,11 @@ export async function GET(req: NextRequest) {
     const limitRaw = Number(url.searchParams.get('limit') || 100);
     const limit = Math.max(1, Math.min(500, Number.isFinite(limitRaw) ? limitRaw : 100));
 
-    const where: string[] = ["status = 'ACTIVE'", 'market = ?'];
+    // LIFECYCLE-MIGRATION: open/active predictions now detected via
+    // `lifecycle_status IN ('proven', 'testing')` (Bravo's new column).
+    // The legacy `status = 'ACTIVE'` check is replaced — but `status` is
+    // still SELECTed for outcome display on the UI.
+    const where: string[] = ["lifecycle_status IN ('proven', 'testing')", 'market = ?'];
     const params: unknown[] = [market];
 
     if (persona && persona !== 'all') {
@@ -120,7 +125,7 @@ export async function GET(req: NextRequest) {
 
     const sql = `
       SELECT
-        ticker, signal, status, persona, market,
+        ticker, signal, status, lifecycle_status, persona, market,
         entry_price, target_price, target_price_2, stop_loss,
         risk_reward, master_score, confidence,
         prediction_date, holding_days, exit_type, kill_filter_result
@@ -184,6 +189,7 @@ export async function GET(req: NextRequest) {
         market: String(r.market || market),
         signal: String(r.signal || ''),
         status: r.status === null ? null : String(r.status),
+        lifecycle_status: r.lifecycle_status === null ? null : String(r.lifecycle_status),
         persona: r.persona === null ? null : String(r.persona),
         entry_price: entry,
         target_price: target,

@@ -222,16 +222,20 @@ export async function GET() {
       return NextResponse.json(EMPTY_LEDGER);
     }
 
-    // ---- Active predictions (status still pending/active) -----------------
+    // ---- Active predictions (lifecycle_status still open) --------------
     // LIMIT 20 here is intentional — these are NOT part of KPI computation,
     // they're the "currently open" preview for the Live Monitor widget.
+    // LIFECYCLE-MIGRATION: open/active now detected via `lifecycle_status
+    // IN ('proven', 'testing')`. Legacy NULL-status rows with no
+    // actual_return are kept as a fallback for rows that haven't been
+    // migrated yet.
     const activeRows = db.prepare(`
       SELECT id, ticker, signal, prediction_date, entry_price,
              target_price, stop_loss, master_score, confidence,
-             morning_bell, market, status
+             morning_bell, market, status, lifecycle_status
       FROM predictions
-      WHERE status IN ('active', 'ACTIVE', 'PENDING', 'pending')
-         OR (status IS NULL AND actual_return IS NULL)
+      WHERE lifecycle_status IN ('proven', 'testing')
+         OR (lifecycle_status IS NULL AND actual_return IS NULL)
       ORDER BY prediction_date DESC
       LIMIT 20
     `).all() as Record<string, unknown>[];
@@ -241,12 +245,14 @@ export async function GET() {
     // the display payload below (preview for the UI).
     //
     // "Closed" = anything with a measurable outcome: actual_return is set,
-    // exit_price is set, OR hit_target/hit_stop is set, OR status is
-    // EXPIRED/CLOSED.
+    // exit_price is set, OR hit_target/hit_stop is set, OR `lifecycle_status
+    // = 'closed'` (Bravo's new canonical column).
+    // LIFECYCLE-MIGRATION: the legacy `UPPER(status) IN ('CLOSED',
+    // 'EXPIRED')` check is replaced by `lifecycle_status = 'closed'`.
     const closedRows = db.prepare(`
       SELECT id, ticker, persona, morning_bell, prediction_date, entry_price,
              target_price, target_price_2, stop_loss, exit_price, actual_exit_price,
-             actual_return, hit_target, hit_stop, status, holding_days,
+             actual_return, hit_target, hit_stop, status, lifecycle_status, holding_days,
              outcome_date, closed_at, highest_price, lowest_price,
              signal, master_score, confidence, market
       FROM predictions
@@ -255,7 +261,7 @@ export async function GET() {
          OR actual_exit_price IS NOT NULL
          OR hit_target = 1
          OR hit_stop = 1
-         OR UPPER(status) IN ('CLOSED', 'EXPIRED')
+         OR lifecycle_status = 'closed'
       ORDER BY COALESCE(outcome_date, closed_at, prediction_date) DESC
     `).all() as Record<string, unknown>[];
 
