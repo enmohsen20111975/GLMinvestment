@@ -39,6 +39,7 @@ import { Separator } from '@/components/ui/separator';
 import { TradingViewChart } from './TradingViewChart';
 import { ChartToggle } from '@/components/shared/ChartToggle';
 import { TradingChartView } from '@/modules/market-analysis/components/TradingChartView';
+import { StockFeelCard } from '@/components/shared/StockFeelCard';
 import { DeepAnalysis } from './DeepAnalysis';
 import { StockNews } from './StockNews';
 import { CalculationBreakdown } from './CalculationBreakdown';
@@ -1067,7 +1068,17 @@ export function StockDetail() {
  // (canonical signal + accumulation + money_flow + technical + prediction + radar).
  // Old fetches (footprint, etc.) are kept as fallback in case unified API fails.
  const [unifiedData, setUnifiedData] = useState<any>(null);
-
+ // ALPHA-STOCK-FEEL-1: fetch feel data from /api/stock-screener/analyze
+ const [feelData, setFeelData] = useState<any>(null);
+ useEffect(() => {
+   if (!selectedTicker) { setFeelData(null); return; }
+   let cancelled = false;
+   fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}`)
+     .then(r => r.json())
+     .then(d => { if (!cancelled && d) setFeelData(d); })
+     .catch(() => {});
+   return () => { cancelled = true; };
+ }, [selectedTicker]);
  // Auto-load news and liquidity footprint when stock is selected
  useEffect(() => {
  if (selectedTicker && selectedStock) {
@@ -1218,6 +1229,9 @@ export function StockDetail() {
  {/* Flow Score + Explosive + Fundamentals from Python backend */}
  <FlowScoreCard ticker={stock.ticker} />
  <FundamentalsCard ticker={stock.ticker} />
+
+ {/* ALPHA-STOCK-FEEL-1: بطاقة الإحساس بالسهم */}
+ <StockFeelCard analysis={feelData} />
 
  {/* Back Button */}
  <Button
