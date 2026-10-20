@@ -1322,7 +1322,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
 
  {/* Footer links */}
  <div style={{
- background: 'linear-gradient(135deg, rgba(234,88,12,0.15), rgba(217,119,6,0.15))',
+ background: 'rgba(234,88,12,0.08)',
  borderRadius: '10px',
  padding: '12px 16px',
  textAlign: 'center',

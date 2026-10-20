@@ -666,13 +666,12 @@ export function SubscriptionView() {
 
  {/* Hero Section */}
  <div className="relative overflow-hidden">
- <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] via-transparent to-transparent" />
  <div className="absolute top-20 left-10 w-72 h-72 bg-profit/10 rounded-full blur-3xl pointer-events-none" />
  <div className="absolute top-40 right-20 w-96 h-96 bg-whale/10 rounded-full blur-3xl pointer-events-none" />
 
  <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-6">
  <div className="text-center">
- <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl from-profit to-whale mb-6 shadow-2xl shadow-emerald-500/30">
+ <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-profit/10 border border-profit/20 mb-6">
  <Crown className="w-10 h-10 text-foreground" />
  </div>
 
