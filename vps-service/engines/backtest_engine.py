@@ -33,6 +33,8 @@ if _VPS_ROOT not in sys.path:
 from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
 from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
 from analyzers.indicators.ma import sma as _canonical_sma, ema as _canonical_ema
+from analyzers.indicators.bollinger import calc_bollinger_series as _canonical_bollinger_series
+from utils.fair_value import calc_vwap_fair_value as _canonical_vwap_fair_value
 import json
 import sqlite3
 import math
@@ -281,22 +283,19 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float], period:
     return result
 
 
-def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[float], List[float], List[float]]:
-    """Bollinger Bands (middle, upper, lower)"""
-    mid = calc_sma(closes, period)
-    upper = []
-    lower = []
-    
-    for i in range(len(closes)):
-        start = max(0, i - period + 1)
-        window = closes[start:i+1]
-        mean = mid[i]
-        variance = sum((x - mean) ** 2 for x in window) / len(window)
-        std = math.sqrt(variance)
-        upper.append(mean + std_dev * std)
-        lower.append(mean - std_dev * std)
-    
-    return mid, upper, lower
+def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[Optional[float]], List[Optional[float]], List[Optional[float]]]:
+    """Bollinger Bands (middle, upper, lower) — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+    Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع lists بـ None values (مش fabrication).
+    """
+    result = _canonical_bollinger_series(closes, period, std_dev)
+    if result is None:
+        # Rule 27: return None lists (not fabricated values)
+        return [None] * len(closes), [None] * len(closes), [None] * len(closes)
+    # preserve None values (first period-1 entries) — caller must handle None
+    mid_list = result['middle']
+    upper_list = result['upper']
+    lower_list = result['lower']
+    return mid_list, upper_list, lower_list
 
 
 # ===========================================================================
@@ -518,27 +517,8 @@ def evaluate_fundamentals(pe_ratio: Optional[float], roe: Optional[float]) -> Fu
 # ===========================================================================
 
 def calc_fair_value(highs: List[float], lows: List[float], closes: List[float], volumes: List[float], period: int = 100) -> Tuple[float, float]:
-    """
-    القيمة العادلة (VWAP-based) من V38:
-    typical_price = (high + low + close) / 3
-    fair_value = sum(typical_price * volume) / sum(volume)
-    fair_premium = ((close - fair_value) / fair_value) * 100
-    """
-    n = min(period, len(closes))
-    if n == 0:
-        return 0.0, 0.0
-    
-    total_vol = sum(volumes[-n:]) if volumes else 0
-    typical_prices = [(highs[i] + lows[i] + closes[i]) / 3 for i in range(-n, 0)]
-    weighted = sum(typical_prices[i] * volumes[-n:][i] for i in range(n) if volumes[-n:][i])
-    
-    if total_vol <= 0:
-        return closes[-1], 0.0
-    
-    fv = weighted / total_vol
-    premium = ((closes[-1] - fv) / fv) * 100 if fv > 0 else 0.0
-    
-    return fv, premium
+    """القيمة العادلة (VWAP-based) — BRAVO UNIFY: delegates to canonical utils.fair_value."""
+    return _canonical_vwap_fair_value(highs, lows, closes, volumes, period)
 
 
 # ===========================================================================

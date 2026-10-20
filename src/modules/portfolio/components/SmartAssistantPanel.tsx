@@ -219,7 +219,7 @@ export function SmartAssistantPanel() {
 
  {/* Summary Cards */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <Card className="p-4 bg-gradient-to-br from-primary to-primary dark:from-primary dark:to-primary">
+ <Card className="p-4 from-primary to-primary dark:from-primary dark:to-primary">
  <div className="flex items-center gap-2 mb-1">
  <Wallet className="h-4 w-4 text-whale" />
  <span className="text-sm text-muted-foreground">إجمالى الاستثمار</span>
@@ -228,7 +228,7 @@ export function SmartAssistantPanel() {
  {data.summary.totalInvested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
  </div>
  </Card>
- <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+ <Card className="p-4 from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
  <div className="flex items-center gap-2 mb-1">
  <DollarSign className="h-4 w-4 text-primary" />
  <span className="text-sm text-muted-foreground">القيمة الحالية</span>
@@ -240,8 +240,8 @@ export function SmartAssistantPanel() {
  <Card className={cn(
  "p-4",
  data.summary.totalProfitLoss >= 0 
- ? "bg-gradient-to-br from-success to-success dark:from-success dark:to-success"
- : "bg-gradient-to-br from-loss to-loss "
+ ? "from-success to-success dark:from-success dark:to-success"
+ : "from-loss to-loss "
  )}>
  <div className="flex items-center gap-2 mb-1">
  <BarChart3 className={cn(
@@ -266,7 +266,7 @@ export function SmartAssistantPanel() {
  ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{(data.summary.totalProfitLossPercent ?? 0).toFixed(2)}%)
  </div>
  </Card>
- <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+ <Card className="p-4 from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
  <div className="flex items-center gap-2 mb-1">
  <Activity className="h-4 w-4 text-warning" />
  <span className="text-sm text-muted-foreground">عدد الأصول</span>

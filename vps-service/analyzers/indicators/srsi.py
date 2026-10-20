@@ -1,7 +1,7 @@
 """
 analyzers/indicators/srsi.py — Canonical Stochastic RSI (SRSI)
 =================================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب SRSI في المشروع.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب SRSI في المشروع.
 
 SRSI = Stochastic RSI — بيطبّق صيغة Stochastic على قيم RSI (مش على الأسعار مباشرة).
 
@@ -23,7 +23,7 @@ SRSI = Stochastic RSI — بيطبّق صيغة Stochastic على قيم RSI (م
   - RSI أدق في الـ trending markets، SRSI أدق في الـ ranging markets
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Chande, T. & Kroll, S. (1994). The New Technical Trader
   - النسخة TS: src/lib/analysis-engine.ts (لو موجودة)
 

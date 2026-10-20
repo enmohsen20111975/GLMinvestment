@@ -157,13 +157,13 @@ export function AboutView() {
 
  return (
  <div
- className="min-h-screen bg-gradient-to-b from-background via-background to-profit/5"
+ className="min-h-screen from-background via-background "
  dir="rtl"
  >
  <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
  {/* ─── مقدمة ─── */}
  <div className="text-center mb-10 md:mb-14">
- <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-profit to-whale shadow-lg shadow-emerald-500/30 mb-5">
+ <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl from-profit to-whale shadow-lg shadow-emerald-500/30 mb-5">
  <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-foreground" />
  </div>
  <Badge
@@ -186,7 +186,7 @@ export function AboutView() {
  <Card className="mb-8 md:mb-10 border-border/60 shadow-sm overflow-hidden">
  <CardContent className="p-5 md:p-7">
  <div className="flex items-center gap-3 mb-5">
- <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-profit to-whale flex items-center justify-center">
+ <div className="w-10 h-10 rounded-lg from-profit to-whale flex items-center justify-center">
  <Globe className="w-5 h-5 text-foreground" />
  </div>
  <div>
@@ -223,7 +223,7 @@ export function AboutView() {
  <Card className="mb-8 md:mb-10 border-border/60 shadow-sm overflow-hidden">
  <CardContent className="p-5 md:p-7">
  <div className="flex items-center gap-3 mb-5">
- <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-whale to-profit flex items-center justify-center">
+ <div className="w-10 h-10 rounded-lg from-whale to-profit flex items-center justify-center">
  <Target className="w-5 h-5 text-foreground" />
  </div>
  <div>
@@ -258,7 +258,7 @@ export function AboutView() {
  {/* ─── المزايا الرئيسية ─── */}
  <div className="mb-8 md:mb-10">
  <div className="flex items-center gap-3 mb-5">
- <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-warning to-orange-600 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-lg from-warning to-orange-600 flex items-center justify-center">
  <BarChart3 className="w-5 h-5 text-foreground" />
  </div>
  <div>
@@ -279,11 +279,11 @@ export function AboutView() {
  key={f.title}
  className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow"
  >
- <div className={`h-0.5 bg-gradient-to-l ${c.gradient}`} />
+ <div className={`h-0.5 ${c.gradient}`} />
  <CardContent className="p-5">
  <div className="flex items-start gap-3 mb-2">
  <div
- className={`shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${c.gradient} flex items-center justify-center`}
+ className={`shrink-0 w-10 h-10 rounded-lg ${c.gradient} flex items-center justify-center`}
  >
  <Icon className="w-5 h-5 text-foreground" />
  </div>
@@ -329,7 +329,7 @@ export function AboutView() {
  <Card className="mb-8 md:mb-10 border-border/60 shadow-sm overflow-hidden">
  <CardContent className="p-5 md:p-7">
  <div className="flex items-center gap-3 mb-4">
- <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-500 to-slate-700 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-lg from-slate-500 to-slate-700 flex items-center justify-center">
  <BookOpen className="w-5 h-5 text-foreground" />
  </div>
  <h2 className="text-lg md:text-xl font-bold text-foreground">
@@ -369,7 +369,7 @@ export function AboutView() {
  <div className="text-center mt-10 md:mt-12 mb-8">
  <button
  onClick={() => setCurrentView('dashboard')}
- className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-l from-profit to-whale text-foreground text-sm font-semibold hover:from-profit hover:to-whale transition-colors shadow-md"
+ className="inline-flex items-center gap-2 px-6 py-3 rounded-lg from-profit to-whale text-foreground text-sm font-semibold hover:from-profit hover:to-whale transition-colors shadow-md"
  >
  <TrendingUp className="w-4 h-4" />
  الانتقال إلى لوحة التحكم

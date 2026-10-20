@@ -29,7 +29,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { Header } from '@/components/layout/Header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, Lock } from 'lucide-react';
+import { Info, Lock, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -560,7 +560,7 @@ function AppShell() {
     // لو ضغط view مقفول → نعرض GuestLockedView placeholder + نفتح LoginPromptModal.
     // (AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal تلقائياً،
     //  بس هنا بنعرض placeholder كمان لو الـ view وصل لـ render قبل الـ redirect.)
-    if (isGuest && currentView !== 'auth' && !isViewAllowedForGuest(currentView)) {
+    if (isGuest && currentView !== 'auth' && currentView !== 'admin' && !isViewAllowedForGuest(currentView)) {
       return <GuestLockedView view={currentView} />;
     }
     switch (currentView) {
@@ -648,8 +648,24 @@ function AppShell() {
         return <PredictionTrackingView />;
       case 'dual-track':
         return <DualTrackPredictionsView />;
+      // V82 معطل مؤقتاً (SUB_ENGINE_DISABLED = True في v82_analyzer.py)
+      // بدل ما نعرض panel بيـ display "محرك متوقف"، نعرض رسالة واضحة.
+      // لما نفعّله تاني: return <V82DecisionPanel initialTicker="COMI" />;
       case 'v82':
-        return <V82DecisionPanel initialTicker="COMI" />;
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
+            <div className="text-center p-8 max-w-md">
+              <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-foreground mb-2">محرك القرار المؤسسي</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                المحرك ده قيد التطوير حالياً. استخدم شاشة التوصيات أو رادار السيولة كبديل.
+              </p>
+              <a href="#dashboard" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+                العودة للوحة التحكم
+              </a>
+            </div>
+          </div>
+        );
       case 'reports':
         return <ReportsView />;
       case 'news':
@@ -854,7 +870,7 @@ function AppShell() {
     if (botLinkToken) {
       return (
         <div
-          className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
+          className="min-h-screen flex flex-col items-center justify-center from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
           dir="rtl"
         >
           <div className="max-w-md w-full rounded-xl border border-primary/20 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
@@ -879,7 +895,7 @@ function AppShell() {
   if (authStatus === 'loading') {
     return (
       <div
-        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
+        className="min-h-screen flex items-center justify-center from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
         dir="rtl"
       >
         <div className="flex flex-col items-center gap-3">

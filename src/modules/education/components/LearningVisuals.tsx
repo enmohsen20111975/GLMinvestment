@@ -823,7 +823,7 @@ export function LossAversionCurve() {
  const gainMarker = { x: 500, y: 100 }; // point on gain curve
 
  return (
- <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+ <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
  <svg
  width="100%"
  height="380"
@@ -1137,7 +1137,7 @@ export function SopPipelineFlow() {
  const loopEndX = xs[0] + cardW / 2; // 116
 
  return (
- <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+ <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
  <svg
  width="100%"
  height="320"
@@ -1417,7 +1417,7 @@ export function TradingSystemPipeline() {
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.5 }}
  dir="rtl"
- className="my-6 overflow-hidden rounded-2xl border border-slate-700/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 shadow-xl sm:p-6"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-700/60 from-slate-950 via-slate-900 to-slate-950 p-4 shadow-xl sm:p-6"
  >
  {/* Header */}
  <div className="mb-4 text-center">
@@ -1647,7 +1647,7 @@ export function MarketStagesVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Layers className="h-5 w-5 text-profit " />
@@ -1786,7 +1786,7 @@ export function OrderFlowVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Scale className="h-5 w-5 text-profit " />
@@ -2027,7 +2027,7 @@ export function CandlestickPatternsVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Crosshair className="h-5 w-5 text-profit " />
@@ -2177,7 +2177,7 @@ export function RiskRewardVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Scale className="h-5 w-5 text-profit " />
@@ -2465,7 +2465,7 @@ export function PortfolioAllocationVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <PieChart className="h-5 w-5 text-profit " />

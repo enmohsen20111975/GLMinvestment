@@ -97,7 +97,7 @@ export function RefreshAnalyticsButton({
  disabled={isRefreshing}
  className={cn(
  'relative group transition-all duration-300 font-medium',
- isGlow && 'bg-gradient-to-r from-profit via-whale to-cyan-600 hover:from-profit hover:to-cyan-500 text-white shadow-md hover:shadow-lg hover:shadow-emerald-500/20 border-0',
+ isGlow && 'from-profit via-whale to-cyan-600 hover:from-profit hover:to-cyan-500 text-white shadow-md hover:shadow-lg hover:shadow-emerald-500/20 border-0',
  className
  )}
  >

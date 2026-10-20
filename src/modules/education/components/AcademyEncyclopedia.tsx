@@ -1911,7 +1911,7 @@ export function AcademyEncyclopedia() {
  <main className="min-w-0">
  <article className="rounded-lg border bg-card">
  {/* Lesson header */}
- <header className="border-b bg-gradient-to-l from-profit/50 to-transparent p-5 /20">
+ <header className="border-b to-transparent p-5 /20">
  <div className="flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-start gap-3">
  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-profit text-2xl /50">

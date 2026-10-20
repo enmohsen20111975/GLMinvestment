@@ -341,7 +341,7 @@ export function TipOfTheDay({ className }: { className?: string }) {
  className={cn(
  'relative overflow-hidden rounded-2xl border',
  config.border,
- 'bg-gradient-to-l',
+ '',
  config.gradient,
  'p-5 sm:p-6',
  className

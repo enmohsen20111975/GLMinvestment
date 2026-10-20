@@ -14,6 +14,7 @@ from datetime import datetime
 import time
 import sys
 import os
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -609,6 +610,89 @@ def get_cache_status():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
+# RADAR INCUBATOR ENDPOINT — رادار التربص وقيد التسخين
+# ============================================================================
+
+@misc_bp.route('/api/radar/incubator', methods=['GET'])
+def radar_incubator():
+    """🔭 رادار التربص وقيد التسخين — The Incubator & Stalking Engine.
+
+    GET /api/radar/incubator?market=EGX
+
+    بيرجّع قائمة الأسهم اللي محققة 4/6 أو 5/6 إشارات (قيد التسخين) في مسار
+    B_quiet_accumulation_strong أو A_pre_surge. كل سهم معاه الشرط الناقص
+    (trigger) وأرقام الصفقة المتوقعة في حالة التفعيل.
+
+    Response Contract:
+    {
+        "success": true,
+        "market": "EGX",
+        "total_candidates": N,
+        "candidates": [...],
+        "timestamp": "ISO"
+    }
+    """
+    import os
+    import glob
+    from pathlib import Path
+
+    market = (request.args.get('market') or 'EGX').strip().upper()
+
+    # ابحث عن أحدث cache file للسوق المطلوب
+    project_root = Path(__file__).resolve().parents[2]
+    output_dir = project_root / 'scripts' / 'output'
+
+    # pattern: maker_radar_{MARKET}_{YYYYMMDD}.json
+    pattern = str(output_dir / f'maker_radar_{market}_*.json')
+    cache_files = sorted(glob.glob(pattern), reverse=True)
+
+    if not cache_files:
+        return jsonify({
+            'success': True,
+            'market': market,
+            'total_candidates': 0,
+            'candidates': [],
+            'timestamp': datetime.now().isoformat(),
+            'message': 'الرادار يمسح السوق حالياً — لا توجد بيانات متاحة'
+        })
+
+    latest_cache = cache_files[0]
+    try:
+        with open(latest_cache, 'r', encoding='utf-8') as f:
+            cache_data = json.load(f)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'فشل قراءة ملف الكاش: {e}',
+            'market': market,
+            'total_candidates': 0,
+            'candidates': [],
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+    candidates = cache_data.get('incubator_candidates', [])
+
+    # لو مفيش incubator_candidates في الكاش (نسخة قديمة)، نحاول نبنيها من all_results
+    if not candidates and cache_data.get('all_results'):
+        try:
+            import sys
+            sys.path.insert(0, str(project_root / 'scripts'))
+            from maker_radar import build_incubator_candidates
+            candidates = build_incubator_candidates(cache_data['all_results'])
+        except Exception:
+            candidates = []
+
+    return jsonify({
+        'success': True,
+        'market': market,
+        'total_candidates': len(candidates),
+        'candidates': candidates,
+        'timestamp': cache_data.get('generated_at', datetime.now().isoformat()),
+        'cache_file': os.path.basename(latest_cache),
+    })
 
 
 # ============================================================================
@@ -1606,16 +1690,18 @@ def rebuild_predictions():
                         logger.error(f"[rebuild-predictions] Error running intraday scanner: {_e}")
 
             # 1. جلب آخر التوقعات النشطة من stored_analyses و predictions
+            # BRAVO-STALE-FIX (جيمي directive): فلتر زمني صارم — أي توقع أقدم من 48 ساعة
+            # يُعتبر STALE ويُستبعد فوراً. لو مفيش صفقات مؤهلة → قائمة فاضية + رسالة "كاش وانتظار".
             active_predictions = []
             try:
-                # أولاً: توقعات V40.2 النشطة من جدول predictions
+                # أولاً: توقعات V40.2 النشطة من جدول predictions (آخر 48 ساعة فقط)
                 pred_rows = conn.execute("""
                     SELECT ticker, signal, signal_type, entry_price, target_price,
                            stop_loss, confidence, maestro_score, created_at,
                            prediction_date, kill_filter_result
                     FROM predictions
                     WHERE status IN ('PENDING', 'active', 'ACTIVE')
-                       OR lifecycle_status IN ('testing', 'proven', 'active')
+                      AND date(created_at) >= date('now', '-2 days')
                     ORDER BY id DESC
                     LIMIT 30
                 """).fetchall()
@@ -1646,12 +1732,13 @@ def rebuild_predictions():
                         })
                         seen_tickers.add(pticker)
 
-                # ثانياً: استكمال من stored_analyses
+                # ثانياً: استكمال من stored_analyses (آخر 48 ساعة فقط — BRAVO-STALE-FIX)
                 rows = conn.execute("""
                     SELECT ticker, recommendation, maestro_score, target_price,
                            stop_loss, entry_price, confidence, updated_at,
                            ai_decision, ai_confidence
                     FROM stored_analyses
+                    WHERE date(updated_at) >= date('now', '-2 days')
                     ORDER BY updated_at DESC
                     LIMIT 100
                 """).fetchall()
@@ -1660,6 +1747,8 @@ def rebuild_predictions():
                     ticker = d.get('ticker') or ''
                     if ticker and ticker not in seen_tickers:
                         stock_info = _get_stock_name(ticker)
+                        _rec = (d.get('recommendation') or 'hold').upper()
+                        _is_whale = 'WHALE' in _rec
                         active_predictions.append({
                             'ticker': ticker,
                             'symbol': ticker,
@@ -1667,10 +1756,12 @@ def rebuild_predictions():
                             'name_ar': stock_info['name_ar'],
                             'sector': stock_info['sector'],
                             'logo_url': stock_info.get('logo_url', ''),
-                            'signal': (d.get('recommendation') or 'hold').upper(),
-                            'signal_type': 'BUY' if 'buy' in (d.get('recommendation') or '').lower()
-                                           else 'SELL' if 'sell' in (d.get('recommendation') or '').lower()
+                            'signal': 'BUY' if 'buy' in _rec.lower() else ('SELL' if 'sell' in _rec.lower() else 'HOLD'),
+                            'signal_type': 'BUY' if 'buy' in _rec.lower()
+                                           else 'SELL' if 'sell' in _rec.lower()
                                            else 'HOLD',
+                            'track': 'WHALE_RADAR' if _is_whale else 'V40.2',
+                            'is_whale_radar': _is_whale,
                             'entry_price': d.get('entry_price') or 0,
                             'target_price': d.get('target_price') or 0,
                             'stop_loss': d.get('stop_loss') or 0,
@@ -1894,6 +1985,8 @@ def rebuild_predictions():
             # أسهم تحت الاختبار (lifecycle_status='testing') — R/R ≥ 1.8 + نشطة
             # عشان الواجهة تعرضها في تبويب "تحت الاختبار"
             'testing_candidates': _get_testing_candidates(),
+            # BRAVO-STALE-FIX (جيمي directive): لو مفيش توقعات طازة → رسالة واضحة
+            'market_status': 'كاش وانتظار — لا توجد إشارات شراء جديدة في آخر 48 ساعة' if not active_predictions else 'نشط',
             'stats': {
                 'today': today,
                 'weekly': weekly,
@@ -2806,9 +2899,18 @@ def unified_predictions():
                             'lowest_price_reached': round(_ep_min_l, 2) if _ep_min_l else None,
                         }
                         _empty_prev.append(_entry_obj)
-                        # FIX: أي توقع لسه معلق (مش hit_target ولا hit_stop)
-                        # نحطه في الـ predictions list الرئيسي عشان يظهر على الشاشة.
-                        if _ht != 1 and _hs != 1:
+                        # BRAVO-STALE-FIX (جيمي directive): أي توقع لسه معلق بس أقدم من 48 ساعة
+                        # ما يدخلش في fallback_predictions (التوقعات النشطة لليوم) — يفضل في previous_predictions بس.
+                        _is_fresh = False
+                        if pr['created_at']:
+                            try:
+                                from datetime import timedelta
+                                _created_d = str(pr['created_at'])[:10]
+                                _fresh_cutoff = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+                                _is_fresh = _created_d >= _fresh_cutoff
+                            except Exception:
+                                _is_fresh = False
+                        if _ht != 1 and _hs != 1 and _is_fresh:
                             _fallback_predictions.append(_entry_obj)
                         if len(_empty_prev) >= 30:
                             break
@@ -2830,6 +2932,7 @@ def unified_predictions():
                     'market': market or 'ALL',
                     'stats': {'total': len(_fallback_predictions), 'win_count': 0, 'loss_count': 0, 'win_rate': 0.0, 'avg_pnl': 0.0},
                     'source': 'predictions_fallback' if _fallback_predictions else 'predictions_db_empty',
+                    'market_status': 'كاش وانتظار — لا توجد إشارات شراء جديدة في آخر 48 ساعة' if not _fallback_predictions else 'نشط',
                     'testing_candidates': _get_testing_candidates(),
                     'note': 'عرض آخر التوقعات المتاحة (stored_analyses فارغ — الأرشيف من جدول predictions)' if _fallback_predictions else 'لا توجد توقعات متاحة',
                     'timestamp': datetime.now().isoformat(),

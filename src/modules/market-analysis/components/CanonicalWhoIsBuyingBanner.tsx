@@ -161,7 +161,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  }
 
  return (
- <div className="mb-3 rounded-xl border-2 border-sky-500/40 bg-gradient-to-l from-sky-50 via-card to-profit dark:from-sky-950/20 dark:via-card /20 overflow-hidden shadow-sm">
+ <div className="mb-3 rounded-xl border-2 border-sky-500/40 from-sky-50 via-card to-profit dark:from-sky-950/20 dark:via-card /20 overflow-hidden shadow-sm">
  {/* ─── Header: العنوان + إحالة للقرار النهائي ─── */}
  <div className="px-4 py-3 border-b border-sky-500/20 bg-sky-100/40 dark:bg-sky-900/15 flex items-center justify-between gap-3 flex-wrap">
  <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  </div>
  <div className="h-2 rounded-full overflow-hidden bg-loss/10 flex">
  {buyPct !== null && (
- <div className="h-full bg-gradient-to-l from-profit to-profit" style={{ width: `${Math.min(100, Math.max(0, buyPct))}%` }} />
+ <div className="h-full from-profit to-profit" style={{ width: `${Math.min(100, Math.max(0, buyPct))}%` }} />
  )}
  </div>
  </div>

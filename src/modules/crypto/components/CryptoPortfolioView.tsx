@@ -350,7 +350,7 @@ export function CryptoPortfolioView() {
  <div className="max-w-7xl mx-auto px-4 py-4">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-xl from-orange-500 to-yellow-500 flex items-center justify-center">
  <Wallet className="w-6 h-6 text-foreground" />
  </div>
  <div>

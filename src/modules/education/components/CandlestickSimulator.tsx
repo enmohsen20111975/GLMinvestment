@@ -791,7 +791,7 @@ export function CandlestickSimulator() {
  </div>
 
  {/* Right: live SVG candle */}
- <div className="flex flex-col items-center justify-center rounded-lg border bg-gradient-to-b from-background to-muted/20 p-4">
+ <div className="flex flex-col items-center justify-center rounded-lg border from-background p-4">
  <CandleSvg o={openV} h={effHigh} l={effLow} c={effClose} />
  <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs">
  <span className="inline-flex items-center gap-1 rounded-md bg-profit/15 px-2 py-0.5 text-profit ">

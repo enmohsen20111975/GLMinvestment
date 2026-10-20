@@ -544,7 +544,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
  {/* FOOTER */}
  <div
  style={{
- background: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)',
+ background: 'transparent',
  color: '#e6fffa',
  padding: '14px 28px 10px',
  display: 'flex',
@@ -584,7 +584,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
  {/* OFFICIAL LINKS FOOTER */}
  <div
  style={{
- background: 'linear-gradient(135deg, #064e3b 0%, #0f766e 100%)',
+ background: 'transparent',
  color: '#ffffff',
  padding: '10px 28px',
  display: 'flex',

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import ChartControls from './ChartControls';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
@@ -611,7 +611,7 @@ export function SingleStockAnalysisView({
         </div>
       )}
 
-      <CardHeader className="px-4 py-3 border-b border-border bg-gradient-to-r from-slate-50 via-white to-profit/50 space-y-3">
+      <CardHeader className="px-4 py-3 border-b border-border from-slate-50 via-white space-y-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <StockSearchSelector
@@ -1301,7 +1301,7 @@ export function SingleStockAnalysisView({
                                 {tr.min?.toFixed(2)} — {tr.max?.toFixed(2)}
                               </span>
                             </div>
-                            <div className="relative h-2.5 bg-gradient-to-l from-loss/30 via-warning/30 to-profit/30 rounded-full border border-border/40">
+                            <div className="relative h-2.5 rounded-full border border-border/40">
                               <div
                                 className="absolute top-1/2 -translate-y-1/2 h-3.5 w-1 bg-foreground rounded-sm shadow-sm transition-all"
                                 style={{

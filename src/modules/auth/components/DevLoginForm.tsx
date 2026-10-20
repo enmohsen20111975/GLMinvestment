@@ -68,10 +68,10 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
  };
 
  return (
- <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4" dir="rtl">
+ <div className="min-h-screen flex items-center justify-center from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4" dir="rtl">
  <Card className="w-full max-w-md shadow-xl">
  <CardHeader className="text-center space-y-3">
- <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-warning to-loss flex items-center justify-center">
+ <div className="w-14 h-14 mx-auto rounded-full from-warning to-loss flex items-center justify-center">
  <Shield className="w-7 h-7 text-foreground" />
  </div>
  <div>
@@ -130,7 +130,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
  <Button
  type="submit"
  disabled={loading || !username.trim() || !password.trim()}
- className="w-full gap-2 bg-gradient-to-r from-warning to-loss hover:from-warning hover:to-loss text-foreground"
+ className="w-full gap-2 from-warning to-loss hover:from-warning hover:to-loss text-foreground"
  >
  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
  {loading ? 'جارٍ الدخول...' : 'دخول كأدمن'}

@@ -124,9 +124,9 @@ function IslamicPattern() {
 function OrnamentDivider() {
  return (
  <div className="flex items-center justify-center gap-2 py-1" aria-hidden>
- <div className="flex-1 h-px bg-gradient-to-l from-transparent via-warning/40 to-transparent" />
+ <div className="flex-1 h-px from-transparent to-transparent" />
  <Sparkles className="w-3.5 h-3.5 text-warning/70" />
- <div className="flex-1 h-px bg-gradient-to-r from-transparent via-warning/40 to-transparent" />
+ <div className="flex-1 h-px from-transparent to-transparent" />
  </div>
  );
 }
@@ -421,7 +421,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
  onClick={(e) => e.stopPropagation()}
  >
  {/* Header */}
- <div className="relative bg-gradient-to-l from-profit via-profit to-profit text-profit p-4">
+ <div className="relative from-profit via-profit to-profit text-profit p-4">
  <IslamicPattern />
  <div className="relative flex items-start justify-between gap-3">
  <div>
@@ -825,7 +825,7 @@ function PurificationResultCard({ result }: { result: PurificationResponse }) {
  const capitalGain = typeof result.realized_capital_gain === 'number' ? result.realized_capital_gain : null;
 
  return (
- <div className="rounded-lg border-2 border-warning bg-gradient-to-l from-warning via-warning/40 to-warning dark:from-warning/30 dark:via-warning/10 dark:to-warning/30 p-4">
+ <div className="rounded-lg border-2 border-warning from-warning to-warning dark:dark:dark:p-4">
  <div className="flex items-center justify-between gap-3 mb-3">
  <div>
  <p className="text-xs uppercase tracking-wider text-warning font-semibold">
@@ -991,7 +991,7 @@ function PortfolioResultCard({ result }: { result: Record<string, unknown> }) {
  const perSymbol = Array.isArray(result.per_symbol) ? (result.per_symbol as Array<Record<string, unknown>>) : [];
 
  return (
- <div className="rounded-lg border-2 border-profit bg-gradient-to-l from-profit via-profit/40 to-profit /30 /10 /30 p-4 space-y-3">
+ <div className="rounded-lg border-2 border-profit from-profit to-profit /30 /10 /30 p-4 space-y-3">
  <div className="flex items-center justify-between gap-3">
  <div>
  <p className="text-xs uppercase tracking-wider text-profit font-semibold">
@@ -1377,10 +1377,10 @@ export function ShariaView() {
  }, []);
 
  return (
- <div className="min-h-screen bg-gradient-to-b from-profit/30 via-background to-background /10">
+ <div className="min-h-screen via-background to-background /10">
  <div className="max-w-6xl mx-auto p-3 sm:p-4 space-y-4" dir="rtl">
  {/* Hero header */}
- <Card className="relative overflow-hidden border-profit bg-gradient-to-l from-profit via-profit to-profit text-profit">
+ <Card className="relative overflow-hidden border-profit from-profit via-profit to-profit text-profit">
  <IslamicPattern />
  <CardContent className="relative p-5 sm:p-6">
  <div className="flex items-start justify-between gap-3 flex-wrap">

@@ -308,11 +308,11 @@ class TestPillar3AtrStopFromSettings:
             f"ATR_STOP_MAX_PCT = {ATR_STOP_MAX_PCT}, expected 9.0 (PILLAR-3)"
         )
 
-    def test_min_pct_is_3(self):
-        """PILLAR-3 key assertion: ATR_STOP_MIN_PCT = 3.0 (unchanged)."""
+    def test_min_pct_is_5(self):
+        """PILLAR-3 key assertion: ATR_STOP_MIN_PCT = 5.0 (Rule 8 — EGX-STRATEGY 2026-08-30, was 3.0)."""
         from core.opportunity_quality import ATR_STOP_MIN_PCT
-        assert ATR_STOP_MIN_PCT == 3.0, (
-            f"ATR_STOP_MIN_PCT = {ATR_STOP_MIN_PCT}, expected 3.0"
+        assert ATR_STOP_MIN_PCT == 5.0, (
+            f"ATR_STOP_MIN_PCT = {ATR_STOP_MIN_PCT}, expected 5.0"
         )
 
     def test_getters_return_settings_values(self):
@@ -426,6 +426,8 @@ class TestAllCategoriesKnown:
         "confidence", "smc", "general",
         # P1.3/P1.4/P1.5 categories
         "evidence", "exit", "kill_filter", "absorption", "regime",
+        # P41 categories (morning_bell + exit_engine)
+        "morning_bell", "exit_engine",
     }
 
     def test_no_unknown_categories(self):

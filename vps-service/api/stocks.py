@@ -30,6 +30,7 @@ from flask import Blueprint, jsonify, request
 
 from utils.db_paths import DBPaths
 from utils.helpers import parse_volume
+from utils.fair_value import calc_fundamental_fair_value as _canonical_fundamental_fair_value, calc_upside_percent as _canonical_upside_percent
 
 
 stocks_bp = Blueprint('stocks screener', __name__)
@@ -86,53 +87,16 @@ def _to_float(value) -> float | None:
 
 
 def _calc_fair_value(pe_ratio, eps, book_value_per_share, current_price=None, pb_ratio=None, ma_200=None) -> float | None:
-    """
-    Estimate fair value per share.
-
-    Primary formula (per task spec STOCKS-SCREEN-020):
-        fair_value = max(pe_ratio * eps, book_value_per_share * 1.5)
-
-    Fallbacks (when primary inputs are missing — common for EGX stocks where
-    book_value_per_share and pe_ratio are often NULL):
-        2. If pb_ratio is known: derive bvps = current_price / pb_ratio,
-           then fair_value = bvps * 1.5
-           (stocks with pb_ratio < 1.5 will be flagged as undervalued)
-        3. If ma_200 is known: use it as a long-term fair-value proxy
-           (stocks trading below their 200-day MA are "below fair value")
-
-    Returns None when no meaningful estimate can be computed.
-    """
-    pe = _to_float(pe_ratio)
-    eps_v = _to_float(eps)
-    bvps = _to_float(book_value_per_share)
-    cp = _to_float(current_price)
-    pb = _to_float(pb_ratio)
-    ma2 = _to_float(ma_200)
-
-    pe_estimate = (pe * eps_v) if (pe and pe > 0 and eps_v and eps_v > 0) else None
-    bv_estimate = (bvps * 1.5) if (bvps and bvps > 0) else None
-    # Fallback 2: derive bvps from pb_ratio
-    pb_estimate = None
-    if bv_estimate is None and pb and pb > 0 and cp and cp > 0:
-        derived_bvps = cp / pb
-        pb_estimate = derived_bvps * 1.5
-    # Fallback 3: ma_200 as long-term fair value proxy
-    ma_estimate = ma2 if (ma2 and ma2 > 0) else None
-
-    candidates = [v for v in (pe_estimate, bv_estimate, pb_estimate, ma_estimate)
-                  if v is not None and v > 0]
-    if not candidates:
-        return None
-    return round(max(candidates), 4)
+    """Estimate fair value per share — BRAVO UNIFY: delegates to canonical utils.fair_value."""
+    return _canonical_fundamental_fair_value(
+        pe_ratio=pe_ratio, eps=eps, book_value_per_share=book_value_per_share,
+        current_price=current_price, pb_ratio=pb_ratio, ma_200=ma_200,
+    )
 
 
 def _calc_upside_percent(fair_value, current_price) -> float | None:
-    """upside_percent = ((fair_value - current_price) / current_price) * 100"""
-    fv = _to_float(fair_value)
-    cp = _to_float(current_price)
-    if not fv or not cp or cp <= 0:
-        return None
-    return round(((fv - cp) / cp) * 100, 2)
+    """upside_percent = ((fair_value - current_price) / current_price) * 100 — BRAVO UNIFY: delegates to canonical."""
+    return _canonical_upside_percent(fair_value, current_price)
 
 
 def _get_daily_stats(conn: sqlite3.Connection, ticker: str) -> dict:

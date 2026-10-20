@@ -530,7 +530,7 @@ function StockIcon({
 
  return (
  <div
- className={`${cls} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-foreground font-bold border-2 border-white/20 dark:border-slate-700 shadow-sm`}
+ className={`${cls} rounded-xl ${gradient} flex items-center justify-center text-foreground font-bold border-2 border-white/20 dark:border-slate-700 shadow-sm`}
  aria-label={`${symbol} icon`}
  >
  {initials}
@@ -1124,7 +1124,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </h4>
  <p className="text-3xl font-bold">{fmtNum(rsi, 1)}</p>
  {/* RSI bar 0-100 with marker */}
- <div className="h-2 bg-gradient-to-r from-profit via-warning to-loss rounded-full relative mt-3">
+ <div className="h-2 from-profit via-warning to-loss rounded-full relative mt-3">
  {rsi != null && (
  <div
  className="absolute w-3 h-4 bg-slate-900 dark:bg-white rounded-sm -top-1 border border-white shadow"
@@ -1734,7 +1734,7 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
  <span className="text-loss">قاع: {(low52w ?? 0).toFixed(2)}</span>
  <span className="text-profit">قمة: {(high52w ?? 0).toFixed(2)}</span>
  </div>
- <div className="relative h-4 rounded-full bg-gradient-to-l from-loss via-warning to-profit">
+ <div className="relative h-4 rounded-full from-loss via-warning to-profit">
  <div
  className="absolute w-1 h-6 -top-1 bg-slate-900 dark:bg-white rounded-sm shadow-md border border-white"
  style={{
@@ -2668,10 +2668,10 @@ export function SpecialistAnalysisView() {
  return (
  <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 bg-white dark:bg-slate-950 min-h-screen" dir="rtl">
  {/* ════ Header ════ */}
- <div className="rounded-xl border border-profit/20 /40 bg-gradient-to-l from-profit via-warning/40 to-slate-50 /30 dark:via-warning/20 dark:to-slate-900/40 p-4 sm:p-5">
+ <div className="rounded-xl border border-profit/20 /40 from-profit to-slate-50 /30 dark:dark:to-slate-900/40 p-4 sm:p-5">
  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
  <div className="flex items-start gap-3">
- <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-profit to-warning flex items-center justify-center flex-shrink-0 shadow-md">
+ <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg from-profit to-warning flex items-center justify-center flex-shrink-0 shadow-md">
  <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-foreground" />
  </div>
  <div>

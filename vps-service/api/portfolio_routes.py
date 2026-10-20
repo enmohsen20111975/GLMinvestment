@@ -82,6 +82,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from portfolio.position_manager import PositionManager, PositionState, TradingPattern
 from portfolio.portfolio_heat import PortfolioHeatCalculator, HeatLevel
+# BRAVO UNIFY (Rule 67): delegate risk-based position sizing to canonical
+from utils.position_sizing import calculate_risk_based_position as _canonical_risk_position
 from portfolio.strategies import (
     EntryStrategies, StrategyType,
     PlannedScaleInStrategy, PyramidUpStrategy, ThreeZoneHuntStrategy
@@ -2016,11 +2018,27 @@ def calculate_position_size():
         available_cash = float(cash_info.get('available_cash', 0))
 
         # 2) حساب الـ risk-based position size
-        risk_amount = portfolio_value * 0.02  # 2% max loss
-        risk_per_share = entry - stop
-        shares = risk_amount / risk_per_share if risk_per_share > 0 else 0
-        position_value = shares * entry
-        suggested_pct = (position_value / portfolio_value * 100) if portfolio_value > 0 else 0
+        #    BRAVO UNIFY (Rule 67): delegate core calculation to canonical utils.position_sizing
+        #    canonical بـ يطبق max_position_pct cap (5% per ticker هنا)
+        _pos_result = _canonical_risk_position(
+            capital=portfolio_value,
+            entry=entry,
+            stop=stop,
+            risk_pct=2.0,  # 2% max loss
+            direction="BUY",
+            max_position_pct=5.0,  # 5% max per single ticker
+        )
+        if _pos_result is None:
+            return jsonify({
+                "success": False,
+                "error": "position sizing failed: invalid entry/stop"
+            }), 400
+        risk_amount = _pos_result['risk_amount']
+        risk_per_share = _pos_result['risk_per_share']
+        shares = _pos_result['position_size']
+        position_value = _pos_result['position_value']
+        suggested_pct = _pos_result['position_pct']
+        capped_by_ticker = (suggested_pct >= 5.0)
 
         # 3) تطبيق قواعد الـ caps
         #    (a) 5% max per single ticker

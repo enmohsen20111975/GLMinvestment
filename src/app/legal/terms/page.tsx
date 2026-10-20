@@ -13,7 +13,7 @@ export default function TermsOfServicePage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-l from-purple-600 to-purple-800 px-8 py-6">
+          <div className="from-purple-600 to-purple-800 px-8 py-6">
             <h1 className="text-3xl font-bold text-white">شروط الاستخدام</h1>
             <p className="text-purple-100 mt-2">آخر تحديث: مايو 2025</p>
           </div>

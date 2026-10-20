@@ -374,6 +374,18 @@ def classify_disclosure(title: str, content: str = '',
                 best_match['verdict'] = 'NEUTRAL'
                 best_match['reason_ar'] = 'توزيع أرباح — قبل ex-date (محايد)'
 
+    # BRAVO-NEWS-FALLBACK (2026-10-20): لو مفيش تصنيف (خبر عام مش إفصاح رسمي)
+    # صـنفه كـ NEWS_GENERAL (score=0, neutral) عشان يـ store في DB.
+    # السبب: أخبار amwalalghad مقالات إخبارية (مش إفصاحات بالـ format المتوقع).
+    if best_match is None:
+        best_match = {
+            'event_type': 'NEWS_GENERAL',
+            'score': 0,
+            'verdict': 'NEUTRAL',
+            'reason_ar': 'خبر عام — مش إفصاح رسمي',
+            'matched_keywords': [],
+        }
+
     return best_match
 
 
@@ -547,7 +559,7 @@ def _extract_ticker_from_text(text: str) -> Optional[str]:
 
 def fetch_egx_disclosures(limit: int = 50) -> List[Dict[str, Any]]:
     """
-    جلب الإفصاحات من EGX official + EGKSCO fallback.
+    جلب الإفصاحات من EGX official + EGKSCO fallback + amwalalghad (news).
 
     Returns: list of raw disclosure dicts (title, content, url, date, source)
     """
@@ -590,7 +602,45 @@ def fetch_egx_disclosures(limit: int = 50) -> List[Dict[str, Any]]:
                     'source_url': EGKSCO_DISCLOSURES_URL,
                 })
 
-    # 3. If no real data, allow manual injection (for testing/backtest)
+    # 3. BRAVO-NEWS-SOURCE (2026-10-20): amwalalghad.com — أخبار EGX طازة
+    # EGX official site blocked/unreliable. amwalalghad بـ يـ publish أخبار البورصة يومياً.
+    if len(disclosures) < 10:
+        try:
+            _amwal_url = 'https://www.amwalalghad.com/stock-market/egx/'
+            _amwal_html = _http_get(_amwal_url, timeout=15)
+            if _amwal_html:
+                # extract article URLs (dated: /YYYY/MM/DD/)
+                _article_urls = re.findall(
+                    r'href="(https://amwalalghad\.com/(20\d{2})/(\d{2})/(\d{2})/[^"]+)"',
+                    _amwal_html
+                )
+                _seen = set()
+                for url, year, month, day in _article_urls:
+                    if url in _seen:
+                        continue
+                    _seen.add(url)
+                    _date_str = f'{year}-{month}-{day}'
+                    # fetch article page to get title
+                    _art_html = _http_get(url, timeout=10)
+                    if _art_html:
+                        _title_match = re.search(r'<title>([^<]+)</title>', _art_html)
+                        _title = _title_match.group(1).split('|')[0].strip() if _title_match else ''
+                        if len(_title) > 10:
+                            # extract ticker from title (if mentioned)
+                            _ticker = _extract_ticker_from_text(_title) or 'EGX_GENERAL'
+                            disclosures.append({
+                                'ticker': _ticker,
+                                'title': _title[:300],
+                                'published_at': _date_str,
+                                'source': 'AMWALALGHAD',
+                                'source_url': url,
+                            })
+                    if len(disclosures) >= limit:
+                        break
+        except Exception as _amwal_err:
+            logger.debug(f'amwalalghad fetch failed: {_amwal_err}')
+
+    # 4. If no real data, allow manual injection (for testing/backtest)
     # This is a safe fallback — returns empty list if no disclosures found
     return disclosures[:limit]
 

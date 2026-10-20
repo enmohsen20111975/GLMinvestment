@@ -41,6 +41,11 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field, asdict
 
+# BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate ATR/Bollinger/VWAP to canonical.
+from analyzers.indicators.atr import calc_atr as _canonical_atr
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+from analyzers.indicators.vwap import calc_vwap as _canonical_vwap
+
 # ---------------------------------------------------------------------------
 # Optional imports — try/except with fallback
 # ---------------------------------------------------------------------------
@@ -328,66 +333,32 @@ class SniperEngine:
     def calc_atr(self, highs: List[float], lows: List[float],
                  closes: List[float], period: int = 14) -> float:
         """
-        ATR(14) — Average True Range with Wilder smoothing.
-
+        ATR(14) — BRAVO UNIFY: delegates to canonical analyzers.indicators.atr (Wilder's).
         True Range = max(H-L, |H-prevC|, |L-prevC|)
         """
-        if len(closes) < period + 1:
-            return 0.0
-
-        trs: List[float] = []
-        for i in range(1, len(closes)):
-            if i >= len(highs) or i >= len(lows):
-                break
-            h = highs[i]
-            l = lows[i]
-            pc = closes[i - 1]
-            if h <= 0 or l <= 0 or pc <= 0:
-                continue
-            tr = max(h - l, abs(h - pc), abs(l - pc))
-            trs.append(tr)
-
-        if len(trs) < period:
-            return round(sum(trs) / len(trs), 4) if trs else 0.0
-
-        atr = sum(trs[:period]) / period
-        for i in range(period, len(trs)):
-            atr = (atr * (period - 1) + trs[i]) / period
-
-        return round(atr, 4)
+        result = _canonical_atr(highs, lows, closes, period)
+        return result if result is not None else 0.0
 
     def calc_bollinger_bands(self, closes: List[float],
                              period: int = 20, num_std: float = 2.0) -> Dict:
         """
-        Bollinger Bands(20, 2) — SMA-20 ± 2 standard deviations.
+        Bollinger Bands(20, 2) — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+        بيرجع {upper, middle, lower, bandwidth, percent_b}.
+        Rule 67: percent_b موحّد 0-100 (matching canonical API).
         """
-        if len(closes) < period:
+        result = _canonical_bollinger(closes, period, num_std)
+        if result is None:
             return {
-                'upper': 0.0, 'middle': 0.0, 'lower': 0.0,
-                'bandwidth': 0.0, 'percent_b': 0.5,
+                'upper': None, 'middle': None, 'lower': None,
+                'bandwidth': None, 'percent_b': None,
             }
-
-        slice_closes = closes[-period:]
-        middle = sum(slice_closes) / period
-        variance = sum((c - middle) ** 2 for c in slice_closes) / period
-        std = math.sqrt(variance)
-
-        upper = middle + num_std * std
-        lower = middle - num_std * std
-        bandwidth = ((upper - lower) / middle * 100) if middle > 0 else 0.0
-
-        current = closes[-1]
-        if upper != lower:
-            percent_b = (current - lower) / (upper - lower)
-        else:
-            percent_b = 0.5
-
+        # Rule 67: percent_b 0-100 (matching canonical — no conversion)
         return {
-            'upper': round(upper, 4),
-            'middle': round(middle, 4),
-            'lower': round(lower, 4),
-            'bandwidth': round(bandwidth, 2),
-            'percent_b': round(max(0, min(1, percent_b)), 4),
+            'upper': result['upper'],
+            'middle': result['middle'],
+            'lower': result['lower'],
+            'bandwidth': round(result['bandwidth'], 2),
+            'percent_b': result['percent_b'],
         }
 
     def calc_sma(self, closes: List[float], periods: List[int] = None) -> Dict:
@@ -408,30 +379,13 @@ class SniperEngine:
     def calc_vwap(self, highs: List[float], lows: List[float],
                   closes: List[float], volumes: List[float]) -> float:
         """
-        VWAP — Volume Weighted Average Price.
-
-        Uses available data (typical price × volume) / total volume.
+        VWAP — BRAVO UNIFY: delegates to canonical analyzers.indicators.vwap.
+        Volume Weighted Average Price = sum(typical_price × volume) / sum(volume).
         """
-        if not closes or not volumes or len(closes) != len(volumes):
-            return 0.0
-
-        cumulative_tp_vol = 0.0
-        cumulative_vol = 0.0
-
-        for i in range(len(closes)):
-            vol = volumes[i] if i < len(volumes) else 0
-            if vol <= 0:
-                continue
-            h = highs[i] if i < len(highs) else closes[i]
-            l = lows[i] if i < len(lows) else closes[i]
-            typical_price = (h + l + closes[i]) / 3.0
-            cumulative_tp_vol += typical_price * vol
-            cumulative_vol += vol
-
-        if cumulative_vol == 0:
+        result = _canonical_vwap(highs, lows, closes, volumes)
+        if result is None:
             return closes[-1] if closes else 0.0
-
-        return round(cumulative_tp_vol / cumulative_vol, 4)
+        return result
 
     def calc_volume_sma(self, volumes: List[float], period: int = 20) -> float:
         """Volume SMA — average volume over the last N periods."""
@@ -1005,7 +959,7 @@ class SniperEngine:
           - Otherwise: scaled 20-50
         """
         if len(closes) < period or len(highs) < period or len(lows) < period:
-            return 50.0, 0.0, 0.0
+            return None, None, None  # Rule 27: no fabrication
 
         recent_highs = highs[-period:]
         recent_lows = lows[-period:]
@@ -1014,7 +968,7 @@ class SniperEngine:
         current = closes[-1]
 
         if upper_channel <= 0:
-            return 50.0, round(upper_channel, 4), round(lower_channel, 4)
+            return None, None, None  # Rule 27: no fabrication
 
         if current > upper_channel:
             # Breakout above 55-day high!
@@ -1849,9 +1803,10 @@ class SniperEngine:
           - Aggressive:   SL=2.0×ATR, Trail=2.5×ATR, TP=3.5×ATR
 
         Returns: (stop_loss, target_price, risk_reward, trailing_stop_atr_mult, initial_stop_atr_mult)
+        Rule 27 (NO-FAKE-DATA): بيرجّع (None, None, None, None, None) لو price <= 0.
         """
         if price <= 0:
-            return 0.0, 0.0, 0.0, 3.0, 3.0
+            return None, None, None, None, None  # Rule 27: no fabrication
 
         # Persona-based ATR multipliers
         persona_params = {

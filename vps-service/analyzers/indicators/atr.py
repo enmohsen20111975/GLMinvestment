@@ -1,7 +1,7 @@
 """
 analyzers/indicators/atr.py — Canonical ATR (Average True Range)
 ================================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب ATR في المشروع.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب ATR في المشروع.
 
 الصيغة: **Wilder's smoothing** (مش SMA)
   TR[i] = max(high[i] - low[i], |high[i] - close[i-1]|, |low[i] - close[i-1]|)
@@ -11,7 +11,7 @@ analyzers/indicators/atr.py — Canonical ATR (Average True Range)
 SMA (sum/TR_count) بـ يعطي قيم أسرع في التغيّر — ده غلط.
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Documentation/ENGINEERING_AUDIT_REPORT.md (Bug #1: ATR Wilder vs SMA)
   - النسخة الأصلية: analyzers/technical_analyzer.py:206 (Wilder's — الصحيحة)
 

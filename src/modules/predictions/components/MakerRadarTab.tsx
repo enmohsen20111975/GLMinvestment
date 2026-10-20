@@ -1144,7 +1144,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
  {/* ===== HEADER ===== (always visible — refresh buttons work across all sub-tabs) */}
  <Card className="overflow-hidden">
- <div className="bg-gradient-to-l from-profit/80 via-profit/30 to-transparent /30 dark:to-transparent p-4 md:p-5">
+ <div className="to-transparent /30 dark:to-transparent p-4 md:p-5">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
  <div className="relative">
@@ -1449,7 +1449,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
  {/* ===== RADAR SUMMARY — الخلاصة النهائية للقرار ===== */}
  {data && !loading && (
- <Card className="p-4 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+ <Card className="p-4 border-primary/20 ">
  <div className="flex items-start gap-3">
  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
  <Target className="w-5 h-5 text-primary-foreground" />
@@ -1972,15 +1972,15 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
  // Gradient based on direction
  const gradient = isInflow
- ? 'from-profit/80 to-profit/60'
+ ? ''
  : isOutflow
- ? 'from-loss/80 to-loss/60'
- : 'from-warning/60 to-warning/40';
+ ? ''
+ : '';
 
  return (
  <div
  key={s.sector}
- className={`relative flex-1 min-w-[20px] bg-gradient-to-l ${gradient} transition-all duration-300 ${isHovered ? 'brightness-110 scale-y-110' : ''} ${isDimmed ? 'opacity-40' : ''}`}
+ className={`relative flex-1 min-w-[20px] ${gradient} transition-all duration-300 ${isHovered ? 'brightness-110 scale-y-110' : ''} ${isDimmed ? 'opacity-40' : ''}`}
  style={{ flexGrow: widthPct, flexBasis: '0%' }}
  onMouseEnter={() => setHoveredSector(s.sector)}
  onMouseLeave={() => setHoveredSector(null)}
@@ -1988,7 +1988,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
  >
  {/* Animated shimmer for inflow sectors */}
  {isInflow && (
- <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/20 to-transparent animate-pulse" style={{ animationDuration: '2s' }} />
+ <div className="absolute inset-0 from-transparent to-transparent animate-pulse" style={{ animationDuration: '2s' }} />
  )}
  {/* Sector label (only if wide enough) */}
  {widthPct > 8 && (
@@ -3711,7 +3711,7 @@ function ExplosiveBarChart({ detected, total }: { detected: number; total: numbe
  {detected}
  </div>
  <div
- className="w-full bg-gradient-to-t from-profit to-profit rounded-t-md transition-all"
+ className="w-full from-profit to-profit rounded-t-md transition-all"
  style={{ height: `${Math.max(detectedPct, 4)}%` }}
  title={`${detected} مكتشفة`}
  />
@@ -3722,7 +3722,7 @@ function ExplosiveBarChart({ detected, total }: { detected: number; total: numbe
  {missed}
  </div>
  <div
- className="w-full bg-gradient-to-t from-loss to-loss rounded-t-md transition-all"
+ className="w-full from-loss to-loss rounded-t-md transition-all"
  style={{ height: `${Math.max(missedPct, 4)}%` }}
  title={`${missed} فائتة`}
  />
@@ -3789,7 +3789,7 @@ function MarketIntelligenceCard({ ticker }: { ticker: string }) {
  const priceHistory = sections.priceHistory || {};
 
  return (
- <Card className="p-3 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 space-y-3">
+ <Card className="p-3 border-primary/20 space-y-3">
  <div className="flex items-center gap-1.5">
  <Target className="h-3.5 w-3.5 text-primary" />
  <span className="text-xs font-bold">خريطة ذكاء السوق</span>

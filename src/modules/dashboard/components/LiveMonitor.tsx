@@ -336,7 +336,7 @@ function MarketStatusBanner({
  className={cn(
  'relative overflow-hidden rounded-2xl border p-4 sm:p-6 shadow-sm',
  'border-slate-200 dark:border-slate-800',
- 'bg-gradient-to-l from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950',
+ 'from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950',
  )}
  >
  {/* Decorative grid pattern */}

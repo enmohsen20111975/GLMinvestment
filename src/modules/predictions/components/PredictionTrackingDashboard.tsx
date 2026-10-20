@@ -1155,7 +1155,7 @@ export function PredictionTrackingDashboard({
  return (
  <div className={cn('space-y-5 dir-rtl', className)}>
  {/* ─── 1. Luxury Header & Timeframe Control Bar ─── */}
- <Card className="border border-profit/20 bg-gradient-to-br from-card via-card to-profit/20 shadow-xl rounded-2xl overflow-hidden">
+ <Card className="border border-profit/20 from-card via-card shadow-xl rounded-2xl overflow-hidden">
  <CardHeader className="p-4 md:p-6 pb-3 border-b border-border/50">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
  <div>
@@ -1304,8 +1304,8 @@ export function PredictionTrackingDashboard({
  <div className={cn(
  'col-span-2 sm:col-span-1 p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden',
  activeStats.netReturn >= 0
- ? 'bg-gradient-to-br from-profit/15 via-profit/5 to-transparent border-profit/20'
- : 'bg-gradient-to-br from-loss/15 via-loss/5 to-transparent border-loss/20'
+ ? 'to-transparent border-profit/20'
+ : 'to-transparent border-loss/20'
  )}>
  <div className="flex items-center justify-between text-xs font-bold mb-1">
  <span className={activeStats.netReturn >= 0 ? 'text-profit ' : 'text-loss '}>
@@ -1459,7 +1459,7 @@ export function PredictionTrackingDashboard({
 
  {/* ─── P0-v17: Focus Stocks Banner + Cumulative Profit Chart ─── */}
  {focusTickerList.length > 0 && (
- <Card className="border border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card shadow-md rounded-2xl overflow-hidden">
+ <Card className="border border-warning/20 via-card to-card shadow-md rounded-2xl overflow-hidden">
  <CardHeader className="p-4 border-b border-warning/20">
  <div className="flex items-center gap-2 flex-wrap">
  <Badge className="bg-warning/15 text-warning border border-warning/20 gap-1 font-bold text-xs">

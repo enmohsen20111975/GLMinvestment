@@ -1,7 +1,7 @@
 """
 analyzers/indicators/ma.py — Canonical Moving Averages (SMA + EMA + MACD)
 ==========================================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب SMA/EMA/MACD في المشروع.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب SMA/EMA/MACD في المشروع.
 
 الـ canonical functions:
   - sma(data, period)      — Simple Moving Average = sum(data[-period:]) / period
@@ -14,7 +14,7 @@ analyzers/indicators/ma.py — Canonical Moving Averages (SMA + EMA + MACD)
   - MACD = EMA(12) - EMA(26), signal = EMA(MACD, 9)
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Documentation/ENGINEERING_AUDIT_REPORT.md (Bug #9: SMA200 = EMA200 mislabeled)
   - النسخة الأصلية: analyzers/technical_analyzer.py:56-134 (الصحيحة)
 

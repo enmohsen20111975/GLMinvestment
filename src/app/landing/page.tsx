@@ -15,7 +15,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background page-transition" dir="rtl">
       {/* ─── Hero Section ─── */}
       <section className="relative overflow-hidden gradient-border mx-4 mt-6 rounded-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-profit/5" />
+        <div className="absolute inset-0 via-transparent " />
         <div className="relative px-6 py-16 md:py-24 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

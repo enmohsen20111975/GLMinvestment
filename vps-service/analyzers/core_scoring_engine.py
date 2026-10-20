@@ -44,6 +44,7 @@ from analyzers.engine_settings import get_setting
 # ============================================================================
 from analyzers.indicators.rsi import calc_rsi
 from analyzers.indicators.ma import macd as _canonical_macd_cse, sma as _canonical_sma_cse  # BRAVO INDICATOR-UNIFY  # noqa: F401 — re-exported for backward compat
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger_cse  # BRAVO UNIFY (Rule 67)
 
 
 # ============================================================================
@@ -104,16 +105,15 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float],
         return sum(trs[-period:]) / period if len(trs) >= period else sum(trs) / len(trs)
 
 
-def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[float, float, float]:
-    """حساب Bollinger Bands → (upper, middle, lower)"""
-    if len(closes) < period:
-        mid = closes[-1]
-        return mid * 1.02, mid, mid * 0.98
-
-    recent = closes[-period:]
-    mid = sum(recent) / period
-    std = math.sqrt(sum((x - mid) ** 2 for x in recent) / period)
-    return round(mid + 2 * std, 4), round(mid, 4), round(mid - 2 * std, 4)
+def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    """حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+    Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع (None, None, None).
+    بيرجع (upper, middle, lower).
+    """
+    result = _canonical_bollinger_cse(closes, period, 2.0)
+    if result is None:
+        return None, None, None
+    return (result['upper'], result['middle'], result['lower'])
 
 
 def detect_candlestick_pattern(
@@ -281,6 +281,7 @@ class VolumeScorer:
         current_volume = price_data.get("current_volume", 0)
 
         if not volumes or len(volumes) < 5:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"volume_data": "غير متاح"}
 
         avg_volume = sum(volumes[-20:]) / min(20, len(volumes))
@@ -330,6 +331,7 @@ class CandlestickScorer:
         closes = price_data.get("closes", [])
 
         if len(closes) < 3:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"pattern": "غير كافٍ"}
 
         pattern, pattern_score = detect_candlestick_pattern(opens, highs, lows, closes)
@@ -356,6 +358,7 @@ class FundamentalScorer:
         """
         fundamental = price_data.get("fundamental", {})
         if not fundamental:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"fundamental_data": "غير متاح - استخدم 50 محايد"}
 
         score = 50.0

@@ -254,7 +254,7 @@ export function UserPublishingView() {
  </div>
  
  {userPoints && (
- <Card className="bg-gradient-to-l from-warning/10 to-yellow-500/10 border-warning ">
+ <Card className="to-yellow-500/10 border-warning ">
  <CardContent className="p-4 flex items-center gap-4">
  <div className="flex items-center gap-2">
  {getLevelIcon(userPoints.level)}
@@ -660,9 +660,9 @@ function LeaderboardTab() {
  };
 
  const getRankStyle = (rank: number) => {
- if (rank === 1) return 'bg-gradient-to-l from-yellow-500/20 to-warning/20 border-yellow-400';
- if (rank === 2) return 'bg-gradient-to-l from-gray-400/20 to-slate-500/20 border-border';
- if (rank === 3) return 'bg-gradient-to-l from-orange-600/20 to-warning/20 border-orange-500';
+ if (rank === 1) return 'from-yellow-500/20 border-yellow-400';
+ if (rank === 2) return 'from-gray-400/20 to-slate-500/20 border-border';
+ if (rank === 3) return 'from-orange-600/20 border-orange-500';
  return '';
  };
 

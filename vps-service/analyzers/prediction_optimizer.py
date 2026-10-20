@@ -29,6 +29,9 @@ import json
 import logging
 import threading
 from datetime import datetime, timezone, timedelta
+
+# BRAVO UNIFY (Rule 67 + Rule 27): delegate Bollinger to canonical (no fabrication)
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -1161,19 +1164,14 @@ class PredictionOptimizer:
 
     def _calc_bollinger(
         self, prices: List[float], period: int = 20, std_mult: float = 2.0
-    ) -> Tuple[float, float, float, float]:
-        """حساب Bollinger Bands + %B."""
-        if len(prices) < period:
-            mid = sum(prices) / len(prices) if prices else 50
-            return mid, mid, mid, 50
-        recent = prices[-period:]
-        mid = sum(recent) / period
-        variance = sum((p - mid) ** 2 for p in recent) / period
-        std = math.sqrt(variance)
-        upper = mid + std_mult * std
-        lower = mid - std_mult * std
-        pct = ((prices[-1] - lower) / (upper - lower) * 100) if (upper - lower) > 0 else 50
-        return upper, mid, lower, max(0, min(100, pct))
+    ) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
+        """حساب Bollinger Bands + %B — BRAVO UNIFY: delegates to canonical.
+        Rule 27 (NO-FAKE-DATA): returns (None, None, None, None) on insufficient data.
+        """
+        result = _canonical_bollinger(prices, period, std_mult)
+        if result is None:
+            return None, None, None, None
+        return (result['upper'], result['middle'], result['lower'], result['percent_b'])
 
     def _calc_support_resistance(
         self, prices: List[float], lookback: int = 20, ticker: str = None

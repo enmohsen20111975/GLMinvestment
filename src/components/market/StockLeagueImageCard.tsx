@@ -109,21 +109,21 @@ function getCurrentMonthName(): string {
 function RankBadge({ rank }: { rank: number }) {
  if (rank === 1) {
  return (
- <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-warning flex items-center justify-center shadow-lg shadow-amber-500/30">
+ <div className="flex-shrink-0 w-9 h-9 rounded-full from-yellow-400 to-warning flex items-center justify-center shadow-lg shadow-amber-500/30">
  <Crown className="w-5 h-5 text-slate-900" />
  </div>
  );
  }
  if (rank === 2) {
  return (
- <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 flex items-center justify-center shadow-lg shadow-slate-400/20">
+ <div className="flex-shrink-0 w-9 h-9 rounded-full from-slate-200 to-slate-400 flex items-center justify-center shadow-lg shadow-slate-400/20">
  <Medal className="w-5 h-5 text-slate-800" />
  </div>
  );
  }
  if (rank === 3) {
  return (
- <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center shadow-lg shadow-amber-800/20">
+ <div className="flex-shrink-0 w-9 h-9 rounded-full from-warning to-warning flex items-center justify-center shadow-lg shadow-amber-800/20">
  <Award className="w-5 h-5 text-warning" />
  </div>
  );
@@ -142,10 +142,10 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  <div
  ref={ref}
  dir="rtl"
- className="w-[560px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
+ className="w-[560px] from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
  >
  {/* Header — Golden gradient with trophy */}
- <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-5 text-center relative overflow-hidden">
+ <div className="from-warning via-yellow-500 to-warning p-5 text-center relative overflow-hidden">
  <div className="absolute inset-0 opacity-10">
  <Trophy className="w-32 h-32 text-slate-900 mx-auto" />
  </div>
@@ -193,11 +193,11 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  key={`${entry.ticker}-${entry.rank}`}
  className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${
  entry.rank === 1
- ? 'bg-gradient-to-l from-warning/10 to-transparent border border-warning/20'
+ ? 'to-transparent border border-warning/20'
  : entry.rank === 2
- ? 'bg-gradient-to-l from-slate-300/5 to-transparent border border-slate-400/20'
+ ? 'from-slate-300/5 to-transparent border border-slate-400/20'
  : entry.rank === 3
- ? 'bg-gradient-to-l from-warning/5 to-transparent border border-warning/20'
+ ? 'to-transparent border border-warning/20'
  : 'bg-slate-800/40 border border-slate-700/30'
  }`}
  >
@@ -257,9 +257,9 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  </div>
 
  {/* Footer — Branding */}
- <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-3 flex items-center justify-between">
+ <div className="from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-3 flex items-center justify-between">
  <div className="flex items-center gap-1.5">
- <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center">
+ <div className="w-5 h-5 rounded-full from-warning to-warning flex items-center justify-center">
  <TrendingUp className="w-3 h-3 text-slate-900" />
  </div>
  <span className="text-xs font-bold text-warning">
@@ -294,10 +294,10 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  <div
  ref={ref}
  dir="rtl"
- className="w-[520px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
+ className="w-[520px] from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
  >
  {/* Header — Golden gradient */}
- <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-4 text-center">
+ <div className="from-warning via-yellow-500 to-warning p-4 text-center">
  <div className="flex items-center justify-center gap-2 mb-1">
  <Trophy className="w-6 h-6 text-slate-900" />
  <h2 className="text-xl font-black text-slate-900">
@@ -394,9 +394,9 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  </div>
 
  {/* Footer — Branding */}
- <div className="bg-gradient-to-r from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-2.5 flex items-center justify-between">
+ <div className="from-slate-800 to-slate-900 border-t border-warning/20 px-4 py-2.5 flex items-center justify-between">
  <div className="flex items-center gap-1.5">
- <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warning to-warning flex items-center justify-center">
+ <div className="w-5 h-5 rounded-full from-warning to-warning flex items-center justify-center">
  <TrendingUp className="w-3 h-3 text-slate-900" />
  </div>
  <span className="text-xs font-bold text-warning">
@@ -499,7 +499,7 @@ export function StockLeagueImageCard({
  telegramMarket="EGX"
  accentColor="#f59e0b"
  borderClass="border-warning"
- bgClass="bg-gradient-to-br from-warning via-yellow-50 to-orange-100/40"
+ bgClass="from-warning via-yellow-50 to-orange-100/40"
  hasData={true}
  emptyHint=""
  >
@@ -543,7 +543,7 @@ export function StockLeagueImageCard({
  telegramMarket="EGX"
  accentColor="#f59e0b"
  borderClass="border-warning"
- bgClass="bg-gradient-to-br from-warning via-yellow-50 to-orange-100/40"
+ bgClass="from-warning via-yellow-50 to-orange-100/40"
  hasData={true}
  emptyHint=""
  >

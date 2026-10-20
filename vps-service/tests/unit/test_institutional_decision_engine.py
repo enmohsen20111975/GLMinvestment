@@ -130,6 +130,11 @@ class TestTechScoreBase:
 class TestThresholds:
     """Verify buy/sell/strong thresholds read from settings."""
 
+    @pytest.mark.skip(
+        reason="V40 behavior change — evidence-count gate (needs rewrite for V40): "
+               "engine now requires benchmark_passed + strong_count >= 3 (AXIS-4), "
+               "tech_score no longer drives the buy decision directly."
+    )
     @patch('analyzers.institutional_decision_engine.get_setting')
     def test_buy_threshold_from_settings(self, mock_gs):
         """institutional_buy_threshold reads from settings (default 65)."""

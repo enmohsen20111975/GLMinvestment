@@ -1,7 +1,7 @@
 """
 utils/risk_reward.py — Canonical Risk:Reward Calculation
 ==========================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب R:R في الـ Python backend.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب R:R في الـ Python backend.
 
 الصيغة:
   - BUY setup (target > entry, stop < entry):
@@ -16,7 +16,7 @@ utils/risk_reward.py — Canonical Risk:Reward Calculation
 الـ fallback: لو أي قيمة = 0 أو invalid → بـ يرجّع fallback (default=0.0).
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Documentation/ENGINEERING_AUDIT_REPORT.md (Bug #4: 11+ Python inline copies)
   - النسخة TS: src/lib/risk-reward.ts::computeRiskReward() (matching)
 

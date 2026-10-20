@@ -1,13 +1,13 @@
 """
 utils/backtest_stats.py — Canonical Backtest Statistics (Win Rate + Profit Factor)
 ====================================================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب WR + PF في المشروع.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب WR + PF في المشروع.
 
 الـ canonical functions:
   - compute_win_rate(closed_trades) — wins / total × 100
   - compute_profit_factor(closed_trades, fallback=999.0) — gross_profit / gross_loss
 
-قواعد صارمة (Rule 54):
+قواعد صارمة (Rule 67):
   1. WR لازم يكون 0-100 (percentage)
   2. PF fallback = 999.0 (TradingView convention) لما gross_loss = 0
   3. round WR لـ 1 رقم عشري، PF لـ 2 رقم
@@ -15,7 +15,7 @@ utils/backtest_stats.py — Canonical Backtest Statistics (Win Rate + Profit Fac
   5. dedup-by-ticker (Rule 22): لو في تكرار للسهم، ناخد أعلى score
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Documentation/ENGINEERING_AUDIT_REPORT.md (Bug #6: 30+ inline copies, fallback = 999/0/0.25/infinity)
 
 الاستخدام:

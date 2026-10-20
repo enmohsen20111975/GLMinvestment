@@ -39,10 +39,10 @@ export function MarketingStudio() {
  return (
  <div className="space-y-4">
  {/* Header */}
- <Card className="border-whale/20 bg-gradient-to-br from-whale/5 via-cyan-500/5 to-violet-500/5">
+ <Card className="border-whale/20 via-cyan-500/5 to-violet-500/5">
  <CardHeader>
  <div className="flex items-start gap-3">
- <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-whale via-cyan-500 to-violet-500 flex items-center justify-center shrink-0">
+ <div className="w-11 h-11 rounded-xl from-whale via-cyan-500 to-violet-500 flex items-center justify-center shrink-0">
  <Sparkles className="w-6 h-6 text-foreground" />
  </div>
  <div className="flex-1 min-w-0">

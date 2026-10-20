@@ -46,7 +46,7 @@ export function ImageCardExport({
  telegramMarket = 'EGX',
  accentColor = '#ea580c',
  borderClass = 'border-orange-200',
- bgClass = 'bg-gradient-to-br from-orange-50 via-warning to-orange-100/40',
+ bgClass = 'from-orange-50 via-warning to-orange-100/40',
  hasData = true,
  emptyHint = 'قيد التحليل — البيانات بتتحدث كل دورة',
  children,

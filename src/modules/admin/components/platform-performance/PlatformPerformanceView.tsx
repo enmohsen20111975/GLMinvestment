@@ -345,7 +345,7 @@ export function PlatformPerformanceView() {
  return (
  <div className="space-y-4" dir="rtl">
  {/* === Branding Header === */}
- <Card className="border-2 border-primary/20 bg-gradient-to-l from-primary/5 to-transparent">
+ <Card className="border-2 border-primary/20 to-transparent">
  <CardContent className="p-4 sm:p-5">
  <div className="flex items-start justify-between gap-3 flex-wrap">
  <div className="flex-1 min-w-0">

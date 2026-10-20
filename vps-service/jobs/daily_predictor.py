@@ -4498,6 +4498,192 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     print(f"📊 Predictions in: {PREDICTIONS_DB}")
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# 🐋 WHALE RADAR HUNTER — Counter-Trend Smart Money Picks (جيمي directive)
+# ═══════════════════════════════════════════════════════════════════════════
+# لما السوق العام يكون كاش/تصحيح ومحرك Trend Following مبيطلعش صفقات،
+# رادار الميكرز بيرصد تجميع مؤسسي هادئ (Quiet Accumulation مسار B) بسيولة ضخمة.
+# ده function بـ reads الـ maker_radar JSON + بـ inject الأسهم في stored_analyses
+# كـ "WHALE_RADAR" picks مع إدارة مخاطر صارمة (2% risk + 1.8 R/R + ATR stop).
+# ═══════════════════════════════════════════════════════════════════════════
+
+def inject_whale_radar_picks(market='EGX', dry_run=False):
+    """اقرا maker_radar JSON + ضيف أسهم الحيتان لـ stored_analyses.
+
+    جيمي directive: 'في عز الهبوط والنزيف ده هو وقت المغارة اللي الحوت بيلم فيها'
+    """
+    import json as _json
+
+    _root = Path(__file__).resolve().parents[2]
+    _output_dir = _root / 'scripts' / 'output'
+
+    # 1. اوجد آخر maker_radar JSON
+    prefix = f'maker_radar_{market}_'
+    radar_files = sorted([f for f in _output_dir.glob(f'{prefix}*.json')], reverse=True)
+    if not radar_files:
+        print("[WHALE-RADAR] ⚠️ لا يوجد ملف رادار مخزن — تخطي")
+        return 0
+
+    radar_path = radar_files[0]
+    print(f"[WHALE-RADAR] 📂 قراءة: {radar_path.name}")
+
+    try:
+        radar_data = _json.loads(radar_path.read_text(encoding='utf-8'))
+    except Exception as e:
+        print(f"[WHALE-RADAR] ❌ فشل قراءة الرادار: {e}")
+        return 0
+
+    # 2. استخرج أسهم quiet_accumulation (مسار B) بـ signal_count >= 5 + سيولة موجبة
+    quiet_list = radar_data.get('quiet_list', [])
+    if not quiet_list:
+        # fallback: under_microscope لو فيه path=B_quiet
+        quiet_list = [s for s in radar_data.get('under_microscope', [])
+                      if 'quiet' in (s.get('path') or '').lower()]
+
+    whale_picks = []
+    for stock in quiet_list:
+        ticker = stock.get('ticker') or stock.get('symbol') or ''
+        if not ticker:
+            continue
+
+        signal_count = stock.get('quiet_details', {}).get('signal_count', 0) or stock.get('signal_count', 0)
+        if signal_count < 5:
+            continue  # لازم 5/6 شروط على الأقل
+
+        net_flow = stock.get('net_flow_egp') or stock.get('net_flow') or 0
+        if net_flow <= 0:
+            continue  # سيولة سالبة = تصريف، مش تجميع
+
+        current_price = stock.get('current_price') or stock.get('entry_price') or 0
+        if current_price <= 0:
+            continue
+
+        # احسب ATR-based stop (1.5 ATR أو 4% تحت الدخول)
+        atr = stock.get('atr') or (current_price * 0.04)  # fallback 4%
+        stop_loss = current_price - (atr * 1.5)
+
+        # target = 1.8x risk (R/R >= 1.8)
+        risk = current_price - stop_loss
+        target_price = current_price + (risk * 1.8)
+
+        # R/R check
+        if risk <= 0:
+            continue
+        rr = (target_price - current_price) / risk
+        if rr < 1.8:
+            target_price = current_price + (risk * 1.8)
+            rr = 1.8
+
+        whale_picks.append({
+            'ticker': ticker,
+            'current_price': round(current_price, 2),
+            'stop_loss': round(stop_loss, 2),
+            'target_price': round(target_price, 2),
+            'risk_reward': round(rr, 2),
+            'net_flow_egp': round(net_flow, 0),
+            'signal_count': signal_count,
+            'path': stock.get('path', 'B_quiet_accumulation_strong'),
+            'reason': f"تجميع هادئ من صانع السوق — سيولة داخلة {net_flow/1e6:.1f}M جنيه — {signal_count}/6 شروط تجميع — إدارة مخاطر صارمة 2%",
+        })
+
+    if not whale_picks:
+        print("[WHALE-RADAR] ℹ️ لا توجد أسهم تجميع مؤهلة (5/6 + سيولة موجبة)")
+        return 0
+
+    print(f"[WHALE-RADAR] 🐋 {len(whale_picks)} أسهم تجميع مؤهلة:")
+    for wp in whale_picks:
+        print(f"  → {wp['ticker']}: price={wp['current_price']} | stop={wp['stop_loss']} | target={wp['target_price']} | R/R={wp['risk_reward']} | flow={wp['net_flow_egp']/1e6:.1f}M")
+
+    if dry_run:
+        print("[WHALE-RADAR] 🔍 DRY RUN — skipping DB write")
+        return len(whale_picks)
+
+    # 3. خزن في stored_analyses
+    now_iso = datetime.now().isoformat()
+    today = datetime.now().strftime('%Y-%m-%d')
+    _db_dir = _root / 'db'
+    _pred_db = str(_db_dir / 'predictions.db')
+
+    try:
+        conn_sa = sqlite3.connect(_pred_db, timeout=30.0)
+        conn_sa.row_factory = sqlite3.Row
+        cur_sa = conn_sa.cursor()
+
+        # تأكد إن الأعمدة موجودة
+        try:
+            cur_sa.execute("ALTER TABLE stored_analyses ADD COLUMN ai_reason TEXT")
+        except Exception:
+            pass
+        try:
+            cur_sa.execute("ALTER TABLE stored_analyses ADD COLUMN ai_narrative TEXT")
+        except Exception:
+            pass
+
+        for wp in whale_picks:
+            sa_id = f"whale_{wp['ticker']}_{market}"
+            sa_json = _json.dumps({
+                'gambler': {
+                    'verdict': 'شراء رادار حيتان (مخاطرة محسوبة)',
+                    'score': 75,
+                    'reason': wp['reason'],
+                    'entry': wp['current_price'],
+                    'target': wp['target_price'],
+                    'stop': wp['stop_loss'],
+                    'risk_reward': wp['risk_reward'],
+                    'signal': 'BUY',
+                    'timeframe': 'يومي-أسبوعي',
+                },
+                'narrative': {
+                    'line1': f"🐋 رادار صانع السولى: تجميع هادئ {wp['signal_count']}/6",
+                    'line2': f"💧 السيولة المتدفقة: {wp['net_flow_egp']/1e6:.1f} مليون جنيه",
+                    'line3': f"⚖️ المخاطرة المحسوبة: R/R = {wp['risk_reward']} | حجم المحفظة 2%",
+                },
+            }, ensure_ascii=False)
+
+            cur_sa.execute('''
+                INSERT INTO stored_analyses (
+                    id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                    confidence, entry_price, target_price, stop_loss, risk_reward,
+                    prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity,
+                    ai_reason, ai_narrative
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+                ON CONFLICT(ticker, market) DO UPDATE SET
+                    maestro_score = excluded.maestro_score,
+                    recommendation = excluded.recommendation,
+                    recommendation_ar = excluded.recommendation_ar,
+                    confidence = excluded.confidence,
+                    entry_price = excluded.entry_price,
+                    target_price = excluded.target_price,
+                    stop_loss = excluded.stop_loss,
+                    risk_reward = excluded.risk_reward,
+                    prediction_date = excluded.prediction_date,
+                    updated_at = excluded.updated_at,
+                    analysis_json = excluded.analysis_json,
+                    is_gambler_opportunity = 1,
+                    is_investor_opportunity = 0,
+                    ai_reason = excluded.ai_reason,
+                    ai_narrative = excluded.ai_narrative
+            ''', (
+                sa_id, wp['ticker'], market, 75,
+                'WHALE_RADAR_BUY',
+                'شراء رادار حيتان',
+                75,
+                wp['current_price'], wp['target_price'], wp['stop_loss'],
+                wp['risk_reward'], today, now_iso, sa_json,
+                wp['reason'],
+                f"🐋 رادار الحيتان: {wp['ticker']} — تجميع {wp['signal_count']}/6 — سيولة {wp['net_flow_egp']/1e6:.1f}M",
+            ))
+
+        conn_sa.commit()
+        conn_sa.close()
+        print(f"[WHALE-RADAR] ✅ تم تخزين {len(whale_picks)} توقع حيتان في stored_analyses")
+        return len(whale_picks)
+
+    except Exception as e:
+        print(f"[WHALE-RADAR] ❌ فشل التخزين: {e}")
+        return 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='V40.2 Prediction Generator — توليد توقعات V40.2 لأي فترة',
@@ -4643,6 +4829,23 @@ def main():
             force=args.force,
             market_code=args.market,
         )
+
+    # 🐋 WHALE RADAR HUNTER (جيمي directive):
+    # بعد ما run_generator يخلص، شغل whale radar injection.
+    # ده بـ reads الـ maker_radar JSON + بيـ inject أسهم الحيتان في stored_analyses.
+    # لو السوق كاش والـ trend following مطلعش حاجة → الرادار يـ fill الفراغ.
+    if args.market != 'CRYPTO':
+        print("\n" + "=" * 60, flush=True)
+        print("🐋 WHALE RADAR HUNTER — Counter-Trend Smart Money", flush=True)
+        print("=" * 60, flush=True)
+        try:
+            whale_count = inject_whale_radar_picks(
+                market=args.market,
+                dry_run=args.dry_run,
+            )
+            print(f"🐋 Whale picks injected: {whale_count}", flush=True)
+        except Exception as _whale_err:
+            print(f"[WHALE-RADAR] ⚠️ Error: {_whale_err}", flush=True)
 
 
 def get_crypto_tickers(min_days=30):

@@ -320,7 +320,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
  return (
  <div className="space-y-4" dir="rtl">
  {/* Header */}
- <Card className="border-primary/20 bg-gradient-to-l from-primary/5 to-cyan-500/5">
+ <Card className="border-primary/20 to-cyan-500/5">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="flex items-center gap-2">

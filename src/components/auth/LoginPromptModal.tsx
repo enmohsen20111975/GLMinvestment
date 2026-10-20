@@ -77,7 +77,7 @@ export function LoginPromptModal() {
  </DialogDescription>
 
  {/* Compact Gradient Header */}
- <div className="relative bg-gradient-to-r from-warning via-warning to-profit px-4 py-3 text-foreground flex items-center justify-between">
+ <div className="relative from-warning via-warning to-profit px-4 py-3 text-foreground flex items-center justify-between">
  <div className="flex items-center gap-2.5 min-w-0">
  <div className="size-9 rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur flex items-center justify-center shrink-0 overflow-hidden">
  {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -136,7 +136,7 @@ export function LoginPromptModal() {
  <Button
  onClick={goRegister}
  size="sm"
- className="flex-1 h-8 text-xs font-bold bg-gradient-to-r from-warning to-profit hover:from-warning hover:to-profit text-foreground shadow-sm"
+ className="flex-1 h-8 text-xs font-bold from-warning to-profit hover:from-warning hover:to-profit text-foreground shadow-sm"
  >
  <UserPlus className="size-3.5 ml-1" />
  سجّل مجاناً

@@ -157,7 +157,7 @@ export function DailyPicksPoster() {
  className="bg-[#0a0e27] shadow-2xl"
  >
  {/* HEADER */}
- <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f1535 0%, #1a1f3a 100%)' }}>
+ <div className="relative overflow-hidden" style={{ background: 'transparent' }}>
  {/* Background candles effect */}
  <div className="absolute inset-0 opacity-10">
  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -289,7 +289,7 @@ export function DailyPicksPoster() {
  </div>
 
  {/* FOOTER */}
- <div style={{ background: 'linear-gradient(135deg, #0f1535 0%, #1a1f3a 100%)' }}>
+ <div style={{ background: 'transparent' }}>
  {/* Gold top border */}
  <div style={{ height: '3px', background: '#ffd700' }} />
  

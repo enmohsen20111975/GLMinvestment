@@ -187,6 +187,7 @@ def _to_float(value, default: float = 0.0) -> float:
 def _rating_to_score(rating: Optional[str]) -> float:
     """تحويل technical_rating النصي إلى رقم 0-100"""
     if not rating:
+        # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
         return 50.0
     r = str(rating).strip()
     mapping = {

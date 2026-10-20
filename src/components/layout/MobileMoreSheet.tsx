@@ -20,6 +20,7 @@ import {
  LogIn,
  Bell,
  LayoutGrid,
+ Shield,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useNotificationStore } from '@/lib/notification-store';
@@ -192,6 +193,29 @@ export function MobileMoreSheet() {
  {/* Account / Login — زر ذكي: logged in → settings، logged out → auth.
  'auth' مش في moreNavItems عشان ده يـ handle الـ user state (منع التكرار). */}
  <div className="my-2 border-t border-border" />
+ {(() => {
+ const uEmail = (user?.email || '').toLowerCase();
+ const uName = (user?.username || '').toLowerCase();
+ const isUserAdmin =
+ user?.is_admin === true ||
+ user?.subscription_tier === 'admin' ||
+ ['mohseny', 'admin'].includes(uName) ||
+ ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
+
+ if (!isUserAdmin) return null;
+ return (
+ <button
+ onClick={() => { setCurrentView('admin'); closeAll(); }}
+ className={cn(
+ 'w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-amber-500/10 text-amber-500 transition-colors text-right min-h-[44px] font-bold border border-amber-500/20 mb-2',
+ (currentView === 'admin') && 'bg-amber-500/20'
+ )}
+ >
+ <Shield className="w-5 h-5 text-amber-500" />
+ <span className="text-sm font-bold">لوحة تحكم الإدارة</span>
+ </button>
+ );
+ })()}
  <button
  onClick={() => { setCurrentView(user ? 'settings' : 'auth'); closeAll(); }}
  className={cn(

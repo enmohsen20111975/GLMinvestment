@@ -1,7 +1,7 @@
 """
 analyzers/indicators/rsi.py — Canonical RSI (Relative Strength Index)
 ======================================================================
-**Rule 54 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب RSI في المشروع.
+**Rule 67 — CALCULATION-CANONICAL**: ده المصدر الوحيد لحساب RSI في المشروع.
 
 الصيغة: **Wilder's smoothing** (مش SMA)
   delta[i] = close[i] - close[i-1]
@@ -16,7 +16,7 @@ analyzers/indicators/rsi.py — Canonical RSI (Relative Strength Index)
 SMA (sum(gains[-14:])/14) بـ يعطي RSI أسرع في التغيّر — ده غلط.
 
 المرجعية:
-  - Rule 54 (00-CONSTITUTION.md)
+  - Rule 67 (00-CONSTITUTION.md)
   - Documentation/ENGINEERING_AUDIT_REPORT.md (Bug #1: RSI Wilder vs SMA — 10-20 نقطة فرق)
   - النسخة الأصلية: analyzers/technical_analyzer.py:81 (Wilder's — الصحيحة)
 

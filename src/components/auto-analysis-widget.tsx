@@ -87,7 +87,7 @@ export function AutoAnalysisWidget() {
 
  if (loading) {
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="from-slate-900 via-slate-800 to-slate-900 border-slate-700">
  <CardHeader>
  <div className="flex items-center gap-2">
  <Brain className="h-5 w-5 text-primary" />
@@ -104,7 +104,7 @@ export function AutoAnalysisWidget() {
 
  if (error) {
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="from-slate-900 via-slate-800 to-slate-900 border-slate-700">
  <CardHeader>
  <div className="flex items-center gap-2">
  <AlertTriangle className="h-5 w-5 text-loss" />
@@ -125,7 +125,7 @@ export function AutoAnalysisWidget() {
  if (!testResult) return null;
 
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="from-slate-900 via-slate-800 to-slate-900 border-slate-700">
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">

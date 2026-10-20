@@ -266,8 +266,8 @@ export function LiveStockTicker() {
  </div>
 
  {/* تدرّج لطفي على الحواف لإخفاء القطع */}
- <div className="pointer-events-none absolute inset-y-0 right-10 z-[1] w-8 bg-gradient-to-l from-slate-50/80 to-transparent dark:from-slate-900/60" />
- <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-slate-50/80 to-transparent dark:from-slate-900/60" />
+ <div className="pointer-events-none absolute inset-y-0 right-10 z-[1] w-8 from-slate-50/80 to-transparent dark:from-slate-900/60" />
+ <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 from-slate-50/80 to-transparent dark:from-slate-900/60" />
 
  {/* المسار المتحرك */}
  <div className="lss-ticker-wrap relative flex-1 overflow-hidden">

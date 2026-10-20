@@ -406,7 +406,7 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
 
  return (
  <div className="relative py-4 px-2">
- <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-l from-loss via-primary to-profit" />
+ <div className="absolute top-1/2 left-0 right-0 h-0.5 from-loss via-primary to-profit" />
  <div className="relative flex flex-col gap-3" style={{ minHeight: '120px' }}>
  {items.map((item) => {
  const topPercent = toPercent(item.price);

@@ -292,7 +292,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  telegramMarket={MARKET_CODES[market]}
  accentColor="#15803d"
  borderClass="border-success"
- bgClass="bg-gradient-to-br from-success via-profit to-success/40"
+ bgClass="from-success via-profit "
  hasData={stocks.length > 0}
  emptyHint="لا توجد بيانات متاحة حالياً"
  >

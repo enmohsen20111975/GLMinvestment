@@ -143,7 +143,7 @@ function AuthGateBanner() {
  transition={{ type: 'spring', stiffness: 220, damping: 24 }}
  className="sticky top-0 z-40 w-full"
  >
- <div className="relative bg-gradient-to-l from-slate-700 via-slate-800 to-slate-900 text-foreground shadow-md">
+ <div className="relative from-slate-700 via-slate-800 to-slate-900 text-foreground shadow-md">
  <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
  <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/15">
  <Lock className="size-4" />
@@ -192,7 +192,7 @@ function TrialWarningBanner({ daysLeft }: { daysLeft: number }) {
  transition={{ type: 'spring', stiffness: 220, damping: 24 }}
  className="sticky top-0 z-40 w-full"
  >
- <div className="relative bg-gradient-to-l from-warning via-warning to-profit text-foreground shadow-md">
+ <div className="relative from-warning via-warning to-profit text-foreground shadow-md">
  <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
  <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/20">
  <Clock className="size-4 animate-pulse" />
@@ -244,7 +244,7 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
  transition={{ type: 'spring', stiffness: 220, damping: 24 }}
  className="sticky top-0 z-40 w-full"
  >
- <div className="relative bg-gradient-to-l from-loss via-loss to-loss text-foreground shadow-lg border-b border-loss">
+ <div className="relative from-loss via-loss to-loss text-foreground shadow-lg border-b border-loss">
  <div className="mx-auto max-w-7xl px-4 py-2.5 flex items-center gap-3">
  <span className="inline-flex size-7 items-center justify-center rounded-full bg-white/20">
  <AlertTriangle className="size-4 text-loss animate-bounce" />
@@ -325,6 +325,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
  useEffect(() => {
  if (!authChecked) return;
  if (!isAdminView(currentView)) return;
+ // AdminView handles its own direct credentials & session authentication
+ if (currentView === 'admin') return;
 
  const u = user as Record<string, unknown> | null;
  const s = session?.user as Record<string, unknown> | null;

@@ -3062,7 +3062,7 @@ const ReportsTab = memo(function ReportsTab() {
  </CardHeader>
  <CardContent className="space-y-4">
  {/* Portfolio Health Score */}
- <div className="p-3 rounded-lg bg-gradient-to-r from-profit to-primary /20 dark:to-primary/20">
+ <div className="p-3 rounded-lg from-profit to-primary /20 dark:">
  <div className="flex items-center justify-between mb-2">
  <span className="font-medium text-sm">تقييم صحة المحفظة</span>
  <span className="text-2xl font-bold text-profit ">
@@ -3150,7 +3150,7 @@ const ReportsTab = memo(function ReportsTab() {
  </div>
 
  {/* Money Distribution Plan */}
- <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-profit via-primary to-purple-50 /20 dark:via-primary/20 dark:to-purple-900/20 border">
+ <div className="mt-4 p-4 rounded-lg from-profit via-primary to-purple-50 /20 dark:dark:to-purple-900/20 border">
  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
  <Coins className="w-4 h-4" />
  خطة توزيع الأموال المقترحة

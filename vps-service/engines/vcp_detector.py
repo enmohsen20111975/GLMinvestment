@@ -37,7 +37,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..core.base import EngineResult, Signal, SignalType, Timeframe
+from glminvestment_engines.core.base import EngineResult, Signal, SignalType, Timeframe
 
 
 # ──────────────────────────────────────────────────────────────────────────

@@ -1253,6 +1253,50 @@ def get_settings_descriptions() -> Dict[str, Dict[str, str]]:
         "exit_engine_overextended_gain_pct": {"description": "P41: ربح مفرط يستدعي جني (15%)", "category": "exit_engine"},
         "exit_engine_reversal_rvol_threshold": {"description": "P41: RVOL انعكاسي (2.0×)", "category": "exit_engine"},
         "exit_engine_reversal_loss_pct": {"description": "P41: خسارة انعكاسية (-2%)", "category": "exit_engine"},
+        # ===== CANONICAL signal_*_threshold keys (Task UNIFICATION-PHASE-1) =====
+        "signal_strong_buy_threshold": {"description": "CANONICAL: عتبة الشراء القوي (78) — مطابقة canonical_signal.py", "category": "scoring"},
+        "signal_buy_threshold": {"description": "CANONICAL: عتبة الشراء العادي (65) — مطابقة canonical_signal.py", "category": "scoring"},
+        "signal_accumulate_threshold": {"description": "CANONICAL: عتبة التجميع (55) — مطابقة canonical_signal.py", "category": "scoring"},
+        "signal_hold_threshold": {"description": "CANONICAL: عتبة الاحتفاظ (40) — مطابقة canonical_signal.py", "category": "scoring"},
+        "signal_sell_threshold": {"description": "CANONICAL: عتبة البيع (25) — مطابقة canonical_signal.py", "category": "scoring"},
+        "signal_strong_sell_threshold": {"description": "CANONICAL: عتبة البيع القوي (<25) — مطابقة canonical_signal.py", "category": "scoring"},
+        # ===== EGX-STRATEGY: min evidence count =====
+        "min_evidence_count": {"description": "EGX-STRATEGY: أدنى عدد أدلة لازمة للدخول (3 من 6)", "category": "evidence"},
+        # ===== PHASE-C: V40.2 generator config (daily_predictor thresholds → dynamic) =====
+        "v402_max_picks_per_day": {"description": "V40.2: أقصى عدد توقعات في اليوم (5)", "category": "confidence"},
+        "v402_min_ticker_days": {"description": "V40.2: أدنى أيام تاريخية لازمة للسهم (30)", "category": "limits"},
+        "v402_scan_interval": {"description": "V40.2: فترة الفحص كل N أيام تداول (1)", "category": "limits"},
+        "v402_buy_threshold": {"description": "V40.2: عتبة شراء V38BacktestEngine (75)", "category": "scoring"},
+        "v402_min_evidence_count": {"description": "V40.2: أدنى أدلة لتوقع صالح (3)", "category": "evidence"},
+        # --- Don't Chase filter ---
+        "v402_chase_daily_gain_max": {"description": "V40.2: رفض لو daily gain > 12%", "category": "kill_filter"},
+        "v402_chase_roc3_max": {"description": "V40.2: رفض لو 3-day ROC > 18%", "category": "kill_filter"},
+        "v402_chase_roc5_max": {"description": "V40.2: رفض لو 5-day ROC > 28%", "category": "kill_filter"},
+        # --- Near-peak filter ---
+        "v402_near_peak_threshold": {"description": "V40.2: رفض لو القرب من القمة ≥ 95%", "category": "kill_filter"},
+        "v402_near_peak_rsi_max": {"description": "V40.2: رفض لو RSI > 65 عند القمة", "category": "kill_filter"},
+        # --- Drawdown filter ---
+        "v402_drawdown_from_high_min": {"description": "V40.2: علم لو الانخفاض من القمة ≥ 5%", "category": "kill_filter"},
+        # --- Pattern win-rate filter ---
+        "v402_pattern_wr_min": {"description": "V40.2: عقّم لو pattern WR < 65%", "category": "kill_filter"},
+        "v402_pattern_wr_boost": {"description": "V40.2: عزّز لو pattern WR ≥ 75%", "category": "kill_filter"},
+        # --- Soft surge detector ---
+        "v402_soft_surge_vol_ratio": {"description": "V40.2: عتبة نسبة الحجم للـ soft surge (2.0×)", "category": "volume"},
+        "v402_soft_surge_roc5_min": {"description": "V40.2: أدنى 5-day ROC للـ soft surge (3.0)", "category": "volume"},
+        "v402_soft_surge_rr_min": {"description": "V40.2: أدنى R:R لاختيارات soft surge (1.8)", "category": "targets"},
+        # --- Fundamentals filter ---
+        "v402_fund_score_min": {"description": "V40.2: رفض لو درجة الأساسيات < 30", "category": "fundamentals"},
+        # --- V68 probability thresholds ---
+        "v402_v68_prob_strong": {"description": "V40.2: احتمال V68 لإشارة قوية (70)", "category": "scoring"},
+        "v402_v68_prob_moderate": {"description": "V40.2: احتمال V68 لإشارة متوسطة (50)", "category": "scoring"},
+        "v402_v68_mag_rr_min": {"description": "V40.2: أدنى R:R للمغناطيسية V68 (2.0)", "category": "targets"},
+        # --- Sector filter ---
+        "v402_sector_min_count": {"description": "V40.2: أدنى عدد أسهم في القطاع للإحصاء (3)", "category": "kill_filter"},
+        "v402_sector_decline_threshold": {"description": "V40.2: متوسط تغير القطاع لعلم الانخفاض (-1.0)", "category": "kill_filter"},
+        "v402_sector_rising_pct_max": {"description": "V40.2: أقصى نسبة صاعدة لعلم انخفاض القطاع (0.25)", "category": "kill_filter"},
+        # --- Volume / liquidity guards ---
+        "v402_dead_volume_threshold": {"description": "V40.2: حجم تحته يعتبر السهم ميت (1000)", "category": "liquidity"},
+        "v402_penny_stock_price": {"description": "V40.2: سعر تحته يعتبر سهم قرش (1.0)", "category": "liquidity"},
     }
 
 

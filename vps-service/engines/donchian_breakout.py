@@ -25,8 +25,8 @@ from typing import Optional
 
 import pandas as pd
 
-from ..core.base import EngineResult, Signal, SignalType, Timeframe
-from ..core.indicators import donchian_channels, sma
+from glminvestment_engines.core.base import EngineResult, Signal, SignalType, Timeframe
+from glminvestment_engines.core.indicators import donchian_channels, sma
 
 
 # ──────────────────────────────────────────────────────────────────────────

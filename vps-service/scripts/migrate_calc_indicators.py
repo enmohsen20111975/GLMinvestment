@@ -29,6 +29,11 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
+# BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate RSI to canonical.
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 
@@ -39,24 +44,8 @@ def log(msg, level='INFO'):
 
 
 def calc_rsi(closes, period=14):
-    """حساب RSI بطريقة Wilder's."""
-    if len(closes) < period + 1:
-        return None
-    gains = 0
-    losses = 0
-    for i in range(1, period + 1):
-        change = closes[i] - closes[i-1]
-        if change > 0:
-            gains += change
-        else:
-            losses -= change
-    avg_gain = gains / period
-    avg_loss = losses / period
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi if 0 <= rsi <= 100 else None
+    """حساب RSI — BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi (Wilder's)."""
+    return _canonical_calc_rsi(closes, period)
 
 
 def main():

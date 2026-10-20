@@ -173,7 +173,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  if (loading) {
  return (
  <Card className="overflow-hidden">
- <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
+ <CardHeader className="pb-2 to-transparent">
  <CardTitle className="text-base flex items-center gap-2">
  <Zap className="w-5 h-5 text-primary animate-pulse" />
  التحليل الذكي للسهم
@@ -223,7 +223,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
 
  return (
  <Card className="overflow-hidden border-primary/20" ref={shareCardRef}>
- <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
+ <CardHeader className="pb-2 to-transparent">
  <div className="flex items-center justify-between">
  <CardTitle className="text-base flex items-center gap-2">
  <Zap className="w-5 h-5 text-primary" />

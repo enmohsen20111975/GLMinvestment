@@ -63,12 +63,12 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TIER_ACCENT: Record<string, string> = {
- premium: 'border-warning/20 bg-gradient-to-br from-warning/5 to-orange-500/5 shadow-md shadow-amber-500/5',
- pro: 'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
- vip_pass: 'border-warning/80 bg-gradient-to-br from-warning/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-warning/60 shadow-xl shadow-amber-500/15',
- b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-primary/5',
- b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-indigo-500/5',
- b2b_enterprise: 'border-indigo-600/40 bg-gradient-to-br from-indigo-600/5 to-purple-600/5',
+ premium: 'border-warning/20 to-orange-500/5 shadow-md shadow-amber-500/5',
+ pro: 'border-purple-500/50 from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
+ vip_pass: 'border-warning/80 via-yellow-500/10 to-orange-500/15 ring-2 ring-warning/60 shadow-xl shadow-amber-500/15',
+ b2b_starter: 'border-sky-500/40 from-sky-500/5 ',
+ b2b_pro: 'border-sky-600/40 from-sky-600/5 to-indigo-500/5',
+ b2b_enterprise: 'border-indigo-600/40 from-indigo-600/5 to-purple-600/5',
 };
 
 export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }: PricingViewProps) {
@@ -240,7 +240,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
  {popular && !plan.is_vip && (
  <Badge
  variant="default"
- className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning to-orange-500 text-foreground shadow-md text-xs py-0.5"
+ className="absolute -top-2.5 right-4 from-warning to-orange-500 text-foreground shadow-md text-xs py-0.5"
  >
  الأكثر شعبية ⭐
  </Badge>
@@ -248,7 +248,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
  {plan.is_vip && (
  <Badge
  variant="default"
- className="absolute -top-2.5 right-4 bg-gradient-to-r from-warning via-yellow-500 to-orange-500 text-black font-extrabold shadow-lg text-xs py-0.5 px-3"
+ className="absolute -top-2.5 right-4 from-warning via-yellow-500 to-orange-500 text-black font-extrabold shadow-lg text-xs py-0.5 px-3"
  >
  👑 الباقة الشاملة VIP (توفير 65%)
  </Badge>
@@ -299,7 +299,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
  disabled={checkoutLoading === plan.tier}
  className={cn(
  'w-full gap-2',
- popular && 'bg-gradient-to-r from-warning to-orange-500 hover:from-warning hover:to-orange-600 text-foreground',
+ popular && 'from-warning to-orange-500 hover:from-warning hover:to-orange-600 text-foreground',
  )}
  variant={popular ? 'default' : 'outline'}
  >

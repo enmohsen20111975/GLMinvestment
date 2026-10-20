@@ -328,7 +328,7 @@ export function AuthView() {
  <div className="w-full max-w-md">
  {/* Logo & Title */}
  <div className="text-center mb-6">
- <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-profit to-whale flex items-center justify-center mx-auto mb-4 shadow-lg">
+ <div className="w-16 h-16 rounded-2xl from-profit to-whale flex items-center justify-center mx-auto mb-4 shadow-lg">
  <TrendingUp className="w-8 h-8 text-foreground" />
  </div>
  <h2 className="text-2xl font-bold text-foreground">{t('common.appName')}</h2>

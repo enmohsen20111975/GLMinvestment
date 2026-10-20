@@ -161,13 +161,13 @@ function ProfessionalHeader({
 }) {
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-primary/10 via-card to-muted p-5 print:break-inside-avoid"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 via-card to-muted p-5 print:break-inside-avoid"
  dir="rtl"
  >
- <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
+ <div className="absolute top-0 right-0 left-0 h-[3px] from-warning via-warning to-warning" />
  <div className="flex items-center justify-between gap-4 flex-wrap">
  <div className="flex items-center gap-3">
- <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
+ <div className="w-14 h-14 rounded-xl from-warning via-warning to-profit flex items-center justify-center shadow-lg shadow-amber-500/20">
  <FileBarChart className="w-7 h-7 text-warning-foreground" strokeWidth={2.5} />
  </div>
  <div>
@@ -329,7 +329,7 @@ function SectorReport() {
 
  {/* KPIs */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
- <div className="rounded-xl border border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
+ <div className="rounded-xl border border-warning/20 p-3.5">
  <p className="text-xs text-foreground mb-1">عدد القطاعات</p>
  <p className="text-2xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(sectors.length, 0)}
@@ -611,7 +611,7 @@ function PredictionsReport() {
  </h3>
  </div>
  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
- <div className="rounded-xl border border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
+ <div className="rounded-xl border border-warning/20 p-3.5">
  <p className="text-xs text-foreground mb-1">أداء EGX30 الأسبوعي</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(egx30Perf, 2)}
@@ -790,7 +790,7 @@ function PredictionsReport() {
 
  {/* AI Summary text (Python-generated) */}
  {report.content && (
- <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+ <Card className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Activity className="w-5 h-5" />
@@ -877,7 +877,7 @@ export function ReportsView() {
  <div className="min-h-screen flex flex-col bg-card text-muted-foreground">
  <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-sm border-b border-border print:hidden">
  <div className="flex items-center gap-3 px-4 py-3">
- <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-profit flex items-center justify-center">
+ <div className="w-10 h-10 rounded-xl from-warning to-profit flex items-center justify-center">
  <FileBarChart className="w-5 h-5 text-warning-foreground" strokeWidth={2.5} />
  </div>
  <div className="min-w-0 mr-auto">

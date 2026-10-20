@@ -623,7 +623,7 @@ function ProjectionCard({
  ) : (
  <>
  {/* Big result */}
- <div className="rounded-xl bg-gradient-to-l from-profit to-profit/40 /40 /20 border border-profit/20 p-4">
+ <div className="rounded-xl from-profit /40 /20 border border-profit/20 p-4">
  <p className="text-xs text-muted-foreground mb-1">
  ثروتك المتوقعة بعد {data.years} سنين هي
  </p>

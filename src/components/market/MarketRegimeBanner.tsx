@@ -138,10 +138,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
  <div
  className={`rounded-xl border p-3.5 md:p-4 transition-all duration-300 shadow-sm ${
  isDefensive
- ? 'bg-gradient-to-l from-loss/20 via-loss/10 to-warning/20 border-loss/20 text-foreground ring-1 ring-loss/20'
+ ? 'border-loss/20 text-foreground ring-1 ring-loss/20'
  : isAggressive
- ? 'bg-gradient-to-l from-purple-950/20 via-indigo-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
- : 'bg-gradient-to-l from-profit/15 via-whale/10 to-background border-profit/20 text-foreground'
+ ? 'from-purple-950/20 via-indigo-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
+ : 'to-background border-profit/20 text-foreground'
  } ${className}`}
  dir="rtl"
  >

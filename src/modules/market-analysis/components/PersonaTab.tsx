@@ -1200,7 +1200,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
  width: '800px',
  minHeight: '600px',
  padding: '0',
- background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+ background: 'transparent',
  borderRadius: '20px',
  fontFamily: 'Arial, sans-serif',
  direction: 'rtl',
@@ -1210,7 +1210,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
  >
  {/* Header */}
  <div style={{
- background: 'linear-gradient(135deg, #ea580c, #d97706)',
+ background: 'transparent',
  padding: '20px 28px',
  display: 'flex',
  justifyContent: 'space-between',
@@ -1326,7 +1326,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
 
  {/* Footer links */}
  <div style={{
- background: 'linear-gradient(135deg, rgba(234,88,12,0.15), rgba(217,119,6,0.15))',
+ background: 'rgba(234,88,12,0.08)',
  borderRadius: '10px',
  padding: '12px 16px',
  textAlign: 'center',
@@ -1676,6 +1676,14 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  // (HOLD fallback was deleted in PRED-RADAR-GAP-AUDIT Step 1 —
  // HOLD was masking the real bug instead of fixing it)
  if (signal !== 'BUY' && signal !== 'STRONG_BUY') return null;
+ // ALPHA-STALE-GATE: ممنوع عرض أي توقع راجع من الفولباك تاريخه أقدم من 48 ساعة كفرصة نشطة لليوم
+ const _predDateRaw = p.created_at || p.prediction_date;
+ if (_predDateRaw) {
+   const _predTime = new Date(String(_predDateRaw)).getTime();
+   if (!isNaN(_predTime) && (Date.now() - _predTime) > 48 * 3600 * 1000) {
+     return null;
+   }
+ }
  // ALPHA-RR-GATE-1: HARD GATE R/R >= 1.5 — اقتل أي BUY بـ R/R < 1.5 (ممنوع توصيات Zبالة)
  const _rr = p.risk_reward != null ? Number(p.risk_reward) : (() => {
    const _entry = Number(p.entry_price) || 0;
@@ -2026,10 +2034,10 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  borderClass={isLongTerm ? 'border-profit' : (persona === 'balanced' ? 'border-warning' : 'border-fuchsia-200')}
  bgClass={
  isLongTerm
- ? 'bg-gradient-to-br from-profit via-whale/40 to-profit/40'
+ ? 'from-profit '
  : persona === 'balanced'
- ? 'bg-gradient-to-br from-warning via-yellow-50/40 to-warning/40'
- : 'bg-gradient-to-br from-fuchsia-50 via-pink-50/40 to-fuchsia-100/40'
+ ? 'from-warning via-yellow-50/40 '
+ : 'from-fuchsia-50 via-pink-50/40 to-fuchsia-100/40'
  }
  hasData={items.length > 0}
  emptyHint={

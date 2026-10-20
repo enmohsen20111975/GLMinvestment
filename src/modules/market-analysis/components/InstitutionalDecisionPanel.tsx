@@ -222,7 +222,7 @@ export function InstitutionalDecisionPanel({
 
  if (!decision || !decision.ready) {
  return (
- <Card className="border-purple-500/30 bg-gradient-to-br from-slate-950/80 to-purple-950/30">
+ <Card className="border-purple-500/30 from-slate-950/80 to-purple-950/30">
  <CardContent className="p-3 text-xs text-center text-muted-foreground">
  محرك القرار المؤسسي غير متاح لهذا السهم
  </CardContent>
@@ -269,11 +269,11 @@ export function InstitutionalDecisionPanel({
  'text-loss';
 
  const scoreBg =
- tech_score >= 75 ? 'from-profit/20 to-profit/10 border-profit/20' :
+ tech_score >= 75 ? 'border-profit/20' :
  tech_score >= 60 ? 'from-lime-500/20 to-lime-600/10 border-lime-500/40' :
- tech_score >= 40 ? 'from-warning/20 to-warning/10 border-warning/20' :
+ tech_score >= 40 ? 'border-warning/20' :
  tech_score >= 25 ? 'from-orange-500/20 to-orange-600/10 border-orange-500/40' :
- 'from-loss/20 to-loss/10 border-loss/20';
+ 'border-loss/20';
 
  const FlightIcon = flightIconMap[flight_state?.state] || Moon;
  const adviceClass = portfolio_advice ? adviceColorMap[portfolio_advice.color] : '';
@@ -355,7 +355,7 @@ export function InstitutionalDecisionPanel({
 
  <div className="p-3 space-y-2.5">
  {/* ─── 1. القرار النهائي + Tech Score ─── */}
- <div className={cn('rounded-lg bg-gradient-to-l p-2.5 border', scoreBg)}>
+ <div className={cn('rounded-lg p-2.5 border', scoreBg)}>
  <div className="flex items-center justify-between gap-2">
  <div className="flex flex-col">
  <span className="text-xs text-muted-foreground font-bold">القرار النهائي:</span>

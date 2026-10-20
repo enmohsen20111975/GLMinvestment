@@ -16,9 +16,18 @@ import sys
 import json
 import sqlite3
 import argparse
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
+
+# Module-level logger (BRAVO-INCUBATOR: used by promote_incubator_candidates)
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s'))
+    logger.addHandler(_h)
+    logger.setLevel(logging.INFO)
 
 # Path setup
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -471,6 +480,14 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
         except Exception as e:
             print(f"  ⚠️ خطأ أثناء حفظ التوقعات اللحظية: {e}", flush=True)
 
+    # BRAVO-INCUBATOR: promote any incubator candidates that met their trigger
+    try:
+        promoted = promote_incubator_candidates()
+        if promoted:
+            logger.info(f"🔭 Incubator promoted {len(promoted)} stocks: {promoted}")
+    except Exception as e:
+        logger.error(f"Incubator promotion error: {e}")
+
     return top_picks
 
 
@@ -487,6 +504,138 @@ def _run_liquidity_alerts_hook() -> None:
     except Exception as _la_err:
         # Never crash the scanner — alerts are best-effort.
         print(f"  ⚠️ [LIQUIDITY-ALERTS] failed: {_la_err}", flush=True)
+
+
+# ============================================================================
+# BRAVO-INCUBATOR: Intraday Promotion Hook — الترقية اللحظية
+# ============================================================================
+def promote_incubator_candidates(market: str = 'EGX') -> list:
+    """آلية الترقية اللحظية (Intraday Promotion Hook).
+
+    أثناء جلسة التداول: قراءة قائمة incubator_candidates من الكاش.
+    لو سهم حقق شرط الـ Trigger (كسر trigger_price أو فوليوم اختراق):
+      1. يتم تسجيل التوقع فوراً في predictions بـ signal='BUY', track='RADAR_PROMOTED'
+      2. يُرسل إشعار للواجهة وللبوت
+
+    Args:
+        market: كود السوق (default: EGX)
+
+    Returns:
+        list of promoted tickers
+    """
+    import glob
+    import json as _json
+    from pathlib import Path
+    from datetime import datetime as _dt
+
+    project_root = Path(__file__).resolve().parents[2]
+    output_dir = project_root / 'scripts' / 'output'
+    pattern = str(output_dir / f'maker_radar_{market}_*.json')
+    cache_files = sorted(glob.glob(pattern), reverse=True)
+
+    if not cache_files:
+        return []
+
+    try:
+        with open(cache_files[0], 'r', encoding='utf-8') as f:
+            cache_data = _json.load(f)
+    except Exception:
+        return []
+
+    candidates = cache_data.get('incubator_candidates', [])
+    if not candidates:
+        return []
+
+    promoted = []
+
+    # اقرأ الأسعار اللحظية الحالية من intraday.db
+    intraday_db = project_root / 'db' / 'intraday.db'
+    predictions_db = project_root / 'db' / 'predictions.db'
+
+    try:
+        import sqlite3
+        intra_conn = sqlite3.connect(str(intraday_db), timeout=5.0)
+        intra_conn.row_factory = sqlite3.Row
+    except Exception:
+        return []
+
+    try:
+        for cand in candidates:
+            ticker = cand.get('ticker', '')
+            trigger = cand.get('trigger', {})
+            trigger_type = trigger.get('type')
+            trigger_price = trigger.get('trigger_price')
+
+            if not ticker or not trigger_type:
+                continue
+
+            # اقرأ آخر سعر + حجم لحظي للسهم
+            row = intra_conn.execute(
+                "SELECT price, volume FROM stock_intraday WHERE ticker = ? ORDER BY timestamp DESC LIMIT 1",
+                (ticker,)
+            ).fetchone()
+
+            if not row:
+                continue
+
+            live_price = row['price'] or 0
+            live_volume = row['volume'] or 0
+
+            if live_price <= 0:
+                continue
+
+            # فحص تحقق الشرط
+            triggered = False
+            if trigger_type == 'RESISTANCE_BREAK' and trigger_price:
+                # الشرط: السعر كسر trigger_price
+                if live_price > trigger_price:
+                    triggered = True
+            elif trigger_type == 'SUPPORT_CONFIRM' and trigger_price:
+                # الشرط: السعر ثبت فوق trigger_price (الدعم)
+                if live_price > trigger_price:
+                    triggered = True
+            elif trigger_type == 'VOLUME_SURGE':
+                # الشرط: الحجم الحالي > 1.5× متوسط 20 يوم
+                avg_vol_20 = cand.get('avg_volume_20d') or 0
+                if avg_vol_20 > 0 and live_volume > avg_vol_20 * 1.5:
+                    triggered = True
+
+            if not triggered:
+                continue
+
+            # سجّل التوقع في predictions.db
+            try:
+                pred_conn = sqlite3.connect(str(predictions_db), timeout=10.0)
+                pred_conn.execute("""
+                    INSERT OR IGNORE INTO predictions (
+                        ticker, signal, signal_type, entry_price, stop_loss, target_price,
+                        risk_reward, confidence, track, notes, prediction_date, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    ticker,
+                    'BUY',
+                    'BUY',
+                    cand.get('current_price', live_price),
+                    cand.get('stop_loss_if_promoted'),
+                    cand.get('target_if_promoted'),
+                    cand.get('risk_reward'),
+                    cand.get('readiness_pct', 80),
+                    'RADAR_PROMOTED',
+                    f"تمت الترقية لايف من رادار التربص بعد تحقيق شرط {trigger.get('condition_ar', trigger_type)}",
+                    _dt.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    _dt.now().isoformat(),
+                ))
+                pred_conn.commit()
+                pred_conn.close()
+                promoted.append(ticker)
+                logger.info(f"🚀 INCUBATOR PROMOTED: {ticker} — trigger={trigger_type}, live_price={live_price}")
+            except Exception as e:
+                logger.error(f"Failed to promote {ticker}: {e}")
+
+    finally:
+        intra_conn.close()
+
+    return promoted
 
 
 if __name__ == '__main__':
