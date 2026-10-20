@@ -5507,3 +5507,57 @@ Stage Summary:
 - ✅ كل الاختبارات نجحت بعد الـ merge + dedup
 - 🎯 نسخة Bravo هي الـ canonical (متـحقق منها على real data) — نسختي اتـشالت
 - 🎯 Alpha work (IncubatorSection.tsx + /api/radar/incubator endpoint) متـوافق مع Bravo's contract
+
+---
+Task ID: DESIGN-SYSTEM-1
+Agent: Z.ai Code (الفاحص التقني + منفّذ Alpha)
+Task: محسن — "ألفا استسهل وكل كومبوننت بيدخل يكتب ستايل وألوان بمزاجه". تنفيذ Unified Financial Design System.
+
+الـ insight بتاع المالك:
+> "النتيجة إن المشروع بقى عامل زي طبق سلطة مقلوب: واحد كاتب إميرالد،
+>  وواحد كاتب بروفيت، وواحد كاتب سلايت، وواحد عاكس الألوان!"
+
+التنفيذ (commit 1fc0e15):
+
+Task 1 — Master Badge Tokens في design-tokens.ts (+230 lines):
+- BadgeStyle interface: {bg, text, border, icon, labelAr}
+- SIGNAL_BADGE_STYLES: 11 trading signals (STRONG_BUY/BUY/ACCUMULATE/WHALE_RADAR_BUY/HOLD/WAIT/REDUCE/SELL/STRONG_SELL/AVOID)
+  * كل واحد بـ high-contrast bg/text/border (no text-loss on bg-loss!)
+  * emerald للـ buy, cyan للـ whale, rose للـ sell, amber للـ reduce, slate للـ hold
+- STATUS_BADGE_STYLES: 7 statuses (TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED/PENDING/ACTIVE/WAITING)
+  * emerald للـ target, teal للـ trailing, rose للـ stopped, slate للـ expired, blue للـ pending
+- READINESS_BADGE_STYLES: 3 incubator stages (HEATING_UP/APPROACHING_TRIGGER/COMPLETE)
+- ARCHIVE_BADGE_STYLES: 2 archive states (STALE/MISMATCH)
+- getSignalBadgeStyle() + getStatusBadgeStyle() helpers + NEUTRAL_BADGE fallback
+
+Task 2 — StatusBadge.tsx rewrite:
+- Uses getSignalBadgeStyle() + getStatusBadgeStyle() from design-tokens.ts
+- Props: status, signal, label, labelAr, showIcon, size, className
+- Priority: status > signal
+- Re-exports helpers for migration
+
+Task 3 — Migration (2 of 4 files):
+1) PredictionsTab.tsx: deleted statusColor ternary (12 lines) + sigColor map (3 lines) → <StatusBadge>
+2) PersonaTab.tsx: deleted isMismatch/isStale ternary (8 lines) → <StatusBadge> + fixed 7 contrast bugs
+
+Contrast bugs fixed (7 total in PersonaTab):
+- bg-warning text-warning → bg-amber-500/15 text-amber-700 dark:text-amber-300
+- bg-loss text-loss → bg-rose-500/15 text-rose-700 dark:text-rose-300
+- bg-warning text-warning/40 → high-contrast amber
+- bg-loss text-loss/40 → high-contrast rose
+
+Verification:
+- ✅ bun run lint: exit 0
+- ✅ bunx next build --no-lint: SUCCESS
+- ✅ GET / HTTP 200 (0.016s)
+- ✅ 0 contrast bugs في PersonaTab (was 7)
+
+Deferred:
+- MakerRadarTab.tsx: liquidity/path colors (complex — many custom patterns)
+- MorningBellSection.tsx: session badges
+
+Stage Summary:
+- ✅ Task 1 done: design-tokens.ts master tokens
+- ✅ Task 2 done: StatusBadge.tsx rewrite
+- ✅ Task 3 partial: PredictionsTab + PersonaTab migrated (2/4)
+- 🎯 النظام الموحد جاهز — مـمنوع أي ألوان ad-hoc بعد اليوم
