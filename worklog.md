@@ -101,3 +101,41 @@ Stage Summary:
 - ✅ الـ "44 tests" claim غلط — الحقيقة **13 pytest tests** (11 + 2).
 - 🙏 اعتذار للمالك: برافو عدّ الـ check() calls كـ tests في التسليم السابق. ده غلط صريح. الـ tests دلوقتي صادقة.
 - 🎯 المشروع دلوقتي أنظف + مختبر بـ pytest حقيقي.
+
+---
+Task ID: BRAVO-FIX2-VERIFICATION-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — إصلاح 10 مشاكل جديدة كشفها جيمي في التقرير العميق الثاني.
+
+Work Log:
+- قرأت تقرير جيمي الثاني (commit f209a03 — "15 مشكلة مش 5"). أقرّ بصراحة: برافو عمل **fallbacks fabrication مخالفة لـ Rule 27** (NO-FAKE-DATA). ATR=0 ممكن يسبب position sizing ضخم = خساير مالية. ده خطير جداً.
+- **P0-1 (FIX)**: `calculate_kelly_position` — أضفت `entry` parameter. `position_size` دلوقتي = shares (مش value) لو entry متاح. API consistent مع `calculate_risk_based_position`.
+- **P0-2 (FIX)**: `enhanced_indicators.py` fallbacks — ATR/Bollinger/ADX بترجع None (مش 0.0/0,0,0,50/0,0,0,False). ATR=0 كان خطير على position sizing.
+- **P0-3 (FIX)**: `core_scoring_engine.py` Bollinger fallback — بترجع (None, None, None) (مش ±2% fabrication).
+- **P0-4 (FIX)**: `backtest_engine.py` Bollinger fallback — بترجع None lists (مش mid,mid,mid = 0 volatility).
+- **P0-5 (FIX)**: `calc_vwap_fair_value` — بترجع (None, None) على empty data (مش 0.0, 0.0 silent failure).
+- **P1-6 (FIX)**: `calc_fundamental_fair_value` — median بدل max. max كان بـ magnify outliers (PE=100 → fair_value=100 غير واقعي).
+- **P1-7 (FIX)**: `calc_vwap` period<=0 → return None (was full list due to [-0:] bug).
+- **P1-8 (FIX)**: `calc_volume_profile` — handle negative bin_idx (floating point rounding edge case).
+- **P1-10 (FIX)**: `sniper_engine` percent_b موحّد لـ 0-100 (was 0-1, inconsistent مع canonical).
+- **P2-9 (FIX)**: شيلت backtest_engine من ALLOWED_INLINE_FILES في test_canonical_compliance.py. الـ "0 violations" claim دلوقتي دقيقة.
+- **tests جديدة**: أضفت `test_no_fake_data_fallbacks` ( Rule 27 compliance) + `test_indicator_edge_cases_fixed` (period=0 + negative bin_idx).
+
+Verification:
+- pytest: **15 passed** (was 13, now 15 مع 2 tests جديدة)
+- كل fallbacks بترجع None (مش fabricated) ✅
+- kelly position_size = shares (consistent API) ✅
+- fair_value median (مش max) ✅
+- calc_vwap period<=0 → None ✅
+- volume_profile negative bin_idx handled ✅
+- sniper percent_b 0-100 (unified) ✅
+- regression test دقيق (backtest_engine مش excluded) ✅
+- syntax check: كل الملفات OK ✅
+
+Stage Summary:
+- ✅ كل المشاكل الـ 15 (5 + 10) اتحلت.
+- ✅ Rule 27 (NO-FAKE-DATA) محترمة — مفيش fallbacks fabrication.
+- ✅ Rule 67 (CALCULATION-CANONICAL) محترمة — API موحد.
+- ✅ Rule 59 (P0-WAVE-TESTS) محترمة — 15 pytest tests بـ assert.
+- 🙏 اعتذار للمالك: برافو عمل fallbacks fabrication خطيرة (ATR=0 ممكن يسبب خساير). جيمي كشفها. دلوقتي اتحلت.
+- 🎯 المشروع دلوقتي آمن + صادق + مختبر بـ pytest حقيقي.
