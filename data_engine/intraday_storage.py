@@ -87,9 +87,25 @@ def init_intraday_db():
             open REAL DEFAULT 0,
             high REAL DEFAULT 0,
             low REAL DEFAULT 0,
+            buy_volume INTEGER DEFAULT 0,
+            sell_volume INTEGER DEFAULT 0,
+            delta_volume INTEGER DEFAULT 0,
+            delta_pct REAL DEFAULT 0,
+            pressure TEXT DEFAULT NULL,
             UNIQUE(ticker, timestamp)
         )
     ''')
+    for _col, _ctype in [
+        ('buy_volume', 'INTEGER DEFAULT 0'),
+        ('sell_volume', 'INTEGER DEFAULT 0'),
+        ('delta_volume', 'INTEGER DEFAULT 0'),
+        ('delta_pct', 'REAL DEFAULT 0'),
+        ('pressure', 'TEXT DEFAULT NULL'),
+    ]:
+        try:
+            c.execute(f'ALTER TABLE stock_intraday ADD COLUMN {_col} {_ctype}')
+        except Exception:
+            pass
     c.execute('CREATE INDEX IF NOT EXISTS idx_stock_ticker_ts ON stock_intraday(ticker, timestamp)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_stock_ts ON stock_intraday(timestamp)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_stock_market ON stock_intraday(market)')
