@@ -1664,6 +1664,8 @@ def rebuild_predictions():
                     ticker = d.get('ticker') or ''
                     if ticker and ticker not in seen_tickers:
                         stock_info = _get_stock_name(ticker)
+                        _rec = (d.get('recommendation') or 'hold').upper()
+                        _is_whale = 'WHALE' in _rec
                         active_predictions.append({
                             'ticker': ticker,
                             'symbol': ticker,
@@ -1671,10 +1673,12 @@ def rebuild_predictions():
                             'name_ar': stock_info['name_ar'],
                             'sector': stock_info['sector'],
                             'logo_url': stock_info.get('logo_url', ''),
-                            'signal': (d.get('recommendation') or 'hold').upper(),
-                            'signal_type': 'BUY' if 'buy' in (d.get('recommendation') or '').lower()
-                                           else 'SELL' if 'sell' in (d.get('recommendation') or '').lower()
+                            'signal': 'BUY' if 'buy' in _rec.lower() else ('SELL' if 'sell' in _rec.lower() else 'HOLD'),
+                            'signal_type': 'BUY' if 'buy' in _rec.lower()
+                                           else 'SELL' if 'sell' in _rec.lower()
                                            else 'HOLD',
+                            'track': 'WHALE_RADAR' if _is_whale else 'V40.2',
+                            'is_whale_radar': _is_whale,
                             'entry_price': d.get('entry_price') or 0,
                             'target_price': d.get('target_price') or 0,
                             'stop_loss': d.get('stop_loss') or 0,
