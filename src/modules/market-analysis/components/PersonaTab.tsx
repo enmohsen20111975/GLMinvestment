@@ -2453,10 +2453,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
  )}
 
- {/* 🔭 رادار التربص وقيد التسخين (الحاضنة) — إظهار عقل النظام والأسهم تحت المراقبة اللحظية */}
- <div className="my-5">
- <IncubatorSection market={market} />
- </div>
+
 
  {/* P6-PREDICTIONS: أرشيف التوقعات السابقة — اتنقل هنا من التبويب العام */}
  <PreviousPredictionsArchive

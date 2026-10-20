@@ -5561,3 +5561,35 @@ Stage Summary:
 - ✅ Task 2 done: StatusBadge.tsx rewrite
 - ✅ Task 3 partial: PredictionsTab + PersonaTab migrated (2/4)
 - 🎯 النظام الموحد جاهز — مـمنوع أي ألوان ad-hoc بعد اليوم
+
+---
+
+## 2026-10-20 — [جيمي & برافو & ألفا] — تثبيت الحاضنة ورادار التربص وإصلاح كراش التوقعات وتوحيد التناغم
+
+### 1. الكوارث التي تم كشفها وإصلاحها جذرياً:
+1. **كراش شاشة التحليل والتوقعات (`ReferenceError: dedupedPredictions is not defined`):**
+   - **السبب:** عند محاولة منع تكرار سهم KZPC، تم استدعاء `dedupedPredictions.length` في كود الـ JSX دون تعريف المتغير! مما سبب كراش فوري بـ ErrorBoundary في المتصفح.
+   - **الحل:** تم تعريف `dedupedPredictions` داخل `PreviousPredictionsArchive` في [PredictionsTab.tsx] باستخدام `React.useMemo` بفلترة ثلاثية تعتمد على `ticker + prediction_date + status`، وتحويل `map` ليعمل على القائمة المفلترة لمنع أي تكرار تاريخي.
+
+2. **فضيحة غياب مكوّن الحاضنة (The Stalking Radar):**
+   - **السبب:** لم يكن هناك مكوّن واجهة ولا مسار API في Next.js لعرض أسهم الحاضنة الـ 12 التي يولدها رادار الحيتان في البايثون.
+   - **الحل:**
+     - بناء مسار API الوسيط: `src/app/api/radar/incubator/route.ts` لربط السيرفر المحلي ببايثون backend (`/api/radar/incubator?market=EGX`).
+     - بناء مكوّن `src/modules/radar/components/IncubatorSection.tsx` الشامل لغرفة الطبخ والتربص:
+       * عداد الجاهزية (83% - 5 من 6 شروط مكتملة).
+       * قائمة الشروط المحققة (تجميع صامت، سيولة مؤسسية متدفقة، غياب مظاهر التصريف).
+       * الشرط المتبقي للإطلاق (Trigger Condition) ببوكس كهرماني تحذيري واضح للعميل.
+       * أرقام الصفقة المتوقعة عند التفعيل (الدخول، الهدف، الوقف، R/R).
+       * زر تفعيل التنبيه اللحظي `🔔 نبهني فور التفعيل`.
+     - تركيبه في `src/modules/market-analysis/components/PersonaTab.tsx` ليظهر في قمة الصفحة عند وضع السوق الدفاعي (الكاش).
+
+3. **إزالة تكرار الاستدعاء (`the name IncubatorSection is defined multiple times`):**
+   - حل التضارب الناجم عن تكرار الـ Import في السطرين 24 و 59 في `PersonaTab.tsx` وتنظيف الـ Render المكرر.
+
+4. **إلزام Alpha بالدستور البصري الموحد:**
+   - إصدار التكليف الصارم بحظر الـ Blind Sed واستبدال كافة الألوان الـ 1,325 عبر `StatusBadge` والـ 5 نغمات المعتمدة فقط.
+
+### 2. التحقق والاختبار (Verification):
+- ✅ `next build`: نجاح بنسبة 100% (Exit Code 0 - 0 lint/webpack errors).
+- ✅ `pm2 restart all`: جميع الخدمات (nextjs, python-backend, data-engine, ws-service, telegram bots) متصلة وشغالة بنجاح 🟢.
+- ✅ `GET http://localhost:3000/api/radar/incubator?market=EGX`: نجاح 200 واكتمال جلب الـ 12 سهم.
