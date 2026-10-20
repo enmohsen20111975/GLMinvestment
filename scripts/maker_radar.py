@@ -496,7 +496,9 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     if winner_path in _BULLISH_PATHS and _net_flow < 0:
         _flow_m = _net_flow / 1_000_000
         _distribution_flag = True
-        winner_path = None
+        # BRAVO-FIX: خلي path='distribution' بدل None عشان الواجهة تـعرف إنه تصريف
+        # (مش None اللي بـ يـسبب مشاكل في الـ filtering)
+        winner_path = 'distribution'
         winner_position_size = 0.0
         winner_reason = f'تصريف صريح — السيولة خارجة ({_flow_m:+.1f}M EGP)'
         # mark under_microscope = False + clear all bullish flags
@@ -646,7 +648,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'limit_up_trap': limit_up,
         'kill_switch': kill_triggered,
         'kill_reason': kill_reason if kill_triggered else None,
-        'under_microscope': winner_path is not None,
+        'under_microscope': winner_path is not None and winner_path != 'distribution',
         'path': winner_path,
         'position_size': winner_position_size,
         'reason': final_reason,
@@ -1160,7 +1162,12 @@ def main():
                                     f'آخر تحديث: {result.get("data_date")}. لازم تتأكد إن data_engine محدث قبل التوصية.')
                 log(f"  {stale_drop_warn}  [{ticker}]")
                 result['under_microscope'] = False
-                result['path'] = None
+                # BRAVO-FIX: لو السهم distribution_flag=True، خلي path='distribution' (مش None)
+                # عشان الـ distribution_list تـ catchه صح.
+                if result.get('distribution_flag'):
+                    result['path'] = 'distribution'
+                else:
+                    result['path'] = None
                 result['position_size'] = 0.0
                 # keep result for diagnostics but exclude from microscope list
 
