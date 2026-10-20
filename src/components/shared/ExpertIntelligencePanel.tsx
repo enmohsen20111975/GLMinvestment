@@ -33,6 +33,7 @@ import {
  RefreshCw, Loader2, ThumbsDown, ThumbsUp, Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 
 // ==================== Types ====================
 
@@ -631,10 +632,13 @@ export function ExpertIntelligencePanel({
  </div>
  )}
 
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState */}
  {!consensusLoading && consensusList.length === 0 && (
- <div className="text-center py-6 text-muted-foreground text-sm">
- لا توجد بيانات consensus متاحة — شغّل تحليلاً جديداً أولاً
- </div>
+ <UnifiedEmptyState
+ variant="empty"
+ title="مفيش بيانات consensus"
+ description="شغّل تحليلاً جديداً أولاً عشان تظهر النتايج هنا"
+ />
  )}
 
  {/* Consensus list */}

@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 import {
  TrendingUp, TrendingDown, Clock, Calendar,
  BarChart3, Target, AlertTriangle, CheckCircle,
@@ -1062,8 +1063,9 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  </Badge>
  </div>
  ))}
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState */}
  {Object.keys(weekStats.sectors).length === 0 && (
- <p className="text-muted-foreground text-sm p-2">لا توجد بيانات قطاعات</p>
+ <UnifiedEmptyState variant="empty" title="مفيش بيانات قطاعات" />
  )}
  </div>
  </div>

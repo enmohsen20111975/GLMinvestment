@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 
@@ -401,12 +402,12 @@ export function InvestorsFlowPanel() {
  </div>
  </div>
  ))}
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState */}
  {data.top_inflow_stocks.length === 0 && (
- <div className="text-xs text-muted-foreground py-1">بانتظار البيانات</div>
+ <UnifiedEmptyState variant="loading" title="بانتظار البيانات" />
  )}
  </div>
  </div>
-
  {/* Outflow */}
  <div className="space-y-1">
  <div className="flex items-center gap-1 text-xs font-semibold text-loss ">
@@ -425,8 +426,9 @@ export function InvestorsFlowPanel() {
  </div>
  </div>
  ))}
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState */}
  {data.top_outflow_stocks.length === 0 && (
- <div className="text-xs text-muted-foreground py-1">بانتظار البيانات</div>
+ <UnifiedEmptyState variant="loading" title="بانتظار البيانات" />
  )}
  </div>
  </div>
