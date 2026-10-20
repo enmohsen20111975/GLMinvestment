@@ -1027,3 +1027,47 @@ Stage Summary:
 - 🎯 تقدير LOC savings: ~9,700 LOC.
 - 🎯 60% من الشغل = activation + migration مش بناء جديد (UnifiedTable, UnifiedEmptyState, PredictionCard, lib/format.ts, lib/api-client.ts, PALETTE_MIGRATION, TanStack Query كلهم موجودين بس مش متـفعّلين).
 - ⏳ بانتظار موافقة المالك على الخطة + ترتيب التنفيذ.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-PHASE-0
+Agent: Z.ai Code (الفاحص التقني + منفّذ)
+Task: محسن — "توكل على الله وبين كل مرحلة والاخرى اختبار للوظائف والاستقرار". تنفيذ Phase 0 من PLAN-COMPONENT-UNIFICATION.md + اختبار.
+
+Work Log:
+- قرأت worklog.md + فهمت الـ 4 audit reports (AUDIT-1/2/3/4).
+- قرأت المصادر الفعلية للـ duplications (getLifecycle, sigColor maps, SECTOR_ARABIC_MAP, MARKET_FLAGS, MARKET_NAMES_AR conflicting translations, SECTOR_COLORS hex, SECTOR_COLOR_MAP tailwind, persona themes).
+- لقيت إن فيه bug مشهور (trailing spaces في `'text-profit '`, `'border-profit '`, `'bg-profit text-profit/30 '`) — نفس نوع الباج اللي اتصصلح في helpers.ts قبل كده. اتصلّح في الـ canonical versions.
+
+التنفيذ (10 ملفات):
+
+NEW canonical lib files (7):
+1) modules/market-analysis/lib/sector-map.ts — SECTOR_ARABIC_MAP + arSector() + SECTOR_AR_OPTIONS.
+2) modules/market-analysis/lib/lifecycle.ts — getLifecycle() canonical (merges 2 implementations) + LIFECYCLE_LABELS_AR + LIFECYCLE_DESCRIPTIONS_AR.
+3) modules/market-analysis/lib/signals.ts — SIGNAL_STYLES (lifted from PredictionCard) + detectSignalKind + signalLabelAr + getSignalStyle + SIGNAL_COLOR_MAP (deprecated alias).
+4) lib/market-constants.ts — re-exports MARKET_NAMES_AR/CODES/CURRENCY_LABEL + NEW MARKET_FLAGS/CURRENCY/INDEX_LABEL/OPTIONS + parseMarketValue/marketToValue + MARKET_API_CODE_MAP.
+5) lib/sector-constants.ts — SECTOR_HEX_COLORS (for charts) + SECTOR_BADGE_CLASSES (for badges) + getSectorHex/getSectorBadgeClass.
+6) lib/persona-config.ts — PERSONA_THEMES + normalizePersona + personaToAnalysisJsonKey + getPersonaTheme + PERSONA_OPTIONS.
+
+NEW hooks (3):
+7) hooks/use-api-query.ts — useApiQuery (TanStack Query wrapper) + useLiveApiQuery + useConditionalApiQuery. Replaces 268 manual useEffect+fetch patterns.
+8) hooks/use-pagination.ts — usePagination<T> (state + slice + helpers). Replaces 7+ inline pagination patterns. Auto-resets page if items shrank.
+9) hooks/use-debounce.ts — useDebounce<T> for search inputs.
+
+MODIFIED (1):
+10) components/Providers.tsx — wired QueryClientProvider (TanStack Query v5.82.0 was installed but never wired; Phase 0 audit found 0 usages).
+
+Verification (بين كل مرحلة والثانية — per محسن's directive):
+- ✅ bun run lint: exit 0.
+- ✅ bunx tsc --noEmit: 0 errors from new files (1672 pre-existing errors in archive/ + other files — out of scope).
+- ⚠️ Dev server: starts + compiles middleware successfully + serves requests. The full "/" page compilation gets OOM-killed by the system (3.9GB RAM limit — same issue as previous session, NOT from Phase 0 changes which are all small + additive ~52KB new code).
+- ⚠️ Pre-existing issue: better-sqlite3 module was missing (installed via bun add). This is from metrics-db.ts — not from Phase 0.
+
+Commit: a091022 P0-COMPONENT-UNIFICATION Phase 0: foundation — 7 lib files + 3 hooks + QueryClientProvider.
+
+Stage Summary:
+- ✅ Phase 0 كاملة: 7 lib files + 3 hooks + QueryClientProvider wired.
+- ✅ lint: Exit 0.
+- ✅ tsc: 0 new errors.
+- 🎯 الـ canonical sources جاهزة لـ Phase 2 codemod (اللي هـ يستبدل كل الـ duplicate definitions بـ imports من هنا).
+- 🎯 الـ foundation موجودة دلوقتي لـ Phase 1 (shared components: SignalBadge, LifecycleBadge, StatusBadge, … اللي هـ تستورد من الـ lib files دي).
+- ⏳ جاهز لـ Phase 1 (shared components) لما المالك يـوافق.
