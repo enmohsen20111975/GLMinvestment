@@ -181,10 +181,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   EXPIRED: { label: 'انتهت المدة', color: 'bg-amber-500/15 text-amber-600 border-amber-500/30', icon: <Clock className="h-3 w-3" /> },
   PENDING: { label: 'قيد التنفيذ', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', icon: <Clock className="h-3 w-3" /> },
   CLOSED: { label: 'مغلقة', color: 'bg-slate-500/15 text-slate-600 border-slate-500/30', icon: <CheckCircle2 className="h-3 w-3" /> },
-  // BRAVO-SCHEMA-MIGRATION: unified status values (proven/testing/closed)
-  proven: { label: 'مُثبتة', color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30', icon: <Trophy className="h-3 w-3" /> },
-  testing: { label: 'قيد الاختبار', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', icon: <Clock className="h-3 w-3" /> },
-  closed: { label: 'مغلقة', color: 'bg-slate-500/15 text-slate-600 border-slate-500/30', icon: <CheckCircle2 className="h-3 w-3" /> },
 };
 
 const MARKET_NAMES: Record<string, string> = {
@@ -1578,10 +1574,6 @@ export default function HonestPredictionsPage() {
                 <SelectItem value="STOPPED">وقف الخسارة</SelectItem>
                 <SelectItem value="EXPIRED">انتهت المدة</SelectItem>
                 <SelectItem value="PENDING">قيد التنفيذ</SelectItem>
-                {/* BRAVO-SCHEMA-MIGRATION: unified status values */}
-                <SelectItem value="proven">مُثبتة</SelectItem>
-                <SelectItem value="testing">قيد الاختبار</SelectItem>
-                <SelectItem value="closed">مغلقة</SelectItem>
               </SelectContent>
             </Select>
             <Select value={signalFilter} onValueChange={setSignalFilter}>
@@ -1824,7 +1816,7 @@ export default function HonestPredictionsPage() {
                                   النتيجة والتحليل الأساسي
                                 </h4>
                                 <div className="space-y-1 text-xs">
-                                  {p.status === 'PENDING' || p.status === 'proven' || p.status === 'testing' ? (
+                                  {p.status === 'PENDING' ? (
                                     <div className="text-xs text-amber-600 bg-amber-500/10 rounded p-2 text-center">
                                       ⏳ قيد التنفيذ — بانتظار النتيجة
                                     </div>

@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
                SUM(CASE WHEN actual_return > 0 THEN 1 ELSE 0 END) as hits
         FROM predictions
         WHERE ticker = ?
-          AND status = 'closed'
+          AND status IN ('EXPIRED', 'STOPPED', 'TARGET_HIT')
           AND actual_return IS NOT NULL
           ${marketClause}`;
       const accRow = db.prepare(accQuery).get(ticker, ...marketParams) as { total: number; hits: number } | undefined;

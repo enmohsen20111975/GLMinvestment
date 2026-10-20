@@ -36,6 +36,9 @@ function openDb(path: string, readonly = true): any {
   return new Database(path, { readonly });
 }
 
+const WIN_STATUSES = new Set(['TARGET_HIT', 'closed_win']);
+const LOSS_STATUSES = new Set(['closed_stop', 'STOPPED']);
+
 function ensureTrackColumn(db: any): void {
   // predictions table needs a track column (defaults to 'full_analysis')
   try {
@@ -90,8 +93,8 @@ export async function GET(request: NextRequest) {
         AND prediction_date >= datetime('now', ?)
         ${trackClause}
       ORDER BY
-        CASE WHEN status = 'proven' THEN 0
-             WHEN hit_target = 1 THEN 1
+        CASE WHEN status = 'active' OR status = 'ACTIVE' THEN 0
+             WHEN status IN ('TARGET_HIT','closed_win') THEN 1
              ELSE 2
         END,
         prediction_date DESC
@@ -116,9 +119,9 @@ export async function GET(request: NextRequest) {
       const t = r.track;
       if (!byTrack[t]) byTrack[t] = { total: 0, wins: 0, losses: 0, active: 0 };
       byTrack[t].total++;
-      if (r.hit_target === 1) byTrack[t].wins++;
-      else if (r.hit_stop === 1) byTrack[t].losses++;
-      else if (r.status === 'proven' || r.status === 'testing') byTrack[t].active++;
+      if (WIN_STATUSES.has(r.status)) byTrack[t].wins++;
+      else if (LOSS_STATUSES.has(r.status)) byTrack[t].losses++;
+      else if (r.status === 'active' || r.status === 'ACTIVE') byTrack[t].active++;
     }
 
     db.close();

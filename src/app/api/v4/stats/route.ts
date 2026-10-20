@@ -7,8 +7,8 @@
  * Tries Python /api/v4/stats first (5s timeout).
  * On failure, computes stats from the predictions table:
  *   - total predictions
- *   - wins (hit_target = 1)
- *   - losses (hit_stop = 1)
+ *   - wins (status = 'TARGET_HIT')
+ *   - losses (status = 'STOPPED')
  *   - win_rate
  *   - avg_return (mean of actual_return across closed predictions)
  *   - by_persona breakdown (count + win_rate per persona)
@@ -99,9 +99,9 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
       .prepare(
         `SELECT
            COUNT(*) AS total_predictions,
-           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
-           SUM(CASE WHEN status = 'proven' THEN 1 ELSE 0 END) AS pending,
+           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS pending,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions`
       )
@@ -132,8 +132,8 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
         `SELECT
            COALESCE(NULLIF(persona, ''), 'unspecified') AS persona,
            COUNT(*) AS total,
-           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions
          GROUP BY COALESCE(NULLIF(persona, ''), 'unspecified')
@@ -170,8 +170,8 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
         `SELECT
            ticker,
            COUNT(*) AS total,
-           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) AS wins,
-           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) AS losses,
+           SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) AS wins,
+           SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) AS losses,
            AVG(CASE WHEN actual_return IS NOT NULL THEN actual_return END) AS avg_return
          FROM predictions
          GROUP BY ticker
