@@ -84,8 +84,8 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
  'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs font-medium tabular-nums transition-colors',
  'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-profit/50 rounded',
  up
- ? 'text-profit hover:bg-profit dark:hover:bg-profit/40'
- : 'text-loss hover:bg-loss dark:hover:bg-loss/40',
+ ? 'text-profit hover:bg-profit dark:hover:bg-profit/10'
+ : 'text-loss hover:bg-loss dark:hover:bg-loss/10',
  )}
  dir="ltr"
  >

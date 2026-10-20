@@ -138,10 +138,10 @@ function getRecommendationColor(rec: string): string {
 
 function getSeverityColor(severity: string): string {
  switch (severity) {
- case 'danger': return 'border-loss bg-loss /20';
- case 'warning': return 'border-yellow-300 bg-warning /20';
- case 'success': return 'border-success bg-success /20';
- default: return 'border-whale bg-primary /20';
+ case 'danger': return 'border-loss bg-loss/20';
+ case 'warning': return 'border-yellow-300 bg-warning/20';
+ case 'success': return 'border-success bg-success/20';
+ default: return 'border-whale bg-primary/20';
  }
 }
 
@@ -435,7 +435,7 @@ export function ProfessionalWatchlistView() {
  
  {/* Alerts Summary */}
  {alerts.length > 0 && (
- <Card className="border-orange-200 bg-warning /20">
+ <Card className="border-orange-200 bg-warning/20">
  <CardContent className="p-4">
  <div className="flex items-center gap-2 mb-3">
  <Bell className="h-4 w-4 text-warning" />

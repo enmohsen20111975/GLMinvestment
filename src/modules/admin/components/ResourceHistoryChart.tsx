@@ -353,7 +353,7 @@ export function ResourceHistoryChart({ className }: ResourceHistoryChartProps) {
  className={cn(
  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[32px] border',
  range === opt.key
- ? 'bg-profit/10 text-profit border-profit/40'
+ ? 'bg-profit/10 text-profit border-profit/20'
  : 'text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/40',
  )}
  >

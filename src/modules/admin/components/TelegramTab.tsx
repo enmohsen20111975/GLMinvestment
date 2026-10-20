@@ -365,7 +365,7 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
 // ====== Not Authenticated Banner ======
 function NotAuthBanner({ onRequireAuth }: { onRequireAuth: () => void }) {
  return (
- <Card className="border-warning bg-warning /30">
+ <Card className="border-warning bg-warning/10">
  <CardContent className="py-6 flex flex-col items-center text-center gap-3">
  <XCircle className="h-8 w-8 text-warning" />
  <p className="font-medium text-warning ">
@@ -2089,7 +2089,7 @@ function LegacyBotTab({ authenticated, onRequireAuth }: {
  )}
  <p className="text-sm whitespace-pre-wrap line-clamp-4">{msg.text}</p>
  {cleanedTexts[msg.message_id] && (
- <div className="p-2 rounded bg-profit /30 border border-profit text-xs">
+ <div className="p-2 rounded bg-profit/10 border border-profit text-xs">
  <div className="flex items-center gap-1 mb-1 text-profit ">
  <Sparkles className="h-3 w-3" /> <span className="font-medium">بعد التنظيف</span>
  </div>

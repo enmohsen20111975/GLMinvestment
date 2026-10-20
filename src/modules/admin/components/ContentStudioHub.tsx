@@ -764,7 +764,7 @@ export function ContentStudioHub() {
  ))}
  </div>
  ) : (
- <p className="text-xs text-warning p-2 rounded bg-warning /20 border border-warning ">
+ <p className="text-xs text-warning p-2 rounded bg-warning/20 border border-warning ">
  ℹ️ مفيش صفقات ناجحة في الـ DB. الفيديو هياخد بيانات تجريبية.
  </p>
  )}

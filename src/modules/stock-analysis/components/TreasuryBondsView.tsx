@@ -105,7 +105,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
  variant={daysToMaturity < 90 ? "default" : "secondary"} 
  className={cn(
  "text-xs w-fit",
- daysToMaturity < 90 && "bg-warning text-warning /30 "
+ daysToMaturity < 90 && "bg-warning text-warning/30 "
  )}
  >
  <Clock className="w-3 h-3 ml-1" />
@@ -224,7 +224,7 @@ const bondColumns: Column<TreasuryBond>[] = [
  className={cn(
  'text-xs w-fit',
  daysToMaturity < 90 &&
- 'bg-warning text-warning /30 ',
+ 'bg-warning text-warning/30 ',
  )}
  >
  <Clock className="w-3 h-3 ml-1" />
@@ -287,7 +287,7 @@ export function TreasuryBondsView() {
  <CardContent className="p-4">
  <div className="flex items-center justify-between gap-4 flex-wrap">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-profit /30 rounded-lg">
+ <div className="p-2 bg-profit/10 rounded-lg">
  <Landmark className="w-5 h-5 text-profit " />
  </div>
  <div>
@@ -338,7 +338,7 @@ export function TreasuryBondsView() {
  </div>
 
  {/* Info Banner */}
- <Card className="py-0 gap-0 bg-primary /20 border-whale ">
+ <Card className="py-0 gap-0 bg-primary/20 border-whale ">
  <CardContent className="p-3">
  <div className="flex items-start gap-2">
  <Shield className="w-4 h-4 text-whale mt-0.5 flex-shrink-0" />
@@ -392,7 +392,7 @@ export function TreasuryBondsView() {
  <Card className="py-0 gap-0">
  <CardContent className="p-4">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-profit /30 rounded-lg">
+ <div className="p-2 bg-profit/10 rounded-lg">
  <Landmark className="w-5 h-5 text-profit" />
  </div>
  <div>
@@ -405,7 +405,7 @@ export function TreasuryBondsView() {
  <Card className="py-0 gap-0">
  <CardContent className="p-4">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-whale /30 rounded-lg">
+ <div className="p-2 bg-whale/10 rounded-lg">
  <FileText className="w-5 h-5 text-whale" />
  </div>
  <div>
@@ -418,7 +418,7 @@ export function TreasuryBondsView() {
  <Card className="py-0 gap-0">
  <CardContent className="p-4">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-warning /30 rounded-lg">
+ <div className="p-2 bg-warning/10 rounded-lg">
  <Percent className="w-5 h-5 text-warning" />
  </div>
  <div>

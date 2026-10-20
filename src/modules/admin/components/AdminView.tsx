@@ -943,7 +943,7 @@ export function AdminView() {
  <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
  <Card className="w-full max-w-md">
  <CardHeader className="text-center">
- <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-profit /30 flex items-center justify-center">
+ <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-profit/10 flex items-center justify-center">
  <Shield className="w-8 h-8 text-profit" />
  </div>
  <CardTitle>دخول المدير</CardTitle>
@@ -1010,7 +1010,7 @@ export function AdminView() {
  label: 'المراقبة وصحة النظام',
  shortLabel: 'المراقبة',
  icon: <Activity className="w-4 h-4" />,
- accent: 'border-profit/40 bg-profit/5',
+ accent: 'border-profit/20 bg-profit/5',
  tabs: [
  { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" />, desc: 'نظرة عامة + صحة النظام' },
  { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" />, desc: 'CPU/RAM/DB' },
@@ -1024,7 +1024,7 @@ export function AdminView() {
  label: 'المحركات والتعلم الذكي',
  shortLabel: 'المحركات',
  icon: <Zap className="w-4 h-4" />,
- accent: 'border-warning/40 bg-warning/5',
+ accent: 'border-warning/20 bg-warning/5',
  tabs: [
  // Task 31-B (Engine Monitor Battalion) — unified engine control room
  // (8 engine cards + per-engine deep view + error console + start-all/stop-all).
@@ -1063,7 +1063,7 @@ export function AdminView() {
  label: 'المستخدمين والاشتراكات',
  shortLabel: 'المستخدمين',
  icon: <Users className="w-4 h-4" />,
- accent: 'border-loss/40 bg-loss/5',
+ accent: 'border-loss/20 bg-loss/5',
  tabs: [
  { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" />, desc: 'CRUD + باقات' },
  { id: 'users', label: 'تحليلات المستخدمين', icon: <BarChart3 className="w-3.5 h-3.5" />, desc: 'إحصائيات + behavior' },
@@ -1078,7 +1078,7 @@ export function AdminView() {
  label: 'أدوات التسويق والنشر',
  shortLabel: 'التسويق',
  icon: <Send className="w-4 h-4" />,
- accent: 'border-whale/40 bg-whale/5',
+ accent: 'border-whale/20 bg-whale/5',
  tabs: [
  { id: 'marketing-studio', label: 'استوديو التسويق', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'فيديو + كروت + حملات + تقويم' },
  { id: 'reports', label: 'التقارير الذكية', icon: <FileText className="w-3.5 h-3.5" />, desc: 'يومية + أسبوعية + PDF' },
@@ -1096,9 +1096,9 @@ export function AdminView() {
  <div className="flex items-center gap-3">
  <div className={cn(
  "w-12 h-12 rounded-xl flex items-center justify-center",
- healthScore >= 80 ? "bg-profit /30" :
- healthScore >= 50 ? "bg-warning /30" :
- "bg-loss /30"
+ healthScore >= 80 ? "bg-profit/10" :
+ healthScore >= 50 ? "bg-warning/10" :
+ "bg-loss/10"
  )}>
  <Shield className={cn(
  "w-6 h-6",
@@ -1152,7 +1152,7 @@ export function AdminView() {
  "gap-2 h-9 text-xs font-bold transition-all",
  activeTab === 'news-control'
  ? "bg-primary text-primary-foreground shadow-md"
- : "border-primary/50 text-primary hover:bg-primary/10"
+ : "border-primary/20 text-primary hover:bg-primary/10"
  )}
  >
  <Newspaper className="w-4 h-4" />
@@ -1444,9 +1444,9 @@ export function AdminView() {
  {dataStatus.categories.map((cat) => (
  <div key={cat.category} className={cn(
  "p-3 rounded-lg border-2",
- cat.status === 'fresh' ? "border-profit bg-profit /20" :
- cat.status === 'stale' ? "border-warning bg-warning /20" :
- cat.status === 'old' ? "border-loss bg-loss /20" :
+ cat.status === 'fresh' ? "border-profit bg-profit/20" :
+ cat.status === 'stale' ? "border-warning bg-warning/20" :
+ cat.status === 'old' ? "border-loss bg-loss/20" :
  "border-border bg-muted /20"
  )}>
  <div className="flex items-center justify-between mb-2">
@@ -1584,7 +1584,7 @@ export function AdminView() {
  <SystemHealthCard />
 
  {/* Mini command center preview */}
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between">
  <CardTitle className="text-base flex items-center gap-2">
@@ -1933,16 +1933,16 @@ export function AdminView() {
 // ==================== USER FEEDBACK TAB ====================
 
 const FEEDBACK_TYPE_META: Record<string, { label: string; cls: string }> = {
- bug: { label: 'مشكلة', cls: 'border-loss bg-loss text-loss /40 ' },
- suggestion: { label: 'اقتراح', cls: 'border-warning bg-warning text-warning /40 ' },
+ bug: { label: 'مشكلة', cls: 'border-loss bg-loss text-loss/40 ' },
+ suggestion: { label: 'اقتراح', cls: 'border-warning bg-warning text-warning/40 ' },
  opinion: { label: 'رأي / ملاحظة', cls: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' },
- praise: { label: 'إشادة', cls: 'border-profit bg-profit text-profit /40 ' },
+ praise: { label: 'إشادة', cls: 'border-profit bg-profit text-profit/40 ' },
 };
 
 const FEEDBACK_STATUS_META: Record<string, { label: string; cls: string }> = {
- new: { label: 'جديد', cls: 'bg-loss text-loss /50 ' },
- reviewed: { label: 'تمت المراجعة', cls: 'bg-warning text-warning /50 ' },
- resolved: { label: 'تم الحل', cls: 'bg-profit text-profit /50 ' },
+ new: { label: 'جديد', cls: 'bg-loss text-loss/50 ' },
+ reviewed: { label: 'تمت المراجعة', cls: 'bg-warning text-warning/50 ' },
+ resolved: { label: 'تم الحل', cls: 'bg-profit text-profit/50 ' },
 };
 
 function UserFeedbackTab({

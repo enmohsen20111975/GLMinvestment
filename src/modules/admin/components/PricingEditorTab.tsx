@@ -183,7 +183,7 @@ export function PricingEditorTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -261,7 +261,7 @@ export function PricingEditorTab() {
  className={cn(
  'p-4 rounded-lg border-2',
  plan.id === 'premium'
- ? 'border-profit bg-profit /20 /50'
+ ? 'border-profit bg-profit/20 /50'
  : plan.id === 'developer'
  ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/20 dark:border-sky-900/50'
  : 'border-border bg-card',
@@ -330,8 +330,8 @@ export function PricingEditorTab() {
  className={cn(
  'p-3 rounded-lg border flex items-start gap-3',
  gate.enabled
- ? 'border-warning bg-warning /20 /40'
- : 'border-profit bg-profit /20 /40',
+ ? 'border-warning bg-warning/20 /40'
+ : 'border-profit bg-profit/20 /40',
  )}
  >
  <div className={cn(

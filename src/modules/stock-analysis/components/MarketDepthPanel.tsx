@@ -117,10 +117,10 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
 
  // Interpretation
  let interpretation = { label: 'متوازن', color: 'text-slate-600 bg-slate-500/10 border-slate-500/30' };
- if (buyPct >= 60) interpretation = { label: 'ضغط شرائي قوي', color: 'text-profit bg-profit/15 border-profit/40 ' };
- else if (buyPct >= 55) interpretation = { label: 'ضغط شرائي', color: 'text-profit bg-profit/10 border-profit/30 ' };
- else if (sellPct >= 60) interpretation = { label: 'ضغط بيعي قوي', color: 'text-loss bg-loss/15 border-loss/40 ' };
- else if (sellPct >= 55) interpretation = { label: 'ضغط بيعي', color: 'text-loss bg-loss/10 border-loss/30 ' };
+ if (buyPct >= 60) interpretation = { label: 'ضغط شرائي قوي', color: 'text-profit bg-profit/15 border-profit/20 ' };
+ else if (buyPct >= 55) interpretation = { label: 'ضغط شرائي', color: 'text-profit bg-profit/10 border-profit/20 ' };
+ else if (sellPct >= 60) interpretation = { label: 'ضغط بيعي قوي', color: 'text-loss bg-loss/15 border-loss/20 ' };
+ else if (sellPct >= 55) interpretation = { label: 'ضغط بيعي', color: 'text-loss bg-loss/10 border-loss/20 ' };
 
  return (
  <Card dir="rtl">

@@ -282,7 +282,7 @@ export function SmartAssistantPanel() {
 
  {/* Alerts Section */}
  {allAlerts.length > 0 && (
- <Card className="border-orange-200 bg-warning /20">
+ <Card className="border-orange-200 bg-warning/20">
  <CardHeader className="pb-2">
  <CardTitle className="text-base flex items-center gap-2">
  <AlertCircle className="h-4 w-4 text-warning" />
@@ -504,7 +504,7 @@ export function SmartAssistantPanel() {
  </CardHeader>
  <CardContent className="space-y-3">
  {data.gold.map((gold, i) => (
- <Card key={i} className="bg-warning /20">
+ <Card key={i} className="bg-warning/20">
  <CardContent className="p-4">
  <div className="flex items-center justify-between">
  <div>

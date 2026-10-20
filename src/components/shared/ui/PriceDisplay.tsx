@@ -10,7 +10,7 @@
  * Rule 27: مفيش أرقام وهمية — لو price = null → "—".
  * Rule 30: Emerald + Amber + Cyan (ممنوع أزرق/indigo).
  *
- * Design tokens: text-profit / text-loss (semantic tokens من BLUEPRINT).
+ * Design tokens: text-profit/ text-loss (semantic tokens من BLUEPRINT).
  */
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';

@@ -107,8 +107,8 @@ function promoBadge(promo: AdminUser['promoCode']) {
  isVip
  ? "bg-primary/15 text-primary border-purple-500/40"
  : isPremium
- ? "bg-profit/15 text-profit border-profit/40"
- : "bg-primary/15 text-primary border-primary/40"
+ ? "bg-profit/15 text-profit border-profit/20"
+ : "bg-primary/15 text-primary border-primary/20"
  )}
  >
  <Ticket className="w-3 h-3 text-current shrink-0" />
@@ -831,7 +831,7 @@ export function UserManagementPanel() {
  </div>
  )}
  {cleanupResult?.dryRun && (!cleanupResult.usersPreview || cleanupResult.usersPreview.length === 0) && (
- <div className="bg-profit /20 rounded p-2 text-xs text-profit ">
+ <div className="bg-profit/20 rounded p-2 text-xs text-profit ">
  {cleanupResult.message || 'لا يوجد مستخدمين مؤهلين للحذف حالياً.'}
  </div>
  )}

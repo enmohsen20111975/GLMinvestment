@@ -170,9 +170,9 @@ function signalClass(text: string): string {
  const t = text.toLowerCase();
  const bull = ['إيجابي', 'صعود', 'شراء', 'اشتري', 'تشبع بيعي', 'مرتفع', 'صاعد', 'bullish', 'buy', 'positive', 'oversold', 'rising'];
  const bear = ['سلبي', 'هبوط', 'بيع', 'بع', 'تشبع شرائي', 'هبوطي', 'هابط', 'bearish', 'sell', 'negative', 'overbought', 'falling'];
- for (const w of bull) { if (t.includes(w)) return 'bg-profit text-profit /40 '; }
- for (const w of bear) { if (t.includes(w)) return 'bg-loss text-loss /40 '; }
- return 'bg-warning text-warning /40 ';
+ for (const w of bull) { if (t.includes(w)) return 'bg-profit text-profit/40 '; }
+ for (const w of bear) { if (t.includes(w)) return 'bg-loss text-loss/40 '; }
+ return 'bg-warning text-warning/40 ';
 }
 
 function n(val: unknown, fb = 0): number {
@@ -652,7 +652,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  </CardHeader>
  <CardContent>
  <div className="grid grid-cols-3 gap-3">
- <div className="text-center p-3 rounded-lg bg-loss /20">
+ <div className="text-center p-3 rounded-lg bg-loss/20">
  <p className="text-xs text-loss mb-1">مستوى الدعم</p>
  <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.support)}</p>
  </div>
@@ -660,7 +660,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  <p className="text-xs text-muted-foreground mb-1">المقاومة</p>
  <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.resistance)}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-profit /20">
+ <div className="text-center p-3 rounded-lg bg-profit/20">
  <p className="text-xs text-profit mb-1">الهدف الصاعد</p>
  <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.upside_target)}</p>
  </div>
@@ -693,21 +693,21 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  </Badge>
  </div>
  <div className="grid grid-cols-3 gap-3">
- <div className="text-center p-3 rounded-lg bg-primary /20 border border-whale ">
+ <div className="text-center p-3 rounded-lg bg-primary/20 border border-whale ">
  <p className="text-xs text-whale mb-1 flex items-center justify-center gap-1">
  <ArrowLeftRight className="w-3 h-3" />
  سعر الدخول
  </p>
  <p className="font-bold text-sm tabular-nums" dir="ltr">{fmt(rec.entry_price)}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-profit /20 border border-profit ">
+ <div className="text-center p-3 rounded-lg bg-profit/20 border border-profit ">
  <p className="text-xs text-profit mb-1 flex items-center justify-center gap-1">
  <Target className="w-3 h-3" />
  الهدف
  </p>
  <p className="font-bold text-sm tabular-nums" dir="ltr">{fmt(rec.target_price)}</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-loss /20 border border-loss ">
+ <div className="text-center p-3 rounded-lg bg-loss/20 border border-loss ">
  <p className="text-xs text-loss mb-1 flex items-center justify-center gap-1">
  <Shield className="w-3 h-3" />
  وقف الخسارة
@@ -891,9 +891,9 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
 
  const patternBadge = (type: string) => {
  switch (type) {
- case 'bullish': return 'bg-profit text-profit /40 ';
- case 'bearish': return 'bg-loss text-loss /40 ';
- default: return 'bg-warning text-warning /40 ';
+ case 'bullish': return 'bg-profit text-profit/40 ';
+ case 'bearish': return 'bg-loss text-loss/40 ';
+ default: return 'bg-warning text-warning/40 ';
  }
  };
  const typeAr = (type: string) => {
@@ -928,8 +928,8 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  <span className={cn(
  'text-xs px-2 py-0.5 rounded-full font-medium',
  prof.patterns.ma_cross === 'golden_cross'
- ? 'bg-profit text-profit /40 '
- : 'bg-loss text-loss /40 '
+ ? 'bg-profit text-profit/40 '
+ : 'bg-loss text-loss/40 '
  )}>
  {prof.patterns.ma_cross === 'golden_cross' ? 'تقاطع ذهبي ✦' : 'تقاطع مميت ✦'}
  </span>

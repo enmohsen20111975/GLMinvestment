@@ -471,9 +471,9 @@ export function DataScraperControl() {
  key={job.id}
  className={cn(
  "p-3 rounded-lg border",
- job.status === 'running' && "bg-primary /20 border-primary",
- job.status === 'completed' && "bg-success /20 border-success",
- job.status === 'failed' && "bg-loss /20 border-loss"
+ job.status === 'running' && "bg-primary/20 border-primary",
+ job.status === 'completed' && "bg-success/20 border-success",
+ job.status === 'failed' && "bg-loss/20 border-loss"
  )}
  >
  <div className="flex items-center justify-between mb-2">
@@ -513,7 +513,7 @@ export function DataScraperControl() {
  )}
 
  {/* معلومات */}
- <Card className="bg-warning /20 border-warning">
+ <Card className="bg-warning/20 border-warning">
  <CardContent className="p-4">
  <div className="flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />

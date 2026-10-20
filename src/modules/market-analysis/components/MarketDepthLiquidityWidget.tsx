@@ -142,13 +142,13 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
  return {
  label: 'ضغط شرائي',
  icon: <TrendingUp className="w-3 h-3" />,
- color: 'text-profit bg-profit/15 border-profit/40 ',
+ color: 'text-profit bg-profit/15 border-profit/20 ',
  };
  case 'sell_pressure':
  return {
  label: 'ضغط بيعي',
  icon: <TrendingDown className="w-3 h-3" />,
- color: 'text-loss bg-loss/15 border-loss/40 ',
+ color: 'text-loss bg-loss/15 border-loss/20 ',
  };
  default:
  return {
@@ -278,7 +278,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
  >
  {/* Bar — fills from the inside edge (left in RTL = outer) */}
  <div
- className="absolute inset-y-0 right-0 bg-loss/30 /25 transition-all"
+ className="absolute inset-y-0 right-0 bg-loss/10 /25 transition-all"
  style={{ width: `${wPct}%` }}
  />
  <div className="relative h-full flex items-center justify-between px-2 text-xs">
@@ -319,7 +319,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
  className="relative h-7 rounded overflow-hidden bg-profit/5 border border-profit/10"
  >
  <div
- className="absolute inset-y-0 left-0 bg-profit/30 /25 transition-all"
+ className="absolute inset-y-0 left-0 bg-profit/10 /25 transition-all"
  style={{ width: `${wPct}%` }}
  />
  <div className="relative h-full flex items-center justify-between px-2 text-xs">

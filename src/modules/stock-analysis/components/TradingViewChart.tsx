@@ -1791,7 +1791,7 @@ export function TradingViewChart({
  className={cn(
  'flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors border',
  indicators[ind.key]
- ? 'bg-primary/15 border-primary/40 text-primary'
+ ? 'bg-primary/15 border-primary/20 text-primary'
  : 'bg-card/50 border-border/60 text-muted-foreground hover:bg-muted'
  )}
  >

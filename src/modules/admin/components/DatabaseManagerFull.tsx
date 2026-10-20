@@ -1233,7 +1233,7 @@ export function DatabaseManagerFull() {
  <CardContent className="p-4">
  <div className="flex items-center justify-between flex-wrap gap-4">
  <div className="flex items-center gap-3">
- <div className="w-12 h-12 rounded-xl bg-profit /30 flex items-center justify-center">
+ <div className="w-12 h-12 rounded-xl bg-profit/10 flex items-center justify-center">
  <DatabaseIcon className="w-6 h-6 text-profit " />
  </div>
  <div>
@@ -1252,10 +1252,10 @@ export function DatabaseManagerFull() {
  className={cn(
  'text-xs gap-1 cursor-default',
  integritySummary.corrupt > 0
- ? 'bg-loss /20 text-loss border-loss'
+ ? 'bg-loss/20 text-loss border-loss'
  : integritySummary.unknown > 0
- ? 'bg-warning /20 text-warning border-warning'
- : 'bg-profit /20 text-profit '
+ ? 'bg-warning/20 text-warning border-warning'
+ : 'bg-profit/20 text-profit '
  )}
  >
  <ShieldCheck className="w-3 h-3" />
@@ -1791,7 +1791,7 @@ export function DatabaseManagerFull() {
  </div>
  </div>
 
- <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-profit/50 md:col-span-3 border-profit">
+ <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-profit/10 md:col-span-3 border-profit">
  <div>
  <div className="text-sm font-semibold text-profit flex items-center gap-1.5">
  <RefreshCw className="w-4 h-4" />
@@ -1910,7 +1910,7 @@ function DbCard({
  className={cn(
  'w-full text-right p-3 rounded-lg border transition-all hover:border-profit',
  selected
- ? 'border-profit bg-profit /20'
+ ? 'border-profit bg-profit/20'
  : 'border-border bg-card'
  )}
  >
@@ -1934,7 +1934,7 @@ function DbCard({
  {(db.walPresent || db.shmPresent) && (
  <div className="mt-2 flex items-center gap-1 flex-wrap">
  {db.walPresent && (
- <Badge variant="outline" className="text-xs bg-warning /20 text-warning ">
+ <Badge variant="outline" className="text-xs bg-warning/20 text-warning ">
  WAL {formatBytes(db.walSizeBytes)}
  </Badge>
  )}
@@ -1952,7 +1952,7 @@ function DbCard({
 function IntegrityBadge({ integrity }: { integrity: 'ok' | 'corrupt' | 'unknown' }) {
  if (integrity === 'ok') {
  return (
- <Badge variant="outline" className="text-xs bg-profit /20 text-profit ">
+ <Badge variant="outline" className="text-xs bg-profit/20 text-profit ">
  <CheckCircle2 className="w-3 h-3" />
  سليمة
  </Badge>
@@ -2046,7 +2046,7 @@ function OverviewPanel({
  </span>
  <div className="flex gap-1">
  {overview.walPresent ? (
- <Badge variant="outline" className="text-xs bg-warning /20 text-warning ">
+ <Badge variant="outline" className="text-xs bg-warning/20 text-warning ">
  WAL {formatBytes(overview.walSizeBytes)}
  </Badge>
  ) : (
@@ -2278,7 +2278,7 @@ function TablesPanel(props: TablesPanelProps) {
  maxHeight="max-h-72"
  rowClassName={(t) => cn(
  'cursor-pointer',
- props.selectedTable === t.name && 'bg-profit /20',
+ props.selectedTable === t.name && 'bg-profit/20',
  )}
  onRowClick={(t) => props.onSelectTable(t.name)}
  />
@@ -2657,7 +2657,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
  {props.result.durationMs} ms
  </Badge>
  {props.result.isWrite ? (
- <Badge variant="outline" className="text-xs bg-warning /20 text-warning ">
+ <Badge variant="outline" className="text-xs bg-warning/20 text-warning ">
  {props.result.affected.toLocaleString('en-US')} صف متأثر
  </Badge>
  ) : (
@@ -2666,7 +2666,7 @@ function SqlConsolePanel(props: SqlConsolePanelProps) {
  {props.result.rows.length} صف
  </Badge>
  {props.result.truncated && (
- <Badge variant="outline" className="text-xs bg-warning /20 text-warning ">
+ <Badge variant="outline" className="text-xs bg-warning/20 text-warning ">
  تم اقتطاع النتائج ({RESULT_LIMIT} حد أقصى)
  </Badge>
  )}
@@ -3142,7 +3142,7 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
  className={cn(
  'border rounded-lg p-4',
  backup.corruptCount > 0
- ? 'border-loss bg-loss/30 /10'
+ ? 'border-loss bg-loss/10 /10'
  : 'border-border bg-card'
  )}
  >
@@ -3154,12 +3154,12 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
  {backup.dayOfWeek}
  </Badge>
  {backup.hasSummary ? (
- <Badge variant="outline" className="text-xs bg-profit /20 text-profit ">
+ <Badge variant="outline" className="text-xs bg-profit/20 text-profit ">
  <CheckCircle2 className="w-3 h-3" />
  مُلخّص
  </Badge>
  ) : (
- <Badge variant="outline" className="text-xs bg-warning /20 text-warning ">
+ <Badge variant="outline" className="text-xs bg-warning/20 text-warning ">
  <AlertCircle className="w-3 h-3" />
  مفحوص يدوياً
  </Badge>
@@ -3188,8 +3188,8 @@ function DailyBackupsPanel(props: DailyBackupsPanelProps) {
  className={cn(
  'text-xs gap-1 cursor-default',
  db.integrity === 'ok'
- ? 'bg-profit /20 text-profit '
- : 'bg-loss /20 text-loss '
+ ? 'bg-profit/20 text-profit '
+ : 'bg-loss/20 text-loss '
  )}
  >
  {db.integrity === 'ok' ? (

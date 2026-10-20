@@ -101,7 +101,7 @@ export function NewsHealthTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -158,7 +158,7 @@ export function NewsHealthTab() {
 
  {/* Error */}
  {!loading && data && !data.success && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>
@@ -174,7 +174,7 @@ export function NewsHealthTab() {
 
  {/* Broken sources alert */}
  {data?.success && brokenCount > 0 && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <Bug className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>
@@ -220,7 +220,7 @@ export function NewsHealthTab() {
  key={i}
  className={cn(
  'border-b hover:bg-muted/30',
- s.is_broken && 'bg-loss /10',
+ s.is_broken && 'bg-loss/10',
  )}
  >
  <td className="p-2">

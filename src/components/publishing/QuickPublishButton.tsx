@@ -295,7 +295,7 @@ ${reasonsList}
  </div>
 
  {/* Points Info */}
- <div className="flex items-center justify-between text-sm text-muted-foreground bg-profit /20 p-2.5 rounded-lg border border-profit/20">
+ <div className="flex items-center justify-between text-sm text-muted-foreground bg-profit/20 p-2.5 rounded-lg border border-profit/20">
  <div className="flex items-center gap-2">
  <Coins className="w-4 h-4 text-profit" />
  <span className="font-bold text-profit ">ستحصل على 10 نقاط عند نشر هذا التوقع</span>

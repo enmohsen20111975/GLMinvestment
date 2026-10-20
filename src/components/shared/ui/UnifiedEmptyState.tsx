@@ -77,7 +77,7 @@ export function UnifiedEmptyState({
  {icon ? (
  icon
  ) : variant === 'loading' ? (
- <div className="size-8 rounded-full border-2 border-profit/30 border-t-profit animate-spin" />
+ <div className="size-8 rounded-full border-2 border-profit/20 border-t-profit animate-spin" />
  ) : (
  <div className="size-3 rounded-full bg-muted-foreground/40" />
  )}

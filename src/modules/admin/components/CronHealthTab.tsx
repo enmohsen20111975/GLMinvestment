@@ -69,7 +69,7 @@ function jobStatusColor(job: CronJob): {
 } {
  if (!job.exists_log || !job.last_run) {
  return {
- border: 'border-loss bg-loss /20 /40',
+ border: 'border-loss bg-loss/20 /40',
  badge: 'border-loss text-loss',
  dot: 'bg-loss',
  label: 'لم يُشغّل',
@@ -80,7 +80,7 @@ function jobStatusColor(job: CronJob): {
  const sevenDays = 7 * oneDay;
  if (ageMs < oneDay) {
  return {
- border: 'border-profit bg-profit /20 /40',
+ border: 'border-profit bg-profit/20 /40',
  badge: 'border-profit text-profit',
  dot: 'bg-profit',
  label: 'طازج (<24س)',
@@ -88,14 +88,14 @@ function jobStatusColor(job: CronJob): {
  }
  if (ageMs < sevenDays) {
  return {
- border: 'border-warning bg-warning /20 /40',
+ border: 'border-warning bg-warning/20 /40',
  badge: 'border-warning text-warning',
  dot: 'bg-warning',
  label: 'هذا الأسبوع',
  };
  }
  return {
- border: 'border-loss bg-loss /20 /40',
+ border: 'border-loss bg-loss/20 /40',
  badge: 'border-loss text-loss',
  dot: 'bg-loss',
  label: 'قديم (>7أيام)',
@@ -137,7 +137,7 @@ export function CronHealthTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -199,7 +199,7 @@ export function CronHealthTab() {
 
  {/* Error */}
  {!loading && data && !data.success && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>

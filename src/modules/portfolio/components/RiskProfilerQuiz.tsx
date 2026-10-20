@@ -412,7 +412,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
  {/* ── تنبيه إعادة التوازن (Task 6) ── */}
  {rebalanceSuggestions && hasRebalanceWarning && (
- <div className="p-4 rounded-lg bg-warning /30 border-2 border-warning ">
+ <div className="p-4 rounded-lg bg-warning/10 border-2 border-warning ">
  <div className="flex items-start gap-2 mb-3">
  <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
  <div>
@@ -431,8 +431,8 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
  className={cn(
  'flex items-center justify-between p-2 rounded-md text-sm',
  s.action === 'sell'
- ? 'bg-loss /30'
- : 'bg-success /30'
+ ? 'bg-loss/10'
+ : 'bg-success/10'
  )}
  >
  <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
  {/* توقع Rebalancing (static hint — kept for context) */}
  {!currentAllocation && (
- <div className="p-3 rounded-lg bg-primary /30 border border-whale ">
+ <div className="p-3 rounded-lg bg-primary/10 border border-whale ">
  <p className="text-xs text-whale leading-relaxed">
  <strong>توقّع المستشار الآلي:</strong> قارن توزيع محفظتك الحالي بالتوزيع المثالي أعلاه. إذا تجاوز الفرق لأي أصل نسبة 10%، يُنصح بإعادة التوازن (بيع الزائد وشراء الناقص) للبقاء ضمن نطاق شخصيتك الاستثمارية.
  </p>

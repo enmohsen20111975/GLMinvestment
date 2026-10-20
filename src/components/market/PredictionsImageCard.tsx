@@ -448,7 +448,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
  compact
  showTechnical={false}
  rankBadge={`#${i + 1}`}
- className="border-whale/60 /40 bg-white/90"
+ className="border-whale/20 /40 bg-white/90"
  footer={
  <div className="flex items-center justify-between gap-2 text-xs">
  <span className="text-muted-foreground">

@@ -167,9 +167,9 @@ export function SeasonalitySignalsWidget() {
  key={s.ticker}
  className={cn(
  'p-2 rounded-lg border transition-all',
- s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-profit /20 border-profit ' :
- s.signal === 'SELL' ? 'bg-loss /20 border-loss ' :
- 'bg-warning /20 border-warning '
+ s.signal === 'BUY' || s.signal === 'STRONG_BUY' ? 'bg-profit/20 border-profit ' :
+ s.signal === 'SELL' ? 'bg-loss/20 border-loss ' :
+ 'bg-warning/20 border-warning '
  )}
  >
  <div className="flex items-center justify-between mb-1">

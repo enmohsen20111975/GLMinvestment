@@ -263,7 +263,7 @@ export function SystemControlPanel() {
  <>
  {/* PHASE2-ADMIN-PANEL: red stale-DB alert — owner requirement */}
  {staleDbs.length > 0 && (
- <Card className="bg-loss/10 border-loss/40 p-3 mb-3">
+ <Card className="bg-loss/10 border-loss/20 p-3 mb-3">
  <div className="flex items-start gap-2">
  <AlertCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
  <div className="flex-1">
@@ -327,7 +327,7 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
  <Card className="bg-white/5 border-white/10 p-3">
  <div className="flex items-center justify-between mb-2">
  <span className="text-xs font-semibold text-muted-foreground">قواعد البيانات</span>
- <Badge variant="outline" className="text-profit border-profit/30 text-xs">
+ <Badge variant="outline" className="text-profit border-profit/20 text-xs">
  {healthyCount}/{dbs.length} سليمة
  </Badge>
  </div>
@@ -436,7 +436,7 @@ function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
  const stale = meta?.lastModified ? isStale(meta.lastModified) : false;
 
  return (
- <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-loss/40 bg-loss/5')}>
+ <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-loss/20 bg-loss/5')}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2 min-w-0 flex-1">
  <Database className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -693,10 +693,10 @@ function StatCard({ icon: Icon, label, value, color }: any) {
 
 function QuickButton({ icon: Icon, label, onClick, loading, color }: any) {
  const colors: Record<string, string> = {
- emerald: 'text-profit border-profit/30 hover:bg-profit/10',
- amber: 'text-warning border-warning/30 hover:bg-warning/10',
+ emerald: 'text-profit border-profit/20 hover:bg-profit/10',
+ amber: 'text-warning border-warning/20 hover:bg-warning/10',
  purple: 'text-primary border-purple-500/30 hover:bg-primary/10',
- red: 'text-loss border-loss/30 hover:bg-loss/10',
+ red: 'text-loss border-loss/20 hover:bg-loss/10',
  };
  return (
  <button

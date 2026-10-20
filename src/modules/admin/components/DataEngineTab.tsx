@@ -601,7 +601,7 @@ export function DataEngineTab() {
  {engine?.errors && engine.errors.length > 0 && (
  <div className="bg-loss rounded-xl border border-loss mb-4">
  <div 
- className="p-4 flex items-center justify-between cursor-pointer hover:bg-loss/50"
+ className="p-4 flex items-center justify-between cursor-pointer hover:bg-loss/10"
  onClick={() => setShowErrors(!showErrors)}
  >
  <div className="flex items-center gap-3">

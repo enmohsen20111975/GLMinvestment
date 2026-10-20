@@ -64,9 +64,9 @@ class ErrorBoundary extends Component<{ children: ReactNode; title?: string }, {
  render() {
  if (this.state.hasError) {
  return (
- <Card className="border-loss /50">
+ <Card className="border-loss/20">
  <CardContent className="p-4 text-center">
- <div className="w-10 h-10 rounded-full bg-loss /40 flex items-center justify-center mx-auto mb-3">
+ <div className="w-10 h-10 rounded-full bg-loss/10 flex items-center justify-center mx-auto mb-3">
  <AlertTriangle className="w-5 h-5 text-loss" />
  </div>
  <p className="text-sm font-bold text-foreground mb-1">
@@ -464,7 +464,7 @@ function EstimatedBadge() {
  return (
  <Badge
  variant="outline"
- className="text-xs px-1 py-0 h-4 leading-none border-warning/40 text-warning bg-warning/10"
+ className="text-xs px-1 py-0 h-4 leading-none border-warning/20 text-warning bg-warning/10"
  title="قيمة مقدّرة هيكلياً من القيمة السوقية ومكررات السعر (raw data unavailable)"
  >
  تقديري
@@ -1253,12 +1253,12 @@ export function StockDetail() {
  {/* Index Membership Badges */}
  <div className="flex gap-1.5">
  {stock.egx30_member && (
- <Badge className="bg-profit text-profit /40 hover:bg-profit dark:hover:bg-profit/60 border-0 text-xs px-2">
+ <Badge className="bg-profit text-profit/40 hover:bg-profit dark:hover:bg-profit/10 border-0 text-xs px-2">
  EGX 30
  </Badge>
  )}
  {stock.egx70_member && (
- <Badge className="bg-warning text-warning /40 hover:bg-warning dark:hover:bg-warning/60 border-0 text-xs px-2">
+ <Badge className="bg-warning text-warning/40 hover:bg-warning dark:hover:bg-warning/10 border-0 text-xs px-2">
  EGX 70
  </Badge>
  )}
@@ -1276,13 +1276,13 @@ export function StockDetail() {
  {stock.sector}
  </Badge>
  {stock.compliance_status === 'halal' && (
- <Badge className="bg-profit text-profit /40 border-0 text-xs gap-1">
+ <Badge className="bg-profit text-profit/40 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  متوافق شرعاً
  </Badge>
  )}
  {stock.compliance_status === 'doubtful' && (
- <Badge className="bg-warning text-warning /40 border-0 text-xs gap-1">
+ <Badge className="bg-warning text-warning/40 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  غير مؤكد
  </Badge>
@@ -1407,7 +1407,7 @@ export function StockDetail() {
  <Button
  variant="outline"
  size="sm"
- className="gap-2 border-warning/40 text-warning hover:bg-warning/10"
+ className="gap-2 border-warning/20 text-warning hover:bg-warning/10"
  title="بطاقة إنفوجرافيك قابلة للنشر كصورة"
  >
  <Camera className="w-4 h-4" />

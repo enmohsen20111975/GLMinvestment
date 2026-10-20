@@ -72,11 +72,11 @@ function getRelativeTime(dateStr: string): string {
 function getSentimentColor(sentiment: string): string {
  switch (sentiment) {
  case 'positive':
- return 'bg-profit text-profit /40 ';
+ return 'bg-profit text-profit/40 ';
  case 'negative':
- return 'bg-loss text-loss /40 ';
+ return 'bg-loss text-loss/40 ';
  default:
- return 'bg-warning text-warning /40 ';
+ return 'bg-warning text-warning/40 ';
  }
 }
 
@@ -338,7 +338,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
  <div className="flex items-center gap-2 flex-wrap pt-1">
  {/* Catalyst Badge */}
  {Boolean(article.is_catalyst) && (
- <Badge className="bg-warning/15 text-warning border border-warning/30 text-xs gap-1 px-2.5 py-0.5 font-semibold">
+ <Badge className="bg-warning/15 text-warning border border-warning/20 text-xs gap-1 px-2.5 py-0.5 font-semibold">
  <Sparkles className="w-3 h-3 text-warning" />
  محفز صعودي قوي 🚀
  </Badge>
@@ -346,7 +346,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
 
  {/* Impact Type Badge */}
  {article.impact_type && (
- <Badge variant="outline" className="text-xs px-2 py-0 border-primary/30 text-primary">
+ <Badge variant="outline" className="text-xs px-2 py-0 border-primary/20 text-primary">
  {getCategoryLabel(article.impact_type)}
  </Badge>
  )}

@@ -136,7 +136,7 @@ export function AutoAnalysisWidget() {
  </div>
  <div className="flex items-center gap-2">
  {testResult.auto_analysis_eligible ? (
- <Badge className="bg-success/20 text-success border-success/50">
+ <Badge className="bg-success/20 text-success border-success/20">
  <CheckCircle2 className="h-3 w-3 mr-1" />
  جاهز للتشغيل
  </Badge>
@@ -235,7 +235,7 @@ export function AutoAnalysisWidget() {
  {/* Recommendation */}
  <div className={`p-3 rounded-lg border ${
  testResult.auto_analysis_eligible
- ? 'bg-success/10 border-success/30'
+ ? 'bg-success/10 border-success/20'
  : 'bg-warning/10 border-yellow-500/30'
  }`}>
  <div className="flex items-center gap-2 mb-1">

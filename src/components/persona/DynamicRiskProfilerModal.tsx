@@ -254,7 +254,7 @@ export function DynamicRiskProfilerModal({
  </RadioGroup>
  </Card>
  ) : (
- <Card className="p-5 space-y-4 border-primary/30 bg-primary/5">
+ <Card className="p-5 space-y-4 border-primary/20 bg-primary/5">
  <div className="flex items-center gap-2">
  <CheckCircle2 className="h-5 w-5 text-profit" />
  <h3 className="font-bold">اكتمل الاستبيان</h3>

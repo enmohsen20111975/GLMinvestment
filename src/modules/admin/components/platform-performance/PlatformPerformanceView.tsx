@@ -227,9 +227,9 @@ function KPICard({
  };
  const borderClasses = {
  default: 'border-border',
- success: 'border-profit /50',
- warning: 'border-warning /50',
- danger: 'border-loss /50',
+ success: 'border-profit/20',
+ warning: 'border-warning/20',
+ danger: 'border-loss/20',
  };
  return (
  <Card className={`border ${borderClasses[variant]} shadow-xs`}>
@@ -541,7 +541,7 @@ export function PlatformPerformanceView() {
 
  {/* === Readiness Box === */}
  {readiness && !insufficientData && (
- <Card className={readiness.recommendation === 'candidate' ? 'border-profit bg-profit/50' : 'border-warning bg-warning/50'}>
+ <Card className={readiness.recommendation === 'candidate' ? 'border-profit bg-profit/10' : 'border-warning bg-warning/10'}>
  <CardContent className="p-4">
  <div className="flex items-start gap-3">
  {readiness.recommendation === 'candidate' ? (
@@ -679,7 +679,7 @@ export function PlatformPerformanceView() {
 
  {/* === Worst Trades (إجباري) === */}
  {data && data.worst_trades.length > 0 && (
- <Card className="border-loss /50">
+ <Card className="border-loss/20">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-2 text-base text-loss ">
  <Skull className="h-5 w-5" />
@@ -719,7 +719,7 @@ export function PlatformPerformanceView() {
 
  {/* === Excluded Examples (شفافية) === */}
  {data && data.excluded_examples.length > 0 && (
- <Card className="border-warning /50">
+ <Card className="border-warning/20">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-2 text-base text-warning ">
  <AlertTriangle className="h-5 w-5" />

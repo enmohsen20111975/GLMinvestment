@@ -93,11 +93,11 @@ type BucketKey = 'all' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow'
 const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
   { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
   // ALPHA-UX-FIX-8: 'quiet_accumulation' (تجميع هادئ) — ده الـ signal اللي بيتعرض أكتر
-  { key: 'quiet_accumulation', label: 'تجميع هادئ', icon: '🟢', cls: 'bg-whale/10 text-whale border-whale/30' },
-  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/30' },
-  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/30' },
-  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/30' },
-  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-warning/10 text-warning border-warning/30' },
+  { key: 'quiet_accumulation', label: 'تجميع هادئ', icon: '🟢', cls: 'bg-whale/10 text-whale border-whale/20' },
+  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/20' },
+  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/20' },
+  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/20' },
+  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-warning/10 text-warning border-warning/20' },
 ];
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive

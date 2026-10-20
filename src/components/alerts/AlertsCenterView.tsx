@@ -120,7 +120,7 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
  return (
  <Card className={cn(
  'transition-all duration-200 hover:shadow-md',
- alert.triggered && 'border-profit bg-profit/50 /20'
+ alert.triggered && 'border-profit bg-profit/10 /20'
  )}>
  <CardContent className="p-4">
  <div className="flex items-start justify-between gap-3">
@@ -128,8 +128,8 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
  <div className={cn(
  'w-10 h-10 rounded-lg flex items-center justify-center',
  alert.type === 'crypto' 
- ? 'bg-warning /30' 
- : 'bg-profit /30'
+ ? 'bg-warning/10' 
+ : 'bg-profit/10'
  )}>
  {alert.type === 'crypto' 
  ? <Bitcoin className="w-5 h-5 text-warning " />
@@ -187,15 +187,15 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 
 function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
  const severityColors = {
- info: 'border-whale bg-primary/50 /20',
- warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/50 /20',
- danger: 'border-loss bg-loss/50 /20',
+ info: 'border-whale bg-primary/10 /20',
+ warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/10 /20',
+ danger: 'border-loss bg-loss/10 /20',
  };
 
  const severityIconColors = {
- info: 'text-whale bg-whale /30',
- warning: 'text-warning bg-warning /30',
- danger: 'text-loss bg-loss /30',
+ info: 'text-whale bg-whale/10',
+ warning: 'text-warning bg-warning/10',
+ danger: 'text-loss bg-loss/10',
  };
 
  const typeLabels: Record<string, string> = {
@@ -249,9 +249,9 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
 
 function MarketAlertCard({ alert }: { alert: MarketAlert }) {
  const severityColors = {
- info: 'border-whale bg-primary/50 /20',
- warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/50 /20',
- danger: 'border-loss bg-loss/50 /20',
+ info: 'border-whale bg-primary/10 /20',
+ warning: 'border-yellow-200 dark:border-yellow-800 bg-warning/10 /20',
+ danger: 'border-loss bg-loss/10 /20',
  };
 
  return (
@@ -280,10 +280,10 @@ function MarketAlertCard({ alert }: { alert: MarketAlert }) {
 
 function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
  const severityColors: Record<ObligationAlert['severity'], string> = {
- overdue: 'border-loss bg-loss/60 /30',
- critical: 'border-loss bg-loss/40 /20',
- warning: 'border-warning bg-warning/60 /20',
- info: 'border-whale bg-primary/60 /20',
+ overdue: 'border-loss bg-loss/10 /30',
+ critical: 'border-loss bg-loss/10 /20',
+ warning: 'border-warning bg-warning/10 /20',
+ info: 'border-whale bg-primary/10 /20',
  };
 
  const severityBadge: Record<ObligationAlert['severity'], string> = {
@@ -513,7 +513,7 @@ export function AlertsCenterView() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-warning /30 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
  <Shield className="w-5 h-5 text-warning " />
  </div>
  <div>

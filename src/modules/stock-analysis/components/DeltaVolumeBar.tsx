@@ -190,7 +190,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
  style={{ height: `${hBuyPct}%` }}
  />
  <div
- className="bg-loss/50 transition-all duration-500"
+ className="bg-loss/10 transition-all duration-500"
  style={{ height: `${100 - hBuyPct}%` }}
  />
  </div>

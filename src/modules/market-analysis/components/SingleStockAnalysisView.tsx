@@ -580,7 +580,7 @@ export function SingleStockAnalysisView({
         <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
       )}
       {canonicalLoading && (
-        <div className="mb-3 p-3 rounded-lg border border-profit/30 bg-profit/50 dark:bg-profit/10 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="mb-3 p-3 rounded-lg border border-profit/20 bg-profit/10 dark:bg-profit/10 flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-profit" />
           <span>جارٍ تحميل قرار المحرك المؤسسي الموحّد…</span>
         </div>
@@ -590,7 +590,7 @@ export function SingleStockAnalysisView({
           لما العميل يفتح النافذة الشاملة من جدول التوقعات، بنعرض التوقّع الأصلي
           فوق الشارت عشان مايحصلش تناقض بين جدول التوقعات والتحليل الفني. */}
       {predictionContext && (
-        <div className="mb-3 p-3 rounded-lg border-2 border-profit/40 bg-profit/20 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-3 p-3 rounded-lg border-2 border-profit/20 bg-profit/20 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold px-2 py-1 rounded-full bg-profit text-white">
               📊 توقّع نشط
@@ -890,7 +890,7 @@ export function SingleStockAnalysisView({
             {/* Row 1: Always Visible — Executive Summary (Score + Trade Plan) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {/* Score Card & Confluence — الملخص التنفيذي */}
-              <div className="p-3 rounded-lg bg-profit/10 border border-profit/30 space-y-1.5">
+              <div className="p-3 rounded-lg bg-profit/10 border border-profit/20 space-y-1.5">
                 <div className="flex justify-between items-center font-bold text-[11px]">
                   <span className="text-profit dark:text-profit">📋 الملخص التنفيذي:</span>
                   <span className="font-mono text-profit dark:text-profit font-black text-base">
@@ -1094,7 +1094,7 @@ export function SingleStockAnalysisView({
                       <CardContent className="p-3 space-y-2.5 text-xs">
                         {/* Big up vs down display */}
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="text-center p-2 rounded-lg bg-profit/10 border border-profit/30">
+                          <div className="text-center p-2 rounded-lg bg-profit/10 border border-profit/20">
                             <div className="text-[10px] text-profit dark:text-profit font-bold mb-0.5">
                               🟢 صعود
                             </div>
@@ -1102,7 +1102,7 @@ export function SingleStockAnalysisView({
                               {(upPct ?? 0).toFixed(1)}%
                             </div>
                           </div>
-                          <div className="text-center p-2 rounded-lg bg-loss/10 border border-loss/30">
+                          <div className="text-center p-2 rounded-lg bg-loss/10 border border-loss/20">
                             <div className="text-[10px] text-loss dark:text-loss font-bold mb-0.5">
                               🔴 هبوط
                             </div>
@@ -1246,7 +1246,7 @@ export function SingleStockAnalysisView({
                           </div>
                           {dna.personality_type && (
                             <Badge
-                              className="bg-warning/15 text-warning dark:text-warning border border-warning/30 text-[10px] font-bold shrink-0"
+                              className="bg-warning/15 text-warning dark:text-warning border border-warning/20 text-[10px] font-bold shrink-0"
                               title={dna.personality_type_en || dna.personality_type}
                             >
                               {dna.personality_type}
@@ -1334,7 +1334,7 @@ export function SingleStockAnalysisView({
                                 {dna.best_months.map((m) => (
                                   <Badge
                                     key={`bm-${m.month_num}`}
-                                    className="bg-profit/15 text-profit dark:text-profit border border-profit/30 text-[9px] font-bold"
+                                    className="bg-profit/15 text-profit dark:text-profit border border-profit/20 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
                                     <span className="font-mono">+{(m.avg_change ?? 0).toFixed(1)}%</span>
@@ -1352,7 +1352,7 @@ export function SingleStockAnalysisView({
                                 {dna.worst_months.map((m) => (
                                   <Badge
                                     key={`wm-${m.month_num}`}
-                                    className="bg-loss/15 text-loss dark:text-loss border border-loss/30 text-[9px] font-bold"
+                                    className="bg-loss/15 text-loss dark:text-loss border border-loss/20 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
                                     <span className="font-mono">{(m.avg_change ?? 0).toFixed(1)}%</span>
@@ -1410,8 +1410,8 @@ export function SingleStockAnalysisView({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 pt-1">
                 {/* SMC & Order Blocks */}
                 {data.smc_analysis && (
-                  <div className="p-3 rounded-lg bg-whale/10 border border-whale/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-whale/30 text-whale dark:text-whale">
+                  <div className="p-3 rounded-lg bg-whale/10 border border-whale/20 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-whale/20 text-whale dark:text-whale">
                       🏛️ تحليل سلوك السيولة (SMC):
                     </span>
                     <div className="flex justify-between text-[11px]">
@@ -1437,8 +1437,8 @@ export function SingleStockAnalysisView({
 
                 {/* Candlestick Patterns — للخبراء */}
                 {data.candlestick_patterns && data.candlestick_patterns.length > 0 && (
-                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
+                  <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-warning/20 text-warning dark:text-warning">
                       🕯️ الأنماط اليابانية المكتشفة:
                     </span>
                     {data.candlestick_patterns.slice(0, 5).map((p, i) => (
@@ -1509,8 +1509,8 @@ export function SingleStockAnalysisView({
                 )}
 
                 {/* Fundamental Valuation */}
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 space-y-1">
-                  <span className="font-bold text-[11px] block border-b border-warning/30 text-warning dark:text-warning">
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 space-y-1">
+                  <span className="font-bold text-[11px] block border-b border-warning/20 text-warning dark:text-warning">
                     🏛️ التقييم والتحليل الأساسي:
                   </span>
                   {/* P0-REDESIGN FIX (Rule 27 NO-FAKE-DATA): أزلت القيم الوهمية

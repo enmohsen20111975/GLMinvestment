@@ -288,21 +288,21 @@ export function ExpertIntelligencePanel({
  <>
  {/* Summary stats */}
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
- <div className="bg-loss /20 p-2 sm:p-3 rounded-lg text-center">
+ <div className="bg-loss/20 p-2 sm:p-3 rounded-lg text-center">
  <div className="text-xl sm:text-2xl font-bold text-loss">{missedOpp.summary.missed_bulls}</div>
  <div className="text-xs sm:text-xs text-muted-foreground">فرصة ضاعت</div>
  </div>
- <div className="bg-warning /20 p-2 sm:p-3 rounded-lg text-center">
+ <div className="bg-warning/20 p-2 sm:p-3 rounded-lg text-center">
  <div className="text-xl sm:text-2xl font-bold text-warning">{missedOpp.summary.false_positives}</div>
  <div className="text-xs sm:text-xs text-muted-foreground">توقع خاطئ</div>
  </div>
- <div className="bg-success /20 p-2 sm:p-3 rounded-lg text-center">
+ <div className="bg-success/20 p-2 sm:p-3 rounded-lg text-center">
  <div className="text-xl sm:text-2xl font-bold text-success">
  {missedOpp.summary.correct_buys + missedOpp.summary.correct_sells}
  </div>
  <div className="text-xs sm:text-xs text-muted-foreground">توقع صحيح</div>
  </div>
- <div className="bg-whale /20 p-2 sm:p-3 rounded-lg text-center">
+ <div className="bg-whale/20 p-2 sm:p-3 rounded-lg text-center">
  <div className="text-xl sm:text-2xl font-bold text-whale">{missedOpp.summary.accuracy_rate_pct}%</div>
  <div className="text-xs sm:text-xs text-muted-foreground">نسبة الدقة</div>
  </div>
@@ -459,9 +459,9 @@ export function ExpertIntelligencePanel({
  {/* Market mood */}
  <div className={cn(
  'rounded-lg p-3 sm:p-4 text-center',
- sectorIntel.summary.market_breadth?.market_mood?.includes('صاعد') ? 'bg-success /20' :
- sectorIntel.summary.market_breadth?.market_mood?.includes('هابط') ? 'bg-loss /20' :
- 'bg-warning /20'
+ sectorIntel.summary.market_breadth?.market_mood?.includes('صاعد') ? 'bg-success/20' :
+ sectorIntel.summary.market_breadth?.market_mood?.includes('هابط') ? 'bg-loss/20' :
+ 'bg-warning/20'
  )}>
  <div className="text-xs sm:text-xs text-muted-foreground">مزاج السوق</div>
  <div className="text-base sm:text-2xl font-bold">{sectorIntel.summary.market_breadth?.market_mood || '—'}</div>
@@ -472,14 +472,14 @@ export function ExpertIntelligencePanel({
 
  {/* Best + worst */}
  <div className="grid grid-cols-2 gap-2 sm:gap-3">
- <div className="border rounded-lg p-2 sm:p-3 bg-success /20">
+ <div className="border rounded-lg p-2 sm:p-3 bg-success/20">
  <div className="text-xs sm:text-xs text-muted-foreground">أقوى قطاع</div>
  <div className="font-bold text-success text-xs sm:text-sm truncate">
  {sectorIntel.summary.best_sector?.sector || '—'}
  </div>
  <div className="text-xs sm:text-sm text-success">+{sectorIntel.summary.best_sector?.avg_change_pct}%</div>
  </div>
- <div className="border rounded-lg p-2 sm:p-3 bg-loss /20">
+ <div className="border rounded-lg p-2 sm:p-3 bg-loss/20">
  <div className="text-xs sm:text-xs text-muted-foreground">أضعف قطاع</div>
  <div className="font-bold text-loss text-xs sm:text-sm truncate">
  {sectorIntel.summary.worst_sector?.sector || '—'}

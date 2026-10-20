@@ -78,14 +78,14 @@ const SEVERITY_CONFIG: Record<string, {
  critical: {
  emoji: '🔴',
  color: '#ef4444',
- border: 'border-loss/40',
+ border: 'border-loss/20',
  bg: 'bg-loss/5',
  text: 'text-loss ',
  },
  warning: {
  emoji: '🟡',
  color: '#f59e0b',
- border: 'border-warning/40',
+ border: 'border-warning/20',
  bg: 'bg-warning/5',
  text: 'text-warning ',
  },
@@ -99,7 +99,7 @@ const SEVERITY_CONFIG: Record<string, {
  recovered: {
  emoji: '🟢',
  color: '#10b981',
- border: 'border-profit/40',
+ border: 'border-profit/20',
  bg: 'bg-profit/5',
  text: 'text-profit ',
  },
@@ -258,7 +258,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
  {loading && !data ? (
  <Skeleton className="h-32 w-full rounded-lg" />
  ) : error ? (
- <div className="rounded-lg border border-loss/30 bg-loss/5 p-4 text-center">
+ <div className="rounded-lg border border-loss/20 bg-loss/5 p-4 text-center">
  <AlertTriangle className="w-6 h-6 text-loss mx-auto mb-2" />
  <div className="text-xs text-muted-foreground">{error}</div>
  <Button
@@ -273,9 +273,9 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
  <div
  className={cn(
  'rounded-xl border p-4 flex items-center gap-4',
- score >= 80 ? 'border-profit/30 bg-profit/5' :
- score >= 60 ? 'border-warning/30 bg-warning/5' :
- 'border-loss/30 bg-loss/5',
+ score >= 80 ? 'border-profit/20 bg-profit/5' :
+ score >= 60 ? 'border-warning/20 bg-warning/5' :
+ 'border-loss/20 bg-loss/5',
  )}
  >
  {/* Big number */}
@@ -352,7 +352,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
  ))}
  </div>
  ) : !loading && alerts.length === 0 ? (
- <div className="rounded-lg border border-profit/30 bg-profit/5 p-4 text-center text-xs text-profit flex flex-col items-center gap-2">
+ <div className="rounded-lg border border-profit/20 bg-profit/5 p-4 text-center text-xs text-profit flex flex-col items-center gap-2">
  <CheckCircle2 className="w-6 h-6" />
  <div>كل المؤشرات ضمن النطاق الطبيعي — لا توجد تنبيهات.</div>
  </div>

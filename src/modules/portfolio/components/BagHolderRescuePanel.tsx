@@ -75,9 +75,9 @@ interface RescueResult {
 }
 
 const REC_COLORS: Record<string, string> = {
- CUT_LOSS: 'bg-loss text-loss /40 border-loss',
- AVERAGE_DOWN: 'bg-warning text-warning /40 border-warning',
- HOLD: 'bg-success text-profit /40 border-success',
+ CUT_LOSS: 'bg-loss text-loss/40 border-loss',
+ AVERAGE_DOWN: 'bg-warning text-warning/40 border-warning',
+ HOLD: 'bg-success text-profit/40 border-success',
 };
 
 const URGENCY_LABEL: Record<string, string> = {
@@ -497,9 +497,9 @@ export function BagHolderRescuePanel({
  {/* Reasoning — التقرير المفصل */}
  <div className={cn(
  'p-3 rounded-lg border text-sm leading-relaxed',
- result.recommendation === 'CUT_LOSS' ? 'bg-loss /20 border-loss ' :
- result.recommendation === 'AVERAGE_DOWN' ? 'bg-warning /20 border-warning ' :
- 'bg-success /20 border-success dark:border-success'
+ result.recommendation === 'CUT_LOSS' ? 'bg-loss/20 border-loss ' :
+ result.recommendation === 'AVERAGE_DOWN' ? 'bg-warning/20 border-warning ' :
+ 'bg-success/20 border-success dark:border-success'
  )}>
  <div className="flex items-start gap-2">
  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
@@ -623,7 +623,7 @@ export function BagHolderRescuePanel({
  </div>
  {(result.technical.support.length > 0 || result.technical.resistance.length > 0) && (
  <div className="grid grid-cols-2 gap-2 text-xs">
- <div className="p-2 rounded-md bg-profit /20 border border-profit ">
+ <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-muted-foreground mb-1">الدعوم القريبة</div>
  <div className="flex flex-wrap gap-1">
  {result.technical.support.length > 0
@@ -635,7 +635,7 @@ export function BagHolderRescuePanel({
  : <span className="text-muted-foreground">—</span>}
  </div>
  </div>
- <div className="p-2 rounded-md bg-loss /20 border border-loss ">
+ <div className="p-2 rounded-md bg-loss/20 border border-loss ">
  <div className="text-muted-foreground mb-1">المقاومات القريبة</div>
  <div className="flex flex-wrap gap-1">
  {result.technical.resistance.length > 0
@@ -762,10 +762,10 @@ export function BagHolderRescuePanel({
  className={cn(
  'p-3 rounded-md border text-sm',
  row.color === 'emerald'
- ? 'bg-profit /20 border-profit '
+ ? 'bg-profit/20 border-profit '
  : row.color === 'amber'
- ? 'bg-warning /20 border-warning '
- : 'bg-loss /20 border-loss ',
+ ? 'bg-warning/20 border-warning '
+ : 'bg-loss/20 border-loss ',
  )}
  >
  <div className="flex items-center justify-between gap-2 mb-1">
@@ -855,10 +855,10 @@ export function BagHolderRescuePanel({
  className={cn(
  'p-3 rounded-md border text-sm transition-all',
  c.tone === 'emerald'
- ? 'bg-profit /20 border-profit '
+ ? 'bg-profit/20 border-profit '
  : c.tone === 'amber'
- ? 'bg-warning /20 border-warning '
- : 'bg-loss /20 border-loss ',
+ ? 'bg-warning/20 border-warning '
+ : 'bg-loss/20 border-loss ',
  isRecommended && 'ring-2 ring-primary/60 shadow-sm',
  )}
  >
@@ -889,7 +889,7 @@ export function BagHolderRescuePanel({
  })}
  </div>
  {action === 'AVERAGE_DOWN' && breakeven && (
- <div className="p-3 rounded-md bg-warning /20 border border-warning text-xs space-y-1">
+ <div className="p-3 rounded-md bg-warning/20 border border-warning text-xs space-y-1">
  <div className="flex items-center gap-2 font-semibold text-warning ">
  <Calculator className="h-4 w-4" />
  حاسبة متوسط التكلفة
@@ -929,10 +929,10 @@ export function BagHolderRescuePanel({
  'px-3 py-1.5 rounded-md border text-xs font-medium transition-colors',
  journalDecision === opt
  ? opt === 'HOLD'
- ? 'bg-profit /40 border-profit text-profit '
+ ? 'bg-profit/10 border-profit text-profit '
  : opt === 'AVERAGE_DOWN'
- ? 'bg-warning /40 border-warning text-warning '
- : 'bg-loss /40 border-loss text-loss '
+ ? 'bg-warning/10 border-warning text-warning '
+ : 'bg-loss/10 border-loss text-loss '
  : 'bg-background border-border text-muted-foreground hover:bg-accent',
  )}
  >
@@ -971,7 +971,7 @@ export function BagHolderRescuePanel({
  <div className="flex items-center justify-between flex-wrap gap-2">
  <div className="flex items-center gap-2">
  <span className="text-sm text-muted-foreground">شخصيتك الاستثمارية:</span>
- <Badge variant="outline" className="border-primary/30 text-primary">
+ <Badge variant="outline" className="border-primary/20 text-primary">
  {personaLabelAr(persona)}
  </Badge>
  </div>
@@ -990,10 +990,10 @@ export function BagHolderRescuePanel({
  <div className={cn(
  'p-3 rounded-lg border text-sm leading-relaxed flex items-start gap-2',
  personaAdvice.recommendation === 'CUT_LOSS'
- ? 'bg-loss /20 border-loss text-loss '
+ ? 'bg-loss/20 border-loss text-loss '
  : personaAdvice.recommendation === 'AVERAGE_DOWN'
- ? 'bg-warning /20 border-warning text-warning '
- : 'bg-success /20 border-success dark:border-success text-profit '
+ ? 'bg-warning/20 border-warning text-warning '
+ : 'bg-success/20 border-success dark:border-success text-profit '
  )}>
  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
  <p>{personaAdvice.noteAr}</p>
@@ -1022,7 +1022,7 @@ export function BagHolderRescuePanel({
  <div className="pt-2 border-t border-border space-y-2">
  {/* P39-PHASE-4: persona-aware AVERAGE_DOWN ceiling warning */}
  {overflowsCeiling && (
- <div className="p-2 rounded-md bg-loss /20 border border-loss text-xs text-loss space-y-1">
+ <div className="p-2 rounded-md bg-loss/20 border border-loss text-xs text-loss space-y-1">
  <div className="flex items-start gap-1.5">
  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
  <span>
@@ -1066,7 +1066,7 @@ export function BagHolderRescuePanel({
  </Card>
 
  {/* P39-PHASE-4: Dynamic Debt Paydown card — always visible at the bottom */}
- <Card className="border-profit/50">
+ <Card className="border-profit/20">
  <CardContent className="p-4 space-y-3">
  <div className="flex items-center gap-2">
  <Wallet className="h-5 w-5 text-profit" />
@@ -1096,7 +1096,7 @@ export function BagHolderRescuePanel({
 
  {profitEGP && Number(profitEGP) > 0 && (
  <div className="space-y-2 animate-in fade-in duration-300">
- <div className="p-3 rounded-lg border bg-profit /20 border-profit text-profit text-sm leading-relaxed flex items-start gap-2">
+ <div className="p-3 rounded-lg border bg-profit/20 border-profit text-profit text-sm leading-relaxed flex items-start gap-2">
  <Wallet className="h-4 w-4 flex-shrink-0 mt-0.5" />
  <p>{debtAdvice.noteAr}</p>
  </div>

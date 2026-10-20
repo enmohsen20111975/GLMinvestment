@@ -179,22 +179,22 @@ const flightIconMap: Record<string, React.ElementType> = {
 
 const flightColorMap: Record<string, string> = {
  flying_up: 'text-lime-500 bg-lime-500/10 border-lime-500/30',
- falling_down: 'text-loss bg-loss/10 border-loss/30',
- coiling: 'text-warning bg-warning/10 border-warning/30',
+ falling_down: 'text-loss bg-loss/10 border-loss/20',
+ coiling: 'text-warning bg-warning/10 border-warning/20',
  sideways: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
 };
 
 const makerColorMap: Record<string, string> = {
- absorption: 'text-profit bg-profit/10 border-profit/30',
- distribution: 'text-loss bg-loss/10 border-loss/30',
+ absorption: 'text-profit bg-profit/10 border-profit/20',
+ distribution: 'text-loss bg-loss/10 border-loss/20',
  calm: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
 };
 
 const adviceColorMap: Record<string, string> = {
- red: 'border-loss/40 bg-loss/10 text-loss ',
+ red: 'border-loss/20 bg-loss/10 text-loss ',
  orange: 'border-orange-500/40 bg-warning/10 text-warning ',
- yellow: 'border-warning/40 bg-warning/10 text-warning ',
- green: 'border-profit/40 bg-profit/10 text-profit ',
+ yellow: 'border-warning/20 bg-warning/10 text-warning ',
+ green: 'border-profit/20 bg-profit/10 text-profit ',
 };
 
 const qualityColorMap: Record<string, string> = {
@@ -269,11 +269,11 @@ export function InstitutionalDecisionPanel({
  'text-loss';
 
  const scoreBg =
- tech_score >= 75 ? 'from-profit/20 to-profit/10 border-profit/40' :
+ tech_score >= 75 ? 'from-profit/20 to-profit/10 border-profit/20' :
  tech_score >= 60 ? 'from-lime-500/20 to-lime-600/10 border-lime-500/40' :
- tech_score >= 40 ? 'from-warning/20 to-warning/10 border-warning/40' :
+ tech_score >= 40 ? 'from-warning/20 to-warning/10 border-warning/20' :
  tech_score >= 25 ? 'from-orange-500/20 to-orange-600/10 border-orange-500/40' :
- 'from-loss/20 to-loss/10 border-loss/40';
+ 'from-loss/20 to-loss/10 border-loss/20';
 
  const FlightIcon = flightIconMap[flight_state?.state] || Moon;
  const adviceClass = portfolio_advice ? adviceColorMap[portfolio_advice.color] : '';
@@ -299,9 +299,9 @@ export function InstitutionalDecisionPanel({
  className={cn(
  'flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border text-xs transition-colors',
  proof.passed
- ? 'border-profit/30 bg-profit/5'
+ ? 'border-profit/20 bg-profit/5'
  : proof.score_impact < 0
- ? 'border-loss/30 bg-loss/5'
+ ? 'border-loss/20 bg-loss/5'
  : 'border-slate-500/20 bg-slate-500/5'
  )}
  title={proof.detail || ''}
@@ -344,9 +344,9 @@ export function InstitutionalDecisionPanel({
  {/* V39: عدد الإثباتات */}
  <Badge className={cn(
  'text-xs border font-mono',
- proofsPassed >= 4 ? 'bg-profit/20 text-profit border-profit/40' :
- proofsPassed >= 2 ? 'bg-warning/20 text-warning border-warning/40' :
- 'bg-loss/20 text-loss border-loss/40'
+ proofsPassed >= 4 ? 'bg-profit/20 text-profit border-profit/20' :
+ proofsPassed >= 2 ? 'bg-warning/20 text-warning border-warning/20' :
+ 'bg-loss/20 text-loss border-loss/20'
  )}>
  {proofsPassed}/{proofsTotal} إثباتات
  </Badge>
@@ -426,8 +426,8 @@ export function InstitutionalDecisionPanel({
  variant="outline"
  className={cn(
  'text-xs py-0 px-1.5',
- fair_state === 'غالي' ? 'border-loss/40 text-loss' :
- fair_state === 'رخيص' ? 'border-profit/40 text-profit' :
+ fair_state === 'غالي' ? 'border-loss/20 text-loss' :
+ fair_state === 'رخيص' ? 'border-profit/20 text-profit' :
  'border-slate-500/40 text-slate-300'
  )}
  >
@@ -450,11 +450,11 @@ export function InstitutionalDecisionPanel({
  {/* ─── 4. الإثباتات الستة (Proofs) — V39 ─── */}
  <div>
  <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
- <div className="h-px flex-1 bg-warning/30" />
+ <div className="h-px flex-1 bg-warning/10" />
  <span className="text-xs font-bold text-warning flex items-center gap-1">
  <Shield className="w-3 h-3" /> الإثباتات (Proofs) — {proofsPassed}/{proofsTotal}
  </span>
- <div className="h-px flex-1 bg-warning/30" />
+ <div className="h-px flex-1 bg-warning/10" />
  </div>
  <div className="grid grid-cols-1 gap-1">
  {proofs.map(renderProof)}
@@ -530,12 +530,12 @@ export function InstitutionalDecisionPanel({
  {/* V39: Dynamic indicators */}
  <div className="flex items-center gap-1 mr-auto">
  {dynamic_sl_mult && (
- <Badge variant="outline" className="text-[7px] py-0 px-1 border-loss/30 text-loss">
+ <Badge variant="outline" className="text-[7px] py-0 px-1 border-loss/20 text-loss">
  SL ×{dynamic_sl_mult}
  </Badge>
  )}
  {dynamic_rr1 && (
- <Badge variant="outline" className="text-[7px] py-0 px-1 border-profit/30 text-profit">
+ <Badge variant="outline" className="text-[7px] py-0 px-1 border-profit/20 text-profit">
  R:R {dynamic_rr1}
  </Badge>
  )}
@@ -581,7 +581,7 @@ export function InstitutionalDecisionPanel({
  )}
 
  {/* ─── 7. التوقع بالعربي ─── */}
- <div className="rounded-md border border-warning/30 bg-warning/5 p-2">
+ <div className="rounded-md border border-warning/20 bg-warning/5 p-2">
  <div className="flex items-start gap-1.5">
  <span className="text-base">🔮</span>
  <div className="flex-1">

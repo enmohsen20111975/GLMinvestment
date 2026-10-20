@@ -960,7 +960,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  return (
  <div dir="rtl" className="space-y-4 text-right">
  {/* Header */}
- <Card className="border-profit/60 bg-gradient-to-l from-profit/60 to-transparent">
+ <Card className="border-profit/20 bg-gradient-to-l from-profit/60 to-transparent">
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between gap-2 flex-wrap">
  <div>
@@ -1092,7 +1092,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  keyField="_idx"
  dense
  className="border-profit"
- rowClassName={() => 'hover:bg-profit/30'}
+ rowClassName={() => 'hover:bg-profit/10'}
  emptyTextAr="أضف صفًا لإدخال التوقعات"
  />
  </div>
@@ -1102,7 +1102,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  {rows.map((r, idx) => (
  <div
  key={idx}
- className="rounded-lg border border-profit bg-profit/30 p-3 space-y-2"
+ className="rounded-lg border border-profit bg-profit/10 p-3 space-y-2"
  >
  <div className="flex items-center justify-between">
  <span className="text-xs text-muted-foreground">توقع #{idx + 1}</span>
@@ -1238,7 +1238,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  </div>
 
  {/* Import button */}
- <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-t bg-profit/30">
+ <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-t bg-profit/10">
  <p className="text-xs text-muted-foreground">
  سيتم استيراد{' '}
  <span className="font-bold text-profit">
@@ -1363,7 +1363,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  dense
  maxHeight="max-h-96"
  className="border-profit"
- rowClassName={() => 'hover:bg-profit/40'}
+ rowClassName={() => 'hover:bg-profit/10'}
  />
  </div>
  )}
@@ -1435,7 +1435,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  ))}
  </div>
  ) : filteredStored.length === 0 ? (
- <div className="rounded-lg border border-dashed border-profit bg-profit/30 p-8 text-center text-sm text-muted-foreground">
+ <div className="rounded-lg border border-dashed border-profit bg-profit/10 p-8 text-center text-sm text-muted-foreground">
  <ClipboardList className="w-8 h-8 mx-auto mb-2 text-profit" />
  لا توجد توقعات محفوظة بعد. ابدأ بإدخالها من الجدول أو النص بالأعلى.
  </div>
@@ -1453,7 +1453,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  filterable
  maxHeight="max-h-96"
  onRowClick={(r) => openDetails(r)}
- rowClassName={() => 'cursor-pointer hover:bg-profit/40'}
+ rowClassName={() => 'cursor-pointer hover:bg-profit/10'}
  />
  </div>
  )}
@@ -1466,7 +1466,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  side="left"
  className="w-full sm:max-w-md overflow-y-auto p-0"
  >
- <SheetHeader className="p-4 border-b bg-profit/60">
+ <SheetHeader className="p-4 border-b bg-profit/10">
  <SheetTitle className="flex items-center gap-2 text-profit">
  <Target className="w-4 h-4" />
  تفاصيل التوقع
@@ -1549,7 +1549,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  <TrendingUp className="w-3.5 h-3.5 text-profit" />
  التحليل الفني
  </div>
- <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
+ <div className="rounded-md bg-profit/10 p-3 text-xs leading-relaxed text-foreground">
  {selectedRec.technical_analysis}
  </div>
  </div>
@@ -1560,7 +1560,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  <FileText className="w-3.5 h-3.5 text-profit" />
  التحليل الأساسي
  </div>
- <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
+ <div className="rounded-md bg-profit/10 p-3 text-xs leading-relaxed text-foreground">
  {selectedRec.fundamental_analysis}
  </div>
  </div>
@@ -1571,7 +1571,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
  <Sparkles className="w-3.5 h-3.5 text-profit" />
  سبب التوقع
  </div>
- <div className="rounded-md bg-profit/50 p-3 text-xs leading-relaxed text-foreground">
+ <div className="rounded-md bg-profit/10 p-3 text-xs leading-relaxed text-foreground">
  {selectedRec.recommendation_reason}
  </div>
  </div>

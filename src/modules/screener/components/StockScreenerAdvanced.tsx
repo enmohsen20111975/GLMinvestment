@@ -215,14 +215,14 @@ interface TopPerformersResponse {
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
 const STATE_BADGE_COLORS: Record<string, string> = {
- CORRECTION_END: 'bg-profit text-profit /40 border-profit ',
- BALANCED_MOMENTUM: 'bg-success text-success /40 border-success dark:border-success',
+ CORRECTION_END: 'bg-profit text-profit/40 border-profit ',
+ BALANCED_MOMENTUM: 'bg-success text-success/40 border-success dark:border-success',
  NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
- AT_PEAK: 'bg-loss text-loss /40 border-loss ',
- NEAR_PEAK: 'bg-warning text-warning /40 border-orange-200 dark:border-orange-800',
+ AT_PEAK: 'bg-loss text-loss/40 border-loss ',
+ NEAR_PEAK: 'bg-warning text-warning/40 border-orange-200 dark:border-orange-800',
  NEUTRAL: 'bg-muted text-muted-foreground /60 border-border ',
- CORRECTION: 'bg-warning text-warning /40 border-orange-200 dark:border-orange-800',
- DECLINING: 'bg-loss text-loss /40 border-loss ',
+ CORRECTION: 'bg-warning text-warning/40 border-orange-200 dark:border-orange-800',
+ DECLINING: 'bg-loss text-loss/40 border-loss ',
  INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
 
@@ -1096,15 +1096,15 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  ];
 
  const colorMap: Record<string, string> = {
- emerald: 'border-profit/40 bg-profit/10 text-profit hover:bg-profit/20 ',
- teal: 'border-whale/40 bg-whale/10 text-whale hover:bg-whale/20 ',
- amber: 'border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 ',
+ emerald: 'border-profit/20 bg-profit/10 text-profit hover:bg-profit/20 ',
+ teal: 'border-whale/20 bg-whale/10 text-whale hover:bg-whale/20 ',
+ amber: 'border-warning/20 bg-warning/10 text-warning hover:bg-warning/20 ',
  orange: 'border-orange-500/40 bg-warning/10 text-warning hover:bg-warning/20 ',
- red: 'border-loss/40 bg-loss/10 text-loss hover:bg-loss/20 ',
+ red: 'border-loss/20 bg-loss/10 text-loss hover:bg-loss/20 ',
  gray: 'border-border/40 bg-muted/10 text-muted-foreground hover:bg-muted/20 ',
  purple: 'border-purple-500/40 bg-primary/10 text-primary hover:bg-primary/20 ',
- rose: 'border-loss/40 bg-loss/10 text-loss hover:bg-loss/20 ',
- green: 'border-success/40 bg-success/10 text-success hover:bg-success/20 ',
+ rose: 'border-loss/20 bg-loss/10 text-loss hover:bg-loss/20 ',
+ green: 'border-success/20 bg-success/10 text-success hover:bg-success/20 ',
  yellow: 'border-yellow-500/40 bg-warning/10 text-warning hover:bg-warning/20 ',
  gold: 'border-yellow-600/40 bg-warning/10 text-warning hover:bg-warning/20 ',
  cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',
@@ -1439,7 +1439,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
  render: (s) =>
  s.above_ma_50 ? (
- <Badge className="bg-profit text-profit /40 border-profit text-xs px-2 py-0.5">
+ <Badge className="bg-profit text-profit/40 border-profit text-xs px-2 py-0.5">
  {t('screener.advanced.stockStateColumn.above')}
  </Badge>
  ) : (
@@ -1704,7 +1704,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  أزرار فلترة سريعة للمتداول المحترف (فوق الجدول مباشرة). كل زر يطبّق
  تركيبة فلاتر متخصصة على الـ clientExtraFilter + يضبط ما يقدر عليه
  من الـ server filter state. Rule 27: لا fabrication. */}
- <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-profit/20 bg-profit/30 /10">
+ <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-profit/20 bg-profit/10 /10">
  <span className="text-xs font-bold text-profit uppercase tracking-wide">قوالب المتداول المحترف</span>
  {traderPresets.map((preset) => {
  const isActive = clientExtraFilter?.label === preset.label;
@@ -1732,7 +1732,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  'h-8 text-xs gap-1.5 transition-all',
  isActive
  ? 'bg-profit text-white hover:bg-profit'
- : 'border-profit/40 bg-background text-profit hover:bg-profit dark:hover:bg-profit/30',
+ : 'border-profit/20 bg-background text-profit hover:bg-profit dark:hover:bg-profit/10',
  )}
  title={isActive ? 'إزالة الفلتر' : 'تطبيق القالب'}
  >
@@ -1743,7 +1743,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  {clientExtraFilter && (
  <button
  onClick={() => setClientExtraFilter(null)}
- className="text-xs text-loss hover:text-loss px-1.5 py-0.5 rounded hover:bg-loss dark:hover:bg-loss/30 transition-colors"
+ className="text-xs text-loss hover:text-loss px-1.5 py-0.5 rounded hover:bg-loss dark:hover:bg-loss/10 transition-colors"
  title="مسح فلتر القالب"
  >
  ✕ مسح القالب
@@ -2143,7 +2143,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  />
  {/* PAYWALL Gate 5: lock CTA — free users see first 5 only */}
  {screenerLocked && hiddenResultsCount > 0 && (
- <div className="border-t border-warning/30 bg-warning/40 /20 p-4 text-center">
+ <div className="border-t border-warning/20 bg-warning/10 /20 p-4 text-center">
  <div className="flex flex-col items-center gap-2">
  <div className="flex items-center gap-2 text-warning ">
  <Lock className="h-4 w-4" />
@@ -2444,7 +2444,7 @@ function TopPerformersTab() {
  >
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  {summary.best_performer && (
- <Card className="border-profit/30 bg-profit/5">
+ <Card className="border-profit/20 bg-profit/5">
  <CardContent className="p-3">
  <div className="flex items-center gap-2 mb-1">
  <Trophy className="w-4 h-4 text-warning" />
@@ -2476,7 +2476,7 @@ function TopPerformersTab() {
  </Card>
  )}
  {summary.worst_performer && (
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-3">
  <div className="flex items-center gap-2 mb-1">
  <TrendingDown className="w-4 h-4 text-loss" />

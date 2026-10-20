@@ -97,8 +97,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
  'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide',
  colors.ring,
  isPositive
- ? 'bg-profit text-profit /60 '
- : 'bg-loss text-loss /60 '
+ ? 'bg-profit text-profit/60 '
+ : 'bg-loss text-loss/60 '
  )}>
  {index.symbol}
  </span>
@@ -127,8 +127,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
  <span className={cn(
  'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-xs font-semibold tabular-nums',
  isPositive
- ? 'bg-profit text-profit /50 '
- : 'bg-loss text-loss /50 '
+ ? 'bg-profit text-profit/50 '
+ : 'bg-loss text-loss/50 '
  )}>
  {isPositive ? '+' : ''}
  {safeNum(index.change_percent).toFixed(2)}%

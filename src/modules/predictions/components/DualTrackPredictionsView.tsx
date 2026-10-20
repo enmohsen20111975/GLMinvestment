@@ -620,9 +620,9 @@ function PredictionRow({ pred }: { pred: Prediction }) {
  variant="outline"
  className={cn(
  'text-xs',
- isWin && 'border-profit/40 text-profit',
- isLoss && 'border-loss/40 text-loss',
- isActive && 'border-warning/40 text-warning',
+ isWin && 'border-profit/20 text-profit',
+ isLoss && 'border-loss/20 text-loss',
+ isActive && 'border-warning/20 text-warning',
  )}
  >
  {isActive ? '🟡 نشط' : isWin ? '✅ نجاح' : isLoss ? '❌ خسارة' : pred.status}

@@ -127,8 +127,8 @@ function colorForWinRate(rate: number): {
  if (rate >= 60) {
  return {
  text: 'text-profit ',
- bg: 'bg-profit /30',
- badge: 'bg-profit text-profit border-profit /60 ',
+ bg: 'bg-profit/10',
+ badge: 'bg-profit text-profit border-profit/20 ',
  bar: 'bg-profit',
  hex: '#10b981',
  };
@@ -136,16 +136,16 @@ function colorForWinRate(rate: number): {
  if (rate >= 40) {
  return {
  text: 'text-warning ',
- bg: 'bg-warning /30',
- badge: 'bg-warning text-warning border-warning /60 ',
+ bg: 'bg-warning/10',
+ badge: 'bg-warning text-warning border-warning/20 ',
  bar: 'bg-warning',
  hex: '#f59e0b',
  };
  }
  return {
  text: 'text-loss ',
- bg: 'bg-loss /30',
- badge: 'bg-loss text-loss border-loss /60 ',
+ bg: 'bg-loss/10',
+ badge: 'bg-loss text-loss border-loss/20 ',
  bar: 'bg-loss',
  hex: '#f43f5e',
  };
@@ -343,7 +343,7 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
  </div>
 
  {data?.note && (
- <div className="mt-3 text-xs text-muted-foreground bg-warning /30 rounded-md p-2 border border-warning ">
+ <div className="mt-3 text-xs text-muted-foreground bg-warning/10 rounded-md p-2 border border-warning ">
  {data.note}
  </div>
  )}
@@ -654,7 +654,7 @@ function LockedDetailsCard({
  message: string;
 }) {
  return (
- <Card className="border-warning/30 bg-warning/30 /10">
+ <Card className="border-warning/20 bg-warning/10 /10">
  <CardHeader className="pb-2">
  <CardTitle className="text-base flex items-center gap-2">
  {icon}
@@ -662,7 +662,7 @@ function LockedDetailsCard({
  </CardTitle>
  </CardHeader>
  <CardContent className="p-6 flex flex-col items-center gap-2 text-center">
- <div className="h-10 w-10 rounded-full bg-warning /40 flex items-center justify-center">
+ <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
  <Lock className="h-5 w-5 text-warning " />
  </div>
  <p className="text-sm font-semibold text-warning ">

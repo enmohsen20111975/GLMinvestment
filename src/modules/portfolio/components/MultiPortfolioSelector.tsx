@@ -100,10 +100,10 @@ function getBrokerIcon(broker: string): React.ReactNode {
 }
 
 function getBrokerColor(broker: string): string {
- if (broker === 'Binance') return 'text-warning bg-warning/40 border-warning';
- if (broker === 'master') return 'text-profit bg-profit/40 border-profit';
- if (broker === 'Thndr') return 'text-whale bg-primary/40 border-whale';
- if (broker === 'Direct') return 'text-primary bg-primary/40 border-purple-800';
+ if (broker === 'Binance') return 'text-warning bg-warning/10 border-warning';
+ if (broker === 'master') return 'text-profit bg-profit/10 border-profit';
+ if (broker === 'Thndr') return 'text-whale bg-primary/10 border-whale';
+ if (broker === 'Direct') return 'text-primary bg-primary/10 border-purple-800';
  return 'text-zinc-400 bg-zinc-900/40 border-zinc-700';
 }
 
@@ -634,7 +634,7 @@ export function MultiPortfolioSelector({
  variant="ghost"
  size="sm"
  onClick={() => openEditModal(p)}
- className="h-7 w-7 p-0 text-muted-foreground hover:text-whale hover:bg-primary/40"
+ className="h-7 w-7 p-0 text-muted-foreground hover:text-whale hover:bg-primary/10"
  title="تعديل المحفظة"
  >
  <Pencil className="h-3.5 w-3.5" />
@@ -643,7 +643,7 @@ export function MultiPortfolioSelector({
  variant="ghost"
  size="sm"
  onClick={() => setDeleteConfirm(p)}
- className="h-7 w-7 p-0 text-muted-foreground hover:text-loss hover:bg-loss/40"
+ className="h-7 w-7 p-0 text-muted-foreground hover:text-loss hover:bg-loss/10"
  title="حذف"
  >
  <Trash2 className="h-3.5 w-3.5" />

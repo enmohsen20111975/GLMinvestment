@@ -282,9 +282,9 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
  const o = r.exit_reason;
  if (!o) return <span className="text-muted-foreground">—</span>;
  const cls = o === 'WIN'
- ? 'border-profit/40 text-profit bg-profit/5'
+ ? 'border-profit/20 text-profit bg-profit/5'
  : o === 'LOSS'
- ? 'border-loss/40 text-loss bg-loss/5'
+ ? 'border-loss/20 text-loss bg-loss/5'
  : 'border-muted-foreground/40 text-muted-foreground bg-muted/20';
  const labelAr = o === 'WIN' ? 'ربح' : o === 'LOSS' ? 'خسارة' : o === 'BREAKEVEN' ? 'تعادل' : o;
  return <Badge variant="outline" className={cn('text-xs', cls)}>{labelAr}</Badge>;
@@ -319,7 +319,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
  return (
  <div className="space-y-4" dir="rtl">
  {/* Header */}
- <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-cyan-500/5">
+ <Card className="border-primary/20 bg-gradient-to-l from-primary/5 to-cyan-500/5">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="flex items-center gap-2">
@@ -436,11 +436,11 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
 
  {/* Table — PAYWALL Gate 6: locked for free users post-trial */}
  {tradesLocked ? (
- <Card className="border-warning/40 bg-warning/40 /20">
+ <Card className="border-warning/20 bg-warning/10 /20">
  <CardContent className="p-5 space-y-4">
  {/* Social proof — 1 winning trade card */}
  {socialProofTrade && (
- <div className="rounded-lg border border-profit/30 bg-profit/40 /20 p-3">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 /20 p-3">
  <div className="flex items-center gap-2 mb-2">
  <TrendingUp className="h-4 w-4 text-profit " />
  <span className="text-xs font-semibold text-profit ">
@@ -471,7 +471,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
 
  {/* Lock CTA */}
  <div className="flex flex-col items-center gap-2 text-center">
- <div className="h-10 w-10 rounded-full bg-warning /40 flex items-center justify-center">
+ <div className="h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
  <Lock className="h-5 w-5 text-warning " />
  </div>
  <p className="text-sm font-semibold text-warning ">
@@ -497,7 +497,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
  </CardContent>
  </Card>
  ) : error ? (
- <Card className="border-loss/40">
+ <Card className="border-loss/20">
  <CardContent className="p-6 text-center space-y-2">
  <AlertCircle className="h-6 w-6 text-loss mx-auto" />
  <p className="text-sm text-loss">{error}</p>

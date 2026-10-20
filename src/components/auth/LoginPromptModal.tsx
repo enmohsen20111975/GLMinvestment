@@ -145,7 +145,7 @@ export function LoginPromptModal() {
  onClick={goLogin}
  size="sm"
  variant="outline"
- className="h-8 px-3 text-xs font-semibold border-warning/40 text-warning hover:bg-warning hover:text-warning dark:hover:bg-warning/40"
+ className="h-8 px-3 text-xs font-semibold border-warning/20 text-warning hover:bg-warning hover:text-warning dark:hover:bg-warning/10"
  >
  <LogIn className="size-3.5 ml-1" />
  دخول

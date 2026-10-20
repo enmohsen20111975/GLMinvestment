@@ -123,28 +123,28 @@ const SIGNAL_STYLES: Record<
  }
 > = {
  strong_buy: {
- bg: 'bg-profit /50',
+ bg: 'bg-profit/10',
  text: 'text-profit ',
  border: 'border-profit ',
  icon: <ArrowUpCircle className="h-3.5 w-3.5" />,
  defaultLabelAr: 'شراء قوي',
  },
  buy: {
- bg: 'bg-profit /40',
+ bg: 'bg-profit/10',
  text: 'text-success ',
  border: 'border-success dark:border-success',
  icon: <TrendingUp className="h-3.5 w-3.5" />,
  defaultLabelAr: 'شراء',
  },
  hold: {
- bg: 'bg-warning /40',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  border: 'border-warning ',
  icon: <Minus className="h-3.5 w-3.5" />,
  defaultLabelAr: 'احتفاظ',
  },
  sell: {
- bg: 'bg-loss /50',
+ bg: 'bg-loss/10',
  text: 'text-loss ',
  border: 'border-loss ',
  icon: <TrendingDown className="h-3.5 w-3.5" />,
@@ -307,7 +307,7 @@ export function PredictionCard({
  <div
  className={cn(
  'rounded-lg p-2 border',
- 'bg-profit/60 /30 border-profit/60 /40',
+ 'bg-profit/10 /30 border-profit/20 /40',
  )}
  >
  <div className="text-xs sm:text-xs text-profit flex items-center justify-center gap-1">
@@ -324,7 +324,7 @@ export function PredictionCard({
  <div
  className={cn(
  'rounded-lg p-2 border',
- 'bg-loss/60 /30 border-loss/60 /40',
+ 'bg-loss/10 /30 border-loss/20 /40',
  )}
  >
  <div className="text-xs sm:text-xs text-loss flex items-center justify-center gap-1">

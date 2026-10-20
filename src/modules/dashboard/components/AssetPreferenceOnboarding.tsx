@@ -131,7 +131,7 @@ export function AssetPreferenceOnboarding() {
  className={cn(
  'group relative flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-right transition-all min-h-[88px]',
  isActive
- ? 'border-profit bg-profit /40 shadow-sm'
+ ? 'border-profit bg-profit/10 shadow-sm'
  : 'border-border bg-card hover:border-profit dark:hover:border-profit'
  )}
  >

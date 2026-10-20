@@ -538,7 +538,7 @@ export function EngineSettingsTab() {
  {/* Bottom save bar (sticky-feel) */}
  {hasChanges && (
  <div className="sticky bottom-4 z-10">
- <Card className="border-warning/40 bg-warning/80 /30 backdrop-blur">
+ <Card className="border-warning/20 bg-warning/80 /30 backdrop-blur">
  <CardContent className="py-3 px-4 flex items-center justify-between gap-3 flex-wrap">
  <div className="text-sm">
  <span className="font-medium">{changedKeys.length}</span> تغيير في الانتظار

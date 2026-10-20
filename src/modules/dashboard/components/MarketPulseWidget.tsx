@@ -406,28 +406,28 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
  switch (regime) {
  case 'HEALTHY_BULL':
  return {
- bg: 'bg-profit /50',
+ bg: 'bg-profit/10',
  text: 'text-profit ',
  border: 'border-profit ',
  icon: ArrowUpRight,
  };
  case 'DISTRIBUTION':
  return {
- bg: 'bg-warning /50',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  border: 'border-warning ',
  icon: AlertTriangle,
  };
  case 'SPECULATION':
  return {
- bg: 'bg-warning /50',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  border: 'border-orange-200 dark:border-orange-800',
  icon: Flame,
  };
  case 'BEAR':
  return {
- bg: 'bg-loss /50',
+ bg: 'bg-loss/10',
  text: 'text-loss ',
  border: 'border-loss ',
  icon: ArrowDownRight,
@@ -730,7 +730,7 @@ export function MarketPulseWidget() {
  className={cn(
  'flex h-7 w-7 items-center justify-center rounded-md',
  isOpen
- ? 'bg-profit text-profit /60 '
+ ? 'bg-profit text-profit/60 '
  : 'bg-muted text-muted-foreground ',
  )}
  >
@@ -767,7 +767,7 @@ export function MarketPulseWidget() {
  {error && (
  <Badge
  variant="outline"
- className="border-loss bg-loss text-xs text-loss /50"
+ className="border-loss bg-loss text-xs text-loss/50"
  >
  <WifiOff className="h-2.5 w-2.5" />
  انقطاع
@@ -884,7 +884,7 @@ export function MarketPulseWidget() {
  {top && (
  <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-gradient-to-l from-profit/60 to-transparent px-2.5 py-2 /30">
  <div className="flex items-center gap-2">
- <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit /60">
+ <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit/60">
  {top.avg_change >= 0 ? (
  <Signal className="h-3.5 w-3.5" />
  ) : (

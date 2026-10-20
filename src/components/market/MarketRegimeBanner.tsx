@@ -112,10 +112,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
  <div
  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
  isDefensive
- ? 'bg-loss/10 border-loss/30 text-loss '
+ ? 'bg-loss/10 border-loss/20 text-loss '
  : isAggressive
  ? 'bg-primary/10 border-purple-500/30 text-primary '
- : 'bg-profit/10 border-profit/30 text-profit '
+ : 'bg-profit/10 border-profit/20 text-profit '
  } ${className}`}
  dir="rtl"
  >
@@ -138,10 +138,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
  <div
  className={`rounded-xl border p-3.5 md:p-4 transition-all duration-300 shadow-sm ${
  isDefensive
- ? 'bg-gradient-to-l from-loss/20 via-loss/10 to-warning/20 border-loss/40 text-foreground ring-1 ring-loss/20'
+ ? 'bg-gradient-to-l from-loss/20 via-loss/10 to-warning/20 border-loss/20 text-foreground ring-1 ring-loss/20'
  : isAggressive
  ? 'bg-gradient-to-l from-purple-950/20 via-indigo-900/10 to-background border-purple-500/40 text-foreground ring-1 ring-purple-500/20'
- : 'bg-gradient-to-l from-profit/15 via-whale/10 to-background border-profit/30 text-foreground'
+ : 'bg-gradient-to-l from-profit/15 via-whale/10 to-background border-profit/20 text-foreground'
  } ${className}`}
  dir="rtl"
  >
@@ -179,10 +179,10 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
  variant="outline"
  className={`text-xs font-bold ${
  isDefensive
- ? 'bg-loss/20 text-loss border-loss/40'
+ ? 'bg-loss/20 text-loss border-loss/20'
  : isAggressive
  ? 'bg-primary/20 text-primary border-purple-500/40'
- : 'bg-profit/20 text-profit border-profit/40'
+ : 'bg-profit/20 text-profit border-profit/20'
  }`}
  >
  {data.regime}

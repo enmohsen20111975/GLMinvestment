@@ -72,11 +72,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-profit text-profit /50 border-profit ',
+ 'bg-profit text-profit/50 border-profit ',
  non_compliant:
- 'bg-loss text-loss /50 border-loss ',
+ 'bg-loss text-loss/50 border-loss ',
  doubtful:
- 'bg-warning text-warning /50 border-warning ',
+ 'bg-warning text-warning/50 border-warning ',
  not_available:
  'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -242,7 +242,7 @@ function ShariaStockCardBody({
  className={cn(
  'rounded border p-1 flex items-center justify-between',
  r.is_primary === 1
- ? 'border-warning bg-warning /30 '
+ ? 'border-warning bg-warning/10 '
  : 'border-border bg-muted/30',
  )}
  >
@@ -332,8 +332,8 @@ function MetricTile({
  className={cn(
  'rounded border p-1.5 text-center',
  accent === 'emerald'
- ? 'border-profit bg-profit/40 /20'
- : 'border-warning bg-warning/40 /20',
+ ? 'border-profit bg-profit/10 /20'
+ : 'border-warning bg-warning/10 /20',
  )}
  >
  <div className="text-xs text-muted-foreground leading-tight">{label}</div>

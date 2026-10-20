@@ -18,8 +18,8 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
  className={cn(
  'flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors duration-150',
  isGainer
- ? 'hover:bg-profit/60 dark:hover:bg-profit/20'
- : 'hover:bg-loss/60 dark:hover:bg-loss/20'
+ ? 'hover:bg-profit/10 dark:hover:bg-profit/20'
+ : 'hover:bg-loss/10 dark:hover:bg-loss/20'
  )}
  >
  {/* Icon */}
@@ -27,8 +27,8 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
  className={cn(
  'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
  isGainer
- ? 'bg-profit /40'
- : 'bg-loss /40'
+ ? 'bg-profit/10'
+ : 'bg-loss/10'
  )}
  >
  {isGainer ? (
@@ -132,14 +132,14 @@ export function TopMovers() {
  <TabsList className="w-full mb-1.5">
  <TabsTrigger
  value="gainers"
- className="flex-1 gap-1.5 data-[state=active]:bg-profit data-[state=active]:text-profit dark:data-[state=active]:bg-profit/40 dark:data-[state=active]:text-profit"
+ className="flex-1 gap-1.5 data-[state=active]:bg-profit data-[state=active]:text-profit dark:data-[state=active]:bg-profit/10 dark:data-[state=active]:text-profit"
  >
  <TrendingUp className="w-3.5 h-3.5" />
  المرتفعة
  </TabsTrigger>
  <TabsTrigger
  value="losers"
- className="flex-1 gap-1.5 data-[state=active]:bg-loss data-[state=active]:text-loss dark:data-[state=active]:bg-loss/40 dark:data-[state=active]:text-loss"
+ className="flex-1 gap-1.5 data-[state=active]:bg-loss data-[state=active]:text-loss dark:data-[state=active]:bg-loss/10 dark:data-[state=active]:text-loss"
  >
  <TrendingDown className="w-3.5 h-3.5" />
  المنخفضة

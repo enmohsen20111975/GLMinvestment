@@ -459,7 +459,7 @@ export function AuthView() {
  </Button>
 
  {googleError && (
- <div className="mt-3 p-3 bg-warning /20 border border-warning rounded-lg flex items-start gap-2">
+ <div className="mt-3 p-3 bg-warning/20 border border-warning rounded-lg flex items-start gap-2">
  <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
  <p className="text-xs text-warning leading-relaxed whitespace-pre-line">{googleError}</p>
  </div>
@@ -633,7 +633,7 @@ export function AuthView() {
  </Button>
 
  {googleError && (
- <div className="mt-3 p-3 bg-warning /20 border border-warning rounded-lg flex items-start gap-2">
+ <div className="mt-3 p-3 bg-warning/20 border border-warning rounded-lg flex items-start gap-2">
  <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
  <p className="text-xs text-warning leading-relaxed whitespace-pre-line">{googleError}</p>
  </div>

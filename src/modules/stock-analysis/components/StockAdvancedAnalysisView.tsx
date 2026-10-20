@@ -357,7 +357,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
 
  if (error) {
  return (
- <Card className="border-loss /50">
+ <Card className="border-loss/20">
  <CardContent className="p-6 text-center">
  <AlertCircle className="w-10 h-10 text-loss mx-auto mb-3" />
  <p className="text-sm font-medium mb-1">خطأ في التحليل</p>
@@ -687,7 +687,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  )}
 
  {/* Disclaimer */}
- <Card className="border-warning /50 bg-warning /20">
+ <Card className="border-warning/20 bg-warning/20">
  <CardContent className="p-4">
  <p className="text-xs text-warning text-center">
  ⚠️ هذا التحليل للأغراض التعليمية فقط ولا يُعتبر نصيحة استثمارية. 

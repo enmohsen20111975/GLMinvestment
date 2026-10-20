@@ -402,7 +402,7 @@ export function CryptoPredictionsTab() {
  // ---- Error state ----
  if (error && !data) {
  return (
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
  <AlertTriangle className="h-8 w-8 text-loss" />
  <p className="text-sm font-semibold text-loss">

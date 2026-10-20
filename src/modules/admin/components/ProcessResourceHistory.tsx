@@ -308,7 +308,7 @@ export function ProcessResourceHistory({
  <Skeleton className="h-[200px] w-full rounded-lg" />
  </div>
  ) : error ? (
- <div className="rounded-lg border border-loss/30 bg-loss/5 p-6 text-center">
+ <div className="rounded-lg border border-loss/20 bg-loss/5 p-6 text-center">
  <AlertTriangle className="w-8 h-8 text-loss mx-auto mb-2" />
  <div className="text-xs text-muted-foreground mb-3">{error}</div>
  <Button

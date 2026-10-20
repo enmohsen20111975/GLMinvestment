@@ -92,7 +92,7 @@ const SECTIONS = [
  title: 'الإشارات الذكية',
  titleEn: 'Pine Script Flags',
  color: 'text-profit',
- bg: 'bg-profit/40',
+ bg: 'bg-profit/10',
  border: 'border-profit',
  content: (
  <div className="space-y-3 text-sm leading-relaxed">
@@ -108,7 +108,7 @@ const SECTIONS = [
  <strong className="text-lime-400"> فرصة شراء بخصم</strong>.
  </p>
  </div>
- <div className="p-3 rounded-lg bg-loss/30 border border-loss/50">
+ <div className="p-3 rounded-lg bg-loss/10 border border-loss/20">
  <div className="flex items-center gap-2 mb-1">
  <Badge className="bg-loss text-loss border border-loss animate-pulse">فخ ارتداد</Badge>
  <span className="text-xs text-muted-foreground">Veto -15 نقطة</span>
@@ -118,7 +118,7 @@ const SECTIONS = [
  غالباً ما يستمر السهم في هبوطه بعد الارتداد الوهمي.
  </p>
  </div>
- <div className="p-3 rounded-lg bg-whale/30 border border-whale/50">
+ <div className="p-3 rounded-lg bg-whale/10 border border-whale/20">
  <div className="flex items-center gap-2 mb-1">
  <Badge className="bg-whale text-whale border border-whale">تباعد إيجابي</Badge>
  <span className="text-xs text-muted-foreground">Boost +5 نقاط</span>
@@ -139,13 +139,13 @@ const SECTIONS = [
  title: 'وضع المضارب والمستثمر',
  titleEn: 'User State Toggle',
  color: 'text-warning',
- bg: 'bg-warning/40',
+ bg: 'bg-warning/10',
  border: 'border-warning',
  content: (
  <div className="space-y-3 text-sm leading-relaxed">
  <p>هناك زرّان أعلى الرسم البياني؛ اختر وضعك:</p>
  <div className="grid grid-cols-2 gap-2">
- <div className="p-3 rounded-lg bg-profit/30 border border-profit/50">
+ <div className="p-3 rounded-lg bg-profit/10 border border-profit/20">
  <div className="flex items-center gap-1.5 mb-1">
  <ShoppingCart className="h-4 w-4 text-profit" />
  <strong className="text-profit">أبحث عن شراء</strong>
@@ -156,7 +156,7 @@ const SECTIONS = [
  وانتظار التصحيح.
  </p>
  </div>
- <div className="p-3 rounded-lg bg-warning/30 border border-warning/50">
+ <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
  <div className="flex items-center gap-1.5 mb-1">
  <Wallet className="h-4 w-4 text-warning" />
  <strong className="text-warning">أملك السهم</strong>
@@ -183,7 +183,7 @@ const SECTIONS = [
  title: 'المحافظ المتعددة',
  titleEn: 'Multi-Portfolio',
  color: 'text-primary',
- bg: 'bg-primary/40',
+ bg: 'bg-primary/10',
  border: 'border-purple-800',
  content: (
  <div className="space-y-3 text-sm leading-relaxed">
@@ -203,7 +203,7 @@ const SECTIONS = [
  ربحك.</li>
  </ol>
  </div>
- <div className="p-3 rounded-lg bg-primary/30 border border-purple-800/50">
+ <div className="p-3 rounded-lg bg-primary/10 border border-purple-800/50">
  <p className="text-xs">
  <strong>الفائدة:</strong> ستتمكن من معرفة مصدر الربح بدقة — مثلاً
  «ربح 5% على ثاندر، خسارة 2% على مباشر» — لتركّز على ما يحقق ربحاً.
@@ -393,7 +393,7 @@ export function PlatformGuide({ open, onOpenChange }: PlatformGuideProps) {
  {/* Sticky footer navigation — always visible */}
  <div className="p-4 border-t border-border shrink-0 space-y-2 sticky bottom-0 bg-background z-10">
  {isLast && (
- <div className="p-3 rounded-lg bg-profit/30 border border-profit/50 flex items-start gap-2">
+ <div className="p-3 rounded-lg bg-profit/10 border border-profit/20 flex items-start gap-2">
  <Lightbulb className="h-4 w-4 text-profit shrink-0 mt-0.5" />
  <p className="text-xs text-profit">
  لقد استعرضت الآن جميع أدوات المنصة. تذكّر:

@@ -219,10 +219,10 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
  className={cn(
  'text-xs',
  interpretation.tone === 'buy'
- ? 'bg-profit/10 text-profit border-profit/30'
+ ? 'bg-profit/10 text-profit border-profit/20'
  : interpretation.tone === 'sell'
- ? 'bg-loss/10 text-loss border-loss/30'
- : 'bg-warning/10 text-warning border-warning/30'
+ ? 'bg-loss/10 text-loss border-loss/20'
+ : 'bg-warning/10 text-warning border-warning/20'
  )}
  >
  {interpretation.tone === 'buy' ? <TrendingUp className="w-3 h-3 ml-1" /> :

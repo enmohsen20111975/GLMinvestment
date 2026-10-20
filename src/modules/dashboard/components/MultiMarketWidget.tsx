@@ -335,7 +335,7 @@ export function MultiMarketWidget() {
  className={cn(
  'flex items-center justify-between p-2 rounded-lg border transition-colors',
  isKarat21
- ? 'bg-warning/10 border-warning/30'
+ ? 'bg-warning/10 border-warning/20'
  : isKarat24
  ? 'bg-warning/5 border-warning/20'
  : 'bg-card/60 border-border/40 hover:bg-muted/50'
@@ -349,7 +349,7 @@ export function MultiMarketWidget() {
  {item.karat}
  </span>
  {isKarat21 && (
- <Badge variant="outline" className="text-xs h-4 px-1 text-warning border-warning/50 bg-warning /40">
+ <Badge variant="outline" className="text-xs h-4 px-1 text-warning border-warning/20 bg-warning/10">
  الأكثر تداولاً
  </Badge>
  )}
@@ -549,7 +549,7 @@ export function MultiMarketWidget() {
  <Globe className="w-4 h-4 text-primary" />
  الأسواق المتعددة
  </CardTitle>
- <Badge variant="outline" className="text-xs font-normal px-2 py-0.5 border-primary/30 text-primary bg-primary/5">
+ <Badge variant="outline" className="text-xs font-normal px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
  {marketInfo.flag} {marketInfo.name} ({marketInfo.currency})
  </Badge>
  </div>

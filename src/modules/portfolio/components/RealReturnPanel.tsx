@@ -131,7 +131,7 @@ export function RealReturnPanel() {
  <Flame className={cn('h-5 w-5', hasWarnings ? 'text-loss' : 'text-warning')} />
  <h3 className="font-bold text-base">محرك العائد الحقيقي</h3>
  {hasWarnings && (
- <Badge className="bg-loss text-loss /40 border border-loss">
+ <Badge className="bg-loss text-loss/40 border border-loss">
  {data.summary.warning_count} تحذير
  </Badge>
  )}
@@ -176,7 +176,7 @@ export function RealReturnPanel() {
 
  {/* التحذير العام */}
  {hasWarnings && inflation > 0 && (
- <div className="p-3 rounded-lg bg-loss /30 border border-loss text-sm">
+ <div className="p-3 rounded-lg bg-loss/10 border border-loss text-sm">
  <div className="flex items-start gap-2">
  <AlertTriangle className="h-5 w-5 text-loss flex-shrink-0 mt-0.5" />
  <div>
@@ -201,8 +201,8 @@ export function RealReturnPanel() {
  key={a.id}
  className={cn(
  'p-2.5 rounded-md border text-sm',
- a.severity === 'severe' ? 'border-loss bg-loss/50 /20' :
- a.severity === 'mild' ? 'border-warning bg-warning/50 /20' :
+ a.severity === 'severe' ? 'border-loss bg-loss/10 /20' :
+ a.severity === 'mild' ? 'border-warning bg-warning/10 /20' :
  'border-border bg-muted/30'
  )}
  >

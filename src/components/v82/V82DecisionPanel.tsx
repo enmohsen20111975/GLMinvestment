@@ -55,10 +55,10 @@ interface V82Result {
 }
 
 const ACTION_COLORS: Record<string, string> = {
- BUY: 'bg-profit/10 border-profit/30 text-profit',
- SELL: 'bg-loss/10 border-loss/30 text-loss',
- WAIT: 'bg-warning/10 border-warning/30 text-warning',
- AVOID: 'bg-loss/10 border-loss/30 text-loss',
+ BUY: 'bg-profit/10 border-profit/20 text-profit',
+ SELL: 'bg-loss/10 border-loss/20 text-loss',
+ WAIT: 'bg-warning/10 border-warning/20 text-warning',
+ AVOID: 'bg-loss/10 border-loss/20 text-loss',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -122,7 +122,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  )}
 
  {!loading && result && !result.success && (
- <Card className="p-4 border-loss/30">
+ <Card className="p-4 border-loss/20">
  <div className="text-sm text-loss">❌ {result.error}</div>
  </Card>
  )}
@@ -167,19 +167,19 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  {result.best_entry_price?.toFixed(2) || '—'}
  </div>
  </Card>
- <Card className="p-3 border-loss/30">
+ <Card className="p-3 border-loss/20">
  <div className="text-xs text-muted-foreground">وقف الخسارة</div>
  <div className="text-lg font-bold text-loss">
  {result.stop_loss?.toFixed(2) || '—'}
  </div>
  </Card>
- <Card className="p-3 border-profit/30">
+ <Card className="p-3 border-profit/20">
  <div className="text-xs text-muted-foreground">الهدف 1</div>
  <div className="text-lg font-bold text-profit">
  {result.target_price_1?.toFixed(2) || '—'}
  </div>
  </Card>
- <Card className="p-3 border-profit/30">
+ <Card className="p-3 border-profit/20">
  <div className="text-xs text-muted-foreground">الهدف 2</div>
  <div className="text-lg font-bold text-profit">
  {result.target_price_2?.toFixed(2) || '—'}

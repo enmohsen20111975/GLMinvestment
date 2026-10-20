@@ -101,7 +101,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
 
  if (loading) {
  return (
- <Card className="bg-gradient-to-br from-profit/30 to-profit/10 border-profit/40">
+ <Card className="bg-gradient-to-br from-profit/30 to-profit/10 border-profit/20">
  <CardContent className="p-4 space-y-3">
  <Skeleton className="h-5 w-40" />
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -127,7 +127,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
  return (
  <div className="space-y-3">
  {/* Aggregated Summary Card */}
- <Card className="bg-gradient-to-br from-profit/40 to-profit/10 border-profit/40">
+ <Card className="bg-gradient-to-br from-profit/40 to-profit/10 border-profit/20">
  <CardContent className="p-4 space-y-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
  </div>
  <p className="text-base font-bold text-warning">{formatCurrency(aggregated.total_obligations_egp ?? 0)}</p>
  </div>
- <div className="p-2.5 rounded-lg bg-profit/10 border border-profit/30 ring-1 ring-profit/20">
+ <div className="p-2.5 rounded-lg bg-profit/10 border border-profit/20 ring-1 ring-profit/20">
  <div className="flex items-center gap-1 mb-0.5 text-muted-foreground">
  <Wallet className="h-3 w-3 text-profit" />
  <p className="text-xs">صافي الثروة</p>

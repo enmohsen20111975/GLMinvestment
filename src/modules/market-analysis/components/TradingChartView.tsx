@@ -710,8 +710,8 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  className={cn(
  'font-mono text-xs font-black px-2 py-0.5 rounded-full',
  isUp
- ? 'bg-profit text-profit border-profit/40'
- : 'bg-loss text-loss border-loss/40'
+ ? 'bg-profit text-profit border-profit/20'
+ : 'bg-loss text-loss border-loss/20'
  )}
  >
  {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}

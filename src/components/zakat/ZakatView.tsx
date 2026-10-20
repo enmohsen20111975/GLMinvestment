@@ -175,7 +175,7 @@ function formatCurrency(num: number | null | undefined): string {
 
 function IslamicBasis() {
  return (
- <Card className="relative overflow-hidden border-warning/30 bg-gradient-to-br from-warning via-white to-warning dark:from-warning/30 dark:via-background dark:to-warning/30">
+ <Card className="relative overflow-hidden border-warning/20 bg-gradient-to-br from-warning via-white to-warning dark:from-warning/30 dark:via-background dark:to-warning/30">
  <IslamicPattern />
  <div className="relative z-10">
  <CardHeader className="text-center pb-2">
@@ -190,7 +190,7 @@ function IslamicBasis() {
  </CardHeader>
  <CardContent className="space-y-4 text-sm">
  <div className="space-y-3">
- <div className="p-4 bg-gradient-to-r from-success to-profit dark:from-success/30 /30 rounded-xl border border-success dark:border-success/50 shadow-sm">
+ <div className="p-4 bg-gradient-to-r from-success to-profit dark:from-success/30 /30 rounded-xl border border-success dark:border-success/20 shadow-sm">
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-full bg-success text-white flex items-center justify-center text-xs font-bold">ق</div>
  <span className="font-bold text-success ">من القرآن الكريم</span>
@@ -201,7 +201,7 @@ function IslamicBasis() {
  <p className="text-xs text-muted-foreground mt-2 text-left">سورة البقرة: 43</p>
  </div>
  
- <div className="p-4 bg-gradient-to-r from-primary to-whale dark:from-primary/30 dark:to-whale/30 rounded-xl border border-whale /50 shadow-sm">
+ <div className="p-4 bg-gradient-to-r from-primary to-whale dark:from-primary/30 dark:to-whale/30 rounded-xl border border-whale/20 shadow-sm">
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-full bg-whale text-white flex items-center justify-center text-xs font-bold">س</div>
  <span className="font-bold text-whale ">من السنة النبوية</span>
@@ -212,7 +212,7 @@ function IslamicBasis() {
  <p className="text-xs text-muted-foreground mt-2 text-left">متفق عليه</p>
  </div>
  
- <div className="p-4 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30 rounded-xl border border-warning /50 shadow-sm">
+ <div className="p-4 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30 rounded-xl border border-warning/20 shadow-sm">
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center text-xs font-bold">٢.٥</div>
  <span className="font-bold text-warning ">مقدار الزكاة</span>
@@ -238,7 +238,7 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
  const silverNisabValue = silverPrice * NISAB.silver.grams;
  
  return (
- <Card className="relative overflow-hidden border-warning/30 bg-gradient-to-br from-warning/50 via-white to-yellow-50/50 dark:from-warning/20 dark:via-background dark:to-yellow-950/20">
+ <Card className="relative overflow-hidden border-warning/20 bg-gradient-to-br from-warning/50 via-white to-yellow-50/50 dark:from-warning/20 dark:via-background dark:to-yellow-950/20">
  <IslamicPattern />
  <div className="relative z-10">
  <CardHeader className="text-center">
@@ -264,7 +264,7 @@ function NisabInfo({ goldPrice, silverPrice }: { goldPrice: number; silverPrice:
  <p className="text-center text-4xl font-bold text-warning mb-2">
  {NISAB.gold.grams} <span className="text-lg">جرام</span>
  </p>
- <div className="text-center p-2 bg-warning/50 /30 rounded-lg mb-3">
+ <div className="text-center p-2 bg-warning/10 /30 rounded-lg mb-3">
  <span className="text-sm text-warning ">القيمة الحالية:</span>
  <span className="block text-lg font-bold text-warning">{formatCurrency(goldNisabValue)}</span>
  </div>
@@ -409,7 +409,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  return (
  <div className="space-y-6">
  {/* Nisab Standard Selector — اختيار المعدن الذي يُحسب على أساسه نصاب النقود وعروض التجارة */}
- <Card className="relative overflow-hidden border-2 border-warning /50 bg-gradient-to-br from-warning/50 to-yellow-50/50 dark:from-warning/20 dark:to-yellow-950/20">
+ <Card className="relative overflow-hidden border-2 border-warning/20 bg-gradient-to-br from-warning/50 to-yellow-50/50 dark:from-warning/20 dark:to-yellow-950/20">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-3 text-lg">
  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-yellow-500 flex items-center justify-center">
@@ -440,7 +440,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  </ToggleGroupItem>
  </ToggleGroup>
 
- <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-warning/70 /30 border border-warning /50">
+ <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-warning/70 /30 border border-warning/20">
  <div className="flex items-center gap-2">
  <Scale className="w-5 h-5 text-warning shrink-0"/>
  <div>
@@ -469,7 +469,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  )}
  </div>
 
- <Alert className="border-warning bg-warning/60 /30">
+ <Alert className="border-warning bg-warning/10 /30">
  <Info className="w-4 h-4 text-warning shrink-0"/>
  <AlertDescription className="text-xs text-warning ">
  نصاب الفضة أقل من الذهب، فيجب إخراج الزكاة لعدد أكبر من الناس. راجع مذهبك الفقهي.
@@ -545,7 +545,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  </Card>
  
  {/* Cash Section */}
- <Card className="relative overflow-hidden border-2 border-success dark:border-success/50 bg-gradient-to-br from-success/50 to-profit/50 dark:from-success/20 /20">
+ <Card className="relative overflow-hidden border-2 border-success dark:border-success/20 bg-gradient-to-br from-success/50 to-profit/50 dark:from-success/20 /20">
  <div className="absolute top-0 right-0 w-20 h-20 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-3 text-lg">
@@ -577,7 +577,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  </Card>
  
  {/* Stocks & Trade Section */}
- <Card className="relative overflow-hidden border-2 border-whale /50 bg-gradient-to-br from-primary/50 to-whale/50 dark:from-primary/20 dark:to-whale/20">
+ <Card className="relative overflow-hidden border-2 border-whale/20 bg-gradient-to-br from-primary/50 to-whale/50 dark:from-primary/20 dark:to-whale/20">
  <div className="absolute top-0 right-0 w-20 h-20 bg-whale/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-3 text-lg">
@@ -619,7 +619,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  
  {/* Results Section */}
  {results.length > 0 && (
- <Card className="relative overflow-hidden border-2 border-profit /50 bg-gradient-to-br from-profit/30 to-success/30 /20 dark:to-success/20">
+ <Card className="relative overflow-hidden border-2 border-profit/20 bg-gradient-to-br from-profit/30 to-success/30 /20 dark:to-success/20">
  <IslamicPattern />
  <div className="relative z-10">
  <CardHeader className="text-center">
@@ -664,7 +664,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
  </p>
  <Badge className={cn(
  'text-xs',
- result.nisabMet ? 'bg-profit text-profit /50 ' : 'bg-warning text-warning /50 '
+ result.nisabMet ? 'bg-profit text-profit/50 ' : 'bg-warning text-warning/50 '
  )}>
  {result.nisabMet ? '✓ تجب الزكاة' : '✗ لم يبلغ النصاب'}
  </Badge>
@@ -868,7 +868,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
  const shortfall = goldNisabValue - eligible;
 
  return (
- <Card className="relative overflow-hidden border-2 border-profit /50 bg-gradient-to-br from-profit/60 via-white to-success/60 /30 dark:via-background dark:to-success/30 shadow-lg">
+ <Card className="relative overflow-hidden border-2 border-profit/20 bg-gradient-to-br from-profit/60 via-white to-success/60 /30 dark:via-background dark:to-success/30 shadow-lg">
  <IslamicPattern />
  <div className="relative z-10">
  <CardHeader className="pb-3">
@@ -904,7 +904,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
  )}
 
  {error && !loading && (
- <Alert className="border-warning bg-warning /30">
+ <Alert className="border-warning bg-warning/10">
  <AlertTriangle className="w-4 h-4 text-warning"/>
  <AlertDescription className="text-sm text-warning ">{error}</AlertDescription>
  </Alert>
@@ -925,7 +925,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
  <Separator/>
 
  {/* Nisab comparison */}
- <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-profit/70 /30 border border-profit /50">
+ <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-profit/70 /30 border border-profit/20">
  <div className="flex items-center gap-2">
  <Scale className="w-5 h-5 text-profit"/>
  <div>
@@ -958,7 +958,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
  </div>
  </div>
  ) : eligible > 0 ? (
- <Alert className="border-warning bg-warning /30">
+ <Alert className="border-warning bg-warning/10">
  <AlertTriangle className="w-5 h-5 text-warning"/>
  <AlertTitle className="text-warning font-bold">لم يبلغ النصاب بعد</AlertTitle>
  <AlertDescription className="text-sm text-warning ">
@@ -967,7 +967,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
  </AlertDescription>
  </Alert>
  ) : (
- <Alert className="border-whale bg-primary /30">
+ <Alert className="border-whale bg-primary/10">
  <Info className="w-5 h-5 text-whale"/>
  <AlertDescription className="text-sm text-whale ">
  أضف أصولاً لمحفظتك (نقد، أسهم، ذهب، كريبتو) من قسم المحفظة ليتم حساب الزكاة تلقائياً.
@@ -1062,7 +1062,7 @@ export function ZakatView() {
  </div>
  
  {/* Header */}
- <div className="sticky top-0 z-10 bg-gradient-to-r from-warning/95 via-white/95 to-yellow-50/95 dark:from-warning/95 dark:via-background/95 dark:to-yellow-950/95 backdrop-blur border-b border-warning /50">
+ <div className="sticky top-0 z-10 bg-gradient-to-r from-warning/95 via-white/95 to-yellow-50/95 dark:from-warning/95 dark:via-background/95 dark:to-yellow-950/95 backdrop-blur border-b border-warning/20">
  <div className="max-w-6xl mx-auto px-4 py-4">
  <div className="flex items-center gap-4">
  <div className="relative">
@@ -1083,7 +1083,7 @@ export function ZakatView() {
  {/* Content */}
  <main className="relative flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-6">
  {error && (
- <Alert className="border-warning bg-warning /30">
+ <Alert className="border-warning bg-warning/10">
  <AlertTriangle className="w-4 h-4 text-warning"/>
  <AlertDescription className="text-sm text-warning ">{error}</AlertDescription>
  </Alert>
@@ -1115,7 +1115,7 @@ export function ZakatView() {
  </Tabs>
  
  {/* Footer */}
- <Card className="relative overflow-hidden border-warning/50 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30">
+ <Card className="relative overflow-hidden border-warning/20 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30">
  <IslamicPattern />
  <CardContent className="relative z-10 p-6">
  <div className="flex items-start gap-4">

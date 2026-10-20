@@ -486,7 +486,7 @@ export function DashboardView() {
  : 'السوق عرضي — انتظر فرص أوضح');
  return (
  <section aria-label="حالة السوق">
- <div className={`rounded-lg border p-3 ${isDefensive ? 'border-loss bg-loss /30' : 'border-profit bg-profit /30'}`}>
+ <div className={`rounded-lg border p-3 ${isDefensive ? 'border-loss bg-loss/10' : 'border-profit bg-profit/10'}`}>
  <div className="flex items-center gap-2">
  {isDefensive ? (
  <span className="text-loss font-bold text-sm">⚠️ {advice}</span>
@@ -501,7 +501,7 @@ export function DashboardView() {
 
  {/* FOCUS-5-TASKS: تنبيهات أسهمك الشخصية — Owner directive: "تبقى أصغر أو في جانب" */}
  {/* خليها collapsible عشان مش تزحم الفرص فوق */}
- <details className="rounded-lg border border-profit /50 bg-profit/30 /10">
+ <details className="rounded-lg border border-profit/20 bg-profit/10 /10">
  <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-profit select-none flex items-center gap-2">
  🔔 تنبيهات أسهمك الشخصية
  </summary>

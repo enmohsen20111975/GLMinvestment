@@ -142,7 +142,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  <div
  ref={ref}
  dir="rtl"
- className="w-[560px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/60 shadow-2xl overflow-hidden"
+ className="w-[560px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
  >
  {/* Header — Golden gradient with trophy */}
  <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-5 text-center relative overflow-hidden">
@@ -193,7 +193,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  key={`${entry.ticker}-${entry.rank}`}
  className={`flex items-center gap-2 p-2 rounded-xl transition-colors ${
  entry.rank === 1
- ? 'bg-gradient-to-l from-warning/10 to-transparent border border-warning/30'
+ ? 'bg-gradient-to-l from-warning/10 to-transparent border border-warning/20'
  : entry.rank === 2
  ? 'bg-gradient-to-l from-slate-300/5 to-transparent border border-slate-400/20'
  : entry.rank === 3
@@ -294,7 +294,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  <div
  ref={ref}
  dir="rtl"
- className="w-[520px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/60 shadow-2xl overflow-hidden"
+ className="w-[520px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border-2 border-warning/20 shadow-2xl overflow-hidden"
  >
  {/* Header — Golden gradient */}
  <div className="bg-gradient-to-r from-warning via-yellow-500 to-warning p-4 text-center">
@@ -329,7 +329,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  {trades.map((trade, idx) => (
  <div
  key={`${trade.ticker}-${idx}`}
- className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-warning/30 transition-colors"
+ className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:border-warning/20 transition-colors"
  >
  {/* Rank badge */}
  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
@@ -524,7 +524,7 @@ export function StockLeagueImageCard({
 
  if (loading) {
  return (
- <div className="w-[560px] h-[400px] bg-slate-900 rounded-2xl border-2 border-warning/30 animate-pulse flex items-center justify-center">
+ <div className="w-[560px] h-[400px] bg-slate-900 rounded-2xl border-2 border-warning/20 animate-pulse flex items-center justify-center">
  <Trophy className="w-12 h-12 text-warning/50" />
  </div>
  );

@@ -87,10 +87,10 @@ const typeLabels: Record<string, string> = {
 };
 
 const severityColors: Record<string, string> = {
- danger: 'border-loss bg-loss /20',
- warning: 'border-yellow-300 bg-warning /20',
- success: 'border-success bg-success /20',
- info: 'border-whale bg-primary /20'
+ danger: 'border-loss bg-loss/20',
+ warning: 'border-yellow-300 bg-warning/20',
+ success: 'border-success bg-success/20',
+ info: 'border-whale bg-primary/20'
 };
 
 const severityBadgeColors: Record<string, string> = {

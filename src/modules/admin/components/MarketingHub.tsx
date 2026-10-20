@@ -363,7 +363,7 @@ export function MarketingHub() {
  return (
  <div className="space-y-6">
  {/* Header */}
- <Card className="border-whale/30 bg-gradient-to-br from-whale/5 via-cyan-500/5 to-sky-500/5">
+ <Card className="border-whale/20 bg-gradient-to-br from-whale/5 via-cyan-500/5 to-sky-500/5">
  <CardHeader>
  <div className="flex items-start gap-3">
  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-whale to-cyan-500 flex items-center justify-center shrink-0">

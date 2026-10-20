@@ -189,7 +189,7 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
  horizonAr: 'صفقات متوسطة (2-6 أسابيع)',
  color: 'text-whale ',
  badgeBg: 'bg-whale/10 text-whale border-whale/20',
- border: 'border-whale/30 hover:border-whale/60',
+ border: 'border-whale/20 hover:border-whale/20',
  glow: 'shadow-teal-500/10',
  icon: Scale,
  },
@@ -200,7 +200,7 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
  horizonAr: 'صفقات استثمارية (6-12 شهر)',
  color: 'text-profit ',
  badgeBg: 'bg-profit/10 text-profit border-profit/20',
- border: 'border-profit/30 hover:border-profit/60',
+ border: 'border-profit/20 hover:border-profit/20',
  glow: 'shadow-emerald-500/10',
  icon: Shield,
  },
@@ -214,13 +214,13 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
 }> = {
  WIN: {
  label: 'هدف محقق 🎯',
- badge: 'bg-profit/15 text-profit border-profit/30',
+ badge: 'bg-profit/15 text-profit border-profit/20',
  icon: Trophy,
  accentColor: 'text-profit',
  },
  LOSS: {
  label: 'وقف خسارة 🛑',
- badge: 'bg-loss/15 text-loss border-loss/30',
+ badge: 'bg-loss/15 text-loss border-loss/20',
  icon: TrendingDown,
  accentColor: 'text-loss',
  },
@@ -232,7 +232,7 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
  },
  PENDING: {
  label: 'جاري التداول ⏳',
- badge: 'bg-warning/15 text-warning border-warning/30',
+ badge: 'bg-warning/15 text-warning border-warning/20',
  icon: Clock3,
  accentColor: 'text-warning',
  },
@@ -244,7 +244,7 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
 // لكن الـ badge بـ يـ differentiعلشان المالك يفرّق بين "هدف محقق" و"جني أرباح".
 const TRAILING_PROFIT_CONFIG = {
  label: 'خرج بربح 💰',
- badge: 'bg-whale/20 text-whale border-whale/40 font-bold',
+ badge: 'bg-whale/20 text-whale border-whale/20 font-bold',
  accentColor: 'text-whale ',
 };
 
@@ -324,15 +324,15 @@ function computeLiveReturnPct(p: LivePrediction): number | null {
 const LIVE_OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'PENDING', { label: string; badge: string }> = {
  WIN: {
  label: 'ربح متوقع (معاينة)',
- badge: 'bg-profit/10 text-profit border border-dashed border-profit/40',
+ badge: 'bg-profit/10 text-profit border border-dashed border-profit/20',
  },
  LOSS: {
  label: 'خسارة متوقعة (معاينة)',
- badge: 'bg-loss/10 text-loss border border-dashed border-loss/40',
+ badge: 'bg-loss/10 text-loss border border-dashed border-loss/20',
  },
  PENDING: {
  label: 'بانتظار الهدف',
- badge: 'bg-warning/10 text-warning border border-dashed border-warning/40',
+ badge: 'bg-warning/10 text-warning border border-dashed border-warning/20',
  },
 };
 
@@ -860,17 +860,17 @@ export function PredictionTrackingDashboard({
  {personaCfg.emoji} {personaCfg.nameAr}
  </Badge>
  {focusTickers[p.ticker] && (
- <Badge className="bg-warning/15 text-warning border border-warning/30 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
+ <Badge className="bg-warning/15 text-warning border border-warning/20 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
  🎯 تركيز ×{focusTickers[p.ticker].count}
  </Badge>
  )}
  {p.morning_bell && (
- <Badge className="bg-warning/20 text-warning border border-warning/40 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
+ <Badge className="bg-warning/20 text-warning border border-warning/20 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
  🔔 جرس الصباح
  </Badge>
  )}
  {p.evidence_count != null && p.evidence_count > 0 && (
- <Badge variant="outline" className="text-xs py-0 px-1.5 font-bold text-profit border-profit/30 whitespace-nowrap" title="عدد الأدلة المتوافقة">
+ <Badge variant="outline" className="text-xs py-0 px-1.5 font-bold text-profit border-profit/20 whitespace-nowrap" title="عدد الأدلة المتوافقة">
  ✅ {p.evidence_count}/6
  </Badge>
  )}
@@ -1000,8 +1000,8 @@ export function PredictionTrackingDashboard({
  className={cn(
  'text-xs font-bold whitespace-nowrap border border-dashed',
  liveReturnPct != null && liveReturnPct >= 0
- ? 'bg-warning/15 text-warning border-warning/40'
- : 'bg-loss/15 text-loss border-loss/40'
+ ? 'bg-warning/15 text-warning border-warning/20'
+ : 'bg-loss/15 text-loss border-loss/20'
  )}
  title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
  >
@@ -1155,12 +1155,12 @@ export function PredictionTrackingDashboard({
  return (
  <div className={cn('space-y-5 dir-rtl', className)}>
  {/* ─── 1. Luxury Header & Timeframe Control Bar ─── */}
- <Card className="border border-profit/30 bg-gradient-to-br from-card via-card to-profit/20 shadow-xl rounded-2xl overflow-hidden">
+ <Card className="border border-profit/20 bg-gradient-to-br from-card via-card to-profit/20 shadow-xl rounded-2xl overflow-hidden">
  <CardHeader className="p-4 md:p-6 pb-3 border-b border-border/50">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
  <div>
  <div className="flex items-center gap-2 flex-wrap">
- <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30 gap-1 font-bold">
+ <Badge variant="outline" className="bg-profit/10 text-profit border-profit/20 gap-1 font-bold">
  <Sparkles className="w-3.5 h-3.5" />
  مركز الشفافية والمصداقية الحية
  </Badge>
@@ -1168,7 +1168,7 @@ export function PredictionTrackingDashboard({
  <Badge className={cn(
  'text-xs gap-1 font-bold',
  session.is_open
- ? 'bg-profit/20 text-profit border border-profit/30 animate-pulse'
+ ? 'bg-profit/20 text-profit border border-profit/20 animate-pulse'
  : 'bg-muted text-muted-foreground border border-border'
  )}>
  {session.is_open ? <Activity className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
@@ -1222,7 +1222,7 @@ export function PredictionTrackingDashboard({
  }
  }}
  disabled={refreshing}
- className="h-9 px-3 text-xs border-warning/50 bg-warning/10 hover:bg-warning/20 text-warning font-bold"
+ className="h-9 px-3 text-xs border-warning/20 bg-warning/10 hover:bg-warning/20 text-warning font-bold"
  >
  {refreshing ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 ml-1" />}
  تحقق من المعلقة
@@ -1270,7 +1270,7 @@ export function PredictionTrackingDashboard({
  </button>
  ))}
  {qualityMode === 'top_picks' && (
- <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-xs font-bold mr-1">
+ <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs font-bold mr-1">
  ≥{minConfidence} ثقة · 5/يوم/شخصية
  </Badge>
  )}
@@ -1304,8 +1304,8 @@ export function PredictionTrackingDashboard({
  <div className={cn(
  'col-span-2 sm:col-span-1 p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden',
  activeStats.netReturn >= 0
- ? 'bg-gradient-to-br from-profit/15 via-profit/5 to-transparent border-profit/30'
- : 'bg-gradient-to-br from-loss/15 via-loss/5 to-transparent border-loss/30'
+ ? 'bg-gradient-to-br from-profit/15 via-profit/5 to-transparent border-profit/20'
+ : 'bg-gradient-to-br from-loss/15 via-loss/5 to-transparent border-loss/20'
  )}>
  <div className="flex items-center justify-between text-xs font-bold mb-1">
  <span className={activeStats.netReturn >= 0 ? 'text-profit ' : 'text-loss '}>
@@ -1459,10 +1459,10 @@ export function PredictionTrackingDashboard({
 
  {/* ─── P0-v17: Focus Stocks Banner + Cumulative Profit Chart ─── */}
  {focusTickerList.length > 0 && (
- <Card className="border border-warning/30 bg-gradient-to-br from-warning/10 via-card to-card shadow-md rounded-2xl overflow-hidden">
+ <Card className="border border-warning/20 bg-gradient-to-br from-warning/10 via-card to-card shadow-md rounded-2xl overflow-hidden">
  <CardHeader className="p-4 border-b border-warning/20">
  <div className="flex items-center gap-2 flex-wrap">
- <Badge className="bg-warning/15 text-warning border border-warning/30 gap-1 font-bold text-xs">
+ <Badge className="bg-warning/15 text-warning border border-warning/20 gap-1 font-bold text-xs">
  <Layers className="w-3.5 h-3.5" />
  أسهم تحت التركيز ({focusTickerList.length})
  </Badge>
@@ -1482,7 +1482,7 @@ export function PredictionTrackingDashboard({
  <button
  key={`focus-${tk}`}
  onClick={() => setSearchQuery(tk)}
- className="px-2.5 py-1 text-xs font-bold rounded-lg border border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 transition-colors flex items-center gap-1"
+ className="px-2.5 py-1 text-xs font-bold rounded-lg border border-warning/20 bg-warning/10 text-warning hover:bg-warning/20 transition-colors flex items-center gap-1"
  title="اضغط للفلترة على هذا السهم"
  >
  <span className="font-mono">{tk}</span>
@@ -1511,14 +1511,14 @@ export function PredictionTrackingDashboard({
  </div>
  <div className="flex items-center gap-3 text-xs">
  <span className="text-muted-foreground">إجمالي الصفقات المقفولة:</span>
- <Badge className="bg-profit/15 text-profit border border-profit/30 font-mono font-black">
+ <Badge className="bg-profit/15 text-profit border border-profit/20 font-mono font-black">
  {cumulativeProfitData.length} صفقة
  </Badge>
  <Badge className={cn(
  'font-mono font-black',
  cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0
- ? 'bg-profit/15 text-profit border border-profit/30'
- : 'bg-loss/15 text-loss border border-loss/30'
+ ? 'bg-profit/15 text-profit border border-profit/20'
+ : 'bg-loss/15 text-loss border border-loss/20'
  )}>
  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{(cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative ?? 0).toFixed(2)}%
  </Badge>
@@ -1739,13 +1739,13 @@ export function PredictionTrackingDashboard({
  {personaCfg.emoji} {personaCfg.nameAr}
  </Badge>
  {focusTickers[pred.ticker] && (
- <Badge className="bg-warning/15 text-warning border border-warning/30 text-xs py-0 px-1.5 font-bold" title="مكرر في عدة شخصيات — إشارة قوية">
+ <Badge className="bg-warning/15 text-warning border border-warning/20 text-xs py-0 px-1.5 font-bold" title="مكرر في عدة شخصيات — إشارة قوية">
  🎯 تركيز ×{focusTickers[pred.ticker].count}
  </Badge>
  )}
  {/* NEW: WHO IS BUYING badge */}
  {pred.who_is_buying_state && (
- <Badge className="bg-primary/15 text-primary border border-primary/30 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
+ <Badge className="bg-primary/15 text-primary border border-primary/20 text-xs py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
  {pred.who_is_buying_state.includes('مؤسساتي') ? '🏦 مؤسساتي' : pred.who_is_buying_state.includes('أفراد') ? '👤 أفراد' : '⚪'}
  </Badge>
  )}
@@ -1756,12 +1756,12 @@ export function PredictionTrackingDashboard({
  </Badge>
  )}
  {pred.morning_bell && (
- <Badge className="bg-warning/20 text-warning border border-warning/40 text-xs py-0 px-1.5 font-bold" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
+ <Badge className="bg-warning/20 text-warning border border-warning/20 text-xs py-0 px-1.5 font-bold" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
  🔔 جرس الصباح
  </Badge>
  )}
  {pred.evidence_count != null && pred.evidence_count > 0 && (
- <Badge variant="outline" className="text-xs py-0 px-1.5 text-profit border-profit/30 font-bold" title="عدد الأدلة المتوافقة">
+ <Badge variant="outline" className="text-xs py-0 px-1.5 text-profit border-profit/20 font-bold" title="عدد الأدلة المتوافقة">
  ✅ {pred.evidence_count}/6
  </Badge>
  )}
@@ -1855,14 +1855,14 @@ export function PredictionTrackingDashboard({
 
  {/* FIX-5B: _live_return للـ PENDING — اعرض badge بـ النسبة المئوية */}
  {showLiveReturnBadge && (
- <div className="flex items-center justify-between gap-2 bg-warning/5 border border-dashed border-warning/40 rounded-lg p-2 text-xs">
+ <div className="flex items-center justify-between gap-2 bg-warning/5 border border-dashed border-warning/20 rounded-lg p-2 text-xs">
  <span className="text-muted-foreground font-bold">العائد اللحظي (معاينة):</span>
  <Badge
  className={cn(
  'text-xs font-bold whitespace-nowrap',
  liveReturnPct != null && liveReturnPct >= 0
- ? 'bg-warning/15 text-warning border border-warning/40'
- : 'bg-loss/15 text-loss border border-loss/40'
+ ? 'bg-warning/15 text-warning border border-warning/20'
+ : 'bg-loss/15 text-loss border border-loss/20'
  )}
  title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
  >
@@ -1942,7 +1942,7 @@ export function PredictionTrackingDashboard({
  <div ref={proofCardRef} className="p-6 bg-card space-y-4 relative">
  <DialogHeader className="p-0 border-b border-border/60 pb-3">
  <div className="flex items-center justify-between">
- <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30 font-bold text-xs gap-1">
+ <Badge variant="outline" className="bg-profit/10 text-profit border-profit/20 font-bold text-xs gap-1">
  <Shield className="w-3.5 h-3.5" />
  بطاقة إثبات التوقع الموثقة
  </Badge>
@@ -2008,7 +2008,7 @@ export function PredictionTrackingDashboard({
 
  {/* Task IMPROVEMENT-25: عرض التحليل الفني الشامل (analysis_reason) */}
  {(selectedProofTrade as any).analysis_reason && (
- <div className="p-3 bg-profit/50 /20 border border-profit/50 /30 rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
+ <div className="p-3 bg-profit/10 /20 border border-profit/20 /30 rounded-xl text-foreground text-xs leading-relaxed whitespace-pre-line">
  {String((selectedProofTrade as any).analysis_reason)}
  </div>
  )}
@@ -2075,7 +2075,7 @@ export function PredictionTrackingDashboard({
  size="sm"
  onClick={handleExportProofImage}
  disabled={downloadingProof}
- className="h-8 text-xs font-bold border-profit/40 text-profit gap-1"
+ className="h-8 text-xs font-bold border-profit/20 text-profit gap-1"
  >
  {downloadingProof ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
  تحميل بطاقة الإثبات 📸

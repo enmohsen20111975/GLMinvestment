@@ -199,9 +199,9 @@ export function PromoCodesAdmin() {
  case 'developer':
  return { label: 'جميع المميزات (كامل)', color: 'bg-primary/20 text-primary border-purple-500/40' };
  case 'premium':
- return { label: 'باقة المحترفين', color: 'bg-profit/20 text-profit border-profit/40' };
+ return { label: 'باقة المحترفين', color: 'bg-profit/20 text-profit border-profit/20' };
  case 'normal':
- return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary border-primary/40' };
+ return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary border-primary/20' };
  default:
  return { label: tier, color: 'bg-muted text-muted-foreground border-border' };
  }
@@ -286,7 +286,7 @@ export function PromoCodesAdmin() {
  </div>
 
  {/* Create Code Form */}
- <Card className="border-profit/30 bg-profit/5">
+ <Card className="border-profit/20 bg-profit/5">
  <CardHeader className="pb-3">
  <CardTitle className="text-base flex items-center gap-2 text-profit ">
  <Sparkles className="w-5 h-5" />
@@ -532,15 +532,15 @@ export function PromoCodesAdmin() {
  {/* Status */}
  <td className="p-3">
  {isExpired ? (
- <Badge variant="outline" className="bg-loss/10 text-loss border-loss/30">
+ <Badge variant="outline" className="bg-loss/10 text-loss border-loss/20">
  منتهي الصلاحية
  </Badge>
  ) : isExhausted ? (
- <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
+ <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
  مكتمل الاستخدام
  </Badge>
  ) : item.is_active ? (
- <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30">
+ <Badge variant="outline" className="bg-profit/10 text-profit border-profit/20">
  مفعّل وفعّال
  </Badge>
  ) : (

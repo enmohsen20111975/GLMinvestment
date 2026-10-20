@@ -128,7 +128,7 @@ function ExportToolbar({
  onClick={onPng}
  disabled={exporting}
  variant="outline"
- className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning bg-[#0d1320]"
+ className="gap-2 border-warning/20 text-warning hover:bg-warning/10 hover:text-warning bg-[#0d1320]"
  >
  <Download className="w-4 h-4" />
  {exporting ? 'جارٍ التصدير...' : pngLabel}
@@ -136,7 +136,7 @@ function ExportToolbar({
  <Button
  onClick={onPrint}
  variant="outline"
- className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit bg-[#0d1320]"
+ className="gap-2 border-profit/20 text-profit hover:bg-profit/10 hover:text-profit bg-[#0d1320]"
  >
  <Printer className="w-4 h-4" />
  طباعة / PDF
@@ -161,7 +161,7 @@ function ProfessionalHeader({
 }) {
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-primary/10 via-card to-muted p-5 print:break-inside-avoid"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-primary/10 via-card to-muted p-5 print:break-inside-avoid"
  dir="rtl"
  >
  <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
@@ -185,7 +185,7 @@ function ProfessionalHeader({
  <div className="flex items-center justify-end gap-2 mt-1">
  <Badge
  variant="outline"
- className="text-xs font-bold border-profit/40 text-profit bg-profit/10"
+ className="text-xs font-bold border-profit/20 text-profit bg-profit/10"
  >
  {market} · LIVE
  </Badge>
@@ -329,7 +329,7 @@ function SectorReport() {
 
  {/* KPIs */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
- <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
+ <div className="rounded-xl border border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
  <p className="text-xs text-foreground mb-1">عدد القطاعات</p>
  <p className="text-2xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(sectors.length, 0)}
@@ -341,13 +341,13 @@ function SectorReport() {
  {safeFmtNum(totalStocks, 0)}
  </p>
  </div>
- <div className="rounded-xl border border-profit/30 bg-profit/10 p-3.5">
+ <div className="rounded-xl border border-profit/20 bg-profit/10 p-3.5">
  <p className="text-xs text-foreground mb-1">متوسط التغيّر</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', avgChange >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(avgChange, 2)}
  </p>
  </div>
- <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
+ <div className="rounded-xl border border-warning/20 bg-warning/10 p-3.5">
  <p className="text-xs text-foreground mb-1">درجة السوق</p>
  <p className="text-2xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(report.summary?.market_breadth ?? 0, 0)}
@@ -358,7 +358,7 @@ function SectorReport() {
  {/* Best / Worst */}
  {bestSector && worstSector && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- <Card className="border-profit/30 bg-profit/5">
+ <Card className="border-profit/20 bg-profit/5">
  <CardContent className="p-4">
  <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <ArrowUpRight className="w-3.5 h-3.5 text-profit" />
@@ -371,7 +371,7 @@ function SectorReport() {
  <p className="text-xs text-muted-foreground">{bestSector.count ?? 0} سهم</p>
  </CardContent>
  </Card>
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-4">
  <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <ArrowDownRight className="w-3.5 h-3.5 text-loss" />
@@ -411,7 +411,7 @@ function SectorReport() {
  const bg = change >= 0
  ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
  : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
- const border = change >= 0 ? 'border-profit/40' : 'border-loss/40';
+ const border = change >= 0 ? 'border-profit/20' : 'border-loss/20';
  return (
  <div
  key={`${sector.name ?? 'sector'}-${i}`}
@@ -611,7 +611,7 @@ function PredictionsReport() {
  </h3>
  </div>
  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
- <div className="rounded-xl border border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
+ <div className="rounded-xl border border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 p-3.5">
  <p className="text-xs text-foreground mb-1">أداء EGX30 الأسبوعي</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', egx30Perf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(egx30Perf, 2)}
@@ -620,7 +620,7 @@ function PredictionsReport() {
  <Sparkline values={sparklineEgx} tone={egx30Perf >= 0 ? 'positive' : 'negative'} />
  )}
  </div>
- <div className="rounded-xl border border-warning/30 bg-warning/10 p-3.5">
+ <div className="rounded-xl border border-warning/20 bg-warning/10 p-3.5">
  <p className="text-xs text-foreground mb-1">أداء الذهب</p>
  <p className={cn('text-2xl font-extrabold tabular-nums', goldPerf >= 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(goldPerf, 2)}
@@ -638,7 +638,7 @@ function PredictionsReport() {
  {/* Best / Worst Stock */}
  <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {bestStock && (
- <Card className="border-profit/30 bg-profit/5">
+ <Card className="border-profit/20 bg-profit/5">
  <CardContent className="p-4">
  <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <Trophy className="w-3.5 h-3.5 text-warning" />
@@ -654,7 +654,7 @@ function PredictionsReport() {
  </Card>
  )}
  {worstStock && (
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-4">
  <p className="text-xs text-foreground mb-1 flex items-center gap-1">
  <AlertTriangle className="w-3.5 h-3.5 text-loss" />
@@ -673,7 +673,7 @@ function PredictionsReport() {
 
  {/* Top 5 Successful Predictions */}
  {topPerformers.length > 0 && (
- <Card className="overflow-hidden border-profit/30 bg-[#0d1320] print:break-inside-avoid">
+ <Card className="overflow-hidden border-profit/20 bg-[#0d1320] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-profit">
  <TrendingUp className="w-5 h-5" />
@@ -711,7 +711,7 @@ function PredictionsReport() {
 
  {/* Honest Failure Display (Rule 67 — never hide losses) */}
  {worstStock && (
- <Card className="overflow-hidden border-loss/30 bg-[#0d1320] print:break-inside-avoid">
+ <Card className="overflow-hidden border-loss/20 bg-[#0d1320] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-loss">
  <TrendingDown className="w-5 h-5" />
@@ -746,7 +746,7 @@ function PredictionsReport() {
  {(lessons.length > 0 || watchlist.length > 0) && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {lessons.length > 0 && (
- <Card className="overflow-hidden border-warning/30 bg-[#0d1320]">
+ <Card className="overflow-hidden border-warning/20 bg-[#0d1320]">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm font-bold flex items-center gap-2 text-warning">
  <Sparkles className="w-4 h-4" />
@@ -763,7 +763,7 @@ function PredictionsReport() {
  </Card>
  )}
  {watchlist.length > 0 && (
- <Card className="overflow-hidden border-profit/30 bg-[#0d1320]">
+ <Card className="overflow-hidden border-profit/20 bg-[#0d1320]">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm font-bold flex items-center gap-2 text-profit">
  <Shield className="w-4 h-4" />
@@ -776,7 +776,7 @@ function PredictionsReport() {
  <Badge
  key={`wl-${i}`}
  variant="outline"
- className="text-xs border-profit/40 text-profit bg-profit/10"
+ className="text-xs border-profit/20 text-profit bg-profit/10"
  >
  {s}
  </Badge>
@@ -790,7 +790,7 @@ function PredictionsReport() {
 
  {/* AI Summary text (Python-generated) */}
  {report.content && (
- <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+ <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Activity className="w-5 h-5" />

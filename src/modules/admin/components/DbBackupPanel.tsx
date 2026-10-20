@@ -842,7 +842,7 @@ export function DbBackupPanel() {
  variant="ghost"
  size="sm"
  onClick={handleSelectNonCore}
- className="h-8 text-xs text-warning hover:bg-warning dark:hover:bg-warning/40"
+ className="h-8 text-xs text-warning hover:bg-warning dark:hover:bg-warning/10"
  >
  غير الأساسية / القديمة
  </Button>
@@ -918,7 +918,7 @@ export function DbBackupPanel() {
  </td>
  <td className="p-2.5 whitespace-nowrap">
  {db.is_core ? (
- <Badge variant="outline" className="bg-profit/10 text-profit border-profit/30 text-xs">
+ <Badge variant="outline" className="bg-profit/10 text-profit border-profit/20 text-xs">
  أساسية للنظام
  </Badge>
  ) : (
@@ -936,7 +936,7 @@ export function DbBackupPanel() {
  variant="ghost"
  size="icon"
  onClick={() => openDeleteModalForSingle(db)}
- className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/40"
+ className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/10"
  title="حذف قاعدة البيانات"
  >
  <Trash2 className="w-3.5 h-3.5" />
@@ -966,7 +966,7 @@ export function DbBackupPanel() {
  variant="outline"
  size="sm"
  onClick={openDeleteModalForAllArchives}
- className="h-7 text-xs text-loss hover:text-loss hover:bg-loss dark:hover:bg-loss/40 border-loss "
+ className="h-7 text-xs text-loss hover:text-loss hover:bg-loss dark:hover:bg-loss/10 border-loss "
  >
  <Trash2 className="w-3 h-3 ml-1" />
  حذف كل الأرشيفات
@@ -1023,7 +1023,7 @@ export function DbBackupPanel() {
  variant="ghost"
  size="icon"
  onClick={() => openDeleteModalForArchive(arc)}
- className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/40"
+ className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/10"
  title="حذف هذا الأرشيف"
  >
  <Trash2 className="w-3.5 h-3.5" />
@@ -1052,7 +1052,7 @@ export function DbBackupPanel() {
  </DialogHeader>
 
  {deleteModal?.hasCore && (
- <div className="p-3 rounded-md bg-loss/10 border border-loss/30 flex items-start gap-2.5 text-loss text-xs leading-relaxed">
+ <div className="p-3 rounded-md bg-loss/10 border border-loss/20 flex items-start gap-2.5 text-loss text-xs leading-relaxed">
  <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-loss" />
  <div>
  <strong>تحذير أمني:</strong> تحتوي القائمة على قاعدة بيانات أساسية لنظام المنصة (مثل stocks.db أو auth.db أو price_history.db). حذفها قد يؤثر على تشغيل النظام إذا لم تكن تملك نسخة احتياطية!

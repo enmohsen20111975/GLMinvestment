@@ -60,9 +60,9 @@ function VerdictBadge({ verdict, verdictAr }: { verdict: string; verdictAr: stri
  return (
  <Badge variant="outline" className={cn(
  'text-sm font-bold border-0 px-4 py-1',
- verdict === 'undervalued' && 'bg-profit text-profit /50 ',
- verdict === 'fair' && 'bg-warning text-warning /50 ',
- verdict === 'overvalued' && 'bg-loss text-loss /50 ',
+ verdict === 'undervalued' && 'bg-profit text-profit/50 ',
+ verdict === 'fair' && 'bg-warning text-warning/50 ',
+ verdict === 'overvalued' && 'bg-loss text-loss/50 ',
  verdict === 'unknown' && 'bg-muted text-muted-foreground /50 ',
  )}>
  {verdictAr}
@@ -201,7 +201,7 @@ function FairValueSection() {
 
  {/* Warning if price is 0 */}
  {currentPrice === 0 && (
- <div className="flex items-center gap-2 p-3 rounded-lg bg-warning /30 border border-warning ">
+ <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning ">
  <AlertTriangle className="w-4 h-4 text-warning" />
  <p className="text-xs text-warning ">
  السعر الحالي غير متوفر - قد تكون البيانات قديمة أو غير محدثة. يرجى تحديث البيانات.
@@ -285,7 +285,7 @@ function FairValueSection() {
  <div className={cn(
  "p-3 rounded-lg border",
  avgFairValue > 0
- ? "bg-profit /30 border-profit /40"
+ ? "bg-profit/10 border-profit/20"
  : "bg-muted /30 border-border /40"
  )}>
  <p className={cn(
@@ -316,7 +316,7 @@ function FairValueSection() {
 
  {/* PAYWALL Gate 1: lock CTA for free users post-trial */}
  {fairValueLocked && (
- <div className="mt-2 p-3 rounded-lg border border-warning/40 bg-warning/60 /30 text-center">
+ <div className="mt-2 p-3 rounded-lg border border-warning/20 bg-warning/10 /30 text-center">
  <p className="text-xs text-warning font-semibold">
  🔒 تفاصيل حساب القيمة العادلة (Graham · Lynch · DCF · P/E) متاحة للمشتركين
  </p>

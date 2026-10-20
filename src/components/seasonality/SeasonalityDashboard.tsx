@@ -283,7 +283,7 @@ export function SeasonalityDashboard() {
  </Card>
 
  {/* Info Alert */}
- <Alert className="bg-success /20 border-success dark:border-success">
+ <Alert className="bg-success/20 border-success dark:border-success">
  <CheckCircle className="h-4 w-4 text-success" />
  <AlertDescription className="text-success ">
  <strong>كيف يعمل المحرك؟</strong>

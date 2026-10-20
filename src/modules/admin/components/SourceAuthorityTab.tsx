@@ -112,7 +112,7 @@ export function SourceAuthorityTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -145,7 +145,7 @@ export function SourceAuthorityTab() {
 
  {/* Conflict alert */}
  {conflicts && conflicts.total_tickers_with_multi_sources > 0 && (
- <Card className="border-warning bg-warning /20 /40">
+ <Card className="border-warning bg-warning/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
  <div className="flex-1">
@@ -229,7 +229,7 @@ export function SourceAuthorityTab() {
  key={market}
  className={cn(
  'p-3 rounded-lg border',
- 'border-profit bg-profit /20 /40',
+ 'border-profit bg-profit/20 /40',
  )}
  >
  <div className="flex items-center justify-between mb-2">
@@ -287,7 +287,7 @@ export function SourceAuthorityTab() {
  {banned.map((b) => (
  <div
  key={b.source}
- className="flex items-start gap-3 p-2.5 rounded-lg border border-loss bg-loss /20 /40"
+ className="flex items-start gap-3 p-2.5 rounded-lg border border-loss bg-loss/20 /40"
  >
  <XCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
  <div>
@@ -314,7 +314,7 @@ export function SourceAuthorityTab() {
  {conflicts.by_market.map((m) => (
  <div
  key={m.market}
- className="p-3 rounded-lg border border-warning bg-warning /20 /40"
+ className="p-3 rounded-lg border border-warning bg-warning/20 /40"
  >
  <div className="flex items-center justify-between mb-1">
  <Badge variant="outline" className="text-xs">{m.market}</Badge>

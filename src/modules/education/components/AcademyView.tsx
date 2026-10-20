@@ -390,7 +390,7 @@ function AdvancedLessonsTab() {
  className={cn(
  'flex w-full items-start gap-2 rounded-md px-2 py-2 text-right text-sm transition-colors',
  isActive
- ? 'bg-warning font-semibold text-warning /40 '
+ ? 'bg-warning font-semibold text-warning/40 '
  : 'hover:bg-accent/60',
  )}
  >
@@ -493,8 +493,8 @@ function AdvancedLessonsTab() {
  </div>
 
  {/* Lock CTA overlay */}
- <div className="rounded-md border border-warning/40 bg-warning/80 /30 p-5 text-center">
- <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-warning /40 flex items-center justify-center">
+ <div className="rounded-md border border-warning/20 bg-warning/80 /30 p-5 text-center">
+ <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-warning/10 flex items-center justify-center">
  <Lock className="h-5 w-5 text-warning " />
  </div>
  <p className="text-sm font-semibold text-warning mb-2">
@@ -534,7 +534,7 @@ function AdvancedLessonsTab() {
 
  {/* Key points */}
  {active.keyPoints && active.keyPoints.length > 0 ? (
- <section className="space-y-2 rounded-md bg-warning/50 p-3 /20">
+ <section className="space-y-2 rounded-md bg-warning/10 p-3 /20">
  <h3 className="flex items-center gap-2 text-sm font-bold">
  <CheckCircle2 className="h-4 w-4 text-warning" />
  النقاط الرئيسية
@@ -699,7 +699,7 @@ function AdvancedMarkdownRenderer({
  return (
  <blockquote
  key={i}
- className="my-2 border-r-4 border-warning bg-warning/40 p-3 text-sm italic text-muted-foreground /10"
+ className="my-2 border-r-4 border-warning bg-warning/10 p-3 text-sm italic text-muted-foreground /10"
  >
  {renderInline(block.text)}
  </blockquote>
@@ -732,7 +732,7 @@ function AdvancedMarkdownRenderer({
  return (
  <div
  key={i}
- className="my-2 overflow-x-auto rounded-md border border-warning/60 /40"
+ className="my-2 overflow-x-auto rounded-md border border-warning/20 /40"
  >
  <table className="w-full border-collapse text-xs sm:text-sm">
  <thead className="bg-warning/70 /30">
@@ -740,7 +740,7 @@ function AdvancedMarkdownRenderer({
  {block.headers.map((h, hi) => (
  <th
  key={hi}
- className="border-b border-warning/60 /40 p-2 text-right font-bold text-warning "
+ className="border-b border-warning/20 /40 p-2 text-right font-bold text-warning "
  >
  {renderInline(h)}
  </th>
@@ -1136,7 +1136,7 @@ function LiveMarketScanner() {
 
  return (
  <Card className="overflow-hidden border-profit/20 bg-gradient-to-br from-profit/20 via-card to-card">
- <CardHeader className="gap-3 border-b bg-profit/30 px-4 py-3 sm:px-6">
+ <CardHeader className="gap-3 border-b bg-profit/10 px-4 py-3 sm:px-6">
  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div className="flex items-center gap-2">
  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-profit/15 text-profit ">
@@ -1164,7 +1164,7 @@ function LiveMarketScanner() {
  size="sm"
  onClick={() => fetchStocks()}
  disabled={refreshing}
- className="border-profit/40 text-profit hover:bg-profit/10 "
+ className="border-profit/20 text-profit hover:bg-profit/10 "
  >
  <RefreshCw className={cn('ml-1 h-4 w-4', refreshing && 'animate-spin')} />
  تحديث
@@ -1172,7 +1172,7 @@ function LiveMarketScanner() {
  </div>
  </div>
  {error && (
- <div className="flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning ">
+ <div className="flex items-center gap-2 rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning ">
  <AlertTriangle className="h-4 w-4 shrink-0" />
  <span>{error}</span>
  </div>
@@ -1391,11 +1391,11 @@ function LiveMarketScanner() {
  className={cn(
  'rounded-lg border p-3 text-sm',
  hint.tone === 'up' &&
- 'border-profit/40 bg-profit/10 text-profit ',
+ 'border-profit/20 bg-profit/10 text-profit ',
  hint.tone === 'down' &&
- 'border-loss/40 bg-loss/10 text-loss ',
+ 'border-loss/20 bg-loss/10 text-loss ',
  hint.tone === 'flat' &&
- 'border-warning/40 bg-warning/10 text-warning ',
+ 'border-warning/20 bg-warning/10 text-warning ',
  )}
  >
  <div className="mb-1 flex items-center gap-2 text-xs font-semibold">
@@ -1588,21 +1588,21 @@ const SCENARIO_TONE_STYLES: Record<
  { accentBorder: string; accentStrip: string; badge: string; badgeLabel: string; iconBg: string }
 > = {
  bullish: {
- accentBorder: 'border-profit/40',
+ accentBorder: 'border-profit/20',
  accentStrip: 'bg-profit',
  badge: 'bg-profit/15 text-profit ',
  badgeLabel: 'صعودي',
  iconBg: 'bg-profit/15 text-profit ',
  },
  bearish: {
- accentBorder: 'border-loss/40',
+ accentBorder: 'border-loss/20',
  accentStrip: 'bg-loss',
  badge: 'bg-loss/15 text-loss ',
  badgeLabel: 'هبوطي',
  iconBg: 'bg-loss/15 text-loss ',
  },
  wait: {
- accentBorder: 'border-warning/40',
+ accentBorder: 'border-warning/20',
  accentStrip: 'bg-warning',
  badge: 'bg-warning/15 text-warning ',
  badgeLabel: 'تحذير',
@@ -1629,19 +1629,19 @@ const VERDICT_STYLE: Record<
  go: {
  Icon: CheckCircle2,
  color: 'text-profit ',
- bg: 'bg-profit/10 border-profit/40',
+ bg: 'bg-profit/10 border-profit/20',
  label: 'إجراء',
  },
  wait: {
  Icon: AlertTriangle,
  color: 'text-warning ',
- bg: 'bg-warning/10 border-warning/40',
+ bg: 'bg-warning/10 border-warning/20',
  label: 'انتظار',
  },
  avoid: {
  Icon: XCircle,
  color: 'text-loss ',
- bg: 'bg-loss/10 border-loss/40',
+ bg: 'bg-loss/10 border-loss/20',
  label: 'تجنّب',
  },
 };
@@ -1935,7 +1935,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
  </ol>
  </div>
  {/* Mistake */}
- <div className="rounded-md border border-loss/40 bg-loss/10 p-2">
+ <div className="rounded-md border border-loss/20 bg-loss/10 p-2">
  <div className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-loss ">
  <AlertTriangle className="h-3.5 w-3.5" />
  الخطأ الشائع
@@ -1950,7 +1950,7 @@ function PlaybookCard({ playbook, defaultOpen }: { playbook: Playbook; defaultOp
  <Target className="h-3 w-3" />
  مثال
  </div>
- <p className="rounded-md border border-warning/30 bg-warning/5 p-2 text-xs leading-relaxed text-muted-foreground">
+ <p className="rounded-md border border-warning/20 bg-warning/5 p-2 text-xs leading-relaxed text-muted-foreground">
  {playbook.example}
  </p>
  </div>
@@ -1991,7 +1991,7 @@ function TradingFloorView() {
  return (
  <div className="space-y-6">
  {/* Owner intent banner — sets the tone that this is a desk, not a textbook */}
- <div className="rounded-lg border border-profit/30 bg-profit/20 px-4 py-3 text-xs text-profit sm:px-6">
+ <div className="rounded-lg border border-profit/20 bg-profit/20 px-4 py-3 text-xs text-profit sm:px-6">
  <span className="font-semibold">📊 أرض التداول —</span> مكتب عملي للقرارات المباشرة:
  شاشة أسعار حية، شجرة قرارات سيناريوهات، وكتيبات إجراءات جاهزة.
  </div>
@@ -2203,13 +2203,13 @@ function PositionSizeCalculator() {
  </div>
 
  {result && 'error' in result ? (
- <div className="rounded-md border border-warning/40 bg-warning/60 /20 p-3 text-xs text-warning ">
+ <div className="rounded-md border border-warning/20 bg-warning/10 /20 p-3 text-xs text-warning ">
  ⚠️ {result.error}
  </div>
  ) : result ? (
  <div className="space-y-3">
  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
- <div className="rounded-md border border-profit/30 bg-profit/50 /20 p-2.5 text-center">
+ <div className="rounded-md border border-profit/20 bg-profit/10 /20 p-2.5 text-center">
  <div className="text-xs font-semibold uppercase tracking-wide text-profit ">
  المخاطرة (جنيه)
  </div>
@@ -2217,7 +2217,7 @@ function PositionSizeCalculator() {
  {result.maxLoss.toLocaleString('en-US', { maximumFractionDigits: 2 })}
  </div>
  </div>
- <div className="rounded-md border border-profit/30 bg-profit/50 /20 p-2.5 text-center">
+ <div className="rounded-md border border-profit/20 bg-profit/10 /20 p-2.5 text-center">
  <div className="text-xs font-semibold uppercase tracking-wide text-profit ">
  الحجم الأقصى (سهم)
  </div>
@@ -2243,14 +2243,14 @@ function PositionSizeCalculator() {
  </div>
  </div>
  <div className="flex flex-wrap items-center gap-2 text-xs">
- <span className="rounded-md border border-warning/30 bg-warning/60 /20 px-2 py-1 text-warning ">
+ <span className="rounded-md border border-warning/20 bg-warning/10 /20 px-2 py-1 text-warning ">
  الاتجاه: {result.direction}
  </span>
  <span className="rounded-md border border-slate-500/30 bg-muted/40 px-2 py-1 text-muted-foreground" dir="ltr">
  المخاطرة/سهم: {(result.perShareRisk ?? 0).toFixed(3)} ج
  </span>
  </div>
- <div className="rounded-md border border-warning/40 bg-warning/60 /20 p-3 text-xs text-warning ">
+ <div className="rounded-md border border-warning/20 bg-warning/10 /20 p-3 text-xs text-warning ">
  💡 <span className="font-semibold">ملاحظة عملية:</span> لو الحجم الأقصى أكبر من سيولة السهم في الـ order book → قلّل الكمية أو اختار stop أقرب لسعر الدخول. ما تدخلش بحجم يعادل أكتر من 10% من سيولة السهم اليومية.
  </div>
  </div>
@@ -2331,7 +2331,7 @@ function BiasDetectorQuiz() {
  className={cn(
  'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
  answers[q.id] === true
- ? 'border-loss/60 bg-loss/15 text-loss '
+ ? 'border-loss/20 bg-loss/15 text-loss '
  : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60',
  )}
  >
@@ -2343,7 +2343,7 @@ function BiasDetectorQuiz() {
  className={cn(
  'flex-1 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors',
  answers[q.id] === false
- ? 'border-profit/60 bg-profit/15 text-profit '
+ ? 'border-profit/20 bg-profit/15 text-profit '
  : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60',
  )}
  >
@@ -2376,7 +2376,7 @@ function BiasDetectorQuiz() {
  {submitted && (
  <div className="space-y-3">
  {dominantBias ? (
- <div className="rounded-md border border-loss/40 bg-loss/10 p-4">
+ <div className="rounded-md border border-loss/20 bg-loss/10 p-4">
  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-loss ">
  <AlertTriangle className="h-4 w-4" />
  تحيزك المهيمن: {dominantBias[0]}
@@ -2389,7 +2389,7 @@ function BiasDetectorQuiz() {
  </p>
  </div>
  ) : (
- <div className="rounded-md border border-profit/40 bg-profit/10 p-4">
+ <div className="rounded-md border border-profit/20 bg-profit/10 p-4">
  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-profit ">
  <CheckCircle2 className="h-4 w-4" />
  ممتاز — لا يوجد تحيز مهيمن واضح
@@ -2419,7 +2419,7 @@ function BiasDetectorQuiz() {
  </div>
  )}
 
- <div className="rounded-md border border-warning/30 bg-warning/60 /20 p-3 text-xs text-warning ">
+ <div className="rounded-md border border-warning/20 bg-warning/10 /20 p-3 text-xs text-warning ">
  <span className="font-semibold">إجمالي إجابات &quot;نعم&quot;:</span> {scores.yesCount} من {BIAS_QUESTIONS.length}.{' '}
  {scores.yesCount >= 4
  ? '⚠️ درجة عالية — راجع يومياتك وطبّق SOPs بصرامة أكبر.'
@@ -2437,7 +2437,7 @@ function BiasDetectorQuiz() {
 function PracticalToolsView() {
  return (
  <div className="space-y-6">
- <div className="rounded-lg border border-warning/30 bg-warning/20 px-4 py-3 text-xs text-warning sm:px-6">
+ <div className="rounded-lg border border-warning/20 bg-warning/20 px-4 py-3 text-xs text-warning sm:px-6">
  <span className="font-semibold">🧮 الأدوات العملية —</span> حاسبتان عمليتان لكل مستثمر: الأولى
  تحسب حجم الصفقة المثالي بناءً على المخاطرة المسموحة، والثانية تكشف تحيزاتك السلوكية المهيمنة
  وتوجّهك للدرس المناسب.
@@ -2459,7 +2459,7 @@ function PracticalToolsView() {
 function AdvancedLabView() {
  return (
  <div className="space-y-6">
- <div className="rounded-lg border border-profit/30 bg-profit/20 px-4 py-3 text-xs text-profit sm:px-6" dir="rtl">
+ <div className="rounded-lg border border-profit/20 bg-profit/20 px-4 py-3 text-xs text-profit sm:px-6" dir="rtl">
  <span className="font-semibold">🔬 المختبر المتقدم —</span> 5 رسوم بيانية تفاعلية + محاكيان
  متقدمان. كل أداة بتعلمك مفهوم محدد: مراحل السوق، تدفّق الأوامر، أنماط الشموع،
  حاسبة المخاطرة/العائد، توزيع المحفظة، محاكاة Monte Carlo، ومقارنة استراتيجيات

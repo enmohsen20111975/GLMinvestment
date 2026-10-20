@@ -317,7 +317,7 @@ export function StockInfographicModal({
  href={OFFICIAL_LINKS.bot}
  target="_blank"
  rel="noopener noreferrer"
- className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-warning/40 bg-warning/10 hover:bg-warning/20 text-warning text-sm font-medium transition-colors no-underline"
+ className="mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-warning/20 bg-warning/10 hover:bg-warning/20 text-warning text-sm font-medium transition-colors no-underline"
  >
  <Bot className="w-4 h-4" />
  افتح بوت تحليل الأسهم

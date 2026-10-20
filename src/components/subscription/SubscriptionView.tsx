@@ -607,7 +607,7 @@ export function SubscriptionView() {
  variant="outline"
  size="sm"
  onClick={handleDismiss}
- className="gap-2 border-profit/30 hover:bg-profit/10 text-white font-bold transition-all shadow-sm"
+ className="gap-2 border-profit/20 hover:bg-profit/10 text-white font-bold transition-all shadow-sm"
  title="إغلاق والعودة للشاشة السابقة"
  >
  <X className="w-4 h-4 text-profit" />
@@ -637,7 +637,7 @@ export function SubscriptionView() {
  <span>تسجيل الدخول / إنشاء حساب</span>
  </Button>
  ) : (
- <Badge variant="outline" className="text-xs border-profit/40 text-profit bg-profit/5">
+ <Badge variant="outline" className="text-xs border-profit/20 text-profit bg-profit/5">
  مرحباً {user?.username || user?.email?.split('@')[0]}
  </Badge>
  )}
@@ -765,7 +765,7 @@ export function SubscriptionView() {
 
  {/* Promo Code Card */}
  <div className="max-w-3xl mx-auto px-4 pb-10">
- <Card className="overflow-hidden border-2 border-profit/30 shadow-lg shadow-emerald-500/5 bg-background/80 backdrop-blur-sm">
+ <Card className="overflow-hidden border-2 border-profit/20 shadow-lg shadow-emerald-500/5 bg-background/80 backdrop-blur-sm">
  <CardHeader className="pb-3">
  <div className="flex items-center gap-3">
  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-profit to-whale shadow-md shadow-emerald-500/30">
@@ -961,7 +961,7 @@ export function SubscriptionView() {
  {/* Payment Options Modal */}
  {showPaymentOptions && selectedPlan && (
  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
- <Card className="w-full max-w-md shadow-2xl border-2 border-profit/40">
+ <Card className="w-full max-w-md shadow-2xl border-2 border-profit/20">
  <CardHeader className="text-center pb-3">
  <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-profit to-whale flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/30">
  <CreditCard className="w-8 h-8 text-foreground" />
@@ -978,7 +978,7 @@ export function SubscriptionView() {
  </CardHeader>
  <CardContent className="space-y-4">
  {/* Free Trial Button */}
- <div className="p-4 rounded-xl border border-profit/40 bg-profit/5">
+ <div className="p-4 rounded-xl border border-profit/20 bg-profit/5">
  <div className="flex items-center gap-3 mb-1">
  <Gift className="w-5 h-5 text-profit " />
  <span className="font-bold text-sm">تجربة مجانية</span>
@@ -1132,7 +1132,7 @@ function PlanCard({
  ? 'border-2 border-profit shadow-xl shadow-emerald-500/10'
  : plan.pro
  ? 'border-2 border-purple-500 dark:border-purple-600 shadow-xl shadow-purple-500/10'
- : 'border border-border/80 hover:border-profit/50'
+ : 'border border-border/80 hover:border-profit/20'
  }`}
  >
  {/* Top Badges */}
@@ -1206,7 +1206,7 @@ function PlanCard({
  <span className="text-sm text-muted-foreground line-through font-mono">
  {billingPeriod === 'yearly' ? plan.originalPrice * 10 : plan.originalPrice} {market.currencyAr}
  </span>
- <Badge className="bg-loss/15 text-loss border border-loss/30 text-xs font-black px-1.5 py-0">
+ <Badge className="bg-loss/15 text-loss border border-loss/20 text-xs font-black px-1.5 py-0">
  وفر {plan.discountPct}% 🔥
  </Badge>
  </div>
@@ -1724,7 +1724,7 @@ function WalletPaymentModal({
  <CardContent className="space-y-4">
  {redirectUrl ? (
  <div className="text-center space-y-3 py-4">
- <div className="w-14 h-14 mx-auto rounded-full bg-profit /30 flex items-center justify-center">
+ <div className="w-14 h-14 mx-auto rounded-full bg-profit/10 flex items-center justify-center">
  <Loader2 className="w-7 h-7 text-profit animate-spin" />
  </div>
  <p className="font-bold text-sm text-profit">جاري تحويلك لصفحة الدفع...</p>

@@ -240,13 +240,13 @@ function InvestmentDecisionInsight({
  <div className="flex flex-wrap items-center gap-1.5">
  {/* Sentiment Badge */}
  {sentimentKey === 'positive' && (
- <Badge className="bg-profit/10 text-profit border-profit/30 text-xs gap-1">
+ <Badge className="bg-profit/10 text-profit border-profit/20 text-xs gap-1">
  <ArrowUpRight className="w-3 h-3" />
  {t('news.feed.insight.sentimentPositive')}
  </Badge>
  )}
  {sentimentKey === 'negative' && (
- <Badge className="bg-loss/10 text-loss border-loss/30 text-xs gap-1">
+ <Badge className="bg-loss/10 text-loss border-loss/20 text-xs gap-1">
  <ArrowDownRight className="w-3 h-3" />
  {t('news.feed.insight.sentimentNegative')}
  </Badge>
@@ -260,17 +260,17 @@ function InvestmentDecisionInsight({
 
  {/* Action Badge */}
  {(action === 'buy' || action === 'شراء') && (
- <Badge className="bg-profit/15 text-profit border-profit/30 text-xs">
+ <Badge className="bg-profit/15 text-profit border-profit/20 text-xs">
  {t('news.feed.insight.buyOpportunity')}
  </Badge>
  )}
  {(action === 'sell' || action === 'بيع') && (
- <Badge className="bg-loss/15 text-loss border-loss/30 text-xs">
+ <Badge className="bg-loss/15 text-loss border-loss/20 text-xs">
  {t('news.feed.insight.sellSignal')}
  </Badge>
  )}
  {(action === 'monitor' || action === 'مراقبة') && (
- <Badge className="bg-warning/15 text-warning border-warning/30 text-xs">
+ <Badge className="bg-warning/15 text-warning border-warning/20 text-xs">
  {t('news.feed.insight.monitor')}
  </Badge>
  )}
@@ -842,7 +842,7 @@ export function NewsFeedView() {
 
  {/* Error state */}
  {error && !loading && (
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-6 text-center space-y-2">
  <p className="text-sm font-semibold text-loss ">{error}</p>
  <Button variant="outline" size="sm" onClick={fetchNews}>

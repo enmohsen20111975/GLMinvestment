@@ -149,25 +149,25 @@ const REFRESH_INTERVAL = 60; // 60s — quieter than LiveMonitor (10s) since thi
 const ADVICE_TYPE_INFO: Record<string, { label_ar: string; color_class: string; icon_bg: string; priority: number }> = {
  EXIT_RADAR: {
  label_ar: 'إشارة خروج',
- color_class: 'text-loss bg-loss /50 border-loss ',
+ color_class: 'text-loss bg-loss/10 border-loss ',
  icon_bg: 'bg-loss',
  priority: 100,
  },
  STOP_LOSS: {
  label_ar: 'وقف خسارة',
- color_class: 'text-loss bg-loss /50 border-loss ',
+ color_class: 'text-loss bg-loss/10 border-loss ',
  icon_bg: 'bg-loss',
  priority: 90,
  },
  TAKE_PROFIT: {
  label_ar: 'جني أرباح',
- color_class: 'text-profit bg-profit /50 border-profit ',
+ color_class: 'text-profit bg-profit/10 border-profit ',
  icon_bg: 'bg-profit',
  priority: 70,
  },
  APPROACHING_TARGET: {
  label_ar: 'اقتراب من الهدف',
- color_class: 'text-warning bg-warning /50 border-warning ',
+ color_class: 'text-warning bg-warning/10 border-warning ',
  icon_bg: 'bg-warning',
  priority: 60,
  },

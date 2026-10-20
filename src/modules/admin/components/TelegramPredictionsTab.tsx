@@ -175,7 +175,7 @@ export function TelegramPredictionsTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -197,7 +197,7 @@ export function TelegramPredictionsTab() {
 
  {/* Audit columns missing alert */}
  {data && !auditOk && (
- <Card className="border-warning bg-warning /20 /40">
+ <Card className="border-warning bg-warning/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
  <div>
@@ -249,7 +249,7 @@ export function TelegramPredictionsTab() {
 
  {/* Error */}
  {!loading && data && !data.success && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>
@@ -277,7 +277,7 @@ export function TelegramPredictionsTab() {
  {pendingToday.map((p) => (
  <div
  key={p.id}
- className="p-3 rounded-lg border border-warning bg-warning /20 /40 flex items-center gap-3 flex-wrap"
+ className="p-3 rounded-lg border border-warning bg-warning/20 /40 flex items-center gap-3 flex-wrap"
  >
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -436,7 +436,7 @@ export function TelegramPredictionsTab() {
  </div>
 
  {/* Rendered message preview (mirrors Telegram layout) */}
- <div className="rounded-lg border border-profit bg-profit /20 /40 p-3">
+ <div className="rounded-lg border border-profit bg-profit/20 /40 p-3">
  <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
  <MessageSquare className="w-3 h-3" />
  معاينة الرسالة

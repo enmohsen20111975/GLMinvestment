@@ -121,7 +121,7 @@ export function ValidationMonitorTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -179,7 +179,7 @@ export function ValidationMonitorTab() {
 
  {/* Error */}
  {!loading && data && !data.success && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>
@@ -195,7 +195,7 @@ export function ValidationMonitorTab() {
 
  {/* Critical alert */}
  {data?.success && invalidPct > 30 && (
- <Card className="border-loss bg-loss /20 /40">
+ <Card className="border-loss bg-loss/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
  <div>
@@ -369,7 +369,7 @@ export function ValidationMonitorTab() {
  {data.recent_nullified.slice(0, 30).map((n, i) => (
  <div
  key={i}
- className="p-2 rounded-lg border border-warning bg-warning /20 /40 text-xs"
+ className="p-2 rounded-lg border border-warning bg-warning/20 /40 text-xs"
  >
  <div className="flex items-center justify-between mb-1">
  <div className="flex items-center gap-2">

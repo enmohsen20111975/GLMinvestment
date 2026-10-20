@@ -70,7 +70,7 @@ export function DesktopNotificationPrompt() {
  return (
  <div
  dir="rtl"
- className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background/95 dark:bg-zinc-900/95 border border-profit/40 border-r-4 border-r-emerald-500 shadow-2xl rounded-2xl p-4 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-300"
+ className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 bg-background/95 dark:bg-zinc-900/95 border border-profit/20 border-r-4 border-r-emerald-500 shadow-2xl rounded-2xl p-4 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-300"
  >
  <div className="flex items-start gap-3">
  <div className="w-9 h-9 rounded-full bg-profit/10 text-profit flex items-center justify-center flex-shrink-0">

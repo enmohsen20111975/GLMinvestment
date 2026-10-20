@@ -57,11 +57,11 @@ interface Props {
 // ─── خريطة ألوان الإشارة الكنسية (مطابقة Pine L895) ─────────────────────────
 const SIGNAL_STYLES: Record<string, { bg: string; text: string; border: string; icon: React.ReactNode }> = {
  STRONG_BUY: { bg: 'bg-profit', text: 'text-foreground', border: 'border-profit', icon: <TrendingUp className="w-4 h-4" /> },
- BUY: { bg: 'bg-profit /40', text: 'text-profit ', border: 'border-profit ', icon: <TrendingUp className="w-4 h-4" /> },
- ACCUMULATE: { bg: 'bg-whale /40', text: 'text-whale ', border: 'border-whale ', icon: <Layers className="w-4 h-4" /> },
- HOLD: { bg: 'bg-warning /40', text: 'text-warning ', border: 'border-warning ', icon: <Minus className="w-4 h-4" /> },
- REDUCE: { bg: 'bg-warning /40', text: 'text-warning ', border: 'border-orange-300 dark:border-orange-700', icon: <TrendingDown className="w-4 h-4" /> },
- SELL: { bg: 'bg-loss /40', text: 'text-loss ', border: 'border-loss ', icon: <TrendingDown className="w-4 h-4" /> },
+ BUY: { bg: 'bg-profit/10', text: 'text-profit ', border: 'border-profit ', icon: <TrendingUp className="w-4 h-4" /> },
+ ACCUMULATE: { bg: 'bg-whale/10', text: 'text-whale ', border: 'border-whale ', icon: <Layers className="w-4 h-4" /> },
+ HOLD: { bg: 'bg-warning/10', text: 'text-warning ', border: 'border-warning ', icon: <Minus className="w-4 h-4" /> },
+ REDUCE: { bg: 'bg-warning/10', text: 'text-warning ', border: 'border-orange-300 dark:border-orange-700', icon: <TrendingDown className="w-4 h-4" /> },
+ SELL: { bg: 'bg-loss/10', text: 'text-loss ', border: 'border-loss ', icon: <TrendingDown className="w-4 h-4" /> },
  STRONG_SELL:{ bg: 'bg-loss', text: 'text-foreground', border: 'border-loss', icon: <TrendingDown className="w-4 h-4" /> },
 };
 
@@ -73,22 +73,22 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
  }
  const s = state.toLowerCase();
  if (s.includes('مؤسس') && s.includes('شراء')) {
- return { bg: 'bg-profit /40', text: 'text-profit ', icon: <Building2 className="w-4 h-4" />, label: state };
+ return { bg: 'bg-profit/10', text: 'text-profit ', icon: <Building2 className="w-4 h-4" />, label: state };
  }
  if (s.includes('مؤسس') && (s.includes('بيع') || s.includes('تصريف'))) {
- return { bg: 'bg-loss /40', text: 'text-loss ', icon: <Building2 className="w-4 h-4" />, label: state };
+ return { bg: 'bg-loss/10', text: 'text-loss ', icon: <Building2 className="w-4 h-4" />, label: state };
  }
  if (s.includes('أفراد') && s.includes('شراء')) {
  return { bg: 'bg-sky-100 dark:bg-sky-900/40', text: 'text-sky-700 dark:text-sky-300', icon: <User className="w-4 h-4" />, label: state };
  }
  if (s.includes('أفراد') && (s.includes('بيع'))) {
- return { bg: 'bg-warning /40', text: 'text-warning ', icon: <User className="w-4 h-4" />, label: state };
+ return { bg: 'bg-warning/10', text: 'text-warning ', icon: <User className="w-4 h-4" />, label: state };
  }
  if (s.includes('مختلط') && (s.includes('شراء') || s.includes('ميل شرائي'))) {
- return { bg: 'bg-whale /40', text: 'text-whale ', icon: <Users2 className="w-4 h-4" />, label: state };
+ return { bg: 'bg-whale/10', text: 'text-whale ', icon: <Users2 className="w-4 h-4" />, label: state };
  }
  if (s.includes('مختلط') && (s.includes('بيع') || s.includes('ميل بيعي'))) {
- return { bg: 'bg-warning /40', text: 'text-warning ', icon: <Users2 className="w-4 h-4" />, label: state };
+ return { bg: 'bg-warning/10', text: 'text-warning ', icon: <Users2 className="w-4 h-4" />, label: state };
  }
  return { bg: 'bg-muted', text: 'text-muted-foreground', icon: <Users2 className="w-4 h-4" />, label: state };
 }
@@ -96,9 +96,9 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
 // ─── خريطة Money Flow (مطابقة Pine L353-366) ────────────────────────────────
 const MONEY_FLOW_STYLES: Record<string, string> = {
  'سيولة داخلة قوية': 'bg-profit text-white',
- 'سيولة داخلة': 'bg-profit text-profit /40 ',
- 'متوازنة': 'bg-warning text-warning /40 ',
- 'سيولة خارجة': 'bg-loss text-loss /40 ',
+ 'سيولة داخلة': 'bg-profit text-profit/40 ',
+ 'متوازنة': 'bg-warning text-warning/40 ',
+ 'سيولة خارجة': 'bg-loss text-loss/40 ',
  'سيولة خارجة قوية': 'bg-loss text-white',
 };
 
@@ -145,7 +145,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  // لو لا يوجد توقع طازج → اعرض بانر مبسّط (لا signal، لا levels — فقط تحذير)
  if (!isFreshPrediction || !prediction) {
  return (
- <div className="mb-3 rounded-xl border-2 border-warning/40 bg-warning/50 /10 p-3">
+ <div className="mb-3 rounded-xl border-2 border-warning/20 bg-warning/10 /10 p-3">
  <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <AlertTriangle className="w-4 h-4 text-warning" />
  <span className="font-bold text-warning ">
@@ -204,7 +204,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  <span>شراء: <strong className="font-mono text-profit">{buyPct !== null ? `${(buyPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
  <span>بيع: <strong className="font-mono text-loss">{sellPct !== null ? `${(sellPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
  </div>
- <div className="h-2 rounded-full overflow-hidden bg-loss /30 flex">
+ <div className="h-2 rounded-full overflow-hidden bg-loss/10 flex">
  {buyPct !== null && (
  <div className="h-full bg-gradient-to-l from-profit to-profit" style={{ width: `${Math.min(100, Math.max(0, buyPct))}%` }} />
  )}
@@ -313,7 +313,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  </span>
  )}
  {radar?.under_microscope && (
- <Badge className="bg-warning text-warning /40 text-xs font-bold px-2 py-0.5 rounded-full border-0">
+ <Badge className="bg-warning text-warning/40 text-xs font-bold px-2 py-0.5 rounded-full border-0">
  🔬 تحت المجهر
  </Badge>
  )}
@@ -321,7 +321,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
 
  {/* ─── التعليق التحليلي العربي (مطابق Pine L919-951 analysis_reason) ─── */}
  {prediction?.analysis_reason && (
- <div className="px-4 py-2.5 border-t border-profit/20 bg-profit/40 /15">
+ <div className="px-4 py-2.5 border-t border-profit/20 bg-profit/10 /15">
  <div className="text-xs font-bold text-profit uppercase tracking-wider mb-1 flex items-center gap-1">
  <Sparkles className="w-3 h-3" /> التعليق التحليلي
  </div>

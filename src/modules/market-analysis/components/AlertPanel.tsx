@@ -329,7 +329,7 @@ function AlertRow({
  </Badge>
  )}
  {recentlyFired && (
- <Badge className="text-xs bg-warning/60 text-warning border border-warning animate-pulse">
+ <Badge className="text-xs bg-warning/10 text-warning border border-warning animate-pulse">
  🔔 اشتعل
  </Badge>
  )}
@@ -363,7 +363,7 @@ function AlertRow({
  variant="ghost"
  size="sm"
  onClick={onRemove}
- className="h-7 w-7 p-0 text-zinc-500 hover:text-loss hover:bg-loss/40 shrink-0"
+ className="h-7 w-7 p-0 text-zinc-500 hover:text-loss hover:bg-loss/10 shrink-0"
  >
  <Trash2 className="h-3.5 w-3.5" />
  </Button>

@@ -55,10 +55,10 @@ interface ApiResponse {
 }
 
 const RECOMMENDATION_AR: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
- reduce_exposure: { label: 'تقليل الانكشاف', color: 'text-loss bg-loss/10 border-loss/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
+ reduce_exposure: { label: 'تقليل الانكشاف', color: 'text-loss bg-loss/10 border-loss/20', icon: <TrendingDown className="h-3.5 w-3.5" /> },
  reduce_weight: { label: 'تقليل الوزن', color: 'text-warning bg-warning/10 border-orange-500/30', icon: <TrendingDown className="h-3.5 w-3.5" /> },
- increase_weight: { label: 'زيادة الوزن', color: 'text-profit bg-profit/10 border-profit/30', icon: <TrendingUp className="h-3.5 w-3.5" /> },
- add_filter: { label: 'إضافة فلتر', color: 'text-warning bg-warning/10 border-warning/30', icon: <Filter className="h-3.5 w-3.5" /> },
+ increase_weight: { label: 'زيادة الوزن', color: 'text-profit bg-profit/10 border-profit/20', icon: <TrendingUp className="h-3.5 w-3.5" /> },
+ add_filter: { label: 'إضافة فلتر', color: 'text-warning bg-warning/10 border-warning/20', icon: <Filter className="h-3.5 w-3.5" /> },
 };
 
 const SORT_OPTIONS = [
@@ -236,7 +236,7 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
  ))}
  </div>
  ) : error ? (
- <Card className="border-loss/40">
+ <Card className="border-loss/20">
  <CardContent className="p-6 text-center space-y-2">
  <AlertCircle className="h-6 w-6 text-loss mx-auto" />
  <p className="text-sm text-loss">{error}</p>
@@ -289,8 +289,8 @@ function LessonCard({ lesson }: { lesson: LearnedLesson }) {
  className={cn(
  'overflow-hidden transition-shadow hover:shadow-md',
  isFailure
- ? 'border-loss/30 bg-loss/[0.02]'
- : 'border-profit/30 bg-profit/[0.02]',
+ ? 'border-loss/20 bg-loss/[0.02]'
+ : 'border-profit/20 bg-profit/[0.02]',
  )}
  >
  <CardHeader className="pb-2 pt-3 px-4">
@@ -320,8 +320,8 @@ function LessonCard({ lesson }: { lesson: LearnedLesson }) {
  className={cn(
  'flex-shrink-0 text-xs gap-1',
  isFailure
- ? 'border-loss/40 text-loss bg-loss/5'
- : 'border-profit/40 text-profit bg-profit/5',
+ ? 'border-loss/20 text-loss bg-loss/5'
+ : 'border-profit/20 text-profit bg-profit/5',
  )}
  >
  {isFailure ? 'فشل' : 'نجاح'}

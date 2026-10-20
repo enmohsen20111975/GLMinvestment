@@ -50,7 +50,7 @@ export function PinnableWidget({ id, title, children, className }: PinnableWidge
  className={cn(
  'inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors min-w-[44px] min-h-[44px] sm:min-h-[28px] sm:min-w-[28px]',
  isPinned
- ? 'text-profit bg-profit /40 hover:bg-profit dark:hover:bg-profit/60'
+ ? 'text-profit bg-profit/10 hover:bg-profit dark:hover:bg-profit/10'
  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
  )}
  aria-pressed={isPinned}

@@ -103,7 +103,7 @@ function ReportHeader({
 }) {
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-warning/40"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:border-warning/20"
  dir="rtl"
  >
  {/* Top gold accent line */}
@@ -128,7 +128,7 @@ function ReportHeader({
  <div className="flex items-center justify-end gap-2 mt-1">
  <Badge
  variant="outline"
- className="text-xs font-bold border-profit/40 text-profit bg-profit/10"
+ className="text-xs font-bold border-profit/20 text-profit bg-profit/10"
  >
  {market} · LIVE
  </Badge>
@@ -155,10 +155,10 @@ function KpiTile({
  subtext?: string;
 }) {
  const toneClasses: Record<string, string> = {
- positive: 'border-profit/30 bg-profit/10 text-profit',
- negative: 'border-loss/30 bg-loss/10 text-loss',
- warning: 'border-warning/30 bg-warning/10 text-warning',
- gold: 'border-warning/40 bg-gradient-to-br from-warning/15 to-warning/5 text-warning',
+ positive: 'border-profit/20 bg-profit/10 text-profit',
+ negative: 'border-loss/20 bg-loss/10 text-loss',
+ warning: 'border-warning/20 bg-warning/10 text-warning',
+ gold: 'border-warning/20 bg-gradient-to-br from-warning/15 to-warning/5 text-warning',
  neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
  };
  return (
@@ -283,7 +283,7 @@ function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
  const bg = change >= 0
  ? `rgba(16, 185, 129, ${0.15 + intensity * 0.45})`
  : `rgba(239, 68, 68, ${0.15 + intensity * 0.45})`;
- const border = change >= 0 ? 'border-profit/40' : 'border-loss/40';
+ const border = change >= 0 ? 'border-profit/20' : 'border-loss/20';
  return (
  <div
  key={`${s.name ?? 'sector'}-${i}`}
@@ -435,7 +435,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  onClick={handleExportPng}
  disabled={exportingPng}
  variant="outline"
- className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
+ className="gap-2 border-warning/20 text-warning hover:bg-warning/10 hover:text-warning"
  >
  <Download className="w-4 h-4" />
  {exportingPng ? 'جارٍ التصدير...' : 'تصدير صورة (PNG)'}
@@ -443,7 +443,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  <Button
  onClick={handlePrint}
  variant="outline"
- className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit"
+ className="gap-2 border-profit/20 text-profit hover:bg-profit/10 hover:text-profit"
  >
  <Printer className="w-4 h-4" />
  طباعة / PDF
@@ -523,7 +523,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  <section aria-label="أكثر الأسهم تحركاً">
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
  {/* Gainers */}
- <Card className="overflow-hidden border-profit/30 bg-[#0d1320]">
+ <Card className="overflow-hidden border-profit/20 bg-[#0d1320]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-profit">
  <TrendingUp className="w-5 h-5" />
@@ -552,7 +552,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  </Card>
 
  {/* Losers */}
- <Card className="overflow-hidden border-loss/30 bg-[#0d1320]">
+ <Card className="overflow-hidden border-loss/20 bg-[#0d1320]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-loss">
  <TrendingDown className="w-5 h-5" />
@@ -603,7 +603,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  {/* AI Summary (Python-generated text) */}
  {report.content && (
  <section aria-label="الملخص الذكي">
- <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
+ <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a]">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Activity className="w-5 h-5" />

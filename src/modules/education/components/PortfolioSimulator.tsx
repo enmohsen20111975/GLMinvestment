@@ -251,8 +251,8 @@ export function PortfolioSimulator() {
  className={cn(
  'rounded-lg border p-3 text-center',
  isBalanced
- ? 'border-profit/40 bg-profit/10'
- : 'border-warning/40 bg-warning/10',
+ ? 'border-profit/20 bg-profit/10'
+ : 'border-warning/20 bg-warning/10',
  )}
  >
  <div className="text-xs font-semibold text-muted-foreground">إجمالي النِسب</div>
@@ -339,7 +339,7 @@ export function PortfolioSimulator() {
  >
  {/* Outcome percentiles */}
  <div className="grid grid-cols-3 gap-2">
- <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+ <div className="rounded-lg border border-loss/20 bg-loss/10 p-3 text-center">
  <div className="flex items-center justify-center gap-1 text-xs font-semibold text-loss ">
  <TrendingDown className="h-3 w-3" /> سيناريو متشائم (P5)
  </div>
@@ -361,7 +361,7 @@ export function PortfolioSimulator() {
  {(((result.p50 - capital) / capital) * 100).toFixed(1)}%
  </div>
  </div>
- <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-center">
  <div className="flex items-center justify-center gap-1 text-xs font-semibold text-profit ">
  <TrendingUp className="h-3 w-3" /> سيناريو متفائل (P95)
  </div>
@@ -407,7 +407,7 @@ export function PortfolioSimulator() {
 
  {/* Educational takeaway */}
  <div
- className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-xs leading-relaxed text-profit "
+ className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-xs leading-relaxed text-profit "
  dir="rtl"
  >
  <div className="mb-1 font-bold">درس المحاكاة:</div>
@@ -419,7 +419,7 @@ export function PortfolioSimulator() {
  التنويع يخفض σ دون خفض μ كثيرًا → Sharpe أعلى.
  </div>
 
- <div className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-xs text-warning /20 " dir="rtl">
+ <div className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning/20 " dir="rtl">
  <span className="font-semibold">إخلاء مسؤولية:</span> المحاكاة
  تعليمية بحتة باستخدام تقلبات تاريخية تقديرية — ليست نصيحة استثمارية مرخصة.
  الأداء السابق لا يضمن المستقبلي.

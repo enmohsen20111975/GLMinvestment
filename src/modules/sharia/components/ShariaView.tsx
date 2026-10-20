@@ -272,11 +272,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-profit text-profit /50 border-profit ',
+ 'bg-profit text-profit/50 border-profit ',
  non_compliant:
- 'bg-loss text-loss /50 border-loss ',
+ 'bg-loss text-loss/50 border-loss ',
  doubtful:
- 'bg-warning text-warning /50 border-warning ',
+ 'bg-warning text-warning/50 border-warning ',
  not_available:
  'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -333,7 +333,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
  {STATUS_EMOJI[status]} {STATUS_LABELS_AR[status]}
  </span>
  {row.is_halal_consensus === 1 && (
- <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning /40 ">
+ <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning/40 ">
  <Award className="w-2.5 h-2.5 inline ml-0.5" />
  إجماع
  </span>
@@ -438,7 +438,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
  variant="ghost"
  size="sm"
  onClick={onClose}
- className="text-profit hover:bg-profit/40 hover:text-foreground"
+ className="text-profit hover:bg-profit/10 hover:text-foreground"
  aria-label="إغلاق"
  >
  ✕
@@ -455,7 +455,7 @@ function ShariaStockDetailModal({ symbol, onClose }: StockDetailModalProps) {
  </div>
  )}
  {error && !loading && (
- <Card className="border-loss /50">
+ <Card className="border-loss/20">
  <CardContent className="p-4 flex items-center gap-2 text-sm text-loss ">
  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
  <span>{error}</span>
@@ -487,15 +487,15 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
  return (
  <>
  {/* Headline */}
- <div className="rounded-lg border border-profit bg-profit/60 /20 p-3 space-y-1">
+ <div className="rounded-lg border border-profit bg-profit/10 /20 p-3 space-y-1">
  <div className="flex items-center gap-2 flex-wrap">
  <span className="font-bold text-profit text-lg">{symbol}</span>
  <Badge
  className={cn(
  'border',
  isHalal
- ? 'bg-profit text-profit /50 border-profit '
- : 'bg-warning text-warning /50 border-warning ',
+ ? 'bg-profit text-profit/50 border-profit '
+ : 'bg-warning text-warning/50 border-warning ',
  )}
  >
  {isHalal ? '🟢 متوافق (إجماع)' : '🟡 مشمول بالقائمة'}
@@ -586,7 +586,7 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
  className={cn(
  'rounded-md border p-2 flex items-center justify-between',
  r.is_primary === 1
- ? 'border-warning bg-warning /30 '
+ ? 'border-warning bg-warning/10 '
  : 'border-border bg-muted/30',
  )}
  >
@@ -626,8 +626,8 @@ function MetricTile({
  className={cn(
  'rounded-md border p-2 text-center',
  accent === 'emerald'
- ? 'border-profit bg-profit/40 /20'
- : 'border-warning bg-warning/40 /20',
+ ? 'border-profit bg-profit/10 /20'
+ : 'border-warning bg-warning/10 /20',
  )}
  >
  <div className="text-xs text-muted-foreground">{label}</div>
@@ -1072,8 +1072,8 @@ function Alert({ variant, children }: { variant: 'error' | 'info'; children: Rea
  className={cn(
  'flex items-start gap-2 p-3 rounded-md text-xs border',
  variant === 'error'
- ? 'border-loss bg-loss text-loss /30 '
- : 'border-warning bg-warning text-warning /30 ',
+ ? 'border-loss bg-loss text-loss/30 '
+ : 'border-warning bg-warning text-warning/30 ',
  )}
  >
  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -1336,16 +1336,16 @@ function StatPill({
  className={cn(
  'rounded-lg border p-2 flex items-center gap-2',
  accent === 'emerald'
- ? 'border-profit bg-profit/50 /20'
- : 'border-warning bg-warning/50 /20',
+ ? 'border-profit bg-profit/10 /20'
+ : 'border-warning bg-warning/10 /20',
  )}
  >
  <span
  className={cn(
  'flex h-7 w-7 items-center justify-center rounded-full',
  accent === 'emerald'
- ? 'bg-profit text-profit /40 '
- : 'bg-warning text-warning /40 ',
+ ? 'bg-profit text-profit/40 '
+ : 'bg-warning text-warning/40 ',
  )}
  >
  {icon}

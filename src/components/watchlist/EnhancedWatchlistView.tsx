@@ -611,7 +611,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
  {/* Header Row */}
  <div className="flex items-center justify-between mb-3">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-profit /30 flex items-center justify-center flex-shrink-0">
+ <div className="w-10 h-10 rounded-full bg-profit/10 flex items-center justify-center flex-shrink-0">
  <span className="text-sm font-bold text-profit ">
  {(item.ticker || '').slice(0, 2)}
  </span>
@@ -669,7 +669,7 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
  {hasGainLoss && item.purchase_price && item.quantity && (
  <div className={cn(
  'rounded-lg p-2.5',
- isProfitable ? 'bg-profit /30' : 'bg-loss /30'
+ isProfitable ? 'bg-profit/10' : 'bg-loss/10'
  )}>
  <p className="text-xs text-muted-foreground mb-0.5">الربح/الخسارة</p>
  <p className={cn(
@@ -681,8 +681,8 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
  <Badge className={cn(
  'text-xs px-1.5 mt-1',
  isProfitable
- ? 'bg-profit text-profit /30 '
- : 'bg-loss text-loss /30 '
+ ? 'bg-profit text-profit/30 '
+ : 'bg-loss text-loss/30 '
  )}>
  {formatPercent(item.gain_loss_percent)}
  </Badge>
@@ -847,7 +847,7 @@ export function EnhancedWatchlistView() {
  filterable: true,
  render: (item) => (
  <div className="flex items-center gap-2">
- <div className="w-9 h-9 rounded-full bg-profit /30 flex items-center justify-center flex-shrink-0">
+ <div className="w-9 h-9 rounded-full bg-profit/10 flex items-center justify-center flex-shrink-0">
  <span className="text-xs font-bold text-profit ">
  {(item.ticker || '').slice(0, 2)}
  </span>
@@ -955,8 +955,8 @@ export function EnhancedWatchlistView() {
  <Badge className={cn(
  'text-xs px-1.5',
  isProfitable
- ? 'bg-profit text-profit /30 '
- : 'bg-loss text-loss /30 '
+ ? 'bg-profit text-profit/30 '
+ : 'bg-loss text-loss/30 '
  )}>
  {formatPercent(item.gain_loss_percent)}
  </Badge>
@@ -1094,7 +1094,7 @@ export function EnhancedWatchlistView() {
  {/* Header */}
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-profit /30 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-full bg-profit/10 flex items-center justify-center">
  <Eye className="w-5 h-5 text-profit " />
  </div>
  <div>
@@ -1193,8 +1193,8 @@ export function EnhancedWatchlistView() {
  <Badge className={cn(
  'text-xs',
  summary.total_gain_loss >= 0
- ? 'bg-profit text-profit /30 '
- : 'bg-loss text-loss /30 '
+ ? 'bg-profit text-profit/30 '
+ : 'bg-loss text-loss/30 '
  )}>
  {formatPercent(summary.total_gain_loss_percent)}
  </Badge>
@@ -1304,8 +1304,8 @@ export function EnhancedWatchlistView() {
  filterable
  rowClassName={(item) => cn(
  'hover:bg-muted/50',
- hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-profit/50 /10',
- hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-loss/50 /10',
+ hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-profit/10 /10',
+ hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-loss/10 /10',
  )}
  />
  </CardContent>

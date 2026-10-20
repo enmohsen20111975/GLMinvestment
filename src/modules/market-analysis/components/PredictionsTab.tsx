@@ -253,7 +253,7 @@ function ProofPredictionsTableView({
  <tr
  key={stock.id || `proof-${stock.ticker}-${i}`}
  className={cn(
- "hover:bg-whale/40 dark:hover:bg-whale/20 transition-colors cursor-pointer",
+ "hover:bg-whale/10 dark:hover:bg-whale/20 transition-colors cursor-pointer",
  isHit ? "bg-profit/20 /10" : isStopped ? "bg-loss/10 /10" : ""
  )}
  onClick={() => loadStockDetail(stock.ticker)}
@@ -330,14 +330,14 @@ function ProofPredictionsTableView({
  🛑 ضربت وقف الخسارة
  </Badge>
  ) : (
- <Badge variant="outline" className="border-whale text-whale bg-whale/50 /30 gap-1 py-1 px-2.5 text-xs font-bold">
+ <Badge variant="outline" className="border-whale text-whale bg-whale/10 /30 gap-1 py-1 px-2.5 text-xs font-bold">
  ⏳ صفقة مستمرة (جارية)
  </Badge>
  )}
  {/* P6-PREDICTIONS: وسم "مبنية على المسار" لما الحالة تُحدد بالقيم التاريخية */}
  {pathBased && (
  <div className="mt-1">
- <span className="inline-block px-1.5 py-0.5 rounded text-xs font-medium bg-whale /60 text-whale border border-whale ">
+ <span className="inline-block px-1.5 py-0.5 rounded text-xs font-medium bg-whale/10 text-whale border border-whale ">
  مبنية على المسار
  </span>
  </div>
@@ -399,14 +399,14 @@ export function PreviousPredictionsArchive({
  {predictions.map((p, i) => {
  const statusColor =
  p.status === 'TARGET_HIT'
- ? 'bg-success text-success /40 border-success'
+ ? 'bg-success text-success/40 border-success'
  : p.status === 'TRAILING_PROFIT'
- ? 'bg-profit text-profit /40 border-profit'
+ ? 'bg-profit text-profit/40 border-profit'
  : p.status === 'STOPPED'
- ? 'bg-loss text-loss /40 border-loss'
+ ? 'bg-loss text-loss/40 border-loss'
  : p.status === 'EXPIRED'
  ? 'bg-slate-100 text-slate-800 dark:bg-slate-900/40 dark:text-slate-300 border-slate-300'
- : 'bg-warning text-warning /40 border-warning';
+ : 'bg-warning text-warning/40 border-warning';
  const ret = p.actual_return;
  const retColor = ret === null || ret === undefined
  ? 'text-muted-foreground'
@@ -676,7 +676,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  return (
  <div className="space-y-4">
  {/* 📢 ترويسة التوثيق وإثبات مصداقية التوقعات */}
- <Card className="border-2 border-whale/30 bg-gradient-to-r from-whale via-profit to-whale dark:from-whale/40 /40 dark:to-whale/40 shadow-sm">
+ <Card className="border-2 border-whale/20 bg-gradient-to-r from-whale via-profit to-whale dark:from-whale/40 /40 dark:to-whale/40 shadow-sm">
  <CardContent className="p-4 space-y-3">
  <div className="flex items-center justify-between gap-3 flex-wrap">
  <div>

@@ -280,7 +280,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
  return (
  <div className="space-y-4">
  {/* Status banner */}
- <Card className="bg-warning /30 border-warning ">
+ <Card className="bg-warning/10 border-warning ">
  <CardContent className="py-3 px-4">
  <div className="flex items-center gap-2 text-sm">
  <Calendar className="h-4 w-4 text-warning" />

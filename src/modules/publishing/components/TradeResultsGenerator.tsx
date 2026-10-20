@@ -396,7 +396,7 @@ export function TradeResultsGenerator({
  variant="outline"
  size="sm"
  onClick={() => setOpen(true)}
- className="gap-1.5 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
+ className="gap-1.5 border-warning/20 text-warning hover:bg-warning/10 hover:text-warning"
  >
  <span className="text-base leading-none">📊</span>
  <span className="hidden sm:inline">نتائج الصفقات</span>
@@ -444,13 +444,13 @@ export function TradeResultsGenerator({
  </div>
  <div className="flex items-center gap-2">
  {!engineAvailable && (
- <span className="inline-flex items-center gap-1 text-warning bg-warning/10 px-2 py-1 rounded border border-warning/30">
+ <span className="inline-flex items-center gap-1 text-warning bg-warning/10 px-2 py-1 rounded border border-warning/20">
  <AlertTriangle className="h-3 w-3" />
  محرك النتائج غير متاح بعد
  </span>
  )}
  {data?.stats && (
- <span className="inline-flex items-center gap-1 text-profit bg-profit/10 px-2 py-1 rounded border border-profit/30">
+ <span className="inline-flex items-center gap-1 text-profit bg-profit/10 px-2 py-1 rounded border border-profit/20">
  ✓ {data.stats.winning_closed} صفقة ناجحة
  </span>
  )}

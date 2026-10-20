@@ -144,19 +144,19 @@ interface WeeklyReportTabProps {
 const REGIME_STYLES: Record<string, { color: string; bg: string; border: string; emoji: string }> = {
  DEFENSIVE: {
  color: 'text-loss ',
- bg: 'bg-loss /40',
+ bg: 'bg-loss/10',
  border: 'border-loss ',
  emoji: '🛡️',
  },
  NORMAL: {
  color: 'text-warning ',
- bg: 'bg-warning /40',
+ bg: 'bg-warning/10',
  border: 'border-warning ',
  emoji: '⚖️',
  },
  AGGRESSIVE: {
  color: 'text-profit ',
- bg: 'bg-profit /40',
+ bg: 'bg-profit/10',
  border: 'border-profit ',
  emoji: '',
  },
@@ -284,7 +284,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  return (
  <Card className="p-8 text-center">
  <div className="flex flex-col items-center gap-3">
- <div className="h-12 w-12 rounded-full bg-profit /40 flex items-center justify-center">
+ <div className="h-12 w-12 rounded-full bg-profit/10 flex items-center justify-center">
  <FileText className="h-6 w-6 text-profit animate-pulse" />
  </div>
  <div>
@@ -395,7 +395,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
 
  {/* ─── Stock of the Week ─────────────────────────────────────── */}
  <Card className="border-profit ">
- <CardHeader className="pb-3 bg-profit/50 /20">
+ <CardHeader className="pb-3 bg-profit/10 /20">
  <CardTitle className="flex items-center gap-2 text-base">
  <Star className="h-5 w-5 text-warning fill-warning" />
  <span>{t('radar.weekly.stockOfWeek.title')}</span>
@@ -410,7 +410,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  <span className="text-2xl font-bold text-profit ">
  {sow.ticker}
  </span>
- <Badge variant="outline" className="bg-profit text-profit /30 ">
+ <Badge variant="outline" className="bg-profit text-profit/30 ">
  {sow.path_ar || sow.path || '—'}
  </Badge>
  </div>
@@ -675,7 +675,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  )}
 
  {/* ─── Subscribe CTA ─────────────────────────────────────────── */}
- <Card className="border-2 border-dashed border-profit bg-profit/30 /10">
+ <Card className="border-2 border-dashed border-profit bg-profit/10 /10">
  <CardContent className="p-4 text-center">
  <div className="flex items-center justify-center gap-2 mb-2">
  <Bell className="h-5 w-5 text-profit " />

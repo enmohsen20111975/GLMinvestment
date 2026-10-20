@@ -379,7 +379,7 @@ export function CryptoPortfolioView() {
  {/* Content */}
  <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 space-y-5">
  {error && (
- <div className="p-4 rounded-lg bg-loss /20 border border-loss flex items-start gap-3">
+ <div className="p-4 rounded-lg bg-loss/20 border border-loss flex items-start gap-3">
  <AlertCircle className="w-5 h-5 text-loss mt-0.5 flex-shrink-0" />
  <div>
  <p className="text-sm font-medium text-loss ">خطأ في تحميل الأسعار</p>
@@ -486,7 +486,7 @@ export function CryptoPortfolioView() {
  className="flex items-center justify-between p-4 rounded-lg border border-border/60 hover:bg-muted/30 transition-colors"
  >
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-warning /30 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
  <Bitcoin className="w-5 h-5 text-warning" />
  </div>
  <div>
@@ -529,7 +529,7 @@ export function CryptoPortfolioView() {
  </Card>
 
  {/* Disclaimer */}
- <div className="p-4 rounded-lg bg-warning /20 border border-warning ">
+ <div className="p-4 rounded-lg bg-warning/20 border border-warning ">
  <div className="flex items-start gap-3">
  <AlertCircle className="w-5 h-5 text-warning mt-0.5" />
  <div>

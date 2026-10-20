@@ -244,7 +244,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  if (error) {
  return (
  <div className="space-y-3">
- <Card className="border-loss/30 bg-loss/5">
+ <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-4 text-center">
  <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-loss" />
  <div className="text-sm font-medium text-loss ">
@@ -607,19 +607,19 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
 
  {/* ============= Rotation signals (optional) ============= */}
  {rotation && !rotation.error && (rotation.entering?.length > 0 || rotation.leaving?.length > 0) && (
- <div className="border border-whale/30 bg-whale/5 rounded-md p-3">
+ <div className="border border-whale/20 bg-whale/5 rounded-md p-3">
  <div className="flex items-center gap-2 mb-2">
  <Activity className="w-4 h-4 text-whale" />
  <span className="text-sm font-semibold">إشارات دوران السيولة</span>
  </div>
  <div className="flex flex-wrap gap-2">
  {rotation.entering?.map((r: any, i: number) => (
- <span key={`en-${i}`} className="text-xs px-2 py-1 rounded border bg-profit/10 border-profit/30 text-profit ">
+ <span key={`en-${i}`} className="text-xs px-2 py-1 rounded border bg-profit/10 border-profit/20 text-profit ">
  {r.sector} — السيولة راجعة ({r.days_rising} أيام صعود)
  </span>
  ))}
  {rotation.leaving?.map((r: any, i: number) => (
- <span key={`lv-${i}`} className="text-xs px-2 py-1 rounded border bg-loss/10 border-loss/30 text-loss ">
+ <span key={`lv-${i}`} className="text-xs px-2 py-1 rounded border bg-loss/10 border-loss/20 text-loss ">
  {r.sector} — السيولة بتهرب ({r.days_falling} أيام هبوط)
  </span>
  ))}
@@ -689,11 +689,11 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  {/* ملاحظة للعميل — شرح الألوان */}
  <div className="text-xs text-muted-foreground px-1 flex items-center gap-3 flex-wrap">
  <span className="inline-flex items-center gap-1">
- <span className="w-3 h-3 rounded bg-profit /50 border border-profit/40" />
+ <span className="w-3 h-3 rounded bg-profit/10 border border-profit/20" />
  تغير إيجابي
  </span>
  <span className="inline-flex items-center gap-1">
- <span className="w-3 h-3 rounded bg-loss /50 border border-loss/40" />
+ <span className="w-3 h-3 rounded bg-loss/10 border border-loss/20" />
  تغير سلبي
  </span>
  <span className="inline-flex items-center gap-1">

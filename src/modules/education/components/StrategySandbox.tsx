@@ -1831,7 +1831,7 @@ function GrahamNumberChart() {
  initial={{ opacity: 0, y: 8 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: 0.6 }}
- className="rounded-lg border border-profit/40 bg-profit/5 p-3 text-center"
+ className="rounded-lg border border-profit/20 bg-profit/5 p-3 text-center"
  >
  <div className="text-sm font-bold text-profit mb-1">
  معادلة Graham
@@ -1925,7 +1925,7 @@ function ExplanationPanel({ topic }: { topic: StrategyTopic }) {
  </div>
 
  {/* how to trade */}
- <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+ <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
  <div className="flex items-center gap-2 mb-2">
  <Target className="size-4 text-primary" />
  <h4 className="font-semibold text-sm">كيف تتداوله</h4>

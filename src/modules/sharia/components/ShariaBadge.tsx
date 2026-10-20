@@ -86,11 +86,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-profit text-profit /50 border-profit ',
+ 'bg-profit text-profit/50 border-profit ',
  non_compliant:
- 'bg-loss text-loss /50 border-loss ',
+ 'bg-loss text-loss/50 border-loss ',
  doubtful:
- 'bg-warning text-warning /50 border-warning ',
+ 'bg-warning text-warning/50 border-warning ',
  not_available:
  'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -396,7 +396,7 @@ function ShariaBadgePopoverOkBody({
  {summary.emoji} {summary.label}
  </span>
  {summary.isConsensus && (
- <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning /40 ">
+ <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning/40 ">
  إجماع
  </span>
  )}
@@ -404,13 +404,13 @@ function ShariaBadgePopoverOkBody({
 
  {/* Metrics grid */}
  <div className="grid grid-cols-3 gap-1.5 text-center">
- <div className="rounded border border-warning bg-warning/40 /20 p-1">
+ <div className="rounded border border-warning bg-warning/10 /20 p-1">
  <div className="text-xs text-muted-foreground">نسبة S&P</div>
  <div className="text-xs font-bold text-warning tabular-nums" dir="ltr">
  {formatPct(spPct ?? summary.purificationRatePct)}
  </div>
  </div>
- <div className="rounded border border-profit bg-profit/40 /20 p-1">
+ <div className="rounded border border-profit bg-profit/10 /20 p-1">
  <div className="text-xs text-muted-foreground">المصادر المتوافقة</div>
  <div className="text-xs font-bold text-profit tabular-nums" dir="ltr">
  {summary.compliantCount}/{summary.activeCount || 8}
@@ -447,7 +447,7 @@ function ShariaBadgePopoverOkBody({
  <Separator className="my-1" />
  <button
  onClick={onOpenSharia}
- className="w-full text-xs flex items-center justify-center gap-1 py-1 rounded bg-profit /40 text-profit hover:bg-profit dark:hover:bg-profit/40 border border-profit transition-colors"
+ className="w-full text-xs flex items-center justify-center gap-1 py-1 rounded bg-profit/10 text-profit hover:bg-profit dark:hover:bg-profit/10 border border-profit transition-colors"
  >
  <Calculator className="w-3 h-3" />
  افتح شاشة التوافق الشرعي

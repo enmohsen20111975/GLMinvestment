@@ -304,7 +304,7 @@ function EngineCard({
  {engine.name === 'Data Engine' && engine.scrapers && (
  <div className="grid grid-cols-3 gap-2">
  {Object.entries(engine.scrapers).map(([key, val]) => (
- <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-profit bg-profit /20' : 'border-border')}>
+ <div key={key} className={cn('p-2 rounded-lg border text-center', val.running ? 'border-profit bg-profit/20' : 'border-border')}>
  <div className="text-xs text-muted-foreground capitalize">{key}</div>
  <div className="flex items-center justify-center gap-1 mt-0.5">
  <div className={cn('w-2 h-2 rounded-full', val.running ? 'bg-profit' : 'bg-loss')} />
@@ -590,9 +590,9 @@ export function EnginesStatusTab() {
  <div className="flex items-center gap-4">
  <div className={cn(
  'w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold',
- healthScore === 100 ? 'bg-profit text-profit /30' :
- healthScore >= 66 ? 'bg-warning text-warning /30' :
- 'bg-loss text-loss /30'
+ healthScore === 100 ? 'bg-profit text-profit/30' :
+ healthScore >= 66 ? 'bg-warning text-warning/30' :
+ 'bg-loss text-loss/30'
  )}>
  {healthScore}%
  </div>
@@ -658,7 +658,7 @@ export function EnginesStatusTab() {
  <EngineCard
  engine={{ ...engines.data, pm2_name: engines.data.pm2_name || 'data-engine' }}
  icon={<Database className="w-6 h-6 text-primary" />}
- color="bg-primary /30"
+ color="bg-primary/10"
  expanded={expandedEngine === 'data'}
  onToggle={() => setExpandedEngine(expandedEngine === 'data' ? null : 'data')}
  onPm2Action={handlePm2Action}
@@ -669,7 +669,7 @@ export function EnginesStatusTab() {
  <EngineCard
  engine={{ ...engines.analysis, pm2_name: engines.analysis.pm2_name || 'python-backend' }}
  icon={<Brain className="w-6 h-6 text-primary" />}
- color="bg-primary /30"
+ color="bg-primary/10"
  expanded={expandedEngine === 'analysis'}
  onToggle={() => setExpandedEngine(expandedEngine === 'analysis' ? null : 'analysis')}
  onPm2Action={handlePm2Action}
@@ -680,7 +680,7 @@ export function EnginesStatusTab() {
  <EngineCard
  engine={{ ...engines.prediction, pm2_name: engines.prediction.pm2_name || 'python-backend' }}
  icon={<Target className="w-6 h-6 text-profit" />}
- color="bg-profit /30"
+ color="bg-profit/10"
  expanded={expandedEngine === 'prediction'}
  onToggle={() => setExpandedEngine(expandedEngine === 'prediction' ? null : 'prediction')}
  onPm2Action={handlePm2Action}
@@ -700,7 +700,7 @@ export function EnginesStatusTab() {
  </CardHeader>
  <CardContent>
  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
- <div className="p-3 rounded-lg bg-primary /20 border border-primary">
+ <div className="p-3 rounded-lg bg-primary/20 border border-primary">
  <div className="flex items-center gap-2 mb-1">
  <Database className="w-4 h-4 text-primary" />
  <span className="font-medium text-sm">محرك البيانات</span>
@@ -709,7 +709,7 @@ export function EnginesStatusTab() {
  يجلب الأسعار من المصادر (TradingView, Yahoo, Binance) ويخزنها في قاعدة البيانات
  </p>
  </div>
- <div className="p-3 rounded-lg bg-primary /20 border border-purple-200">
+ <div className="p-3 rounded-lg bg-primary/20 border border-purple-200">
  <div className="flex items-center gap-2 mb-1">
  <Brain className="w-4 h-4 text-primary" />
  <span className="font-medium text-sm">محرك التحليلات</span>
@@ -718,7 +718,7 @@ export function EnginesStatusTab() {
  يحلل البيانات فنياً وأساسياً (RSI, MACD, Patterns, Fibonacci) وينتج إشارات
  </p>
  </div>
- <div className="p-3 rounded-lg bg-profit /20 border border-profit">
+ <div className="p-3 rounded-lg bg-profit/20 border border-profit">
  <div className="flex items-center gap-2 mb-1">
  <Target className="w-4 h-4 text-profit" />
  <span className="font-medium text-sm">محرك التوقعات</span>
@@ -729,7 +729,7 @@ export function EnginesStatusTab() {
  </div>
  </div>
 
- <div className="mt-3 p-3 rounded-lg bg-warning /20 border border-warning">
+ <div className="mt-3 p-3 rounded-lg bg-warning/20 border border-warning">
  <div className="flex items-start gap-2">
  <Zap className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
  <p className="text-xs text-muted-foreground">

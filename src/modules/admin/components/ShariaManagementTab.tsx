@@ -148,7 +148,7 @@ export function ShariaManagementTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
@@ -201,8 +201,8 @@ export function ShariaManagementTab() {
  <Card className={cn(
  'border',
  runResult.success
- ? 'border-profit bg-profit /20 /40'
- : 'border-loss bg-loss /20 /40',
+ ? 'border-profit bg-profit/20 /40'
+ : 'border-loss bg-loss/20 /40',
  )}>
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between">
@@ -295,7 +295,7 @@ export function ShariaManagementTab() {
 
  {/* Error */}
  {!loading && data && !data.success && (
- <Card className="border-warning bg-warning /20 /40">
+ <Card className="border-warning bg-warning/20 /40">
  <CardContent className="p-4 flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
  <div>
@@ -334,7 +334,7 @@ export function ShariaManagementTab() {
  className={cn(
  'p-3 rounded-lg border text-xs',
  s.is_active
- ? 'border-profit bg-profit /20 /40'
+ ? 'border-profit bg-profit/20 /40'
  : 'border-muted bg-muted/20 opacity-60',
  )}
  >

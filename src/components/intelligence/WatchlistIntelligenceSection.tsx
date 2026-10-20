@@ -103,12 +103,12 @@ function getSignalIcon(signal: string) {
 function getActionColor(action: string): { bg: string; text: string; border: string } {
  const a = action?.toLowerCase() || '';
  if (a.includes('buy')) {
- return { bg: 'bg-profit /30', text: 'text-profit ', border: 'border-profit ' };
+ return { bg: 'bg-profit/10', text: 'text-profit ', border: 'border-profit ' };
  }
  if (a.includes('sell') || a.includes('avoid')) {
- return { bg: 'bg-loss /30', text: 'text-loss ', border: 'border-loss ' };
+ return { bg: 'bg-loss/10', text: 'text-loss ', border: 'border-loss ' };
  }
- return { bg: 'bg-warning /30', text: 'text-warning ', border: 'border-yellow-200 dark:border-yellow-800' };
+ return { bg: 'bg-warning/10', text: 'text-warning ', border: 'border-yellow-200 dark:border-yellow-800' };
 }
 
 export function WatchlistIntelligenceSection() {
@@ -298,7 +298,7 @@ export function WatchlistIntelligenceSection() {
 
  {/* Quick Opportunities */}
  {opportunities.length > 0 && (
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-center gap-2">
  <Star className="w-5 h-5 text-profit" />
@@ -308,9 +308,9 @@ export function WatchlistIntelligenceSection() {
  <CardContent>
  <div className="space-y-2">
  {opportunities.slice(0, 3).map((opp, i) => (
- <div key={i} className="flex items-center justify-between p-2 rounded bg-profit /30">
+ <div key={i} className="flex items-center justify-between p-2 rounded bg-profit/10">
  <div className="flex items-center gap-2">
- <Badge className="bg-profit text-profit /30 ">
+ <Badge className="bg-profit text-profit/30 ">
  {opp.ticker}
  </Badge>
  <span className="text-sm">{opp.reason_ar}</span>
@@ -327,7 +327,7 @@ export function WatchlistIntelligenceSection() {
 
  {/* Quick Warnings */}
  {warnings.length > 0 && (
- <Card className="border-loss /50">
+ <Card className="border-loss/20">
  <CardHeader className="pb-2">
  <div className="flex items-center gap-2">
  <AlertTriangle className="w-5 h-5 text-loss" />
@@ -337,8 +337,8 @@ export function WatchlistIntelligenceSection() {
  <CardContent>
  <div className="space-y-2">
  {warnings.slice(0, 3).map((warn, i) => (
- <div key={i} className="flex items-center gap-2 p-2 rounded bg-loss /30">
- <Badge className="bg-loss text-loss /30 ">
+ <div key={i} className="flex items-center gap-2 p-2 rounded bg-loss/10">
+ <Badge className="bg-loss text-loss/30 ">
  {warn.ticker}
  </Badge>
  <span className="text-sm">{warn.reason_ar}</span>

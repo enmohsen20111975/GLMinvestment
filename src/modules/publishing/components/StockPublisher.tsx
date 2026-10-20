@@ -125,35 +125,35 @@ const RECOMMENDATION_META: Record<
  ar: 'شراء قوي',
  emoji: '',
  badgeClass:
- 'bg-profit text-profit border-profit /60 ',
+ 'bg-profit text-profit border-profit/20 ',
  icon: <TrendingUp className="h-3.5 w-3.5" />,
  },
  BUY: {
  ar: 'شراء',
  emoji: '✅',
  badgeClass:
- 'bg-profit text-profit border-profit /40 /60',
+ 'bg-profit text-profit border-profit/20 /60',
  icon: <TrendingUp className="h-3.5 w-3.5" />,
  },
  INSTITUTIONAL_BUY: {
  ar: 'شراء مؤسسي',
  emoji: '🏛️',
  badgeClass:
- 'bg-primary text-primary border-primary /40 /60',
+ 'bg-primary text-primary border-primary/20 /60',
  icon: <Shield className="h-3.5 w-3.5" />,
  },
  HOLD: {
  ar: 'احتفاظ',
  emoji: '⏸️',
  badgeClass:
- 'bg-warning text-warning border-warning /40 /60',
+ 'bg-warning text-warning border-warning/20 /60',
  icon: <Activity className="h-3.5 w-3.5" />,
  },
  SELL: {
  ar: 'بيع',
  emoji: '🔻',
  badgeClass:
- 'bg-loss text-loss border-loss /40 /60',
+ 'bg-loss text-loss border-loss/20 /60',
  icon: <TrendingDown className="h-3.5 w-3.5" />,
  },
 };
@@ -640,9 +640,9 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
  : 'neutral';
 
  return (
- <Card className="border-2 border-profit/60 /40 overflow-hidden">
+ <Card className="border-2 border-profit/20 /40 overflow-hidden">
  {/* Header — gradient + ticker + recommendation */}
- <div className="bg-profit /40 px-4 py-3 border-b border-profit /30">
+ <div className="bg-profit/10 px-4 py-3 border-b border-profit/20">
  <div className="flex items-center justify-between flex-wrap gap-2">
  <div className="flex items-center gap-2">
  <div className="h-9 w-9 rounded-lg bg-profit flex items-center justify-center text-foreground font-bold text-sm font-mono shadow-sm">
@@ -788,7 +788,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
  {data.riskReward != null && (
  <Badge
  variant="outline"
- className="gap-1 font-mono font-semibold text-warning bg-warning/50 /20 border-warning /50"
+ className="gap-1 font-mono font-semibold text-warning bg-warning/10 /20 border-warning/20"
  >
  <Gauge className="h-3 w-3" />
  R:R {(data.riskReward ?? 0).toFixed(1)}:1
@@ -808,7 +808,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
 
  {/* Signal Strength */}
  {(data.signalCount != null || data.path) && (
- <div className="bg-primary/60 /20 rounded-md p-2.5 space-y-1.5 border border-primary/60 /30">
+ <div className="bg-primary/10 /20 rounded-md p-2.5 space-y-1.5 border border-primary/20 /30">
  <div className="flex items-center justify-between text-xs">
  <span className="font-semibold text-primary flex items-center gap-1">
  <Zap className="h-3.5 w-3.5" />
@@ -988,7 +988,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
 
  {/* Analysis summary */}
  {data.analysisSummary && (
- <div className="bg-primary/40 /15 rounded-md p-2.5 text-xs leading-relaxed border border-purple-100/50 dark:border-purple-900/30">
+ <div className="bg-primary/10 /15 rounded-md p-2.5 text-xs leading-relaxed border border-purple-100/50 dark:border-purple-900/30">
  <div className="font-semibold text-primary mb-1 flex items-center gap-1 text-xs">
  <Brain className="h-3.5 w-3.5" />
  ملخص التحليل
@@ -1036,17 +1036,17 @@ function TradingTile({ label, value, sub, accent, icon }: TradingTileProps) {
  blue: {
  bg: 'bg-primary/70 /30',
  text: 'text-primary ',
- border: 'border-primary/60 /40',
+ border: 'border-primary/20 /40',
  },
  emerald: {
  bg: 'bg-profit/70 /30',
  text: 'text-profit ',
- border: 'border-profit/60 /40',
+ border: 'border-profit/20 /40',
  },
  rose: {
  bg: 'bg-loss/70 /30',
  text: 'text-loss ',
- border: 'border-loss/60 /40',
+ border: 'border-loss/20 /40',
  },
  };
  const c = colors[accent];

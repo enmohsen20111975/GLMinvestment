@@ -178,9 +178,9 @@ function PersonaCard({
 
  // ألوان البرسونا — emerald للمستثمر، amber للمتوازن، fuchsia للمضارب (تجنّب blue/indigo)
  const personaTheme = isInvestor
- ? { emoji: '🛡️', label: 'المستثمر', accent: 'text-profit ', accentBg: 'bg-profit /40', accentBorder: 'border-profit ' }
+ ? { emoji: '🛡️', label: 'المستثمر', accent: 'text-profit ', accentBg: 'bg-profit/10', accentBorder: 'border-profit ' }
  : persona === 'balanced'
- ? { emoji: '⚖️', label: 'المتوازن', accent: 'text-warning ', accentBg: 'bg-warning /40', accentBorder: 'border-warning ' }
+ ? { emoji: '⚖️', label: 'المتوازن', accent: 'text-warning ', accentBg: 'bg-warning/10', accentBorder: 'border-warning ' }
  : { emoji: '🎯', label: 'المضارب', accent: 'text-fuchsia-700 dark:text-fuchsia-400', accentBg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40', accentBorder: 'border-fuchsia-200 dark:border-fuchsia-900' };
 
  const targetPct = data.entry && data.target && data.entry > 0
@@ -282,8 +282,8 @@ function PersonaCard({
  className={cn(
  'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
  fundamentals.sector_role === 'leader'
- ? 'bg-profit text-profit border-profit /40 '
- : 'bg-loss text-loss border-loss /40 '
+ ? 'bg-profit text-profit border-profit/20 '
+ : 'bg-loss text-loss border-loss/20 '
  )}
  title={
  fundamentals.sector_role === 'leader'
@@ -295,7 +295,7 @@ function PersonaCard({
  </span>
  )}
  {data.is_egx30 && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning /40 border border-warning ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning/40 border border-warning ">
  EGX30
  </span>
  )}
@@ -311,7 +311,7 @@ function PersonaCard({
  المستخدم طلب: "لو السهم إشارته HOLD بس درجته عالية، اعرضه
  واكتب تحته بـ Badge لونه أصفر: مراقبة - انتظر كسر المقاومة" */}
  {isInvestor && data.signal && String(data.signal).toUpperCase() === 'HOLD' && (data.score ?? 0) >= 50 && (
- <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning bg-warning text-warning /40 ">
+ <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning bg-warning text-warning/40 ">
  👁️ مراقبة — انتظر كسر المقاومة
  </Badge>
  )}
@@ -379,9 +379,9 @@ function PersonaCard({
  <div className={cn(
  'rounded-lg p-3 border-2',
  data.risk_reward && data.risk_reward >= 2.0
- ? 'bg-profit /30 border-profit '
+ ? 'bg-profit/10 border-profit '
  : data.risk_reward && data.risk_reward >= 1.5
- ? 'bg-warning /30 border-warning '
+ ? 'bg-warning/10 border-warning '
  : 'bg-muted/50 border-border'
  )}>
  <div className="flex items-center justify-between mb-2">
@@ -403,7 +403,7 @@ function PersonaCard({
  <p className="text-muted-foreground text-xs mb-0.5">💰 ادخل</p>
  <p className="font-bold text-foreground text-base">{data.entry ? (data.entry ?? 0).toFixed(2) : '—'}</p>
  </div>
- <div className="rounded-md bg-profit/60 /30 p-2">
+ <div className="rounded-md bg-profit/10 /30 p-2">
  <p className="text-profit text-xs mb-0.5">
  📈 هدف{targetPct !== null && ` +${(targetPct ?? 0).toFixed(1)}%`}
  </p>
@@ -411,7 +411,7 @@ function PersonaCard({
  {data.target ? (data.target ?? 0).toFixed(2) : '—'}
  </p>
  </div>
- <div className="rounded-md bg-loss/60 /30 p-2">
+ <div className="rounded-md bg-loss/10 /30 p-2">
  <p className="text-loss text-xs mb-0.5">
  🛑 وقف{stopPct !== null && ` ${(stopPct ?? 0).toFixed(1)}%`}
  </p>
@@ -456,8 +456,8 @@ function PersonaCard({
  className={cn(
  'flex-1 flex flex-col items-center gap-0.5 rounded-md py-1.5 px-0.5 text-xs transition-colors cursor-default',
  gate.passed
- ? 'bg-profit text-profit /40 '
- : 'bg-loss text-loss /40 '
+ ? 'bg-profit text-profit/40 '
+ : 'bg-loss text-loss/40 '
  )}
  >
  {gate.passed ? (
@@ -489,9 +489,9 @@ function PersonaCard({
  {/* Risk/Reward */}
  <div className={cn(
  'rounded-md p-1.5 text-center',
- data.risk_reward && data.risk_reward >= 3 ? 'bg-profit /40' :
- data.risk_reward && data.risk_reward >= 1.5 ? 'bg-warning /40' :
- data.risk_reward && data.risk_reward > 0 ? 'bg-loss /40' :
+ data.risk_reward && data.risk_reward >= 3 ? 'bg-profit/10' :
+ data.risk_reward && data.risk_reward >= 1.5 ? 'bg-warning/10' :
+ data.risk_reward && data.risk_reward > 0 ? 'bg-loss/10' :
  'bg-muted/50'
  )}>
  <p className="text-muted-foreground text-xs mb-0.5">عائد/مخاطرة</p>
@@ -594,12 +594,12 @@ function PersonaCard({
  </span>
  )}
  {data.price_vs_sr === 'near_support' && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-profit text-profit /40 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-profit text-profit/40 ">
  قرب الدعم ✓
  </span>
  )}
  {data.price_vs_sr === 'near_resistance' && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning /40 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning/40 ">
  قرب المقاومة ⚡
  </span>
  )}
@@ -639,7 +639,7 @@ function PersonaCard({
  ? Math.round(((data.fair_value - entryPrice) / entryPrice) * 100)
  : null;
  return (
- <div className="flex flex-col gap-1 text-xs rounded-md border border-warning/40 bg-warning/60 /30 p-2">
+ <div className="flex flex-col gap-1 text-xs rounded-md border border-warning/20 bg-warning/10 /30 p-2">
  <div className="flex items-center gap-1.5 text-warning font-semibold">
  <Target className="h-3 w-3" />
  <span>🔒 القيمة العادلة — متاحة للمشتركين</span>
@@ -1843,7 +1843,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  ? 'text-muted-foreground'
  : '';
  return (
- <Card className={isDefensive ? 'border-warning bg-warning/30 /10' : 'border-dashed'}>
+ <Card className={isDefensive ? 'border-warning bg-warning/10 /10' : 'border-dashed'}>
  <CardContent className="p-8 text-center">
  <span className="text-4xl mb-3 block">{emoji}</span>
  <p className={`text-lg font-semibold mb-1 ${headlineColor}`}>{headline}</p>
@@ -1940,7 +1940,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  {viewSelector}
  {/* ملاحظة وضع الـ fallback (predictions فقط — sniper اتشال في P42) */}
  {usingFallback && (
- <Card className="border-warning bg-warning /40 ">
+ <Card className="border-warning bg-warning/10 ">
  <CardContent className="p-2.5 flex items-center gap-2 text-xs">
  <Info className="h-4 w-4 text-warning flex-shrink-0" />
  <p className="text-warning ">
@@ -1957,7 +1957,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  سخن (avg_chg≥1% AND ≥60% صاعد). ده الـ "sector rotation" اللي المفروض
  المضارب يركز عليه. المستثمر مش بيشوف الـ banner ده. */}
  {persona === 'gambler' && sectorHeat && sectorHeat.hot && sectorHeat.hot.length > 0 && (
- <Card className="border-orange-300 bg-warning /30 dark:border-orange-800">
+ <Card className="border-orange-300 bg-warning/10 dark:border-orange-800">
  <CardContent className="p-2.5 flex items-start gap-2 text-xs">
  <span className="text-base flex-shrink-0">🔥</span>
  <div className="flex-1 min-w-0">
@@ -2079,7 +2079,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  const holdRatio = items.length > 0 ? holdItems.length / items.length : 0;
  if (holdRatio >= 0.6) {
  return (
- <Card className="border-profit bg-profit /30 ">
+ <Card className="border-profit bg-profit/10 ">
  <CardContent className="p-3 flex items-start gap-2.5">
  <span className="text-xl flex-shrink-0 mt-0.5">🛡️</span>
  <div className="flex-1">
@@ -2249,7 +2249,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
      بتيجي من /api/unified/predictions تحت مفتاح testing_candidates.
      بتـ refresh مع fetchPrevious كل 300s (لو liveMode) — نفس الـ polling cycle. */}
  {testingCandidates.length > 0 && (
- <div className="mt-4 rounded-lg border border-warning/30 bg-warning/5 p-3">
+ <div className="mt-4 rounded-lg border border-warning/20 bg-warning/5 p-3">
  <div className="flex items-center justify-between mb-2">
  <h4 className="text-sm font-bold text-warning flex items-center gap-1">
  🔍 أسهم تحت الاختبار والمراقبة اللحظية

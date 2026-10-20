@@ -33,7 +33,7 @@ function TickerCard({ item }: { item: TickerItem }) {
  className={cn(
  'flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap border text-xs font-medium flex-shrink-0',
  'bg-card',
- isPositive ? 'border-profit /50' : isNegative ? 'border-loss /50' : 'border-border'
+ isPositive ? 'border-profit/20' : isNegative ? 'border-loss/20' : 'border-border'
  )}
  animate={
  movedUp

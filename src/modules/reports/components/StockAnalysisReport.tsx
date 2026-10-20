@@ -376,9 +376,9 @@ function getScoreColor(score: number): string {
 }
 
 function getScoreBg(score: number): string {
- if (score >= 70) return 'bg-profit/20 text-profit border-profit/40';
- if (score >= 50) return 'bg-warning/20 text-warning border-warning/40';
- return 'bg-loss/20 text-loss border-loss/40';
+ if (score >= 70) return 'bg-profit/20 text-profit border-profit/20';
+ if (score >= 50) return 'bg-warning/20 text-warning border-warning/20';
+ return 'bg-loss/20 text-loss border-loss/20';
 }
 
 /* ========== Cover Page Header (Bloomberg-style) ========== */
@@ -408,7 +408,7 @@ function CoverPageHeader({
  const actionBg = actionColors[rec?.action ?? 'hold'] ?? 'from-slate-600 to-slate-500 text-foreground';
  return (
  <div
- className="relative overflow-hidden rounded-2xl border border-warning/30 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
+ className="relative overflow-hidden rounded-2xl border border-warning/20 bg-gradient-to-l from-[#0a0e1a] via-[#0d1320] to-[#10162a] p-5 print:break-inside-avoid"
  dir="rtl"
  >
  <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-warning via-warning to-warning" />
@@ -421,7 +421,7 @@ function CoverPageHeader({
  </h1>
  <Badge
  variant="outline"
- className="text-xs font-bold border-warning/40 text-warning bg-warning/10"
+ className="text-xs font-bold border-warning/20 text-warning bg-warning/10"
  >
  {stock.sector || '—'}
  </Badge>
@@ -454,8 +454,8 @@ function CoverPageHeader({
  className={cn(
  'px-3 py-1.5 rounded-lg tabular-nums text-sm font-bold',
  isUp
- ? 'bg-profit/15 text-profit border border-profit/30'
- : 'bg-loss/15 text-loss border border-loss/30',
+ ? 'bg-profit/15 text-profit border border-profit/20'
+ : 'bg-loss/15 text-loss border border-loss/20',
  )}
  >
  {isUp ? <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" /> : <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />}
@@ -698,12 +698,12 @@ function FundamentalSection({
  })}
  </div>
  {analysis.fair_value && (
- <div className="mt-3 p-3 rounded-lg border border-warning/30 bg-warning/5">
+ <div className="mt-3 p-3 rounded-lg border border-warning/20 bg-warning/5">
  <div className="flex items-center justify-between mb-1">
  <span className="text-xs font-bold text-warning">
  القيمة العادلة المقدّرة · Fair Value
  </span>
- <Badge variant="outline" className="text-xs border-warning/40 text-warning">
+ <Badge variant="outline" className="text-xs border-warning/20 text-warning">
  {analysis.fair_value.verdict_ar}
  </Badge>
  </div>
@@ -776,9 +776,9 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  },
  ];
  const toneClasses: Record<string, string> = {
- positive: 'border-profit/30 bg-profit/10 text-profit',
- negative: 'border-loss/30 bg-loss/10 text-loss',
- warning: 'border-warning/30 bg-warning/10 text-warning',
+ positive: 'border-profit/20 bg-profit/10 text-profit',
+ negative: 'border-loss/20 bg-loss/10 text-loss',
+ warning: 'border-warning/20 bg-warning/10 text-warning',
  neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
  };
  return (
@@ -813,7 +813,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  const rec = analysis.recommendation;
  return (
- <Card className="overflow-hidden border-warning/30 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
+ <Card className="overflow-hidden border-warning/20 bg-gradient-to-br from-[#0d1320] to-[#10162a] print:break-inside-avoid">
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Shield className="w-5 h-5" />
@@ -822,19 +822,19 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  </CardHeader>
  <CardContent>
  <div className="grid grid-cols-3 gap-3 mb-4">
- <div className="text-center p-3 rounded-lg bg-whale/10 border border-whale/30">
+ <div className="text-center p-3 rounded-lg bg-whale/10 border border-whale/20">
  <p className="text-xs text-slate-400 mb-1">سعر الدخول</p>
  <p className="text-lg font-bold text-whale tabular-nums">
  {safeFmtNum(rec.entry_price, 2)}
  </p>
  </div>
- <div className="text-center p-3 rounded-lg bg-profit/10 border border-profit/30">
+ <div className="text-center p-3 rounded-lg bg-profit/10 border border-profit/20">
  <p className="text-xs text-slate-400 mb-1">الهدف</p>
  <p className="text-lg font-bold text-profit tabular-nums">
  {safeFmtNum(rec.target_price, 2)}
  </p>
  </div>
- <div className="text-center p-3 rounded-lg bg-loss/10 border border-loss/30">
+ <div className="text-center p-3 rounded-lg bg-loss/10 border border-loss/20">
  <p className="text-xs text-slate-400 mb-1">وقف الخسارة</p>
  <p className="text-lg font-bold text-loss tabular-nums">
  {safeFmtNum(rec.stop_loss, 2)}
@@ -1123,7 +1123,7 @@ export function StockAnalysisReport() {
  onClick={handleExportPng}
  disabled={exportingPng}
  variant="outline"
- className="gap-2 border-warning/40 text-warning hover:bg-warning/10 hover:text-warning"
+ className="gap-2 border-warning/20 text-warning hover:bg-warning/10 hover:text-warning"
  >
  <Download className="w-4 h-4" />
  {exportingPng ? 'جارٍ التصدير...' : 'تصدير صورة (PNG)'}
@@ -1131,7 +1131,7 @@ export function StockAnalysisReport() {
  <Button
  onClick={handlePrint}
  variant="outline"
- className="gap-2 border-profit/40 text-profit hover:bg-profit/10 hover:text-profit"
+ className="gap-2 border-profit/20 text-profit hover:bg-profit/10 hover:text-profit"
  >
  <Printer className="w-4 h-4" />
  طباعة / PDF

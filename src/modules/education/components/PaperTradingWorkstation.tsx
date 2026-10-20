@@ -189,8 +189,8 @@ function pnlColor(v: number | null | undefined): string {
 
 function rowBgClass(v: number | null | undefined): string {
  if (v == null) return '';
- if (v > 0) return 'bg-profit/40 /20';
- if (v < 0) return 'bg-loss/40 /20';
+ if (v > 0) return 'bg-profit/10 /20';
+ if (v < 0) return 'bg-loss/10 /20';
  return '';
 }
 

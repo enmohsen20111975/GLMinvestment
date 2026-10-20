@@ -226,7 +226,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
  {r.gates.map((g, i) => (
  <Tooltip key={i}>
  <TooltipTrigger asChild>
- <Badge variant="outline" className={`cursor-default text-xs gap-1 ${g.passed ? 'border-success/50 bg-success/10 text-success ' : 'border-loss/50 bg-loss/10 text-loss '}`}>
+ <Badge variant="outline" className={`cursor-default text-xs gap-1 ${g.passed ? 'border-success/20 bg-success/10 text-success ' : 'border-loss/20 bg-loss/10 text-loss '}`}>
  <span className="text-sm">{g.passed ? '🟢' : '🔴'}</span>{g.nameAr}
  </Badge>
  </TooltipTrigger>

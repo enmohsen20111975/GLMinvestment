@@ -128,9 +128,9 @@ function SubscriptionGate({ tier }: { tier: string }) {
  return (
  <div className="space-y-4">
  {/* Lock banner */}
- <Card className="border-warning /50 bg-warning/50 /20">
+ <Card className="border-warning/20 bg-warning/10 /20">
  <CardContent className="p-6 text-center space-y-4">
- <div className="w-16 h-16 mx-auto rounded-full bg-warning /30 flex items-center justify-center">
+ <div className="w-16 h-16 mx-auto rounded-full bg-warning/10 flex items-center justify-center">
  <Lock className="w-8 h-8 text-warning " />
  </div>
  <div className="space-y-2">
@@ -255,7 +255,7 @@ export function DataManager() {
  <div className="space-y-4">
  {/* Active subscription badge */}
  <div className="flex items-center justify-between">
- <Badge className="bg-profit text-profit /40 border-0 gap-1 text-xs">
+ <Badge className="bg-profit text-profit/40 border-0 gap-1 text-xs">
  <Crown className="w-3 h-3" />
  ميزة نشطة — الاشتراك المدفوع
  </Badge>
@@ -272,7 +272,7 @@ export function DataManager() {
  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
  {/* Icon & Info */}
  <div className="flex items-start gap-3 flex-1 min-w-0">
- <div className="w-11 h-11 rounded-xl bg-profit /30 flex items-center justify-center flex-shrink-0">
+ <div className="w-11 h-11 rounded-xl bg-profit/10 flex items-center justify-center flex-shrink-0">
  <Icon className="w-5 h-5 text-profit " />
  </div>
  <div className="min-w-0 flex-1">

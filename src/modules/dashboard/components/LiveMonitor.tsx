@@ -266,7 +266,7 @@ function getMarketStatusConfig(status: MarketData['market_status']): StatusConfi
  label: 'السوق مفتوح',
  color: 'text-profit ',
  chipBg:
- 'bg-profit border-profit /50 ',
+ 'bg-profit border-profit/20 ',
  icon: Activity,
  };
  case 'POST_MARKET':
@@ -274,7 +274,7 @@ function getMarketStatusConfig(status: MarketData['market_status']): StatusConfi
  label: 'ما بعد الجلسة',
  color: 'text-warning ',
  chipBg:
- 'bg-warning border-warning /50 ',
+ 'bg-warning border-warning/20 ',
  icon: Clock,
  };
  case 'CLOSED':
@@ -283,7 +283,7 @@ function getMarketStatusConfig(status: MarketData['market_status']): StatusConfi
  label: 'السوق مغلق',
  color: 'text-loss ',
  chipBg:
- 'bg-loss border-loss /50 ',
+ 'bg-loss border-loss/20 ',
  icon: XCircle,
  };
  }
@@ -365,8 +365,8 @@ function MarketStatusBanner({
  className={cn(
  "gap-1 text-xs px-2 py-0.5 font-medium mr-2",
  egxStatus.isOpen
- ? "bg-profit/10 text-profit border-profit/30 "
- : "bg-warning/10 text-warning border-warning/30 "
+ ? "bg-profit/10 text-profit border-profit/20 "
+ : "bg-warning/10 text-warning border-warning/20 "
  )}
  >
  <Clock className="w-3 h-3" />
@@ -589,11 +589,11 @@ const TYPE_BADGE: Record<
  },
  gold: {
  label: 'ذهب',
- cls: 'bg-warning text-warning border-warning /50 ',
+ cls: 'bg-warning text-warning border-warning/20 ',
  },
  bank: {
  label: 'بنك',
- cls: 'bg-profit text-profit border-profit /50 ',
+ cls: 'bg-profit text-profit border-profit/20 ',
  },
  cash: {
  label: 'نقد',
@@ -629,8 +629,8 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  ? 'text-profit '
  : 'text-loss ';
  const totalBorder = isPositive
- ? 'border-profit bg-profit /30'
- : 'border-loss bg-loss /30';
+ ? 'border-profit bg-profit/10'
+ : 'border-loss bg-loss/10';
 
  // ── UnifiedTable columns for portfolio items ──
  const portfolioColumns: Column<PortfolioItem>[] = [
@@ -773,7 +773,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2">
- <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-profit /50">
+ <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-profit/10">
  <Wallet className="h-4 w-4 text-profit " />
  </div>
  <div>
@@ -848,7 +848,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  rowClassName={(item) => {
  const recent = isRecentlyUpdated(item.price_updated);
  return recent
- ? 'bg-profit/40 /20 border-s-2 border-s-emerald-500'
+ ? 'bg-profit/10 /20 border-s-2 border-s-emerald-500'
  : undefined;
  }}
  />
@@ -877,8 +877,8 @@ function MoverRow({
  ? 'text-profit '
  : 'text-loss ';
  const numBg = isGainer
- ? 'bg-profit text-profit /50 '
- : 'bg-loss text-loss /50 ';
+ ? 'bg-profit text-profit/50 '
+ : 'bg-loss text-loss/50 ';
 
  return (
  <div className="-mx-2 flex items-center justify-between rounded px-2 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30">
@@ -937,8 +937,8 @@ function MoversCard({
  className={cn(
  'overflow-hidden border shadow-sm',
  isGainer
- ? 'border-profit /50'
- : 'border-loss /50',
+ ? 'border-profit/20'
+ : 'border-loss/20',
  )}
  >
  <CardHeader className="pb-2">
@@ -947,8 +947,8 @@ function MoversCard({
  className={cn(
  'flex h-7 w-7 items-center justify-center rounded-lg',
  isGainer
- ? 'bg-profit /50'
- : 'bg-loss /50',
+ ? 'bg-profit/10'
+ : 'bg-loss/10',
  )}
  >
  {isGainer ? (
@@ -1031,7 +1031,7 @@ function ErrorState({
  onRetry: () => void;
 }) {
  return (
- <Card className="border-loss bg-loss/50 /50 /20">
+ <Card className="border-loss bg-loss/10 /50 /20">
  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
  <AlertCircle className="mb-3 h-10 w-10 text-loss" />
  <p className="mb-1 text-sm font-semibold text-loss ">
@@ -1044,7 +1044,7 @@ function ErrorState({
  variant="outline"
  size="sm"
  onClick={onRetry}
- className="gap-2 border-loss text-loss hover:bg-loss dark:hover:bg-loss/40"
+ className="gap-2 border-loss text-loss hover:bg-loss dark:hover:bg-loss/10"
  >
  <RefreshCw className="h-3.5 w-3.5" />
  إعادة المحاولة
@@ -1286,7 +1286,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Zap,
  color: 'text-profit ',
  badge: 'أساسي',
- badgeCls: 'bg-profit text-profit /50 ',
+ badgeCls: 'bg-profit text-profit/50 ',
  },
  {
  label: 'قائمة الأسهم الكاملة',
@@ -1295,7 +1295,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Database,
  color: 'text-warning ',
  badge: 'كل 15 دقيقة',
- badgeCls: 'bg-warning text-warning /50 ',
+ badgeCls: 'bg-warning text-warning/50 ',
  },
  {
  label: 'بيانات نهاية اليوم',

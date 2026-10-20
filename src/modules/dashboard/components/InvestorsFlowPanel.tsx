@@ -196,8 +196,8 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
  <Badge
  className={cn(
  'text-xs px-1 py-0',
- isInflow && 'bg-profit/10 text-profit border-profit/30 ',
- isOutflow && 'bg-loss/10 text-loss border-loss/30 ',
+ isInflow && 'bg-profit/10 text-profit border-profit/20 ',
+ isOutflow && 'bg-loss/10 text-loss border-loss/20 ',
  !isInflow && !isOutflow && 'bg-muted text-muted-foreground border-border'
  )}
  >
@@ -316,7 +316,7 @@ export function InvestorsFlowPanel() {
  <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
  <Users className="w-4 h-4 text-warning" />
  حركة السيولة وتدفّق المستثمرين
- <Badge variant="outline" className="text-xs text-warning border-warning/30">
+ <Badge variant="outline" className="text-xs text-warning border-warning/20">
  {marketNameAr}
  </Badge>
  <div className="flex gap-1 mr-auto">
@@ -501,8 +501,8 @@ function InvestorsTable({
  className={cn(
  'text-xs px-1 py-0',
  autoSeeded
- ? 'text-warning border-warning/30'
- : 'text-profit border-profit/30'
+ ? 'text-warning border-warning/20'
+ : 'text-profit border-profit/20'
  )}
  title={source}
  >

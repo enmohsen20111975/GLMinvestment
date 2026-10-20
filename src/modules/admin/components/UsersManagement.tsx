@@ -512,8 +512,8 @@ export function UsersManagement() {
  isVip
  ? "bg-primary/15 text-primary border-purple-500/40 hover:bg-primary/25"
  : isPremium
- ? "bg-profit/15 text-profit border-profit/40 hover:bg-profit/25"
- : "bg-primary/15 text-primary border-primary/40 hover:bg-primary/25"
+ ? "bg-profit/15 text-profit border-profit/20 hover:bg-profit/25"
+ : "bg-primary/15 text-primary border-primary/20 hover:bg-primary/25"
  )}
  >
  <Ticket className="w-3.5 h-3.5 text-current shrink-0" />
@@ -1114,7 +1114,7 @@ export function UsersManagement() {
  بيانات كود الخصم والترقية (Promo Code)
  </h4>
  {selectedUser.promoCode ? (
- <Badge className={selectedUser.promoCode.is_active ? "bg-profit/20 text-profit border-profit/40" : "bg-loss/20 text-loss border-loss/40"}>
+ <Badge className={selectedUser.promoCode.is_active ? "bg-profit/20 text-profit border-profit/20" : "bg-loss/20 text-loss border-loss/20"}>
  {selectedUser.promoCode.is_active ? `نشط (متبقي ${selectedUser.promoCode.days_left} يوم)` : 'منتهي الصلاحية'}
  </Badge>
  ) : (
@@ -1174,7 +1174,7 @@ export function UsersManagement() {
  <Button
  size="sm"
  variant="outline"
- className="text-xs h-7 text-loss border-loss/40 hover:bg-loss/10"
+ className="text-xs h-7 text-loss border-loss/20 hover:bg-loss/10"
  onClick={() => handleRevokePromo(selectedUser.id)}
  >
  إلغاء

@@ -108,9 +108,9 @@ interface TrackingStats {
 // ============================================================
 
 const STATUS_BADGE_CLASS: Record<PickStatus, string> = {
- pending: 'bg-warning text-warning border-warning /50 ',
- target_hit: 'bg-profit text-profit border-profit /50 ',
- stop_hit: 'bg-loss text-loss border-loss /50 ',
+ pending: 'bg-warning text-warning border-warning/20 ',
+ target_hit: 'bg-profit text-profit border-profit/20 ',
+ stop_hit: 'bg-loss text-loss border-loss/20 ',
  expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-700',
 };
 
@@ -513,7 +513,7 @@ export function PredictionTrackingView() {
  {/* Header */}
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div className="flex items-center gap-2">
- <div className="rounded-xl bg-profit /50 p-2.5">
+ <div className="rounded-xl bg-profit/10 p-2.5">
  <Trophy className="h-5 w-5 text-profit " />
  </div>
  <div>
@@ -570,14 +570,14 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  value={display.total}
  hint={t('predictions.tracking.stats.totalHint', { days: stats?.days ?? 30, market: MARKET_NAMES_AR[currentMarket] })}
  icon={<ListChecks className="h-5 w-5 text-profit " />}
- iconBg="bg-profit /50"
+ iconBg="bg-profit/10"
  />
  <StatCard
  title={t('predictions.tracking.stats.pending')}
  value={display.pending}
  hint={t('predictions.tracking.stats.pendingHint')}
  icon={<Clock className="h-5 w-5 text-warning " />}
- iconBg="bg-warning /50"
+ iconBg="bg-warning/10"
  valueColor="text-warning "
  />
  <StatCard
@@ -585,7 +585,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  value={display.successRate}
  hint={t('predictions.tracking.stats.successHint', { count: stats?.target_hit ?? 0 })}
  icon={<CheckCircle2 className="h-5 w-5 text-profit " />}
- iconBg="bg-profit /50"
+ iconBg="bg-profit/10"
  valueColor="text-profit "
  />
  <StatCard
@@ -593,7 +593,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  value={display.failureRate}
  hint={t('predictions.tracking.stats.failureHint', { count: stats?.stop_hit ?? 0 })}
  icon={<XCircle className="h-5 w-5 text-loss " />}
- iconBg="bg-loss /50"
+ iconBg="bg-loss/10"
  valueColor="text-loss "
  />
  </>

@@ -66,13 +66,13 @@ interface AnalysisResult {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const SIGNAL_COLORS: Record<string, string> = {
- STRONG_BUY: 'bg-profit/20 text-profit border-profit/30',
- BUY: 'bg-success/20 text-success border-success/30',
- ACCUMULATE: 'bg-whale/20 text-whale border-whale/30',
+ STRONG_BUY: 'bg-profit/20 text-profit border-profit/20',
+ BUY: 'bg-success/20 text-success border-success/20',
+ ACCUMULATE: 'bg-whale/20 text-whale border-whale/20',
  HOLD: 'bg-warning/20 text-warning border-yellow-500/30',
  REDUCE: 'bg-warning/20 text-warning border-orange-500/30',
- SELL: 'bg-loss/20 text-loss border-loss/30',
- STRONG_SELL: 'bg-loss/20 text-loss border-loss/30',
+ SELL: 'bg-loss/20 text-loss border-loss/20',
+ STRONG_SELL: 'bg-loss/20 text-loss border-loss/20',
  REJECTED_RR: 'bg-muted/20 text-muted-foreground border-border/30',
  NO_DATA: 'bg-muted/20 text-muted-foreground border-border/30',
 }
@@ -382,7 +382,7 @@ export default function UnifiedAnalysisView() {
 
  {/* Error */}
  {error && (
- <div className="bg-loss/10 border border-loss/30 rounded-xl p-4 text-loss text-sm">
+ <div className="bg-loss/10 border border-loss/20 rounded-xl p-4 text-loss text-sm">
  ❌ {error}
  </div>
  )}

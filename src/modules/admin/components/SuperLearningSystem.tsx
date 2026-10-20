@@ -1278,7 +1278,7 @@ export function SuperLearningSystem() {
  </CardTitle>
  <div className="flex items-center gap-2">
  {isDryRun && (
- <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 gap-1 text-xs">
+ <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 gap-1 text-xs">
  <Zap className="w-3 h-3" />
  وضع تجريبي لحظي (Memory Only)
  </Badge>
@@ -1760,7 +1760,7 @@ export function SuperLearningSystem() {
  </Card>
 
  {/* التعلم من الأخطاء الفعلية */}
- <Card className="border-warning /50 shadow-md">
+ <Card className="border-warning/20 shadow-md">
  <CardHeader className="pb-3">
  <CardTitle className="text-base flex items-center gap-2 text-warning ">
  <AlertTriangle className="h-5 w-5 text-warning" />
@@ -1771,7 +1771,7 @@ export function SuperLearningSystem() {
  </CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-warning/50 /10 border border-warning /30">
+ <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-warning/10 /10 border border-warning/20">
  <div className="space-y-1">
  <p className="font-semibold text-sm">مكافحة تكرار الأخطاء</p>
  <p className="text-xs text-muted-foreground">يقوم النظام بالربط بين المؤشرات الفنية ونظام السوق عند حدوث الفشل لتجنبه مستقبلاً.</p>
@@ -1801,7 +1801,7 @@ export function SuperLearningSystem() {
  {lessons.map((lesson, idx) => (
  <div 
  key={idx} 
- className="flex items-start gap-2.5 text-xs p-3.5 bg-warning/20 /5 rounded-lg border border-warning/60 /30 text-foreground shadow-sm"
+ className="flex items-start gap-2.5 text-xs p-3.5 bg-warning/20 /5 rounded-lg border border-warning/20 /30 text-foreground shadow-sm"
  >
  <Badge className="bg-warning hover:bg-warning text-xs h-5 px-1.5 shrink-0" variant="secondary">
  قاعدة أمان
@@ -1913,7 +1913,7 @@ export function SuperLearningSystem() {
  </h4>
  <div className="space-y-1">
  {iterations[iterations.length - 1].analysis?.errors_detected.map((error, idx) => (
- <div key={idx} className="text-sm p-2 bg-loss /30 rounded border border-loss ">
+ <div key={idx} className="text-sm p-2 bg-loss/10 rounded border border-loss ">
  {error}
  </div>
  ))}
@@ -1929,7 +1929,7 @@ export function SuperLearningSystem() {
  <div className="space-y-1">
  {iterations[iterations.length - 1].analysis?.improvements_made.length > 0 ? (
  iterations[iterations.length - 1].analysis?.improvements_made.map((improvement, idx) => (
- <div key={idx} className="text-sm p-2 bg-success /30 rounded border border-success dark:border-success">
+ <div key={idx} className="text-sm p-2 bg-success/10 rounded border border-success dark:border-success">
  {improvement}
  </div>
  ))
@@ -2000,7 +2000,7 @@ export function SuperLearningSystem() {
  {/* P39-PHASE-5: Persona Benchmarking Tab — side-by-side comparison of the 3 personas */}
  <TabsContent value="persona-benchmark" className="space-y-4">
  {/* Date range info banner */}
- <div className="rounded-lg border bg-profit/60 /10 border-profit /40 p-3 flex items-center gap-2 text-xs text-profit ">
+ <div className="rounded-lg border bg-profit/10 /10 border-profit/20 p-3 flex items-center gap-2 text-xs text-profit ">
  <Clock className="w-4 h-4 text-profit shrink-0" />
  <span>
  البيانات تبدأ من <span className="font-mono font-semibold">{fromDate}</span> — المقارنة تشمل نفس الفترة الزمنية لجميع الشخصيات.
@@ -2066,7 +2066,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].riskScore}
@@ -2084,7 +2084,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {(PERSONA_BENCHMARK_DATA[p].stopFactor ?? 0).toFixed(1)}
@@ -2102,7 +2102,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {(PERSONA_BENCHMARK_DATA[p].targetFactor ?? 0).toFixed(1)}
@@ -2120,7 +2120,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {(PERSONA_BENCHMARK_DATA[p].maxRiskPct ?? 0).toFixed(1)}%
@@ -2138,7 +2138,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono text-profit font-semibold",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].winRate}%
@@ -2156,7 +2156,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono text-primary font-semibold",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {(PERSONA_BENCHMARK_DATA[p].profitFactor ?? 0).toFixed(2)}
@@ -2174,7 +2174,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono text-loss font-semibold",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  -{(PERSONA_BENCHMARK_DATA[p].maxDrawdown ?? 0).toFixed(1)}%
@@ -2192,7 +2192,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].avgTradesPerMonth}
@@ -2210,7 +2210,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono text-primary font-bold",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  +{(PERSONA_BENCHMARK_DATA[p].totalReturn ?? 0).toFixed(1)}%
@@ -2228,7 +2228,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].egxCeiling}%
@@ -2246,7 +2246,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].cryptoCeiling}%
@@ -2264,7 +2264,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono",
- isBest && "bg-profit/40 /10 border-x-2 border-profit"
+ isBest && "bg-profit/10 /10 border-x-2 border-profit"
  )}
  >
  {PERSONA_BENCHMARK_DATA[p].cashFloor}%
@@ -2275,8 +2275,8 @@ export function SuperLearningSystem() {
 
  {/* Live backtest results — win rate */}
  {personaBenchmarkRan && (
- <TableRow className="border-t-2 border-profit bg-profit/30 /10">
- <TableCell className="text-xs font-bold bg-profit/50 /20 sticky right-0">
+ <TableRow className="border-t-2 border-profit bg-profit/10 /10">
+ <TableCell className="text-xs font-bold bg-profit/10 /20 sticky right-0">
  <span className="flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5 text-profit" />
  نسبة النجاح الفعلية (Live Win Rate)
@@ -2291,7 +2291,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono font-bold",
- isBest && "bg-profit/60 /20 border-x-2 border-profit"
+ isBest && "bg-profit/10 /20 border-x-2 border-profit"
  )}
  >
  {loading ? (
@@ -2309,8 +2309,8 @@ export function SuperLearningSystem() {
 
  {/* Live backtest results — profit factor */}
  {personaBenchmarkRan && (
- <TableRow className="bg-profit/30 /10">
- <TableCell className="text-xs font-bold bg-profit/50 /20 sticky right-0">
+ <TableRow className="bg-profit/10 /10">
+ <TableCell className="text-xs font-bold bg-profit/10 /20 sticky right-0">
  <span className="flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5 text-profit" />
  عامل الربحية الفعلي (Live Profit Factor)
@@ -2325,7 +2325,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono font-bold",
- isBest && "bg-profit/60 /20 border-x-2 border-profit"
+ isBest && "bg-profit/10 /20 border-x-2 border-profit"
  )}
  >
  {loading ? (
@@ -2343,8 +2343,8 @@ export function SuperLearningSystem() {
 
  {/* Live backtest results — total return */}
  {personaBenchmarkRan && (
- <TableRow className="bg-profit/30 /10">
- <TableCell className="text-xs font-bold bg-profit/50 /20 sticky right-0">
+ <TableRow className="bg-profit/10 /10">
+ <TableCell className="text-xs font-bold bg-profit/10 /20 sticky right-0">
  <span className="flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5 text-profit" />
  إجمالي العائد الفعلي (Live Total Return)
@@ -2359,7 +2359,7 @@ export function SuperLearningSystem() {
  key={p}
  className={cn(
  "text-xs text-center font-mono font-bold",
- isBest && "bg-profit/60 /20 border-x-2 border-profit"
+ isBest && "bg-profit/10 /20 border-x-2 border-profit"
  )}
  >
  {loading ? (

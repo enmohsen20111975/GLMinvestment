@@ -286,7 +286,7 @@ export function AdvancedPortfolioManager() {
  تحذيرات
  </h4>
  {portfolioState.warnings.map((warning: string, i: number) => (
- <div key={i} className="p-2 bg-warning /20 rounded text-sm">
+ <div key={i} className="p-2 bg-warning/20 rounded text-sm">
  {warning}
  </div>
  ))}
@@ -301,7 +301,7 @@ export function AdvancedPortfolioManager() {
  تحليلات
  </h4>
  {portfolioState.recommendations.map((rec: string, i: number) => (
- <div key={i} className="p-2 bg-primary /20 rounded text-sm">
+ <div key={i} className="p-2 bg-primary/20 rounded text-sm">
  {rec}
  </div>
  ))}
@@ -401,15 +401,15 @@ export function AdvancedPortfolioManager() {
 
  {/* Targets */}
  <div className="grid grid-cols-3 gap-2">
- <div className="p-2 bg-profit /20 rounded text-center">
+ <div className="p-2 bg-profit/20 rounded text-center">
  <p className="text-xs text-muted-foreground">الهدف 1</p>
  <p className="font-bold text-profit">{strategyPlan.targets.target_1?.toFixed(2)}</p>
  </div>
- <div className="p-2 bg-profit /20 rounded text-center">
+ <div className="p-2 bg-profit/20 rounded text-center">
  <p className="text-xs text-muted-foreground">الهدف 2</p>
  <p className="font-bold text-profit">{strategyPlan.targets.target_2?.toFixed(2)}</p>
  </div>
- <div className="p-2 bg-loss /20 rounded text-center">
+ <div className="p-2 bg-loss/20 rounded text-center">
  <p className="text-xs text-muted-foreground">الستوب</p>
  <p className="font-bold text-loss">{strategyPlan.overall_stop?.toFixed(2)}</p>
  </div>
@@ -464,7 +464,7 @@ export function AdvancedPortfolioManager() {
  </div>
  </div>
  
- <div className="p-2 bg-profit /20 rounded text-center">
+ <div className="p-2 bg-profit/20 rounded text-center">
  <p className="text-xs text-muted-foreground">العائد السنوي المتوقع</p>
  <p className="font-bold text-profit">{pattern.expected_annual}</p>
  </div>

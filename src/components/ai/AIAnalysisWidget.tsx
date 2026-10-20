@@ -194,7 +194,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  // Show error if no analysis
  if (error || !analysis) {
  return (
- <Card className="overflow-hidden border-warning bg-warning /10">
+ <Card className="overflow-hidden border-warning bg-warning/10">
  <CardHeader className="pb-2">
  <CardTitle className="text-base flex items-center gap-2 text-warning">
  <AlertCircle className="w-5 h-5" />
@@ -246,7 +246,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  }
  />
  {analysis.is_tradeable && (
- <Badge variant="outline" className="text-xs text-profit border-profit/50">
+ <Badge variant="outline" className="text-xs text-profit border-profit/20">
  <CheckCircle className="w-3 h-3 ml-1" />
  قابل للتداول
  </Badge>
@@ -285,13 +285,13 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  : analysis.risk_profile?.entry_price?.toFixed(2) || '--'}
  </p>
  </div>
- <div className="bg-profit /20 rounded-lg p-2 text-center">
+ <div className="bg-profit/20 rounded-lg p-2 text-center">
  <p className="text-xs text-muted-foreground mb-1">الهدف</p>
  <p className="text-sm font-bold text-profit">
  {analysis.risk_profile.target_price?.toFixed(2) || '--'}
  </p>
  </div>
- <div className="bg-loss /20 rounded-lg p-2 text-center">
+ <div className="bg-loss/20 rounded-lg p-2 text-center">
  <p className="text-xs text-muted-foreground mb-1">وقف الخسارة</p>
  <p className="text-sm font-bold text-loss">
  {analysis.risk_profile.stop_loss_price?.toFixed(2) || '--'}
@@ -305,9 +305,9 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  <div className="flex items-center justify-center gap-2 mb-4 text-sm">
  <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
  <Badge variant="outline" className={cn(
- (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-profit border-profit/50' :
- (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-warning border-warning/50' :
- 'text-loss border-loss/50'
+ (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-profit border-profit/20' :
+ (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-warning border-warning/20' :
+ 'text-loss border-loss/20'
  )}>
  {(analysis.risk_profile?.risk_reward_ratio ?? 0).toFixed(2)}:1
  </Badge>

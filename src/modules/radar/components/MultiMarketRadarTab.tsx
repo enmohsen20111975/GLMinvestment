@@ -66,11 +66,11 @@ const MARKET_FLAG: Record<string, string> = {
 // the API response (`section.name_ar` / `pick.market_name_ar`).
 
 const REGIME_LABEL: Record<string, { color: string }> = {
- defensive: { color: 'bg-warning text-warning border-warning /60 ' },
- normal: { color: 'bg-profit text-profit border-profit /60 ' },
- aggressive: { color: 'bg-loss text-loss border-loss /60 ' },
- bull: { color: 'bg-profit text-profit border-profit /60 ' },
- bear: { color: 'bg-loss text-loss border-loss /60 ' },
+ defensive: { color: 'bg-warning text-warning border-warning/20 ' },
+ normal: { color: 'bg-profit text-profit border-profit/20 ' },
+ aggressive: { color: 'bg-loss text-loss border-loss/20 ' },
+ bull: { color: 'bg-profit text-profit border-profit/20 ' },
+ bear: { color: 'bg-loss text-loss border-loss/20 ' },
  sideways: { color: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/60 dark:text-slate-300 dark:border-slate-700' },
  unknown: { color: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-700' },
 };
@@ -373,7 +373,7 @@ export function MultiMarketRadarTab() {
  aria-label={`toggle ${m}`}
  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 ${
  selected
- ? 'bg-profit text-profit border-profit /60 '
+ ? 'bg-profit text-profit border-profit/20 '
  : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
  }`}
  >
@@ -412,7 +412,7 @@ export function MultiMarketRadarTab() {
  </div>
  </div>
  {section.is_open ? (
- <Badge className="text-xs bg-profit text-profit border-profit /60 ">
+ <Badge className="text-xs bg-profit text-profit border-profit/20 ">
  <span className="h-1.5 w-1.5 rounded-full bg-profit mr-1 animate-pulse" />
  LIVE
  </Badge>
@@ -478,7 +478,7 @@ export function MultiMarketRadarTab() {
 
  {/* ===== UNIFIED TOP 5 ===== */}
  <Card data-testid="unified-top-5" className="overflow-hidden">
- <CardHeader className="pb-2 bg-warning/60 /20">
+ <CardHeader className="pb-2 bg-warning/10 /20">
  <CardTitle className="text-base flex items-center gap-2">
  <Trophy className="h-4 w-4 text-warning " />
  {t('radar.multiMarket.unifiedTop5.title')}

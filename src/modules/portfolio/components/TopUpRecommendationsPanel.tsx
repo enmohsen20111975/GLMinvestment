@@ -104,7 +104,7 @@ function classifyRecommendation(pnlPct: number): {
  return {
  label: 'نجم صاعد',
  badgeColor:
- 'bg-profit text-profit /40 border-profit',
+ 'bg-profit text-profit/40 border-profit',
  icon: 'sparkles',
  };
  }
@@ -112,14 +112,14 @@ function classifyRecommendation(pnlPct: number): {
  return {
  label: 'فرصة زيادة',
  badgeColor:
- 'bg-whale text-whale /40 border-whale',
+ 'bg-whale text-whale/40 border-whale',
  icon: 'trending',
  };
  }
  return {
  label: 'متابعة',
  badgeColor:
- 'bg-warning text-warning /40 border-warning',
+ 'bg-warning text-warning/40 border-warning',
  icon: 'watch',
  };
 }
@@ -207,25 +207,25 @@ export function TopUpRecommendationsPanel() {
  {/* Summary Cards */}
  {topUps.length > 0 && (
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
- <div className="p-2 rounded-md bg-profit /20 border border-profit ">
+ <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-xs text-muted-foreground">عدد الفرص</div>
  <div className="font-bold text-profit ">
  {AR_NUM.format(topUps.length)}
  </div>
  </div>
- <div className="p-2 rounded-md bg-profit /20 border border-profit ">
+ <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-xs text-muted-foreground">إجمالي الربح</div>
  <div className="font-bold text-profit ">
  {formatEgp(totalProfit)}
  </div>
  </div>
- <div className="p-2 rounded-md bg-profit /20 border border-profit ">
+ <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-xs text-muted-foreground">متوسط الربح %</div>
  <div className="font-bold text-profit ">
  {formatPct(avgPct)}
  </div>
  </div>
- <div className="p-2 rounded-md bg-profit /20 border border-profit ">
+ <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-xs text-muted-foreground">الأفضل أداءً</div>
  <div className="font-bold text-profit truncate">
  {bestPerformer ? bestPerformer.ticker : '—'}
@@ -294,7 +294,7 @@ export function TopUpRecommendationsPanel() {
  className="w-full flex items-center justify-between gap-2 text-right"
  >
  <div className="flex items-center gap-2 min-w-0">
- <div className="flex items-center justify-center w-9 h-9 rounded-full bg-profit /30 text-profit shrink-0">
+ <div className="flex items-center justify-center w-9 h-9 rounded-full bg-profit/10 text-profit shrink-0">
  <TrendingUp className="h-4 w-4" />
  </div>
  <div className="min-w-0">
@@ -363,7 +363,7 @@ export function TopUpRecommendationsPanel() {
  </div>
 
  {/* Top-up suggestion */}
- <div className="flex items-start gap-2 p-2 rounded bg-profit /20 border border-profit ">
+ <div className="flex items-start gap-2 p-2 rounded bg-profit/20 border border-profit ">
  <Plus className="h-3.5 w-3.5 text-profit shrink-0 mt-0.5" />
  <div className="text-xs">
  <div className="font-medium text-profit ">

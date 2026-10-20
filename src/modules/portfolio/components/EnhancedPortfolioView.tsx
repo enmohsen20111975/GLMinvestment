@@ -222,13 +222,13 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 };
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
- stock: 'bg-profit text-profit /30 ',
- gold: 'bg-warning text-warning /30 ',
- bank: 'bg-whale text-whale /30 ',
- certificate: 'bg-primary text-primary /30 ',
- fund: 'bg-warning text-warning /30 ',
- crypto: 'bg-warning text-warning /30 ',
- real_estate: 'bg-whale text-whale /30 ',
+ stock: 'bg-profit text-profit/30 ',
+ gold: 'bg-warning text-warning/30 ',
+ bank: 'bg-whale text-whale/30 ',
+ certificate: 'bg-primary text-primary/30 ',
+ fund: 'bg-warning text-warning/30 ',
+ crypto: 'bg-warning text-warning/30 ',
+ real_estate: 'bg-whale text-whale/30 ',
  other: 'bg-muted text-muted-foreground /30 ',
 };
 
@@ -284,9 +284,9 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
- active: 'bg-profit text-profit /30 ',
- paid: 'bg-whale text-whale /30 ',
- overdue: 'bg-loss text-loss /30 ',
+ active: 'bg-profit text-profit/30 ',
+ paid: 'bg-whale text-whale/30 ',
+ overdue: 'bg-loss text-loss/30 ',
 };
 
 // ==================== STOCK SEARCH DROPDOWN ====================
@@ -1052,7 +1052,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  document.getElementById('bag-holder-rescue-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
  }, 100);
  }}
- className="w-full text-right rounded-lg border-2 border-loss bg-loss /40 p-4 animate-pulse hover:bg-loss dark:hover:bg-loss/60 transition-colors"
+ className="w-full text-right rounded-lg border-2 border-loss bg-loss/10 p-4 animate-pulse hover:bg-loss dark:hover:bg-loss/10 transition-colors"
  title="اضغط للحصول على خطة إنقاذ فورية"
  >
  <div className="flex items-center gap-3 flex-wrap">
@@ -1099,7 +1099,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  other side — opens DynamicRiskProfilerModal to recompute the persona. */}
  <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
  <div className="flex items-center gap-2">
- <Badge className="text-xs gap-1 bg-profit text-profit /30 border-profit ">
+ <Badge className="text-xs gap-1 bg-profit text-profit/30 border-profit ">
  <Shield className="w-3 h-3" />
  {t('portfolio.persona.label', { persona: personaLabelAr(persona) })}
  </Badge>
@@ -1353,7 +1353,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  if (!m || m === 'EGX') return null; // EGX هو الافتراضي — ما نظهرش badge
  const label = MARKET_NAMES_AR[m];
  return (
- <Badge variant="outline" className="text-xs px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-primary /40 border-primary text-primary ">
+ <Badge variant="outline" className="text-xs px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-primary/10 border-primary text-primary ">
  🏛️ {label}
  </Badge>
  );
@@ -1377,7 +1377,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  <Button
  variant="outline"
  size="sm"
- className="h-7 px-2 mr-1 text-xs font-bold border-loss text-loss bg-loss /40 hover:bg-loss dark:hover:bg-loss/60 animate-pulse"
+ className="h-7 px-2 mr-1 text-xs font-bold border-loss text-loss bg-loss/10 hover:bg-loss dark:hover:bg-loss/10 animate-pulse"
  onClick={(e) => {
  e.stopPropagation();
  e.preventDefault();
@@ -1443,7 +1443,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  </span>
  )}
  <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>
- <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-loss hover:border-loss hover:bg-loss dark:hover:bg-loss/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title="حذف"><Trash2 className="w-3.5 h-3.5" /></Button>
+ <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-loss hover:border-loss hover:bg-loss dark:hover:bg-loss/10" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title="حذف"><Trash2 className="w-3.5 h-3.5" /></Button>
  </div>
  </div>
  
@@ -1500,7 +1500,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  <span>{formatCurrency(dailyInterest)}</span>
  </div>
  {accruedInterest > 0 && (
- <div className="mt-2 p-2 bg-profit /20 rounded text-xs">
+ <div className="mt-2 p-2 bg-profit/20 rounded text-xs">
  <div className="flex justify-between">
  <span className="text-muted-foreground">الفائدة المكتسبة</span>
  <span className="font-semibold text-profit ">
@@ -1607,7 +1607,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  }} placeholder="0.00" dir="ltr" /></div>
  </div>
  {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
- <div className="bg-profit /20 border border-profit rounded-md px-3 py-2 text-sm">
+ <div className="bg-profit/20 border border-profit rounded-md px-3 py-2 text-sm">
  <span className="text-muted-foreground">إجمالي التكلفة: </span>
  <span className="font-bold text-profit ">{formatCurrency(parseFloat(formTotalInvested))}</span>
  </div>
@@ -1620,7 +1620,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  <>
  <div className="space-y-2"><Label>اسم الأصل</Label><Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="مثال: سوار ذهب، خاتم" /></div>
  {goldPrices && (
- <div className="bg-warning /20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
+ <div className="bg-warning/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 text-sm">
  <div className="font-semibold text-warning mb-2">أسعار الذهب الحالية (للجرام):</div>
  <div className="grid grid-cols-3 gap-2 text-xs">
  <div>عيار ٢٤: <span className="font-bold text-warning ">{goldPrices['24k']?.toFixed(2) || '—'} ج.م</span></div>
@@ -1674,7 +1674,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  </div>
  )}
  {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
- <div className="bg-profit /20 border border-profit rounded-md px-3 py-2 text-sm flex justify-between">
+ <div className="bg-profit/20 border border-profit rounded-md px-3 py-2 text-sm flex justify-between">
  <span className="text-muted-foreground">القيمة الحالية:</span>
  <span className="font-bold text-profit ">{formatCurrency(parseFloat(formCurrentValue))}</span>
  </div>
@@ -1730,7 +1730,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  </div>
  <div className="space-y-2"><Label>القيمة الحالية</Label><Input type="number" value={formCurrentValue} onChange={(e) => setFormCurrentValue(e.target.value)} placeholder="0.00" dir="ltr" /></div>
  {formFundType === 'fixed_income' && (
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-profit /30 rounded-lg border border-profit ">
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-profit/10 rounded-lg border border-profit ">
  <div className="space-y-2">
  <Label className="text-profit ">العائد السنوي %</Label>
  <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder="مثال: 15.5" dir="ltr" />
@@ -1784,7 +1784,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  />
  </div>
  {formSelectedPrice && formSelectedPrice > 0 && (
- <div className="bg-warning /20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
+ <div className="bg-warning/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
  <span className="text-muted-foreground">السعر الحالي (USD)</span>
  <span className="font-semibold text-warning " dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
  </div>
@@ -1810,7 +1810,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  </div>
  </div>
  {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
- <div className="bg-profit /20 border border-profit rounded-md px-3 py-2 text-sm">
+ <div className="bg-profit/20 border border-profit rounded-md px-3 py-2 text-sm">
  <span className="text-muted-foreground">إجمالي التكلفة (USD): </span>
  <span className="font-bold text-profit ">${parseFloat(formTotalInvested).toFixed(2)}</span>
  </div>
@@ -1930,9 +1930,9 @@ function WealthAllocationMatrixCard({
  cash: { label: 'السيولة', icon: <Banknote className="w-4 h-4" /> },
  };
  const severityBorder: Record<WealthAllocationAlert['severity'], string> = {
- ok: 'border-profit /60',
- warning: 'border-warning /60',
- critical: 'border-loss /70',
+ ok: 'border-profit/20',
+ warning: 'border-warning/20',
+ critical: 'border-loss/70',
  };
  const severityText: Record<WealthAllocationAlert['severity'], string> = {
  ok: 'text-profit ',
@@ -2018,8 +2018,8 @@ function WealthAllocationMatrixCard({
  className={cn(
  'text-xs flex items-start gap-1.5 rounded-md px-2 py-1.5',
  a.severity === 'critical'
- ? 'bg-loss /30 text-loss '
- : 'bg-warning /30 text-warning ',
+ ? 'bg-loss/10 text-loss '
+ : 'bg-warning/10 text-warning ',
  )}
  >
  <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -2155,7 +2155,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
  sortable: true,
  filterable: true,
  render: (t) => (
- <Badge className={t.type === 'income' ? 'bg-profit text-profit /30 ' : 'bg-loss text-loss /30 '}>
+ <Badge className={t.type === 'income' ? 'bg-profit text-profit/30 ' : 'bg-loss text-loss/30 '}>
  {t.type === 'income' ? 'دخل' : 'مصروف'}
  </Badge>
  ),
@@ -2862,24 +2862,24 @@ const ReportsTab = memo(function ReportsTab() {
  </CardHeader>
  <CardContent className="space-y-4">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
- <div className="text-center p-3 rounded-lg bg-profit /20">
+ <div className="text-center p-3 rounded-lg bg-profit/20">
  <p className="text-xs text-muted-foreground mb-1">إجمالي الأصول</p>
  <p className="text-lg font-bold text-profit ">{formatCurrency(totalAssets)}</p>
  <p className="text-xs text-muted-foreground mt-1">أسهم + ذهب + بنك + شهادات + صناديق</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-loss /20">
+ <div className="text-center p-3 rounded-lg bg-loss/20">
  <p className="text-xs text-muted-foreground mb-1">إجمالي الالتزامات</p>
  <p className="text-lg font-bold text-loss ">{formatCurrency(totalLiabilities)}</p>
  <p className="text-xs text-muted-foreground mt-1">قروض + أقساط + ديون</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-primary /20">
+ <div className="text-center p-3 rounded-lg bg-primary/20">
  <p className="text-xs text-muted-foreground mb-1">صافي الثروة</p>
  <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-whale ' : 'text-loss ')}>
  {formatCurrency(netWorth)}
  </p>
  <p className="text-xs text-muted-foreground mt-1">الأصول - الالتزامات</p>
  </div>
- <div className="text-center p-3 rounded-lg bg-warning /20">
+ <div className="text-center p-3 rounded-lg bg-warning/20">
  <p className="text-xs text-muted-foreground mb-1">المدخرات الشهرية</p>
  <p className={cn('text-lg font-bold', (reports?.monthly_savings ?? 0) >= 0 ? 'text-warning ' : 'text-loss ')}>
  {formatCurrency(reports?.monthly_savings ?? 0)}
@@ -2902,24 +2902,24 @@ const ReportsTab = memo(function ReportsTab() {
  <CardContent className="space-y-4">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {investmentReturns.bank_monthly > 0 && (
- <div className="p-3 rounded-lg bg-primary /20 text-center">
+ <div className="p-3 rounded-lg bg-primary/20 text-center">
  <p className="text-xs text-muted-foreground mb-1">عائد البنك الشهري</p>
  <p className="text-base font-bold text-whale ">{formatCurrency(investmentReturns.bank_monthly)}</p>
  </div>
  )}
  {investmentReturns.certificate_monthly > 0 && (
- <div className="p-3 rounded-lg bg-primary /20 text-center">
+ <div className="p-3 rounded-lg bg-primary/20 text-center">
  <p className="text-xs text-muted-foreground mb-1">عائد الشهادات الشهري</p>
  <p className="text-base font-bold text-primary ">{formatCurrency(investmentReturns.certificate_monthly)}</p>
  </div>
  )}
  {investmentReturns.fund_monthly > 0 && (
- <div className="p-3 rounded-lg bg-warning /20 text-center">
+ <div className="p-3 rounded-lg bg-warning/20 text-center">
  <p className="text-xs text-muted-foreground mb-1">عائد الصناديق الشهري</p>
  <p className="text-base font-bold text-warning ">{formatCurrency(investmentReturns.fund_monthly)}</p>
  </div>
  )}
- <div className="p-3 rounded-lg bg-profit /20 text-center">
+ <div className="p-3 rounded-lg bg-profit/20 text-center">
  <p className="text-xs text-muted-foreground mb-1">إجمالي العائد الشهري</p>
  <p className="text-base font-bold text-profit ">{formatCurrency(investmentReturns.total_monthly)}</p>
  </div>
@@ -2999,9 +2999,9 @@ const ReportsTab = memo(function ReportsTab() {
  key={idx}
  className={cn(
  'flex items-start gap-3 p-3 rounded-lg border',
- alert.type === 'danger' && 'bg-loss border-loss /20 /50',
+ alert.type === 'danger' && 'bg-loss border-loss/20 /50',
  alert.type === 'warning' && 'bg-warning border-yellow-200 /20 dark:border-yellow-900/50',
- alert.type === 'info' && 'bg-primary border-whale /20 /50'
+ alert.type === 'info' && 'bg-primary border-whale/20 /50'
  )}
  >
  {alert.type === 'danger' && <XCircle className="w-5 h-5 text-loss mt-0.5 flex-shrink-0" />}
@@ -3095,7 +3095,7 @@ const ReportsTab = memo(function ReportsTab() {
  <>
  {/* Warning: High Stock Concentration */}
  {stockPercent > 50 && (
- <div className="flex items-start gap-3 p-3 rounded-lg bg-warning /20 border border-yellow-200 dark:border-yellow-800">
+ <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/20 border border-yellow-200 dark:border-yellow-800">
  <AlertCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
  <div>
  <p className="text-sm font-medium text-warning ">تنويع المحفظة</p>
@@ -3108,7 +3108,7 @@ const ReportsTab = memo(function ReportsTab() {
 
  {/* Good: High Bank Returns */}
  {bankPercent > 60 && investmentReturns && investmentReturns.bank_monthly > 0 && (
- <div className="flex items-start gap-3 p-3 rounded-lg bg-primary /20 border border-whale ">
+ <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/20 border border-whale ">
  <CheckCircle2 className="w-5 h-5 text-whale mt-0.5 flex-shrink-0" />
  <div>
  <p className="text-sm font-medium text-whale ">عوائد بنكية ممتازة</p>
@@ -3121,7 +3121,7 @@ const ReportsTab = memo(function ReportsTab() {
 
  {/* Suggestion: Add Gold */}
  {goldPercent < 5 && totalAssets > 100000 && (
- <div className="flex items-start gap-3 p-3 rounded-lg bg-warning /20 border border-warning ">
+ <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/20 border border-warning ">
  <Info className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
  <div>
  <p className="text-sm font-medium text-warning ">إضافة الذهب</p>
@@ -3134,7 +3134,7 @@ const ReportsTab = memo(function ReportsTab() {
 
  {/* Suggestion: Emergency Fund */}
  {investmentReturns && investmentReturns.total_monthly > 0 && (
- <div className="flex items-start gap-3 p-3 rounded-lg bg-profit /20 border border-profit ">
+ <div className="flex items-start gap-3 p-3 rounded-lg bg-profit/20 border border-profit ">
  <PiggyBank className="w-5 h-5 text-profit mt-0.5 flex-shrink-0" />
  <div>
  <p className="text-sm font-medium text-profit ">صندوق الطوارئ</p>
@@ -3222,7 +3222,7 @@ export function EnhancedPortfolioView() {
  {/* Header */}
  <div className="flex items-center justify-between gap-3">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-full bg-profit /30 flex items-center justify-center">
+ <div className="w-10 h-10 rounded-full bg-profit/10 flex items-center justify-center">
  {portfolioMode === 'portfolio' && <Wallet className="w-5 h-5 text-profit " />}
  {portfolioMode === 'wealth' && <HandCoins className="w-5 h-5 text-warning " />}
  {portfolioMode === 'rescue' && <LifeBuoy className="w-5 h-5 text-loss " />}
@@ -3315,7 +3315,7 @@ export function EnhancedPortfolioView() {
  <MasterPortfolioSummary userId={userId} />
 
  {selectedPortfolioId !== 'master' && (
- <Card className="bg-profit/20 border-profit/40">
+ <Card className="bg-profit/20 border-profit/20">
  <CardContent className="p-3 flex items-center justify-between text-xs text-profit">
  <span>{t('portfolio.subPortfolio.banner')}</span>
  <Badge variant="outline" className="text-profit border-profit">

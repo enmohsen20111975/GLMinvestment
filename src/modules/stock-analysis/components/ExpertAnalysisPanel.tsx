@@ -267,7 +267,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  </Card>
 
  {/* Disclaimer */}
- <div className="mt-4 p-3 rounded-md bg-warning /20 border border-warning ">
+ <div className="mt-4 p-3 rounded-md bg-warning/20 border border-warning ">
  <p className="text-xs text-warning ">
  ⚠️ إخلاء مسؤولية: هذا التحليل لأغراض تعليمية وإعلامية فقط ولا يُعتبر توصية استثمارية ملزمة.
  الاستثمار في الأسهم ينطوي على مخاطر، يُرجى استشارة مستشار مالي مرخص قبل اتخاذ قرارات الاستثمار.
@@ -287,10 +287,10 @@ function PriceBox({ label, value, pct, rationale, color }: {
  color: 'emerald' | 'blue' | 'purple' | 'rose';
 }) {
  const colorClasses = {
- emerald: 'border-profit bg-profit /20',
- blue: 'border-primary bg-primary /20',
- purple: 'border-purple-200 dark:border-purple-900 bg-primary /20',
- rose: 'border-loss bg-loss /20',
+ emerald: 'border-profit bg-profit/20',
+ blue: 'border-primary bg-primary/20',
+ purple: 'border-purple-200 dark:border-purple-900 bg-primary/20',
+ rose: 'border-loss bg-loss/20',
  };
 
  const valueColor = {

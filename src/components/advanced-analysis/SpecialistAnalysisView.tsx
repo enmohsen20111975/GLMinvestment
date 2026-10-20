@@ -1919,10 +1919,10 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
 
  const phase = safeStr(maestro?.phase) ?? safeStr(maestro?.regime_phase);
  const phaseMeta: Record<string, { ar: string; cls: string }> = {
- accumulation: { ar: 'تراكم', cls: 'bg-profit text-profit /40 ' },
- markup: { ar: 'تصعيد', cls: 'bg-profit text-profit /40 ' },
- distribution: { ar: 'توزيع', cls: 'bg-warning text-warning /40 ' },
- decline: { ar: 'انخفاض', cls: 'bg-loss text-loss /40 ' },
+ accumulation: { ar: 'تراكم', cls: 'bg-profit text-profit/40 ' },
+ markup: { ar: 'تصعيد', cls: 'bg-profit text-profit/40 ' },
+ distribution: { ar: 'توزيع', cls: 'bg-warning text-warning/40 ' },
+ decline: { ar: 'انخفاض', cls: 'bg-loss text-loss/40 ' },
  };
  const meta = phase ? phaseMeta[phase.toLowerCase()] ?? { ar: phase, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' } : null;
 
@@ -2394,9 +2394,9 @@ function HeaderCard({
 
  const trendAr = trend == null ? null
  : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
- ? { txt: 'صاعد', cls: 'bg-profit text-profit /40 ' }
+ ? { txt: 'صاعد', cls: 'bg-profit text-profit/40 ' }
  : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
- ? { txt: 'هابط', cls: 'bg-loss text-loss /40 ' }
+ ? { txt: 'هابط', cls: 'bg-loss text-loss/40 ' }
  : { txt: trend, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
 
  const shariaHalal = sharia?.success
@@ -2685,7 +2685,7 @@ export function SpecialistAnalysisView() {
  </div>
  <Badge
  variant="secondary"
- className="bg-profit text-profit /30 border border-profit "
+ className="bg-profit text-profit/30 border border-profit "
  >
  <span className="w-2 h-2 rounded-full bg-profit animate-pulse ml-1" />
  السوق: {MARKET_NAMES_AR[currentMarket] || currentMarket}

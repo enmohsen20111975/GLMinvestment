@@ -17,7 +17,7 @@ export function DevelopmentNotice() {
 
  return (
  <Alert 
- className="mb-3 border-warning bg-warning /40 "
+ className="mb-3 border-warning bg-warning/10 "
  dir="rtl"
  >
  <Construction className="h-4 w-4 text-warning " />

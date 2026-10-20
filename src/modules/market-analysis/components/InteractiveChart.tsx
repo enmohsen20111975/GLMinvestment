@@ -1714,13 +1714,13 @@ export function InteractiveChart(props: FullChartProps) {
  // §2 Regime badge + market warning (only when flight/maker state is provided)
  const regimeBadge = (() => {
  if (flightState?.state === 'falling_down' || makerState?.state === 'distribution') {
- return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-loss', bg: 'bg-loss/30', border: 'border-loss' };
+ return { label: '🛑 سكين ساقطة وانهيار هيكلي', color: 'text-loss', bg: 'bg-loss/10', border: 'border-loss' };
  }
  if (flightState?.state === 'taking_off') {
- return { label: '🟢 مسار صاعد صحي', color: 'text-profit', bg: 'bg-profit/30', border: 'border-profit' };
+ return { label: '🟢 مسار صاعد صحي', color: 'text-profit', bg: 'bg-profit/10', border: 'border-profit' };
  }
  if (makerState?.state === 'accumulation') {
- return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-warning', bg: 'bg-warning/30', border: 'border-warning' };
+ return { label: '🟠 تذبذب عرضي ونطاق ضيق', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning' };
  }
  return null;
  })();
@@ -1858,10 +1858,10 @@ export function InteractiveChart(props: FullChartProps) {
  className={cn(
  'text-sm font-bold px-3 py-1.5 rounded-lg border-2 shadow-sm',
  signalFinal?.includes('SELL') || signalFinal?.includes('AVOID') || signalFinal?.includes('KILL')
- ? 'bg-loss/40 text-loss border-loss'
+ ? 'bg-loss/10 text-loss border-loss'
  : signalFinal?.includes('BUY')
- ? 'bg-profit/40 text-profit border-profit'
- : 'bg-warning/40 text-warning border-warning'
+ ? 'bg-profit/10 text-profit border-profit'
+ : 'bg-warning/10 text-warning border-warning'
  )}
  >
  {signalFinal?.includes('SELL') || signalFinal?.includes('AVOID') || signalFinal?.includes('KILL')
@@ -2100,9 +2100,9 @@ function ReasonCard({ label, value, positive, negative }: {
  <div className={cn(
  'p-2 rounded-lg border text-center',
  positive
- ? 'bg-profit/30 border-profit'
+ ? 'bg-profit/10 border-profit'
  : negative
- ? 'bg-loss/30 border-loss'
+ ? 'bg-loss/10 border-loss'
  : 'bg-muted/30 border-border'
  )}>
  <div className="text-xs text-muted-foreground mb-0.5">{label}</div>

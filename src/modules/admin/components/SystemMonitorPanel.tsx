@@ -254,8 +254,8 @@ export function SystemMonitorPanel() {
  <div className={cn(
  'p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md transition-all',
  isCriticalDisk
- ? 'bg-loss/10 border-loss/40 text-loss '
- : 'bg-warning/10 border-warning/40 text-warning '
+ ? 'bg-loss/10 border-loss/20 text-loss '
+ : 'bg-warning/10 border-warning/20 text-warning '
  )}>
  <div className="flex items-center gap-3">
  <ShieldAlert className="w-8 h-8 flex-shrink-0 animate-pulse" />
@@ -326,7 +326,7 @@ export function SystemMonitorPanel() {
  {/* Clean Logs */}
  <Button
  variant="outline"
- className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-warning/50 hover:bg-warning/5 transition-all"
+ className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-warning/20 hover:bg-warning/5 transition-all"
  disabled={activeAction !== null}
  onClick={() => handleAction('clean_logs')}
  >
@@ -345,7 +345,7 @@ export function SystemMonitorPanel() {
  {/* Vacuum Databases */}
  <Button
  variant="outline"
- className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-profit/50 hover:bg-profit/5 transition-all"
+ className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-profit/20 hover:bg-profit/5 transition-all"
  disabled={activeAction !== null}
  onClick={() => handleAction('vacuum_databases')}
  >
@@ -383,7 +383,7 @@ export function SystemMonitorPanel() {
  {/* Clean Next.js Build Cache */}
  <Button
  variant="outline"
- className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-loss/50 hover:bg-loss/5 transition-all"
+ className="h-auto p-3 flex flex-col items-start gap-1 text-right border-border/80 hover:border-loss/20 hover:bg-loss/5 transition-all"
  disabled={activeAction !== null}
  onClick={() => handleAction('clean_cache')}
  >
@@ -615,7 +615,7 @@ export function SystemMonitorPanel() {
  </div>
  </div>
  <div className="flex items-center gap-2 flex-shrink-0">
- <Badge variant="outline" className="font-mono text-xs text-warning border-warning/30">
+ <Badge variant="outline" className="font-mono text-xs text-warning border-warning/20">
  {file.size_formatted}
  </Badge>
  {isDeletable && (
@@ -810,7 +810,7 @@ function TopProcessesSummary({ services }: { services: Pm2Process[] }) {
  return (
  <div className="border-t border-border/40 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
  {topCpu && (
- <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2">
+ <div className="flex items-center gap-2 rounded-lg border border-warning/20 bg-warning/5 px-3 py-2">
  <span className="text-base">🔥</span>
  <span className="text-muted-foreground">أعلى Process استخداماً للـ CPU:</span>
  <span className="font-mono font-bold text-warning ">{topCpu.name}</span>
@@ -818,7 +818,7 @@ function TopProcessesSummary({ services }: { services: Pm2Process[] }) {
  </div>
  )}
  {topMem && (
- <div className="flex items-center gap-2 rounded-lg border border-profit/30 bg-profit/5 px-3 py-2">
+ <div className="flex items-center gap-2 rounded-lg border border-profit/20 bg-profit/5 px-3 py-2">
  <span className="text-base">🧠</span>
  <span className="text-muted-foreground">أعلى Process استخداماً للـ RAM:</span>
  <span className="font-mono font-bold text-profit ">{topMem.name}</span>

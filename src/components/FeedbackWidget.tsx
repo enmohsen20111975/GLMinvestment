@@ -41,10 +41,10 @@ const TYPES: {
  icon: React.ReactNode;
  color: string;
 }[] = [
- { id: 'bug', label: 'مشكلة', icon: <Bug className="w-4 h-4" />, color: 'text-loss border-loss bg-loss /40 ' },
- { id: 'suggestion', label: 'اقتراح', icon: <Lightbulb className="w-4 h-4" />, color: 'text-warning border-warning bg-warning /40 ' },
+ { id: 'bug', label: 'مشكلة', icon: <Bug className="w-4 h-4" />, color: 'text-loss border-loss bg-loss/10 ' },
+ { id: 'suggestion', label: 'اقتراح', icon: <Lightbulb className="w-4 h-4" />, color: 'text-warning border-warning bg-warning/10 ' },
  { id: 'opinion', label: 'رأي / ملاحظة', icon: <MessageSquareText className="w-4 h-4" />, color: 'text-sky-600 border-sky-500 bg-sky-50 dark:bg-sky-950/40 dark:text-sky-400' },
- { id: 'praise', label: 'إشادة', icon: <Smile className="w-4 h-4" />, color: 'text-profit border-profit bg-profit /40 ' },
+ { id: 'praise', label: 'إشادة', icon: <Smile className="w-4 h-4" />, color: 'text-profit border-profit bg-profit/10 ' },
 ];
 
 export function FeedbackWidget() {

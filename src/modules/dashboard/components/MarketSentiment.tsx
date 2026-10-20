@@ -27,28 +27,28 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
  stroke: '#10b981',
  gradientStart: '#10b981',
  gradientEnd: '#34d399',
- bg: 'bg-profit /30',
+ bg: 'bg-profit/10',
  text: 'text-profit ',
  label: 'صعودي',
- labelBg: 'bg-profit text-profit /50 ',
+ labelBg: 'bg-profit text-profit/50 ',
  },
  neutral: {
  stroke: '#f59e0b',
  gradientStart: '#f59e0b',
  gradientEnd: '#fbbf24',
- bg: 'bg-warning /30',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  label: 'محايد',
- labelBg: 'bg-warning text-warning /50 ',
+ labelBg: 'bg-warning text-warning/50 ',
  },
  bearish: {
  stroke: '#ef4444',
  gradientStart: '#ef4444',
  gradientEnd: '#f87171',
- bg: 'bg-loss /30',
+ bg: 'bg-loss/10',
  text: 'text-loss ',
  label: 'هبوطي',
- labelBg: 'bg-loss text-loss /50 ',
+ labelBg: 'bg-loss text-loss/50 ',
  },
  };
 
@@ -184,7 +184,7 @@ export function MarketSentiment() {
  </span>
  </div>
  </div>
- <div className="relative h-2 bg-loss /40 rounded-full overflow-hidden">
+ <div className="relative h-2 bg-loss/10 rounded-full overflow-hidden">
  <div
  className="absolute inset-y-0 right-0 bg-profit rounded-full transition-all duration-700"
  style={{ width: `${breadthPercent}%` }}

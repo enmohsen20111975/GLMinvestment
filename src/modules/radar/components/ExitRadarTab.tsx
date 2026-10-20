@@ -101,9 +101,9 @@ const EXIT_PATHS = [
  pathValue: 'X1_distribution_strong',
  icon: '🔴',
  color: 'text-loss ',
- bg: 'bg-loss /30',
+ bg: 'bg-loss/10',
  border: 'border-loss ',
- badge: 'bg-loss text-loss /40 ',
+ badge: 'bg-loss text-loss/40 ',
  },
  {
  key: 'x2_volume_divergence',
@@ -111,9 +111,9 @@ const EXIT_PATHS = [
  pathValue: 'X2_volume_divergence',
  icon: '⚠️',
  color: 'text-warning ',
- bg: 'bg-warning /30',
+ bg: 'bg-warning/10',
  border: 'border-warning ',
- badge: 'bg-warning text-warning /40 ',
+ badge: 'bg-warning text-warning/40 ',
  },
  {
  key: 'x3_resistance_rejection',
@@ -121,9 +121,9 @@ const EXIT_PATHS = [
  pathValue: 'X3_resistance_rejection',
  icon: '🚫',
  color: 'text-warning ',
- bg: 'bg-warning /30',
+ bg: 'bg-warning/10',
  border: 'border-orange-200 dark:border-orange-900',
- badge: 'bg-warning text-warning /40 ',
+ badge: 'bg-warning text-warning/40 ',
  },
  {
  key: 'x4_exhaustion_gap',
@@ -131,9 +131,9 @@ const EXIT_PATHS = [
  pathValue: 'X4_exhaustion_gap',
  icon: '😮',
  color: 'text-primary ',
- bg: 'bg-primary /30',
+ bg: 'bg-primary/10',
  border: 'border-purple-200 dark:border-purple-900',
- badge: 'bg-primary text-primary /40 ',
+ badge: 'bg-primary text-primary/40 ',
  },
  {
  key: 'x5_kill_switch_triggered',
@@ -141,9 +141,9 @@ const EXIT_PATHS = [
  pathValue: 'X5_kill_switch_triggered',
  icon: '🛑',
  color: 'text-loss ',
- bg: 'bg-loss /30',
+ bg: 'bg-loss/10',
  border: 'border-loss ',
- badge: 'bg-loss text-loss /40 ',
+ badge: 'bg-loss text-loss/40 ',
  },
 ] as const;
 
@@ -246,9 +246,9 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
  // ============================================================================
  if (exitRadarLocked) {
  return (
- <Card className="p-6 border-warning/40 bg-warning/50 /20" dir="rtl">
+ <Card className="p-6 border-warning/20 bg-warning/10 /20" dir="rtl">
  <div className="flex flex-col items-center gap-3 text-center">
- <div className="h-12 w-12 rounded-full bg-warning /40 flex items-center justify-center">
+ <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
  <Lock className="h-6 w-6 text-warning " />
  </div>
  <div>
@@ -307,7 +307,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
  return (
  <Card className="p-8 text-center">
  <div className="flex flex-col items-center gap-3">
- <div className="h-12 w-12 rounded-full bg-loss /40 flex items-center justify-center">
+ <div className="h-12 w-12 rounded-full bg-loss/10 flex items-center justify-center">
  <AlertTriangle className="h-6 w-6 text-loss animate-pulse" />
  </div>
  <div>
@@ -385,8 +385,8 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
  variant="outline"
  className={
  hasAnySignals
- ? 'text-xs bg-loss /30 text-loss '
- : 'text-xs bg-profit /30 text-profit '
+ ? 'text-xs bg-loss/10 text-loss '
+ : 'text-xs bg-profit/10 text-profit '
  }
  >
  {hasAnySignals
@@ -405,7 +405,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
  </div>
  </div>
  {data.warning && (
- <div className="mt-3 text-xs text-warning bg-warning /30 p-2 rounded">
+ <div className="mt-3 text-xs text-warning bg-warning/10 p-2 rounded">
  ⚠️ {data.warning}
  </div>
  )}
@@ -413,9 +413,9 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
 
  {/* 5 exit path sections — collapsible */}
  {!hasAnySignals && (
- <Card className="p-8 text-center border-profit bg-profit/50 /20">
+ <Card className="p-8 text-center border-profit bg-profit/10 /20">
  <div className="flex flex-col items-center gap-3">
- <div className="h-12 w-12 rounded-full bg-profit /40 flex items-center justify-center">
+ <div className="h-12 w-12 rounded-full bg-profit/10 flex items-center justify-center">
  <TrendingUp className="h-6 w-6 text-profit " />
  </div>
  <div>

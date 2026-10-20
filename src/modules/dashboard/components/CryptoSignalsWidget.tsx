@@ -177,9 +177,9 @@ export function CryptoSignalsWidget() {
  key={crypto.id}
  className={cn(
  'p-2.5 rounded-lg border transition-all',
- signal === 'BUY' ? 'bg-profit /20 border-profit ' :
- signal === 'SELL' ? 'bg-loss /20 border-loss ' :
- 'bg-warning /20 border-warning '
+ signal === 'BUY' ? 'bg-profit/20 border-profit ' :
+ signal === 'SELL' ? 'bg-loss/20 border-loss ' :
+ 'bg-warning/20 border-warning '
  )}
  >
  <div className="flex items-center justify-between mb-1">

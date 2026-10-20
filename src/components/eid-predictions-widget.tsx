@@ -50,8 +50,8 @@ const iconMap: Record<string, any> = {
 };
 
 const signalColors: Record<string, string> = {
- 'BUY': 'bg-success/20 text-success border-success/50',
- 'SELL': 'bg-loss/20 text-loss border-loss/50',
+ 'BUY': 'bg-success/20 text-success border-success/20',
+ 'SELL': 'bg-loss/20 text-loss border-loss/20',
  'HOLD': 'bg-warning/20 text-warning border-yellow-500/50'
 };
 
@@ -113,7 +113,7 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  return (
  <div
  key={pred.id}
- className={cn('rounded-lg p-3 border transition-colors', isClosed ? 'bg-muted/50 border-border opacity-60' : 'bg-card border-border hover:border-primary/40')}
+ className={cn('rounded-lg p-3 border transition-colors', isClosed ? 'bg-muted/50 border-border opacity-60' : 'bg-card border-border hover:border-primary/20')}
  >
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  <Icon className="h-4 w-4 text-foreground" />
  </div>
  <span className="font-bold text-foreground">{pred.symbol}</span>
- {getLifecycle(pred) === 'testing' && (<Badge className="bg-warning/15 text-warning border-warning/40 text-[10px]">🟡 تحت الاختبار</Badge>)}
+ {getLifecycle(pred) === 'testing' && (<Badge className="bg-warning/15 text-warning border-warning/20 text-[10px]">🟡 تحت الاختبار</Badge>)}
  {getLifecycle(pred) === 'closed' && (<Badge className="bg-muted text-muted-foreground border-border text-[10px]">🔴 منتهية</Badge>)}
  </div>
  <Badge className={signalColors[pred.signal]}>
@@ -276,7 +276,7 @@ export function EidPredictionsWidget() {
  </CardHeader>
  <CardContent className="space-y-3">
  {/* Disclaimer */}
- <div className="bg-warning/10 border border-warning/30 rounded-lg p-2 mb-4">
+ <div className="bg-warning/10 border border-warning/20 rounded-lg p-2 mb-4">
  <p className="text-xs text-warning flex items-center gap-1">
  <AlertTriangle className="h-3 w-3" />
  هذه التوقعات للأغراض التعليمية فقط. استشر مستشار مالي قبل الاستثمار.

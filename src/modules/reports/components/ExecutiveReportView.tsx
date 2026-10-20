@@ -941,7 +941,7 @@ export function ExecutiveReportView({
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/60 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-border shadow-sm">
  <div className="min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
- <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 font-bold gap-1 text-xs">
+ <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 font-bold gap-1 text-xs">
  <Layers className="w-3.5 h-3.5" />
  ملخص الأداء
  </Badge>
@@ -1027,7 +1027,7 @@ export function ExecutiveReportView({
  <div className="flex items-center justify-between gap-2 flex-wrap">
  <button
  onClick={() => setShowFilters(!showFilters)}
- className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold bg-warning/10 text-warning border border-warning/30 hover:bg-warning/20 transition-colors"
+ className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold bg-warning/10 text-warning border border-warning/20 hover:bg-warning/20 transition-colors"
  >
  <Filter className="w-4 h-4" />
  فلاتر متقدمة
@@ -1151,7 +1151,7 @@ export function ExecutiveReportView({
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  placeholder="بحث بالرمز أو الاسم..."
- className="w-full pr-9 pl-3 py-1.5 rounded-lg text-xs font-medium bg-card/80 border border-border focus:border-warning/50 focus:ring-1 focus:ring-warning/30 outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+ className="w-full pr-9 pl-3 py-1.5 rounded-lg text-xs font-medium bg-card/80 border border-border focus:border-warning/20 focus:ring-1 focus:ring-warning/30 outline-none transition-colors text-foreground placeholder:text-muted-foreground"
  />
  {searchQuery && (
  <button
@@ -1181,7 +1181,7 @@ export function ExecutiveReportView({
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-7 border-b border-white/10">
  <div className="min-w-0">
  <div className="flex items-center gap-2 flex-wrap mb-3">
- <span className="px-3 py-1 rounded-full text-xs font-black bg-warning/15 text-warning border border-warning/30 tracking-wider">
+ <span className="px-3 py-1 rounded-full text-xs font-black bg-warning/15 text-warning border border-warning/20 tracking-wider">
  ملخص الأداء
  </span>
  <span className="text-xs text-muted-foreground font-mono">
@@ -1198,7 +1198,7 @@ export function ExecutiveReportView({
  )}
  {/* RL-FIX-7: Active filters indicator */}
  {activeFilterCount > 0 && (
- <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-warning/20 text-warning border border-warning/40">
+ <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-warning/20 text-warning border border-warning/20">
  {activeFilterCount} فلتر نشط
  </span>
  )}
@@ -1206,7 +1206,7 @@ export function ExecutiveReportView({
  <span className={cn(
  'px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1',
  qualityMode === 'top_picks'
- ? 'bg-profit/15 text-profit border-profit/40'
+ ? 'bg-profit/15 text-profit border-profit/20'
  : 'bg-muted text-foreground border-border'
  )}>
  <Sparkles className="w-3 h-3" />
@@ -1331,7 +1331,7 @@ export function ExecutiveReportView({
  stop ratchet). الكارد بـ يظهر بس لو فيه عدد > 0 علشان ما يـ clutterش
  الـ UI لو مفيش بيانات. */}
  {trailingProfitCount > 0 && (
- <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-whale/10 border border-whale/30">
+ <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-whale/10 border border-whale/20">
  <span className="text-2xl">💰</span>
  <div className="flex flex-col">
  <span className="text-xs text-muted-foreground font-bold">خرجت بربح (Trailing Profit)</span>
@@ -1410,7 +1410,7 @@ export function ExecutiveReportView({
  <h3 className="text-base font-bold text-foreground">حركة الأرباح التراكمية</h3>
  </div>
  {cumulativeProfitData.length > 0 && (
- <Badge variant="outline" className="text-xs text-profit border-profit/30 bg-profit/10">
+ <Badge variant="outline" className="text-xs text-profit border-profit/20 bg-profit/10">
  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative > 0 ? '+' : ''}
  {(cumulativeProfitData[cumulativeProfitData.length - 1].cumulative ?? 0).toFixed(1)}%
  </Badge>
@@ -1539,7 +1539,7 @@ export function ExecutiveReportView({
  title="أعلى المكاسب"
  subtitle="الأعلى عائداً"
  icon={<Trophy className="w-5 h-5 text-warning" />}
- accentBorder="border-warning/30"
+ accentBorder="border-warning/20"
  items={topGains.map((item) => ({
  ticker: item.ticker,
  nameAr: item.nameAr,
@@ -1556,7 +1556,7 @@ export function ExecutiveReportView({
  title="أسرع الصفقات"
  subtitle="تحقيق الهدف في مدة قصيرة"
  icon={<Zap className="w-5 h-5 text-profit" />}
- accentBorder="border-profit/30"
+ accentBorder="border-profit/20"
  items={fastestGains.map((item) => ({
  ticker: item.ticker,
  nameAr: item.nameAr,
@@ -1575,7 +1575,7 @@ export function ExecutiveReportView({
  title="أعلى الخسائر"
  subtitle="الأكثر انخفاضاً في الفترة"
  icon={<TrendingDown className="w-5 h-5 text-loss" />}
- accentBorder="border-loss/30"
+ accentBorder="border-loss/20"
  items={topLosses.map((item) => ({
  ticker: item.ticker,
  nameAr: item.nameAr,
@@ -1597,7 +1597,7 @@ export function ExecutiveReportView({
  title="💰 خرجت بربح (Trailing Profit)"
  subtitle="جني أرباح قبل الهدف الكامل"
  icon={<Trophy className="w-5 h-5 text-whale" />}
- accentBorder="border-whale/30"
+ accentBorder="border-whale/20"
  items={topTrailingProfit.map((item) => ({
  ticker: item.ticker,
  nameAr: item.nameAr,
@@ -1641,7 +1641,7 @@ export function ExecutiveReportView({
  title="المتوازن"
  subtitle="متوسط (2-6 أسابيع)"
  description="موجات الصعود المنظمة"
- accentRing="border-whale/30"
+ accentRing="border-whale/20"
  accentBar="bg-whale"
  stats={{
  winRate: statsByPersona?.balanced?.winRate ?? 0,
@@ -1658,7 +1658,7 @@ export function ExecutiveReportView({
  title="المستثمر"
  subtitle="استثماري (6-12 شهر)"
  description="القيمة العادلة والأمان المالي"
- accentRing="border-profit/30"
+ accentRing="border-profit/20"
  accentBar="bg-profit"
  stats={{
  winRate: statsByPersona?.conservative?.winRate ?? 0,
@@ -1677,7 +1677,7 @@ export function ExecutiveReportView({
  <div className="flex items-center gap-2">
  <AlertTriangle className="w-5 h-5 text-warning" />
  <h3 className="text-lg font-bold text-foreground">الفرص الضائعة والتحليل البعدي</h3>
- <Badge variant="outline" className="text-xs text-warning border-warning/30 bg-warning/10 whitespace-nowrap">
+ <Badge variant="outline" className="text-xs text-warning border-warning/20 bg-warning/10 whitespace-nowrap">
  حد التحرك ≥ 10%
  </Badge>
  </div>
@@ -1781,9 +1781,9 @@ export function ExecutiveReportView({
 // ════════════════════════════════════════════════════════════════════════════
 
 const KPI_ACCENTS: Record<string, { ring: string; bar: string; value: string; glow: string }> = {
- emerald: { ring: 'border-profit/30', bar: 'bg-profit', value: 'text-profit', glow: 'bg-profit/10' },
- amber: { ring: 'border-warning/30', bar: 'bg-warning', value: 'text-warning', glow: 'bg-warning/10' },
- rose: { ring: 'border-loss/30', bar: 'bg-loss', value: 'text-loss', glow: 'bg-loss/10' },
+ emerald: { ring: 'border-profit/20', bar: 'bg-profit', value: 'text-profit', glow: 'bg-profit/10' },
+ amber: { ring: 'border-warning/20', bar: 'bg-warning', value: 'text-warning', glow: 'bg-warning/10' },
+ rose: { ring: 'border-loss/20', bar: 'bg-loss', value: 'text-loss', glow: 'bg-loss/10' },
 };
 
 function KpiCard({
@@ -1978,19 +1978,19 @@ function StatRow({
 // بتعمل review على التوقعات السابقة: فرص ضاعت / توقعات خاطئة / توقعات صحيحة (شراء/بيع)
 // ════════════════════════════════════════════════════════════════════════════
 const MISSED_OPP_ACCENTS: Record<string, { ring: string; bar: string; value: string }> = {
- amber: { ring: 'border-warning/30', bar: 'bg-warning', value: 'text-warning' },
- rose: { ring: 'border-loss/30', bar: 'bg-loss', value: 'text-loss' },
- emerald: { ring: 'border-profit/30', bar: 'bg-profit', value: 'text-profit' },
- teal: { ring: 'border-whale/30', bar: 'bg-whale', value: 'text-whale' },
+ amber: { ring: 'border-warning/20', bar: 'bg-warning', value: 'text-warning' },
+ rose: { ring: 'border-loss/20', bar: 'bg-loss', value: 'text-loss' },
+ emerald: { ring: 'border-profit/20', bar: 'bg-profit', value: 'text-profit' },
+ teal: { ring: 'border-whale/20', bar: 'bg-whale', value: 'text-whale' },
 };
 
 function signalBadgeClass(signal: string): string {
  const s = (signal || '').toUpperCase();
  if (s === 'BUY' || s === 'STRONG_BUY') {
- return 'text-profit border-profit/30 bg-profit/10';
+ return 'text-profit border-profit/20 bg-profit/10';
  }
  if (s === 'SELL' || s === 'STRONG_SELL') {
- return 'text-loss border-loss/30 bg-loss/10';
+ return 'text-loss border-loss/20 bg-loss/10';
  }
  return 'text-foreground border-white/20 bg-white/5';
 }

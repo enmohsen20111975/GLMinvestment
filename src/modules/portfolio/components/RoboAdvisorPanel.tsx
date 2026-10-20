@@ -227,29 +227,29 @@ function getSeverityStyle(sev: RebalanceAlert['severity']): SeverityStyle {
  switch (sev) {
  case 'danger':
  return {
- container: 'bg-loss /30 border-loss ',
+ container: 'bg-loss/10 border-loss ',
  title: 'text-loss ',
  message: 'text-loss ',
- action: 'bg-loss /40 text-loss border border-loss ',
+ action: 'bg-loss/10 text-loss border border-loss ',
  badge: 'bg-loss text-white',
  icon: <AlertOctagon className="h-5 w-5 text-loss" />,
  };
  case 'warning':
  return {
- container: 'bg-warning /30 border-warning ',
+ container: 'bg-warning/10 border-warning ',
  title: 'text-warning ',
  message: 'text-warning ',
- action: 'bg-warning /40 text-warning border border-warning ',
+ action: 'bg-warning/10 text-warning border border-warning ',
  badge: 'bg-warning text-white',
  icon: <AlertTriangle className="h-5 w-5 text-warning" />,
  };
  case 'info':
  default:
  return {
- container: 'bg-profit /30 border-profit ',
+ container: 'bg-profit/10 border-profit ',
  title: 'text-profit ',
  message: 'text-profit ',
- action: 'bg-profit /40 text-profit border border-profit ',
+ action: 'bg-profit/10 text-profit border border-profit ',
  badge: 'bg-profit text-white',
  icon: <Info className="h-5 w-5 text-profit" />,
  };
@@ -478,7 +478,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<Sparkles className="h-5 w-5" />}
- tone="bg-profit text-profit /40 "
+ tone="bg-profit text-profit/40 "
  />
  <div>
  <h2 className="text-base md:text-lg font-bold">المستشار الآلي (Robo-Advisor)</h2>
@@ -491,7 +491,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
  size="sm"
  variant="outline"
  onClick={() => setRefreshTick((t) => t + 1)}
- className="text-profit border-profit hover:bg-profit dark:hover:bg-profit/40"
+ className="text-profit border-profit hover:bg-profit dark:hover:bg-profit/10"
  >
  <RefreshCw className="h-3.5 w-3.5 ml-1.5" />
  تحديث
@@ -558,13 +558,13 @@ function ProjectionCard({
 }: ProjectionCardProps) {
  const isPositive = (data?.growth_pct ?? 0) >= 0;
  return (
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-start justify-between gap-2 flex-wrap">
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<CalendarClock className="h-5 w-5" />}
- tone="bg-profit text-profit /40 "
+ tone="bg-profit text-profit/40 "
  />
  <div>
  <CardTitle className="text-base">التوقع المستقبلي للثروة</CardTitle>
@@ -613,7 +613,7 @@ function ProjectionCard({
  <Skeleton className="h-44 w-full" />
  </div>
  ) : error ? (
- <div className="rounded-lg border border-warning bg-warning /30 px-3 py-2 text-sm text-warning ">
+ <div className="rounded-lg border border-warning bg-warning/10 px-3 py-2 text-sm text-warning ">
  {error}
  </div>
  ) : !data ? (
@@ -623,7 +623,7 @@ function ProjectionCard({
  ) : (
  <>
  {/* Big result */}
- <div className="rounded-xl bg-gradient-to-l from-profit to-profit/40 /40 /20 border border-profit /50 p-4">
+ <div className="rounded-xl bg-gradient-to-l from-profit to-profit/40 /40 /20 border border-profit/20 p-4">
  <p className="text-xs text-muted-foreground mb-1">
  ثروتك المتوقعة بعد {data.years} سنين هي
  </p>
@@ -754,12 +754,12 @@ interface RebalanceAlertsCardProps {
 
 function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
  return (
- <Card className="border-warning /50">
+ <Card className="border-warning/20">
  <CardHeader className="pb-2">
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<ShieldCheck className="h-5 w-5" />}
- tone="bg-warning text-warning /40 "
+ tone="bg-warning text-warning/40 "
  />
  <div>
  <CardTitle className="text-base">تنبيهات إعادة التوازن</CardTitle>
@@ -776,8 +776,8 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
  <Skeleton className="h-20 w-full" />
  </div>
  ) : !alerts || alerts.length === 0 ? (
- <div className="rounded-xl border border-profit bg-profit /30 p-4 flex items-center gap-3">
- <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-profit /60 text-profit ">
+ <div className="rounded-xl border border-profit bg-profit/10 p-4 flex items-center gap-3">
+ <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-profit/10 text-profit ">
  <ShieldCheck className="h-5 w-5" />
  </span>
  <div>
@@ -885,13 +885,13 @@ function EquityCurveCard({
  }, [data]);
 
  return (
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-start justify-between gap-2 flex-wrap">
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<TrendingUp className="h-5 w-5" />}
- tone="bg-profit text-profit /40 "
+ tone="bg-profit text-profit/40 "
  />
  <div>
  <CardTitle className="text-base">حركة صافي الثروة</CardTitle>
@@ -925,14 +925,14 @@ function EquityCurveCard({
  <Skeleton className="h-48 w-full" />
  </div>
  ) : authRequired ? (
- <div className="rounded-xl border border-dashed border-warning bg-warning/50 /20 p-6 text-center">
+ <div className="rounded-xl border border-dashed border-warning bg-warning/10 /20 p-6 text-center">
  <p className="text-sm text-warning flex items-center justify-center gap-2">
  <Info className="h-4 w-4" />
  سجّل الدخول لعرض حركة ثروتك
  </p>
  </div>
  ) : error ? (
- <div className="rounded-lg border border-warning bg-warning /30 px-3 py-2 text-sm text-warning ">
+ <div className="rounded-lg border border-warning bg-warning/10 px-3 py-2 text-sm text-warning ">
  {error}
  </div>
  ) : !data || chartData.length === 0 ? (
@@ -1047,12 +1047,12 @@ interface AllocationCardProps {
 
 function AllocationCard({ allocation, total }: AllocationCardProps) {
  return (
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<PieIcon className="h-5 w-5" />}
- tone="bg-profit text-profit /40 "
+ tone="bg-profit text-profit/40 "
  />
  <div>
  <CardTitle className="text-base">توزيع الأصول</CardTitle>
@@ -1246,12 +1246,12 @@ const transactionColumns: Column<TransactionRow>[] = [
 
 function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) {
  return (
- <Card className="border-profit /50">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<History className="h-5 w-5" />}
- tone="bg-profit text-profit /40 "
+ tone="bg-profit text-profit/40 "
  />
  <div>
  <CardTitle className="text-base">سجل المعاملات</CardTitle>

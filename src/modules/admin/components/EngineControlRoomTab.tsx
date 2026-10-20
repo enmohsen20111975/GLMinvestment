@@ -350,17 +350,17 @@ function statusTone(status: 'online' | 'offline' | 'degraded' | 'unknown' | 'run
  switch (status) {
  case 'online':
  case 'running':
- return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 يعمل', bg: 'bg-profit /20' };
+ return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 يعمل', bg: 'bg-profit/20' };
  case 'scheduled':
  // Task 35-C: worker engines with no live process but a recent log entry
  // (last 30 min) → "🟢 مجدول" (emerald — it's a periodic worker, not dead).
- return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit /20' };
+ return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit/20' };
  case 'offline':
  case 'stopped':
- return { dot: 'bg-loss', badge: 'border-loss text-loss', label: '🔴 متوقف', bg: 'bg-loss /20' };
+ return { dot: 'bg-loss', badge: 'border-loss text-loss', label: '🔴 متوقف', bg: 'bg-loss/20' };
  case 'degraded':
  case 'slow':
- return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 بطيء', bg: 'bg-warning /20' };
+ return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 بطيء', bg: 'bg-warning/20' };
  default:
  return { dot: 'bg-slate-400', badge: 'border-slate-400 text-slate-700', label: '⚪ غير معروف', bg: 'bg-slate-50 dark:bg-slate-900/20' };
  }
@@ -484,10 +484,10 @@ function nextRunCountdown(schedule: string): string {
  * the user just triggered a manual run (running = amber). */
 function cronTone(running: boolean) {
  if (running) {
- return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 يعمل الآن', bg: 'bg-warning /20' };
+ return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 يعمل الآن', bg: 'bg-warning/20' };
  }
  // CRITICAL Rule 67 fix: cron engines are NEVER "متوقف" — they're "مجدول".
- return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit /20' };
+ return { dot: 'bg-profit', badge: 'border-profit text-profit', label: '🟢 مجدول', bg: 'bg-profit/20' };
 }
 
 // ============================================================================
@@ -598,7 +598,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/10"
  disabled={actionLoading || running || !entry.controlKey}
  onClick={(e) => { e.stopPropagation(); onAction('start'); }}
  >
@@ -608,7 +608,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/10"
  onClick={(e) => { e.stopPropagation(); onOpenLiveConsole(); }}
  >
  <Terminal className="w-3 h-3" /> السجلات
@@ -718,7 +718,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/10"
  disabled={actionLoading || processRunning}
  onClick={(e) => { e.stopPropagation(); onAction('start'); }}
  >
@@ -728,7 +728,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-loss dark:hover:bg-loss/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-loss dark:hover:bg-loss/10"
  disabled={actionLoading || !processRunning}
  onClick={(e) => { e.stopPropagation(); onAction('stop'); }}
  >
@@ -737,7 +737,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/10"
  disabled={actionLoading || !entry.controlKey}
  onClick={(e) => { e.stopPropagation(); onAction('restart'); }}
  >
@@ -844,7 +844,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-profit dark:hover:bg-profit/10"
  disabled={actionLoading || isRunning}
  onClick={(e) => { e.stopPropagation(); onAction('start'); }}
  >
@@ -854,7 +854,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-loss dark:hover:bg-loss/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-loss dark:hover:bg-loss/10"
  disabled={actionLoading || !isRunning}
  onClick={(e) => { e.stopPropagation(); onAction('stop'); }}
  >
@@ -863,7 +863,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-warning dark:hover:bg-warning/10"
  disabled={actionLoading || !entry.controlKey}
  onClick={(e) => { e.stopPropagation(); onAction('restart'); }}
  >
@@ -1064,11 +1064,11 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  className={cn(
  'text-xs shrink-0',
  isRunning
- ? 'border-warning text-warning bg-warning/30'
+ ? 'border-warning text-warning bg-warning/10'
  : processExited
  ? exitedSuccessfully
- ? 'border-profit text-profit bg-profit/30'
- : 'border-loss text-loss bg-loss/30'
+ ? 'border-profit text-profit bg-profit/10'
+ : 'border-loss text-loss bg-loss/10'
  : 'border-slate-500 text-slate-300 bg-slate-800/50',
  )}
  >
@@ -1110,7 +1110,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  className={cn(
  'flex items-center gap-1 px-2 py-1 rounded-md border',
  autoRefresh
- ? 'border-profit text-profit bg-profit/30'
+ ? 'border-profit text-profit bg-profit/10'
  : 'border-slate-500 text-slate-400 bg-slate-800/50',
  )}
  >
@@ -1128,7 +1128,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  <button
  onClick={onRerun}
  disabled={isRunning}
- className="flex items-center gap-1 px-2 py-1 rounded-md border border-warning text-warning bg-warning/30 hover:bg-warning/30 disabled:opacity-50"
+ className="flex items-center gap-1 px-2 py-1 rounded-md border border-warning text-warning bg-warning/10 hover:bg-warning/10 disabled:opacity-50"
  >
  <Zap className="w-3 h-3" />
  {isCron ? 'إعادة التشغيل اليدوي' : 'إعادة المحاولة'}
@@ -1181,8 +1181,8 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  <div className={cn(
  'mt-2 p-2 rounded border text-xs',
  exitedSuccessfully
- ? 'border-profit bg-profit/40 text-profit'
- : 'border-loss bg-loss/40 text-loss',
+ ? 'border-profit bg-profit/10 text-profit'
+ : 'border-loss bg-loss/10 text-loss',
  )}>
  {exitedSuccessfully
  ? '✅ اكتمل التشغيل — انتهت العملية بنجاح'
@@ -1522,14 +1522,14 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
 
  return (
  <div className="space-y-3">
- <div className="rounded-md border border-warning bg-warning /20 p-3 text-xs">
+ <div className="rounded-md border border-warning bg-warning/20 p-3 text-xs">
  <AlertTriangle className="w-4 h-4 inline ml-1 text-warning" />
  الأداء لكل نموذج (technical / fundamental / master_score) بيتحسب من predictions.db.
  هنا بنعرض السجلات الحية لمحرك V40.2 + آخر تشغيل لكل job.
  </div>
 
  {/* PHASE2-ADMIN-PANEL: regenerate predictions for a specific market */}
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardContent className="p-3">
  <div className="flex flex-wrap items-center gap-2">
  <Brain className="w-4 h-4 text-profit" />
@@ -2148,7 +2148,7 @@ export function EngineControlRoomTab() {
  {/* ============================================================ */}
  {/* Header + Quick Actions Bar */}
  {/* ============================================================ */}
- <Card className="border-warning /40">
+ <Card className="border-warning/20">
  <CardHeader className="pb-3">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>

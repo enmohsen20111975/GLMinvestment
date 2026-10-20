@@ -1070,20 +1070,20 @@ export function cryptoSignalStyle(signal: string): {
  const s = (signal || '').toUpperCase();
  if (s === 'BUY' || s === 'STRONG_BUY' || s === 'LONG') {
  return {
- badge: 'bg-profit/15 text-profit border-profit/30',
+ badge: 'bg-profit/15 text-profit border-profit/20',
  text: 'text-profit',
  bg: 'bg-profit/5',
  };
  }
  if (s === 'SELL' || s === 'STRONG_SELL' || s === 'SHORT') {
  return {
- badge: 'bg-loss/15 text-loss border-loss/30',
+ badge: 'bg-loss/15 text-loss border-loss/20',
  text: 'text-loss',
  bg: 'bg-loss/5',
  };
  }
  return {
- badge: 'bg-warning/15 text-warning border-warning/30',
+ badge: 'bg-warning/15 text-warning border-warning/20',
  text: 'text-warning',
  bg: 'bg-warning/5',
  };
@@ -1110,11 +1110,11 @@ export function cryptoSymbolMeta(symbol: string): { icon: string; name: string }
 // Sector tracking helpers
 // ============================================================================
 export const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string; label: string }> = {
- HOT: { bg: 'bg-loss/10 border-loss/30', text: 'text-loss ', icon: '🔥', label: 'نار' },
+ HOT: { bg: 'bg-loss/10 border-loss/20', text: 'text-loss ', icon: '🔥', label: 'نار' },
  WARM: { bg: 'bg-warning/10 border-orange-500/30', text: 'text-warning ', icon: '☀️', label: 'دافئ' },
  NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30', text: 'text-slate-700 dark:text-slate-300', icon: '➖', label: 'محايد' },
  COOL: { bg: 'bg-sky-500/10 border-sky-500/30', text: 'text-sky-700 dark:text-sky-300', icon: '💧', label: 'بارد' },
- COLD: { bg: 'bg-whale/10 border-whale/30', text: 'text-whale ', icon: '❄️', label: 'بارد جداً' },
+ COLD: { bg: 'bg-whale/10 border-whale/20', text: 'text-whale ', icon: '❄️', label: 'بارد جداً' },
 };
 
 

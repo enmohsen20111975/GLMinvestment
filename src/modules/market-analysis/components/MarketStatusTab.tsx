@@ -128,7 +128,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  // FRONTEND-026: شامل لكل إشارات البيع (REDUCE, WEAK_SELL, ...) والشراء (ACCUMULATE, ...)
  const isUp = isBuySignalLabel(stock.signal);
  const isDown = isSellSignalLabel(stock.signal);
- const signalColor = isUp ? 'bg-profit text-profit /40 ' : isDown ? 'bg-loss text-loss /40 ' : 'bg-muted text-muted-foreground';
+ const signalColor = isUp ? 'bg-profit text-profit/40 ' : isDown ? 'bg-loss text-loss/40 ' : 'bg-muted text-muted-foreground';
  const curPrice = pickValidPrice(stock.current_price, stock.close, stock.entry_price);
  const highPrice = pickValidPrice(stock.high_price, stock.high_52w, stock.resistance);
  const lowPrice = pickValidPrice(stock.low_price, stock.low_52w, stock.support);
@@ -162,7 +162,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  )}
  {stock.ath_breakout && (
  <Badge
- className="text-xs font-semibold border-0 bg-profit text-profit /40 "
+ className="text-xs font-semibold border-0 bg-profit text-profit/40 "
  title="🏆 اختراق تاريخي (All-Time High) — فرصة استثنائية مسموح لها بتجاوز بوابات القناص."
  >
  🏆 اختراق تاريخي
@@ -563,7 +563,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
  {/* وصف تفصيلي لحالة السوق (لى حصل ولى بيحصل) — يوليو 2026 */}
  {stocks.length > 0 && marketNarrative && (
- <Card className="border-whale bg-primary/40 /20">
+ <Card className="border-whale bg-primary/10 /20">
  <CardHeader className="pb-2">
  <CardTitle className="text-base flex items-center gap-2">
  <Radio className="h-4 w-4 text-whale" />
@@ -832,9 +832,9 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  className={cn(
  'p-3 rounded-lg border text-center',
  isUp
- ? 'bg-profit /40 border-profit '
+ ? 'bg-profit/10 border-profit '
  : isDown
- ? 'bg-loss /40 border-loss '
+ ? 'bg-loss/10 border-loss '
  : 'bg-muted border-border'
  )}
  >

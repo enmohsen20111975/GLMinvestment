@@ -709,7 +709,7 @@ function AppShell() {
                   </SafeWidget>
                 </section>
               ) : (
-                <Alert className="border-warning/30 bg-warning/5 dark:border-warning/40">
+                <Alert className="border-warning/20 bg-warning/5 dark:border-warning/20">
                   <Info className="h-4 w-4 text-warning" />
                   <AlertDescription className="text-sm text-warning">
                     <span className="font-semibold">
@@ -860,7 +860,7 @@ function AppShell() {
           className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
           dir="rtl"
         >
-          <div className="max-w-md w-full rounded-xl border border-primary/30 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
+          <div className="max-w-md w-full rounded-xl border border-primary/20 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
             <h2 className="text-lg font-bold mb-1">ربط بوت تليجرام بحسابك</h2>
             <p className="text-sm text-muted-foreground">
               سجّل دخولك أو أنشئ حساب (تجربة 14 يوماً مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
@@ -886,7 +886,7 @@ function AppShell() {
         dir="rtl"
       >
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
           <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>
         </div>
       </div>

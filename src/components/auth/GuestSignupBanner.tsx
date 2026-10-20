@@ -58,7 +58,7 @@ export function GuestSignupBanner() {
  return (
   <div
    dir="rtl"
-   className="mx-3 md:mx-4 mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+   className="mx-3 md:mx-4 mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
    role="region"
    aria-label="دعوة للتسجيل المجاني"
   >

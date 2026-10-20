@@ -292,14 +292,14 @@ function statusColorFor(variant: ProgressRowProps['variant'], status: string): s
 
 function statusBadgeClass(variant: ProgressRowProps['variant'], status: string): string {
  if (variant === 'stop_loss') {
- if (status === 'danger') return 'bg-loss text-loss /40 ';
- if (status === 'warning') return 'bg-warning text-warning /40 ';
- return 'bg-profit text-profit /40 ';
+ if (status === 'danger') return 'bg-loss text-loss/40 ';
+ if (status === 'warning') return 'bg-warning text-warning/40 ';
+ return 'bg-profit text-profit/40 ';
  }
- if (status === 'hit') return 'bg-profit text-profit /40 ';
- if (status === 'approaching') return 'bg-warning text-warning /40 ';
- if (variant === 'target_2') return 'bg-primary text-primary /40 ';
- return 'bg-warning text-warning /40 ';
+ if (status === 'hit') return 'bg-profit text-profit/40 ';
+ if (status === 'approaching') return 'bg-warning text-warning/40 ';
+ if (variant === 'target_2') return 'bg-primary text-primary/40 ';
+ return 'bg-warning text-warning/40 ';
 }
 
 function ProgressRow({ label, icon, price, pct, progress, status, statusLabel, variant }: ProgressRowProps) {
@@ -439,9 +439,9 @@ function MilestonesChecklist({ milestones }: { milestones: Milestone[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function NotTrackedCard() {
  return (
- <Card className="p-4 border-dashed border-warning /40 bg-warning/40 /10">
+ <Card className="p-4 border-dashed border-warning/20 bg-warning/10 /10">
  <div className="flex items-start gap-3">
- <div className="h-9 w-9 rounded-full bg-warning /40 flex items-center justify-center shrink-0">
+ <div className="h-9 w-9 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
  <StarOff className="h-4 w-4 text-warning " />
  </div>
  <div className="flex-1">
@@ -457,9 +457,9 @@ function NotTrackedCard() {
 
 function NoPriceHistoryCard() {
  return (
- <Card className="p-4 border-dashed border-primary /40 bg-primary/40 /10">
+ <Card className="p-4 border-dashed border-primary/20 bg-primary/10 /10">
  <div className="flex items-start gap-3">
- <div className="h-9 w-9 rounded-full bg-primary /40 flex items-center justify-center shrink-0">
+ <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
  <Activity className="h-4 w-4 text-primary " />
  </div>
  <div className="flex-1">
@@ -475,9 +475,9 @@ function NoPriceHistoryCard() {
 
 function EntryPriceMissingCard() {
  return (
- <Card className="p-4 border-dashed border-loss /40 bg-loss/40 /10">
+ <Card className="p-4 border-dashed border-loss/20 bg-loss/10 /10">
  <div className="flex items-start gap-3">
- <div className="h-9 w-9 rounded-full bg-loss /40 flex items-center justify-center shrink-0">
+ <div className="h-9 w-9 rounded-full bg-loss/10 flex items-center justify-center shrink-0">
  <AlertTriangle className="h-4 w-4 text-loss " />
  </div>
  <div className="flex-1">
@@ -493,7 +493,7 @@ function EntryPriceMissingCard() {
 
 function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
  return (
- <Card className="p-4 border-loss /40">
+ <Card className="p-4 border-loss/20">
  <div className="flex items-start gap-3">
  <AlertTriangle className="h-5 w-5 text-loss shrink-0 mt-0.5" />
  <div className="flex-1">
@@ -647,7 +647,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
  const isUp = data.current.change_pct >= 0;
 
  return (
- <Card className="p-3 space-y-3 border-primary/60 /40 bg-primary/20 /10">
+ <Card className="p-3 space-y-3 border-primary/20 /40 bg-primary/20 /10">
  {/* ─── 2.1 Header ─── */}
  <div className="space-y-1.5">
  <div className="flex items-center justify-between flex-wrap gap-1">

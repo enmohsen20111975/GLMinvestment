@@ -348,7 +348,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
  {/* Error warnings (if any API failed) */}
  {data.errors.length > 0 && (
- <Card className="border-warning /50 bg-warning /20">
+ <Card className="border-warning/20 bg-warning/20">
  <CardContent className="p-3">
  <div className="flex items-center gap-2 text-xs text-warning ">
  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
@@ -564,7 +564,7 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
 
  {/* ─── CANONICAL Signal (UNIFIED-DATA-CONTRACT, Rule 72 + Rule 73) ─── */}
  {/* العميل بيشوف قرار واحد فقط — من unified API (single display source). */}
- <Card className="md:col-span-2 border-profit/30 bg-profit/5">
+ <Card className="md:col-span-2 border-profit/20 bg-profit/5">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-2">
  <Award className="w-4 h-4 text-profit" />

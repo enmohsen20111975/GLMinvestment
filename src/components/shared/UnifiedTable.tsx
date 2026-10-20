@@ -2113,7 +2113,7 @@ export function UnifiedTable<T extends object>({
  className={cn(
  'inline-flex items-center justify-center w-4 h-4 rounded transition-colors',
  filterActive
- ? 'text-profit bg-profit /40'
+ ? 'text-profit bg-profit/10'
  : 'text-muted-foreground/50 hover:text-foreground hover:bg-muted'
  )}
  title={filterActive ? `فلتر نشط (${filterCount})` : 'فلترة'}
@@ -2199,7 +2199,7 @@ export function UnifiedTable<T extends object>({
  dir === 'rtl' ? 'left-0' : 'right-0',
  resizingCol?.colKey === colKey
  ? 'bg-profit shadow-[0_0_6px_rgba(16,185,129,0.7)]'
- : 'bg-transparent hover:bg-profit/60 hover:shadow-[0_0_4px_rgba(16,185,129,0.5)]',
+ : 'bg-transparent hover:bg-profit/10 hover:shadow-[0_0_4px_rgba(16,185,129,0.5)]',
  )}
  title="اسحب لتغيير عرض العمود"
  />
@@ -2361,7 +2361,7 @@ export function UnifiedTable<T extends object>({
  isPinned && 'sticky right-0 z-10 bg-background shadow-l',
  // (Task 37) «الجدول المتقدّم» — selection + edit styles
  excelGrid && 'cursor-cell',
- isSelected && 'bg-profit /30 ring-2 ring-profit ring-inset',
+ isSelected && 'bg-profit/10 ring-2 ring-profit ring-inset',
  isEditing && 'p-0 ring-2 ring-profit ring-inset bg-white dark:bg-slate-900',
  )}
  onClick={excelGrid ? (e) => handleCellClick(ri, colKey, e) : undefined}
@@ -2449,7 +2449,7 @@ export function UnifiedTable<T extends object>({
  <div className="space-y-3">
  {/* Active edit mode alert banner */}
  {editingCalcId && (
- <div className="flex items-center justify-between px-3 py-1.5 rounded-md bg-warning/10 border border-warning/30 text-xs text-warning ">
+ <div className="flex items-center justify-between px-3 py-1.5 rounded-md bg-warning/10 border border-warning/20 text-xs text-warning ">
  <span className="flex items-center gap-1.5 font-medium">
  <Pencil className="w-3.5 h-3.5 text-warning" />
  وضع التعديل للعمود: <strong>{formulaName || 'المحدد'}</strong>
@@ -2491,8 +2491,8 @@ export function UnifiedTable<T extends object>({
  {formulaText.trim() && formulaValidation && (
  <div className={cn(
  'text-xs px-2 py-1 rounded',
- formulaValidation.ok ? 'bg-profit /30 text-profit '
- : 'bg-loss /30 text-loss '
+ formulaValidation.ok ? 'bg-profit/10 text-profit '
+ : 'bg-loss/10 text-loss '
  )}>
  {formulaValidation.ok ? '✓ الصياغة صحيحة' : `✗ ${formulaValidation.error}`}
  </div>
@@ -2519,7 +2519,7 @@ export function UnifiedTable<T extends object>({
  <button
  key={v.key}
  onClick={() => insertAtCursor(`{${v.key}}`)}
- className="text-xs px-1.5 py-0.5 rounded border border-border hover:border-profit hover:bg-profit dark:hover:bg-profit/30 hover:text-profit dark:hover:text-profit transition-colors font-mono"
+ className="text-xs px-1.5 py-0.5 rounded border border-border hover:border-profit hover:bg-profit dark:hover:bg-profit/10 hover:text-profit dark:hover:text-profit transition-colors font-mono"
  title={`${v.label}${v.unit ? ` (${v.unit})` : ''}`}
  >
  {v.label}
@@ -2629,7 +2629,7 @@ export function UnifiedTable<T extends object>({
  'p-1 rounded transition-colors',
  isEditingThis
  ? 'bg-profit text-white'
- : 'text-muted-foreground hover:text-profit hover:bg-profit dark:hover:bg-profit/30'
+ : 'text-muted-foreground hover:text-profit hover:bg-profit dark:hover:bg-profit/10'
  )}
  title="تعديل المعادلة"
  >
@@ -2779,7 +2779,7 @@ function NumericFilterContent({
  </div>
 
  {rangeFilter && (rangeFilter.min != null || rangeFilter.max != null) && (
- <div className="text-xs bg-profit /30 text-profit px-2 py-1 rounded">
+ <div className="text-xs bg-profit/10 text-profit px-2 py-1 rounded">
  فلتر النطاق نشط: {rangeFilter.min != null ? `≥ ${rangeFilter.min}` : ''} {rangeFilter.max != null ? `≤ ${rangeFilter.max}` : ''}
  </div>
  )}

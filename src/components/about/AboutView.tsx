@@ -109,14 +109,14 @@ const COLOR_CLASSES: Record<
  { bg: string; text: string; border: string; gradient: string; dot: string }
 > = {
  emerald: {
- bg: 'bg-profit /30',
+ bg: 'bg-profit/10',
  text: 'text-profit ',
  border: 'border-profit ',
  gradient: 'from-profit to-whale',
  dot: 'bg-profit',
  },
  teal: {
- bg: 'bg-whale /30',
+ bg: 'bg-whale/10',
  text: 'text-whale ',
  border: 'border-whale ',
  gradient: 'from-whale to-profit',
@@ -130,21 +130,21 @@ const COLOR_CLASSES: Record<
  dot: 'bg-cyan-500',
  },
  amber: {
- bg: 'bg-warning /30',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  border: 'border-warning ',
  gradient: 'from-warning to-orange-600',
  dot: 'bg-warning',
  },
  orange: {
- bg: 'bg-warning /30',
+ bg: 'bg-warning/10',
  text: 'text-warning ',
  border: 'border-orange-200 dark:border-orange-800',
  gradient: 'from-orange-500 to-loss',
  dot: 'bg-warning',
  },
  rose: {
- bg: 'bg-loss /30',
+ bg: 'bg-loss/10',
  text: 'text-loss ',
  border: 'border-loss ',
  gradient: 'from-loss to-pink-600',
@@ -168,7 +168,7 @@ export function AboutView() {
  </div>
  <Badge
  variant="outline"
- className="mb-4 border-profit/50 text-profit bg-profit /30"
+ className="mb-4 border-profit/20 text-profit bg-profit/10"
  >
  منصة تحليل مالي متخصصة
  </Badge>
@@ -302,7 +302,7 @@ export function AboutView() {
  </div>
 
  {/* ─── إخلاء المسؤولية ─── */}
- <Card className="mb-8 md:mb-10 border-warning/40 bg-warning /20 overflow-hidden">
+ <Card className="mb-8 md:mb-10 border-warning/20 bg-warning/20 overflow-hidden">
  <CardContent className="p-5 md:p-6">
  <div className="flex items-start gap-3">
  <div className="shrink-0 w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">

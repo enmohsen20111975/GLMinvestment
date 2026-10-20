@@ -335,12 +335,12 @@ const TYPE_META: Record<
 > = {
  bullish: {
  label: 'صعودي',
- className: 'bg-profit/15 text-profit border-profit/30',
+ className: 'bg-profit/15 text-profit border-profit/20',
  icon: TrendingUp,
  },
  bearish: {
  label: 'هبوطي',
- className: 'bg-loss/15 text-loss border-loss/30',
+ className: 'bg-loss/15 text-loss border-loss/20',
  icon: TrendingDown,
  },
  neutral: {
@@ -356,7 +356,7 @@ const RELIABILITY_META: Record<
 > = {
  high: {
  label: 'موثوقية عالية',
- className: 'bg-warning/15 text-warning border-warning/40',
+ className: 'bg-warning/15 text-warning border-warning/20',
  },
  medium: {
  label: 'موثوقية متوسطة',

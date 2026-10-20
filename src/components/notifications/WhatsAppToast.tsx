@@ -45,10 +45,10 @@ export function WhatsAppToast({
  'w-full max-w-sm sm:max-w-md rounded-2xl p-3.5 shadow-2xl transition-all duration-300 pointer-events-auto',
  'bg-background/95 dark:bg-zinc-900/95 backdrop-blur-md border',
  isExit
- ? 'border-loss/40 border-r-4 border-r-rose-500 shadow-rose-500/10'
+ ? 'border-loss/20 border-r-4 border-r-rose-500 shadow-rose-500/10'
  : isExplosive
- ? 'border-warning/40 border-r-4 border-r-amber-500 shadow-amber-500/10'
- : 'border-profit/40 border-r-4 border-r-emerald-500 shadow-emerald-500/10'
+ ? 'border-warning/20 border-r-4 border-r-amber-500 shadow-amber-500/10'
+ : 'border-profit/20 border-r-4 border-r-emerald-500 shadow-emerald-500/10'
  )}
  >
  {/* Top Header: Sender Bar (WhatsApp/Messenger Style) */}

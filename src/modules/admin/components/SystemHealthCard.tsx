@@ -177,7 +177,7 @@ export function SystemHealthCard() {
  );
 
  return (
- <Card className="border-profit /40">
+ <Card className="border-profit/20">
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between gap-2">
  <div>
@@ -242,7 +242,7 @@ export function SystemHealthCard() {
  <>
  {/* Critical alert if any offline */}
  {offlineCount > 0 && (
- <div className="mb-3 p-2 rounded-lg border border-loss bg-loss /20 /40 flex items-center gap-2">
+ <div className="mb-3 p-2 rounded-lg border border-loss bg-loss/20 /40 flex items-center gap-2">
  <XCircle className="w-4 h-4 text-loss shrink-0" />
  <span className="text-xs font-bold text-loss ">
  {offlineCount} خدمة متوقفة — تحتاج تدخّل فوري
@@ -253,7 +253,7 @@ export function SystemHealthCard() {
  {/* PHASE2-ADMIN-PANEL: stale DB alert — owner requirement.
  "تنبيه أحمر فوري لو توقف تحديث أي قاعدة لأكثر من ساعتين" */}
  {staleDbServices.length > 0 && (
- <div className="mb-3 p-2 rounded-lg border border-loss bg-loss /30 flex items-start gap-2">
+ <div className="mb-3 p-2 rounded-lg border border-loss bg-loss/10 flex items-start gap-2">
  <AlertCircle className="w-4 h-4 text-loss shrink-0 mt-0.5" />
  <div className="flex-1">
  <span className="text-xs font-bold text-loss block">
@@ -277,12 +277,12 @@ export function SystemHealthCard() {
  className={cn(
  'p-2 rounded-lg border flex items-center gap-2 text-xs',
  stale
- ? 'border-loss bg-loss /30 '
+ ? 'border-loss bg-loss/10 '
  : svc.status === 'online'
- ? 'border-profit bg-profit /20 /40'
+ ? 'border-profit bg-profit/20 /40'
  : svc.status === 'degraded'
- ? 'border-warning bg-warning /20 /40'
- : 'border-loss bg-loss /20 /40',
+ ? 'border-warning bg-warning/20 /40'
+ : 'border-loss bg-loss/20 /40',
  )}
  >
  <div className={cn('w-2 h-2 rounded-full shrink-0', stale ? 'bg-loss' : meta.dot)} />

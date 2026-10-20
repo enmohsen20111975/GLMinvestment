@@ -122,9 +122,9 @@ interface PersonalizedRadarResponse {
 // ─── Constants ────────────────────────────────────────────────────────────
 
 const RISK_PROFILE_META: Record<string, { ar: string; icon: React.ReactNode; color: string }> = {
- conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-warning text-warning border-warning /60 ' },
- balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-profit text-profit border-profit /60 ' },
- aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-loss text-loss border-loss /60 ' },
+ conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-warning text-warning border-warning/20 ' },
+ balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-profit text-profit border-profit/20 ' },
+ aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-loss text-loss border-loss/20 ' },
 };
 
 const HOLDING_PERIOD_AR: Record<string, string> = {
@@ -321,7 +321,7 @@ function ProfileCard({
 
  return (
  <Card className="overflow-hidden" data-testid="profile-card">
- <div className="p-4 md:p-5 bg-profit /30">
+ <div className="p-4 md:p-5 bg-profit/10">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
  <div className="h-12 w-12 rounded-xl bg-background/80 /40 flex items-center justify-center">
@@ -567,7 +567,7 @@ function PersonalizedPicksCard({ data }: { data: PersonalizedRadarResponse | nul
  {p.personalized_score}
  </span>
  {p.personalized_score > p.base_score && (
- <Badge variant="outline" className="text-xs bg-profit /40 text-profit border-profit ">
+ <Badge variant="outline" className="text-xs bg-profit/10 text-profit border-profit ">
  +{p.personalized_score - p.base_score}
  </Badge>
  )}

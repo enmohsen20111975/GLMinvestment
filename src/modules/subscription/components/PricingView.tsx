@@ -63,7 +63,7 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TIER_ACCENT: Record<string, string> = {
- premium: 'border-warning/50 bg-gradient-to-br from-warning/5 to-orange-500/5 shadow-md shadow-amber-500/5',
+ premium: 'border-warning/20 bg-gradient-to-br from-warning/5 to-orange-500/5 shadow-md shadow-amber-500/5',
  pro: 'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
  vip_pass: 'border-warning/80 bg-gradient-to-br from-warning/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-warning/60 shadow-xl shadow-amber-500/15',
  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-primary/5',
@@ -267,7 +267,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
  <span className="text-xs line-through text-muted-foreground/80 font-medium">
  {formatPrice(plan.original_price_local || Math.round(plan.price_local * 2), plan.currency)}
  </span>
- <Badge variant="destructive" className="bg-loss/15 text-loss border border-loss/30 text-xs px-1.5 py-0 font-bold">
+ <Badge variant="destructive" className="bg-loss/15 text-loss border border-loss/20 text-xs px-1.5 py-0 font-bold">
  وفر {plan.discount_pct || 50}% 🔥
  </Badge>
  </div>

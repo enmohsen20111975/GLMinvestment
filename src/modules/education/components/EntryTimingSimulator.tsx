@@ -532,8 +532,8 @@ export function EntryTimingSimulator() {
  className={cn(
  'text-xs',
  dataSource === 'real'
- ? 'border-profit/40 bg-profit/10 text-profit '
- : 'border-warning/40 bg-warning/10 text-warning ',
+ ? 'border-profit/20 bg-profit/10 text-profit '
+ : 'border-warning/20 bg-warning/10 text-warning ',
  )}
  >
  {dataSource === 'real' ? (
@@ -552,7 +552,7 @@ export function EntryTimingSimulator() {
 
  {dataSource === 'synthetic' && (
  <div
- className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-xs text-warning /20 "
+ className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning/20 "
  dir="rtl"
  >
  <span className="font-semibold">ملاحظة:</span> تعذّر تحميل البيانات الحقيقية
@@ -574,7 +574,7 @@ export function EntryTimingSimulator() {
  className={cn(
  'flex flex-col gap-1 rounded-lg border p-3 text-right transition',
  isActive
- ? 'border-warning/60 bg-warning/10 shadow-sm'
+ ? 'border-warning/20 bg-warning/10 shadow-sm'
  : 'border-slate-200 bg-card hover:bg-muted/30 dark:border-slate-700',
  )}
  >
@@ -670,7 +670,7 @@ export function EntryTimingSimulator() {
 
  {/* Educational takeaway */}
  <div
- className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning "
+ className="rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs leading-relaxed text-warning "
  dir="rtl"
  >
  <div className="mb-1 font-bold">درس المحاكاة:</div>
@@ -685,7 +685,7 @@ export function EntryTimingSimulator() {
  الاختيار يعتمد على مرحلة السوق + قدرتك على تحمّل التذبذب.
  </div>
 
- <div className="rounded-md border border-warning/30 bg-warning/60 px-3 py-2 text-xs text-warning /20 " dir="rtl">
+ <div className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning/20 " dir="rtl">
  <span className="font-semibold">إخلاء مسؤولية:</span> الباكتست تعليمي.
  الأداء التاريخي لا يضمن المستقبلي. الرسوم والـ slippage غير محسوبة.
  </div>

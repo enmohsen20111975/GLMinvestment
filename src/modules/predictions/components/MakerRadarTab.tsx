@@ -409,36 +409,36 @@ const accentClasses: Record<AccentKey, {
  softBg: string;
 }> = {
  amber: {
- card: 'border-warning /40',
- headerBg: 'bg-warning/60 /20',
+ card: 'border-warning/20',
+ headerBg: 'bg-warning/10 /20',
  iconColor: 'text-warning ',
- badge: 'bg-warning text-warning border-warning /60 ',
- border: 'border-warning /50',
- softBg: 'bg-warning/50 /10',
+ badge: 'bg-warning text-warning border-warning/20 ',
+ border: 'border-warning/20',
+ softBg: 'bg-warning/10 /10',
  },
  rose: {
- card: 'border-loss /40',
- headerBg: 'bg-loss/60 /20',
+ card: 'border-loss/20',
+ headerBg: 'bg-loss/10 /20',
  iconColor: 'text-loss ',
- badge: 'bg-loss text-loss border-loss /60 ',
- border: 'border-loss /50',
- softBg: 'bg-loss/50 /10',
+ badge: 'bg-loss text-loss border-loss/20 ',
+ border: 'border-loss/20',
+ softBg: 'bg-loss/10 /10',
  },
  emerald: {
- card: 'border-profit /40',
- headerBg: 'bg-profit/60 /20',
+ card: 'border-profit/20',
+ headerBg: 'bg-profit/10 /20',
  iconColor: 'text-profit ',
- badge: 'bg-profit text-profit border-profit /60 ',
- border: 'border-profit /50',
- softBg: 'bg-profit/50 /10',
+ badge: 'bg-profit text-profit border-profit/20 ',
+ border: 'border-profit/20',
+ softBg: 'bg-profit/10 /10',
  },
  purple: {
  card: 'border-purple-200 dark:border-purple-900/40',
- headerBg: 'bg-primary/60 /20',
+ headerBg: 'bg-primary/10 /20',
  iconColor: 'text-primary ',
  badge: 'bg-primary text-primary border-purple-200 /60 dark:border-purple-800',
  border: 'border-purple-300 dark:border-purple-800/50',
- softBg: 'bg-primary/50 /10',
+ softBg: 'bg-primary/10 /10',
  },
 };
 
@@ -1178,9 +1178,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  variant="outline"
  className={`text-xs ${
  data.cache_stale
- ? 'text-warning border-warning bg-warning /40'
+ ? 'text-warning border-warning bg-warning/10'
  : data.cache_age_seconds! < 60
- ? 'text-profit border-profit bg-profit /40'
+ ? 'text-profit border-profit bg-profit/10'
  : 'text-muted-foreground border-border bg-muted/30'
  }`}
  title={`DB: ${data.db_source || 'unknown'}\nGenerated: ${data.cache_generated_at || '?'}\nLast warmup: ${data.last_warmup_status} (${data.last_warmup_duration_ms ?? 0}ms)`}
@@ -1194,7 +1194,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  </Badge>
  )}
  {data?.warmup_running && (
- <Badge variant="outline" className="text-xs text-primary border-primary bg-primary /40">
+ <Badge variant="outline" className="text-xs text-primary border-primary bg-primary/10">
  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse mr-1" />
  بيشتغل
  </Badge>
@@ -1205,7 +1205,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  </Badge>
  )}
  {data?.last_warmup_status === 'failed' && data?.last_error && (
- <Badge variant="outline" className="text-xs text-loss border-loss bg-loss /40" title={data.last_error}>
+ <Badge variant="outline" className="text-xs text-loss border-loss bg-loss/10" title={data.last_error}>
  ⚠️ خطأ آخر تشغيل
  </Badge>
  )}
@@ -1257,7 +1257,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  Strategy §4.1 row 7: free users see delayed radar (60 min) as a "taste hook".
  Phase 1 = display-only banner. Phase 2 will enforce the delay server-side. */}
  {radarDelayed && (
- <Card className="border-warning/40 bg-warning/60 /30 p-3">
+ <Card className="border-warning/20 bg-warning/10 /30 p-3">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="flex items-center gap-2 text-warning ">
  <Clock className="h-4 w-4" />
@@ -1268,7 +1268,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <Button
  variant="outline"
  size="sm"
- className="h-7 text-xs gap-1 border-warning/40 text-warning hover:bg-warning/50 dark:hover:bg-warning/40"
+ className="h-7 text-xs gap-1 border-warning/20 text-warning hover:bg-warning/10 dark:hover:bg-warning/10"
  onClick={() => {
  if (typeof window !== 'undefined') {
  window.location.href = '/pricing';
@@ -1438,7 +1438,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
  {/* ===== RADAR SUMMARY — الخلاصة النهائية للقرار ===== */}
  {data && !loading && (
- <Card className="p-4 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+ <Card className="p-4 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
  <div className="flex items-start gap-3">
  <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
  <Target className="w-5 h-5 text-primary-foreground" />
@@ -1448,9 +1448,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <span className="text-sm font-bold">خلاصة الرادار</span>
  {data.market_regime && (
  <Badge variant="outline" className={
- data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-profit/10 text-profit border-profit/30' :
- data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-loss/10 text-loss border-loss/30' :
- 'bg-warning/10 text-warning border-warning/30'
+ data.market_regime.effective_regime === 'AGGRESSIVE' ? 'bg-profit/10 text-profit border-profit/20' :
+ data.market_regime.effective_regime === 'DEFENSIVE' ? 'bg-loss/10 text-loss border-loss/20' :
+ 'bg-warning/10 text-warning border-warning/20'
  }>
  {data.market_regime.effective_regime === 'AGGRESSIVE' ? '🟢 السوق عدواني' :
  data.market_regime.effective_regime === 'DEFENSIVE' ? '🔴 السوق دفاعي' :
@@ -1768,13 +1768,13 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
  let levelColor = 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300';
  if (activityPct > 30) {
  level = 'شعل عالي';
- levelColor = 'text-loss bg-loss /40 ';
+ levelColor = 'text-loss bg-loss/10 ';
  } else if (activityPct > 15) {
  level = 'شعل متوسط';
- levelColor = 'text-warning bg-warning /40 ';
+ levelColor = 'text-warning bg-warning/10 ';
  } else if (activityPct > 5) {
  level = 'شعل منخفض';
- levelColor = 'text-profit bg-profit /40 ';
+ levelColor = 'text-profit bg-profit/10 ';
  }
 
  return {
@@ -1878,11 +1878,11 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
 
 function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
  const colors: Record<KpiCardProps['accent'], { bg: string; text: string; ring: string }> = {
- blue: { bg: 'bg-primary /40', text: 'text-primary ', ring: 'ring-primary /40' },
- amber: { bg: 'bg-warning /40', text: 'text-warning ', ring: 'ring-warning dark:ring-warning/40' },
- rose: { bg: 'bg-loss /40', text: 'text-loss ', ring: 'ring-loss /40' },
- emerald:{ bg: 'bg-profit /40', text: 'text-profit ', ring: 'ring-profit /40' },
- gold: { bg: 'bg-warning /40', text: 'text-warning ', ring: 'ring-yellow-100 dark:ring-yellow-900/40' },
+ blue: { bg: 'bg-primary/10', text: 'text-primary ', ring: 'ring-primary /40' },
+ amber: { bg: 'bg-warning/10', text: 'text-warning ', ring: 'ring-warning dark:ring-warning/40' },
+ rose: { bg: 'bg-loss/10', text: 'text-loss ', ring: 'ring-loss /40' },
+ emerald:{ bg: 'bg-profit/10', text: 'text-profit ', ring: 'ring-profit /40' },
+ gold: { bg: 'bg-warning/10', text: 'text-warning ', ring: 'ring-yellow-100 dark:ring-yellow-900/40' },
  };
  const c = colors[accent];
  // FIX-UI-AUDIT: support both numeric (toLocaleString) and string (ticker
@@ -2010,9 +2010,9 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
  // Color coding
  const cls =
- isInflow ? 'bg-profit text-profit border-profit /40 ' :
- isOutflow ? 'bg-loss text-loss border-loss /40 ' :
- 'bg-warning text-warning border-warning /40 ';
+ isInflow ? 'bg-profit text-profit border-profit/20 ' :
+ isOutflow ? 'bg-loss text-loss border-loss/20 ' :
+ 'bg-warning text-warning border-warning/20 ';
 
  return (
  <div
@@ -2097,7 +2097,7 @@ const RadarSection = memo(function RadarSection({
  <Badge variant="secondary" className="text-xs">
  {stocks.length} أسهم
  </Badge>
- <div className="hidden sm:inline-flex items-center gap-1.5 text-xs text-profit bg-profit/10 border border-profit/30 px-2 py-0.5 rounded-full font-medium">
+ <div className="hidden sm:inline-flex items-center gap-1.5 text-xs text-profit bg-profit/10 border border-profit/20 px-2 py-0.5 rounded-full font-medium">
  <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse" />
  <span>بث الأسعار حي</span>
  </div>
@@ -2497,11 +2497,11 @@ const StockTable = memo(function StockTable({
  const state = String(stock.money_flow_state || '⚪ متوازنة');
  let bgClass = 'bg-muted/30 text-muted-foreground border-border';
  if (state.includes('🔥 دخول') || state.includes('🟢 سيولة داخلة')) {
- bgClass = 'bg-profit text-profit border-profit /40 ';
+ bgClass = 'bg-profit text-profit border-profit/20 ';
  } else if (state.includes('🔥 خروج') || state.includes('🔴 سيولة خارجة')) {
- bgClass = 'bg-loss text-loss border-loss /40 ';
+ bgClass = 'bg-loss text-loss border-loss/20 ';
  } else if (state.includes('⚪')) {
- bgClass = 'bg-warning text-warning border-warning /40 ';
+ bgClass = 'bg-warning text-warning border-warning/20 ';
  }
  return (
  <Badge variant="outline" className={`text-xs font-bold ${bgClass}`}>
@@ -2567,7 +2567,7 @@ const StockTable = memo(function StockTable({
  className: 'text-xs',
  render: (stock) => {
  if (stock.kill_switch) {
- return <Badge variant="outline" className="text-xs text-loss border-loss bg-loss/50">⚠️ تدوير وهمي</Badge>;
+ return <Badge variant="outline" className="text-xs text-loss border-loss bg-loss/10">⚠️ تدوير وهمي</Badge>;
  }
  let cycle = stock.life_cycle && stock.life_cycle !== 'عادي' ? stock.life_cycle : null;
  if (!cycle) {
@@ -2604,10 +2604,10 @@ const StockTable = memo(function StockTable({
  variant="outline"
  className={`text-xs h-5 px-1.5 whitespace-nowrap ${
  isStrong
- ? 'bg-profit text-profit border-profit /50 font-semibold'
+ ? 'bg-profit text-profit border-profit/20 font-semibold'
  : isDist
- ? 'bg-loss text-loss border-loss /50 font-semibold'
- : 'bg-warning text-warning border-warning /40 '
+ ? 'bg-loss text-loss border-loss/20 font-semibold'
+ : 'bg-warning text-warning border-warning/20 '
  }`}
  >
  {accum}
@@ -2662,7 +2662,7 @@ const StockTable = memo(function StockTable({
  }
  // لا توقع متاح
  return (
- <div className="flex flex-col items-center leading-tight bg-warning/50 /10 rounded px-1">
+ <div className="flex flex-col items-center leading-tight bg-warning/10 /10 rounded px-1">
  <span className="text-muted-foreground font-mono text-xs">—</span>
  </div>
  );
@@ -2736,7 +2736,7 @@ const StockTable = memo(function StockTable({
  if (tPrice === null && slPrice === null) {
  // لا توقع ولا مستويات فنية
  return (
- <div className="flex flex-col text-xs leading-tight font-mono bg-warning/30 /10 rounded p-1 gap-0.5">
+ <div className="flex flex-col text-xs leading-tight font-mono bg-warning/10 /10 rounded p-1 gap-0.5">
  <span className="text-muted-foreground text-center">— راجع التحليل</span>
  {badge && <span className={`text-[8px] px-1 rounded text-center ${badgeCls}`}>{badge}</span>}
  </div>
@@ -2780,7 +2780,7 @@ const StockTable = memo(function StockTable({
  const pred = predictionForTicker(stock.ticker);
  if (stock.kill_switch) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-loss text-loss /60 border-loss">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-loss text-loss/60 border-loss">
  ⚠️ حذر
  </Badge>
  );
@@ -2788,7 +2788,7 @@ const StockTable = memo(function StockTable({
  // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
  if (pred?.signal_ar) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-profit text-profit /40 border-profit">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-profit text-profit/40 border-profit">
  {pred.signal_ar}
  </Badge>
  );
@@ -3106,7 +3106,7 @@ export function StockDetailDrawer({
 
  {/* === Tracking banner === */}
  {detail.tracking?.isTracked && (
- <Card className="p-3 bg-warning/60 /20 border-warning /50">
+ <Card className="p-3 bg-warning/10 /20 border-warning/20">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <Star className="h-4 w-4 fill-warning text-warning" />
@@ -3467,7 +3467,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
 
  {/* ─── Targets + Stop grid (prominent, 3 cells) ───────────────────── */}
  <div className="grid grid-cols-3 gap-1.5 mb-2">
- <div className="bg-background/60 rounded-md p-2 border border-profit/60 /40">
+ <div className="bg-background/60 rounded-md p-2 border border-profit/20 /40">
  <div className="text-xs text-muted-foreground flex items-center gap-0.5">
  <Target className="h-3 w-3" /> هدف 1
  </div>
@@ -3478,7 +3478,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
  (+{(t1Gain ?? 0).toFixed(1)}%)
  </div>
  </div>
- <div className="bg-background/60 rounded-md p-2 border border-profit/60 /40">
+ <div className="bg-background/60 rounded-md p-2 border border-profit/20 /40">
  <div className="text-xs text-muted-foreground flex items-center gap-0.5">
  <Award className="h-3 w-3" /> هدف 2
  </div>
@@ -3489,7 +3489,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
  (+{(t2Gain ?? 0).toFixed(1)}%)
  </div>
  </div>
- <div className="bg-background/60 rounded-md p-2 border border-loss/60 /40">
+ <div className="bg-background/60 rounded-md p-2 border border-loss/20 /40">
  <div className="text-xs text-muted-foreground flex items-center gap-0.5">
  <ShieldCheck className="h-3 w-3" /> وقف
  </div>
@@ -3602,7 +3602,7 @@ function ProofSection() {
  <CollapsibleTrigger asChild>
  <button className="w-full flex items-center justify-between p-3 md:p-4 hover:bg-muted/50 transition-colors">
  <div className="flex items-center gap-2">
- <div className="h-8 w-8 rounded-lg bg-profit /40 flex items-center justify-center">
+ <div className="h-8 w-8 rounded-lg bg-profit/10 flex items-center justify-center">
  <ShieldCheck className="h-4 w-4 text-profit " />
  </div>
  <div className="text-right">
@@ -3623,7 +3623,7 @@ function ProofSection() {
  <CollapsibleContent>
  <div className="p-3 md:p-4 pt-0 space-y-3 border-t border-border/50">
  {/* P0-3: placeholder بدل القيم الثابتة الوهمية */}
- <div className="mt-3 p-4 rounded-lg bg-warning /20 border border-warning text-center">
+ <div className="mt-3 p-4 rounded-lg bg-warning/20 border border-warning text-center">
  <div className="flex items-center justify-center gap-2 mb-2">
  <AlertTriangle className="h-5 w-5 text-warning" />
  <span className="text-sm font-bold text-warning ">
@@ -3666,10 +3666,10 @@ interface ProofMetricCardProps {
 
 function ProofMetricCard({ icon, label, value, sub, accent }: ProofMetricCardProps) {
  const colors: Record<ProofMetricCardProps['accent'], { bg: string; text: string }> = {
- blue: { bg: 'bg-primary /40', text: 'text-primary ' },
- amber: { bg: 'bg-warning /40', text: 'text-warning ' },
- rose: { bg: 'bg-loss /40', text: 'text-loss ' },
- emerald: { bg: 'bg-profit /40', text: 'text-profit ' },
+ blue: { bg: 'bg-primary/10', text: 'text-primary ' },
+ amber: { bg: 'bg-warning/10', text: 'text-warning ' },
+ rose: { bg: 'bg-loss/10', text: 'text-loss ' },
+ emerald: { bg: 'bg-profit/10', text: 'text-profit ' },
  };
  const c = colors[accent];
  return (
@@ -3778,7 +3778,7 @@ function MarketIntelligenceCard({ ticker }: { ticker: string }) {
  const priceHistory = sections.priceHistory || {};
 
  return (
- <Card className="p-3 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 space-y-3">
+ <Card className="p-3 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 space-y-3">
  <div className="flex items-center gap-1.5">
  <Target className="h-3.5 w-3.5 text-primary" />
  <span className="text-xs font-bold">خريطة ذكاء السوق</span>
@@ -3842,7 +3842,7 @@ function MarketIntelligenceCard({ ticker }: { ticker: string }) {
  <div key={i} className="flex items-center gap-2 text-xs">
  <span className="font-mono font-semibold w-16">{vp.price?.toFixed(2)}</span>
  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
- <div className="h-full bg-primary/60" style={{ width: `${Math.min(100, (vp.volume / intraday.volumeProfile[0].volume) * 100)}%` }} />
+ <div className="h-full bg-primary/10" style={{ width: `${Math.min(100, (vp.volume / intraday.volumeProfile[0].volume) * 100)}%` }} />
  </div>
  <span className="text-muted-foreground w-16 text-left">{fmtMoney(vp.volume)}</span>
  </div>

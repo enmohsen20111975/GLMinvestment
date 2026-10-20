@@ -440,7 +440,7 @@ export function SectorTreemapCard() {
  <Badge
  key={t.ticker}
  variant="outline"
- className={`text-xs h-4 px-1 ${(t.change_pct ?? 0) >= 0 ? 'border-profit/40 text-profit ' : 'border-loss/40 text-loss '}`}
+ className={`text-xs h-4 px-1 ${(t.change_pct ?? 0) >= 0 ? 'border-profit/20 text-profit ' : 'border-loss/20 text-loss '}`}
  >
  {t.ticker} {(t.change_pct ?? 0) >= 0 ? '+' : ''}{(t.change_pct ?? 0).toFixed(1)}%
  </Badge>
@@ -587,7 +587,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
  </div>
 
  {/* Recommendation */}
- <div className="mt-2 p-2 rounded-md bg-primary /20 border border-primary /40 text-xs text-primary flex items-start gap-1.5">
+ <div className="mt-2 p-2 rounded-md bg-primary/20 border border-primary/20 text-xs text-primary flex items-start gap-1.5">
  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
  <span>{data.recommendation}</span>
  </div>
@@ -737,17 +737,17 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
  concepts from money-flow data). */}
  {Array.isArray(data.levels) && data.levels.length > 0 && (
  <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
- <div className="p-1.5 rounded bg-primary /20 text-center">
+ <div className="p-1.5 rounded bg-primary/20 text-center">
  <div className="text-xs text-muted-foreground">POC</div>
  <div className="font-bold text-primary ">{(data.poc_price ?? 0).toFixed(2)}</div>
  <div className="text-xs text-muted-foreground">نقطة التحكم</div>
  </div>
- <div className="p-1.5 rounded bg-profit /20 text-center">
+ <div className="p-1.5 rounded bg-profit/20 text-center">
  <div className="text-xs text-muted-foreground">VAH</div>
  <div className="font-bold text-profit ">{(data.vah_price ?? 0).toFixed(2)}</div>
  <div className="text-xs text-muted-foreground">قمة منطقة القيمة</div>
  </div>
- <div className="p-1.5 rounded bg-loss /20 text-center">
+ <div className="p-1.5 rounded bg-loss/20 text-center">
  <div className="text-xs text-muted-foreground">VAL</div>
  <div className="font-bold text-loss ">{(data.val_price ?? 0).toFixed(2)}</div>
  <div className="text-xs text-muted-foreground">قاع منطقة القيمة</div>

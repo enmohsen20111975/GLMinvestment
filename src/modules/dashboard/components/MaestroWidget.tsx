@@ -32,9 +32,9 @@ interface MaestroOverview {
 }
 
 const REGIME_CONFIG = {
- bull: { color: 'text-profit', bg: 'bg-success /30', icon: TrendingUp, label: 'صاعد' },
- bear: { color: 'text-loss', bg: 'bg-loss /30', icon: TrendingDown, label: 'هابط' },
- range: { color: 'text-warning', bg: 'bg-warning /30', icon: Minus, label: 'متراوح' }
+ bull: { color: 'text-profit', bg: 'bg-success/10', icon: TrendingUp, label: 'صاعد' },
+ bear: { color: 'text-loss', bg: 'bg-loss/10', icon: TrendingDown, label: 'هابط' },
+ range: { color: 'text-warning', bg: 'bg-warning/10', icon: Minus, label: 'متراوح' }
 };
 
 export function MaestroWidget() {

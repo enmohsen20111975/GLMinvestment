@@ -136,7 +136,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-warning bg-warning text-warning /40 "
+ className="gap-1 border-warning bg-warning text-warning/40 "
  >
  <AlertCircle className="w-3 h-3" />
  تحذير
@@ -146,7 +146,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-profit bg-profit text-profit /40 "
+ className="gap-1 border-profit bg-profit text-profit/40 "
  >
  <Info className="w-3 h-3" />
  معلومة
@@ -163,10 +163,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
  className={cn(
  'rounded-lg border p-4 transition-colors',
  isCritical
- ? 'border-loss bg-loss/50 /50 /20'
+ ? 'border-loss bg-loss/10 /50 /20'
  : isWarning
- ? 'border-warning bg-warning/50 /50 /20'
- : 'border-profit bg-profit/50 /50 /20',
+ ? 'border-warning bg-warning/10 /50 /20'
+ : 'border-profit bg-profit/10 /50 /20',
  )}
  >
  <div className="flex items-start justify-between gap-3">
@@ -175,10 +175,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
  className={cn(
  'shrink-0 mt-0.5 rounded-md p-1.5',
  isCritical
- ? 'bg-loss text-loss /50 '
+ ? 'bg-loss text-loss/50 '
  : isWarning
- ? 'bg-warning text-warning /50 '
- : 'bg-profit text-profit /50 ',
+ ? 'bg-warning text-warning/50 '
+ : 'bg-profit text-profit/50 ',
  )}
  >
  <CategoryIcon category={issue.category} className="w-4 h-4" />
@@ -266,10 +266,10 @@ function SummaryStatCard({
  tone: 'red' | 'amber' | 'emerald' | 'neutral';
 }) {
  const toneClasses = {
- red: 'bg-loss text-loss /30 ',
- amber: 'bg-warning text-warning /30 ',
+ red: 'bg-loss text-loss/30 ',
+ amber: 'bg-warning text-warning/30 ',
  emerald:
- 'bg-profit text-profit /30 ',
+ 'bg-profit text-profit/30 ',
  neutral: 'bg-muted text-muted-foreground',
  }[tone];
 
@@ -330,7 +330,7 @@ export function SystemProblemsTab({
  // ---- Healthy (empty) state ----
  if (totalCount === 0) {
  return (
- <Card className="border-profit /60">
+ <Card className="border-profit/20">
  <CardHeader>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">

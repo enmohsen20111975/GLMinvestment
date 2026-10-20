@@ -121,7 +121,7 @@ export function DevLoginForm({ onSuccess }: DevLoginFormProps) {
  </div>
 
  {error && (
- <div className="flex items-center gap-2 p-2.5 rounded-lg bg-loss /30 border border-loss ">
+ <div className="flex items-center gap-2 p-2.5 rounded-lg bg-loss/10 border border-loss ">
  <AlertTriangle className="w-4 h-4 text-loss shrink-0" />
  <p className="text-xs text-loss ">{error}</p>
  </div>

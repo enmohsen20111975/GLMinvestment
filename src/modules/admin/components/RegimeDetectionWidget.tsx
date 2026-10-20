@@ -20,9 +20,9 @@ interface RegimeData {
 }
 
 const REGIME_CONFIG = {
- bull_trend: { color: 'text-success', bg: 'bg-success /30', icon: TrendingUp, label: 'صاعد واضح' },
- bear_trend: { color: 'text-loss', bg: 'bg-loss /30', icon: TrendingDown, label: 'هابط واضح' },
- ranging: { color: 'text-warning', bg: 'bg-warning /30', icon: Minus, label: 'متراوح' },
+ bull_trend: { color: 'text-success', bg: 'bg-success/10', icon: TrendingUp, label: 'صاعد واضح' },
+ bear_trend: { color: 'text-loss', bg: 'bg-loss/10', icon: TrendingDown, label: 'هابط واضح' },
+ ranging: { color: 'text-warning', bg: 'bg-warning/10', icon: Minus, label: 'متراوح' },
  unknown: { color: 'text-muted-foreground', bg: 'bg-muted /30', icon: Activity, label: 'غير معروف' }
 };
 

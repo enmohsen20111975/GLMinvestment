@@ -119,7 +119,7 @@ function formatCurrency(num: number): string {
 
 function BiblicalBasis() {
  return (
- <Card className="relative overflow-hidden border-whale/30 bg-gradient-to-br from-primary via-white to-whale dark:from-primary/30 dark:via-background dark:to-whale/30">
+ <Card className="relative overflow-hidden border-whale/20 bg-gradient-to-br from-primary via-white to-whale dark:from-primary/30 dark:via-background dark:to-whale/30">
  <ChristianPattern />
  <div className="relative z-10">
  <CardHeader className="text-center pb-2">
@@ -147,7 +147,7 @@ function BiblicalBasis() {
  </p>
  </div>
  
- <div className="p-4 bg-gradient-to-r from-primary to-cyan-50 dark:from-primary/30 dark:to-cyan-950/30 rounded-xl border border-whale /50 shadow-sm">
+ <div className="p-4 bg-gradient-to-r from-primary to-cyan-50 dark:from-primary/30 dark:to-cyan-950/30 rounded-xl border border-whale/20 shadow-sm">
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-full bg-whale text-white flex items-center justify-center text-xs font-bold">ع.ج</div>
  <span className="font-bold text-whale ">من العهد الجديد</span>
@@ -160,7 +160,7 @@ function BiblicalBasis() {
  </p>
  </div>
  
- <div className="p-4 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30 rounded-xl border border-warning /50 shadow-sm">
+ <div className="p-4 bg-gradient-to-r from-warning to-yellow-50 dark:from-warning/30 dark:to-yellow-950/30 rounded-xl border border-warning/20 shadow-sm">
  <div className="flex items-center gap-2 mb-2">
  <div className="w-8 h-8 rounded-full bg-warning text-white flex items-center justify-center text-xs font-bold">١٠٪</div>
  <span className="font-bold text-warning ">مقدار العُشر</span>
@@ -182,7 +182,7 @@ function BiblicalBasis() {
 
 function TitheInfo() {
  return (
- <Card className="relative overflow-hidden border-whale/30 bg-gradient-to-br from-primary/50 via-white to-whale/50 dark:from-primary/20 dark:via-background dark:to-whale/20">
+ <Card className="relative overflow-hidden border-whale/20 bg-gradient-to-br from-primary/50 via-white to-whale/50 dark:from-primary/20 dark:via-background dark:to-whale/20">
  <ChristianPattern />
  <div className="relative z-10">
  <CardHeader className="text-center">
@@ -197,7 +197,7 @@ function TitheInfo() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  <div className="relative group">
  <div className="absolute inset-0 bg-gradient-to-br from-primary to-whale rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
- <div className="relative p-6 bg-gradient-to-br from-primary to-whale dark:from-primary/40 dark:to-whale/40 rounded-2xl border-2 border-whale /50 shadow-lg text-center">
+ <div className="relative p-6 bg-gradient-to-br from-primary to-whale dark:from-primary/40 dark:to-whale/40 rounded-2xl border-2 border-whale/20 shadow-lg text-center">
  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-whale flex items-center justify-center shadow-lg mx-auto mb-4">
  <Coins className="w-8 h-8 text-foreground"/>
  </div>
@@ -265,7 +265,7 @@ function TitheCalculator() {
  return (
  <div className="space-y-6">
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
- <Card className="relative overflow-hidden border-2 border-whale /50 bg-gradient-to-br from-primary/50 to-whale/50 dark:from-primary/20 dark:to-whale/20">
+ <Card className="relative overflow-hidden border-2 border-whale/20 bg-gradient-to-br from-primary/50 to-whale/50 dark:from-primary/20 dark:to-whale/20">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-3 text-lg">
  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-whale flex items-center justify-center">
@@ -321,7 +321,7 @@ function TitheCalculator() {
  </div>
  
  {results.length > 0 && (
- <Card className="relative overflow-hidden border-2 border-whale /50 bg-gradient-to-br from-primary/30 to-whale/30 dark:from-primary/20 dark:to-whale/20">
+ <Card className="relative overflow-hidden border-2 border-whale/20 bg-gradient-to-br from-primary/30 to-whale/30 dark:from-primary/20 dark:to-whale/20">
  <ChristianPattern />
  <div className="relative z-10">
  <CardHeader className="text-center">
@@ -347,7 +347,7 @@ function TitheCalculator() {
  </div>
  <div className="text-left">
  <p className="text-2xl font-bold text-whale ">{formatCurrency(result.amount)}</p>
- <Badge className="text-xs bg-whale text-whale /50 ">عُشر شهري</Badge>
+ <Badge className="text-xs bg-whale text-whale/50 ">عُشر شهري</Badge>
  </div>
  </div>
  </div>
@@ -367,15 +367,15 @@ function TitheCalculator() {
  </div>
  
  <div className="grid grid-cols-3 gap-4 mt-6">
- <div className="text-center p-4 rounded-xl bg-whale /30">
+ <div className="text-center p-4 rounded-xl bg-whale/10">
  <p className="text-xs text-muted-foreground mb-1">إجمالي الدخل</p>
  <p className="text-lg font-bold text-whale">{formatCurrency(totalIncome)}</p>
  </div>
- <div className="text-center p-4 rounded-xl bg-whale /30">
+ <div className="text-center p-4 rounded-xl bg-whale/10">
  <p className="text-xs text-muted-foreground mb-1">العُشر الشهري</p>
  <p className="text-lg font-bold text-whale">{formatCurrency(totalTithe)}</p>
  </div>
- <div className="text-center p-4 rounded-xl bg-primary /30">
+ <div className="text-center p-4 rounded-xl bg-primary/10">
  <p className="text-xs text-muted-foreground mb-1">العُشر السنوي</p>
  <p className="text-lg font-bold text-primary">{formatCurrency(annualTithe)}</p>
  </div>
@@ -548,7 +548,7 @@ function AutoTithesCard() {
  const titheDue = tithable * TITHE.rate;
 
  return (
- <Card className="relative overflow-hidden border-2 border-whale /50 bg-gradient-to-br from-primary/60 via-white to-whale/60 dark:from-primary/30 dark:via-background dark:to-whale/30 shadow-lg">
+ <Card className="relative overflow-hidden border-2 border-whale/20 bg-gradient-to-br from-primary/60 via-white to-whale/60 dark:from-primary/30 dark:via-background dark:to-whale/30 shadow-lg">
  <ChristianPattern />
  <div className="relative z-10">
  <CardHeader className="pb-3">
@@ -584,7 +584,7 @@ function AutoTithesCard() {
  )}
 
  {error && !loading && (
- <Alert className="border-warning bg-warning /30">
+ <Alert className="border-warning bg-warning/10">
  <AlertTriangle className="w-4 h-4 text-warning"/>
  <AlertDescription className="text-sm text-warning ">{error}</AlertDescription>
  </Alert>
@@ -603,7 +603,7 @@ function AutoTithesCard() {
  <Separator/>
 
  {/* Note: tithe is on NET income after deducting installments */}
- <div className="flex items-start gap-2 p-3 rounded-xl bg-whale/70 /30 border border-whale /50">
+ <div className="flex items-start gap-2 p-3 rounded-xl bg-whale/70 /30 border border-whale/20">
  <Info className="w-4 h-4 text-whale mt-0.5 shrink-0"/>
  <p className="text-xs text-whale leading-relaxed">
  العُشر يُحتسب على صافي الدخل الشهري بعد خصم الأقساط.
@@ -612,7 +612,7 @@ function AutoTithesCard() {
  </div>
 
  {/* Tithable income summary */}
- <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-whale/70 /30 border border-whale /50">
+ <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-whale/70 /30 border border-whale/20">
  <div className="flex items-center gap-2">
  <Scale className="w-5 h-5 text-whale"/>
  <div>
@@ -645,7 +645,7 @@ function AutoTithesCard() {
  </div>
  </div>
  ) : (
- <Alert className="border-whale bg-whale /30">
+ <Alert className="border-whale bg-whale/10">
  <Info className="w-5 h-5 text-whale"/>
  <AlertDescription className="text-sm text-whale ">
  سجّل دخلك الشهري أو أضف أصولاً ذات عائد لمحفظتك ليتم حساب العُشر تلقائياً.
@@ -691,7 +691,7 @@ export function TithesView() {
  <ChristianPattern />
  </div>
  
- <div className="sticky top-0 z-10 bg-gradient-to-r from-primary/95 via-white/95 to-whale/95 dark:from-primary/95 dark:via-background/95 dark:to-whale/95 backdrop-blur border-b border-whale /50">
+ <div className="sticky top-0 z-10 bg-gradient-to-r from-primary/95 via-white/95 to-whale/95 dark:from-primary/95 dark:via-background/95 dark:to-whale/95 backdrop-blur border-b border-whale/20">
  <div className="max-w-6xl mx-auto px-4 py-4">
  <div className="flex items-center gap-4">
  <div className="relative">
@@ -734,7 +734,7 @@ export function TithesView() {
  </TabsContent>
  </Tabs>
  
- <Card className="relative overflow-hidden border-whale/50 bg-gradient-to-r from-primary to-whale dark:from-primary/30 dark:to-whale/30">
+ <Card className="relative overflow-hidden border-whale/20 bg-gradient-to-r from-primary to-whale dark:from-primary/30 dark:to-whale/30">
  <ChristianPattern />
  <CardContent className="relative z-10 p-6">
  <div className="flex items-start gap-4">

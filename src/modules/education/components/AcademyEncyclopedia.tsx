@@ -1592,8 +1592,8 @@ function LessonQuiz({
  key={qi}
  className={cn(
  'rounded-lg border p-4 transition-colors',
- isCorrect && 'border-profit bg-profit /30',
- isWrong && 'border-loss bg-loss /30',
+ isCorrect && 'border-profit bg-profit/10',
+ isWrong && 'border-loss bg-loss/10',
  !state.submitted && 'border-border',
  )}
  >
@@ -1618,8 +1618,8 @@ function LessonQuiz({
  'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-right transition-colors',
  'hover:bg-accent/60 disabled:cursor-not-allowed',
  isSelected && !state.submitted && 'border-primary bg-primary/5',
- showCorrect && 'border-profit bg-profit /40',
- showWrong && 'border-loss bg-loss /40',
+ showCorrect && 'border-profit bg-profit/10',
+ showWrong && 'border-loss bg-loss/10',
  )}
  >
  <span
@@ -1648,8 +1648,8 @@ function LessonQuiz({
  className={cn(
  'mt-3 rounded-md border-r-4 p-3 text-sm',
  isCorrect
- ? 'border-profit bg-profit/60 /30'
- : 'border-warning bg-warning/60 /30',
+ ? 'border-profit bg-profit/10 /30'
+ : 'border-warning bg-warning/10 /30',
  )}
  >
  <span className="font-semibold">
@@ -1673,10 +1673,10 @@ function LessonQuiz({
  className={cn(
  'flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4',
  scorePercent >= 70
- ? 'border-profit bg-profit /30'
+ ? 'border-profit bg-profit/10'
  : scorePercent >= 50
- ? 'border-warning bg-warning /30'
- : 'border-loss bg-loss /30',
+ ? 'border-warning bg-warning/10'
+ : 'border-loss bg-loss/10',
  )}
  >
  <div className="flex items-center gap-3">
@@ -1880,7 +1880,7 @@ export function AcademyEncyclopedia() {
  className={cn(
  'flex w-full items-start gap-2 rounded-md px-2 py-2 text-right text-sm transition-colors',
  isActive
- ? 'bg-profit font-semibold text-profit /40 '
+ ? 'bg-profit font-semibold text-profit/40 '
  : 'hover:bg-accent/60',
  )}
  >
@@ -1977,7 +1977,7 @@ export function AcademyEncyclopedia() {
  ) : null}
 
  {section.keyPoints && section.keyPoints.length > 0 ? (
- <ul className="space-y-1.5 rounded-md bg-profit/50 p-3 /20">
+ <ul className="space-y-1.5 rounded-md bg-profit/10 p-3 /20">
  {section.keyPoints.map((kp, i) => (
  <li key={i} className="flex items-start gap-2 text-sm">
  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-profit" />

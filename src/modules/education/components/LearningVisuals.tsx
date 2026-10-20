@@ -150,7 +150,7 @@ export function MarketHoursTimeline() {
  ))}
  </div>
  </div>
- <div className="mt-4 p-2 rounded-lg bg-warning/10 border border-warning/30">
+ <div className="mt-4 p-2 rounded-lg bg-warning/10 border border-warning/20">
  <p className="text-xs text-warning text-center">
  ⚠️ أعلى تقلبات: أول 30 دقيقة وآخر 30 دقيقة - ينصح المبتدئون بتجنبها
  </p>
@@ -233,9 +233,9 @@ export function RiskPyramid() {
 /* ── 6. Callout Box (صناديق ملاحظات) ── */
 export function CalloutBox({ type, title, children }: { type: 'tip' | 'warning' | 'key' | 'example'; title: string; children: React.ReactNode }) {
  const config = {
- tip: { icon: Lightbulb, color: 'border-whale/30 bg-whale/5', iconColor: 'text-whale', titleColor: 'text-whale ' },
- warning: { icon: AlertTriangle, color: 'border-warning/30 bg-warning/5', iconColor: 'text-warning', titleColor: 'text-warning ' },
- key: { icon: Key, color: 'border-profit/30 bg-profit/5', iconColor: 'text-profit', titleColor: 'text-profit ' },
+ tip: { icon: Lightbulb, color: 'border-whale/20 bg-whale/5', iconColor: 'text-whale', titleColor: 'text-whale ' },
+ warning: { icon: AlertTriangle, color: 'border-warning/20 bg-warning/5', iconColor: 'text-warning', titleColor: 'text-warning ' },
+ key: { icon: Key, color: 'border-profit/20 bg-profit/5', iconColor: 'text-profit', titleColor: 'text-profit ' },
  example: { icon: BookOpen, color: 'border-purple-500/30 bg-primary/5', iconColor: 'text-primary', titleColor: 'text-primary ' },
  };
  const { icon: Icon, color, iconColor, titleColor } = config[type];
@@ -410,7 +410,7 @@ export function MACDVisual() {
  <div className="flex justify-center gap-4 mt-2 text-xs">
  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-whale" /> MACD</span>
  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-warning" /> خط الإشارة</span>
- <span className="flex items-center gap-1"><span className="w-3 h-2 bg-profit/50" /> الهيستوجرام</span>
+ <span className="flex items-center gap-1"><span className="w-3 h-2 bg-profit/10" /> الهيستوجرام</span>
  </div>
  </div>
  );
@@ -581,7 +581,7 @@ export function DCFFlowVisual() {
  {/* Step 1 */}
  <motion.div
  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
- className="flex-1 p-3 rounded-lg bg-profit/10 border border-profit/30 text-center"
+ className="flex-1 p-3 rounded-lg bg-profit/10 border border-profit/20 text-center"
  >
  <p className="text-xs font-bold text-profit mb-1">1. تقدير التدفقات</p>
  <p className="text-xs">النقدية المتوقعة لـ 5 سنوات</p>
@@ -590,7 +590,7 @@ export function DCFFlowVisual() {
  {/* Step 2 */}
  <motion.div
  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
- className="flex-1 p-3 rounded-lg bg-whale/10 border border-whale/30 text-center"
+ className="flex-1 p-3 rounded-lg bg-whale/10 border border-whale/20 text-center"
  >
  <p className="text-xs font-bold text-whale mb-1">2. معدل الخصم</p>
  <p className="text-xs">خصم للتضخم والمخاطر</p>
@@ -599,7 +599,7 @@ export function DCFFlowVisual() {
  {/* Step 3 */}
  <motion.div
  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
- className="flex-1 p-3 rounded-lg bg-warning/10 border border-warning/30 text-center"
+ className="flex-1 p-3 rounded-lg bg-warning/10 border border-warning/20 text-center"
  >
  <p className="text-xs font-bold text-warning mb-1">3. القيمة الطرفية</p>
  <p className="text-xs">قيمة ما بعد 5 سنوات</p>
@@ -629,7 +629,7 @@ export function ROEDuPontVisual() {
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  <motion.div
  initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
- className="p-3 rounded-lg bg-profit/10 border border-profit/30 text-center"
+ className="p-3 rounded-lg bg-profit/10 border border-profit/20 text-center"
  >
  <p className="text-xs font-bold text-profit">هامش الربح</p>
  <p className="text-xs text-muted-foreground mb-1">صافي الربح ÷ الإيرادات</p>
@@ -637,7 +637,7 @@ export function ROEDuPontVisual() {
  </motion.div>
  <motion.div
  initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
- className="p-3 rounded-lg bg-whale/10 border border-whale/30 text-center"
+ className="p-3 rounded-lg bg-whale/10 border border-whale/20 text-center"
  >
  <p className="text-xs font-bold text-whale">دوران الأصول</p>
  <p className="text-xs text-muted-foreground mb-1">الإيرادات ÷ الأصول</p>
@@ -645,7 +645,7 @@ export function ROEDuPontVisual() {
  </motion.div>
  <motion.div
  initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
- className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-center"
+ className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-center"
  >
  <p className="text-xs font-bold text-warning">الرافعة المالية</p>
  <p className="text-xs text-muted-foreground mb-1">الأصول ÷ حقوق الملكية</p>
@@ -732,7 +732,7 @@ export function DCAStrategyVisual() {
  </motion.div>
  ))}
  </div>
- <div className="mt-3 p-3 rounded-lg bg-profit/10 border border-profit/30">
+ <div className="mt-3 p-3 rounded-lg bg-profit/10 border border-profit/20">
  <div className="flex justify-between text-sm">
  <span>إجمالي الاستثمار:</span>
  <span className="font-bold">{totalInvest} ج.م</span>
@@ -1091,7 +1091,7 @@ type SopStage = {
 const SOP_STAGES: SopStage[] = [
  {
  icon: ClipboardCheck,
- iconBg: 'bg-profit /40',
+ iconBg: 'bg-profit/10',
  iconColor: 'text-profit ',
  title: 'Pre-trade Checklist',
  subtitle: 'قبل الصفقة',
@@ -1099,7 +1099,7 @@ const SOP_STAGES: SopStage[] = [
  },
  {
  icon: Zap,
- iconBg: 'bg-warning /40',
+ iconBg: 'bg-warning/10',
  iconColor: 'text-warning ',
  title: 'Execute Trade',
  subtitle: 'تنفيذ',
@@ -1107,7 +1107,7 @@ const SOP_STAGES: SopStage[] = [
  },
  {
  icon: NotebookPen,
- iconBg: 'bg-profit /40',
+ iconBg: 'bg-profit/10',
  iconColor: 'text-profit ',
  title: 'Journal Entry',
  subtitle: 'يوميات',
@@ -1115,7 +1115,7 @@ const SOP_STAGES: SopStage[] = [
  },
  {
  icon: TrendingUp,
- iconBg: 'bg-warning /40',
+ iconBg: 'bg-warning/10',
  iconColor: 'text-warning ',
  title: 'Review Weekly',
  subtitle: 'مراجعة',
@@ -1273,7 +1273,7 @@ export function SopPipelineFlow() {
  ))}
  </div>
  <div className="mt-auto flex items-center justify-between pt-1">
- <span className="rounded-full bg-profit px-1.5 py-[1px] text-xs font-bold text-profit /40 ">
+ <span className="rounded-full bg-profit px-1.5 py-[1px] text-xs font-bold text-profit/40 ">
  {String(i + 1).padStart(2, '0')}
  </span>
  <span className="text-[8.5px] text-slate-400" dir="ltr">
@@ -1375,24 +1375,24 @@ const PIPELINE_STAGES: PipelineStage[] = [
 const ACCENT_STYLES: Record<PipelineStage['accent'], { ring: string; badge: string; glow: string; text: string; border: string }> = {
  emerald: {
  ring: 'ring-profit/30',
- badge: 'bg-profit/15 text-profit border-profit/30',
+ badge: 'bg-profit/15 text-profit border-profit/20',
  glow: 'shadow-[0_0_18px_-4px_rgba(16,185,129,0.55)]',
  text: 'text-profit',
- border: 'border-profit/50',
+ border: 'border-profit/20',
  },
  amber: {
  ring: 'ring-warning/30',
- badge: 'bg-warning/15 text-warning border-warning/30',
+ badge: 'bg-warning/15 text-warning border-warning/20',
  glow: 'shadow-[0_0_18px_-4px_rgba(245,158,11,0.55)]',
  text: 'text-warning',
- border: 'border-warning/50',
+ border: 'border-warning/20',
  },
  red: {
  ring: 'ring-loss/30',
- badge: 'bg-loss/15 text-loss border-loss/30',
+ badge: 'bg-loss/15 text-loss border-loss/20',
  glow: 'shadow-[0_0_18px_-4px_rgba(239,68,68,0.55)]',
  text: 'text-loss',
- border: 'border-loss/50',
+ border: 'border-loss/20',
  },
  cyan: {
  ring: 'ring-cyan-500/30',
@@ -1588,7 +1588,7 @@ export function MarketStagesVisual() {
  nameEn: 'Accumulation',
  color: '#10b981',
  bg: 'bg-profit/10',
- border: 'border-profit/40',
+ border: 'border-profit/20',
  action: 'شراء تدريجي',
  actionEn: 'Buy',
  icon: '📥',
@@ -1601,7 +1601,7 @@ export function MarketStagesVisual() {
  nameEn: 'Advance',
  color: '#059669',
  bg: 'bg-profit/10',
- border: 'border-profit/40',
+ border: 'border-profit/20',
  action: 'احتفاظ / إضافة',
  actionEn: 'Hold',
  icon: '🚀',
@@ -1614,7 +1614,7 @@ export function MarketStagesVisual() {
  nameEn: 'Distribution',
  color: '#f59e0b',
  bg: 'bg-warning/10',
- border: 'border-warning/40',
+ border: 'border-warning/20',
  action: 'بيع تدريجي',
  actionEn: 'Sell',
  icon: '📤',
@@ -1627,7 +1627,7 @@ export function MarketStagesVisual() {
  nameEn: 'Decline',
  color: '#ef4444',
  bg: 'bg-loss/10',
- border: 'border-loss/40',
+ border: 'border-loss/20',
  action: 'بيع / قصر',
  actionEn: 'Short',
  icon: '📉',
@@ -1746,7 +1746,7 @@ export function MarketStagesVisual() {
  </div>
 
  {/* Educational takeaway */}
- <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
+ <div className="mt-4 rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
  <span className="font-bold">قاعدة عامة:</span> لا تشترِ في المرحلة 4، ولا تبع في
  المرحلة 2. أفضل نقطة شراء = نهاية المرحلة 1، وأفضل نقطة بيع = بداية المرحلة 3.
  التحرّك ضدّ المرحلة = خسارة شبه مؤكدة.
@@ -1864,11 +1864,11 @@ export function OrderFlowVisual() {
  <div className="flex flex-col gap-3" dir="rtl">
  {/* Order book totals */}
  <div className="grid grid-cols-2 gap-2">
- <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+ <div className="rounded-lg border border-loss/20 bg-loss/10 p-3 text-center">
  <div className="text-xs font-semibold text-loss ">إجمالي Ask</div>
  <div className="text-lg font-bold text-loss ">{totalAsk.toLocaleString()}</div>
  </div>
- <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-center">
  <div className="text-xs font-semibold text-profit ">إجمالي Bid</div>
  <div className="text-lg font-bold text-profit ">{totalBid.toLocaleString()}</div>
  </div>
@@ -1899,7 +1899,7 @@ export function OrderFlowVisual() {
  </div>
 
  {/* Educational key */}
- <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-xs leading-relaxed text-profit ">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-xs leading-relaxed text-profit ">
  <div className="mb-2 font-bold">القاعدة الذهبية لتدفّق الأوامر:</div>
  <ul className="space-y-1">
  <li>• <span className="font-semibold">Limit Order:</span> أمر بانتظار سعر معيّن (يخلق سيولة).</li>
@@ -2000,9 +2000,9 @@ export function CandlestickPatternsVisual() {
  ];
 
  const signalBadge: Record<string, { label: string; cls: string }> = {
- bullish: { label: 'صاعد', cls: 'bg-profit/15 text-profit border-profit/30' },
- bearish: { label: 'هابط', cls: 'bg-loss/15 text-loss border-loss/30' },
- neutral: { label: 'محايد', cls: 'bg-warning/15 text-warning border-warning/30' },
+ bullish: { label: 'صاعد', cls: 'bg-profit/15 text-profit border-profit/20' },
+ bearish: { label: 'هابط', cls: 'bg-loss/15 text-loss border-loss/20' },
+ neutral: { label: 'محايد', cls: 'bg-warning/15 text-warning border-warning/20' },
  };
 
  function MiniCandle({ c, idx }: { c: C; idx: number }) {
@@ -2087,7 +2087,7 @@ export function CandlestickPatternsVisual() {
  })}
  </div>
 
- <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
+ <div className="mt-4 rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
  <span className="font-bold">تحذير مهم:</span> الأنماط وحدها لا تكفي. ادمجها مع
  المستويات (دعم/مقاومة)، السياق (مرحلة السوق)، وحجم التداول. شمعة مطرقة في
  فراغ = مجرد ضجيج.
@@ -2300,12 +2300,12 @@ export function RiskRewardVisual() {
  {/* Metrics + sliders */}
  <div className="flex flex-col gap-3" dir="rtl">
  <div className="grid grid-cols-3 gap-2">
- <div className="rounded-lg border border-loss/30 bg-loss/10 p-3 text-center">
+ <div className="rounded-lg border border-loss/20 bg-loss/10 p-3 text-center">
  <div className="text-xs text-loss ">المخاطرة</div>
  <div className="text-lg font-bold text-loss ">{(risk ?? 0).toFixed(1)}</div>
  <div className="text-xs text-muted-foreground">({(risk / entry * 100).toFixed(1)}%)</div>
  </div>
- <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-center">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-center">
  <div className="text-xs text-profit ">العائد</div>
  <div className="text-lg font-bold text-profit ">{(reward ?? 0).toFixed(1)}</div>
  <div className="text-xs text-muted-foreground">({(reward / entry * 100).toFixed(1)}%)</div>
@@ -2322,10 +2322,10 @@ export function RiskRewardVisual() {
  className={cn(
  'rounded-lg border p-3 text-center text-xs font-bold',
  rr >= 2
- ? 'border-profit/40 bg-profit/15 text-profit '
+ ? 'border-profit/20 bg-profit/15 text-profit '
  : rr >= 1
- ? 'border-warning/40 bg-warning/15 text-warning '
- : 'border-loss/40 bg-loss/15 text-loss ',
+ ? 'border-warning/20 bg-warning/15 text-warning '
+ : 'border-loss/20 bg-loss/15 text-loss ',
  )}
  >
  {rr >= 2 ? '✅ صفقة مقبولة — R:R ≥ 2:1' : rr >= 1 ? '⚠️ صفقة هامشية — R:R بين 1 و 2' : '❌ صفقة مرفوضة — R:R < 1'}
@@ -2381,7 +2381,7 @@ export function RiskRewardVisual() {
  </div>
 
  {/* Position sizing lesson */}
- <div className="rounded-lg border border-profit/30 bg-profit/10 p-3 text-xs leading-relaxed text-profit " dir="rtl">
+ <div className="rounded-lg border border-profit/20 bg-profit/10 p-3 text-xs leading-relaxed text-profit " dir="rtl">
  <div className="mb-1 font-bold">حجم الصفقة (Position Size):</div>
  لو مخاطرك المسموحة = 2% من رأس المال (مثلاً 1000 ج.م من 50,000)،
  والمخاطرة لكل سهم = {(risk ?? 0).toFixed(1)} ج.م →
@@ -2589,7 +2589,7 @@ export function PortfolioAllocationVisual() {
  </div>
  </div>
 
- <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
+ <div className="rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs leading-relaxed text-warning " dir="rtl">
  <span className="font-bold">درس التنويع:</span> المحفظة دي بتدي عائد
  متوقع +{(portfolioReturn ?? 0).toFixed(0)}% لكن بتقلب ±{(portfolioVol ?? 0).toFixed(0)}% فقط —
  أقل من وضع 100% في Crypto (±70%) أو 100% في EGX (±24%). التنويع بيوازن

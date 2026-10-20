@@ -27,9 +27,9 @@ interface StockFeelCardProps {
 
 function statusColor(status?: string): string {
   if (!status) return 'bg-muted text-muted-foreground border-border';
-  if (status.includes('تصحيح حاد')) return 'bg-loss/15 text-loss border-loss/30';
-  if (status.includes('انفجار') || status.includes('صعود')) return 'bg-profit/15 text-profit border-profit/30';
-  if (status.includes('ثبات')) return 'bg-warning/15 text-warning border-warning/30';
+  if (status.includes('تصحيح حاد')) return 'bg-loss/15 text-loss border-loss/20';
+  if (status.includes('انفجار') || status.includes('صعود')) return 'bg-profit/15 text-profit border-profit/20';
+  if (status.includes('ثبات')) return 'bg-warning/15 text-warning border-warning/20';
   return 'bg-muted text-muted-foreground border-border';
 }
 
@@ -63,7 +63,7 @@ export function StockFeelCard({ analysis }: StockFeelCardProps) {
   if (!feel && !correctionStatus && !actionHint) return null;
 
   return (
-    <Card className="border-primary/30 bg-primary/5" dir="rtl">
+    <Card className="border-primary/20 bg-primary/5" dir="rtl">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" />

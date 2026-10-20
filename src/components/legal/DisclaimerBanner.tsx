@@ -35,7 +35,7 @@ export function DisclaimerBanner() {
  return (
  <>
  {visible && (
- <div className="bg-warning /40 border-b border-warning relative z-50">
+ <div className="bg-warning/10 border-b border-warning relative z-50">
  <div className="max-w-7xl mx-auto px-4 py-2 flex items-start gap-3">
  <ShieldCheck className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
  <div className="flex-1 min-w-0 text-center">
@@ -60,7 +60,7 @@ export function DisclaimerBanner() {
  <Button
  variant="ghost"
  size="icon"
- className="h-6 w-6 flex-shrink-0 text-warning hover:text-warning dark:hover:text-warning hover:bg-warning dark:hover:bg-warning/50"
+ className="h-6 w-6 flex-shrink-0 text-warning hover:text-warning dark:hover:text-warning hover:bg-warning dark:hover:bg-warning/10"
  onClick={handleDismiss}
  aria-label="إغلاق التنبيه"
  >
@@ -80,7 +80,7 @@ export function DisclaimerBanner() {
 export function LegalDisclaimerFooter() {
  return (
  <div
- className="border-t border-warning bg-warning/50 /20 px-4 py-2 mt-4"
+ className="border-t border-warning bg-warning/10 /20 px-4 py-2 mt-4"
  dir="rtl"
  >
  <p className="text-xs sm:text-xs text-warning text-center leading-relaxed">

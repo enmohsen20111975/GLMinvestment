@@ -54,7 +54,7 @@ export function GuestLimitCta({
   return (
     <div
       dir="rtl"
-      className={`rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 flex flex-col sm:flex-row items-center gap-3 text-center sm:text-right ${className}`}
+      className={`rounded-lg border border-dashed border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-center gap-3 text-center sm:text-right ${className}`}
       role="region"
       aria-label="دعوة للتسجيل لرؤية المزيد"
     >

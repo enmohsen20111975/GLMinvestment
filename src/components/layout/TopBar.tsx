@@ -191,7 +191,7 @@ export function TopBar() {
  className={cn(
  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-xs font-medium transition-colors',
  marketMenuOpen
- ? 'bg-primary/10 text-primary border-primary/30'
+ ? 'bg-primary/10 text-primary border-primary/20'
  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
  )}
  aria-expanded={marketMenuOpen}
@@ -320,7 +320,7 @@ export function TopBar() {
  {mounted && (
  <button
  onClick={() => setTheme(isDark ? 'light' : 'dark')}
- className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+ className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background transition-all hover:bg-accent hover:border-primary/20 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
  aria-label={isDark ? t('theme.light') : t('theme.dark')}
  title={isDark ? t('theme.light') : t('theme.dark')}
  >
@@ -341,7 +341,7 @@ export function TopBar() {
  <div className="relative" ref={userMenuRef}>
  <button
  onClick={() => setUserMenuOpen(!userMenuOpen)}
- className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs transition-all hover:bg-accent hover:border-primary/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+ className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs transition-all hover:bg-accent hover:border-primary/20 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
  aria-label="حساب المستخدم"
  >
  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm ring-2 ring-primary/20">
@@ -367,7 +367,7 @@ export function TopBar() {
  </button>
  <button
  onClick={() => { signOut({ callbackUrl: '/' }); toast.info('تم تسجيل الخروج بنجاح'); }}
- className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-loss hover:bg-loss dark:hover:bg-loss/30 transition-colors"
+ className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-loss hover:bg-loss dark:hover:bg-loss/10 transition-colors"
  >
  <LogOut className="h-3.5 w-3.5" />
  {t('common.logout')}
