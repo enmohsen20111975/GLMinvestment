@@ -388,8 +388,13 @@ export function getPredictionsFallback(
     }
 
     if (market && market !== 'ALL') {
-      conditions.push(`UPPER(market) = ?`);
-      params.push(market.toUpperCase());
+      const mUpper = market.toUpperCase();
+      if (mUpper === 'EGX' || mUpper === 'EGYPT' || mUpper === 'مصر') {
+        conditions.push(`UPPER(market) = 'EGX' AND ticker NOT GLOB '[0-9]*'`);
+      } else {
+        conditions.push(`UPPER(market) = ?`);
+        params.push(mUpper);
+      }
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

@@ -867,8 +867,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  className={cn(
  "text-xs px-1 rounded font-bold cursor-help",
  isMismatch
- ? "bg-loss text-loss "
- : "bg-warning text-warning "
+ ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 "
+ : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 "
  )}
  >
  {isMismatch ? 'منتهية' : `قديمة ${it.stalePct ? `${it.stalePct}%` : ''}`}
@@ -887,11 +887,11 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  </td>
  <td className="p-2 text-center">
  {isMismatch ? (
- <Badge className="text-xs font-bold border-0 bg-loss text-loss ">
+ <Badge className="text-xs font-bold border border-rose-500/30 bg-rose-500/15 text-rose-700 dark:text-rose-300">
  منتهية
  </Badge>
  ) : isStale ? (
- <Badge className="text-xs font-bold border-0 bg-warning text-warning " title={staleReason}>
+ <Badge className="text-xs font-bold border border-amber-500/30 bg-amber-500/15 text-amber-800 dark:text-amber-300" title={staleReason}>
  ⚠️ قديمة
  </Badge>
  ) : (
@@ -1743,7 +1743,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  });
  const mappedFiltered = mappedPreds.filter((x): x is StoredAnalysisItem => x !== null);
  if (mappedFiltered.length > 0) {
- setItems(enrichItems(mappedFiltered.slice(0, PERSONA_DISPLAY_LIMIT), nameMap));
+ setItems(enrichItems(mappedFiltered.slice(0, 5), nameMap));
  setDataSource('predictions');
  setUsingFallback(true);
  return;
@@ -2169,10 +2169,22 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
  )}
 
- {/* عرض الجدول */}
- {viewMode === 'table' && (
- <PersonaTableView items={personaPageItems} persona={persona} market={market} onSelectItem={handleSelectItem} />
- )}
+      {/* عرض الجدول */}
+      {viewMode === 'table' && (
+        <>
+          {/* ⚠️ تنبيه اتجاه السوق ورادار الحيتان (جيمي directive) */}
+          <div className="mb-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex items-start gap-2.5 text-xs leading-relaxed">
+            <span className="text-base flex-shrink-0">⚠️</span>
+            <div>
+              <div className="font-bold mb-0.5">تنبيه اتجاه السوق — صفقات استثنائية مضادة للاتجاه (أفضل 5 فرص فقط):</div>
+              <div className="opacity-90">
+                المؤشر العام في مسار هابط / كاش عام. الفرص المعروضة هنا مستخرجة عبر <strong>رادار الحيتان ورصد السيولة المؤسسية الخفية</strong> في مناطق التجميع. الدخول بحجم محفظة لا يتعدى <strong>2%</strong> مع الالتزام الصارم بوقف الخسارة.
+              </div>
+            </div>
+          </div>
+          <PersonaTableView items={personaPageItems} persona={persona} market={market} onSelectItem={handleSelectItem} />
+        </>
+      )}
 
  {/* عرض النص المنسق للمشاركة */}
  {viewMode === 'text' && (

@@ -1251,7 +1251,7 @@ def get_results():
             fund = stocks_fund.get(ticker_upper, {})
             current_price = fund.get('current_price') or _get_current_price(ticker)
             recommendation = (r.get('recommendation') or '').lower()
-            is_buy = recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy')
+            is_buy = 'buy' in recommendation or 'accumulate' in recommendation or recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy', 'whale_radar_buy')
 
             # P26-PERSONA-SEPARATION: اقرأ analysis_json بدري عشان نلاقي persona_rr
             # (target_pct/stop_pct لكل persona). ده اللي بيخلي المضارب والمستثمر
