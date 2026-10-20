@@ -153,6 +153,169 @@ def set_cached(key: str, val: Any):
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# BRAVO-STOCK-FEEL (2026-10-20): الإحساس بالسهم + وضعه في التصحيح
+# للخبير: correction_status + correction_detail
+# للمبتدئ: feel + action_hint (كلام بسيط يتفهم)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _build_stock_feel(analysis: Dict, data: Dict) -> Dict:
+    """
+    بناء "الإحساس بالسهم" من الـ hybrid analysis.
+
+    يرجّع:
+      correction_status: تصحيح حاد / تصحيح طبيعي / صعود / ثبات / انفجار صعود
+      correction_detail: تفسير للخبير (RSI + SMA + هبوط 5d)
+      feel: كلام بسيط للمبتدئ (إحساس واحد)
+      action_hint: نصيحة عملية (انتظر / راقب / شراء قوي / بيع)
+      risk_level: low / medium / high
+    """
+    closes = data.get('closes', [])
+    volumes = data.get('volumes', [])
+    rsi_val = analysis.get('rsi')
+    regime = analysis.get('market_context', {}).get('regime', 'UNKNOWN')
+    rec = analysis.get('recommendation', 'HOLD')
+    score = analysis.get('hybrid_score', 0)
+    weinstein_stage = analysis.get('layer3_weinstein', {}).get('stage', '')
+    vol_position = analysis.get('layer4_volume', {}).get('position', '')
+
+    # حساب ROC5 (هبوط/صعود 5 أيام)
+    roc5 = 0.0
+    if len(closes) >= 6 and closes[-6] > 0:
+        roc5 = ((closes[-1] - closes[-6]) / closes[-6]) * 100
+
+    # فوق/تحت SMA50
+    sma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else (sum(closes) / len(closes) if closes else 0)
+    above_sma50 = closes[-1] > sma50 if sma50 > 0 else False
+    pct_from_sma50 = ((closes[-1] - sma50) / sma50 * 100) if sma50 > 0 else 0
+
+    # ── تحديد correction_status ──
+    if roc5 < -10 and not above_sma50:
+        correction_status = 'تصحيح حاد'
+        risk_level = 'high'
+    elif roc5 < -5 and not above_sma50:
+        correction_status = 'تصحيح طبيعي'
+        risk_level = 'medium'
+    elif roc5 > 10 and above_sma50:
+        correction_status = 'انفجار صعود'
+        risk_level = 'low' if rec in ('BUY', 'STRONG_BUY') else 'medium'
+    elif roc5 > 3 and above_sma50:
+        correction_status = 'صعود'
+        risk_level = 'low'
+    elif abs(roc5) <= 3:
+        correction_status = 'ثبات'
+        risk_level = 'low' if rec == 'HOLD' else 'medium'
+    else:
+        correction_status = 'صعود' if roc5 > 0 else 'تصحيح طفيف'
+        risk_level = 'medium'
+
+    # RSI تشبع بيعي/شرائي
+    rsi_note = ''
+    if rsi_val is not None:
+        if rsi_val < 30:
+            rsi_note = f'RSI={rsi_val:.0f} (تشبع بيعي)'
+        elif rsi_val > 70:
+            rsi_note = f'RSI={rsi_val:.0f} (تشبع شرائي)'
+        else:
+            rsi_note = f'RSI={rsi_val:.0f}'
+
+    # ── correction_detail (للخبير) ──
+    detail_parts = []
+    if rsi_note:
+        detail_parts.append(rsi_note)
+    detail_parts.append(f'{"فوق" if above_sma50 else "تحت"} SMA50 ({pct_from_sma50:+.1f}%)')
+    detail_parts.append(f'ROC5={roc5:+.1f}%')
+    if weinstein_stage:
+        stage_ar = analysis.get('layer3_weinstein', {}).get('stage_ar', weinstein_stage)
+        detail_parts.append(f'Weinstein={stage_ar}')
+    if vol_position:
+        detail_parts.append(f'Volume={vol_position}')
+    correction_detail = ' | '.join(detail_parts)
+
+    # ── feel (للمبتدئ — جملة واحدة) ──
+    if correction_status == 'تصحيح حاد':
+        feel = 'السهم في تصحيح حاد — نازل قوي'
+    elif correction_status == 'تصحيح طبيعي':
+        feel = 'السهم في تصحيح طبيعي — نازل بس معتدل'
+    elif correction_status == 'انفجار صعود':
+        feel = 'السهم بيصعد بقوة — انفجار سيولة'
+    elif correction_status == 'صعود':
+        feel = 'السهم في صعود'
+    else:
+        feel = 'السهم ثابت — مفيش اتجاه واضح'
+
+    # ── action_hint (نصيحة عملية) ──
+    if rec in ('STRONG_BUY',):
+        action_hint = 'فرصة شراء قوية — السيولة مؤسسية شرائية'
+    elif rec in ('BUY',):
+        action_hint = 'فرصة شراء — راقب الدخول'
+    elif rec in ('REDUCE',):
+        action_hint = 'قلّل مركزك — السهم في ضعف'
+    elif rec in ('SELL', 'STRONG_SELL'):
+        action_hint = 'بيع — السهم في هبوط قوي'
+    else:  # HOLD / WAIT
+        if correction_status == 'تصحيح حاد':
+            action_hint = 'انتظر — ما تشتريش لسه (falling knife)'
+        elif correction_status == 'انفجار صعود':
+            action_hint = 'راقب — السهم بيتحرك، بس استنى confirmation'
+        else:
+            action_hint = 'انتظر — مفيش إشارة واضحة'
+
+    # ── layers ملخّصة للـ UI ──
+    layers_simple = {
+        'hmm': {
+            'state': analysis.get('layer1_hmm_stock', {}).get('regime', 'UNKNOWN'),
+            'confidence': analysis.get('layer1_hmm_stock', {}).get('confidence', 0),
+            'label_ar': _hmm_label_ar(analysis.get('layer1_hmm_stock', {}).get('regime', 'UNKNOWN')),
+        },
+        'wyckoff': {
+            'phase': analysis.get('layer2_wyckoff', {}).get('phase', 'UNKNOWN'),
+            'label_ar': analysis.get('layer2_wyckoff', {}).get('phase_ar', 'غير محدد'),
+        },
+        'weinstein': {
+            'stage': weinstein_stage,
+            'label_ar': analysis.get('layer3_weinstein', {}).get('stage_ar', weinstein_stage),
+        },
+        'volume': {
+            'position': vol_position,
+            'label_ar': _volume_label_ar(vol_position),
+        },
+    }
+
+    return {
+        'correction_status': correction_status,
+        'correction_detail': correction_detail,
+        'feel': feel,
+        'action_hint': action_hint,
+        'risk_level': risk_level,
+        'roc5': round(roc5, 2),
+        'above_sma50': above_sma50,
+        'pct_from_sma50': round(pct_from_sma50, 2),
+        'layers_simple': layers_simple,
+    }
+
+
+def _hmm_label_ar(state: str) -> str:
+    labels = {
+        'BULL': 'صاعد',
+        'BEAR': 'هابط',
+        'RANGE': 'ثابت',
+        'UNKNOWN': 'غير محدد',
+    }
+    return labels.get(state, state)
+
+
+def _volume_label_ar(position: str) -> str:
+    labels = {
+        'ABOVE_VA': 'فوق متوسط الحجم (سيولة قوية)',
+        'IN_VA': 'في نطاق الحجم (سيولة عادية)',
+        'BELOW_VA': 'تحت متوسط الحجم (سيولة ضعيفة)',
+        'POC_NEAR': 'قرب نقطة التحكم',
+        'UNKNOWN': 'غير محدد',
+    }
+    return labels.get(position, position)
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # API Endpoints
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -262,6 +425,12 @@ def analyze_ticker():
             'reasons': analysis.get('reasons', []),
             'timestamp': datetime.now().isoformat(),
         }
+
+        # BRAVO-STOCK-FEEL (2026-10-20): الإحساس بالسهم + وضعه في التصحيح
+        # للخبير: correction_status + detail
+        # للمبتدئ: feel + action_hint (كلام بسيط)
+        feel_data = _build_stock_feel(analysis, data)
+        response.update(feel_data)
 
         set_cached(cache_key, response)
         return jsonify(response)
