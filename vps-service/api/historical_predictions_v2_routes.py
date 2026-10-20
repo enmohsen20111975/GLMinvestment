@@ -495,7 +495,7 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
                 technical_score, fundamental_score, 50, 50,
                 notes, _persona, now_iso, atr_at_entry,
                 target_price_2 or 0, explosive_score or 0, (explosive_label or '').upper(),
-                market, confidence, risk_reward, 'PENDING',
+                market, confidence, risk_reward, 'testing',
             ))
         except Exception:
             # Fallback for older schema without T2/explosive fields
@@ -512,7 +512,7 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
                 entry_price, target_price, stop_loss, master_score,
                 technical_score, fundamental_score, 50, 50,
                 notes, _persona, now_iso, atr_at_entry,
-                market, confidence, risk_reward, 'PENDING',
+                market, confidence, risk_reward, 'testing',
             ))
         pred_id = cur.lastrowid
         conn.commit()

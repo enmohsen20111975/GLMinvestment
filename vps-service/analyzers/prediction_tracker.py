@@ -733,8 +733,8 @@ class PredictionTracker:
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
                     evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    risk_reward, who_is_buying, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -746,6 +746,7 @@ class PredictionTracker:
                 _target_price_2, _explosive_score, _explosive_label,
                 _evidence_count, _morning_bell, _kill_filter_result,
                 risk_reward, who_is_buying_state,
+                'testing',  # BRAVO-ENGINE-TESTING-TAG: new predictions start as 'testing' (staging lane)
             ))
         except Exception as _primary_err:
             # BRAVO-LOG-EXCEPT (2026-10-19): كان الـ except بـ يبتلع الـ exception
@@ -773,8 +774,8 @@ class PredictionTracker:
                         notes, persona, created_at, atr_at_entry,
                         target_price_2, explosive_score, explosive_label,
                         evidence_count, morning_bell, kill_filter_result,
-                        risk_reward, who_is_buying
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        risk_reward, who_is_buying, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),
@@ -786,6 +787,7 @@ class PredictionTracker:
                     _target_price_2, _explosive_score, _explosive_label,
                     _evidence_count, _morning_bell, _kill_filter_result,
                     risk_reward, who_is_buying_state,
+                    'testing',  # BRAVO-ENGINE-TESTING-TAG: staging lane
                 ))
             except Exception as _fallback_err:
                 # BRAVO-LOG-EXCEPT: log الـ fallback exception كمان
@@ -800,8 +802,8 @@ class PredictionTracker:
                         ticker, signal, signal_type,
                         prediction_date, entry_price, target_price, stop_loss, master_score,
                         technical_score, fundamental_score, ai_pattern_score, sentiment_score,
-                        notes, persona, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        notes, persona, created_at, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),
@@ -809,6 +811,7 @@ class PredictionTracker:
                     technical_score, fundamental_score, ai_pattern_score, sentiment_score,
                     notes, _persona,
                     _created_at_iso,
+                    'testing',  # BRAVO-ENGINE-TESTING-TAG: staging lane
                 ))
 
         pred_id = cursor.lastrowid

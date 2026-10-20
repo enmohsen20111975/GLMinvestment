@@ -399,7 +399,7 @@ def filter_track_b_candidates(rows: List[dict], threshold: float, market: str) -
             'target_price': target_1,
             'target_price_2': target_2,
             'stop_loss': stop_loss,
-            'status': 'ACTIVE',
+            'status': 'testing',
             'confidence': 88.0,
             'risk_reward': round(target_pct / stop_pct, 2) if stop_pct > 0 else 1.5,
             'track': 'liquidity',
