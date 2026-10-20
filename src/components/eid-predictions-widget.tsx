@@ -298,7 +298,7 @@ export function EidPredictionsWidget() {
  )}
  {testing.length > 0 && (
  <div>
- <h4 className="text-xs font-bold text-warning mb-2 flex items-center gap-1">🟡 تحت الاختبار <span className="text-muted-foreground font-normal">({testing.length})</span></h4>
+ <h4 className="text-xs font-bold text-warning mb-2 flex items-center gap-1">🔍 أسهم تحت الاختبار والمراقبة اللحظية <span className="text-muted-foreground font-normal">(Pending Confirmation — {testing.length})</span></h4>
  <p className="text-[10px] text-muted-foreground mb-2">فرص جديدة بتتـ validate — لو ثبتت معانا بتنتقل للتوقعات الأساسية.</p>
  <div className="space-y-2">{testing.map(p => <PredictionCard key={p.id} pred={p} />)}</div>
  </div>

@@ -1016,7 +1016,7 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
 export function getVerdictColor(verdict: string | undefined): { bg: string; text: string; border: string } {
  const v = (verdict || '').toLowerCase();
  if (v.includes('فرصة') || v.includes('ادخل') || v.includes('قوي') || v.includes('شراء')) {
- return { bg: 'bg-profit /40', text: 'text-profit ', border: 'border-profit ' };
+ return { bg: 'bg-profit/40', text: 'text-profit ', border: 'border-profit ' };
  }
  // DYNAMIC-SYSTEM-001: تجميع (ACCUMULATE) — لون teal مميز
  if (v.includes('تجميع')) {
@@ -1026,7 +1026,7 @@ export function getVerdictColor(verdict: string | undefined): { bg: string; text
  return { bg: 'bg-warning /40', text: 'text-warning ', border: 'border-warning ' };
  }
  if (v.includes('ابعد') || v.includes('بيع') || v.includes('تجنب') || v.includes('اخرج')) {
- return { bg: 'bg-loss /40', text: 'text-loss ', border: 'border-loss ' };
+ return { bg: 'bg-loss/40', text: 'text-loss ', border: 'border-loss ' };
  }
  return { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' };
 }
@@ -1137,20 +1137,20 @@ export function formatEGPShort(v: number): string {
 // خلفية خفيفة على عمود "متوسط التغير" (heatmap تذكري بسيط)
 
 export function avgChangeHeatClass(avgChange: number): string {
- if (avgChange >= 2) return 'bg-profit /50';
- if (avgChange > 0.5) return 'bg-profit /30';
- if (avgChange <= -2) return 'bg-loss /50';
- if (avgChange < -0.5) return 'bg-loss /30';
+ if (avgChange >= 2) return 'bg-profit/50';
+ if (avgChange > 0.5) return 'bg-profit/30';
+ if (avgChange <= -2) return 'bg-loss/50';
+ if (avgChange < -0.5) return 'bg-loss/30';
  return 'bg-muted/40';
 }
 
 // خلفية خفيفة على عمود "التغير %" في جدول الأسهم (نفس منطق heatmap)
 
 export function stockChangeHeatClass(chg: number): string {
- if (chg >= 5) return 'bg-profit /50';
- if (chg > 0) return 'bg-profit /30';
- if (chg <= -5) return 'bg-loss /50';
- if (chg < 0) return 'bg-loss /30';
+ if (chg >= 5) return 'bg-profit/50';
+ if (chg > 0) return 'bg-profit/30';
+ if (chg <= -5) return 'bg-loss/50';
+ if (chg < 0) return 'bg-loss/30';
  return 'bg-transparent';
 }
 

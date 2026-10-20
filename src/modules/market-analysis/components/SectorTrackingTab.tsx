@@ -104,6 +104,35 @@ import {
  _isEgxIntradayNow,
 } from './helpers';
 
+// ALPHA-COLORS-1: خريطة تعريب القطاعات — ممنوع كلمة إنجليزي في جدول قطاعات السوق المصري
+const SECTOR_ARABIC_MAP: Record<string, string> = {
+  'Finance': 'القطاع المالي',
+  'Banks': 'البنوك',
+  'Process Industries': 'الصناعات الإجرائية',
+  'Utilities': 'المرافق',
+  'Producer Manufacturing': 'التصنيع والإنتاج',
+  'Industrial Services': 'الخدمات الصناعية',
+  'Materials': 'المواد الأساسية',
+  'Basic Materials': 'المواد الأساسية',
+  'Energy': 'الطاقة',
+  'Health Care': 'الرعاية الصحية',
+  'Consumer Discretionary': 'السلع الاستهلاكية المختارة',
+  'Consumer Staples': 'السلع الاستهلاكية الأساسية',
+  'Real Estate': 'العقارات',
+  'Communication Services': 'خدمات الاتصالات',
+  'Information Technology': 'تكنولوجيا المعلومات',
+  'Insurance': 'التأمين',
+  'Conglomerates': 'الشركات القابضة',
+  'Transportation': 'النقل والمواصلات',
+  'Tourism': 'السياحة',
+};
+
+// تعريب القطاع (لو مش في الخريطة، رجّعه زي ما هو)
+function arSector(sector: string | null | undefined): string {
+  if (!sector) return 'غير محدد';
+  return SECTOR_ARABIC_MAP[sector] || sector;
+}
+
 
 export function SectorTrackingTab({ market }: { market: MarketType }) {
  const [data, setData] = useState<SectorTrackingResponse | null>(null);
@@ -252,7 +281,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  return (
  <div className="flex items-center gap-1.5">
  <span className="text-base">{heat.icon}</span>
- <span className="font-bold">{s.sector}</span>
+ <span className="font-bold">{arSector(s.sector)}</span>
  </div>
  );
  },
