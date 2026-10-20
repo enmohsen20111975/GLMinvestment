@@ -18,11 +18,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPagination } from '@/components/shared/ui';
 import {
  TrendingUp, TrendingDown, Clock, Calendar,
  BarChart3, Target, AlertTriangle, CheckCircle,
  Activity, ArrowUpRight, ArrowDownRight, Info,
- RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldX, Crosshair, Gauge, Facebook, ArrowRight, ArrowLeft,
+ RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldX, Crosshair, Gauge, Facebook, ArrowRight,
  Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
@@ -2215,33 +2216,18 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
  )}
 
- {/* P42-NO-FREEZE: ترقيم الصفحات — 5 كروت لكل صفحة عشان المتصفح مايموتش */}
+ {/* P42-NO-FREEZE: ترقيم الصفحات — 5 كروت لكل صفحة عشان المتصفح مايموتش.
+     P0-COMPONENT-UNIFICATION (Phase 2.4): استبدلنا الـ inline pagination
+     (4 أزرار + counter) بـ <UnifiedPagination> الموحّد. الـ logic نفسه،
+     بس دلوقتي بـ يستخدم shared component + RTL-aware + accessible. */}
  {personaTotalPages > 1 && (
- <div className="flex items-center justify-center gap-2 py-2">
- <Button
- variant="outline"
+ <UnifiedPagination
+ page={personaPage}
+ totalPages={personaTotalPages}
+ onChange={setPersonaPage}
  size="sm"
- className="gap-1"
- disabled={personaPage === 0}
- onClick={() => setPersonaPage((p) => Math.max(0, p - 1))}
- >
- <ArrowRight className="h-4 w-4" />
- السابق
- </Button>
- <span className="text-xs text-muted-foreground tabular-nums px-2">
- {personaPage + 1} / {personaTotalPages}
- </span>
- <Button
- variant="outline"
- size="sm"
- className="gap-1"
- disabled={personaPage >= personaTotalPages - 1}
- onClick={() => setPersonaPage((p) => Math.min(personaTotalPages - 1, p + 1))}
- >
- التالي
- <ArrowLeft className="h-4 w-4" />
- </Button>
- </div>
+ variant="compact"
+ />
  )}
 
  {/* P0-4b — BRAVO-TESTING-CANDIDATES: أسهم تحت الاختبار والمراقبة اللحظية.
