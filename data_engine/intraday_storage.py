@@ -271,9 +271,10 @@ def store_stocks_snapshot():
                 _delta_vol = 0
                 _delta_pct = 0.0
                 _pressure = 'NEUTRAL'
-                _open_val = float(stock.get('open') or 0) or price
-                _high_val = float(stock.get('high') or 0) or price
-                _low_val = float(stock.get('low') or 0) or price
+                _stock_d = dict(stock)
+                _open_val = float(_stock_d.get('open') or 0) or price
+                _high_val = float(_stock_d.get('high') or 0) or price
+                _low_val = float(_stock_d.get('low') or 0) or price
                 if volume > 0 and _high_val > _low_val:
                     _buy_ratio = max(0.0, min(1.0, (price - _low_val) / (_high_val - _low_val)))
                     _buy_vol = int(volume * _buy_ratio)

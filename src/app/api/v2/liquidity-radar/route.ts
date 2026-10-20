@@ -79,12 +79,12 @@ function buildSupportResistanceMap(): Record<string, { support: number | null; r
   try {
     const db = getStocksDb();
     const rows = db.prepare(
-      'SELECT ticker, support_level, resistance_level FROM stocks WHERE support_level IS NOT NULL OR resistance_level IS NOT NULL'
-    ).all() as Array<{ ticker: string; support_level: number | null; resistance_level: number | null }>;
+      'SELECT ticker, support, resistance FROM stocks WHERE support IS NOT NULL OR resistance IS NOT NULL'
+    ).all() as Array<{ ticker: string; support: number | null; resistance: number | null }>;
     for (const r of rows) {
       if (r.ticker) map[r.ticker.toUpperCase()] = {
-        support: r.support_level != null ? Number(r.support_level) : null,
-        resistance: r.resistance_level != null ? Number(r.resistance_level) : null,
+        support: r.support != null ? Number(r.support) : null,
+        resistance: r.resistance != null ? Number(r.resistance) : null,
       };
     }
   } catch { /* stocks.db unavailable → empty map → columns stay "—" (honest) */ }
