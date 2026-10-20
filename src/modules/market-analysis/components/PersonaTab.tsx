@@ -27,7 +27,8 @@ import {
  BarChart3, Target, AlertTriangle, CheckCircle,
  Activity, ArrowUpRight, ArrowDownRight, Info,
  RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldX, Crosshair, Gauge, Facebook, ArrowRight,
- Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send
+ Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send,
+ ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { Radio, Radar } from 'lucide-react';
@@ -1380,6 +1381,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  // P6-PREDICTIONS: أرشيف التوقعات السابقة (يتم عرضه أسفل الـ PersonaTableView).
  // بيتسحب من نفس /api/unified/predictions تحت مفتاح previous_predictions.
  const [previousPredictions, setPreviousPredictions] = useState<PreviousPrediction[]>([]);
+ const [showArchive, setShowArchive] = useState(false);
  // BRAVO-TESTING-CANDIDATES (P0-4b): أسهم تحت الاختبار (lifecycle_status='testing').
  // بتيجي من /api/unified/predictions تحت مفتاح testing_candidates — قسم منفصل
  // للأسهم اللحظية اللي بتتحرك مع الجلسة (Pending Confirmation).
@@ -2294,27 +2296,27 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  ⚠️ صفقات مخاطرة محسوبة — إدارة رأس مال صارمة (2% من المحفظة).
  ============================================================================ */}
  {whaleRadarPicks.length > 0 && (
- <div className="mt-4 rounded-lg border-2 border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-50 via-amber-50 to-yellow-50 dark:from-fuchsia-950/40 dark:via-amber-950/30 dark:to-yellow-950/20 p-4">
+ <div className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="flex items-center gap-2">
- <span className="text-2xl">🐋</span>
+ <span className="text-xl">🐋</span>
  <div>
- <h4 className="text-base font-bold text-fuchsia-700 dark:text-fuchsia-300 flex items-center gap-2">
- 🎯 رادار صانع السوق والسيولة الذكية
- <span className="text-xs font-normal text-muted-foreground">
- (Smart Money Radar — {whaleRadarPicks.length})
+ <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-2">
+ <span>رادار صانع السوق والسيولة الذكية</span>
+ <span className="text-xs font-normal text-muted-foreground font-mono">
+ ({whaleRadarPicks.length})
  </span>
  </h4>
  <p className="text-xs text-muted-foreground mt-0.5">
- رغم هبوط السوق العام — رصدت خوارزمياتنا تجميعاً هادئاً لحيتان المال في الأسهم الآتية
+ تجميع هادئ للسيولة المؤسسية في صفقات ذات قيعان سعرية
  </p>
  </div>
  </div>
  <div className="flex items-center gap-1.5">
- <Badge className="bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30 text-[10px] font-bold">
+ <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning text-[10px] font-medium">
  ⚠️ مخاطرة محسوبة
  </Badge>
- <Badge className="bg-warning/10 text-warning dark:text-warning border-warning/20 text-[10px] font-bold">
+ <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[10px] font-medium">
  حجم 2% فقط
  </Badge>
  </div>
@@ -2455,11 +2457,30 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
 
 
 
- {/* P6-PREDICTIONS: أرشيف التوقعات السابقة — اتنقل هنا من التبويب العام */}
+ {/* P6-PREDICTIONS: أرشيف التوقعات السابقة — مخفي افتراضياً لتجنب إحباط العميل */}
+ {previousPredictions && previousPredictions.length > 0 && (
+ <div className="mt-4 pt-3 border-t border-border/60">
+ <Button
+ variant="outline"
+ size="sm"
+ onClick={() => setShowArchive(!showArchive)}
+ className="gap-2 text-xs text-muted-foreground hover:text-foreground border-dashed h-8"
+ >
+ <span>📋</span>
+ <span>{showArchive ? 'إخفاء الأرشيف التاريخي' : `عرض أرشيف التوقعات السابقة (${previousPredictions.length} صفقة)`}</span>
+ {showArchive ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+ </Button>
+
+ {showArchive && (
+ <div className="mt-3">
  <PreviousPredictionsArchive
  predictions={previousPredictions}
  title="التوقعات السابقة"
  />
+ </div>
+ )}
+ </div>
+ )}
  </>
  )}
 

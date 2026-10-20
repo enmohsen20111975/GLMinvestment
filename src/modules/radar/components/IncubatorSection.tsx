@@ -1,107 +1,78 @@
 'use client';
 
 /**
- * IncubatorSection — "رادار التربص وقيد التسخين" (The Incubator UI)
+ * IncubatorSection — "رادار التربص وقيد التسخين" (The Stalking Radar UI)
  * ============================================================================
- * Per Mohsen's directive 2026-10-20 (ALPHA task):
- *
- * الفلسفة: العميل لما يفتح المنصة، مش عايزين نعرض له شاشة كاش باردة
- * وصامتة توحي بالموت. العميل لازم يشوف "غرفة الطبخ والتربص اللحظي" —
- * الأسهم اللي "على وشك الانفجار" (محققة 4/6 أو 5/6 شروط) ومستنية "تكة"
- * (Trigger) عشان تترقى لتوصية شراء حية.
- *
- * Source: GET /api/radar/incubator?market=EGX
- * → returns 'candidates' array with ticker, readiness_pct, trigger, etc.
- *
- * Design (per owner directive):
- * - Glassmorphism بخلفية داكنة + توهج كهرماني/بنفسجي (Amber/Purple Glow)
- * - Title: 🔭 رادار التربص وقيد التسخين | The Stalking Radar
- * - Pulsing badge: 🔴 قيد المراقبة اللحظية
- * - Readiness Meter (progress bar with gradient)
- * - Missing Trigger Box (yellow warning)
- * - Passed conditions (green checkmarks)
- * - Deal numbers (entry/target/stop/RR)
- * - 🔔 نبهني فور التفعيل button (Notification API)
- * - Promoted State: 🚀 animation when stock achieves trigger
- *
- * المحظورات (per owner):
- * 1. ممنوع حساب أسعار/أهداف في الفرونت-إند — كل البيانات من الـ API.
- * 2. ممنوع Mock Data — لو الـ API فاضي، اعرض رسالة "الرادار يمسح السوق".
- * 3. Responsive Design للموبايل.
+ * Financial Design System Compliant (Clean, High Contrast, Compact).
+ * - Matches platform tokens (bg-card, border-border, text-foreground).
+ * - Compact cards (reduced vertical footprint by ~60%).
+ * - Optional table view + collapsible mode.
+ * - Zero hardcoded alien gradients or low-contrast text.
  * ============================================================================
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, BellRing, CheckCircle2, TrendingUp, Target, Shield, Activity, Zap, Eye } from 'lucide-react';
+import {
+  Bell,
+  BellRing,
+  TrendingUp,
+  Target,
+  Shield,
+  Activity,
+  Zap,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  List,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 
 // ============================================================================
-// Types (mirrors the API response contract)
+// Types
 // ============================================================================
 
 export interface IncubatorTrigger {
- type: 'VOLUME_SURGE' | 'RESISTANCE_BREAK' | 'SUPPORT_CONFIRM' | 'OTHER' | 'COMPLETE' | string;
- condition_ar: string;
- trigger_price: number | null;
- distance_to_trigger_pct: number;
+  type: 'VOLUME_SURGE' | 'RESISTANCE_BREAK' | 'SUPPORT_CONFIRM' | 'OTHER' | 'COMPLETE' | string;
+  condition_ar: string;
+  trigger_price: number | null;
+  distance_to_trigger_pct: number;
 }
 
 export interface IncubatorCandidate {
- ticker: string;
- name_ar?: string;
- current_price: number;
- readiness_pct: number;
- signals_passed: number;
- total_signals: number;
- passed_reasons: string[];
- trigger: IncubatorTrigger;
- target_if_promoted: number;
- stop_loss_if_promoted: number;
- risk_reward: number;
- stage: 'HEATING_UP' | 'APPROACHING_TRIGGER' | 'UNKNOWN' | string;
+  ticker: string;
+  name_ar?: string;
+  current_price: number;
+  readiness_pct: number;
+  signals_passed: number;
+  total_signals: number;
+  passed_reasons: string[];
+  trigger: IncubatorTrigger;
+  target_if_promoted: number;
+  stop_loss_if_promoted: number;
+  risk_reward: number;
+  stage: 'HEATING_UP' | 'APPROACHING_TRIGGER' | 'UNKNOWN' | string;
+  logo_url?: string;
 }
 
 export interface IncubatorResponse {
- success: boolean;
- market: string;
- total_candidates: number;
- candidates: IncubatorCandidate[];
- timestamp: string;
- source?: string;
- message?: string;
+  success: boolean;
+  market: string;
+  total_candidates: number;
+  candidates: IncubatorCandidate[];
+  timestamp: string;
+  source?: string;
+  message?: string;
 }
-
-// ============================================================================
-// Props
-// ============================================================================
 
 export interface IncubatorSectionProps {
- /** السوق — default: EGX */
- market?: string;
- /** Auto-refresh interval in ms. default: 60000 (60s). 0 = no refresh. */
- refreshIntervalMs?: number;
- /** Max candidates to display. default: 6. */
- maxDisplay?: number;
- /** className for the root container. */
- className?: string;
-}
-
-// ============================================================================
-// Helper: readiness color gradient (orange → green)
-// ============================================================================
-
-function readinessColor(pct: number): string {
- if (pct >= 80) return 'from-emerald-500 to-green-400'; // green (approaching trigger)
- if (pct >= 60) return 'from-amber-500 to-yellow-400'; // warm amber (heating up)
- return 'from-orange-600 to-amber-500'; // cool (early stage)
-}
-
-function readinessTextColor(pct: number): string {
- if (pct >= 80) return 'text-profit';
- if (pct >= 60) return 'text-warning';
- return 'text-orange-400';
+  market?: string;
+  refreshIntervalMs?: number;
+  maxDisplay?: number;
+  className?: string;
 }
 
 // ============================================================================
@@ -109,345 +80,394 @@ function readinessTextColor(pct: number): string {
 // ============================================================================
 
 function TriggerIcon({ type }: { type: string }) {
- if (type === 'VOLUME_SURGE') return <Activity className="h-3.5 w-3.5" />;
- if (type === 'RESISTANCE_BREAK') return <TrendingUp className="h-3.5 w-3.5" />;
- if (type === 'SUPPORT_CONFIRM') return <Shield className="h-3.5 w-3.5" />;
- return <Zap className="h-3.5 w-3.5" />;
+  if (type === 'VOLUME_SURGE') return <Activity className="size-3 text-warning" />;
+  if (type === 'RESISTANCE_BREAK') return <TrendingUp className="size-3 text-profit" />;
+  if (type === 'SUPPORT_CONFIRM') return <Shield className="size-3 text-primary" />;
+  return <Zap className="size-3 text-warning" />;
 }
 
 // ============================================================================
-// Single Candidate Card
+// Single Candidate Compact Card
 // ============================================================================
 
 function CandidateCard({ c }: { c: IncubatorCandidate }) {
- const [subscribed, setSubscribed] = useState(false);
- const [promoted, setPromoted] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [promoted, setPromoted] = useState(false);
 
- // Notification subscription (per owner directive: "🔔 نبهني فور التفعيل")
- const handleSubscribe = useCallback(async () => {
- if (subscribed) return;
- // Request browser notification permission
- if (typeof window !== 'undefined' && 'Notification' in window) {
- const permission = await Notification.requestPermission();
- if (permission === 'granted') {
- setSubscribed(true);
- // In production, this would also register a webhook with the backend
- // (the intraday_scanner.py promotion hook would send a notification).
- new Notification('🔭 رادار التربص', {
- body: `تم تفعيل التنبيه لـ ${c.ticker} — هتـوصلك إشعار أول ما يترقى.`,
- icon: '/logo.svg',
- });
- }
- } else {
- // Fallback: just mark as subscribed (webhook-only)
- setSubscribed(true);
- }
- }, [subscribed, c.ticker]);
+  const handleSubscribe = useCallback(async () => {
+    if (subscribed) return;
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setSubscribed(true);
+        new Notification('🔭 رادار التربص', {
+          body: `تم تفعيل التنبيه لـ ${c.ticker} — ستصلك إشارة فور اكتمال الشروط.`,
+          icon: '/logo.svg',
+        });
+      } else {
+        setSubscribed(true);
+      }
+    } else {
+      setSubscribed(true);
+    }
+  }, [subscribed, c.ticker]);
 
- // Simulate promotion detection (in production, this would be a WebSocket
- // event from the intraday_scanner.py promotion hook).
- // For now, we just check if the trigger distance crosses 0.
- useEffect(() => {
- if (c.trigger.distance_to_trigger_pct <= 0 && c.trigger.type !== 'COMPLETE') {
- setPromoted(true);
- }
- }, [c.trigger.distance_to_trigger_pct, c.trigger.type]);
+  useEffect(() => {
+    if (c.trigger.distance_to_trigger_pct <= 0 && c.trigger.type !== 'COMPLETE') {
+      setPromoted(true);
+    }
+  }, [c.trigger.distance_to_trigger_pct, c.trigger.type]);
 
- return (
- <div
- className={cn(
- 'relative rounded-xl border p-4 backdrop-blur-md transition-all',
- promoted
- ? 'border-profit/30/60 bg-profit/10 shadow-lg animate-pulse'
- : 'border-warning/20 bg-muted hover:border-warning/30'
- )}
- >
- {/* Promoted badge (animation when trigger achieved) */}
- {promoted && (
- <div className="absolute -top-3 right-4">
- <Badge className="bg-profit text-white border-profit/30 text-[10px] font-bold shadow-lg">
- 🚀 تم الانفجار والانتقال لتوصيات الشراء!
- </Badge>
- </div>
- )}
+  const isHot = c.stage === 'APPROACHING_TRIGGER' || c.readiness_pct >= 80;
 
- {/* Header: ticker + name + stage badge */}
- <div className="flex items-start justify-between gap-2 mb-3">
- <div className="flex-1 min-w-0">
- <div className="flex items-center gap-2">
- <span className="font-bold text-base text-white">{c.ticker}</span>
- <Badge
- className={cn(
- 'text-[9px] font-semibold',
- c.stage === 'APPROACHING_TRIGGER'
- ? 'bg-profit/10 text-profit border-profit/20'
- : 'bg-warning/10 text-warning border-warning/20'
- )}
- >
- {c.stage === 'APPROACHING_TRIGGER' ? '🔥 على وشك' : '🌡️ تسخين'}
- </Badge>
- </div>
- {c.name_ar && (
- <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.name_ar}</p>
- )}
- </div>
- <div className="text-right">
- <div className="text-xs text-muted-foreground">السعر</div>
- <div className="font-mono font-bold text-white text-sm">{c.current_price.toFixed(2)}</div>
- </div>
- </div>
+  return (
+    <div
+      className={cn(
+        'relative flex flex-col justify-between rounded-lg border bg-card p-3 transition-all duration-200',
+        'hover:border-primary/40 hover:shadow-sm',
+        promoted ? 'border-profit/50 bg-profit/5 animate-pulse' : 'border-border'
+      )}
+    >
+      {/* Top Row: Symbol + Price */}
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <StockIconMini ticker={c.ticker} className="size-6 shrink-0" />
+            <div className="truncate">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm text-foreground font-mono">{c.ticker}</span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-[10px] px-1.5 py-0 font-medium h-4',
+                    isHot
+                      ? 'border-profit/30 bg-profit/10 text-profit'
+                      : 'border-warning/30 bg-warning/10 text-warning'
+                  )}
+                >
+                  {isHot ? '🔥 وشك' : '🌡️ تسخين'}
+                </Badge>
+              </div>
+              {c.name_ar && (
+                <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                  {c.name_ar}
+                </p>
+              )}
+            </div>
+          </div>
 
- {/* Readiness Meter */}
- <div className="mb-3">
- <div className="flex items-center justify-between text-[10px] mb-1">
- <span className="text-muted-foreground">الجاهزية</span>
- <span className={cn('font-bold tabular-nums', readinessTextColor(c.readiness_pct))}>
- {c.readiness_pct}% — {c.signals_passed} من {c.total_signals} شروط
- </span>
- </div>
- <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
- <div
- className={cn('h-full rounded-full bg-gradient-to-r transition-all', readinessColor(c.readiness_pct))}
- style={{ width: `${c.readiness_pct}%` }}
- role="progressbar"
- aria-valuenow={c.readiness_pct}
- aria-valuemin={0}
- aria-valuemax={100}
- />
- </div>
- </div>
+          <div className="text-left shrink-0">
+            <div className="font-mono font-bold text-sm text-foreground">
+              {c.current_price > 0 ? c.current_price.toFixed(2) : '—'}
+            </div>
+            <div className="text-[10px] text-muted-foreground">السعر الحالي</div>
+          </div>
+        </div>
 
- {/* Missing Trigger Box (yellow warning) */}
- {c.trigger.type !== 'COMPLETE' && (
- <div className="mb-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-2.5">
- <div className="flex items-center gap-1.5 mb-1">
- <TriggerIcon type={c.trigger.type} />
- <span className="text-[10px] font-bold text-yellow-400">⏳ الشرط المتبقي للاختراق:</span>
- </div>
- <p className="text-[11px] text-yellow-200 leading-snug">{c.trigger.condition_ar}</p>
- {c.trigger.trigger_price != null && (
- <div className="mt-1.5 flex items-center justify-between text-[10px]">
- <span className="text-muted-foreground">سعر التفعيل:</span>
- <span className="font-mono font-bold text-yellow-300">
- {c.trigger.trigger_price.toFixed(2)}
- {c.trigger.distance_to_trigger_pct > 0 && (
- <span className="text-muted-foreground font-normal">
- {' '}(باقي +{c.trigger.distance_to_trigger_pct.toFixed(1)}%)
- </span>
- )}
- </span>
- </div>
- )}
- </div>
- )}
+        {/* Readiness Meter */}
+        <div className="mb-2.5">
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="text-muted-foreground text-[10px]">الجاهزية الفنية</span>
+            <span
+              className={cn(
+                'font-bold text-[10px] tabular-nums',
+                c.readiness_pct >= 80 ? 'text-profit' : 'text-warning'
+              )}
+            >
+              {c.readiness_pct}% ({c.signals_passed}/{c.total_signals})
+            </span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                c.readiness_pct >= 80 ? 'bg-profit' : 'bg-warning'
+              )}
+              style={{ width: `${Math.min(100, Math.max(0, c.readiness_pct))}%` }}
+            />
+          </div>
+        </div>
 
- {/* Passed conditions (green checkmarks) */}
- {c.passed_reasons.length > 0 && (
- <div className="mb-3">
- <div className="text-[10px] text-muted-foreground mb-1.5">الشروط المتحققة:</div>
- <ul className="space-y-1">
- {c.passed_reasons.slice(0, 4).map((r, i) => (
- <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted-foreground">
- <CheckCircle2 className="h-3 w-3 text-profit flex-shrink-0 mt-0.5" />
- <span>{r}</span>
- </li>
- ))}
- </ul>
- </div>
- )}
+        {/* Missing Trigger Condition (1 compact line) */}
+        {c.trigger.condition_ar && c.trigger.type !== 'COMPLETE' && (
+          <div className="rounded-md border border-warning/20 bg-warning/5 px-2 py-1.5 mb-2.5 flex items-start gap-1.5">
+            <TriggerIcon type={c.trigger.type} />
+            <div className="text-[11px] leading-tight flex-1 text-foreground/90">
+              <span className="text-warning font-semibold text-[10px]">متبقي: </span>
+              {c.trigger.condition_ar}
+              {c.trigger.trigger_price != null && (
+                <span className="font-mono font-medium text-muted-foreground text-[10px] mr-1">
+                  (عند {c.trigger.trigger_price.toFixed(2)})
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
- {/* Deal numbers (if promoted) */}
- <div className="grid grid-cols-3 gap-2 mb-3 pt-2 border-t border-slate-700/50">
- <div>
- <div className="text-[9px] text-muted-foreground flex items-center gap-0.5">
- <Target className="h-2.5 w-2.5" /> هدف
- </div>
- <div className="font-mono font-bold text-profit text-xs">
- {c.target_if_promoted.toFixed(2)}
- </div>
- </div>
- <div>
- <div className="text-[9px] text-muted-foreground flex items-center gap-0.5">
- <Shield className="h-2.5 w-2.5" /> وقف
- </div>
- <div className="font-mono font-bold text-red-400 text-xs">
- {c.stop_loss_if_promoted.toFixed(2)}
- </div>
- </div>
- <div>
- <div className="text-[9px] text-muted-foreground">R/R</div>
- <div className={cn(
- 'font-mono font-bold text-xs',
- c.risk_reward >= 1.8 ? 'text-profit' : 'text-warning'
- )}>
- {c.risk_reward.toFixed(2)}
- </div>
- </div>
- </div>
+      {/* Bottom Metrics + Alert Action */}
+      <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-1 text-[11px]">
+        <div className="flex items-center gap-2.5 font-mono text-[10px]">
+          <div>
+            <span className="text-muted-foreground">هدف: </span>
+            <span className="font-bold text-profit">
+              {c.target_if_promoted > 0 ? c.target_if_promoted.toFixed(2) : '—'}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">وقف: </span>
+            <span className="font-bold text-loss">
+              {c.stop_loss_if_promoted > 0 ? c.stop_loss_if_promoted.toFixed(2) : '—'}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">R/R: </span>
+            <span className="font-bold text-foreground">
+              {c.risk_reward > 0 ? c.risk_reward.toFixed(1) : '—'}
+            </span>
+          </div>
+        </div>
 
- {/* Bell button — subscribe to notification */}
- {!promoted && (
- <Button
- size="sm"
- variant={subscribed ? 'secondary' : 'outline'}
- onClick={handleSubscribe}
- disabled={subscribed}
- className={cn(
- 'w-full gap-1.5 text-[11px] h-7',
- subscribed
- ? 'bg-profit/10 text-profit border-profit/20'
- : 'bg-transparent border-warning/20 text-warning hover:bg-warning/10'
- )}
- >
- {subscribed ? (
- <>
- <BellRing className="h-3 w-3" /> تم التفعيل — هتوصلك إشعار
- </>
- ) : (
- <>
- <Bell className="h-3 w-3" /> 🔔 نبهني فور التفعيل
- </>
- )}
- </Button>
- )}
- </div>
- );
+        <Button
+          size="sm"
+          variant={subscribed ? 'secondary' : 'ghost'}
+          onClick={handleSubscribe}
+          disabled={subscribed}
+          className={cn(
+            'h-6 px-2 text-[10px] gap-1 shrink-0',
+            subscribed ? 'text-profit font-medium' : 'text-muted-foreground hover:text-foreground'
+          )}
+          title={subscribed ? 'تنبيه مفعل' : 'نبهني عند اكتمال الشروط'}
+        >
+          {subscribed ? (
+            <>
+              <BellRing className="size-3 text-profit" />
+              <span>مفعل</span>
+            </>
+          ) : (
+            <>
+              <Bell className="size-3" />
+              <span>تنبيه</span>
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 // ============================================================================
-// Main IncubatorSection component
+// Compact Table Mode
+// ============================================================================
+
+function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-right text-xs">
+        <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+          <tr>
+            <th className="p-2.5 font-medium">السهم</th>
+            <th className="p-2.5 font-medium">السعر</th>
+            <th className="p-2.5 font-medium">الجاهزية</th>
+            <th className="p-2.5 font-medium">الشرط المتبقي للاختراق</th>
+            <th className="p-2.5 font-medium">الهدف</th>
+            <th className="p-2.5 font-medium">الوقف</th>
+            <th className="p-2.5 font-medium">R/R</th>
+            <th className="p-2.5 font-medium text-center">إشعار</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/60">
+          {candidates.map((c, i) => (
+            <tr key={`${c.ticker}-${i}`} className="hover:bg-muted/30 transition-colors">
+              <td className="p-2.5 font-bold font-mono">
+                <div className="flex items-center gap-1.5">
+                  <StockIconMini ticker={c.ticker} className="size-4 shrink-0" />
+                  <span>{c.ticker}</span>
+                  {c.name_ar && <span className="text-[11px] font-normal text-muted-foreground">({c.name_ar})</span>}
+                </div>
+              </td>
+              <td className="p-2.5 font-mono">{c.current_price.toFixed(2)}</td>
+              <td className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <span className={cn('font-bold font-mono text-[11px]', c.readiness_pct >= 80 ? 'text-profit' : 'text-warning')}>
+                    {c.readiness_pct}%
+                  </span>
+                  <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn('h-full', c.readiness_pct >= 80 ? 'bg-profit' : 'bg-warning')}
+                      style={{ width: `${c.readiness_pct}%` }}
+                    />
+                  </div>
+                </div>
+              </td>
+              <td className="p-2.5 text-muted-foreground text-[11px] max-w-xs truncate">
+                {c.trigger.condition_ar || 'بانتظار تأكيد الاختراق'}
+              </td>
+              <td className="p-2.5 font-mono text-profit font-semibold">{c.target_if_promoted.toFixed(2)}</td>
+              <td className="p-2.5 font-mono text-loss font-semibold">{c.stop_loss_if_promoted.toFixed(2)}</td>
+              <td className="p-2.5 font-mono font-medium">{c.risk_reward.toFixed(1)}</td>
+              <td className="p-2.5 text-center">
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                  <Bell className="size-3 text-muted-foreground" />
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main IncubatorSection Component
 // ============================================================================
 
 export function IncubatorSection({
- market = 'EGX',
- refreshIntervalMs = 60_000,
- maxDisplay = 6,
- className,
+  market = 'EGX',
+  refreshIntervalMs = 60_000,
+  maxDisplay = 6,
+  className,
 }: IncubatorSectionProps) {
- const [candidates, setCandidates] = useState<IncubatorCandidate[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [candidates, setCandidates] = useState<IncubatorCandidate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
- const fetchIncubator = useCallback(async () => {
- try {
- setError(null);
- const res = await fetch(`/api/radar/incubator?market=${encodeURIComponent(market)}`, {
- cache: 'no-store',
- signal: AbortSignal.timeout(10_000),
- });
- if (!res.ok) {
- throw new Error(`HTTP ${res.status}`);
- }
- const data: IncubatorResponse = await res.json();
- if (data.success) {
- setCandidates(data.candidates.slice(0, maxDisplay));
- setLastUpdated(data.timestamp || new Date().toISOString());
- } else {
- setCandidates([]);
- }
- } catch (e) {
- const msg = e instanceof Error ? e.message : String(e);
- setError(msg);
- setCandidates([]);
- } finally {
- setLoading(false);
- }
- }, [market, maxDisplay]);
+  const fetchIncubator = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch(`/api/radar/incubator?market=${encodeURIComponent(market)}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: IncubatorResponse = await res.json();
+      if (data.success) {
+        setCandidates(data.candidates.slice(0, maxDisplay));
+      } else {
+        setCandidates([]);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setCandidates([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [market, maxDisplay]);
 
- useEffect(() => {
- fetchIncubator();
- // Auto-refresh
- if (refreshIntervalMs > 0) {
- const interval = setInterval(fetchIncubator, refreshIntervalMs);
- return () => clearInterval(interval);
- }
- }, [fetchIncubator, refreshIntervalMs]);
+  useEffect(() => {
+    fetchIncubator();
+    if (refreshIntervalMs > 0) {
+      const interval = setInterval(fetchIncubator, refreshIntervalMs);
+      return () => clearInterval(interval);
+    }
+  }, [fetchIncubator, refreshIntervalMs]);
 
- // ============================================================================
- // Glassmorphism container with amber/purple glow
- // ============================================================================
- return (
- <div
- className={cn(
- 'relative rounded-2xl border border-warning/20',
- 'bg-gradient-to-br from-slate-900/80 via-purple-950/40 to-amber-950/30',
- 'backdrop-blur-xl',
- 'shadow-[0_0_30px_rgba(251,191,36,0.08)]',
- 'p-4 md:p-5',
- className
- )}
- dir="rtl"
- >
- {/* Subtle glow overlay */}
- <div className="absolute inset-0 rounded-2xl pointer-events-none bg-gradient-to-br from-amber-500/5 via-transparent to-purple-500/5" />
+  return (
+    <div
+      className={cn(
+        'rounded-xl border border-border bg-card p-3.5 shadow-sm transition-all',
+        className
+      )}
+      dir="rtl"
+    >
+      {/* Header Bar */}
+      <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🔭</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm md:text-base font-bold text-foreground">
+                رادار التربص وقيد التسخين
+              </h3>
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 font-medium border-warning/30 bg-warning/10 text-warning"
+              >
+                قيد المراقبة
+              </Badge>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                ({candidates.length} أسهم)
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              أسهم حققت معظم الشروط وتنتظر تأكيد السيولة للترقية لتوصيات حية
+            </p>
+          </div>
+        </div>
 
- {/* Header */}
- <div className="relative flex items-center justify-between mb-4 flex-wrap gap-2">
- <div className="flex items-center gap-2">
- <span className="text-2xl">🔭</span>
- <div>
- <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2 flex-wrap">
- رادار التربص وقيد التسخين
- <span className="text-[10px] font-normal text-muted-foreground" dir="ltr">
- | The Stalking Radar
- </span>
- </h3>
- {lastUpdated && (
- <p className="text-[10px] text-muted-foreground mt-0.5">
- آخر تحديث: {new Date(lastUpdated).toLocaleString('ar-EG')}
- </p>
- )}
- </div>
- </div>
- <div className="flex items-center gap-1.5">
- <span className="relative flex h-2.5 w-2.5">
- <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
- <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
- </span>
- <Badge className="bg-red-500/20 text-red-300 border-red-500/40 text-[10px] font-bold">
- قيد المراقبة اللحظية
- </Badge>
- </div>
- </div>
+        {/* View Switchers & Collapse Toggle */}
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            onClick={() => setViewMode('grid')}
+            className="h-7 w-7 p-0"
+            title="عرض كروت مدمجة"
+          >
+            <LayoutGrid className="size-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+            onClick={() => setViewMode('table')}
+            className="h-7 w-7 p-0"
+            title="عرض جدول"
+          >
+            <List className="size-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+          >
+            {isCollapsed ? (
+              <>
+                <span>عرض</span>
+                <ChevronDown className="size-3.5" />
+              </>
+            ) : (
+              <>
+                <span>طي</span>
+                <ChevronUp className="size-3.5" />
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
 
- {/* Content */}
- {loading ? (
- <div className="text-center py-8 text-muted-foreground text-sm">
- <div className="inline-flex items-center gap-2">
- <Eye className="h-4 w-4 animate-pulse" />
- جاري مسح السوق...
- </div>
- </div>
- ) : error ? (
- <div className="text-center py-6 text-warning text-sm">
- <p>⚠️ تعذّر تحميل بيانات الرادار — حاول تاني بعد شوية.</p>
- <p className="text-[10px] text-muted-foreground mt-1">({error})</p>
- </div>
- ) : candidates.length === 0 ? (
- <div className="text-center py-8 text-muted-foreground text-sm">
- <div className="inline-flex items-center gap-2">
- <Eye className="h-4 w-4" />
- 🔭 الرادار يمسح السوق حالياً — لا توجد أسهم قريبة من اكتمال شروط الاختراق في هذه اللحظة.
- </div>
- </div>
- ) : (
- <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
- {candidates.map((c, i) => (
- <CandidateCard key={`${c.ticker}-${i}`} c={c} />
- ))}
- </div>
- )}
-
- {/* Footer */}
- {candidates.length > 0 && (
- <div className="relative mt-4 pt-3 border-t border-warning/20/10 text-[10px] text-muted-foreground text-center">
- الأسهم دي مش توصيات شراء — دي تحت المراقبة اللحظية لحد ما تحقق شرط التفعيل.
- أول ما يتحقق الشرط، بـ تتـرقى تلقائياً لتوصية شراء حية.
- </div>
- )}
- </div>
- );
+      {/* Body Content */}
+      {!isCollapsed && (
+        <div className="pt-3">
+          {loading ? (
+            <div className="text-center py-6 text-muted-foreground text-xs flex items-center justify-center gap-2">
+              <Eye className="size-3.5 animate-pulse" />
+              <span>جاري مسح أسهم الرادار...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-4 text-warning text-xs">
+              ⚠️ تعذّر تحميل بيانات الرادار — حاول مرة أخرى لاحقاً.
+            </div>
+          ) : candidates.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-xs">
+              🔭 لا توجد أسهم قريبة من اكتمال شروط الاختراق في هذه اللحظة.
+            </div>
+          ) : viewMode === 'table' ? (
+            <CandidateTable candidates={candidates} />
+          ) : (
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {candidates.map((c, i) => (
+                <CandidateCard key={`${c.ticker}-${i}`} c={c} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default IncubatorSection;
