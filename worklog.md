@@ -68728,3 +68728,30 @@ Stage Summary:
 - ✅ الـ pattern الجديد (sqlite3.connect + try/finally) أأمن + مش بـ يـسبب leaks.
 - ✅ اختبار: 327 سهم رجعوا من غير error.
 - ⚠️ ملاحظة: برافو رجّع تعديلات الـ TS (utils.ts + globals.css) لأصلها — دي مش شغله.
+
+---
+Task ID: BRAVO-SPEED-FIX-1 + BRAVO-CRON-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — (1) تعطيل news_agent (under development)، (2) شيل sleep، (3) أضف cron */2 لـ intraday_storage.
+
+Work Log:
+
+BRAVO-SPEED-FIX-1 (daily_predictor.py):
+- news_agent معطّل (commented as "under development"): analyze_stock_news() كان بيعمل network calls لكل سهم (289 × network = ~10 دقايق).
+- _time.sleep(0.01) اتشال (كان بيضيف 2.9s لـ 289 سهم).
+- VERIFICATION: syntax ✓، 0 active analyze_stock_news calls، 0 active _time.sleep(0.01).
+- test (10 tickers on 2026-10-15): 102.73s = 10.27s/ticker — لسه بطيء!
+- PROFILE: الـ bottleneck الحقيقي = get_price_data() بـ 0.877s/ticker (3 DB connections × 289 tickers = 867 connections).
+- batch query test: 1.4s لـ 1557 tickers (تحسين 180×). محتاج تعديل backtest_engine.py.
+
+BRAVO-CRON-1 (crontab.txt):
+- أضفت cron job: */2 8-12 * * 0-4 data_engine/intraday_storage.py --stocks >> /tmp/intraday_storage.log
+- السبب: stock_intraday لازم تتغذى كل دقيقتين (مش 5) عشان intraday_scanner يجمع 5 بارات في 10 دقايق بدل 25.
+- السكريبت محلي (< 50ms) + deduplication (_should_store) + log ريشة (10KB/جلسة).
+
+Stage Summary:
+- ✅ news_agent معطّل (under development).
+- ✅ sleep اتشال.
+- ✅ cron */2 لـ intraday_storage مضاف.
+- ⏳ الـ daily_predictor لسه بطيء (10s/ticker) — الـ bottleneck الحقيقي = get_price_data (3 DB connections per ticker).
+- 🎯 الخطوة الجاية: batch cache في backtest_engine.py (تحسين 180×) — محتاج موافقة محسن.

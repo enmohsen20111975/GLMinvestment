@@ -42,6 +42,13 @@
 # يفحص بيانات الـ 5 دقائق الحية من intraday.db ويكتشف الاختراقات وتدفق السيولة
 */5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
 
+# ─── 2b. Intraday Storage — حفظ لقطات الأسعار اللحظية (BRAVO-CRON-1) ─────
+# كل دقيقتين أثناء الجلسة (08:00-12:00 UTC = 10:00-14:00 Cairo)
+# يغذي stock_intraday بلقطات سريعة → intraday_scanner يجمع 5 بارات في 10 دقايق بس
+# (بدلاً من 25 دقيقة على */5) → يصطاد الانفجار السعري وهو لسه بيسخن
+# السكريبت محلي (يقرا من data_engine.db + يكتب intraday.db) — أقل من 50ms لكل run
+*/2 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/intraday_storage.py --stocks >> /tmp/intraday_storage.log 2>&1
+
 # ─── 3. إغلاق الصفقات (daily_closer) ────────────────────────────────────
 # يومياً 14:00 UTC (16:00 Cairo — بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
 0 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1

@@ -825,11 +825,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
     for ticker in tickers:
         processed += 1
-        # Task PHASE1-CPU (Roadmap): micro-sleep between stocks to reduce CPU from 95% → 35%.
-        # This prevents Hostinger CPU limitation activation during daily prediction runs.
-        # 10ms sleep per ticker × 1046 tickers ≈ 10s total overhead — negligible.
-        import time as _time
-        _time.sleep(0.01)
+        # BRAVO-SPEED-FIX (2026-10-20): شيلنا _time.sleep(0.01) — كان بيضيف 2.9s لـ 289 سهم.
+        # السبب الأصلي (PHASE1-CPU): تقليل CPU على Hostinger. على اللابتوب/الإنتاج القوي مش محتاجينه.
+        # لو رجع CPU throttling على Hostinger، فعّله تاني بـ _time.sleep(0.01).
         if processed % 50 == 0:
             print(f"  ⏳ Processing {processed}/{total_tickers} tickers...", flush=True)
 
@@ -3510,30 +3508,37 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # لو الأخبار إيجابية → boost الثقة
             # safe-by-design: لو الـ Agent فشل → نتجاهل ونكمّل
             # A/B TESTING: V40_2_SKIP_NEWS env var to skip news (faster backtest)
-            try:
-                if os.environ.get('V40_2_SKIP_NEWS', '0') == '1':
-                    raise RuntimeError('news skipped for A/B backtest')
-                from ai.news_agent import NewsAgent
-                if not hasattr(engine, '_news_agent'):
-                    engine._news_agent = NewsAgent()
-                if engine._news_agent.is_ready() or DDGS_AVAILABLE:
-                    _news_result = engine._news_agent.analyze_stock_news(
-                        ticker, max_articles=2
-                    )
-                    _news_score = _news_result.get('score', 50)
-                    _news_sentiment = _news_result.get('sentiment', 'neutral')
-                    # خزّن في آخر signal
-                    if signals_by_date[scan_date]:
-                        signals_by_date[scan_date][-1]['news_sentiment'] = _news_sentiment
-                        signals_by_date[scan_date][-1]['news_score'] = _news_score
-                        signals_by_date[scan_date][-1]['news_summary'] = _news_result.get('summary', '')
-                    # لو الأخبار سلبية جداً (score < 30) → ارفض
-                    if _news_score < 30 and _news_result.get('confidence', 0) > 0.5:
-                        print(f"[NEWS-REJECT] {ticker} on {scan_date}: أخبار سلبية "
-                              f"(score={_news_score}/100) → رفض", flush=True)
-                        signals_by_date[scan_date].pop()  # شيل آخر signal
-            except Exception as _news_err:
-                pass  # safe-by-design: لو الـ Agent فشل → نتجاهل
+            #
+            # ⚠️ BRAVO-NEWS-DISABLE (2026-10-20): news_agent معطّل — under development.
+            # السبب: analyze_stock_news() بيعمل network calls لكل سهم (DuckDuckGo/news API)
+            # → 289 سهم × network = ~10 دقايق لكل run = الفرصة بتضيع.
+            # المحرك شغّال بدون news (الـ 6 إثباتات التانية كافية). هيتفعل لما يتصلح.
+            # لإعادة التفعيل: اشيل التعليق من الكود تحت + اتأكد إن news_agent شغّال offline.
+            #
+            # try:
+            #     if os.environ.get('V40_2_SKIP_NEWS', '0') == '1':
+            #         raise RuntimeError('news skipped for A/B backtest')
+            #     from ai.news_agent import NewsAgent
+            #     if not hasattr(engine, '_news_agent'):
+            #         engine._news_agent = NewsAgent()
+            #     if engine._news_agent.is_ready() or DDGS_AVAILABLE:
+            #         _news_result = engine._news_agent.analyze_stock_news(
+            #             ticker, max_articles=2
+            #         )
+            #         _news_score = _news_result.get('score', 50)
+            #         _news_sentiment = _news_result.get('sentiment', 'neutral')
+            #         # خزّن في آخر signal
+            #         if signals_by_date[scan_date]:
+            #             signals_by_date[scan_date][-1]['news_sentiment'] = _news_sentiment
+            #             signals_by_date[scan_date][-1]['news_score'] = _news_score
+            #             signals_by_date[scan_date][-1]['news_summary'] = _news_result.get('summary', '')
+            #         # لو الأخبار سلبية جداً (score < 30) → ارفض
+            #         if _news_score < 30 and _news_result.get('confidence', 0) > 0.5:
+            #             print(f"[NEWS-REJECT] {ticker} on {scan_date}: أخبار سلبية "
+            #                   f"(score={_news_score}/100) → رفض", flush=True)
+            #             signals_by_date[scan_date].pop()  # شيل آخر signal
+            # except Exception as _news_err:
+            #     pass  # safe-by-design: لو الـ Agent فشل → نتجاهل
 
         del dates, opens, highs, lows, closes, volumes, atrs, date_to_idx
         if processed % 100 == 0:
