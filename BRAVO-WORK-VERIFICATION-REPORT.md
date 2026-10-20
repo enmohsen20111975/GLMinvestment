@@ -106,3 +106,70 @@ DEAD: scripts/backfill_exit_type.py
 ---
 
 *آخر تحديث: بعد فحص المرحلة 0*
+
+---
+
+## المرحلة 1 — Engine Unification (STAGE-1)
+
+**الـ commit**: `675ac0b`
+**الـ goal**: دمج 3 engine folders → `engines/` واحد
+
+### ✅ اللي شغال صح:
+1. **15 modules** في `engines/` (موحدة من 3 مجلدات)
+2. **engine/__init__.py shim** شغال:
+   - بيـ re-export 7 modules من `engines/`
+   - بيـ log errors (مش silent pass) ✅
+   - بيـ set `sys.modules` للـ backward compat
+3. **15 caller** لـ `engine.` (legacy) — الـ shim بيـ catchهم كلهم:
+   - `jobs/daily_predictor.py` (1)
+   - `analyzers/background_analyzer.py` (1)
+   - `analyzers/master_analyzer.py` (1)
+   - `api/admin_routes.py` (12)
+4. **كل engines modules بتـ import بنجاح** (15/15)
+
+### ⚠️ مشكلة 1: glminvestment_engines shim — no error handling
+
+```python
+# glminvestment_engines/engines/__init__.py
+from engines.atr_risk_engine import analyze as analyze_atr_risk, ...
+from engines.stage2_filter import analyze as analyze_stage2, ...
+```
+
+**المشكلة**: مفيش `try/except`. لو `engines.atr_risk_engine` فشل → الـ shim هـ crash كله.
+
+**التوصية**: ضيف try/except + logging زي engine shim.
+
+### ⚠️ مشكلة 2: persona_engine self-referencing import
+
+```python
+# engines/persona_engine.py:9 (docstring)
+from engine.persona_engine import PersonaEngine, InvestorPersona
+```
+
+**المشكلة**: الملف في `engines/` بيـ recommend import من `engine.` (الـ shim). ده self-referencing بس بيشتغل (مش circular) لأن الـ shim بـ redirect لـ `engines.` تاني.
+
+**التوصية**: حدّث الـ docstring لـ `from engines.persona_engine import ...`
+
+### 📊 التقدير: 90% سليم
+
+| | الحالة |
+|---|--------|
+| engines/ موحدة | ✅ 15/15 |
+| engine shim | ✅ شغال + logging |
+| backward compat | ✅ 15 callers |
+| glminvestment shim | ⚠️ no error handling |
+| persona docstring | ⚠️ self-referencing |
+
+---
+
+## المراحل التالية:
+- [x] المرحلة 0 — fixture map
+- [x] المرحلة 1 — Engine Unification
+- [ ] المرحلة 2 — core Unification
+- [ ] المرحلة 3 — CALCULATION-CANONICAL
+- [ ] المرحلة 5 — API audit
+- [ ] المرحلة 6 — scripts archive
+- [ ] المرحلة 7 — Quant Canonical
+- [ ] المرحلة 8 — Tests
+
+*آخر تحديث: بعد فحص المرحلة 1*
