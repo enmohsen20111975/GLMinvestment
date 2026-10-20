@@ -22,6 +22,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
+# BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate Bollinger/ATR/ADX to canonical.
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+from analyzers.indicators.atr import calc_atr as _canonical_atr
+from analyzers.indicators.adx import calc_adx as _canonical_adx
+
 
 @dataclass
 class EnhancedIndicatorResult:
@@ -133,31 +138,13 @@ class EnhancedIndicators:
     def calc_bollinger(prices: list[float], period: int = 20,
                        std_dev: float = 2.0) -> tuple[float, float, float, float]:
         """
-        حساب Bollinger Bands.
-        Middle = SMA(period)
-        Upper = Middle + std_dev * StdDev
-        Lower = Middle - std_dev * StdDev
-        percent_b = (price - lower) / (upper - lower) * 100
+        حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
         بيرجع (upper, middle, lower, percent_b).
         """
-        if len(prices) < period:
+        result = _canonical_bollinger(prices, period, std_dev)
+        if result is None:
             return 0.0, 0.0, 0.0, 50.0
-
-        window = prices[-period:]
-        middle = sum(window) / period
-        variance = sum((x - middle) ** 2 for x in window) / period
-        sd = math.sqrt(variance)
-
-        upper = middle + std_dev * sd
-        lower = middle - std_dev * sd
-
-        price = prices[-1]
-        if upper - lower == 0:
-            percent_b = 50.0
-        else:
-            percent_b = (price - lower) / (upper - lower) * 100.0
-
-        return upper, middle, lower, percent_b
+        return (result['upper'], result['middle'], result['lower'], result['percent_b'])
 
     # ---------- Stochastic ----------
     @staticmethod
@@ -205,119 +192,27 @@ class EnhancedIndicators:
     def calc_atr(highs: list[float], lows: list[float], closes: list[float],
                  period: int = 14) -> float:
         """
-        حساب Average True Range.
+        حساب Average True Range — BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.
+        Rule 67: canonical بـ Wilder's smoothing (مش SMA القديم).
         True Range = max(high-low, |high-prev_close|, |low-prev_close|)
-        ATR = SMA(period) من TR.
+        ATR = Wilder's smoothing(TR, period).
         """
-        n = min(len(highs), len(lows), len(closes))
-        if n < 2:
-            return 0.0
-
-        tr_values: list[float] = []
-        for i in range(1, n):
-            tr1 = highs[i] - lows[i]
-            tr2 = abs(highs[i] - closes[i - 1])
-            tr3 = abs(lows[i] - closes[i - 1])
-            tr = max(tr1, tr2, tr3)
-            tr_values.append(tr)
-
-        if not tr_values:
-            return 0.0
-
-        if len(tr_values) < period:
-            # لو الداتا أقل من المطلوب نرجّع متوسط اللي موجود
-            return sum(tr_values) / len(tr_values)
-
-        window = tr_values[-period:]
-        return sum(window) / period
+        result = _canonical_atr(highs, lows, closes, period)
+        return result if result is not None else 0.0
 
     # ---------- ADX ----------
     @staticmethod
     def calc_adx(highs: list[float], lows: list[float], closes: list[float],
                  period: int = 14) -> tuple[float, float, float, bool]:
         """
-        حساب ADX (Average Directional Index) بطريقة Wilder.
-        +DI / -DI باستخدام Wilder's smoothing.
+        حساب ADX — BRAVO UNIFY: delegates to canonical analyzers.indicators.adx (Wilder's).
         بيرجع (adx, plus_di, minus_di, trending).
         trending = True لو ADX > 25.
         """
-        n = min(len(highs), len(lows), len(closes))
-        if n < period + 2:
+        result = _canonical_adx(highs, lows, closes, period)
+        if result is None:
             return 0.0, 0.0, 0.0, False
-
-        # 1) نحسب +DM, -DM, TR لكل فترة
-        plus_dm: list[float] = []
-        minus_dm: list[float] = []
-        tr: list[float] = []
-        for i in range(1, n):
-            up_move = highs[i] - highs[i - 1]
-            down_move = lows[i - 1] - lows[i]
-
-            p_dm = up_move if (up_move > down_move and up_move > 0) else 0.0
-            m_dm = down_move if (down_move > up_move and down_move > 0) else 0.0
-
-            tr1 = highs[i] - lows[i]
-            tr2 = abs(highs[i] - closes[i - 1])
-            tr3 = abs(lows[i] - closes[i - 1])
-            tr_val = max(tr1, tr2, tr3)
-
-            plus_dm.append(p_dm)
-            minus_dm.append(m_dm)
-            tr.append(tr_val)
-
-        # 2) Wilder's smoothing — بيخزن الـ sum-level (مش average)
-        def wilder_smooth(values: list[float], p: int) -> list[float]:
-            if len(values) < p:
-                return []
-            smoothed: list[float] = []
-            first = sum(values[:p])
-            smoothed.append(first)
-            for i in range(p, len(values)):
-                prev = smoothed[-1]
-                new_val = prev - (prev / p) + values[i]
-                smoothed.append(new_val)
-            return smoothed
-
-        sm_plus = wilder_smooth(plus_dm, period)
-        sm_minus = wilder_smooth(minus_dm, period)
-        sm_tr = wilder_smooth(tr, period)
-
-        if not sm_plus or not sm_minus or not sm_tr:
-            return 0.0, 0.0, 0.0, False
-
-        # 3) +DI / -DI و DX
-        k = min(len(sm_plus), len(sm_minus), len(sm_tr))
-        dx_values: list[float] = []
-        plus_di_last = 0.0
-        minus_di_last = 0.0
-        for i in range(k):
-            if sm_tr[i] == 0:
-                continue
-            p_di = 100.0 * sm_plus[i] / sm_tr[i]
-            m_di = 100.0 * sm_minus[i] / sm_tr[i]
-            plus_di_last = p_di
-            minus_di_last = m_di
-            denom = p_di + m_di
-            if denom == 0:
-                dx_values.append(0.0)
-            else:
-                dx_values.append(100.0 * abs(p_di - m_di) / denom)
-
-        if not dx_values:
-            return 0.0, 0.0, 0.0, False
-
-        # 4) ADX = Wilder's smoothing of DX (نقسم على period عشان نرجّع average)
-        if len(dx_values) < period:
-            adx = sum(dx_values) / len(dx_values)
-        else:
-            sm_dx = wilder_smooth(dx_values, period)
-            if not sm_dx:
-                adx = sum(dx_values) / len(dx_values)
-            else:
-                adx = sm_dx[-1] / period
-
-        trending = adx > 25.0
-        return adx, plus_di_last, minus_di_last, trending
+        return (result['adx'], result['plus_di'], result['minus_di'], result['adx'] > 25.0)
 
     # ---------- Williams %R ----------
     @staticmethod

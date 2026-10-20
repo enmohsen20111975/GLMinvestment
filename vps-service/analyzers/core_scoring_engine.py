@@ -44,6 +44,7 @@ from analyzers.engine_settings import get_setting
 # ============================================================================
 from analyzers.indicators.rsi import calc_rsi
 from analyzers.indicators.ma import macd as _canonical_macd_cse, sma as _canonical_sma_cse  # BRAVO INDICATOR-UNIFY  # noqa: F401 — re-exported for backward compat
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger_cse  # BRAVO UNIFY (Rule 67)
 
 
 # ============================================================================
@@ -105,15 +106,15 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float],
 
 
 def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[float, float, float]:
-    """حساب Bollinger Bands → (upper, middle, lower)"""
-    if len(closes) < period:
-        mid = closes[-1]
-        return mid * 1.02, mid, mid * 0.98
-
-    recent = closes[-period:]
-    mid = sum(recent) / period
-    std = math.sqrt(sum((x - mid) ** 2 for x in recent) / period)
-    return round(mid + 2 * std, 4), round(mid, 4), round(mid - 2 * std, 4)
+    """حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+    بيرجع (upper, middle, lower).
+    """
+    result = _canonical_bollinger_cse(closes, period, 2.0)
+    if result is None:
+        # fallback: لو البيانات أقل من period — استخدم آخر سعر ± 2%
+        mid = closes[-1] if closes else 0.0
+        return round(mid * 1.02, 4), round(mid, 4), round(mid * 0.98, 4)
+    return (result['upper'], result['middle'], result['lower'])
 
 
 def detect_candlestick_pattern(
