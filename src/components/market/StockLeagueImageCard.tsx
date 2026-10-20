@@ -335,7 +335,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
  idx === 0 ? 'bg-warning text-slate-900' :
  idx === 1 ? 'bg-slate-400 text-slate-900' :
- idx === 2 ? 'bg-warning text-warning' :
+ idx === 2 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30' :
  'bg-slate-700 text-slate-300'
  }`}>
  {idx + 1}

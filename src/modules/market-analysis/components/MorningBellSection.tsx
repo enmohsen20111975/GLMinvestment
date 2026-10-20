@@ -325,9 +325,9 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  }
 
  const contStateColor: Record<string, string> = {
- continuing: 'bg-profit text-profit/40 ',
- weakening: 'bg-warning text-warning/40 ',
- exhausted: 'bg-loss text-loss/40 ',
+ continuing: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
+ weakening: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
+ exhausted: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
  };
  const contStateAr: Record<string, string> = {
  continuing: 'مستمرة',
@@ -344,7 +344,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  </h3>
  <Badge className="text-xs font-semibold border-0 bg-primary/10 text-primary">{label}</Badge>
  {marketStatus === 'live' && stocks.length > 0 && (
- <Badge className="text-xs font-semibold border-0 bg-profit text-profit/40 ">● مباشر</Badge>
+ <Badge className="text-xs font-semibold border-0 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ">● مباشر</Badge>
  )}
  {isLive && stocks.length > 0 && (
  <Badge className="text-xs font-semibold border-0 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" title={`دورة تجديد كل ${refreshMin} دقيقة`}>
@@ -353,7 +353,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  </Badge>
  )}
  {vetoed && (
- <Badge className="text-xs font-semibold border-0 bg-loss text-loss/40 ">🛡️ كاش</Badge>
+ <Badge className="text-xs font-semibold border-0 bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ">🛡️ كاش</Badge>
  )}
  </div>
 
@@ -387,7 +387,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  <div className="min-w-0">
  <div className="flex items-center gap-1.5 flex-wrap">
  <span className="font-mono text-sm font-bold">{s.ticker}</span>
- {idx === 0 && <Badge className="text-xs font-bold border-0 bg-warning text-warning ">#1</Badge>}
+ {idx === 0 && <Badge className="text-xs font-bold border-0 bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ">#1</Badge>}
  {s.rvol !== undefined && s.rvol >= 1.5 && (
  <Badge className="text-xs font-bold border-0 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" title="Relative Volume — حجم غير عادي">
  RVOL ×{safeToFixed(s.rvol, 1)}
@@ -397,7 +397,7 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  <p className="text-xs text-muted-foreground truncate mt-0.5">{s.name_ar}</p>
  </div>
  <div className="flex flex-col items-end gap-1 shrink-0">
- <Badge className={cn('text-xs font-bold border-0', s.signal === 'strong_buy' ? 'bg-profit text-white' : 'bg-profit text-profit/40 ')}>
+ <Badge className={cn('text-xs font-bold border-0', s.signal === 'strong_buy' ? 'bg-profit text-white' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ')}>
  {s.signal_ar}
  </Badge>
  {s.continuation_state && (
@@ -461,10 +461,10 @@ export function MorningBellSection({ marketCode }: { marketCode: string }) {
  </span>
  <div className="flex items-center gap-1 flex-wrap">
  {s.risk_flag === 'extreme_north' && (
- <Badge className="text-xs font-semibold border-0 bg-loss text-loss/40 " title="أسهم الشمال — مخاطر عالية جداً">🔴 شمال</Badge>
+ <Badge className="text-xs font-semibold border-0 bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 " title="أسهم الشمال — مخاطر عالية جداً">🔴 شمال</Badge>
  )}
  {s.delay_compensation_applied && (
- <Badge className="text-xs font-semibold border-0 cursor-help bg-warning text-warning "
+ <Badge className="text-xs font-semibold border-0 cursor-help bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 "
  onClick={() => toast.info('⚠️ تعويض تأخير البيانات', { description: 'تم توسيع الهدف (+5%) وتضييق وقف الخسارة (-15%) لحماية صفقتك.', duration: 6000 })}>
  ⚠️ تعويض
  </Badge>

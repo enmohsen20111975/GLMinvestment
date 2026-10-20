@@ -122,9 +122,9 @@ interface PersonalizedRadarResponse {
 // ─── Constants ────────────────────────────────────────────────────────────
 
 const RISK_PROFILE_META: Record<string, { ar: string; icon: React.ReactNode; color: string }> = {
- conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-warning text-warning border-warning/20 ' },
- balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-profit text-profit border-profit/20 ' },
- aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-loss text-loss border-loss/20 ' },
+ conservative: { ar: 'تحفظي', icon: <ShieldAlert className="h-4 w-4" />, color: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ' },
+ balanced: { ar: 'متوازن', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ' },
+ aggressive: { ar: 'هجومي', icon: <ShieldQuestion className="h-4 w-4" />, color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ' },
 };
 
 const HOLDING_PERIOD_AR: Record<string, string> = {

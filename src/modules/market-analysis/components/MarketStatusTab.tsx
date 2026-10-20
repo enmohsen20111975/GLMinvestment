@@ -129,7 +129,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  // FRONTEND-026: شامل لكل إشارات البيع (REDUCE, WEAK_SELL, ...) والشراء (ACCUMULATE, ...)
  const isUp = isBuySignalLabel(stock.signal);
  const isDown = isSellSignalLabel(stock.signal);
- const signalColor = isUp ? 'bg-profit text-profit/40 ' : isDown ? 'bg-loss text-loss/40 ' : 'bg-muted text-muted-foreground';
+ const signalColor = isUp ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' : isDown ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' : 'bg-muted text-muted-foreground';
  const curPrice = pickValidPrice(stock.current_price, stock.close, stock.entry_price);
  const highPrice = pickValidPrice(stock.high_price, stock.high_52w, stock.resistance);
  const lowPrice = pickValidPrice(stock.low_price, stock.low_52w, stock.support);
@@ -151,7 +151,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  </Badge>
  {stock.delay_compensation_applied && (
  <Badge
- className="text-xs font-semibold border-0 cursor-help bg-warning text-warning hover:bg-warning dark:hover:bg-warning transition-colors"
+ className="text-xs font-semibold border-0 cursor-help bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning dark:hover:bg-warning transition-colors"
  title="بسبب تأخر بيانات السوق 5 دقائق، تم توسيع الهدف وتضييق وقف الخسارة لحماية صفقتك. ينصح بالتنفيذ عند ارتداد السعر للدعم وليس عند صعوده السريع."
  onClick={() => toast.info('⚠️ تعويض تأخير البيانات', {
  description: 'بسبب تأخر بيانات السوق 5 دقائق، تم توسيع الهدف (+5%) وتضييق وقف الخسارة (-15%) لحماية صفقتك. ينصح بالتنفيذ عند ارتداد السعر للدعم وليس عند صعوده السريع.',
@@ -163,7 +163,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  )}
  {stock.ath_breakout && (
  <Badge
- className="text-xs font-semibold border-0 bg-profit text-profit/40 "
+ className="text-xs font-semibold border-0 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  title="🏆 اختراق تاريخي (All-Time High) — فرصة استثنائية مسموح لها بتجاوز بوابات القناص."
  >
  🏆 اختراق تاريخي

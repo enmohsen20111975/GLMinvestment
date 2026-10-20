@@ -110,7 +110,7 @@ const SECTIONS = [
  </div>
  <div className="p-3 rounded-lg bg-loss/10 border border-loss/20">
  <div className="flex items-center gap-2 mb-1">
- <Badge className="bg-loss text-loss border border-loss animate-pulse">فخ ارتداد</Badge>
+ <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border border-loss animate-pulse">فخ ارتداد</Badge>
  <span className="text-xs text-muted-foreground">Veto -15 نقطة</span>
  </div>
  <p className="text-xs">

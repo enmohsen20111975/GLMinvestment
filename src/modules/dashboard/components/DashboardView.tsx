@@ -436,7 +436,7 @@ export function DashboardView() {
  <div className="font-mono font-bold text-sm">{stock.ticker}</div>
  <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
  </div>
- <span className={`text-xs font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-profit text-profit-foreground' : 'bg-primary/10 text-primary'}`}>
+ <span className={`text-xs font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground' : 'bg-primary/10 text-primary'}`}>
  {stock.recommendationAr || stock.recommendation}
  </span>
  </div>

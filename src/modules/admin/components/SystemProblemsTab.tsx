@@ -136,7 +136,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-warning bg-warning text-warning/40 "
+ className="gap-1 border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 "
  >
  <AlertCircle className="w-3 h-3" />
  تحذير
@@ -146,7 +146,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-profit bg-profit text-profit/40 "
+ className="gap-1 border-profit bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  >
  <Info className="w-3 h-3" />
  معلومة
@@ -175,10 +175,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
  className={cn(
  'shrink-0 mt-0.5 rounded-md p-1.5',
  isCritical
- ? 'bg-loss text-loss/50 '
+ ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
  : isWarning
- ? 'bg-warning text-warning/50 '
- : 'bg-profit text-profit/50 ',
+ ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 '
+ : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
  )}
  >
  <CategoryIcon category={issue.category} className="w-4 h-4" />
@@ -266,10 +266,10 @@ function SummaryStatCard({
  tone: 'red' | 'amber' | 'emerald' | 'neutral';
 }) {
  const toneClasses = {
- red: 'bg-loss text-loss/30 ',
- amber: 'bg-warning text-warning/30 ',
+ red: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
+ amber: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
  emerald:
- 'bg-profit text-profit/30 ',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
  neutral: 'bg-muted text-muted-foreground',
  }[tone];
 

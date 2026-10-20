@@ -215,14 +215,14 @@ interface TopPerformersResponse {
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
 const STATE_BADGE_COLORS: Record<string, string> = {
- CORRECTION_END: 'bg-profit text-profit/40 border-profit ',
- BALANCED_MOMENTUM: 'bg-success text-success/40 border-success dark:border-success',
+ CORRECTION_END: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
+ BALANCED_MOMENTUM: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-success dark:border-success',
  NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
- AT_PEAK: 'bg-loss text-loss/40 border-loss ',
- NEAR_PEAK: 'bg-warning text-warning/40 border-orange-200 dark:border-orange-800',
+ AT_PEAK: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
+ NEAR_PEAK: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-orange-200 dark:border-orange-800',
  NEUTRAL: 'bg-muted text-muted-foreground /60 border-border ',
- CORRECTION: 'bg-warning text-warning/40 border-orange-200 dark:border-orange-800',
- DECLINING: 'bg-loss text-loss/40 border-loss ',
+ CORRECTION: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-orange-200 dark:border-orange-800',
+ DECLINING: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
  INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
 
@@ -1439,7 +1439,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
  render: (s) =>
  s.above_ma_50 ? (
- <Badge className="bg-profit text-profit/40 border-profit text-xs px-2 py-0.5">
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit text-xs px-2 py-0.5">
  {t('screener.advanced.stockStateColumn.above')}
  </Badge>
  ) : (

@@ -478,7 +478,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<Sparkles className="h-5 w-5" />}
- tone="bg-profit text-profit/40 "
+ tone="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  />
  <div>
  <h2 className="text-base md:text-lg font-bold">المستشار الآلي (Robo-Advisor)</h2>
@@ -564,7 +564,7 @@ function ProjectionCard({
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<CalendarClock className="h-5 w-5" />}
- tone="bg-profit text-profit/40 "
+ tone="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  />
  <div>
  <CardTitle className="text-base">التوقع المستقبلي للثروة</CardTitle>
@@ -759,7 +759,7 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<ShieldCheck className="h-5 w-5" />}
- tone="bg-warning text-warning/40 "
+ tone="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 "
  />
  <div>
  <CardTitle className="text-base">تنبيهات إعادة التوازن</CardTitle>
@@ -891,7 +891,7 @@ function EquityCurveCard({
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<TrendingUp className="h-5 w-5" />}
- tone="bg-profit text-profit/40 "
+ tone="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  />
  <div>
  <CardTitle className="text-base">حركة صافي الثروة</CardTitle>
@@ -1052,7 +1052,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<PieIcon className="h-5 w-5" />}
- tone="bg-profit text-profit/40 "
+ tone="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  />
  <div>
  <CardTitle className="text-base">توزيع الأصول</CardTitle>
@@ -1251,7 +1251,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) 
  <div className="flex items-center gap-2">
  <FeatureIcon
  icon={<History className="h-5 w-5" />}
- tone="bg-profit text-profit/40 "
+ tone="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
  />
  <div>
  <CardTitle className="text-base">سجل المعاملات</CardTitle>

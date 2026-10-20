@@ -741,7 +741,7 @@ export function PaperTradingWorkstation() {
  <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
  {/* Account title */}
  <div className="flex items-center gap-3 min-w-0">
- <div className="flex items-center justify-center w-11 h-11 rounded-full bg-profit text-profit ">
+ <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ">
  <Wallet className="w-6 h-6" />
  </div>
  <div className="min-w-0">
@@ -1217,8 +1217,8 @@ export function PaperTradingWorkstation() {
  variant="outline"
  className={
  isBuy
- ? 'bg-profit text-profit border-profit '
- : 'bg-loss text-loss border-loss '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss '
  }
  >
  {isBuy ? 'شراء' : 'بيع'}
@@ -1406,9 +1406,9 @@ export function PaperTradingWorkstation() {
  MANUAL:
  'bg-muted text-muted-foreground border-border ',
  STOP_LOSS:
- 'bg-loss text-loss border-loss ',
+ 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
  TAKE_PROFIT:
- 'bg-profit text-profit border-profit ',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
  };
  return (
  <tr
@@ -1428,8 +1428,8 @@ export function PaperTradingWorkstation() {
  variant="outline"
  className={
  isBuy
- ? 'bg-profit text-profit border-profit '
- : 'bg-loss text-loss border-loss '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss '
  }
  >
  {isBuy ? 'شراء' : 'بيع'}

@@ -179,11 +179,11 @@ function formatPct(n: number | null): string {
 function classificationBadge(c: string) {
  switch (c) {
  case 'clean':
- return { variant: 'default' as const, label: 'أنظف نسبياً', className: 'bg-profit text-profit hover:bg-profit' };
+ return { variant: 'default' as const, label: 'أنظف نسبياً', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit' };
  case 'momentum':
- return { variant: 'default' as const, label: 'زخم', className: 'bg-warning text-warning hover:bg-warning' };
+ return { variant: 'default' as const, label: 'زخم', className: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning' };
  case 'high_risk':
- return { variant: 'default' as const, label: 'عالي المخاطر', className: 'bg-loss text-loss hover:bg-loss' };
+ return { variant: 'default' as const, label: 'عالي المخاطر', className: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:bg-loss' };
  default:
  return { variant: 'secondary' as const, label: 'غير محدد', className: '' };
  }
@@ -211,9 +211,9 @@ function actionColor(action: string): string {
 function priorityBadge(p: string) {
  switch (p) {
  case 'high':
- return <Badge variant="outline" className="bg-loss text-loss border-loss text-xs">عالية</Badge>;
+ return <Badge variant="outline" className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss text-xs">عالية</Badge>;
  case 'medium':
- return <Badge variant="outline" className="bg-warning text-warning border-warning text-xs">متوسطة</Badge>;
+ return <Badge variant="outline" className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning text-xs">متوسطة</Badge>;
  case 'low':
  return <Badge variant="outline" className="bg-zinc-50 text-zinc-700 border-zinc-200 text-xs">منخفضة</Badge>;
  default:

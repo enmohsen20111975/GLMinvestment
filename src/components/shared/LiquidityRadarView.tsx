@@ -701,7 +701,7 @@ function MarketSelectorBar({
             className={cn(
               'px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors',
               activeMarket === m.code
-                ? 'bg-profit text-profit-foreground shadow-sm'
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground shadow-sm'
                 : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >

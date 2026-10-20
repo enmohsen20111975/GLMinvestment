@@ -123,8 +123,8 @@ export function PortfolioIntelligencePanel() {
  const getRiskColor = (risk: string) => {
  switch (risk) {
  case 'LOW': return 'bg-success text-profit';
- case 'HIGH': return 'bg-loss text-loss';
- default: return 'bg-warning text-warning';
+ case 'HIGH': return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30';
+ default: return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30';
  }
  };
 

@@ -223,7 +223,7 @@ export function ExpertMemoryPanel({
  {insight.avg_pnl !== 0 && (
  <div className={cn(
  "flex items-center gap-2 text-sm p-2 rounded-md",
- insight.avg_pnl > 0 ? "bg-success text-success " : "bg-loss text-loss "
+ insight.avg_pnl > 0 ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 " : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 "
  )}>
  {insight.avg_pnl > 0 ? (
  <TrendingUp className="h-4 w-4" />

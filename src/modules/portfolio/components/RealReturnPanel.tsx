@@ -131,7 +131,7 @@ export function RealReturnPanel() {
  <Flame className={cn('h-5 w-5', hasWarnings ? 'text-loss' : 'text-warning')} />
  <h3 className="font-bold text-base">محرك العائد الحقيقي</h3>
  {hasWarnings && (
- <Badge className="bg-loss text-loss/40 border border-loss">
+ <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border border-loss">
  {data.summary.warning_count} تحذير
  </Badge>
  )}

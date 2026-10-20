@@ -163,7 +163,7 @@ export function DataEngineTab() {
  <div className="text-sm text-slate-500 flex items-center gap-3 mt-1">
  <span className={cn(
  "px-3 py-1 rounded-lg font-bold text-base",
- isActive ? "bg-profit text-profit" : "bg-loss text-loss"
+ isActive ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}>
  {isActive ? 'RUNNING' : 'STOPPED'}
  </span>
@@ -350,7 +350,7 @@ export function DataEngineTab() {
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.stocks_running ? "bg-profit text-profit" : "bg-loss text-loss"
+ engine?.stocks_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}
  onClick={() => triggerAction('toggle_scraper', 'stocks')}
  >
@@ -380,7 +380,7 @@ export function DataEngineTab() {
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.crypto_running ? "bg-profit text-profit" : "bg-loss text-loss"
+ engine?.crypto_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}
  onClick={() => triggerAction('toggle_scraper', 'crypto')}
  >
@@ -410,7 +410,7 @@ export function DataEngineTab() {
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.metals_running ? "bg-profit text-profit" : "bg-loss text-loss"
+ engine?.metals_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}
  onClick={() => triggerAction('toggle_scraper', 'metals')}
  >
@@ -440,7 +440,7 @@ export function DataEngineTab() {
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.news_running ? "bg-profit text-profit" : "bg-loss text-loss"
+ engine?.news_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}
  onClick={() => triggerAction('toggle_scraper', 'news')}
  >

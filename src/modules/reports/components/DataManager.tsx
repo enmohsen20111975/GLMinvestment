@@ -255,7 +255,7 @@ export function DataManager() {
  <div className="space-y-4">
  {/* Active subscription badge */}
  <div className="flex items-center justify-between">
- <Badge className="bg-profit text-profit/40 border-0 gap-1 text-xs">
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-0 gap-1 text-xs">
  <Crown className="w-3 h-3" />
  ميزة نشطة — الاشتراك المدفوع
  </Badge>

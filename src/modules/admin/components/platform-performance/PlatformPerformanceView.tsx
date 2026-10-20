@@ -285,9 +285,9 @@ function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Tra
  </td>
  <td className="px-2 py-2 text-xs">
  {trade.hit_target === 1 ? (
- <Badge className="bg-profit text-profit hover:bg-profit text-xs">هدف ✓</Badge>
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit text-xs">هدف ✓</Badge>
  ) : trade.hit_stop === 1 ? (
- <Badge className="bg-loss text-loss hover:bg-loss text-xs">وقف ✗</Badge>
+ <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:bg-loss text-xs">وقف ✗</Badge>
  ) : (
  <Badge variant="outline" className="text-xs">{trade.status}</Badge>
  )}
@@ -352,7 +352,7 @@ export function PlatformPerformanceView() {
  <div className="flex items-center gap-2 mb-1">
  <Gauge className="h-6 w-6 text-primary" />
  <h2 className="text-xl sm:text-2xl font-bold">كفاءة المنصة</h2>
- <Badge className="bg-warning text-warning hover:bg-warning text-xs">
+ <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning text-xs">
  للتقييم الداخلي — Admin Only
  </Badge>
  </div>
@@ -666,7 +666,7 @@ export function PlatformPerformanceView() {
  <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.highest_price ?? t.exit_price)}</td>
  <td className={`px-2 py-2 text-xs ${returnColor(t.actual_return)}`} dir="ltr">{fmtPct(t.actual_return)}</td>
  <td className="px-2 py-2 text-xs">
- <Badge className="bg-profit text-profit hover:bg-profit text-xs">تحقق ✓</Badge>
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit text-xs">تحقق ✓</Badge>
  </td>
  </tr>
  ))}

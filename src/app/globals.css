@@ -46,13 +46,17 @@
   --danger: 0 72% 51%;
   --danger-foreground: 0 0% 100%;
   /* BLUEPRINT-UNIFIED-SCREENS semantic tokens (financial — KEEP) */
-  --profit: 160 84% 39%;          /* Green-500 — gains/buy/up */
+  --profit: 160 84% 39%;
+  /* Green-500 — gains/buy/up */
   --profit-foreground: 0 0% 100%;
-  --loss: 0 84% 60%;              /* Red-500 — loss/sell/down */
+  --loss: 0 84% 60%;
+  /* Red-500 — loss/sell/down */
   --loss-foreground: 0 0% 100%;
-  --whale: 189 95% 43%;           /* Cyan-500 — institutional liquidity */
+  --whale: 189 95% 43%;
+  /* Cyan-500 — institutional liquidity */
   --whale-foreground: 0 0% 100%;
-  --info: 217 91% 60%;            /* Blue-500 — informational */
+  --info: 217 91% 60%;
+  /* Blue-500 — informational */
   --info-foreground: 0 0% 100%;
   --sidebar: 210 40% 98%;
   --sidebar-foreground: 215 25% 27%;
@@ -122,6 +126,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     /* Cairo = primary Arabic/Latin font (already @import'd above).
@@ -133,15 +138,24 @@
     -moz-osx-font-smoothing: grayscale;
     /* خلفية بسيطة هادئة — بدون gradient (جيمي directive) */
   }
+
   .dark body {
     /* Dark mode: خلفية سوداء هادئة بدون gradient */
   }
+
   /* Headings: tighter tracking reads as more professional / editorial */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     letter-spacing: -0.02em;
   }
+
   /* Prevent horizontal overflow on mobile */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
     width: 100%;
   }
@@ -152,9 +166,11 @@
   .animate-accordion-down {
     animation: accordion-down 0.2s ease-out;
   }
+
   .animate-accordion-up {
     animation: accordion-up 0.2s ease-out;
   }
+
   /* Tabular figures — for price/P&L tables to keep columns aligned */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
@@ -175,11 +191,13 @@
     transform 0.2s ease,
     border-color 0.2s ease;
 }
+
 .dark [data-slot="card"] {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.4),
     0 1px 2px rgba(0, 0, 0, 0.25);
 }
+
 [data-slot="card"].card-hover:hover,
 .card-hover[data-slot="card"]:hover {
   box-shadow:
@@ -188,6 +206,7 @@
   transform: translateY(-1px);
   border-color: hsl(var(--ring) / 0.35);
 }
+
 .dark [data-slot="card"].card-hover:hover,
 .dark .card-hover[data-slot="card"]:hover {
   box-shadow:
@@ -202,10 +221,12 @@
     transform 0.2s ease,
     border-color 0.2s ease;
 }
+
 .card-hover:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
+
 .dark .card-hover:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
@@ -222,9 +243,11 @@
     box-shadow 0.15s ease,
     transform 0.1s ease;
 }
+
 [data-slot="button"]:active {
   transform: scale(0.98);
 }
+
 /* Secondary/outline buttons pick up a subtle emerald tint on hover — keeps
    the design system coherent without breaking variant colors. */
 [data-slot="button"]:not([class*="bg-primary"]):not([class*="bg-destructive"]):hover {
@@ -247,6 +270,7 @@ select {
     box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
+
 [data-slot="input"]:focus,
 [data-slot="textarea"]:focus,
 input:focus-visible,
@@ -263,6 +287,7 @@ select:focus-visible {
   from {
     height: 0;
   }
+
   to {
     height: var(--radix-accordion-content-height);
   }
@@ -272,6 +297,7 @@ select:focus-visible {
   from {
     height: var(--radix-accordion-content-height);
   }
+
   to {
     height: 0;
   }
@@ -310,8 +336,10 @@ select:focus-visible {
 
 /* Mobile touch improvements */
 @media (max-width: 768px) {
+
   /* Better scrolling */
-  .overflow-y-auto, .overflow-auto {
+  .overflow-y-auto,
+  .overflow-auto {
     -webkit-overflow-scrolling: touch;
   }
 }
@@ -328,13 +356,16 @@ select:focus-visible {
   width: 4px;
   height: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 2px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
 }
@@ -357,12 +388,13 @@ select:focus-visible {
 
 /* Minimum touch target for all buttons on mobile */
 @media (hover: none) and (pointer: coarse) {
+
   button:not(.touch-exempt),
   a[role="button"]:not(.touch-exempt) {
     min-height: 40px;
     min-width: 40px;
   }
-  
+
   /* Larger touch targets for nav items */
   nav button,
   [role="navigation"] button {
@@ -388,6 +420,7 @@ button,
 
 /* Better focus visibility for accessibility */
 @media (hover: none) and (pointer: coarse) {
+
   button:focus-visible,
   a:focus-visible {
     outline: 2px solid hsl(var(--primary));
@@ -397,6 +430,7 @@ button,
 
 /* Prevent zoom on input focus (iOS) */
 @media (hover: none) and (pointer: coarse) {
+
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -409,6 +443,7 @@ button,
 
 /* Better tap feedback */
 @media (hover: none) and (pointer: coarse) {
+
   button:active,
   a:active {
     transform: scale(0.97);
@@ -422,6 +457,7 @@ button,
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide-mobile::-webkit-scrollbar {
     display: none;
   }
@@ -431,6 +467,7 @@ button,
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -444,9 +481,15 @@ button,
 
 /* Loading skeleton shimmer */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
+
 .skeleton-shimmer {
   background: hsl(var(--muted) / 0.6);
   animation: shimmer 1.5s infinite;
@@ -454,19 +497,32 @@ button,
 
 /* ROBO-ADVISOR-P1: وميض الأسعار — وميض أخضر/أحمر عند تحديث السعر اللحظي */
 @keyframes flash-green {
-  0%   { background-color: hsl(142 76% 36% / 0.35); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: hsla(146, 49%, 58%, 0.35);
+  }
+
+  100% {
+    background-color: transparent;
+  }
 }
+
 @keyframes flash-red {
-  0%   { background-color: hsl(0 72% 51% / 0.35); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: hsla(0, 54%, 72%, 0.41);
+  }
+
+  100% {
+    background-color: transparent;
+  }
 }
+
 .price-flash-up {
   animation: flash-green 0.9s ease-out;
   border-radius: 6px;
   padding: 0 4px;
   transition: background-color 0.2s;
 }
+
 .price-flash-down {
   animation: flash-red 0.9s ease-out;
   border-radius: 6px;
@@ -504,9 +560,15 @@ button,
   background: hsl(var(--muted) / 0.6);
   animation: shimmer 1.5s infinite;
 }
+
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* === Score badge بسيط هادئ — بدون gradient/shine (جيمي directive) === */
@@ -521,16 +583,19 @@ button,
   font-weight: 700;
   font-size: 1rem;
 }
+
 .score-badge-premium.high {
   background: hsl(var(--profit) / 0.1);
   color: hsl(var(--profit));
   border: 1px solid hsl(var(--profit) / 0.2);
 }
+
 .score-badge-premium.mid {
   background: hsl(var(--warning) / 0.1);
   color: hsl(var(--warning));
   border: 1px solid hsl(var(--warning) / 0.2);
 }
+
 .score-badge-premium.low {
   background: hsl(var(--loss) / 0.1);
   color: hsl(var(--loss));
@@ -547,6 +612,7 @@ button,
 table tbody tr {
   transition: background-color 0.15s ease;
 }
+
 table tbody tr:hover {
   background: hsl(var(--muted) / 0.5);
 }
@@ -555,6 +621,7 @@ table tbody tr:hover {
 .live-pulse {
   position: relative;
 }
+
 .live-pulse::before {
   content: '';
   position: absolute;
@@ -564,9 +631,18 @@ table tbody tr:hover {
   opacity: 0.6;
   animation: live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
 @keyframes live-ping {
-  0% { transform: scale(1); opacity: 0.6; }
-  75%, 100% { transform: scale(2); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 /* === Premium button hover lift === */
@@ -574,6 +650,7 @@ button:not(:disabled):hover {
   transform: translateY(-1px);
   transition: transform 0.15s ease;
 }
+
 button:not(:disabled):active {
   transform: translateY(0);
 }
@@ -583,21 +660,39 @@ button:not(:disabled):active {
   transition: color 0.3s ease, transform 0.3s ease;
   display: inline-block;
 }
+
 .number-ticker.up {
   color: hsl(var(--profit));
   animation: ticker-up 0.4s ease;
 }
+
 .number-ticker.down {
   color: hsl(var(--loss));
   animation: ticker-down 0.4s ease;
 }
+
 @keyframes ticker-up {
-  0% { transform: translateY(8px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
+
 @keyframes ticker-down {
-  0% { transform: translateY(-8px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* === Sticky header بسيط هادئ — بدون glassmorphism (جيمي directive) === */
@@ -611,6 +706,7 @@ button:not(:disabled):active {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
 }
+
 .dark .card-premium {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
@@ -620,7 +716,15 @@ button:not(:disabled):active {
 .page-transition {
   animation: page-enter 0.3s ease-out;
 }
+
 @keyframes page-enter {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

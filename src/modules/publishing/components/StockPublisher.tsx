@@ -125,14 +125,14 @@ const RECOMMENDATION_META: Record<
  ar: 'شراء قوي',
  emoji: '',
  badgeClass:
- 'bg-profit text-profit border-profit/20 ',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
  icon: <TrendingUp className="h-3.5 w-3.5" />,
  },
  BUY: {
  ar: 'شراء',
  emoji: '✅',
  badgeClass:
- 'bg-profit text-profit border-profit/20 /60',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 /60',
  icon: <TrendingUp className="h-3.5 w-3.5" />,
  },
  INSTITUTIONAL_BUY: {
@@ -146,14 +146,14 @@ const RECOMMENDATION_META: Record<
  ar: 'احتفاظ',
  emoji: '⏸️',
  badgeClass:
- 'bg-warning text-warning border-warning/20 /60',
+ 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 /60',
  icon: <Activity className="h-3.5 w-3.5" />,
  },
  SELL: {
  ar: 'بيع',
  emoji: '🔻',
  badgeClass:
- 'bg-loss text-loss border-loss/20 /60',
+ 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 /60',
  icon: <TrendingDown className="h-3.5 w-3.5" />,
  },
 };

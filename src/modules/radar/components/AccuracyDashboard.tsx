@@ -128,7 +128,7 @@ function colorForWinRate(rate: number): {
  return {
  text: 'text-profit ',
  bg: 'bg-profit/10',
- badge: 'bg-profit text-profit border-profit/20 ',
+ badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
  bar: 'bg-profit',
  hex: '#10b981',
  };
@@ -137,7 +137,7 @@ function colorForWinRate(rate: number): {
  return {
  text: 'text-warning ',
  bg: 'bg-warning/10',
- badge: 'bg-warning text-warning border-warning/20 ',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
  bar: 'bg-warning',
  hex: '#f59e0b',
  };
@@ -145,7 +145,7 @@ function colorForWinRate(rate: number): {
  return {
  text: 'text-loss ',
  bg: 'bg-loss/10',
- badge: 'bg-loss text-loss border-loss/20 ',
+ badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ',
  bar: 'bg-loss',
  hex: '#f43f5e',
  };

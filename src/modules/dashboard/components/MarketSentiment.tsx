@@ -30,7 +30,7 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
  bg: 'bg-profit/10',
  text: 'text-profit ',
  label: 'صعودي',
- labelBg: 'bg-profit text-profit/50 ',
+ labelBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
  },
  neutral: {
  stroke: '#f59e0b',
@@ -39,7 +39,7 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
  bg: 'bg-warning/10',
  text: 'text-warning ',
  label: 'محايد',
- labelBg: 'bg-warning text-warning/50 ',
+ labelBg: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
  },
  bearish: {
  stroke: '#ef4444',
@@ -48,7 +48,7 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
  bg: 'bg-loss/10',
  text: 'text-loss ',
  label: 'هبوطي',
- labelBg: 'bg-loss text-loss/50 ',
+ labelBg: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
  },
  };
 
