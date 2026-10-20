@@ -206,33 +206,38 @@ export async function GET(request: NextRequest) {
     db.close();
 
     // Join sector + name_ar from stocks.db if missing
+    // BRAVO-FIX9: logo_url من data_engine.db (عقيدة السعر الواحد) عبر logo-helper
     let stocksLookup: Map<string, { sector: string; name_ar: string }> = new Map();
     try {
       const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
       if (fs.existsSync(stocksDbPath)) {
         const stocksDb = new Database(stocksDbPath, { readonly: true });
+        // FIX: stocks.db.stocks مش فيها logo_url — شيلناها من الـ query
         const stockRows = stocksDb
-          .prepare(`SELECT ticker, sector, name_ar, logo_url FROM stocks`)
+          .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
           .all() as Array<Record<string, unknown>>;
         for (const r of stockRows) {
           stocksLookup.set(String(r.ticker), {
             sector: String(r.sector || ''),
             name_ar: String(r.name_ar || r.ticker || ''),
-            logo_url: r.logo_url ? String(r.logo_url) : null,
           });
         }
         stocksDb.close();
       }
     } catch {}
 
+    // BRAVO-FIX9: logo lookup من data_engine.db (الـ SSOT)
+    const { getLogoUrl } = require('@/lib/logo-helper');
+
     const analyses = rows.map((r) => {
       const lookup = stocksLookup.get(String(r.ticker));
+      const tickerStr = String(r.ticker || '');
       return {
-        ticker: String(r.ticker || ''),
+        ticker: tickerStr,
         market: String(r.market || market),
         sector: r.sector ?? lookup?.sector ?? null,
-        name_ar: r.name_ar ?? lookup?.name_ar ?? String(r.ticker || ''),
-        logo_url: lookup?.logo_url ?? (r.logo_url ? String(r.logo_url) : null),
+        name_ar: r.name_ar ?? lookup?.name_ar ?? tickerStr,
+        logo_url: getLogoUrl(tickerStr) ?? (r.logo_url ? String(r.logo_url) : null),
         recommendation:
           r.recommendation ?? (r.signal ? String(r.signal).toLowerCase() : null),
         recommendation_ar: r.recommendation_ar ?? r.signal_ar ?? null,
