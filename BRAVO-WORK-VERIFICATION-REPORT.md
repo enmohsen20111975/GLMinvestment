@@ -173,3 +173,52 @@ from engine.persona_engine import PersonaEngine, InvestorPersona
 - [ ] المرحلة 8 — Tests
 
 *آخر تحديث: بعد فحص المرحلة 1*
+
+---
+
+## المرحلة 2 — core Unification (STAGE-2)
+
+**الـ commit**: `71f72b8`
+**الـ goal**: حل naming collision في `telegram/database.py` → rename لـ `telegram/telegram_db.py`
+
+### ✅ كل حاجة شغالة صح:
+
+1. **telegram/database.py** بقى shim:
+   ```python
+   from telegram.telegram_db import *  # noqa
+   from telegram.telegram_db import db_manager  # explicit
+   ```
+
+2. **telegram/telegram_db.py** هو الـ canonical:
+   - `class DatabaseManager` (line 23)
+   - `db_manager = DatabaseManager()` (line 419)
+
+3. **caller اتحديث**: `api/telegram_routes.py:27` → `from telegram.telegram_db import db_manager`
+
+4. **import test**: `db_manager is dm2 = True` (same object ✅)
+
+5. **naming collision اتحل**: `core/database.py` ليه `DatabaseManager` مختلف (general DB) و `telegram/telegram_db.py` ليه `DatabaseManager` (telegram-specific)
+
+### 📊 التقدير: 100% سليم
+
+| | الحالة |
+|---|--------|
+| shim | ✅ شغال |
+| canonical | ✅ telegram_db.py |
+| caller | ✅ اتحديث |
+| import test | ✅ same object |
+| naming collision | ✅ اتحل |
+
+---
+
+## المراحل التالية:
+- [x] المرحلة 0 — fixture map
+- [x] المرحلة 1 — Engine Unification
+- [x] المرحلة 2 — core Unification
+- [ ] المرحلة 3 — CALCULATION-CANONICAL
+- [ ] المرحلة 5 — API audit
+- [ ] المرحلة 6 — scripts archive
+- [ ] المرحلة 7 — Quant Canonical
+- [ ] المرحلة 8 — Tests
+
+*آخر تحديث: بعد فحص المرحلة 2*
