@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPredictionsFallback, getPerformanceFallback } from '@/lib/flutter-sqlite-fallback';
+import { getPredictionsFallback, getPerformanceFallback, getTestingCandidatesFallback } from '@/lib/flutter-sqlite-fallback';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
   const active = getPredictionsFallback(limit, 'active', market);
   const closed = getPredictionsFallback(limit, 'closed', market);
   const perf = getPerformanceFallback(market);
+  // P0-INTRADAY-PULSE: include testing_candidates في الـ fallback (mirror لـ Python)
+  const testingCandidates = getTestingCandidatesFallback(market, limit);
   return NextResponse.json(
     {
       success: true,
@@ -54,6 +56,7 @@ export async function GET(req: NextRequest) {
       closed_predictions: closed,
       active_predictions: active,
       previous_predictions: closed,
+      testing_candidates: testingCandidates,
       total: active.length + closed.length,
       performance: perf,
       timestamp: new Date().toISOString(),

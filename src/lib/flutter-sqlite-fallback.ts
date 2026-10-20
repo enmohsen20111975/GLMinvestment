@@ -416,6 +416,64 @@ export function getPredictionsFallback(
   }
 }
 
+// ─── getTestingCandidatesFallback ───────────────────────────────────────────
+// P0-INTRADAY-PULSE: SQLite fallback لـ testing_candidates (lifecycle_status='testing').
+// Pattern: mirror لـ _get_testing_candidates() في misc_routes.py:274.
+// بيترجّع الأسهم الـ lifecycle_status='testing' + outcome_date IS NULL + R/R ≥ 1.8.
+// لو الـ DB مفيهاش عمود lifecycle_status (legacy) → بيرجّع [] صامت.
+export function getTestingCandidatesFallback(
+  market?: string,
+  limit = 50
+): Record<string, unknown>[] {
+  const db = openReadonly(PREDICTIONS_DB_PATH);
+  if (!db) return [];
+  try {
+    // Check if lifecycle_status column exists (defensive against legacy schemas)
+    const cols = db.prepare("PRAGMA table_info(predictions)").all() as Array<{ name: string }>;
+    const colNames = new Set(cols.map(c => c.name));
+    if (!colNames.has('lifecycle_status')) return [];
+
+    const conditions = [
+      "lifecycle_status = 'testing'",
+      "(outcome_date IS NULL OR outcome_date = '')",
+    ];
+    const params: (string | number)[] = [];
+
+    // R/R ≥ 1.8 filter (same as Python backend)
+    if (colNames.has('entry_price') && colNames.has('target_price') && colNames.has('stop_loss')) {
+      conditions.push(
+        "(entry_price > 0 AND target_price > 0 AND stop_loss > 0 " +
+        "AND (target_price - entry_price) > 0 " +
+        "AND (entry_price - stop_loss) > 0 " +
+        "AND (target_price - entry_price) / (entry_price - stop_loss) >= 1.8)"
+      );
+    }
+
+    if (market && market !== 'ALL') {
+      conditions.push("UPPER(market) = ?");
+      params.push(market.toUpperCase());
+    }
+
+    params.push(limit);
+
+    return db
+      .prepare(
+        `SELECT ticker, signal, entry_price, target_price, stop_loss,
+                risk_reward, prediction_date, master_score, confidence,
+                persona, created_at
+         FROM predictions
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY created_at DESC
+         LIMIT ?`
+      )
+      .all(...params) as Record<string, unknown>[];
+  } catch {
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
 export function getPerformanceFallback(market?: string): Record<string, unknown> {
   const db = openReadonly(PREDICTIONS_DB_PATH);
   if (!db) return { success: true, source: 'sqlite_fallback', total: 0, hit_rate: 0 };
