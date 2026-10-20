@@ -560,7 +560,7 @@ function AppShell() {
     // لو ضغط view مقفول → نعرض GuestLockedView placeholder + نفتح LoginPromptModal.
     // (AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal تلقائياً،
     //  بس هنا بنعرض placeholder كمان لو الـ view وصل لـ render قبل الـ redirect.)
-    if (isGuest && currentView !== 'auth' && !isViewAllowedForGuest(currentView)) {
+    if (isGuest && currentView !== 'auth' && currentView !== 'admin' && !isViewAllowedForGuest(currentView)) {
       return <GuestLockedView view={currentView} />;
     }
     switch (currentView) {

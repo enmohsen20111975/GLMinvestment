@@ -38,7 +38,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
  Menu, X, ChevronDown,
  Sun, Moon, Globe,
- Settings, LogIn, LogOut,
+ Settings, LogIn, LogOut, Shield,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTheme } from 'next-themes';
@@ -97,10 +97,22 @@ export function TopBar() {
  const marketMenuRef = useRef<HTMLDivElement>(null);
  const userMenuRef = useRef<HTMLDivElement>(null);
 
- // حالة المستخدم
- const isAuthenticated = status === 'authenticated' && !!session?.user;
- const userDisplayName = (session?.user as Record<string, unknown>)?.name as string || (session?.user as Record<string, unknown>)?.email as string || (session?.user as Record<string, unknown>)?.username as string || null;
+ // حالة المستخدم وصلاحيات الأدمن
+ const storeUser = useAppStore((s) => s.user);
+ const storeAuth = useAppStore((s) => s.isAuthenticated);
+ const isAuthenticated = (status === 'authenticated' && !!session?.user) || storeAuth || !!storeUser;
+ const userDisplayName = (session?.user as Record<string, unknown>)?.name as string || (session?.user as Record<string, unknown>)?.email as string || storeUser?.name || storeUser?.email || storeUser?.username || null;
  const userInitial = userDisplayName ? userDisplayName.charAt(0).toUpperCase() : '?';
+
+ const uEmail = ((session?.user?.email as string) || storeUser?.email || '').toLowerCase();
+ const uName = ((session?.user?.name as string) || (session?.user as Record<string, unknown>)?.username as string || storeUser?.username || '').toLowerCase();
+ const isUserAdmin =
+ storeUser?.is_admin === true ||
+ storeUser?.subscription_tier === 'admin' ||
+ (session?.user as Record<string, unknown>)?.is_admin === true ||
+ (session?.user as Record<string, unknown>)?.subscription_tier === 'admin' ||
+ ['mohseny', 'admin'].includes(uName) ||
+ ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
 
  // mount check للـ theme (next-themes بتحتاج client-side)
  useEffect(() => { setMounted(true); }, []);
@@ -337,6 +349,16 @@ export function TopBar() {
  {mounted && <LanguageToggle variant="outline" size="icon" />}
 
  {/* N9: تسجيل الدخول/الخروج + اسم المستخدم */}
+ {isUserAdmin && (
+ <button
+ onClick={() => { setCurrentView('admin'); window.location.hash = 'admin'; }}
+ className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-500 hover:bg-amber-500/20 transition-all shadow-sm"
+ title="لوحة الإدارة"
+ >
+ <Shield className="h-3.5 w-3.5" />
+ <span className="hidden md:inline">لوحة الإدارة</span>
+ </button>
+ )}
  {isAuthenticated ? (
  <div className="relative" ref={userMenuRef}>
  <button
@@ -356,8 +378,17 @@ export function TopBar() {
  <div className="absolute left-0 mt-2 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg z-50" dir="rtl">
  <div className="px-3 py-2 border-b border-border mb-1">
  <p className="text-xs font-semibold text-foreground truncate">{userDisplayName}</p>
- <p className="text-xs text-muted-foreground">مسجّل الدخول</p>
+ <p className="text-xs text-muted-foreground">{isUserAdmin ? 'مدير النظام (Admin)' : 'مسجّل الدخول'}</p>
  </div>
+ {isUserAdmin && (
+ <button
+ onClick={() => { setCurrentView('admin'); setUserMenuOpen(false); window.location.hash = 'admin'; }}
+ className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-bold text-amber-500 hover:bg-amber-500/10 transition-colors border-b border-border mb-1"
+ >
+ <Shield className="h-3.5 w-3.5 text-amber-500" />
+ لوحة تحكم الإدارة
+ </button>
+ )}
  <button
  onClick={() => { setCurrentView('settings'); setUserMenuOpen(false); window.location.hash = 'settings'; }}
  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors"

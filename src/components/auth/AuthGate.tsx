@@ -325,6 +325,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
  useEffect(() => {
  if (!authChecked) return;
  if (!isAdminView(currentView)) return;
+ // AdminView handles its own direct credentials & session authentication
+ if (currentView === 'admin') return;
 
  const u = user as Record<string, unknown> | null;
  const s = session?.user as Record<string, unknown> | null;
