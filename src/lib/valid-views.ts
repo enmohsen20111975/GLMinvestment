@@ -25,6 +25,7 @@ export const VALID_VIEWS: readonly string[] = [
   'prediction-tracking', 'picks-management',
   'smart-confluence',
   'liquidity-radar',
+  'sectors', // حركة القطاعات — تبويب مستقل
   'market-depth',  // MARKET-DEPTH-VIEW — شاشة عمق السوق المنفصلة
   'market-status',  // ALPHA-UX-FIX-7: standalone (moved from #recommendations tab → السوق)
   'historical-trades',  // ALPHA-UX-FIX-7: standalone (moved from #recommendations tab → السوق)

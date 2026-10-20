@@ -28,6 +28,7 @@ import { StockDetailDrawer } from '@/modules/predictions/components/MakerRadarTa
 // ALPHA-UX-FIX-6: guest CTA + sectors tracking (moved from #recommendations)
 import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
 import { SectorTrackingTab } from '@/modules/market-analysis/components/SectorTrackingTab';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Shield, RefreshCw, AlertTriangle, Activity,
   TrendingUp, TrendingDown, Layers, ChevronLeft, ChevronRight, Lock,
@@ -212,7 +213,13 @@ function marketCurrency(market: string): string {
 // Main Component
 // ============================================================================
 
-export function LiquidityRadarView({ market: marketProp }: { market?: string }) {
+export function LiquidityRadarView({
+  market: marketProp,
+  initialTab = 'radar',
+}: {
+  market?: string;
+  initialTab?: 'radar' | 'sectors';
+}) {
   const t = useTranslation('liquidityRadar');
   const storeMarket = useAppStore((s) => s.currentMarket);
   const storeStocks = useAppStore((s) => s.stocks);
@@ -224,6 +231,13 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     (marketProp || storeMarket || 'EGX').toUpperCase()
   );
   const market = activeMarket;
+  const [activeTab, setActiveTab] = useState<'radar' | 'sectors'>(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const [data, setData] = useState<RadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -452,136 +466,149 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
   ];
 
-  // ─── Loading state ───
-  if (loading) {
-    return (
-      <div className="space-y-4 p-4" dir="rtl">
-        <Skeleton className="h-12 w-full rounded-xl" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    );
-  }
-
-  // ─── Error / empty state — BLUEPRINT Phase 3: UnifiedEmptyState ───
-  if (error || !data || !data.stocks || data.stocks.length === 0) {
-    return (
-      <div className="space-y-4 p-4" dir="rtl">
-        <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
-        <PulseRibbon market={market} scannedCount={data?.scanned_count ?? 0} />
-        <UnifiedEmptyState
-          variant={error ? 'error' : 'empty'}
-          title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
-          description={error || 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'}
-          actionLabel="إعادة المحاولة"
-          onAction={fetchData}
-        />
-        {/* ALPHA-UX-FIX-6: تتبع القطاعات يظهر حتى لو الرادار فاضي (تحليل مستقل) */}
-        <SectorTrackingTab market={market} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4 p-4" dir="rtl">
       {/* ─── Market Selector Bar ─── */}
       <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
 
-      {/* ─── Pulse Ribbon ─── */}
-      <PulseRibbon market={market} scannedCount={data.scanned_count ?? data.stocks.length} />
-
-      {/* ─── TASK-PUBLISH: نشر الجدول كله (مش كل صف) + فلتر الأسهم الخاملة ─── */}
-      <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
-        <UnifiedPublishButton
-          content={`📊 رادار السيولة — ${market}\n\n${pagedStocks.slice(0, 10).map(s =>
-            `🎯 ${s.ticker} — ${PHASE_LABELS[s.phase] || s.phase} | دخول: ${fmtPrice(s.entry_defense?.entry_level)} | وقف: ${fmtPrice(s.entry_defense?.defense_level)} | هدف: ${fmtPrice(s.entry_defense?.resistance_level)}`
-          ).join('\n')}\n\n${OFFICIAL_LINKS_BLOCK}`}
-          title={`📊 رادار السيولة — ${market}`}
-          filename={`liquidity-radar-${market}-${new Date().toISOString().slice(0, 10)}`}
-          hashtags={['EGX', 'رادار', 'سيولة']}
-          variant="outline"
-          size="sm"
-        />
-        <div className="h-4 w-px bg-border mx-1" />
-        {BUCKET_FILTERS.map((f) => {
-          const count = f.key === 'all'
-            ? (data?.stocks?.length ?? 0)
-            : (data?.stocks ?? []).filter((st) => (st.liquidity_bucket || 'neutral') === f.key).length;
-          const active = bucketFilter === f.key;
-          return (
-            <button
-              key={f.key}
-              onClick={() => setBucketFilter(f.key)}
-              className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1',
-                active
-                  ? f.cls + ' shadow-sm ring-1 ring-profit/20'
-                  : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
-              )}
+      {/* ─── Tabs Switcher: رادار السيولة vs حركة القطاعات ─── */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'radar' | 'sectors')} className="w-full">
+        <div className="flex justify-center mb-2">
+          <TabsList className="grid grid-cols-2 w-full max-w-md bg-muted/80 p-1 rounded-xl border border-border/50">
+            <TabsTrigger
+              value="radar"
+              className="flex items-center justify-center gap-2 py-2 text-sm font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
-              <span>{f.icon}</span>
-              <span>{f.label}</span>
-              <span className="text-[9px] opacity-70">({count})</span>
-            </button>
-          );
-        })}
-        <label className="ms-auto flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hideInactive}
-            onChange={(e) => setHideInactive(e.target.checked)}
-            className="w-3.5 h-3.5 accent-profit"
-          />
-          إخفاء الأسهم الخاملة (&lt;100K)
-        </label>
-      </div>
-
-      {/* ─── UnifiedTable (paginated) ─── */}
-      <UnifiedTable<RadarStock>
-        columns={columns}
-        data={pagedStocks}
-        keyField="ticker"
-        dense
-        filterable
-        columnToggle
-        onRowClick={(row) => {
-          // GUEST: لو مش مسجل → اعرض LockModal بدل ما يفتح التفاصيل
-          if (isGuest) {
-            setShowLockModal(true);
-            return;
-          }
-          setSelectedTicker(row.ticker);
-        }}
-        maxHeight="calc(100vh - 280px)"
-        emptyText={bucketFilter === 'all' ? 'لا توجد أسهم مطابقة' : `لا توجد أسهم في تصنيف "${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label || ''}"`}
-        className="bg-card border-border rounded-xl"
-      />
-
-      {/* ─── Pagination ─── */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
-          <span className="text-xs text-muted-foreground">
-            عرض {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredStocks.length)} من {filteredStocks.length} سهم
-            {bucketFilter !== 'all' && ` (مُصفّى: ${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label})`}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="sm" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} className="h-7 gap-1 text-xs">
-              <ChevronRight className="w-3.5 h-3.5" /> السابق
-            </Button>
-            <span className="text-xs font-mono tabular-nums text-muted-foreground px-2">
-              {safePage + 1} / {totalPages}
-            </span>
-            <Button variant="outline" size="sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="h-7 gap-1 text-xs">
-              التالي <ChevronLeft className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+              <Activity className="w-4 h-4 text-profit" />
+              <span>رادار السيولة</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="sectors"
+              className="flex items-center justify-center gap-2 py-2 text-sm font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
+              <Layers className="w-4 h-4 text-cyan-500" />
+              <span>حركة القطاعات</span>
+            </TabsTrigger>
+          </TabsList>
         </div>
-      )}
 
-      {/* ALPHA-UX-FIX-6: guest freemium CTA — بتشوف 5 من N، سجل للمزيد */}
-      <GuestLimitCta shown={pagedStocks.length} total={filteredStocks.length} itemLabel="إشارة" itemLabelPlural="إشارات" />
+        {/* ─── TAB 1: رادار السيولة ─── */}
+        <TabsContent value="radar" className="space-y-4 mt-0">
+          <PulseRibbon market={market} scannedCount={data?.scanned_count ?? data?.stocks?.length ?? 0} />
 
-      {/* ALPHA-UX-FIX-6: تتبع القطاعات — اتنقل من #recommendations لرادار السيولة */}
-      <SectorTrackingTab market={market} />
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          ) : error || !data || !data.stocks || data.stocks.length === 0 ? (
+            <UnifiedEmptyState
+              variant={error ? 'error' : 'empty'}
+              title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
+              description={error || 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'}
+              actionLabel="إعادة المحاولة"
+              onAction={fetchData}
+            />
+          ) : (
+            <>
+              {/* ─── TASK-PUBLISH: نشر الجدول كله + فلتر الأسهم الخاملة ─── */}
+              <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
+                <UnifiedPublishButton
+                  content={`📊 رادار السيولة — ${market}\n\n${pagedStocks.slice(0, 10).map(s =>
+                    `🎯 ${s.ticker} — ${PHASE_LABELS[s.phase] || s.phase} | دخول: ${fmtPrice(s.entry_defense?.entry_level)} | وقف: ${fmtPrice(s.entry_defense?.defense_level)} | هدف: ${fmtPrice(s.entry_defense?.resistance_level)}`
+                  ).join('\n')}\n\n${OFFICIAL_LINKS_BLOCK}`}
+                  title={`📊 رادار السيولة — ${market}`}
+                  filename={`liquidity-radar-${market}-${new Date().toISOString().slice(0, 10)}`}
+                  hashtags={['EGX', 'رادار', 'سيولة']}
+                  variant="outline"
+                  size="sm"
+                />
+                <div className="h-4 w-px bg-border mx-1" />
+                {BUCKET_FILTERS.map((f) => {
+                  const count = f.key === 'all'
+                    ? (data?.stocks?.length ?? 0)
+                    : (data?.stocks ?? []).filter((st) => (st.liquidity_bucket || 'neutral') === f.key).length;
+                  const active = bucketFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => setBucketFilter(f.key)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1',
+                        active
+                          ? f.cls + ' shadow-sm ring-1 ring-profit/20'
+                          : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
+                      )}
+                    >
+                      <span>{f.icon}</span>
+                      <span>{f.label}</span>
+                      <span className="text-[9px] opacity-70">({count})</span>
+                    </button>
+                  );
+                })}
+                <label className="ms-auto flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideInactive}
+                    onChange={(e) => setHideInactive(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-profit"
+                  />
+                  إخفاء الأسهم الخاملة (&lt;100K)
+                </label>
+              </div>
+
+              {/* ─── UnifiedTable (paginated) ─── */}
+              <UnifiedTable<RadarStock>
+                columns={columns}
+                data={pagedStocks}
+                keyField="ticker"
+                dense
+                filterable
+                columnToggle
+                onRowClick={(row) => {
+                  if (isGuest) {
+                    setShowLockModal(true);
+                    return;
+                  }
+                  setSelectedTicker(row.ticker);
+                }}
+                maxHeight="calc(100vh - 280px)"
+                emptyText={bucketFilter === 'all' ? 'لا توجد أسهم مطابقة' : `لا توجد أسهم في تصنيف "${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label || ''}"`}
+                className="bg-card border-border rounded-xl"
+              />
+
+              {/* ─── Pagination ─── */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
+                  <span className="text-xs text-muted-foreground">
+                    عرض {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredStocks.length)} من {filteredStocks.length} سهم
+                    {bucketFilter !== 'all' && ` (مُصفّى: ${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label})`}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button variant="outline" size="sm" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} className="h-7 gap-1 text-xs">
+                      <ChevronRight className="w-3.5 h-3.5" /> السابق
+                    </Button>
+                    <span className="text-xs font-mono tabular-nums text-muted-foreground px-2">
+                      {safePage + 1} / {totalPages}
+                    </span>
+                    <Button variant="outline" size="sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="h-7 gap-1 text-xs">
+                      التالي <ChevronLeft className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* ALPHA-UX-FIX-6: guest freemium CTA */}
+              <GuestLimitCta shown={pagedStocks.length} total={filteredStocks.length} itemLabel="إشارة" itemLabelPlural="إشارات" />
+            </>
+          )}
+        </TabsContent>
+
+        {/* ─── TAB 2: حركة القطاعات ─── */}
+        <TabsContent value="sectors" className="space-y-4 mt-0">
+          <SectorTrackingTab market={market} />
+        </TabsContent>
+      </Tabs>
 
       {/* ─── Rich StockDetailDrawer Dialog (SSOT Maker Radar Modal) ─── */}
       <Dialog open={!!selectedTicker} onOpenChange={(open) => { if (!open) setSelectedTicker(null); }}>

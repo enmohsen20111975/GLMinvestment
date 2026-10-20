@@ -415,4 +415,697 @@ function SessionSync() {
   return null; // no UI
 }
 
-// =====================================================================
+// ============================================================================
+// RESTRUCT-A-P3: GuestLockedView — placeholder للـ Guest لما يحاول يفتح view مقفول.
+// (مش شاشة جديدة — Rule 4: placeholder component جوّه page.tsx.)
+// ============================================================================
+function GuestLockedView({ view }: { view: string }) {
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
+  const setCurrentView = useAppStore((s) => s.setCurrentView);
+
+  React.useEffect(() => {
+    // افتح LoginPromptModal فورًا — Guest لازم يسجل عشان يفتح view مقفول.
+    setShowLoginPrompt(true);
+  }, [setShowLoginPrompt]);
+
+  return (
+    <div
+      className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center"
+      dir="rtl"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="inline-flex items-center justify-center mb-4 size-16 rounded-2xl bg-warning/10 ring-2 ring-warning/20">
+        <Lock className="size-8 text-warning" />
+      </div>
+      <h2 className="text-xl font-bold mb-2">هذه الصفحة تتطلب تسجيل الدخول</h2>
+      <p className="text-sm text-muted-foreground mb-5 max-w-md">
+        سجّل مجاناً للوصول إلى {view || 'هذه الصفحة'} — توقعات، تحليلات، محفظة، وتنبيهات.
+        تجربة 14 يوماً مجاناً بدون بطاقة ائتمان.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => setCurrentView('dashboard')}
+          variant="outline"
+          size="sm"
+        >
+          تصفّح السوق مجاناً
+        </Button>
+        <Button
+          onClick={() => setShowLoginPrompt(true)}
+          size="sm"
+          className="bg-profit hover:bg-profit/90 text-profit-foreground gap-1.5"
+        >
+          <Lock className="size-3.5" />
+          سجّل مجاناً
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AppShell() {
+  const { currentView } = useAppStore();
+  const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
+  const currentMarket = useAppStore((s) => s.currentMarket);
+  const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
+  const selectedTicker = useAppStore((s) => s.selectedTicker);
+  // RESTRUCT-A-P3: Guest Mode flags — بنحدد Guest + restrict views.
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const user = useAppStore((s) => s.user);
+  const setShowLoginPrompt = useAppStore((s) => s.setShowLoginPrompt);
+
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // Guest (unauthenticated) بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
+  // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
+  const { status: authStatus } = useSession();
+  const isGuest = authStatus === 'unauthenticated' || isGuestUser(user, isAuthenticated);
+
+  // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
+  // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
+  // لو الـ trial نشط، نعرض TrialCountdownBanner (بانر تنبيهي بالأيام المتبقية)
+  const [trialExpired, setTrialExpired] = React.useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = React.useState<number | null>(null);
+  const [trialEndsAt, setTrialEndsAt] = React.useState<string | null>(null);
+  const [trialShowBanner, setTrialShowBanner] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/subscription/status', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (cancelled) return;
+        setTrialExpired(Boolean(j.isExpired));
+        setTrialDaysLeft(typeof j.daysLeft === 'number' ? j.daysLeft : null);
+        setTrialEndsAt(j.trialEndsAt ? (typeof j.trialEndsAt === 'string' ? j.trialEndsAt : (j.trialEndsAt as Date).toISOString()) : null);
+        // اعرض البانر بس لو المستخدم Free + في trial نشط (مش expired)
+        setTrialShowBanner(!j.isPaid && !j.isExpired && j.status === 'trial');
+      } catch {
+        // network error — متسجلش، يمكن المستخدم offline
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 5 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // UNIFIED-MARKET-UX (Task 2): Crypto view → CRYPTO market
+  // لما المستخدم يدخل على crypto-* view (سواء من الـ TopBar أو من deep link)،
+  // احنا بنفعّل وضع الكريبتو في الـ store فوراً عشان الـ unified components
+  // يجيبوا بيانات الكريبتو بدل بيانات الأسهم. الـ effect ده بيشيل تعقيد الـ
+  // setCurrentMarket اللي كان متكرر في كل handler منفصل.
+  React.useEffect(() => {
+    if (isCryptoView(currentView) && currentMarket !== 'CRYPTO') {
+      setCurrentMarket('CRYPTO');
+    }
+  }, [currentView, currentMarket, setCurrentMarket]);
+
+  // Direct hash → view sync (robust fallback that survives hydration errors)
+  // Reads URL hash on mount and on hashchange, sets the current view directly.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const applyHash = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && VALID_VIEWS_SET.has(hash)) {
+        const { currentView: cur } = useAppStore.getState();
+        if (cur !== hash) {
+          setCurrentViewFromHash(hash as typeof currentView);
+        }
+      }
+    };
+
+    // Apply on mount
+    applyHash();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', applyHash);
+    window.addEventListener('popstate', applyHash);
+
+    return () => {
+      window.removeEventListener('hashchange', applyHash);
+      window.removeEventListener('popstate', applyHash);
+    };
+  }, [setCurrentViewFromHash]);
+
+  const renderView = () => {
+    // RESTRUCT-A-P3: Guest Mode restrictions.
+    // Guest (مش مسجّل) بيشوف بس: dashboard + market + radar-limited + news + about.
+    // لو ضغط view مقفول → نعرض GuestLockedView placeholder + نفتح LoginPromptModal.
+    // (AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal تلقائياً،
+    //  بس هنا بنعرض placeholder كمان لو الـ view وصل لـ render قبل الـ redirect.)
+    if (isGuest && !isViewAllowedForGuest(currentView)) {
+      return <GuestLockedView view={currentView} />;
+    }
+    switch (currentView) {
+      // === البورصة المصرية (EGX) ===
+      case 'dashboard':
+        return <DashboardView />;
+      case 'stocks':
+      case 'stock-detail':
+        return <StocksView />;
+      case 'stock-filters':
+        return <StockScreenerAdvancedView />;
+      // #top-performers merged into #stock-filters (Tab 2). Redirect safely.
+      case 'top-performers':
+        return <StockScreenerAdvancedView initialTab="top-performers" />;
+      case 'screener':
+      case 'trading-chart':
+        return <TradingChartView />;
+      case 'portfolio':
+      case 'finance':
+        return <EnhancedPortfolioView />;
+      case 'watchlist':
+        return <EnhancedWatchlistView />;
+      case 'recommendations':
+      case 'analysis':
+        return <MarketAnalysisView />;
+      case 'market-status':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="حالة السوق" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <MarketStatusView market={currentMarket} />
+            </main>
+          </div>
+        );
+      case 'historical-trades':
+        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="الصفقات التاريخية" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
+            <main className="flex-1 p-3 md:p-4">
+              <HistoricalTradesView />
+            </main>
+          </div>
+        );
+      case 'advanced-analysis':
+      case 'v2-analysis':
+        // advanced-analysis REMOVED — features distributed to:
+        //   - #recommendations (متابعة التوقعات) → prediction tracking + persona tabs
+        //   - #specialist-analysis (تحليل المتخصصين) → expert intelligence + comparison
+        // Redirect to recommendations for backward-compat hash links.
+        return <MarketAnalysisView />;
+      case 'unified-analysis':
+        return <UnifiedAnalysisView />;
+      case 'specialist-analysis':
+        return <SpecialistAnalysisView />;
+      case 'prediction-performance':
+      case 'prediction-credibility':
+        // These views are admin-only now — available in /#admin panel
+        // Direct access redirects to dashboard
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+            <div className="text-6xl mb-4">🔬</div>
+            <h2 className="text-2xl font-bold mb-2">قسم التحليلات الفنية</h2>
+            <p className="text-muted-foreground mb-4">
+              هذه الصفحة متاحة في لوحة التحكم للمشرفين فقط.
+            </p>
+            <button
+              onClick={() => { setCurrentViewFromHash('dashboard'); window.location.hash = ''; }}
+              className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90"
+            >
+              العودة للوحة التحكم
+            </button>
+          </div>
+        );
+      case 'prediction-tracking':
+        return <PredictionTrackingView />;
+      // picks-management REMOVED 2026-09-28 — redirects to prediction-tracking
+      case 'picks-management':
+        return <PredictionTrackingView />;
+      case 'dual-track':
+        return <DualTrackPredictionsView />;
+      case 'v82':
+        return <V82DecisionPanel initialTicker="COMI" />;
+      case 'reports':
+        return <ReportsView />;
+      case 'news':
+        return <NewsFeedView />;
+      case 'simulation':
+        return <SimulationView />;
+      case 'academy':
+        return <AcademyView />;
+      // TASK 31-C — Disaster Stock Rescue Battalion: شاشة إنقاذ السهم الخسران
+      // كانت مخفية جوّه EnhancedPortfolioView، دلوقتي بنوفرها كـ view مستقل
+      // في الـ switch ده (مش route جديد) عشان تظهر في القائمة العلوية.
+      case 'bagholder-rescue':
+        return <BagHolderRescueView />;
+      case 'advanced-portfolio':
+        return <AdvancedPortfolioManager />;
+      case 'seasonality':
+        return <SeasonalityDashboard />;
+      // sniper merged into analysis
+      
+      // === المساعد المالي الذكي (Smart Assistant) ===
+      case 'smart-confluence':
+        return <SmartConfluenceView />;
+
+      // === رادار السيولة (Liquidity Radar) — شاشة منفصلة ===
+      // N8: كان تبويب جوّه MarketAnalysisView باسم "رادار الميكرز". دلوقتي شاشة مستقلة
+      // قابلة للوصول مباشرة من القائمة. أهم خدمة للمستثمرين (80% من الأرباح).
+      case 'liquidity-radar':
+        return <LiquidityRadarView market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} initialTab="radar" />;
+      case 'sectors':
+        return <LiquidityRadarView market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} initialTab="sectors" />;
+
+      // === عمق السوق (Market Depth) — شاشة منفصلة (MARKET-DEPTH-VIEW) ===
+      // Owner directive: "حركة العملات والذهب + حركة السيولة + تدفّق المستثمرين +
+      // ضغط الشراء/البيع" في شاشة مستقلة من قائمة الأعلى. الـ 4 widgets دي كانت
+      // جوّه DashboardView واتشالت منها عشان الـ Dashboard يبقى نضيف.
+      //
+      // MultiMarketWidget بيتعرض لكل الأسواق (عملات وذهب عالمية).
+      // InvestorsFlow + LiquidityFlow + IntradayPressure → EGX only (بيانات intraday
+      // محصورة على EGX). لغير EGX بنعرض تنبيه ودي بدل الـ 3 panels.
+      case 'market-depth': {
+        const isEGX = currentMarket === 'EGX';
+        const marketLabel = MARKET_NAMES_AR[currentMarket] || 'السوق';
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header
+              title="عمق السوق"
+              subtitle={`لوحة متابعة شاملة — ${marketLabel}`}
+            />
+            <main className="flex-1 p-3 md:p-4 space-y-4" dir="rtl">
+              {/* ── الصف 1: عام لكل الأسواق (عملات + ذهب + كريبتو + أسهم) ── */}
+              <section aria-label="العملات والذهب والأسهم — لكل الأسواق">
+                <SafeWidget name="العملات والذهب">
+                  <MarketDepthMultiMarket />
+                </SafeWidget>
+              </section>
+
+              {/* ── الصف 2: بيانات EGX اللحظية (تدفّق المستثمرين وحركة السيولة) ── */}
+              {isEGX ? (
+                <section aria-label="تدفّق المستثمرين وحركة السيولة" className="space-y-4">
+                  <SafeWidget name="تدفّق المستثمرين وحركة السيولة">
+                    <MarketDepthInvestorsFlow />
+                  </SafeWidget>
+                </section>
+              ) : (
+                <Alert className="border-warning/30 bg-warning/5 dark:border-warning/40">
+                  <Info className="h-4 w-4 text-warning" />
+                  <AlertDescription className="text-sm text-warning">
+                    <span className="font-semibold">
+                      بيانات تدفّق المستثمرين والسيولة القطاعية وضغط الجلسة متاحة لسوق EGX فقط.
+                    </span>
+                    <span className="block mt-1 text-xs text-warning/80">
+                      جدول العملات والذهب أعلاه متاح لكل الأسواق. للوصول لبيانات EGX intraday،
+                      بدّل السوق إلى 🇪🇬 مصر من قائمة الأسواق بأعلى الصفحة.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </main>
+            <Footer />
+          </div>
+        );
+      }
+
+      // === الذكاء الاصطناعي (Intelligence) ===
+      case 'alerts-center':
+        return <AlertsCenterView />;
+      
+
+      case 'live-monitor':
+        return <LiveMonitor />;
+      
+      case 'wealth':
+        return <WealthCharts />;
+      
+      // === ذاكرة التداول (Trading Memory) ===
+      case 'trading-memory':
+        return <TradingMemoryView />;
+      
+      // === يوميات التداول (Trading Journal) ===
+      case 'trading-journal':
+        return <TradingJournalView />;
+      
+      // === منصة التوقعات (Publishing & Points) ===
+      case 'publishing':
+        return <UserPublishingView />;
+      
+      // === العملات الرقمية (Crypto) — UNIFIED-MARKET-UX (Task 2) ============
+      // كل الـ crypto-* views دلوقتي بـ redirect للـ unified view المناسب
+      // (نفس الـ component اللي بيستعمله السوق العادي) + setCurrentMarket('CRYPTO')
+      // بيشتغل تلقائياً من useEffect في AppShell. الفرق الوحيد بين الكريبتو
+      // والأسهم هو قيمة currentMarket في الـ store — الـ unified component بياخد
+      // البيانات من هناك فبيعرض بيانات الكريبتو بشكل تلقائي (UI-Mirror Protocol).
+      //
+      // Mapping (see CRYPTO_VIEW_REDIRECTS in valid-views.ts):
+      //   crypto               → dashboard        (DashboardView + CRYPTO)
+      //   crypto-live          → stocks           (StocksView + CRYPTO)
+      //   crypto-recommendations → recommendations (MarketAnalysisView + CRYPTO)
+      //   crypto-trading-chart → trading-chart    (TradingChartView + CRYPTO)
+      //   crypto-screener      → stock-filters    (StockScreenerAdvancedView + CRYPTO)
+      //   crypto-analysis      → smart-confluence  (SmartConfluenceView + CRYPTO)
+      //   crypto-learning      → academy          (AcademyView + CRYPTO)
+      //   crypto-simulation    → simulation       (SimulationView + CRYPTO)
+      case 'crypto':
+        // unified: dashboard + setCurrentMarket('CRYPTO')
+        return <DashboardView />;
+      case 'crypto-live':
+        // unified: stocks + setCurrentMarket('CRYPTO')
+        return <StocksView />;
+      case 'crypto-portfolio':
+        return <CryptoPortfolioView />;
+      case 'crypto-watchlist':
+        return <EnhancedWatchlistView />;
+      case 'crypto-recommendations':
+        // unified: recommendations (MarketAnalysisView) + setCurrentMarket('CRYPTO')
+        return <MarketAnalysisView />;
+      case 'crypto-analysis':
+        // unified: smart-confluence (SmartConfluenceView) + setCurrentMarket('CRYPTO')
+        return <SmartConfluenceView />;
+      case 'crypto-learning':
+        // Rule 63 (Education Unification 2026-10-01):
+        //   LearningView archived. crypto-learning now redirects to academy.
+        //   setCurrentMarket('CRYPTO') is still applied by the shell effect.
+        return <AcademyView />;
+      case 'crypto-simulation':
+        // unified: simulation (SimulationView) + setCurrentMarket('CRYPTO')
+        return <SimulationView />;
+      case 'crypto-trading-chart':
+        // unified: trading-chart (TradingChartView) + setCurrentMarket('CRYPTO')
+        return <TradingChartView />;
+      case 'crypto-prediction-tracking':
+        return <CryptoPredictionTrackingView />;
+      case 'crypto-screener':
+        // unified: stock-filters (StockScreenerAdvancedView) + setCurrentMarket('CRYPTO')
+        return <StockScreenerAdvancedView />;
+      
+      // === حسابات دينية ===
+      case 'zakat':
+        return <ZakatView />;
+      case 'tithes':
+        return <TithesView />;
+      case 'sharia':
+        return <ShariaView />;
+       
+       // === أخرى ===
+      case 'subscription':
+        return <SubscriptionView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'auth':
+        return <AuthView />;
+      case 'admin':
+        return <AdminView />;
+
+      // === من نحن ===
+      case 'about':
+        return <AboutView />;
+
+      // === مخفية/قديمة ===
+      case 'backtesting':
+        return <EGXBacktestDashboard />;
+
+      case 'rescue':
+        return <RescuePage />;
+
+      default:
+        return <DashboardView />;
+    }
+  };
+
+  const isChartView = currentView === 'trading-chart' || currentView === 'screener';
+
+  // SEC-AUTH-GATE (RESTRUCT-A-P3): Guest Mode — مش AuthView سجن.
+  // لو status === 'unauthenticated' → Guest بيوصل لـ AppShell محدود (market + radar-limited + news).
+  // ?dev=1 → DevLoginForm. ?bot_link → AuthView container (لازم يسجل عشان يربط البوت).
+  // باقي cases → Guest يكمل لـ <AuthGate> + renderView مع Guest restrictions.
+  if (authStatus === 'unauthenticated') {
+    // فحص ?dev=1 في الـ URL
+    const isDevLogin = typeof window !== 'undefined'
+      && new URLSearchParams(window.location.search).get('dev') === '1';
+
+    if (isDevLogin) {
+      return <DevLoginForm />;
+    }
+
+    // BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN → اعرض AuthView
+    // مع بانر واضح يوضح إنه لازم يسجل قبل ما يقدر يربط البوت بحسابه.
+    const botLinkToken = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('bot_link')
+      : null;
+    if (botLinkToken) {
+      return (
+        <div
+          className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/20 dark:via-background dark:to-background p-4 gap-4"
+          dir="rtl"
+        >
+          <div className="max-w-md w-full rounded-xl border border-primary/30 bg-card p-5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] ring-1 ring-primary/10">
+            <h2 className="text-lg font-bold mb-1">ربط بوت تليجرام بحسابك</h2>
+            <p className="text-sm text-muted-foreground">
+              سجّل دخولك أو أنشئ حساب (تجربة 14 يوماً مجاناً) لتأكيد ربط البوت بحسابك في الموقع.
+            </p>
+          </div>
+          <div className="w-full max-w-md">
+            <AuthView />
+          </div>
+        </div>
+      );
+    }
+
+    // RESTRUCT-A-P3: Guest Mode — Guest بيوصل لـ AppShell محدود (مش AuthView سجن).
+    // يكمل لـ <AuthGate> + renderView مع Guest restrictions (isGuestUser + isViewAllowedForGuest).
+    // LoginPromptModal بيتفتح تلقائياً لو Guest ضغط view مقفول (عبر AuthGate route guard).
+  }
+
+  // لو الـ session لسه بيتحمّل → skeleton
+  if (authStatus === 'loading') {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
+        dir="rtl"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthGate>
+      <div className="min-h-screen flex flex-col bg-background">
+        <DbSchemaInit />
+        <SessionSync />
+        <UrlHashSync />
+        <RealtimeTicker />
+        {/* RESTRUCT-A-P3: PaywallListener — بيسمع paywall:blocked events من api-client
+            (402/403) + بيـ trigger المودال الصح (LoginPrompt/Lock/TrialExpired) حسب user state. */}
+        <PaywallListener />
+        {/* BOT-SUBSCRIPTION-GATE (2026-10-01): لو في ?bot_link=TOKEN →
+            اعرض Dialog تأكيد ربط البوت بحساب المستخدم المسجّل. */}
+        <BotLinkHandler />
+        {/* P20-CENTRAL-ALERTS: الجرس المركزي — بيراقب /api/sniper/scan كل 60ث
+            ويطلع صوت + toast للإشارات الجديدة/المتغيرة (مشروط بتفعيل التنبيهات) */}
+        <CentralAlertMonitor />
+        {/* إشعار تفعيل تنبيهات سطح المكتب بنظام الواتساب حتى لو الموقع مصغر */}
+        <DesktopNotificationPrompt />
+        {/* RESTRUCT-A-P3: Trial expired — soft paywall (dismissable + CTA).
+            لو trialExpired=true → soft modal. (مش hard block اللي كان قبل كده.) */}
+        <TrialExpiredModal isExpired={trialExpired} />
+        {/* Trial countdown banner — بانر تنبيهي بالأيام المتبقية في الفترة المجانية */}
+        <TrialCountdownBanner
+          daysLeft={trialDaysLeft ?? undefined}
+          trialEndsAt={trialEndsAt}
+          show={trialShowBanner}
+        />
+        <AppGuideAutoOpen />
+        {/* TOPBAR: قائمة علوية مرتبة بدل الـ Sidebar الجانبي القديم */}
+        <TopBar />
+        <div className="flex-1 flex flex-col overflow-x-hidden">
+          {/* Task PHASE5-SCREENS (Footer sticky-bottom fix): removed redundant min-h-screen
+              from inner container — the parent (L846) already has min-h-screen flex flex-col.
+              This ensures Footer stays at viewport bottom on short pages + pushed down on long pages. */}
+          <div className="flex-1 min-w-0 w-full flex flex-col overflow-x-hidden">
+            <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
+              {/* N1: page transition animation — fade + slight slide for professional feel */}
+              <motion.div
+                key={currentView}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                {renderView()}
+              </motion.div>
+            </main>
+            <Footer />
+          </div>
+          <MobileNav />
+        </div>
+        {/* ROBO-ADVISOR-P2: زر التنبيهات الحية — عائم فوق الـ MobileNav على الموبايل */}
+        <div className="fixed bottom-20 lg:bottom-4 left-4 z-40">
+          <RoboNotifierToggle />
+        </div>
+      </div>
+    </AuthGate>
+  );
+}
+
+// ONBOARDING-033: Auto-open the Platform Guide on first visit (separate
+// component so the hook only runs on the client, not during SSR).
+function AppGuideAutoOpen() {
+  const { open, setOpen } = usePlatformGuide();
+  return <PlatformGuide open={open} onOpenChange={setOpen} />;
+}
+
+// ============================================================================
+// BOT-SUBSCRIPTION-GATE (2026-10-01): BotLinkHandler
+// ----------------------------------------------------------------------------
+// When the user opens the website via a link that contains `?bot_link=TOKEN`
+// (typically by tapping the "🔗 ربط حسابك في الموقع" button in the Telegram
+// bot), and they're authenticated, we show a confirmation Dialog. On confirm
+// we POST /api/bot/link-account with the token; the backend verifies the
+// token, writes a `user_telegram_links` row, marks the token as used, and
+// tells us the chat_id. We then show a "ارجع للبوت في تليجرام" success
+// message.
+//
+// The component renders nothing visible if there is no `bot_link` token in
+// the URL — so it's safe to mount unconditionally inside the authenticated
+// AppShell.
+// ============================================================================
+type BotLinkState = 'idle' | 'confirming' | 'linking' | 'success' | 'error';
+
+function BotLinkHandler() {
+  const [token, setToken] = React.useState<string | null>(null);
+  const [state, setState] = React.useState<BotLinkState>('idle');
+  const [errorMsg, setErrorMsg] = React.useState<string>('');
+  const [chatId, setChatId] = React.useState<number | null>(null);
+
+  // 1. Read the ?bot_link token from the URL on mount.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const t = new URLSearchParams(window.location.search).get('bot_link');
+    if (t && t.length > 0 && t.length < 200) {
+      setToken(t);
+      setState('confirming');
+    }
+  }, []);
+
+  // 2. On confirm → POST /api/bot/link-account
+  const onConfirm = React.useCallback(async () => {
+    if (!token) return;
+    setState('linking');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/bot/link-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({ success: false, error: 'invalid_response' }));
+      if (res.ok && data?.success) {
+        setChatId(typeof data.chat_id === 'number' ? data.chat_id : null);
+        setState('success');
+      } else {
+        const err = typeof data?.error === 'string' ? data.error : 'link_failed';
+        const arMap: Record<string, string> = {
+          token_not_found: 'رمز الربط غير صحيح أو منتهي. يرجى العودة إلى البوت وضغط زر الربط مرة أخرى.',
+          token_expired: 'انتهت صلاحية رمز الربط (10 دقائق). يرجى العودة إلى البوت وضغط زر الربط مرة أخرى.',
+          token_already_used: 'تم استخدام رمز الربط مسبقاً. يرجى العودة إلى البوت والبدء من /start.',
+          invalid_token: 'رمز الربط غير صحيح.',
+          link_failed: 'تعذّر ربط البوت بحسابك. حاول مرة أخرى.',
+        };
+        setErrorMsg(arMap[err] || `تعذّر ربط البوت بحسابك (${err}).`);
+        setState('error');
+      }
+    } catch {
+      setErrorMsg('حدثت مشكلة في الاتصال. يرجى المحاولة مرة أخرى.');
+      setState('error');
+    }
+  }, [token]);
+
+  // 3. Cleanup the URL after success/error so a refresh doesn't re-trigger.
+  const cleanUrl = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('bot_link');
+    window.history.replaceState({}, '', url.toString());
+    setToken(null);
+    setState('idle');
+  }, []);
+
+  if (state === 'idle' || !token) return null;
+
+  const open = state === 'confirming' || state === 'linking' || state === 'success' || state === 'error';
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) cleanUrl(); }}>
+      <DialogContent dir="rtl" className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span>تأكيد ربط البوت بحسابك</span>
+          </DialogTitle>
+          <DialogDescription>
+            {state === 'success'
+              ? 'تم ربط البوت بحسابك بنجاح.'
+              : 'تأكيد أن بوت تليجرام يمكنه استخدام اشتراكك الشهري.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {state === 'success' ? (
+          <div className="space-y-3 py-2 text-center">
+            <div className="text-5xl">✅</div>
+            <p className="text-base font-medium">تم ربط البوت بحسابك بنجاح!</p>
+            {chatId !== null && (
+              <p className="text-xs text-muted-foreground" dir="ltr">
+                chat_id: {chatId}
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              📲 ارجع إلى البوت في تليجرام واضغط /start — سيعمل البوت بشكل كامل.
+            </p>
+            <DialogFooter className="sm:justify-center pt-2">
+              <Button onClick={cleanUrl}>تم</Button>
+            </DialogFooter>
+          </div>
+        ) : state === 'error' ? (
+          <div className="space-y-3 py-2 text-center">
+            <div className="text-5xl">⚠️</div>
+            <p className="text-sm text-destructive">{errorMsg}</p>
+            <DialogFooter className="sm:justify-center pt-2">
+              <Button variant="outline" onClick={cleanUrl}>إغلاق</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              اضغط &quot;تأكيد الربط&quot; ليبدأ البوت بالعمل. تربط هذه العملية
+              حسابك في تليجرام بحسابك في الموقع — ويتطلب اشتراك Premium (أو تجربة مجانية نشطة) لاستخدام البوت.
+            </p>
+            <DialogFooter className="sm:justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={cleanUrl} disabled={state === 'linking'}>
+                إلغاء
+              </Button>
+              <Button onClick={onConfirm} disabled={state === 'linking'}>
+                {state === 'linking' ? (
+                  <>
+                    <span className="w-4 h-4 mr-2 rounded-full border-2 border-background/40 border-t-background animate-spin inline-block" />
+                    جاري الربط...
+                  </>
+                ) : (
+                  'تأكيد الربط'
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Home() {
+  return <AppShell />;
+}

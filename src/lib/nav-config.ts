@@ -39,6 +39,7 @@ import {
   History,
   TrendingUp,
   Landmark,
+  Layers,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppView } from '@/types';
@@ -76,6 +77,7 @@ export const navSections: NavSection[] = [
     items: [
       { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity },
+      { id: 'sectors', label: 'حركة القطاعات', icon: Layers },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
       // ALPHA-UX-FIX-7: اتنقلوا من #recommendations tabs لروابط مستقلة تحت السوق
       { id: 'market-status', label: 'حالة السوق', icon: Activity },
