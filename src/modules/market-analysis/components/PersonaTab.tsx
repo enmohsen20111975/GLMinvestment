@@ -1648,6 +1648,14 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  // (HOLD fallback was deleted in PRED-RADAR-GAP-AUDIT Step 1 —
  // HOLD was masking the real bug instead of fixing it)
  if (signal !== 'BUY' && signal !== 'STRONG_BUY') return null;
+ // ALPHA-STALE-GATE: ممنوع عرض أي توقع راجع من الفولباك تاريخه أقدم من 48 ساعة كفرصة نشطة لليوم
+ const _predDateRaw = p.created_at || p.prediction_date;
+ if (_predDateRaw) {
+   const _predTime = new Date(String(_predDateRaw)).getTime();
+   if (!isNaN(_predTime) && (Date.now() - _predTime) > 48 * 3600 * 1000) {
+     return null;
+   }
+ }
  // ALPHA-RR-GATE-1: HARD GATE R/R >= 1.5 — اقتل أي BUY بـ R/R < 1.5 (ممنوع توصيات Zبالة)
  const _rr = p.risk_reward != null ? Number(p.risk_reward) : (() => {
    const _entry = Number(p.entry_price) || 0;

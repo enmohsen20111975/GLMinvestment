@@ -2812,9 +2812,18 @@ def unified_predictions():
                             'lowest_price_reached': round(_ep_min_l, 2) if _ep_min_l else None,
                         }
                         _empty_prev.append(_entry_obj)
-                        # FIX: أي توقع لسه معلق (مش hit_target ولا hit_stop)
-                        # نحطه في الـ predictions list الرئيسي عشان يظهر على الشاشة.
-                        if _ht != 1 and _hs != 1:
+                        # BRAVO-STALE-FIX (جيمي directive): أي توقع لسه معلق بس أقدم من 48 ساعة
+                        # ما يدخلش في fallback_predictions (التوقعات النشطة لليوم) — يفضل في previous_predictions بس.
+                        _is_fresh = False
+                        if pr['created_at']:
+                            try:
+                                from datetime import timedelta
+                                _created_d = str(pr['created_at'])[:10]
+                                _fresh_cutoff = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+                                _is_fresh = _created_d >= _fresh_cutoff
+                            except Exception:
+                                _is_fresh = False
+                        if _ht != 1 and _hs != 1 and _is_fresh:
                             _fallback_predictions.append(_entry_obj)
                         if len(_empty_prev) >= 30:
                             break
@@ -2836,6 +2845,7 @@ def unified_predictions():
                     'market': market or 'ALL',
                     'stats': {'total': len(_fallback_predictions), 'win_count': 0, 'loss_count': 0, 'win_rate': 0.0, 'avg_pnl': 0.0},
                     'source': 'predictions_fallback' if _fallback_predictions else 'predictions_db_empty',
+                    'market_status': 'كاش وانتظار — لا توجد إشارات شراء جديدة في آخر 48 ساعة' if not _fallback_predictions else 'نشط',
                     'testing_candidates': _get_testing_candidates(),
                     'note': 'عرض آخر التوقعات المتاحة (stored_analyses فارغ — الأرشيف من جدول predictions)' if _fallback_predictions else 'لا توجد توقعات متاحة',
                     'timestamp': datetime.now().isoformat(),
