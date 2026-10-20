@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import ChartControls from './ChartControls';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
