@@ -68755,3 +68755,39 @@ Stage Summary:
 - ✅ cron */2 لـ intraday_storage مضاف.
 - ⏳ الـ daily_predictor لسه بطيء (10s/ticker) — الـ bottleneck الحقيقي = get_price_data (3 DB connections per ticker).
 - 🎯 الخطوة الجاية: batch cache في backtest_engine.py (تحسين 180×) — محتاج موافقة محسن.
+
+---
+Task ID: PUSH-AND-FINAL-CLEANUP-1
+Agent: Z.ai Code (per جيمي's final directive — push + نظف الملفين الباقيين)
+Task: محسن — جيمي قال: 'ادفع الـ 3 commits فوراً، وظبط الملفين الباقيين يا بطل'.
+
+Work Log:
+- ✅ Push الـ 3 commits على origin/main:
+  * cherry-pick على origin/main نظيف (b638691 → c8d433e, c7045d5 → f1bb9e6, 6472272 → 9094128)
+  * git push origin main نجح (231bc8e..9094128)
+- ✅ إصلاح NotificationCenter.tsx (commit 3a96d0e):
+  * 3 fixes: bg-profit /30 → bg-profit/10, border-profit /40 → border-profit/20, text-profit  → text-profit
+  * نفس الإصلاحات لـ warning + whale + primary
+  * system case: bg-muted border-border → bg-muted/30 border-border/40 (نفس الـ pattern)
+- ✅ إصلاح SpecialistAnalysisView.tsx (نفس commit):
+  * 15+ fixes بـ sed آلي:
+    - كل bg-{color} /30|/40|/60 → bg-{color}/10
+    - كل border-{color} /60 → border-{color}/20
+    - شيل كل المسافات الزائدة في text-{color}
+    - شيل كل المسافات قبل / في bg/border
+- ✅ lint: Exit 0
+- ✅ push: نجح (9094128..3a96d0e)
+- ✅ verify: origin/main HEAD = 3a96d0e
+
+Stage Summary:
+- ✅ الـ 4 commits على origin/main:
+  1. c8d433e — feat(PersonaTab): P0-4b Testing Candidates section
+  2. f1bb9e6 — fix(LiquidityRadarView): netFlow < 0 بدل -1M
+  3. 9094128 — fix(helpers.ts): getVerdictColor — المسافات + opacity 40
+  4. 3a96d0e — fix(UI): NotificationCenter + SpecialistAnalysisView — المسافات + opacity
+- 🔥 لقيت كوارث نفس الـ pattern في ملفات تانية (مش في التكليف):
+  * SubscriptionView.tsx, FeedbackWidget.tsx, QuickPublishButton.tsx, AIAnalysisWidget.tsx,
+    SeasonalityDashboard.tsx, DisclaimerBanner.tsx, TithesView.tsx, MobileNav.tsx,
+    MobileMoreSheet.tsx, SettingsView.tsx
+  → دول محتاجين تكليف منفصل للفريق
+- 🎯 جيمي: الشاشة دلوقتي نضيفة في القطاعات + الرادار + التحليل المتخصص + الإشعارات
