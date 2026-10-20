@@ -569,22 +569,27 @@ function AppShell() {
         return <DashboardView />;
       case 'stocks':
       case 'stock-detail':
+      case 'crypto-live': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough (shell handles CRYPTO market)
         return <StocksView />;
       case 'stock-filters':
+      case 'crypto-screener': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <StockScreenerAdvancedView />;
       // #top-performers merged into #stock-filters (Tab 2). Redirect safely.
       case 'top-performers':
         return <StockScreenerAdvancedView initialTab="top-performers" />;
       case 'screener':
       case 'trading-chart':
+      case 'crypto-trading-chart': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <TradingChartView />;
       case 'portfolio':
       case 'finance':
         return <EnhancedPortfolioView />;
       case 'watchlist':
+      case 'crypto-watchlist': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <EnhancedWatchlistView />;
       case 'recommendations':
       case 'analysis':
+      case 'crypto-recommendations': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <MarketAnalysisView />;
       case 'market-status':
         // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
@@ -650,8 +655,10 @@ function AppShell() {
       case 'news':
         return <NewsFeedView />;
       case 'simulation':
+      case 'crypto-simulation': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <SimulationView />;
       case 'academy':
+      case 'crypto-learning': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough (AcademyView is canonical for both)
         return <AcademyView />;
       // TASK 31-C — Disaster Stock Rescue Battalion: شاشة إنقاذ السهم الخسران
       // كانت مخفية جوّه EnhancedPortfolioView، دلوقتي بنوفرها كـ view مستقل
@@ -770,35 +777,25 @@ function AppShell() {
       case 'crypto':
         // unified: dashboard + setCurrentMarket('CRYPTO')
         return <DashboardView />;
-      case 'crypto-live':
-        // unified: stocks + setCurrentMarket('CRYPTO')
-        return <StocksView />;
       case 'crypto-portfolio':
         return <CryptoPortfolioView />;
-      case 'crypto-watchlist':
-        return <EnhancedWatchlistView />;
-      case 'crypto-recommendations':
-        // unified: recommendations (MarketAnalysisView) + setCurrentMarket('CRYPTO')
-        return <MarketAnalysisView />;
       case 'crypto-analysis':
         // unified: smart-confluence (SmartConfluenceView) + setCurrentMarket('CRYPTO')
         return <SmartConfluenceView />;
-      case 'crypto-learning':
-        // Rule 63 (Education Unification 2026-10-01):
-        //   LearningView archived. crypto-learning now redirects to academy.
-        //   setCurrentMarket('CRYPTO') is still applied by the shell effect.
-        return <AcademyView />;
-      case 'crypto-simulation':
-        // unified: simulation (SimulationView) + setCurrentMarket('CRYPTO')
-        return <SimulationView />;
-      case 'crypto-trading-chart':
-        // unified: trading-chart (TradingChartView) + setCurrentMarket('CRYPTO')
-        return <TradingChartView />;
       case 'crypto-prediction-tracking':
         return <CryptoPredictionTrackingView />;
-      case 'crypto-screener':
-        // unified: stock-filters (StockScreenerAdvancedView) + setCurrentMarket('CRYPTO')
-        return <StockScreenerAdvancedView />;
+
+      // P0-COMPONENT-UNIFICATION Phase 3.1: removed 6 crypto-* cases that
+      // returned the SAME component as their non-crypto counterparts.
+      // The shell effect at line 523 handles setCurrentMarket('CRYPTO')
+      // automatically. Removed cases (now using fallthrough above):
+      //   crypto-live → <StocksView /> (now falls through from 'stocks')
+      //   crypto-recommendations → <MarketAnalysisView /> (falls through from 'recommendations')
+      //   crypto-trading-chart → <TradingChartView /> (falls through from 'trading-chart')
+      //   crypto-screener → <StockScreenerAdvancedView /> (falls through from 'stock-filters')
+      //   crypto-watchlist → <EnhancedWatchlistView /> (falls through from 'watchlist')
+      //   crypto-simulation → <SimulationView /> (falls through from 'simulation')
+      //   crypto-learning → <AcademyView /> (falls through from 'academy')
       
       // === حسابات دينية ===
       case 'zakat':
