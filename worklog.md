@@ -5274,3 +5274,45 @@ src/modules/personalized/lib/personalized-radar.ts
 - 📊 Heaviest modules: admin (~33.9K LOC), market-analysis (~18.3K LOC), education (~14.4K LOC), stock-analysis (~11.8K LOC), dashboard (~10.5K LOC).
 - 📊 Largest single files: MakerRadarTab.tsx (3,907), DatabaseManagerFull.tsx (3,291), EnhancedPortfolioView.tsx (3,369), EngineControlRoomTab.tsx (2,481), SuperLearningSystem.tsx (2,489), AcademyView.tsx (2,483), LearningVisuals.tsx (2,621).
 - 🎯 Recommendation: prioritize useApiQuery migration starting with admin module (highest concentration) and market-analysis (most consumer-facing).
+
+---
+Task ID: DOCUMENTATION-DEEP-AUDIT
+Agent: Z.ai Code (الفاحص التقني + موثّق)
+Task: محسن — "اعمل وصف كامل للشاشات وتركيبة الكود وكل شاشة او عنصر او حتى مكون وحط بيوصلو بأنهى API deep audit and structure and details save it to Documentation in all screens and component data.md".
+
+Work Log:
+- أطلقت 4 deep audit agents بالتوازي:
+  * DEEP-AUDIT-1: screens inventory (49 cases → 43 components، 43,638 LOC)
+  * DEEP-AUDIT-2: shared components (20 في ui/ + 13 في shared/ + 50 shadcn = 83 total)
+  * DEEP-AUDIT-3: feature modules (18 modules، 156 components، ~127K LOC، 251 fetch calls)
+  * DEEP-AUDIT-4: API routes (454 routes في 27 domains)
+- كل agent عملـ full audit + appended findings لـ worklog.md (اللي بقى 5,276 سطر).
+- بنيت ملف Documentation شامل (540 سطر) بـ 9 sections:
+  1. Executive Summary
+  2. Project Overview
+  3. Architecture — 4-Tier Hierarchy
+  4. Screens Inventory (49 cases → 43 components)
+  5. Shared Components (83 total)
+  6. Feature Modules (18 modules، 156 components)
+  7. API Routes (454 في 27 domains)
+  8. Component → API Dependency Map (top 20)
+  9. Critical Findings + Recommendations
+
+الـ critical findings الـ 3 (مـتـوثّقة في الـ documentation):
+1. TanStack Query installed but 0 usages (251 manual fetch patterns)
+2. 23 broken no-op API routes (silent bugs)
+3. useAppStore mega-store (1,573 LOC, ~50 fields)
+
+الـ deliverable:
+- Documentation/all screens and component data.md (540 سطر، 29 KB)
+- worklog.md بقى 5,276 سطر (فيه كل الـ raw audit data)
+- Commit: 30dd726
+
+Stage Summary:
+- ✅ Documentation شامل جاهز في Documentation/all screens and component data.md
+- ✅ كل شاشة موثّقة (49 cases) بـ component + file + APIs
+- ✅ كل shared component موثّق (83 total)
+- ✅ كل feature module موثّق (18 modules)
+- ✅ كل API route domain موثّق (27 domains، 454 routes)
+- ✅ Component → API dependency map (top 20 components)
+- ✅ Critical findings + 10 ranked recommendations
