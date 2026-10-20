@@ -674,6 +674,264 @@ def get_ticker_sector(ticker):
         return None
 
 
+# ============================================================================
+# WHALE_RADAR INTEGRATOR (Hunter Mode — Per Mohsen's directive 2026-10-20)
+# ============================================================================
+# When the market is DEFENSIVE/correction AND the classic Trend Following
+# engine produces no breakout picks, this function reads the maker_radar
+# JSON output (Quiet Accumulation path B_quiet_accumulation_strong) and
+# generates WHALE_RADAR predictions for stocks where whales are quietly
+# accumulating. This is "Hunter Mode" — we surface whale activity to the
+# user instead of showing an empty defensive screen.
+#
+# Filter criteria (per owner directive):
+#   1. path == 'B_quiet_accumulation_strong' (Quiet Accumulation path)
+#   2. quiet_details.signal_count >= 5 (5/6 or 6/6 signals verified)
+#   3. avg_turnover_20d >= 10_000_000 (10M EGP minimum liquidity)
+#   4. distribution_flag == False (no whale distribution)
+#
+# For each surviving stock, we store:
+#   - prediction with signal='WHALE_RADAR_BUY', persona='gambler',
+#     who_is_buying_state='WHALE_RADAR', position_size=2%
+#   - stored_analyses entry with source='WHALE_RADAR'
+# ============================================================================
+
+WHALE_RADAR_OUTPUT_DIR = Path(PROJECT_ROOT) / 'scripts' / 'output'
+WHALE_RADAR_MIN_TURNOVER = 10_000_000  # 10M EGP minimum liquidity
+WHALE_RADAR_MIN_SIGNALS = 5            # 5/6 or 6/6 signals verified
+WHALE_RADAR_POSITION_SIZE = 0.02       # 2% of portfolio (strict risk management)
+WHALE_RADAR_MIN_RR = 1.8               # R:R >= 1.8 (per owner directive)
+
+
+def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
+                                        tracker, total_generated_ref: list):
+    """
+    Read the latest maker_radar JSON output + generate WHALE_RADAR predictions
+    for stocks with Quiet Accumulation pattern (path B).
+
+    Args:
+        scan_date: YYYY-MM-DD format (the prediction date).
+        market_code: 'EGX' | 'TADAWUL' | etc.
+        tracker: PredictionTracker instance (already initialized).
+        total_generated_ref: mutable list [int] — we append count to outer scope.
+
+    Returns:
+        int: number of WHALE_RADAR predictions generated.
+    """
+    try:
+        # (1) Locate the radar JSON for this market + date
+        # The maker_radar.py outputs to: maker_radar_{MARKET}_{YYYY-MM-DD}.json
+        radar_json_path = WHALE_RADAR_OUTPUT_DIR / f'maker_radar_{market_code}_{scan_date}.json'
+
+        # Fallback: try without date suffix (latest run for this market)
+        if not radar_json_path.exists():
+            # Find the most recent maker_radar_{MARKET}_*.json
+            candidates = sorted(WHALE_RADAR_OUTPUT_DIR.glob(f'maker_radar_{market_code}_*.json'), reverse=True)
+            if not candidates:
+                print(f"  🐋 [WHALE_RADAR] No maker_radar JSON found for {market_code} on {scan_date}", flush=True)
+                return 0
+            radar_json_path = candidates[0]
+            print(f"  🐋 [WHALE_RADAR] Using latest radar: {radar_json_path.name}", flush=True)
+
+        with open(radar_json_path, 'r', encoding='utf-8') as f:
+            radar_data = json.load(f)
+
+        # (2) Filter quiet_list for high-conviction Quiet Accumulation picks
+        quiet_list = radar_data.get('quiet_list', [])
+        if not quiet_list:
+            print(f"  🐋 [WHALE_RADAR] No quiet_list in radar output", flush=True)
+            return 0
+
+        # Apply the 4 filter criteria
+        candidates = []
+        for stock in quiet_list:
+            ticker = stock.get('ticker', '')
+            path = stock.get('path', '')
+            turnover = stock.get('avg_turnover_20d', 0) or 0
+            quiet_details = stock.get('quiet_details') or {}
+            signal_count = quiet_details.get('signal_count', 0) if quiet_details else 0
+            distribution_flag = stock.get('distribution_flag', False)
+
+            # Criterion 1: path must be B_quiet_accumulation_strong (or similar quiet path)
+            if 'quiet_accumulation' not in path.lower():
+                continue
+            # Criterion 2: at least 5/6 signals verified
+            if signal_count < WHALE_RADAR_MIN_SIGNALS:
+                continue
+            # Criterion 3: minimum liquidity 10M EGP
+            if turnover < WHALE_RADAR_MIN_TURNOVER:
+                continue
+            # Criterion 4: no whale distribution
+            if distribution_flag:
+                continue
+
+            candidates.append(stock)
+
+        if not candidates:
+            print(f"  🐋 [WHALE_RADAR] No stocks passed all 4 filters (path + signals>=5 + turnover>=10M + no distribution)", flush=True)
+            return 0
+
+        print(f"  🐋 [WHALE_RADAR] {len(candidates)} stock(s) passed Hunter Mode filters:", flush=True)
+
+        # (3) Generate a prediction for each candidate
+        whale_count = 0
+        now_iso = datetime.now().isoformat()
+
+        # Open stored_analyses DB connection (same pattern as main loop)
+        sa_db_path = os.path.join(PROJECT_ROOT, 'db', 'predictions.db')
+        conn_sa = None
+        try:
+            conn_sa = sqlite3.connect(sa_db_path, timeout=30.0)
+            cur_sa = conn_sa.cursor()
+            # Ensure stored_analyses table exists (safe — won't fail if it does)
+            cur_sa.execute('''CREATE TABLE IF NOT EXISTS stored_analyses (
+                id TEXT PRIMARY KEY,
+                ticker TEXT,
+                market TEXT,
+                maestro_score REAL,
+                recommendation TEXT,
+                recommendation_ar TEXT,
+                confidence REAL,
+                entry_price REAL,
+                target_price REAL,
+                stop_loss REAL,
+                risk_reward REAL,
+                prediction_date TEXT,
+                updated_at TEXT,
+                analysis_json TEXT,
+                is_gambler_opportunity INTEGER DEFAULT 0,
+                is_investor_opportunity INTEGER DEFAULT 0,
+                ai_reason TEXT,
+                ai_narrative TEXT
+            )''')
+            conn_sa.commit()
+        except Exception as e:
+            print(f"  🐋 [WHALE_RADAR] stored_analyses DB init failed: {e}", flush=True)
+            conn_sa = None
+
+        for stock in candidates:
+            ticker = stock.get('ticker', '')
+            entry = stock.get('entry_price') or stock.get('current_price')
+            target = stock.get('target_price')
+            stop = stock.get('stop_loss')
+            turnover = stock.get('avg_turnover_20d', 0)
+            net_flow = stock.get('net_flow_egp', 0)
+            quiet_details = stock.get('quiet_details') or {}
+            signal_count = quiet_details.get('signal_count', 0) if quiet_details else 0
+            path = stock.get('path', '')
+
+            # Skip if missing critical prices
+            if not entry or not target or not stop:
+                print(f"    ⚠️ {ticker}: missing entry/target/stop — skipping", flush=True)
+                continue
+
+            # Compute R:R
+            try:
+                rr = (target - entry) / (entry - stop) if (entry - stop) > 0 else 0
+            except Exception:
+                rr = 0
+
+            # Enforce R:R >= 1.8 (per owner directive)
+            if rr < WHALE_RADAR_MIN_RR:
+                print(f"    ⚠️ {ticker}: R:R={rr:.2f} < {WHALE_RADAR_MIN_RR} — skipping", flush=True)
+                continue
+
+            # Build the technical reason (the "why" for the user)
+            tech_reason = (
+                f"تجميع هادئ من صانع السوق (Quiet Accumulation — مسار B). "
+                f"إشارات متحققة: {signal_count}/6. "
+                f"سيولة داخلة: {net_flow/1_000_000:.1f} مليون جنيه. "
+                f"متوسط سيولة 20 يوم: {turnover/1_000_000:.1f} مليون جنيه. "
+                f"المسار: {path}. "
+                f"⚠️ صفقة رادار حيتان — مخاطرة محسوبة، إدارة رأس مال صارمة (2% من المحفظة)."
+            )
+
+            try:
+                # (3a) Store in predictions table via PredictionTracker
+                pred_id = tracker.record_prediction(
+                    ticker=ticker,
+                    signal='WHALE_RADAR_BUY',
+                    entry_price=entry,
+                    target_price=target,
+                    stop_loss=stop,
+                    master_score=75.0,  # fixed confidence for whale radar
+                    notes=f"WHALE_RADAR | {tech_reason}",
+                    persona='gambler',  # high-risk persona
+                    risk_reward=rr,
+                    who_is_buying_state='WHALE_RADAR',
+                    evidence_count=signal_count,
+                    prediction_date=scan_date,
+                )
+
+                # (3b) Store in stored_analyses table (for PersonaTab UI)
+                if conn_sa:
+                    sa_id = f"whale_{ticker}_{market_code}"
+                    sa_json = json.dumps({
+                        'ticker': ticker,
+                        'signal': 'WHALE_RADAR_BUY',
+                        'signal_ar': 'شراء رادار حيتان',
+                        'entry': entry,
+                        'target': target,
+                        'stop': stop,
+                        'risk_reward': round(rr, 2),
+                        'position_size': WHALE_RADAR_POSITION_SIZE,
+                        'evidence_count': signal_count,
+                        'source': 'WHALE_RADAR',
+                        'technical_explanation': tech_reason,
+                        'whale_radar': {
+                            'turnover_egp': turnover,
+                            'net_flow_egp': net_flow,
+                            'signal_count': signal_count,
+                            'path': path,
+                        },
+                    }, ensure_ascii=False)
+                    cur_sa.execute('''
+                        INSERT INTO stored_analyses (
+                            id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                            confidence, entry_price, target_price, stop_loss, risk_reward,
+                            prediction_date, updated_at, analysis_json,
+                            is_gambler_opportunity, is_investor_opportunity,
+                            ai_reason, ai_narrative
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            maestro_score = excluded.maestro_score,
+                            recommendation = excluded.recommendation,
+                            recommendation_ar = excluded.recommendation_ar,
+                            confidence = excluded.confidence,
+                            entry_price = excluded.entry_price,
+                            target_price = excluded.target_price,
+                            stop_loss = excluded.stop_loss,
+                            risk_reward = excluded.risk_reward,
+                            prediction_date = excluded.prediction_date,
+                            updated_at = excluded.updated_at,
+                            analysis_json = excluded.analysis_json,
+                            ai_reason = excluded.ai_reason
+                    ''', (
+                        sa_id, ticker, market_code, 75.0,
+                        'WHALE_RADAR_BUY', 'شراء رادار حيتان (مخاطرة محسوبة)',
+                        75.0, entry, target, stop, round(rr, 2),
+                        scan_date, now_iso, sa_json,
+                        tech_reason, '',
+                    ))
+                    conn_sa.commit()
+
+                whale_count += 1
+                total_generated_ref[0] = total_generated_ref[0] + 1 if total_generated_ref else total_generated_ref[0]
+                print(f"    ✅ {ticker}: entry={entry:.2f} target={target:.2f} stop={stop:.2f} R:R={rr:.2f} | flow={net_flow/1_000_000:.1f}M EGP", flush=True)
+            except Exception as e:
+                print(f"    ⚠️ {ticker}: store error — {e}", flush=True)
+
+        if conn_sa:
+            conn_sa.close()
+
+        print(f"  🐋 [WHALE_RADAR] Generated {whale_count} whale radar prediction(s).", flush=True)
+        return whale_count
+
+    except Exception as e:
+        print(f"  🐋 [WHALE_RADAR] Integration failed: {e}", flush=True)
+        return 0
+
+
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
                   max_tickers=None, tickers_offset=0, force=False,
@@ -4136,6 +4394,55 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         print(f"  📅 {scan_date}: {len(picks)} picks ({wins}W/{len(picks) - wins}L) | "
               f"MB={mb['ticker'] if mb else '-'}({'✅' if mb and mb['is_win'] else '❌'}) | "
               f"avg_ev={daily_summary[-1]['avg_evidence']}", flush=True)
+
+    # ============================================================================
+    # WHALE_RADAR HUNTER MODE (Per Mohsen's directive 2026-10-20)
+    # ============================================================================
+    # When the market is DEFENSIVE/correction AND the classic Trend Following
+    # engine produced no breakout picks (total_generated == 0), activate
+    # Hunter Mode: read the maker_radar Quiet Accumulation picks and generate
+    # WHALE_RADAR predictions so the user sees whale activity instead of an
+    # empty defensive screen.
+    #
+    # Trigger conditions:
+    #   1. regime is DEFENSIVE/BEAR/STRONG_BEAR, OR
+    #   2. total_generated == 0 (no classic picks — fallback to whale radar)
+    #
+    # The whale radar picks are ADDED on top of any classic picks (they don't
+    # replace them). They are tagged with:
+    #   - signal = 'WHALE_RADAR_BUY'
+    #   - who_is_buying_state = 'WHALE_RADAR'
+    #   - persona = 'gambler' (high-risk)
+    #   - position_size = 2% (strict risk management)
+    #
+    # The frontend (PersonaTab) shows these in a special "Smart Money Radar"
+    # section when market is defensive.
+    # ============================================================================
+    _whale_trigger = (
+        _regime_name in ('DEFENSIVE', 'BEAR', 'STRONG_BEAR')
+        or total_generated == 0
+    )
+    if _whale_trigger and not _dry_run_no_write:
+        print("\n" + "=" * 80, flush=True)
+        print("  🐋 WHALE_RADAR HUNTER MODE ACTIVATED", flush=True)
+        print(f"  🌐 Market regime: {_regime_name} | Classic picks: {total_generated}", flush=True)
+        print("  → Surfacing whale accumulation picks from maker_radar...", flush=True)
+        print("=" * 80, flush=True)
+        _whale_ref = [total_generated]  # mutable ref for the inner function
+        _whale_count = _integrate_whale_radar_predictions(
+            scan_date=scan_date,
+            market_code=market_code,
+            tracker=tracker,
+            total_generated_ref=_whale_ref,
+        )
+        # Update total_generated with the whale picks count
+        total_generated = _whale_ref[0]
+        if _whale_count > 0:
+            print(f"  🐋 Hunter Mode added {_whale_count} whale radar pick(s) on top of classic picks.", flush=True)
+        else:
+            print(f"  🐋 Hunter Mode found no qualifying whale radar picks today.", flush=True)
+    elif _whale_trigger and _dry_run_no_write:
+        print("  🐋 [WHALE_RADAR] Skipped in dry-run mode (would have activated Hunter Mode)", flush=True)
 
     # Compute PF from stored trades
     wins_pnl = [s['pnl_pct'] for s in all_stored if s['pnl_pct'] > 0]
