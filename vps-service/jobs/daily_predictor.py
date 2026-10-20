@@ -4283,6 +4283,10 @@ def inject_whale_radar_picks(market='EGX', dry_run=False):
         print("[WHALE-RADAR] ℹ️ لا توجد أسهم تجميع مؤهلة (5/6 + سيولة موجبة)")
         return 0
 
+    # ترتيب واختيار أفضل 5 فرص فقط (جيمي directive — الكاش هو الأصل وممنوع زحمة الإشارات)
+    whale_picks.sort(key=lambda x: (x.get('signal_count', 0), x.get('net_flow_egp', 0)), reverse=True)
+    whale_picks = whale_picks[:5]
+
     print(f"[WHALE-RADAR] 🐋 {len(whale_picks)} أسهم تجميع مؤهلة:")
     for wp in whale_picks:
         print(f"  → {wp['ticker']}: price={wp['current_price']} | stop={wp['stop_loss']} | target={wp['target_price']} | R/R={wp['risk_reward']} | flow={wp['net_flow_egp']/1e6:.1f}M")

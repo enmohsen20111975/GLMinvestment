@@ -376,7 +376,7 @@ export function PreviousPredictionsArchive({
  <div className="flex items-center gap-2 mb-3">
  <span className="text-lg">📋</span>
  <h3 className="font-bold text-base">{title}</h3>
- <Badge variant="secondary">{predictions.length}</Badge>
+ <Badge variant="secondary">{dedupedPredictions.length}</Badge>
  <span className="text-xs text-muted-foreground hidden sm:inline">— توقعات تم إصدارها سابقاً وحالتها الحالية</span>
  </div>
  <div className="max-h-96 overflow-y-auto rounded-md border border-border table-mobile-scroll">
@@ -399,14 +399,14 @@ export function PreviousPredictionsArchive({
  {predictions.map((p, i) => {
  const statusColor =
  p.status === 'TARGET_HIT'
- ? 'bg-success text-success/40 border-success'
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold'
  : p.status === 'TRAILING_PROFIT'
- ? 'bg-profit text-profit/40 border-profit'
+ ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-500/40 font-semibold'
  : p.status === 'STOPPED'
- ? 'bg-loss text-loss/40 border-loss'
+ ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-semibold'
  : p.status === 'EXPIRED'
- ? 'bg-slate-100 text-slate-800 dark:bg-slate-900/40 dark:text-slate-300 border-slate-300'
- : 'bg-warning text-warning/40 border-warning';
+ ? 'bg-slate-200/60 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300/60 dark:border-slate-700 font-semibold'
+ : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 font-semibold';
  const ret = p.actual_return;
  const retColor = ret === null || ret === undefined
  ? 'text-muted-foreground'
