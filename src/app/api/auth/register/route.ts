@@ -4,6 +4,8 @@ export const dynamic = "force-dynamic";
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { checkAuthRateLimit } from '@/lib/rate-limiter'; // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #2)
+import { validateEmailQuality } from '@/lib/disposable-emails';
+import { hasClaimedTrial, recordTrialClaim } from '@/lib/trial-abuse-guard';
 
 // ---------------------------------------------------------------------------
 // POST /api/auth/register
@@ -42,12 +44,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, username, password, risk_tolerance } = body;
+    const { email, username, password, risk_tolerance, fingerprint } = body;
 
     // Validate required fields
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
         { success: false, error: 'البريد الإلكتروني مطلوب' },
+        { status: 400 }
+      );
+    }
+
+    // ANTI-ABUSE: حظر البريد المؤقت والوهمي
+    const emailCheck = validateEmailQuality(email);
+    if (!emailCheck.valid) {
+      return NextResponse.json(
+        { success: false, error: emailCheck.error },
         { status: 400 }
       );
     }
@@ -109,11 +120,11 @@ export async function POST(request: NextRequest) {
     const salt = await bcrypt.genSalt(12);
     const password_hash = await bcrypt.hash(password, salt);
 
+    // ANTI-TRIAL-ABUSE: فحص هل استفاد هذا الـ IP أو البصمة من التجربة المجانية من قبل
+    const alreadyClaimed = hasClaimedTrial(ip, fingerprint);
+    const trialEndsAt = alreadyClaimed ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
     // Create user
-    // SUBSCRIPTION-SYSTEM: 7 أيام Premium trial تلقائياً لكل مستخدم جديد.
-    // trial_ends_at = NOW + 7 days.
-    // بعد انتهاء الـ trial → ينزل لـ Free + حظر الأدوات الحصرية حتى الاشتراك.
-    const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const user = await db.user.create({
       data: {
         email: email.toLowerCase().trim(),
@@ -127,6 +138,11 @@ export async function POST(request: NextRequest) {
         trial_ends_at: trialEndsAt,
       },
     });
+
+    // لو أخذ Trial جديد، نسجل الـ IP والبصمة لمنع التكرار
+    if (!alreadyClaimed) {
+      recordTrialClaim(ip, email, fingerprint);
+    }
 
     // Generate API key
     const apiKey = `egx_${user.id}_${Date.now()}`;

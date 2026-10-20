@@ -477,6 +477,32 @@ export function AuthView() {
  <CardDescription>{t('auth.joinInvestment')}</CardDescription>
  </CardHeader>
  <CardContent>
+ {/* Google Direct Register (Fast & Verified) */}
+ <div className="mb-4">
+ <Button
+ variant="outline"
+ className="w-full py-5 font-bold border-profit/40 hover:bg-profit/10 flex items-center justify-center gap-2 shadow-sm text-sm"
+ onClick={handleGoogleLogin}
+ disabled={isSubmitting}
+ >
+ {isSubmitting ? (
+ <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+ ) : (
+ <GoogleIcon />
+ )}
+ <span>التسجيل المباشر بحساب Google (الخيار الأسرع)</span>
+ </Button>
+
+ <div className="relative my-4">
+ <div className="absolute inset-0 flex items-center">
+ <span className="w-full border-t border-border" />
+ </div>
+ <div className="relative flex justify-center text-xs">
+ <span className="bg-card px-2.5 text-muted-foreground font-medium">أو بالبريد الإلكتروني الحقيقي</span>
+ </div>
+ </div>
+ </div>
+
  <Form {...registerForm}>
  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
  <FormField
@@ -490,13 +516,16 @@ export function AuthView() {
  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
  <Input
  type="email"
- placeholder={t('auth.emailPlaceholder')}
+ placeholder="بريدك الحقيقي (Gmail أو Yahoo أو Outlook..)"
  className="pr-10"
  dir="ltr"
  {...field}
  />
  </div>
  </FormControl>
+ <p className="text-[11px] text-muted-foreground">
+ 🔒 لا يُقبل البريد المؤقت (Temp-Mail) لضمان حماية الحساب وتفعيل التجربة المجانية.
+ </p>
  <FormMessage />
  </FormItem>
  )}
@@ -607,38 +636,12 @@ export function AuthView() {
  </form>
  </Form>
 
- {/* Google Register */}
- <div className="mt-4">
- <div className="relative">
- <div className="absolute inset-0 flex items-center">
- <span className="w-full border-t border-border" />
- </div>
- <div className="relative flex justify-center text-xs uppercase">
- <span className="bg-card px-2 text-muted-foreground">أو</span>
- </div>
- </div>
-
- <Button
- variant="outline"
- className="w-full mt-4 py-5 font-medium"
- onClick={handleGoogleLogin}
- disabled={isSubmitting}
- >
- {isSubmitting ? (
- <Loader2 className="w-4 h-4 ml-2 animate-spin" />
- ) : (
- <GoogleIcon />
- )}
- التسجيل بحساب Google
- </Button>
-
  {googleError && (
  <div className="mt-3 p-3 bg-warning/20 border border-warning rounded-lg flex items-start gap-2">
  <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
  <p className="text-xs text-warning leading-relaxed whitespace-pre-line">{googleError}</p>
  </div>
  )}
- </div>
  </CardContent>
  </Card>
  </TabsContent>
