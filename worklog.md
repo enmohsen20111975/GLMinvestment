@@ -1071,3 +1071,60 @@ Stage Summary:
 - 🎯 الـ canonical sources جاهزة لـ Phase 2 codemod (اللي هـ يستبدل كل الـ duplicate definitions بـ imports من هنا).
 - 🎯 الـ foundation موجودة دلوقتي لـ Phase 1 (shared components: SignalBadge, LifecycleBadge, StatusBadge, … اللي هـ تستورد من الـ lib files دي).
 - ⏳ جاهز لـ Phase 1 (shared components) لما المالك يـوافق.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-PHASE-1
+Agent: Z.ai Code (الفاحص التقني + منفّذ)
+Task: محسن — "تمام على الله". تنفيذ Phase 1 من PLAN-COMPONENT-UNIFICATION.md + اختبار.
+
+Work Log:
+- قرأت worklog.md + فهمت إن Phase 0 خلصت بـ 7 lib files + 3 hooks + QueryClientProvider.
+- فحصت src/components/shared/ui/ فوجدت فيه components موجودة أصلاً (SignalBadge, PriceDisplay, DeltaBadge, RiskRewardBadge, UnifiedEmptyState, FlowPhaseTag, FilterDrawer, StockDetailDrawer, ActionMenu, LiquidityFlashCell).
+- اكتشفت إن SignalBadge الموجود كان عنده SIGNAL_MAP محلي (مش بـ يستخدم canonical lib/signals.ts من Phase 0).
+- قرأت UnifiedEmptyState API فلقيتها بـ تاخد icon?: React.ReactNode + actionLabel + onAction (مش action?: React.ReactNode كما افترضت).
+
+التنفيذ (11 components):
+
+NEW (10):
+1) LifecycleBadge.tsx — يستخدم getLifecycle من lib/lifecycle.ts. PHASE_STYLES map: proven=🟢 profit, testing=🔍 warning, closed=🔴 muted. soft + solid variants.
+2) StatusBadge.tsx — يحل 22 bug `/40`! 7 official statuses + fallback. + getStatusBadgeClass() + getStatusLabelAr() helpers للـ migration.
+3) UnifiedPagination.tsx — RTL-aware (السابق/التالي). compact + full variants. Auto-hides if totalPages <= 1.
+4) Skeleton.tsx — 4 variants: SkeletonRow + TabSkeleton + TableSkeleton + CardSkeleton. كلهم بـ يستخدموا shadcn Skeleton primitive.
+5) AsyncBoundary.tsx — Loading + Error + Empty + Success states في واحد. Render-prop pattern. Auto-detects empty arrays. Supports onRetry.
+6) ChangePill.tsx — +/- value بـ color (profit/loss) + arrow. percent + value formats. يحل 286+ inline .toFixed() calls.
+7) PriceText.tsx — يستخدم canonical formatPrice من lib/format.ts (كان 0 imports!). 5 markets + 5 sizes + 4 weights + 4 tones.
+8) SeverityBadge.tsx — 5 levels (critical/high/medium/low/info). + getSeverityBadgeClass() helper. يحل 5+ inline severityColors maps في alerts/.
+9) ConfidenceMeter.tsx — Horizontal bar + value (0-100). Color: profit >=75, warning 50-74, muted <50. role=progressbar.
+10) PersonaEmptyState.tsx — يستخدم UnifiedEmptyState + getPersonaTheme من lib/persona-config.ts. Auto-derives title + description.
+
+REFACTORED (1):
+11) SignalBadge.tsx — كان عنده SIGNAL_MAP محلي. دلوقتي imports detectSignalKind + getSignalStyle + signalLabelAr من lib/signals.ts (Phase 0 canonical). API backward compatible. Added signalAr prop.
+
+Barrel updated: src/components/shared/ui/index.ts دلوقتي exports كل الـ 11 components + types + helpers.
+
+Bug fixes during Phase 1:
+- اكتشفت إن UnifiedEmptyState بـ تاخد actionLabel + onAction (مش action React node) فعدّلت AsyncBoundary + PersonaEmptyState.
+- اكتشفت إن formatPrice بـ تاخد market (مش digits) فعدّلت PriceText بـ uses the canonical signature + added PriceMarket type alias matching formatPrice's union.
+- اكتشفت إن export function + export { ... } في نفس الملف بـ يـسبب redeclare error. شيلت الـ duplicate export من Skeleton.tsx.
+
+NOT done (deferred to Phase 2):
+- eid-predictions-widget.tsx local PredictionCard (lines 108-153) — لازم shared/PredictionCard يـكسب lifecycle_status + BTC/ETH symbol support الأول (refactor أكبر).
+
+Verification (بين كل مرحلة والثانية — per محسن's directive):
+- ✅ bun run lint: exit 0.
+- ✅ bunx tsc --noEmit: 0 errors from Phase 1 files. 1 pre-existing error في ActionMenu.tsx (مش لمسته — DropdownMenuContentProps typing issue).
+- ⚠️ Dev server: starts + compiles middleware. الـ "/" full compile بـ يـ OOM-kill (نفس مشكلة النظام من Phase 0).
+
+Commit: P0-COMPONENT-UNIFICATION Phase 1.
+
+Stage Summary:
+- ✅ Phase 1 كاملة: 11 shared components (10 new + 1 refactor).
+- ✅ lint: Exit 0.
+- ✅ tsc: 0 new errors.
+- 🎯 الـ components الجديدة جاهزة لـ Phase 2 codemod:
+  * StatusBadge + getStatusBadgeClass() بـ يحل الـ 22 bug `/40` (مـنتظر migrate consumers).
+  * ChangePill + PriceText بـ يحلوا 286 toFixed + 19 fmtPrice duplicates.
+  * UnifiedPagination + usePagination بـ يحلوا 7+ inline paginations.
+  * Skeleton بـ يحل 328+ inline Skeleton blocks.
+  * AsyncBoundary بـ يحل 268 manual useEffect+fetch triples.
+- ⏳ جاهز لـ Phase 2 (codemod migrations) لما المالك يـوافق.
