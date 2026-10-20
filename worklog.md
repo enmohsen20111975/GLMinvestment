@@ -1205,3 +1205,42 @@ Stage Summary:
 - ✅ كل migration متـverified بـ build + HTTP probe.
 - 🎯 الـ methodology شغّالة: تنفيذ → lint → build → HTTP probe → commit → worklog.
 - ⏳ فيه شغل تاني في Phase 2 بس كله بدأ + الـ approach ثابت.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-PHASE-2-CONTINUED
+Agent: Z.ai Code (الفاحص التقني + منفّذ)
+Task: محسن — "أكيد". أكمل Phase 2 بنفس الأسلوب (تنفيذ → lint → build → HTTP probe → commit).
+
+Work Log:
+
+Phase 2.2 — Empty states migration (PARTIAL — 3/36+ done):
+1) SectorTrackingTab.tsx (line 682) — استبدلت inline empty div بـ <UnifiedEmptyState>.
+2) SmartTip.tsx (line 520) — استبدلت inline div+Lightbulb بـ <UnifiedEmptyState icon={<Lightbulb/>}>.
+3) TopUpRecommendationsPanel.tsx (line 237) — استبدلت inline div+Sparkles بـ <UnifiedEmptyState icon={<Sparkles/>}>.
+Commit: cdf1db7.
+
+Phase 2.4 — Pagination migration (PARTIAL — 4/7 done):
+- Migration 1: PersonaTab.tsx (commit 90a5c02)
+- Migration 2: LiquidityRadarView.tsx (commit 5d289cb)
+- Migration 3: HistoricalTradesTable.tsx — استخدم disabled=loading prop (جديد!)
+- Migration 4: ShariaView.tsx — showCounter={false} عشان فيه contextual text above
+- New feature added: UnifiedPagination.disabled prop (default false) — disable BOTH buttons during async loading.
+- Commit: 1a69b5b.
+
+Phase 2.3 — Skeletons (DEFERRED):
+- 377 inline <Skeleton> patterns لقيتهم. كل واحد مختلف (heights, shapes, contexts).
+- مش 1:1 migration — يحتاج per-file analysis. هـ يتـعمل في batch تاني.
+
+Verification after each migration:
+- bun run lint: exit 0 ✓
+- bunx next build --no-lint: SUCCESS ✓
+- Production server: GET / → HTTP 200 (0.02-0.28s) ✓
+- HTML title: 'دليل الاستثمار | تحليلات الأسهم والعملات الرقمية' (Arabic RTL intact) ✓
+- HTML raw palette: 0 ✓
+
+Stage Summary:
+- ✅ Phase 2.6 (PALETTE_MIGRATION) كاملة: 301 replacements، 0 raw palette في HTML.
+- ✅ Phase 2.2 (Empty states) partial: 3/36+ migrated.
+- ✅ Phase 2.4 (Pagination) partial: 4/7 migrated + added disabled prop.
+- 🎯 كل migration متـverified بـ build + HTTP probe.
+- ⏳ Phase 2.3 (Skeletons) + 2.5 (useApiQuery) + 2.1 (Tables) لسه محتاجين شغل.
