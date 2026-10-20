@@ -124,6 +124,7 @@ export async function GET(req: NextRequest) {
       ...(data.pre_surge_list ?? []),
       ...(data.explosive_list ?? []),
       ...(data.early_break_list ?? []),
+      ...(data.distribution_list ?? []),
       ...(data.under_microscope ?? []),
       ...(data.stocks ?? []),
     ].filter((s, i, arr) =>

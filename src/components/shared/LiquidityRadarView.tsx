@@ -153,8 +153,8 @@ const PHASE_COLORS: Record<string, string> = {
 
 function getPhaseInfo(rawPhase?: string | null, netFlow?: number | null): { label: string; cls: string } {
   if (!rawPhase) return { label: '—', cls: 'bg-muted text-muted-foreground border-border' };
-  // P0-FIX: لو السيولة سالبة بـ ملايين → تصريف وحذر (أحمر), مش أخضر
-  if (netFlow != null && Number(netFlow) < -5_000_000) {
+  // P0-FIX: لو السيولة سالبة (أكتر من 1M EGP خروج) → تصريف وحذر (أحمر), مش أخضر
+  if (netFlow != null && Number(netFlow) < -1_000_000) {
     return { label: 'تصريف وحذر', cls: 'bg-loss/10 text-loss border-loss/20' };
   }
   const p = rawPhase.toLowerCase().trim();
