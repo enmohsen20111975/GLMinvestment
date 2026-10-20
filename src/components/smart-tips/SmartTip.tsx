@@ -192,12 +192,12 @@ export function SmartTip({
  )}>
  <div className="flex items-start gap-3">
  <div className="bg-muted rounded-lg p-2 shrink-0">
- <div className="h-5 w-5 bg-muted-foreground/20 rounded animate-pulse" />
+ <div className="h-5 w-5 bg-muted-foreground/20 rounded shimmer" />
  </div>
  <div className="flex-1 space-y-2">
- <div className="h-3 w-24 bg-muted rounded animate-pulse" />
- <div className="h-4 w-full bg-muted rounded animate-pulse" />
- <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+ <div className="h-3 w-24 bg-muted rounded shimmer" />
+ <div className="h-4 w-full bg-muted rounded shimmer" />
+ <div className="h-4 w-3/4 bg-muted rounded shimmer" />
  </div>
  </div>
  </div>
@@ -436,7 +436,7 @@ export function AllTipsView() {
  return (
  <div className="space-y-4 p-6">
  {Array.from({ length: 6 }).map((_, i) => (
- <div key={i} className="h-24 bg-muted rounded-xl animate-pulse" />
+ <div key={i} className="h-24 bg-muted rounded-xl shimmer" />
  ))}
  </div>
  );

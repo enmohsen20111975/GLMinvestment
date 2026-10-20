@@ -45,13 +45,14 @@ function TickerCard({ item }: { item: TickerItem }) {
  transition={{ duration: 0.5 }}
  >
  <span className="font-bold text-foreground">{item.ticker}</span>
- <span className="text-foreground tabular-nums">
+ <span className="text-foreground tabular-nums number-ticker">
  {safeToFixed(price)}
  </span>
  <span
  className={cn(
- 'tabular-nums font-semibold',
- isPositive ? 'text-profit ' : isNegative ? 'text-loss ' : 'text-muted-foreground'
+ 'tabular-nums font-semibold number-ticker',
+ isPositive ? 'text-profit glow-profit' : isNegative ? 'text-loss glow-loss' : 'text-muted-foreground',
+ isPositive ? 'up' : isNegative ? 'down' : ''
  )}
  >
  {isPositive ? '+' : ''}
@@ -160,8 +161,11 @@ export function RealtimeTicker() {
  <div className="flex items-center gap-1.5 px-3 border-l border-border h-full bg-muted/80 flex-shrink-0" dir="rtl">
  {isConnected ? (
  <>
+ <span className="relative flex h-2 w-2 live-pulse">
+ <span className="relative inline-flex h-2 w-2 rounded-full bg-profit" />
+ </span>
  <Wifi className="w-3 h-3 text-profit" />
- <span className="text-xs font-medium text-profit hidden xs:inline">مباشر</span>
+ <span className="text-xs font-medium text-profit hidden xs:inline glow-profit">مباشر</span>
  </>
  ) : (
  <>

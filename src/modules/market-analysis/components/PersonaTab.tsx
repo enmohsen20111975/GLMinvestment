@@ -429,7 +429,7 @@ function PersonaCard({
  <div>
  <div className="flex items-center justify-between text-xs mb-1">
  <span className="text-muted-foreground">{data.sniper_score ? '🎯 نتيجة التصطاد' : 'النتيجة'}</span>
- <span className="font-bold">{(score ?? 0).toFixed(0)}/100</span>
+ <span className="font-bold font-mono tabular-nums glow-primary">{(score ?? 0).toFixed(0)}/100</span>
  </div>
  <div className="h-2 rounded-full bg-muted overflow-hidden">
  <div

@@ -591,7 +591,7 @@ function AppShell() {
         return (
           <div className="min-h-screen flex flex-col bg-background">
             <Header title="حالة السوق" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
-            <main className="flex-1 p-3 md:p-4">
+            <main className="flex-1 p-3 md:p-4 page-transition">
               <MarketStatusView market={currentMarket} />
             </main>
           </div>
@@ -601,7 +601,7 @@ function AppShell() {
         return (
           <div className="min-h-screen flex flex-col bg-background">
             <Header title="الصفقات التاريخية" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
-            <main className="flex-1 p-3 md:p-4">
+            <main className="flex-1 p-3 md:p-4 page-transition">
               <HistoricalTradesView />
             </main>
           </div>
