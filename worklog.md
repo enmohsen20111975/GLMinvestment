@@ -1310,3 +1310,54 @@ Stage Summary:
 - ⚠️ Phase 2.1 (Tables) deferred: 44+ complex tables.
 - 🎯 كل migration متـverified بـ build + HTTP probe.
 - 🎯 Bug recovery: JSX regression اتـcaught + اتـfixed + re-verified.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-PHASE-3-PARTIAL
+Agent: Z.ai Code (الفاحص التقني + منفّذ)
+Task: محسن — "كمل بس تعمل الاختبارات كلها". استكمال Phase 3 بـ كل الاختبارات.
+
+Work Log:
+
+Phase 3.2 — Delete dead tracking/* API routes (NOT DONE — Rule 4 NO-DELETION):
+- اكتشفت إن الـ tracking routes deprecated بس متـركين بـ Rule 4 (NO-DELETION).
+- كل route بـ يعمل redirect لـ canonical route + بيرجع 410 Gone بـ deprecated flag.
+- الـ comment بيقول بـ وضوح: "file intentionally kept so existing callers (Flutter app, old dashboards) don't 404".
+- القرار: ما ألمسهاش — Rule 4 يـمنع الحذف.
+
+Phase 3.1 — Simplify page.tsx renderView (DONE):
+- لقيت 8 crypto-* cases في page.tsx (lines 770-801).
+- 7 منهم بـ يـرجّعوا SAME component زي الـ non-crypto counterparts:
+  * crypto-live → <StocksView /> (same as 'stocks')
+  * crypto-recommendations → <MarketAnalysisView /> (same as 'recommendations')
+  * crypto-trading-chart → <TradingChartView /> (same as 'trading-chart')
+  * crypto-screener → <StockScreenerAdvancedView /> (same as 'stock-filters')
+  * crypto-watchlist → <EnhancedWatchlistView /> (same as 'watchlist')
+  * crypto-simulation → <SimulationView /> (same as 'simulation')
+  * crypto-learning → <AcademyView /> (same as 'academy')
+- shell effect (line 523) بـ يـفعّل setCurrentMarket('CRYPTO') تلقائياً.
+- الحل: case fallthrough — كل crypto-* case بقى بـ fallthrough لـ الـ non-crypto case.
+- 3 crypto-* cases اتـسيكوا (different components):
+  * crypto-portfolio → CryptoPortfolioView (unique)
+  * crypto-analysis → SmartConfluenceView (different from 'analysis')
+  * crypto-prediction-tracking → CryptoPredictionTrackingView (unique)
+- LOC saved: ~20 lines.
+
+Verification (ALL tests per Mohsen's directive):
+- ✅ bun run lint: exit 0.
+- ✅ bunx tsc --noEmit: 2 pre-existing errors في page.tsx (lines 63 + 396 — مش من تعديلي).
+- ✅ bunx next build --no-lint: SUCCESS.
+- ✅ Production server (next start):
+  * GET / → HTTP 200 | 0.25s | 34144 bytes
+  * GET /api/notifications → HTTP 200 | 0.09s
+  * GET /api/stocks?market=EGX → HTTP 200 | 0.03s
+- ✅ HTML content verified:
+  * Title: 'دليل الاستثمار | تحليلات الأسهم والعملات الرقمية'
+  * <html lang="ar" dir="rtl">
+  * Raw palette: 0
+
+Commit: dae1968 P0-COMPONENT-UNIFICATION Phase 3.1.
+
+Stage Summary:
+- ✅ Phase 3.1 (page.tsx renderView simplification) DONE: 7 crypto-* cases consolidated via fallthrough.
+- ⚠️ Phase 3.2 (delete dead tracking routes) NOT DONE: Rule 4 NO-DELETION prevents it.
+- ⏳ Phase 3.3-3.7 (consolidate API subsystems) deferred: complex per-endpoint analysis.
