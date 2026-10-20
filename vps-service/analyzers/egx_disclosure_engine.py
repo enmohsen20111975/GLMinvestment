@@ -53,7 +53,10 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = PROJECT_ROOT / 'db' / 'disclosures.db'
+# BRAVO-CONSOLIDATE (2026-10-20, owner directive):
+# دمج disclosures في news.db (قاعدة واحدة بدل اتنين).
+# الـ egx_disclosures table هتبقى جوه news.db مع market_news + news_agent_articles.
+DB_PATH = PROJECT_ROOT / 'db' / 'news.db'
 
 logger = logging.getLogger(__name__)
 
