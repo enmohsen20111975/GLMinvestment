@@ -68791,3 +68791,47 @@ Stage Summary:
     MobileMoreSheet.tsx, SettingsView.tsx
   → دول محتاجين تكليف منفصل للفريق
 - 🎯 جيمي: الشاشة دلوقتي نضيفة في القطاعات + الرادار + التحليل المتخصص + الإشعارات
+
+---
+Task ID: UI-MASSIVE-CLEANUP-1
+Agent: Z.ai Code (per جيمي's directive — "الألوان المنصة شكلها وستايلها خرا")
+Task: محسن — جيمي غضب إن الألوان شكلها خرا. audit شامل كشف كارثة.
+
+Work Log:
+- 🔥 كارثة شاملة: 507 مسافة مكسورة + 217 كتلة مصمتة في كل src/
+  * الفريق اصلح بس 4 ملفات (helpers + NotificationCenter + SpecialistAnalysisView + LiquidityRadarView)
+  * بس فيه 168 ملف تاني محتاجين نفس الإصلاح
+- ✅ تطبيق script آلي على كل src/ (172 ملف):
+  * شيل كل المسافات قبل / في bg/border/text-{color}
+  * opacity 60 → 10 في bg (كتل مصمتة → شفافة ناعمة)
+  * opacity 50 → 10 في bg
+  * opacity 40 → 10 في bg
+  * opacity 30 → 10 في bg
+  * opacity 60 → 20 في border (حدود أوضح)
+  * opacity 50 → 20 في border
+  * opacity 40 → 20 في border
+  * opacity 30 → 20 في border
+- ✅ النتيجة:
+  * 0 مسافات مكسورة باقية
+  * 0 كتل مصمتة باقية
+  * 172 ملف اتعدل
+  * lint: Exit 0
+- ✅ push: نجح (78db4fc..90001a0)
+
+Top 15 ملف كانت فيها أكتر مشاكل:
+1. MakerRadarTab.tsx (37)
+2. EnhancedPortfolioView.tsx (30)
+3. BagHolderRescuePanel.tsx (20)
+4. RoboAdvisorPanel.tsx (16)
+5. DatabaseManagerFull.tsx (15)
+6. TithesView.tsx (14)
+7. ZakatView.tsx (13)
+8. PersonaTab.tsx (12)
+9. LiveMonitor.tsx (12)
+10. ExitRadarTab.tsx (11)
+
+Stage Summary:
+- ✅ كل الـ src/ نضيف من المسافات المكسورة + الكتل المصمتة
+- ✅ Pattern موحد في كل المنصة: bg-{color}/10 + text-{color} + border-{color}/20
+- ✅ commit 90001a0 على origin/main
+- 🎯 المنصة دلوقتي نضيفة في كل الصفحات
