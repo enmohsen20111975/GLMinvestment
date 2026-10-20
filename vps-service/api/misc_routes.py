@@ -2830,6 +2830,7 @@ def unified_predictions():
                     'market': market or 'ALL',
                     'stats': {'total': len(_fallback_predictions), 'win_count': 0, 'loss_count': 0, 'win_rate': 0.0, 'avg_pnl': 0.0},
                     'source': 'predictions_fallback' if _fallback_predictions else 'predictions_db_empty',
+                    'testing_candidates': _get_testing_candidates(),
                     'note': 'عرض آخر التوقعات المتاحة (stored_analyses فارغ — الأرشيف من جدول predictions)' if _fallback_predictions else 'لا توجد توقعات متاحة',
                     'timestamp': datetime.now().isoformat(),
                 })
@@ -3534,6 +3535,7 @@ def unified_predictions():
             'closed_count': closed_count_real,
             'open_count': len(open_predictions),
             'previous_count': len(previous_predictions),
+            'testing_candidates': _get_testing_candidates(),
             'market': market or 'ALL',
             'cascade': {
                 'dominant_tier': _dominant_tier,
