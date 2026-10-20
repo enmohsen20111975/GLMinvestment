@@ -19,6 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPagination } from '@/components/shared/ui';
+// ALPHA-WHALE-RADAR-HUNTER-MODE: IncubatorSection (The Stalking Radar)
+// بيـعرض الأسهم اللي محققة 4/6 أو 5/6 شروط + مستنية trigger.
+import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
 import {
  TrendingUp, TrendingDown, Clock, Calendar,
  BarChart3, Target, AlertTriangle, CheckCircle,
@@ -2239,6 +2242,20 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  })}
  </div>
  )}
+
+ {/* ============================================================================
+   ALPHA — INCUBATOR SECTION (The Stalking Radar — per Mohsen's directive)
+   يـعرض الأسهم اللي محققة 4/6 أو 5/6 شروط + مستنية trigger.
+   - لما السوق دفاعي: يظهر في أول الصفحة (فوق التوقعات).
+   - لما السوق طبيعي: يظهر بعد التوقعات النشطة (كـ "coming up" preview).
+   ============================================================================ */}
+ <div className={isDefensive ? 'order-first' : ''}>
+ <IncubatorSection
+ market={MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market]}
+ refreshIntervalMs={60_000}
+ maxDisplay={6}
+ />
+ </div>
 
  {/* P42-NO-FREEZE: ترقيم الصفحات — 5 كروت لكل صفحة عشان المتصفح مايموتش.
      P0-COMPONENT-UNIFICATION (Phase 2.4): استبدلنا الـ inline pagination

@@ -662,6 +662,208 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
 
 
 # ============================================================================
+# ============================================================================
+# INCUBATOR ENGINE (Per Mohsen's directive 2026-10-20 — BRAVO task)
+# ============================================================================
+# محرك "الحضانة والتربص" — بيكشف الأسهم اللي محققة 4/6 أو 5/6 إشارات في
+# مسار B_quiet_accumulation_strong أو A_pre_surge، ومستنية "تكة" (Trigger)
+# عشان تنفجر. بـ يـحدد الشرط الناقص بالمليمتر + بـ يـراقب لحظياً.
+# ============================================================================
+
+# خريطة أسماء الإشارات للعربي (للـ passed_reasons في الـ API response)
+SIGNAL_LABELS_AR = {
+    'volume_high_recurring': 'ضغط شرائي مؤسسي مستمر',
+    'buy_pressure': 'أيام شراء غالبة',
+    'compressed': 'انضغاط سعري حاد (تجميع صامت)',
+    'volume_not_low': 'سيولة متدفقة مقبولة',
+    'not_explosive': 'غياب الانفجار السعري (مستقر)',
+    'no_distribution': 'غياب تام لمظاهر التصريف',
+}
+
+
+def extract_missing_trigger(stock_data: dict) -> dict:
+    """بيفحص الإشارة الساقطة من الـ 6 إشارات + بيرجّع trigger موصوف بالمليمتر.
+
+    Args:
+        stock_data: dict من results — لازم فيه quiet_details (or pre_surge_details)
+                    + current_price + entry_price + target_price + stop_loss.
+
+    Returns:
+        dict بالشكل:
+            {
+                'type': 'VOLUME_SURGE' | 'RESISTANCE_BREAK' | 'SUPPORT_CONFIRM' | 'OTHER',
+                'condition_ar': 'بانتظار شمعة فوليوم أعلى من 1.5x متوسط 20 يوم',
+                'trigger_price': 20.40,        # لو فيه سعر تفعيل
+                'distance_to_trigger_pct': 2.5, # المسافة من السعر الحالي
+            }
+            لو كل الإشارات متحققة (مفيش شرط ناقص) → بيرجّع trigger فارغ.
+    """
+    quiet_details = stock_data.get('quiet_details') or {}
+    pre_surge_details = stock_data.get('pre_surge_details') or {}
+    details = quiet_details or pre_surge_details or {}
+
+    signals_failed = details.get('signals_failed', []) or []
+    signals_met = details.get('signals_met', []) or []
+    current_price = stock_data.get('current_price', 0) or 0
+
+    # لو مفيش إشارات فاشلة → السهم مكتمل 6/6 (مش محتاج trigger)
+    if not signals_failed:
+        return {
+            'type': 'COMPLETE',
+            'condition_ar': 'كل الإشارات متحققة — السهم جاهز للترقية',
+            'trigger_price': None,
+            'distance_to_trigger_pct': 0.0,
+        }
+
+    # نفحص أول إشارة فاشلة + نـحدد نوع الـ trigger
+    first_failed = signals_failed[0] if signals_failed else ''
+    failed_lower = first_failed.lower()
+
+    # ─── (1) VOLUME_SURGE: لو الإشارة الناقصة هي volume_high_recurring ───
+    if 'volume_high_recurring' in failed_lower:
+        # الشرط: شمعة فوليوم أعلى من 1.5x متوسط 20 يوم
+        avg_vol_20d = stock_data.get('avg_volume_20d', 0) or 0
+        trigger_price = current_price  # السعر اللي فيه الفوليوم لازم يظهر
+        distance_pct = 0.0
+        return {
+            'type': 'VOLUME_SURGE',
+            'condition_ar': 'بانتظار شمعة فوليوم أعلى من 1.5x متوسط 20 يوم',
+            'trigger_price': round(trigger_price, 2) if trigger_price else None,
+            'distance_to_trigger_pct': round(distance_pct, 2),
+        }
+
+    # ─── (2) RESISTANCE_BREAK: لو السهم قريب من مقاومة (not_explosive فشل) ───
+    if 'not_explosive' in failed_lower:
+        # not_explosive فشل معناها السهم عمل اختراق — ده مش "ناقص" ده "زيادة"
+        # بس لو الإشارة فشلت لأنه مش اخترق (ROC10 < 12%) → محتاج كسر مقاومة
+        # نستخدم أعلى swing high قريب كمقاومة
+        recent_swing_high = stock_data.get('current_price', 0) * 1.05  # تقريب: 5% فوق السعر الحالي
+        # محاولة استخراج أعلى High من البيانات لو موجود
+        highs = stock_data.get('highs', [])
+        if highs and len(highs) > 0:
+            recent_swing_high = max(highs[-20:]) if len(highs) >= 20 else max(highs)
+
+        trigger_price = recent_swing_high
+        distance_pct = ((trigger_price - current_price) / current_price * 100) if current_price > 0 else 0
+        return {
+            'type': 'RESISTANCE_BREAK',
+            'condition_ar': f'بانتظار اختراق وتأكيد أعلى {round(trigger_price, 2)}',
+            'trigger_price': round(trigger_price, 2),
+            'distance_to_trigger_pct': round(distance_pct, 2),
+        }
+
+    # ─── (3) SUPPORT_CONFIRM: لو الإشارة الناقصة هي buy_pressure أو compressed ───
+    if 'buy_pressure' in failed_lower or 'compressed' in failed_lower:
+        # السهم محتاج ثبات فوق دعم
+        lows = stock_data.get('lows', [])
+        recent_support = stock_data.get('current_price', 0) * 0.97  # تقريب: 3% تحت السعر الحالي
+        if lows and len(lows) > 0:
+            recent_support = min(lows[-20:]) if len(lows) >= 20 else min(lows)
+
+        trigger_price = recent_support
+        distance_pct = abs(((trigger_price - current_price) / current_price * 100)) if current_price > 0 else 0
+        return {
+            'type': 'SUPPORT_CONFIRM',
+            'condition_ar': f'بانتظار استقرار السعر أعلى دعم {round(trigger_price, 2)}',
+            'trigger_price': round(trigger_price, 2),
+            'distance_to_trigger_pct': round(distance_pct, 2),
+        }
+
+    # ─── (4) OTHER: لو الإشارة الناقصة هي volume_not_low أو no_distribution ───
+    # ده حالة خاصة — مش trigger واضح، بنقول للعميل نراقب
+    failed_label_ar = SIGNAL_LABELS_AR.get(
+        failed_lower.split('(')[0].split('.')[1] if '.' in failed_lower else failed_lower,
+        failed_lower
+    )
+    return {
+        'type': 'OTHER',
+        'condition_ar': f'بانتظار تحقق: {failed_label_ar} ({first_failed})',
+        'trigger_price': None,
+        'distance_to_trigger_pct': 0.0,
+    }
+
+
+def _build_incubator_candidates(quiet_list: list, pre_surge_list: list) -> list:
+    """بيبني قائمة incubator_candidates — الأسهم اللي محققة 4/6 أو 5/6 إشارات
+    ومستنية trigger عشان تترقى لتوصية شراء حية.
+
+    Args:
+        quiet_list: الأسهم في مسار B_quiet_accumulation_strong.
+        pre_surge_list: الأسهم في مسار A_pre_surge.
+
+    Returns:
+        list of dicts — كل سهم فيه:
+            ticker, current_price, readiness_pct, signals_passed, total_signals,
+            passed_reasons, trigger, target_if_promoted, stop_loss_if_promoted,
+            risk_reward, stage.
+    """
+    candidates = []
+
+    # الأسهم اللي محققة 4/6 أو 5/6 (مش 6/6 — ده يبقى توصية كاملة)
+    for stock in quiet_list + pre_surge_list:
+        quiet_details = stock.get('quiet_details') or stock.get('pre_surge_details') or {}
+        signals_met = quiet_details.get('signal_count', 0) if quiet_details else 0
+        total_signals = 6  # fixed total
+
+        # بس الأسهم اللي 4/6 أو 5/6 (الـ 6/6 بقت توصية كاملة)
+        if signals_met < 4 or signals_met >= 6:
+            continue
+
+        # ممنوع الأسهم في تصريف (per owner directive)
+        if stock.get('distribution_flag', False):
+            continue
+
+        # استخراج الـ trigger الناقص
+        trigger = extract_missing_trigger(stock)
+
+        # استخراج passed_reasons بالعربي
+        signals_met_list = quiet_details.get('signals_met', []) if quiet_details else []
+        passed_reasons = []
+        for sig in signals_met_list:
+            # شكل الإشارة: "1.volume_high_recurring(2/2)" — نشيل الأرقام
+            sig_key = sig.split('(')[0].split('.', 1)[1] if '.' in sig else sig
+            sig_key = sig_key.strip()
+            label_ar = SIGNAL_LABELS_AR.get(sig_key, sig)
+            passed_reasons.append(label_ar)
+
+        # الأسعار المتوقعة في حالة التفعيل
+        entry = stock.get('entry_price') or stock.get('current_price', 0)
+        target = stock.get('target_price') or (entry * 1.10)  # fallback 10% فوق
+        stop = stock.get('stop_loss') or (entry * 0.95)  # fallback 5% تحت
+
+        # R:R
+        try:
+            rr = (target - entry) / (entry - stop) if (entry - stop) > 0 else 0
+        except Exception:
+            rr = 0
+
+        # readiness_pct = (signals_passed / total) * 100
+        readiness_pct = round((signals_met / total_signals) * 100)
+
+        # stage: HEATING_UP (4/6) أو APPROACHING_TRIGGER (5/6)
+        stage = 'HEATING_UP' if signals_met == 4 else 'APPROACHING_TRIGGER' if signals_met == 5 else 'UNKNOWN'
+
+        candidate = {
+            'ticker': stock.get('ticker', ''),
+            'name_ar': stock.get('name_ar', stock.get('ticker', '')),
+            'current_price': round(stock.get('current_price', 0), 2),
+            'readiness_pct': readiness_pct,
+            'signals_passed': signals_met,
+            'total_signals': total_signals,
+            'passed_reasons': passed_reasons,
+            'trigger': trigger,
+            'target_if_promoted': round(target, 2),
+            'stop_loss_if_promoted': round(stop, 2),
+            'risk_reward': round(rr, 2),
+            'stage': stage,
+        }
+        candidates.append(candidate)
+
+    # ترتيب: الأعلى readiness أول
+    candidates.sort(key=lambda c: c['readiness_pct'], reverse=True)
+    return candidates
+
+
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB
 # يكتب كل سهم تحت الميكروسكوب في radar_signal_tracking table
 # ============================================================================
@@ -1307,6 +1509,10 @@ def main():
             'early_break_list': early_break_list,
             'distribution_list': distribution_list,
             'under_microscope': under_microscope,
+            # INCUBATOR ENGINE (BRAVO task — Mohsen's directive 2026-10-20):
+            # الأسهم اللي محققة 4/6 أو 5/6 إشارات + مستنية trigger.
+            # بيـستخدمها /api/radar/incubator endpoint + intraday_scanner.py.
+            'incubator_candidates': _build_incubator_candidates(quiet_list, pre_surge_list),
             'all_results': results,
         }, f, ensure_ascii=False, indent=2, default=str)
     log(f"\n✅ JSON saved: {json_path}")

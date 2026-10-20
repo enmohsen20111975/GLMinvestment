@@ -30,6 +30,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+// ALPHA-INCUBATOR: The Stalking Radar section (per Mohsen's directive 2026-10-20)
+import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 // Task 23-C Deliverable 2 — inline Sharia badge next to each radar pick.
@@ -1131,6 +1133,15 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
  return (
  <div className="space-y-4" dir="rtl">
+ {/* ===== ALPHA-INCUBATOR: "الميكروسكوب والتربص" section =====
+     Per Mohsen's directive 2026-10-20 — يعرض الأسهم اللي محققة 4/6 أو 5/6
+     شروط + مستنية trigger. بيـستهلك /api/radar/incubator endpoint. */}
+ <IncubatorSection
+ market={market === 'TADAWUL' || market === 'KSA' ? 'TADAWUL' : 'EGX'}
+ refreshIntervalMs={60_000}
+ maxDisplay={6}
+ />
+
  {/* ===== HEADER ===== (always visible — refresh buttons work across all sub-tabs) */}
  <Card className="overflow-hidden">
  <div className="bg-gradient-to-l from-profit/80 via-profit/30 to-transparent /30 dark:to-transparent p-4 md:p-5">
