@@ -523,7 +523,7 @@ export function UserManagementPanel() {
  <Users className="w-3.5 h-3.5 text-profit" />
  </div>
  <div className="grid grid-cols-2 gap-2 text-xs">
- <TierStat label="مجاني" value={stats.activeByTier.free} color="text-slate-600 dark:text-slate-300" />
+ <TierStat label="مجاني" value={stats.activeByTier.free} color="text-muted-foreground dark:text-muted-foreground" />
  <TierStat label="مميز" value={stats.activeByTier.premium} color="text-warning" />
  <TierStat label="أدمن" value={stats.activeByTier.admin} color="text-loss" />
  <TierStat label="VIP" value={stats.activeByTier.vip} color="text-primary" />
@@ -534,7 +534,7 @@ export function UserManagementPanel() {
  <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
  <div className="flex items-center justify-between mb-2">
  <span className="text-xs text-muted-foreground">مزامنة Telegram Bot</span>
- <Bot className="w-3.5 h-3.5 text-cyan-500" />
+ <Bot className="w-3.5 h-3.5 text-whale" />
  </div>
  <div className="flex items-center gap-2 text-xs">
  <span

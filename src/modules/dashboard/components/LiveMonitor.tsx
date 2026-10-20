@@ -335,7 +335,7 @@ function MarketStatusBanner({
  <div
  className={cn(
  'relative overflow-hidden rounded-2xl border p-4 sm:p-6 shadow-sm',
- 'border-slate-200 dark:border-slate-800',
+ 'border-border',
  'from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950',
  )}
  >
@@ -354,7 +354,7 @@ function MarketStatusBanner({
  <div className="flex flex-col gap-2">
  <div className="flex items-center gap-2 flex-wrap">
  {isOpen && <PulsingDot color="emerald" />}
- <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+ <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
  Live Monitor
  </span>
  {(() => {
@@ -383,25 +383,25 @@ function MarketStatusBanner({
  >
  {clockStr}
  </div>
- <span className="text-xs text-slate-500 dark:text-slate-400">
+ <span className="text-xs text-muted-foreground dark:text-muted-foreground">
  (القاهرة)
  </span>
  </div>
 
- <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
- <CalendarDays className="h-4 w-4 text-slate-400" />
+ <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground dark:text-muted-foreground">
+ <CalendarDays className="h-4 w-4 text-muted-foreground" />
  <span className="font-medium">
  {getArabicWeekday(data.weekday_name)}
  </span>
- <span className="text-slate-300 dark:text-slate-600">•</span>
+ <span className="text-muted-foreground dark:text-muted-foreground">•</span>
  <span>{dateStr}</span>
  </div>
  </div>
 
  {/* Center: EGX30 index */}
  {egx && (
- <div className="flex flex-col items-center gap-1 lg:px-8 lg:border-x lg:border-slate-200 dark:lg:border-slate-800">
- <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+ <div className="flex flex-col items-center gap-1 lg:px-8 lg:border-x lg:border-border dark:lg:border-slate-800">
+ <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground dark:text-muted-foreground">
  <BarChart3 className="h-3.5 w-3.5" />
  {egx.name || 'EGX 30'}
  </div>
@@ -441,12 +441,12 @@ function MarketStatusBanner({
  {statusConfig.label}
  </div>
  {regime && (
- <div className="text-xs text-slate-500 dark:text-slate-400 lg:text-right">
+ <div className="text-xs text-muted-foreground dark:text-muted-foreground lg:text-right">
  مرحلة السوق:{' '}
- <span className="font-semibold text-slate-700 dark:text-slate-200">
+ <span className="font-semibold text-muted-foreground dark:text-slate-200">
  {regime.stage_name}
  </span>{' '}
- <span className="text-slate-400">#{regime.stage}</span>
+ <span className="text-muted-foreground">#{regime.stage}</span>
  </div>
  )}
  </div>
@@ -481,7 +481,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  <span className="text-2xl font-bold tabular-nums text-slate-900 ">
  {stocks.updated_last_10min}
  </span>
- <span className="text-sm text-slate-400">/ {stocks.total}</span>
+ <span className="text-sm text-muted-foreground">/ {stocks.total}</span>
  </div>
  ),
  subtitle: `آخر تحديث: ${relativeTime(stocks.latest_update)}`,
@@ -491,7 +491,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  icon: Server,
  accentClass: scheduler.market_open
  ? 'text-profit '
- : 'text-slate-500 dark:text-slate-400',
+ : 'text-muted-foreground dark:text-muted-foreground',
  main: (
  <div className="flex items-center gap-2">
  <span
@@ -499,7 +499,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  'text-2xl font-bold transition-colors',
  scheduler.market_open
  ? 'text-profit '
- : 'text-slate-500 dark:text-slate-400',
+ : 'text-muted-foreground dark:text-muted-foreground',
  )}
  >
  {scheduler.market_open ? 'يعمل ✓' : 'متوقف'}
@@ -539,7 +539,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  {regime?.stage_name ?? '—'}
  </span>
  {regime && (
- <span className="text-xs text-slate-400">#{regime.stage}</span>
+ <span className="text-xs text-muted-foreground">#{regime.stage}</span>
  )}
  </div>
  ),
@@ -554,17 +554,17 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  return (
  <Card
  key={i}
- className="relative overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+ className="relative overflow-hidden border-border bg-white shadow-sm"
  >
  <CardContent className="p-4">
  <div className="mb-3 flex items-center justify-between">
- <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+ <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground">
  {card.title}
  </span>
  <Icon className={cn('h-4 w-4', card.accentClass)} />
  </div>
  <div className="mb-1">{card.main}</div>
- <p className="truncate text-xs text-slate-500 dark:text-slate-500">
+ <p className="truncate text-xs text-muted-foreground dark:text-muted-foreground">
  {card.subtitle}
  </p>
  </CardContent>
@@ -589,15 +589,15 @@ const TYPE_BADGE: Record<
  },
  gold: {
  label: 'ذهب',
- cls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
+ cls: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ',
  },
  bank: {
  label: 'بنك',
- cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
+ cls: 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ',
  },
  cash: {
  label: 'نقد',
- cls: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700',
+ cls: 'bg-muted text-muted-foreground border-border/50 dark:text-muted-foreground',
  },
  crypto: {
  label: 'كريبتو',
@@ -651,7 +651,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  {item.name}
  </span>
  {item.stock_ticker && (
- <span className="font-mono text-xs text-slate-500">
+ <span className="font-mono text-xs text-muted-foreground">
  {item.stock_ticker}
  </span>
  )}
@@ -769,7 +769,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  ];
 
  return (
- <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+ <Card className="border-border bg-white shadow-sm">
  <CardHeader className="pb-3">
  <div className="flex items-center justify-between gap-2">
  <div className="flex items-center gap-2">
@@ -795,8 +795,8 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  <CardContent>
  {/* Summary row */}
  <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
- <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/50">
- <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+ <div className="rounded-lg border border-border bg-slate-50 p-3 dark:bg-slate-950/50">
+ <p className="mb-1 text-xs text-muted-foreground dark:text-muted-foreground">
  إجمالي المستثمر
  </p>
  <p className="text-lg font-bold tabular-nums text-slate-900 ">
@@ -809,7 +809,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  totalBorder,
  )}
  >
- <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+ <p className="mb-1 text-xs text-muted-foreground dark:text-muted-foreground">
  القيمة الحالية
  </p>
  <p className={cn('text-lg font-bold tabular-nums', totalColor)}>
@@ -822,7 +822,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  totalBorder,
  )}
  >
- <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+ <p className="mb-1 text-xs text-muted-foreground dark:text-muted-foreground">
  الربح/الخسارة
  </p>
  <div className="flex items-baseline gap-2">
@@ -838,7 +838,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  </div>
 
  {/* Items table — UnifiedTable (Rule 52) */}
- <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+ <div className="overflow-hidden rounded-lg border border-border">
  <UnifiedTable<PortfolioItem>
  columns={portfolioColumns}
  data={portfolio.items}
@@ -877,8 +877,8 @@ function MoverRow({
  ? 'text-profit '
  : 'text-loss ';
  const numBg = isGainer
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ';
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 ';
 
  return (
  <div className="-mx-2 flex items-center justify-between rounded px-2 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30">
@@ -895,7 +895,7 @@ function MoverRow({
  <div className="font-mono text-xs font-bold text-slate-900 ">
  {stock.ticker}
  </div>
- <div className="max-w-[140px] truncate text-xs text-slate-500">
+ <div className="max-w-[140px] truncate text-xs text-muted-foreground">
  {stock.name}
  </div>
  </div>
@@ -1206,7 +1206,7 @@ export function LiveMonitor() {
  {/* Top bar: title + manual trigger */}
  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
  <div className="flex items-center gap-2">
- <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-100">
+ <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 dark:bg-muted">
  <Activity className="h-5 w-5 text-profit " />
  <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-profit opacity-75" />
@@ -1217,7 +1217,7 @@ export function LiveMonitor() {
  <h2 className="text-lg font-bold text-slate-900 ">
  لوحة المراقبة الحية
  </h2>
- <p className="text-xs text-slate-500 dark:text-slate-400">
+ <p className="text-xs text-muted-foreground dark:text-muted-foreground">
  {refreshing
  ? 'جاري التحديث...'
  : `التحديث التالي خلال ${secondsUntilRefresh} ثانية`}
@@ -1266,7 +1266,7 @@ export function LiveMonitor() {
  <MarketMovers data={data} />
 
  {/* Footer */}
- <div className="flex items-center justify-center gap-2 pt-2 text-xs text-slate-400 dark:text-slate-600">
+ <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground dark:text-muted-foreground">
  <Clock className="h-3 w-3" />
  <span>
  التحديث التلقائي كل {REFRESH_INTERVAL} ثوانٍ
@@ -1286,7 +1286,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Zap,
  color: 'text-profit ',
  badge: 'أساسي',
- badgeCls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
+ badgeCls: 'bg-profit/10 text-profit border border-profit/20 ',
  },
  {
  label: 'قائمة الأسهم الكاملة',
@@ -1295,30 +1295,30 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Database,
  color: 'text-warning ',
  badge: 'كل 15 دقيقة',
- badgeCls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
+ badgeCls: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ',
  },
  {
  label: 'بيانات نهاية اليوم',
  value: sources.end_of_day,
  note: sources.end_of_day_note,
  icon: Clock,
- color: 'text-slate-500 dark:text-slate-400',
+ color: 'text-muted-foreground dark:text-muted-foreground',
  badge: 'يومي',
- badgeCls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+ badgeCls: 'bg-muted text-muted-foreground dark:text-muted-foreground',
  },
  ];
 
  return (
- <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+ <Card className="border-border bg-white shadow-sm">
  <CardContent className="p-4">
  <div className="mb-3 flex items-center justify-between">
  <div className="flex items-center gap-2">
- <Database className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+ <Database className="h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
  <h3 className="text-sm font-semibold text-slate-900 ">
  مصادر البيانات
  </h3>
  </div>
- <span className="text-xs text-slate-500 dark:text-slate-500">
+ <span className="text-xs text-muted-foreground dark:text-muted-foreground">
  نظام متعدد المصادر
  </span>
  </div>
@@ -1328,7 +1328,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  return (
  <div
  key={i}
- className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50"
+ className="rounded-lg border border-border bg-slate-50 p-3/50"
  >
  <div className="mb-1.5 flex items-center justify-between">
  <Icon className={cn('h-3.5 w-3.5', item.color)} />
@@ -1339,10 +1339,10 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  <div className="mb-1 text-sm font-bold text-slate-900 ">
  {item.value}
  </div>
- <div className="text-xs leading-snug text-slate-500 dark:text-slate-400">
+ <div className="text-xs leading-snug text-muted-foreground dark:text-muted-foreground">
  {item.label}
  </div>
- <p className="mt-1 text-xs leading-snug text-slate-400 dark:text-slate-500">
+ <p className="mt-1 text-xs leading-snug text-muted-foreground dark:text-muted-foreground">
  {item.note}
  </p>
  </div>

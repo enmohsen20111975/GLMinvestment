@@ -72,13 +72,13 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
+ 'bg-profit/10 text-profit border border-profit/20 border-profit ',
  non_compliant:
- 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
+ 'bg-loss/10 text-loss border border-loss/20 border-loss ',
  doubtful:
- 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ',
+ 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning ',
  not_available:
- 'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+ 'bg-muted text-muted-foreground/50 dark:text-muted-foreground border-border',
 };
 
 function formatPct(v: number | null | undefined, digits = 2): string {

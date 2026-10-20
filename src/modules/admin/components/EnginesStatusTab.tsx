@@ -384,7 +384,7 @@ function EngineCard({
  log.includes('✅') || log.includes('success') ? 'text-profit' :
  log.includes('❌') || log.includes('error') || log.includes('ERROR') ? 'text-loss' :
  log.includes('⚠️') || log.includes('WARNING') ? 'text-warning' :
- 'text-slate-300'
+ 'text-muted-foreground'
  )}
  >
  {log}
@@ -590,9 +590,9 @@ export function EnginesStatusTab() {
  <div className="flex items-center gap-4">
  <div className={cn(
  'w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold',
- healthScore === 100 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' :
- healthScore >= 66 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30' :
- 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+ healthScore === 100 ? 'bg-profit/10 text-profit border border-profit/20' :
+ healthScore >= 66 ? 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30' :
+ 'bg-loss/10 text-loss border border-loss/20'
  )}>
  {healthScore}%
  </div>

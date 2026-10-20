@@ -146,10 +146,10 @@ export function DataEngineTab() {
  const histProgress = engine?.historical_progress
 
  return (
- <div className="bg-slate-100 min-h-screen p-4 text-slate-900" dir="ltr">
+ <div className="bg-muted min-h-screen p-4 text-slate-900" dir="ltr">
  
  {/* Header */}
- <div className="bg-white rounded-xl p-5 mb-4 border border-slate-200 shadow-sm">
+ <div className="bg-white rounded-xl p-5 mb-4 border border-border shadow-sm">
  <div className="flex items-center justify-between flex-wrap gap-4">
  <div className="flex items-center gap-4">
  <div className={cn(
@@ -160,14 +160,14 @@ export function DataEngineTab() {
  </div>
  <div>
  <div className="text-2xl font-bold text-slate-800">DATA ENGINE v2.2.0</div>
- <div className="text-sm text-slate-500 flex items-center gap-3 mt-1">
+ <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
  <span className={cn(
  "px-3 py-1 rounded-lg font-bold text-base",
- isActive ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+ isActive ? "bg-profit/10 text-profit border border-profit/20" : "bg-loss/10 text-loss border border-loss/20"
  )}>
  {isActive ? 'RUNNING' : 'STOPPED'}
  </span>
- <span className="px-3 py-1 rounded-lg bg-slate-200 text-slate-600 text-base">
+ <span className="px-3 py-1 rounded-lg bg-muted text-muted-foreground text-base">
  {source}
  </span>
  </div>
@@ -224,10 +224,10 @@ export function DataEngineTab() {
  </span>
  </div>
  <div className="flex items-center gap-3 text-base">
- <span className="text-slate-600 font-medium">
+ <span className="text-muted-foreground font-medium">
  {histProgress.current}/{histProgress.total}
  </span>
- <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
+ <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
  <div 
  className="h-full bg-primary transition-all rounded-full"
  style={{ width: `${(histProgress.current / histProgress.total) * 100}%` }}
@@ -237,7 +237,7 @@ export function DataEngineTab() {
  {histProgress.symbol}
  </span>
  </div>
- <div className="text-sm text-slate-500 mt-2">
+ <div className="text-sm text-muted-foreground mt-2">
  {histProgress.category}
  </div>
  </div>
@@ -249,41 +249,41 @@ export function DataEngineTab() {
  <div className="bg-white rounded-xl p-4 text-center border border-primary shadow-sm hover:shadow-md transition-shadow">
  <TrendingUp className="w-6 h-6 mx-auto text-primary mb-2" />
  <div className="text-2xl font-bold text-primary">{formatNum(counts?.stocks || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">STOCKS</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">STOCKS</div>
  </div>
  <div className="bg-white rounded-xl p-4 text-center border border-warning shadow-sm hover:shadow-md transition-shadow">
  <Coins className="w-6 h-6 mx-auto text-warning mb-2" />
  <div className="text-2xl font-bold text-warning">{formatNum(counts?.crypto || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">CRYPTO</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">CRYPTO</div>
  </div>
  <div className="bg-white rounded-xl p-4 text-center border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
  <BarChart3 className="w-6 h-6 mx-auto text-warning mb-2" />
  <div className="text-2xl font-bold text-warning">{formatNum(counts?.gold || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">GOLD</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">GOLD</div>
  </div>
- <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
- <div className="text-2xl font-bold text-slate-500">{formatNum(counts?.silver || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">SILVER</div>
+ <div className="bg-white rounded-xl p-4 text-center border border-border shadow-sm hover:shadow-md transition-shadow">
+ <div className="text-2xl font-bold text-muted-foreground">{formatNum(counts?.silver || 0)}</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">SILVER</div>
  </div>
  <div className="bg-white rounded-xl p-4 text-center border border-profit shadow-sm hover:shadow-md transition-shadow">
  <Globe className="w-6 h-6 mx-auto text-profit mb-2" />
  <div className="text-2xl font-bold text-profit">{formatNum(counts?.forex || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">FOREX</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">FOREX</div>
  </div>
- <div className="bg-white rounded-xl p-4 text-center border border-cyan-200 shadow-sm hover:shadow-md transition-shadow">
- <Newspaper className="w-6 h-6 mx-auto text-cyan-600 mb-2" />
- <div className="text-2xl font-bold text-cyan-600">{formatNum(counts?.news || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">NEWS</div>
+ <div className="bg-white rounded-xl p-4 text-center border border-whale/20 shadow-sm hover:shadow-md transition-shadow">
+ <Newspaper className="w-6 h-6 mx-auto text-whale mb-2" />
+ <div className="text-2xl font-bold text-whale">{formatNum(counts?.news || 0)}</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">NEWS</div>
  </div>
  <div className="bg-white rounded-xl p-4 text-center border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
  <History className="w-6 h-6 mx-auto text-primary mb-2" />
  <div className="text-2xl font-bold text-primary">{formatNum(counts?.historical_records || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">HIST. DATA</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">HIST. DATA</div>
  </div>
  <div className="bg-white rounded-xl p-4 text-center border border-whale shadow-sm hover:shadow-md transition-shadow">
  <Calendar className="w-6 h-6 mx-auto text-whale mb-2" />
  <div className="text-2xl font-bold text-whale">{formatNum(counts?.daily_prices || 0)}</div>
- <div className="text-sm text-slate-500 font-medium mt-1">DAILY PRICES</div>
+ <div className="text-sm text-muted-foreground font-medium mt-1">DAILY PRICES</div>
  </div>
  </div>
 
@@ -291,15 +291,15 @@ export function DataEngineTab() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
  {/* By Market */}
  {by_market && Object.keys(by_market).length > 0 && (
- <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
- <div className="text-base text-slate-600 mb-3 font-bold flex items-center gap-2">
+ <div className="bg-white rounded-xl p-4 border border-border shadow-sm">
+ <div className="text-base text-muted-foreground mb-3 font-bold flex items-center gap-2">
  <Database className="w-5 h-5" />
  STOCKS BY MARKET
  </div>
  <div className="flex flex-wrap gap-3">
  {Object.entries(by_market).map(([market, count]) => (
- <div key={market} className="bg-slate-100 px-4 py-2 rounded-lg text-base flex items-center gap-3">
- <span className="text-slate-600 font-medium">{market}</span>
+ <div key={market} className="bg-muted px-4 py-2 rounded-lg text-base flex items-center gap-3">
+ <span className="text-muted-foreground font-medium">{market}</span>
  <span className="text-primary font-bold text-lg">{formatNum(count as number)}</span>
  </div>
  ))}
@@ -311,7 +311,7 @@ export function DataEngineTab() {
  {counts?.historical_records > 0 && (
  <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
  <div 
- className="text-base text-slate-600 mb-3 font-bold flex items-center justify-between cursor-pointer"
+ className="text-base text-muted-foreground mb-3 font-bold flex items-center justify-between cursor-pointer"
  onClick={() => setShowHistorical(!showHistorical)}
  >
  <span className="flex items-center gap-2">
@@ -325,10 +325,10 @@ export function DataEngineTab() {
  <div className="grid grid-cols-2 gap-2 text-sm">
  {historical_categories.map((cat, i) => (
  <div key={i} className="bg-slate-50 p-3 rounded-lg">
- <div className="text-slate-700 font-medium truncate">{cat.category}</div>
+ <div className="text-muted-foreground font-medium truncate">{cat.category}</div>
  <div className="flex gap-3 mt-1">
  <span className="text-primary font-bold">{cat.symbols} symbols</span>
- <span className="text-slate-500">{formatNum(cat.records)} records</span>
+ <span className="text-muted-foreground">{formatNum(cat.records)} records</span>
  </div>
  </div>
  ))}
@@ -343,14 +343,14 @@ export function DataEngineTab() {
  {/* Stocks */}
  <div className={cn(
  "bg-white rounded-xl p-4 border-2 shadow-sm",
- engine?.stocks_running ? "border-primary" : "border-slate-200"
+ engine?.stocks_running ? "border-primary" : "border-border"
  )}>
  <div className="flex items-center justify-between mb-3">
  <TrendingUp className="w-6 h-6 text-primary" />
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.stocks_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+ engine?.stocks_running ? "bg-profit/10 text-profit border border-profit/20" : "bg-loss/10 text-loss border border-loss/20"
  )}
  onClick={() => triggerAction('toggle_scraper', 'stocks')}
  >
@@ -358,7 +358,7 @@ export function DataEngineTab() {
  </button>
  </div>
  <div className="text-lg font-bold mb-1">STOCKS</div>
- <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_stocks_update)}</div>
+ <div className="text-sm text-muted-foreground mb-3">{formatTime(engine?.last_stocks_update)}</div>
  <Button
  variant="outline"
  size="lg"
@@ -373,14 +373,14 @@ export function DataEngineTab() {
  {/* Crypto */}
  <div className={cn(
  "bg-white rounded-xl p-4 border-2 shadow-sm",
- engine?.crypto_running ? "border-warning" : "border-slate-200"
+ engine?.crypto_running ? "border-warning" : "border-border"
  )}>
  <div className="flex items-center justify-between mb-3">
  <Coins className="w-6 h-6 text-warning" />
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.crypto_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+ engine?.crypto_running ? "bg-profit/10 text-profit border border-profit/20" : "bg-loss/10 text-loss border border-loss/20"
  )}
  onClick={() => triggerAction('toggle_scraper', 'crypto')}
  >
@@ -388,7 +388,7 @@ export function DataEngineTab() {
  </button>
  </div>
  <div className="text-lg font-bold mb-1">CRYPTO</div>
- <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_crypto_update)}</div>
+ <div className="text-sm text-muted-foreground mb-3">{formatTime(engine?.last_crypto_update)}</div>
  <Button
  variant="outline"
  size="lg"
@@ -403,14 +403,14 @@ export function DataEngineTab() {
  {/* Metals */}
  <div className={cn(
  "bg-white rounded-xl p-4 border-2 shadow-sm",
- engine?.metals_running ? "border-yellow-500" : "border-slate-200"
+ engine?.metals_running ? "border-yellow-500" : "border-border"
  )}>
  <div className="flex items-center justify-between mb-3">
  <BarChart3 className="w-6 h-6 text-warning" />
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.metals_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+ engine?.metals_running ? "bg-profit/10 text-profit border border-profit/20" : "bg-loss/10 text-loss border border-loss/20"
  )}
  onClick={() => triggerAction('toggle_scraper', 'metals')}
  >
@@ -418,7 +418,7 @@ export function DataEngineTab() {
  </button>
  </div>
  <div className="text-lg font-bold mb-1">METALS</div>
- <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_metals_update)}</div>
+ <div className="text-sm text-muted-foreground mb-3">{formatTime(engine?.last_metals_update)}</div>
  <Button
  variant="outline"
  size="lg"
@@ -433,14 +433,14 @@ export function DataEngineTab() {
  {/* News */}
  <div className={cn(
  "bg-white rounded-xl p-4 border-2 shadow-sm",
- engine?.news_running ? "border-cyan-500" : "border-slate-200"
+ engine?.news_running ? "border-whale/20" : "border-border"
  )}>
  <div className="flex items-center justify-between mb-3">
- <Newspaper className="w-6 h-6 text-cyan-600" />
+ <Newspaper className="w-6 h-6 text-whale" />
  <button
  className={cn(
  "text-sm px-3 py-1 rounded-lg font-bold",
- engine?.news_running ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
+ engine?.news_running ? "bg-profit/10 text-profit border border-profit/20" : "bg-loss/10 text-loss border border-loss/20"
  )}
  onClick={() => triggerAction('toggle_scraper', 'news')}
  >
@@ -448,11 +448,11 @@ export function DataEngineTab() {
  </button>
  </div>
  <div className="text-lg font-bold mb-1">NEWS</div>
- <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_news_update)}</div>
+ <div className="text-sm text-muted-foreground mb-3">{formatTime(engine?.last_news_update)}</div>
  <Button
  variant="outline"
  size="lg"
- className="w-full h-10 text-sm border-cyan-500 text-cyan-600 hover:bg-cyan-50"
+ className="w-full h-10 text-sm border-whale/20 text-whale hover:bg-whale/5"
  onClick={() => triggerAction('trigger_news')}
  disabled={triggeringAction !== null}
  >
@@ -470,7 +470,7 @@ export function DataEngineTab() {
  )} />
  </div>
  <div className="text-lg font-bold mb-1">HISTORICAL</div>
- <div className="text-sm text-slate-500 mb-3">5 Years Yahoo</div>
+ <div className="text-sm text-muted-foreground mb-3">5 Years Yahoo</div>
  <Button
  variant="outline"
  size="lg"
@@ -489,7 +489,7 @@ export function DataEngineTab() {
  <HardDrive className="w-5 h-5 text-profit" />
  </div>
  <div className="text-lg font-bold mb-1">SYNC DB</div>
- <div className="text-sm text-slate-500 mb-3">{formatTime(engine?.last_sync)}</div>
+ <div className="text-sm text-muted-foreground mb-3">{formatTime(engine?.last_sync)}</div>
  <Button
  variant="outline"
  size="lg"
@@ -507,7 +507,7 @@ export function DataEngineTab() {
  <Zap className="w-6 h-6 text-profit" />
  </div>
  <div className="text-lg font-bold mb-1">RUN ALL</div>
- <div className="text-sm text-slate-500 mb-3">All scrapers</div>
+ <div className="text-sm text-muted-foreground mb-3">All scrapers</div>
  <Button
  variant="default"
  size="lg"
@@ -521,33 +521,33 @@ export function DataEngineTab() {
  </div>
 
  {/* Market Hours */}
- <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-4">
+ <div className="bg-white rounded-xl p-4 border border-border shadow-sm mb-4">
  <div className="flex items-center gap-3 mb-3">
  <Clock className="w-5 h-5 text-primary" />
  <span className="text-base font-bold">MARKET HOURS (Local)</span>
  </div>
  <div className="grid grid-cols-4 gap-3 text-sm">
  <div className="bg-slate-50 p-3 rounded-lg">
- <div className="text-slate-500 font-medium">EGX</div>
+ <div className="text-muted-foreground font-medium">EGX</div>
  <div className="text-slate-800 font-mono font-bold">10:00-14:30</div>
  </div>
  <div className="bg-slate-50 p-3 rounded-lg">
- <div className="text-slate-500 font-medium">TADAWUL</div>
+ <div className="text-muted-foreground font-medium">TADAWUL</div>
  <div className="text-slate-800 font-mono font-bold">10:00-15:00</div>
  </div>
  <div className="bg-slate-50 p-3 rounded-lg">
- <div className="text-slate-500 font-medium">KSE</div>
+ <div className="text-muted-foreground font-medium">KSE</div>
  <div className="text-slate-800 font-mono font-bold">09:00-13:15</div>
  </div>
  <div className="bg-slate-50 p-3 rounded-lg">
- <div className="text-slate-500 font-medium">QSE</div>
+ <div className="text-muted-foreground font-medium">QSE</div>
  <div className="text-slate-800 font-mono font-bold">09:30-13:15</div>
  </div>
  </div>
  </div>
 
  {/* Logs */}
- <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
+ <div className="bg-white rounded-xl border border-border shadow-sm mb-4">
  <div 
  className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-t-xl"
  onClick={() => setShowLogs(!showLogs)}
@@ -583,14 +583,14 @@ export function DataEngineTab() {
  log.includes('❌') || log.includes('ERROR') ? "text-loss" :
  log.includes('⚠️') || log.includes('WARNING') ? "text-warning" :
  log.includes('📥') || log.includes('Fetching') ? "text-primary" :
- log.includes('📊') ? "text-cyan-400" :
- "text-slate-300"
+ log.includes('📊') ? "text-whale" :
+ "text-muted-foreground"
  )}>
  {log}
  </div>
  ))
  ) : (
- <div className="text-slate-500 text-center py-8">No logs yet - Run scrapers to see activity</div>
+ <div className="text-muted-foreground text-center py-8">No logs yet - Run scrapers to see activity</div>
  )}
  </div>
  </div>
@@ -624,7 +624,7 @@ export function DataEngineTab() {
  )}
 
  {/* Footer */}
- <div className="text-center text-sm text-slate-500 mt-3 pb-4">
+ <div className="text-center text-sm text-muted-foreground mt-3 pb-4">
  Refresh: {REFRESH_INTERVAL / 1000}s | 
  Scheduler: {engine?.scheduler_active ? 'ACTIVE' : 'INACTIVE'} |
  Historical: {counts?.historical_records?.toLocaleString() || 0} records

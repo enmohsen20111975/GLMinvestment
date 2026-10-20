@@ -352,7 +352,7 @@ export function TopBar() {
  {isUserAdmin && (
  <button
  onClick={() => { setCurrentView('admin'); window.location.hash = 'admin'; }}
- className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-bold text-amber-500 hover:bg-amber-500/20 transition-all shadow-sm"
+ className="flex items-center gap-1.5 rounded-lg border border-warning/20 bg-warning/10 px-2.5 py-1.5 text-xs font-bold text-warning hover:bg-warning/10 transition-all shadow-sm"
  title="لوحة الإدارة"
  >
  <Shield className="h-3.5 w-3.5" />
@@ -383,9 +383,9 @@ export function TopBar() {
  {isUserAdmin && (
  <button
  onClick={() => { setCurrentView('admin'); setUserMenuOpen(false); window.location.hash = 'admin'; }}
- className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-bold text-amber-500 hover:bg-amber-500/10 transition-colors border-b border-border mb-1"
+ className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-bold text-warning hover:bg-warning/10 transition-colors border-b border-border mb-1"
  >
- <Shield className="h-3.5 w-3.5 text-amber-500" />
+ <Shield className="h-3.5 w-3.5 text-warning" />
  لوحة تحكم الإدارة
  </button>
  )}

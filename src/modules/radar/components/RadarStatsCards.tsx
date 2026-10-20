@@ -755,7 +755,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
  </div>
  )}
  {data.levels.length === 0 && (
- <div className="mb-3 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900/40 rounded p-1.5 text-center">
+ <div className="mb-3 text-xs text-muted-foreground bg-slate-50 rounded p-1.5 text-center">
  المصدر: /api/flow/{data.ticker} · بيانات تدفق السيولة (CLV + CMF) — لا يتوفر مخطط توزيع الحجم
  </div>
  )}

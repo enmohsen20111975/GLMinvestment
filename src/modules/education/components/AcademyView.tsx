@@ -1230,7 +1230,7 @@ function LiveMarketScanner() {
  'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums',
  tone === 'up' && 'bg-profit/10 text-profit ',
  tone === 'down' && 'bg-loss/10 text-loss ',
- tone === 'flat' && 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
+ tone === 'flat' && 'bg-slate-500/10 text-muted-foreground dark:text-muted-foreground',
  )}
  dir="ltr"
  >
@@ -1293,7 +1293,7 @@ function LiveMarketScanner() {
  'inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold tabular-nums',
  tone === 'up' && 'bg-profit/10 text-profit ',
  tone === 'down' && 'bg-loss/10 text-loss ',
- tone === 'flat' && 'bg-slate-500/10 text-slate-600 dark:text-slate-300',
+ tone === 'flat' && 'bg-slate-500/10 text-muted-foreground dark:text-muted-foreground',
  )}
  dir="ltr"
  >
@@ -1369,7 +1369,7 @@ function LiveMarketScanner() {
  'text-profit ',
  changeTone(analysis.stock.change_percent) === 'down' &&
  'text-loss ',
- changeTone(analysis.stock.change_percent) === 'flat' && 'text-slate-500',
+ changeTone(analysis.stock.change_percent) === 'flat' && 'text-muted-foreground',
  )}
  dir="ltr"
  >
@@ -1611,9 +1611,9 @@ const SCENARIO_TONE_STYLES: Record<
  neutral: {
  accentBorder: 'border-slate-500/40',
  accentStrip: 'bg-slate-500',
- badge: 'bg-slate-600/15 text-slate-700 dark:text-slate-300',
+ badge: 'bg-slate-600/15 text-muted-foreground dark:text-muted-foreground',
  badgeLabel: 'مشروط',
- iconBg: 'bg-slate-600/15 text-slate-600 dark:text-slate-400',
+ iconBg: 'bg-slate-600/15 text-muted-foreground dark:text-muted-foreground',
  },
 };
 
@@ -1844,7 +1844,7 @@ const PLAYBOOKS: Playbook[] = [
  {
  id: 'dca',
  icon: Layers,
- iconBg: 'bg-slate-600/15 text-slate-600 dark:text-slate-400',
+ iconBg: 'bg-slate-600/15 text-muted-foreground dark:text-muted-foreground',
  title: 'خطة DCA (متوسط التكلفة)',
  condition:
  'تستثمر في سهم أساسي طويل الأجل (بنك أو قائد قطاع) وتريد تخفيض متوسط التكلفة دون توقيت السوق.',
@@ -2001,7 +2001,7 @@ function TradingFloorView() {
  Validation → Signal → Risk Gate → Execution → Journal → Review) with a feedback
  loop. Placed at the top of the Trading Floor so investors see HOW the system
  thinks before they act on the live prices below. */}
- <section aria-labelledby="pipeline-heading" className="rounded-xl border border-slate-200 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60 sm:p-6">
+ <section aria-labelledby="pipeline-heading" className="rounded-xl border border-border bg-white/80 p-4 dark:bg-slate-950/60 sm:p-6">
  <div className="mb-3 flex items-center gap-2">
  <span className="text-lg" role="img" aria-label="خريطة">🗺️</span>
  <h3 id="pipeline-heading" className="text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg">
@@ -2226,7 +2226,7 @@ function PositionSizeCalculator() {
  </div>
  </div>
  <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center">
- <div className="text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+ <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
  القيمة الإجمالية
  </div>
  <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200" dir="ltr">
@@ -2234,7 +2234,7 @@ function PositionSizeCalculator() {
  </div>
  </div>
  <div className="rounded-md border border-slate-500/30 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 text-center">
- <div className="text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+ <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground">
  % من المحفظة
  </div>
  <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200" dir="ltr">

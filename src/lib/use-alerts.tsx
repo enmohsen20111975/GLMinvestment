@@ -217,7 +217,7 @@ export function useAlerts(
       // 3. Toast (visual)
       const toastColor =
         direction === 'up'
-          ? 'bg-emerald-950/80 border-emerald-700'
+          ? 'bg-profit/10 border-profit/30'
           : direction === 'down'
             ? 'bg-red-950/80 border-red-700'
             : 'bg-blue-950/80 border-blue-700';
@@ -303,7 +303,7 @@ export function useCrossTickerAlerts(): void {
         // Toast
         toast.custom(
           () => (
-            <div className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border bg-amber-950/80 border-amber-700 shadow-2xl backdrop-blur-sm min-w-[300px]">
+            <div className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border bg-warning/10 border-warning/30 shadow-2xl backdrop-blur-sm min-w-[300px]">
               <div className="text-2xl shrink-0">🔥</div>
               <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                 <span className="text-sm font-bold text-white truncate">

@@ -172,7 +172,7 @@ export function WealthCharts() {
  if (loading) {
  return (
  <div className="flex items-center justify-center py-20">
- <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+ <Loader2 className="w-6 h-6 animate-spin text-whale" />
  </div>
  );
  }
@@ -218,7 +218,7 @@ export function WealthCharts() {
  className={cn(
  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[36px]',
  period === p
- ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+ ? 'bg-whale/10 text-whale border border-whale/20'
  : 'text-muted-foreground hover:text-foreground border border-white/10'
  )}
  >
@@ -370,7 +370,7 @@ export function WealthCharts() {
  s.action === 'STOP_LOSS' ? 'bg-loss/5 border-loss/20' :
  s.action === 'TAKE_PROFIT' ? 'bg-profit/5 border-profit/20' :
  s.action === 'SELL' ? 'bg-warning/5 border-warning/20' :
- s.action === 'BUY_MORE' ? 'bg-cyan-500/5 border-cyan-500/20' :
+ s.action === 'BUY_MORE' ? 'bg-whale/5 border-whale/20' :
  'bg-white/5 border-white/10'
  )}
  >
@@ -436,7 +436,7 @@ function ChartCard({ title, icon: Icon, children }: any) {
  return (
  <Card className="bg-white/5 border-white/10 p-3">
  <div className="flex items-center gap-2 mb-3">
- <Icon className="w-4 h-4 text-cyan-400" />
+ <Icon className="w-4 h-4 text-whale" />
  <span className="text-xs font-semibold text-foreground">{title}</span>
  </div>
  {children}
@@ -446,7 +446,7 @@ function ChartCard({ title, icon: Icon, children }: any) {
 
 function SummaryCard({ icon: Icon, label, value, subValue, color }: any) {
  const colors: Record<string, string> = {
- cyan: 'text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
+ cyan: 'text-whale bg-whale/5 border-whale/20',
  emerald: 'text-profit bg-profit/5 border-profit/20',
  red: 'text-loss bg-loss/5 border-loss/20',
  amber: 'text-warning bg-warning/5 border-warning/20',

@@ -252,7 +252,7 @@ export function LiquidityFlowPanel() {
  <Card dir="rtl" className="w-full">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-cyan-500" />
+ <Waves className="w-4 h-4 text-whale" />
  حركة السيولة
  <Badge variant="outline" className="text-xs">{marketNameAr}</Badge>
  </CardTitle>
@@ -271,7 +271,7 @@ export function LiquidityFlowPanel() {
  <Card dir="rtl" className="w-full">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-cyan-500" />
+ <Waves className="w-4 h-4 text-whale" />
  حركة السيولة
  <Badge variant="outline" className="text-xs">{marketNameAr}</Badge>
  </CardTitle>
@@ -297,9 +297,9 @@ export function LiquidityFlowPanel() {
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between gap-2 flex-wrap">
  <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-cyan-500" />
+ <Waves className="w-4 h-4 text-whale" />
  حركة السيولة
- <Badge variant="outline" className="text-xs text-cyan-700 dark:text-cyan-400 border-cyan-500/30">
+ <Badge variant="outline" className="text-xs text-whale dark:text-whale border-whale/20">
  {marketNameAr}
  </Badge>
  {summary.net_flow_direction === 'inflow' && (
@@ -432,7 +432,7 @@ export function LiquidityFlowPanel() {
  {investor_type_estimate.institutional_pct > 12 ? `مؤسسي ${investor_type_estimate.institutional_pct}%` : ''}
  </div>
  <div
- className="bg-cyan-500/60 flex items-center justify-center text-xs text-foreground font-semibold"
+ className="bg-whale/60 flex items-center justify-center text-xs text-foreground font-semibold"
  style={{ width: `${Math.max(investor_type_estimate.retail_pct, 5)}%` }}
  title={`أفراد ${investor_type_estimate.retail_pct}%`}
  >

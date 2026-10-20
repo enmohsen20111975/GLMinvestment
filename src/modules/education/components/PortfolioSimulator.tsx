@@ -231,8 +231,8 @@ export function PortfolioSimulator() {
  <CardContent className="space-y-4">
  {/* Inputs */}
  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
- <div className="rounded-lg border border-slate-200 bg-muted/30 p-3 dark:border-slate-700" dir="rtl">
- <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-muted/30 p-3" dir="rtl">
+ <label className="mb-1 block text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  رأس المال (ج.م)
  </label>
  <Input
@@ -277,7 +277,7 @@ export function PortfolioSimulator() {
  {/* Allocation sliders */}
  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3" dir="rtl">
  {ASSET_CLASSES.map((a) => (
- <div key={a.id} className="rounded-md border border-slate-200 bg-card p-2 dark:border-slate-700">
+ <div key={a.id} className="rounded-md border border-border bg-card p-2">
  <div className="mb-1 flex items-center justify-between">
  <span className="flex items-center gap-1.5 text-xs font-semibold">
  <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: a.color }} />
@@ -351,10 +351,10 @@ export function PortfolioSimulator() {
  </div>
  </div>
  <div className="rounded-lg border border-slate-400/40 bg-slate-500/10 p-3 text-center">
- <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="flex items-center justify-center gap-1 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  <Activity className="h-3 w-3" /> الوسيط (P50)
  </div>
- <div className="text-base font-bold text-slate-700 dark:text-slate-300 sm:text-lg">
+ <div className="text-base font-bold text-muted-foreground dark:text-muted-foreground sm:text-lg">
  {result.p50.toLocaleString('ar-EG', { maximumFractionDigits: 0 })}
  </div>
  <div className="text-xs text-muted-foreground">
@@ -401,7 +401,7 @@ export function PortfolioSimulator() {
  icon={Shield}
  label="Sharpe Ratio"
  value={(result.sharpe ?? 0).toFixed(2)}
- color="text-slate-700 dark:text-slate-300"
+ color="text-muted-foreground dark:text-muted-foreground"
  />
  </div>
 
@@ -469,8 +469,8 @@ function EquityCurve({ result, capital }: { result: SimResult; capital: number }
  const ticks = Array.from({ length: yTicks + 1 }, (_, i) => yMin + ((yMax - yMin) * i) / yTicks);
 
  return (
- <div className="rounded-lg border border-slate-200 bg-card p-3 dark:border-slate-700" dir="rtl">
- <div className="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-card p-3" dir="rtl">
+ <div className="mb-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  منحنى حقوق الملكية — الوسيط + نطاق ثقة 90%
  </div>
  <svg
@@ -554,7 +554,7 @@ function MetricCard({
  color: string;
 }) {
  return (
- <div className="rounded-lg border border-slate-200 bg-muted/30 p-2 text-center dark:border-slate-700" dir="rtl">
+ <div className="rounded-lg border border-border bg-muted/30 p-2 text-center" dir="rtl">
  <Icon className="mx-auto mb-1 h-4 w-4 opacity-70" />
  <div className="text-xs text-muted-foreground">{label}</div>
  <div className={cn('text-sm font-bold sm:text-base', color)}>{value}</div>

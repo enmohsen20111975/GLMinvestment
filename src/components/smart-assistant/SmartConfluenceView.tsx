@@ -44,7 +44,7 @@ function getRecBadge(rec?: string | null) {
  return <Badge className="bg-profit hover:bg-profit">شراء</Badge>;
  }
  if (lower.includes('swing_buy') || lower.includes('ت Swing')) {
- return <Badge className="bg-cyan-500 hover:bg-cyan-600">شراء متأرجح</Badge>;
+ return <Badge className="bg-whale hover:bg-whale/90">شراء متأرجح</Badge>;
  }
  if (lower.includes('hold') || lower.includes('حيادية')) {
  return <Badge className="bg-warning hover:bg-warning">حيادية</Badge>;

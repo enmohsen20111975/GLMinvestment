@@ -150,8 +150,8 @@ export default function RescuePage() {
  label: result.decision_ar || 'اصبر',
  icon: Clock,
  color: 'text-profit',
- bg: 'bg-emerald-50 dark:bg-emerald-950/30',
- border: 'border-emerald-300 dark:border-emerald-800',
+ bg: 'bg-profit/5',
+ border: 'border-profit/30 ',
  badge: 'bg-profit text-white',
  };
  })() : null;
@@ -307,7 +307,7 @@ export default function RescuePage() {
  <Badge variant="outline" className="text-[9px] border-red-300 text-danger mr-1">سكين ساقطة</Badge>
  )}
  {result.autopsy.ignored_stop_loss && (
- <Badge variant="outline" className="text-[9px] border-amber-300 text-warning mr-1">تجاهل الوقف</Badge>
+ <Badge variant="outline" className="text-[9px] border-warning/30 text-warning mr-1">تجاهل الوقف</Badge>
  )}
  </div>
  <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">{result.autopsy.summary}</p>
@@ -386,7 +386,7 @@ export default function RescuePage() {
  </Card>
 
  {/* Lessons Learned */}
- <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10">
+ <Card className="border-warning/20 dark:border-warning/30 bg-warning/5">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-1.5">
  <Lightbulb className="w-4 h-4 text-warning" />

@@ -56,7 +56,6 @@ import { ExpertRecommendationsPanel } from '@/modules/market-analysis/components
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import { DailyPicksPoster } from '@/components/daily-picks/DailyPicksPoster';
 import { PreviousPredictionsArchive } from './PredictionsTab';
-import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 // Task 23-C Deliverable 2 — inline Sharia badge next to each stock ticker.
 import { ShariaBadge } from '@/modules/sharia/components/ShariaBadge';
@@ -264,7 +263,7 @@ function PersonaCard({
  <span className={cn(
  'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
  fundamentals?.sector_heat === 'hot'
- ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+ ? 'bg-warning/10 text-warning dark:text-warning border border-warning/20'
  : fundamentals?.sector_heat === 'dead'
  ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800'
  : 'bg-muted text-muted-foreground border-border'
@@ -288,7 +287,7 @@ function PersonaCard({
  'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
  fundamentals.sector_role === 'leader'
  ? 'bg-profit text-profit border-profit/20 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 '
+ : 'bg-loss/10 text-loss border-loss/20 '
  )}
  title={
  fundamentals.sector_role === 'leader'
@@ -300,7 +299,7 @@ function PersonaCard({
  </span>
  )}
  {data.is_egx30 && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-warning/10 text-warning dark:text-warning border border-warning/20 ">
  EGX30
  </span>
  )}
@@ -316,7 +315,7 @@ function PersonaCard({
  المستخدم طلب: "لو السهم إشارته HOLD بس درجته عالية، اعرضه
  واكتب تحته بـ Badge لونه أصفر: مراقبة - انتظر كسر المقاومة" */}
  {isInvestor && data.signal && String(data.signal).toUpperCase() === 'HOLD' && (data.score ?? 0) >= 50 && (
- <Badge variant="outline" className="text-xs px-1.5 py-0 border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300 ">
+ <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning/20 bg-warning/10 text-warning dark:text-warning ">
  👁️ مراقبة — انتظر كسر المقاومة
  </Badge>
  )}
@@ -462,7 +461,7 @@ function PersonaCard({
  'flex-1 flex flex-col items-center gap-0.5 rounded-md py-1.5 px-0.5 text-xs transition-colors cursor-default',
  gate.passed
  ? 'bg-profit text-profit/40 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 '
+ : 'bg-loss/10 text-loss '
  )}
  >
  {gate.passed ? (
@@ -604,7 +603,7 @@ function PersonaCard({
  </span>
  )}
  {data.price_vs_sr === 'near_resistance' && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-warning/10 text-warning dark:text-warning ">
  قرب المقاومة ⚡
  </span>
  )}
@@ -883,11 +882,11 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  </td>
  <td className="p-2 text-center">
  {isMismatch ? (
- <Badge className="text-xs font-bold border border-rose-500/30 bg-rose-500/15 text-rose-700 dark:text-rose-300">
+ <Badge className="text-xs font-bold border border-loss/20 bg-loss/10 text-loss">
  منتهية
  </Badge>
  ) : isStale ? (
- <Badge className="text-xs font-bold border border-amber-500/30 bg-amber-500/15 text-amber-800 dark:text-amber-300" title={staleReason}>
+ <Badge className="text-xs font-bold border border-warning/20 bg-warning/10 text-warning dark:text-warning" title={staleReason}>
  ⚠️ قديمة
  </Badge>
  ) : (
@@ -1675,19 +1674,19 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  // ALPHA-STALE-GATE: ممنوع عرض أي توقع راجع من الفولباك تاريخه أقدم من 48 ساعة كفرصة نشطة لليوم
  const _predDateRaw = p.created_at || p.prediction_date;
  if (_predDateRaw) {
-   const _predTime = new Date(String(_predDateRaw)).getTime();
-   if (!isNaN(_predTime) && (Date.now() - _predTime) > 48 * 3600 * 1000) {
-     return null;
-   }
+ const _predTime = new Date(String(_predDateRaw)).getTime();
+ if (!isNaN(_predTime) && (Date.now() - _predTime) > 48 * 3600 * 1000) {
+ return null;
+ }
  }
  // ALPHA-RR-GATE-1: HARD GATE R/R >= 1.5 — اقتل أي BUY بـ R/R < 1.5 (ممنوع توصيات Zبالة)
  const _rr = p.risk_reward != null ? Number(p.risk_reward) : (() => {
-   const _entry = Number(p.entry_price) || 0;
-   const _target = Number(p.target_price) || 0;
-   const _stop = Number(p.stop_loss) || 0;
-   const _risk = _entry - _stop;
-   const _reward = _target - _entry;
-   return _risk > 0 ? _reward / _risk : 0;
+ const _entry = Number(p.entry_price) || 0;
+ const _target = Number(p.target_price) || 0;
+ const _stop = Number(p.stop_loss) || 0;
+ const _risk = _entry - _stop;
+ const _reward = _target - _entry;
+ return _risk > 0 ? _reward / _risk : 0;
  })();
  if (_rr > 0 && _rr < 1.5) return null;
  // P26: isLongTerm = conservative (أفق طويل). balanced و gambler = أفق أقصر.
@@ -2000,7 +1999,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  {sectorHeat.hot.slice(0, 4).map((s) => (
  <span
  key={s.sector}
- className="px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 whitespace-nowrap"
+ className="px-1.5 py-0.5 rounded-full bg-warning/10 text-warning dark:text-warning border border-warning/20 whitespace-nowrap"
  title={`avg change ${(s.avg_chg ?? 0).toFixed(2)}% — ${Math.round(s.rising_ratio * 100)}% صاعد — ${s.n} سهم — boost +${Math.round(s.boost * 100)}%`}
  >
  {s.sector} <span className="opacity-70">+{(s.avg_chg ?? 0).toFixed(1)}%</span>
@@ -2165,22 +2164,22 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
  )}
 
-      {/* عرض الجدول */}
-      {viewMode === 'table' && (
-        <>
-          {/* ⚠️ تنبيه اتجاه السوق ورادار الحيتان (جيمي directive) */}
-          <div className="mb-3 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 flex items-start gap-2.5 text-xs leading-relaxed">
-            <span className="text-base flex-shrink-0">⚠️</span>
-            <div>
-              <div className="font-bold mb-0.5">تنبيه اتجاه السوق — صفقات استثنائية مضادة للاتجاه (أفضل 5 فرص فقط):</div>
-              <div className="opacity-90">
-                المؤشر العام في مسار هابط / كاش عام. الفرص المعروضة هنا مستخرجة عبر <strong>رادار الحيتان ورصد السيولة المؤسسية الخفية</strong> في مناطق التجميع. الدخول بحجم محفظة لا يتعدى <strong>2%</strong> مع الالتزام الصارم بوقف الخسارة.
-              </div>
-            </div>
-          </div>
-          <PersonaTableView items={personaPageItems} persona={persona} market={market} onSelectItem={handleSelectItem} />
-        </>
-      )}
+ {/* عرض الجدول */}
+ {viewMode === 'table' && (
+ <>
+ {/* ⚠️ تنبيه اتجاه السوق ورادار الحيتان (جيمي directive) */}
+ <div className="mb-3 p-3 rounded-lg border border-warning/20 bg-warning/10 text-warning flex items-start gap-2.5 text-xs leading-relaxed">
+ <span className="text-base flex-shrink-0">⚠️</span>
+ <div>
+ <div className="font-bold mb-0.5">تنبيه اتجاه السوق — صفقات استثنائية مضادة للاتجاه (أفضل 5 فرص فقط):</div>
+ <div className="opacity-90">
+ المؤشر العام في مسار هابط / كاش عام. الفرص المعروضة هنا مستخرجة عبر <strong>رادار الحيتان ورصد السيولة المؤسسية الخفية</strong> في مناطق التجميع. الدخول بحجم محفظة لا يتعدى <strong>2%</strong> مع الالتزام الصارم بوقف الخسارة.
+ </div>
+ </div>
+ </div>
+ <PersonaTableView items={personaPageItems} persona={persona} market={market} onSelectItem={handleSelectItem} />
+ </>
+ )}
 
  {/* عرض النص المنسق للمشاركة */}
  {viewMode === 'text' && (
@@ -2260,11 +2259,11 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  )}
 
  {/* ============================================================================
-   ALPHA — INCUBATOR SECTION (The Stalking Radar — per Mohsen's directive)
-   يـعرض الأسهم اللي محققة 4/6 أو 5/6 شروط + مستنية trigger.
-   - لما السوق دفاعي: يظهر في أول الصفحة (فوق التوقعات).
-   - لما السوق طبيعي: يظهر بعد التوقعات النشطة (كـ "coming up" preview).
-   ============================================================================ */}
+ ALPHA — INCUBATOR SECTION (The Stalking Radar — per Mohsen's directive)
+ يـعرض الأسهم اللي محققة 4/6 أو 5/6 شروط + مستنية trigger.
+ - لما السوق دفاعي: يظهر في أول الصفحة (فوق التوقعات).
+ - لما السوق طبيعي: يظهر بعد التوقعات النشطة (كـ "coming up" preview).
+ ============================================================================ */}
  <div className={isDefensive ? 'order-first' : ''}>
  <IncubatorSection
  market={MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market]}
@@ -2274,9 +2273,9 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  </div>
 
  {/* P42-NO-FREEZE: ترقيم الصفحات — 5 كروت لكل صفحة عشان المتصفح مايموتش.
-     P0-COMPONENT-UNIFICATION (Phase 2.4): استبدلنا الـ inline pagination
-     (4 أزرار + counter) بـ <UnifiedPagination> الموحّد. الـ logic نفسه،
-     بس دلوقتي بـ يستخدم shared component + RTL-aware + accessible. */}
+ P0-COMPONENT-UNIFICATION (Phase 2.4): استبدلنا الـ inline pagination
+ (4 أزرار + counter) بـ <UnifiedPagination> الموحّد. الـ logic نفسه،
+ بس دلوقتي بـ يستخدم shared component + RTL-aware + accessible. */}
  {personaTotalPages > 1 && (
  <UnifiedPagination
  page={personaPage}
@@ -2288,12 +2287,12 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  )}
 
  {/* ============================================================================
-   BRAVO-WHALE-RADAR-HUNTER-MODE (Per Mohsen's directive 2026-10-20):
-   Smart Money Radar section — يظهر لما السوق العام يكون دفاعي + فيه تجميع
-   حيتان هادئ (Quiet Accumulation). الأسهم دي بتـجيل من maker_radar.py
-   (path B_quiet_accumulation_strong بـ 5/6 أو 6/6 signals + 10M+ EGP liquidity).
-   ⚠️ صفقات مخاطرة محسوبة — إدارة رأس مال صارمة (2% من المحفظة).
-   ============================================================================ */}
+ BRAVO-WHALE-RADAR-HUNTER-MODE (Per Mohsen's directive 2026-10-20):
+ Smart Money Radar section — يظهر لما السوق العام يكون دفاعي + فيه تجميع
+ حيتان هادئ (Quiet Accumulation). الأسهم دي بتـجيل من maker_radar.py
+ (path B_quiet_accumulation_strong بـ 5/6 أو 6/6 signals + 10M+ EGP liquidity).
+ ⚠️ صفقات مخاطرة محسوبة — إدارة رأس مال صارمة (2% من المحفظة).
+ ============================================================================ */}
  {whaleRadarPicks.length > 0 && (
  <div className="mt-4 rounded-lg border-2 border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-50 via-amber-50 to-yellow-50 dark:from-fuchsia-950/40 dark:via-amber-950/30 dark:to-yellow-950/20 p-4">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -2315,7 +2314,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  <Badge className="bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30 text-[10px] font-bold">
  ⚠️ مخاطرة محسوبة
  </Badge>
- <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] font-bold">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border-warning/20 text-[10px] font-bold">
  حجم 2% فقط
  </Badge>
  </div>
@@ -2335,7 +2334,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  return (
  <div
  key={`whale-${(p.ticker || '') + '-' + i}`}
- className="rounded-lg border border-fuchsia-500/20 bg-white/80 dark:bg-slate-900/60 p-3 hover:border-fuchsia-500/40 transition-colors"
+ className="rounded-lg border border-fuchsia-500/20 bg-white/80/60 p-3 hover:border-fuchsia-500/40 transition-colors"
  >
  <div className="flex items-center justify-between mb-2">
  <span className="font-bold text-sm">{p.ticker}</span>
@@ -2361,7 +2360,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  <span className="text-[10px] text-muted-foreground">
  R:R = <span className={`font-bold ${rr >= 1.8 ? 'text-profit' : 'text-warning'}`}>{rr.toFixed(2)}</span>
  </span>
- <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
+ <span className="text-[10px] text-warning dark:text-warning font-bold">
  حجم مقترح: 2%
  </span>
  </div>
@@ -2383,9 +2382,9 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  )}
 
  {/* P0-4b — BRAVO-TESTING-CANDIDATES: أسهم تحت الاختبار والمراقبة اللحظية.
-     Pattern: mirror لـ EidPredictionsWidget — قسم منفصل للأسهم الـ lifecycle_status='testing'.
-     بتيجي من /api/unified/predictions تحت مفتاح testing_candidates.
-     بتـ refresh مع fetchPrevious كل 300s (لو liveMode) — نفس الـ polling cycle. */}
+ Pattern: mirror لـ EidPredictionsWidget — قسم منفصل للأسهم الـ lifecycle_status='testing'.
+ بتيجي من /api/unified/predictions تحت مفتاح testing_candidates.
+ بتـ refresh مع fetchPrevious كل 300s (لو liveMode) — نفس الـ polling cycle. */}
  {testingCandidates.length > 0 && (
  <div className="mt-4 rounded-lg border border-warning/20 bg-warning/5 p-3">
  <div className="flex items-center justify-between mb-2">

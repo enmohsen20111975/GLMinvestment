@@ -460,7 +460,7 @@ export function SystemMonitorPanel() {
  e.stopPropagation();
  setDialogProcess(proc.name);
  }}
- className="inline-flex items-center justify-center h-6 w-6 rounded hover:bg-cyan-500/10 text-cyan-500 transition-colors"
+ className="inline-flex items-center justify-center h-6 w-6 rounded hover:bg-whale/10 text-whale transition-colors"
  title="عرض السجل التاريخي للعملية"
  aria-label="عرض السجل التاريخي"
  >

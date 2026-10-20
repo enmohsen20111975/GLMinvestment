@@ -116,7 +116,7 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  const sellPct = summary?.sell_pressure_pct ?? 0;
 
  // Interpretation
- let interpretation = { label: 'متوازن', color: 'text-slate-600 bg-slate-500/10 border-slate-500/30' };
+ let interpretation = { label: 'متوازن', color: 'text-muted-foreground bg-slate-500/10 border-slate-500/30' };
  if (buyPct >= 60) interpretation = { label: 'ضغط شرائي قوي', color: 'text-profit bg-profit/15 border-profit/20 ' };
  else if (buyPct >= 55) interpretation = { label: 'ضغط شرائي', color: 'text-profit bg-profit/10 border-profit/20 ' };
  else if (sellPct >= 60) interpretation = { label: 'ضغط بيعي قوي', color: 'text-loss bg-loss/15 border-loss/20 ' };
@@ -126,7 +126,7 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  <Card dir="rtl">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
- <Activity className="w-4 h-4 text-cyan-500" />
+ <Activity className="w-4 h-4 text-whale" />
  ضغط الشراء/البيع داخل الجلسة
  <div className="flex gap-1 mr-auto items-center">
  <Input
@@ -160,7 +160,7 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
 
  {loading ? (
  <div className="flex items-center justify-center py-6">
- <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
+ <Loader2 className="w-5 h-5 animate-spin text-whale" />
  </div>
  ) : !data || !summary ? (
  <div className="text-center py-6 text-xs text-muted-foreground">

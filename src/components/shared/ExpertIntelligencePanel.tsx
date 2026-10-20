@@ -359,7 +359,7 @@ export function ExpertIntelligencePanel({
  <div className="flex items-center gap-2 mb-2 flex-wrap">
  <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
  <span className="font-medium text-xs sm:text-sm">توقعات شراء غلط</span>
- <Badge className="text-xs bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">متوسط: {missedOpp.summary.avg_false_loss_pct}%</Badge>
+ <Badge className="text-xs bg-warning/10 text-warning dark:text-warning border border-warning/20">متوسط: {missedOpp.summary.avg_false_loss_pct}%</Badge>
  </div>
  <div className="max-h-72 overflow-y-auto border rounded-lg divide-y">
  {missedOpp.false_positives.map((op: any, idx: number) => (
@@ -500,8 +500,8 @@ export function ExpertIntelligencePanel({
  <div className="flex items-center gap-2 min-w-0">
  <span className={cn(
  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0',
- i === 0 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' :
- i === sectorIntel.sector_ranking!.length - 1 ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30' :
+ i === 0 ? 'bg-profit/10 text-profit border border-profit/20' :
+ i === sectorIntel.sector_ranking!.length - 1 ? 'bg-loss/10 text-loss border border-loss/20' :
  'bg-muted text-muted-foreground'
  )}>{i + 1}</span>
  <div className="min-w-0">
@@ -556,7 +556,7 @@ export function ExpertIntelligencePanel({
  السهم {s.stock_change_pct > 0 ? '+' : ''}{s.stock_change_pct}% · القطاع {s.sector_avg_change_pct}%
  </div>
  </div>
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs flex-shrink-0">RS +{s.relative_strength}%</Badge>
+ <Badge className="bg-profit/10 text-profit border border-profit/20 text-xs flex-shrink-0">RS +{s.relative_strength}%</Badge>
  </div>
  </div>
  ))}
@@ -653,7 +653,7 @@ export function ExpertIntelligencePanel({
  {c.is_egx30 && <Badge variant="outline" className="text-xs px-1 py-0">EGX30</Badge>}
  {c.is_egx100 && !c.is_egx30 && <Badge variant="outline" className="text-xs px-1 py-0">EGX100</Badge>}
  {c.current_state?.price_is_stale && (
- <Badge className="text-xs px-1 py-0 bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">⏱️</Badge>
+ <Badge className="text-xs px-1 py-0 bg-warning/10 text-warning dark:text-warning border border-warning/20">⏱️</Badge>
  )}
  </div>
  <div className="text-xs sm:text-xs text-muted-foreground mt-0.5 truncate">

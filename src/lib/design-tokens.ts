@@ -94,11 +94,11 @@ export const TONE_SOFT: Record<string, string> = {
 
 /** خلفية صلبة (solid) — bg-tone + text-tone-foreground */
 export const TONE_SOLID: Record<string, string> = {
-  success: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground',
-  warning: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30-foreground',
+  success: 'bg-profit/10 text-profit border border-profit/20',
+  warning: 'bg-warning/10 text-warning border border-warning/20',
   danger: 'bg-danger text-danger-foreground',
-  profit: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground',
-  loss: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30-foreground',
+  profit: 'bg-profit/10 text-profit border border-profit/20',
+  loss: 'bg-loss/10 text-loss border border-loss/20',
   whale: 'bg-whale text-whale-foreground',
   muted: 'bg-muted text-muted-foreground',
   primary: 'bg-primary text-primary-foreground',
@@ -181,75 +181,75 @@ export interface BadgeStyle {
 export const SIGNAL_BADGE_STYLES: Record<string, BadgeStyle> = {
   // ─── شراء ───
   STRONG_BUY: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    border: 'border-emerald-500/30',
+    bg: 'bg-profit/10',
+    text: 'text-profit',
+    border: 'border-profit/20',
     icon: '🟢',
     labelAr: 'شراء قوي',
   },
   BUY: {
-    bg: 'bg-emerald-500/10',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    border: 'border-emerald-500/20',
+    bg: 'bg-profit/10',
+    text: 'text-profit',
+    border: 'border-profit/20',
     icon: '🟢',
     labelAr: 'شراء',
   },
   ACCUMULATE: {
-    bg: 'bg-cyan-500/15',
-    text: 'text-cyan-700 dark:text-cyan-400',
-    border: 'border-cyan-500/30',
+    bg: 'bg-whale/10',
+    text: 'text-whale',
+    border: 'border-whale/20',
     icon: '🐋',
     labelAr: 'تجميع',
   },
   WHALE_RADAR_BUY: {
-    bg: 'bg-cyan-500/15',
-    text: 'text-cyan-700 dark:text-cyan-400',
-    border: 'border-cyan-500/30',
+    bg: 'bg-whale/10',
+    text: 'text-whale',
+    border: 'border-whale/20',
     icon: '🐋',
     labelAr: 'شراء رادار حيتان',
   },
   // ─── محايد ───
   HOLD: {
-    bg: 'bg-slate-200/80 dark:bg-slate-800',
-    text: 'text-slate-700 dark:text-slate-300',
-    border: 'border-slate-300 dark:border-slate-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
     icon: '⏸️',
     labelAr: 'احتفاظ',
   },
   WAIT: {
-    bg: 'bg-slate-200/80 dark:bg-slate-800',
-    text: 'text-slate-700 dark:text-slate-300',
-    border: 'border-slate-300 dark:border-slate-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
     icon: '⏸️',
     labelAr: 'انتظار',
   },
   // ─── تحذير ───
   REDUCE: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-700 dark:text-amber-400',
-    border: 'border-amber-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '⚠️',
     labelAr: 'تخفيض',
   },
   // ─── بيع ───
   SELL: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-400',
-    border: 'border-rose-500/30',
+    bg: 'bg-loss/10',
+    text: 'text-loss',
+    border: 'border-loss/20',
     icon: '🔴',
     labelAr: 'بيع',
   },
   STRONG_SELL: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-400',
-    border: 'border-rose-500/30',
+    bg: 'bg-loss/10',
+    text: 'text-loss',
+    border: 'border-loss/20',
     icon: '🔴',
     labelAr: 'بيع قوي',
   },
   AVOID: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-400',
-    border: 'border-rose-500/30',
+    bg: 'bg-loss/10',
+    text: 'text-loss',
+    border: 'border-loss/20',
     icon: '🔴',
     labelAr: 'تجنّب',
   },
@@ -261,51 +261,51 @@ export const SIGNAL_BADGE_STYLES: Record<string, BadgeStyle> = {
 
 export const STATUS_BADGE_STYLES: Record<string, BadgeStyle> = {
   TARGET_HIT: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-500/30',
+    bg: 'bg-profit/10',
+    text: 'text-profit',
+    border: 'border-profit/20',
     icon: '✅',
     labelAr: 'تم الهدف',
   },
   TRAILING_PROFIT: {
-    bg: 'bg-teal-500/15',
-    text: 'text-teal-700 dark:text-teal-300',
-    border: 'border-teal-500/30',
+    bg: 'bg-whale/10',
+    text: 'text-whale',
+    border: 'border-whale/20',
     icon: '💰',
     labelAr: 'ربح محقق',
   },
   STOPPED: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-500/30',
+    bg: 'bg-loss/10',
+    text: 'text-loss',
+    border: 'border-loss/20',
     icon: '🛑',
     labelAr: 'وقف خسارة',
   },
   EXPIRED: {
-    bg: 'bg-slate-200/70 dark:bg-slate-800',
-    text: 'text-slate-600 dark:text-slate-400',
-    border: 'border-slate-300 dark:border-slate-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
     icon: '⌛',
     labelAr: 'منتهية',
   },
   PENDING: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '⏳',
     labelAr: 'نشطة',
   },
   ACTIVE: {
-    bg: 'bg-blue-500/15',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '🟢',
     labelAr: 'نشط',
   },
   WAITING: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '⏸️',
     labelAr: 'في انتظار',
   },
@@ -317,23 +317,23 @@ export const STATUS_BADGE_STYLES: Record<string, BadgeStyle> = {
 
 export const READINESS_BADGE_STYLES: Record<string, BadgeStyle> = {
   HEATING_UP: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '🌡️',
     labelAr: 'تسخين',
   },
   APPROACHING_TRIGGER: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-500/30',
+    bg: 'bg-profit/10',
+    text: 'text-profit',
+    border: 'border-profit/20',
     icon: '🔥',
     labelAr: 'على وشك',
   },
   COMPLETE: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-500/30',
+    bg: 'bg-profit/10',
+    text: 'text-profit',
+    border: 'border-profit/20',
     icon: '✅',
     labelAr: 'مكتمل',
   },
@@ -345,16 +345,16 @@ export const READINESS_BADGE_STYLES: Record<string, BadgeStyle> = {
 
 export const ARCHIVE_BADGE_STYLES: Record<string, BadgeStyle> = {
   STALE: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-800 dark:text-amber-300',
-    border: 'border-amber-500/30',
+    bg: 'bg-warning/10',
+    text: 'text-warning',
+    border: 'border-warning/20',
     icon: '⚠️',
     labelAr: 'قديمة',
   },
   MISMATCH: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-500/30',
+    bg: 'bg-loss/10',
+    text: 'text-loss',
+    border: 'border-loss/20',
     icon: '🔴',
     labelAr: 'منتهية',
   },
@@ -380,9 +380,41 @@ export function getStatusBadgeStyle(status: string | null | undefined): BadgeSty
 
 /** Neutral fallback — للـ signals/statuses مش المتعرفة. */
 export const NEUTRAL_BADGE: BadgeStyle = {
-  bg: 'bg-slate-200/70 dark:bg-slate-800',
-  text: 'text-slate-600 dark:text-slate-400',
-  border: 'border-slate-300 dark:border-slate-700',
+  bg: 'bg-muted',
+  text: 'text-muted-foreground',
+  border: 'border-border',
   icon: '•',
   labelAr: 'غير محدد',
 };
+
+// ============================================================================
+// 🎯 FinancialTone + resolveFinancialTone (Per Mohsen's directive)
+// ============================================================================
+// The 5 canonical financial tones. All badge components resolve to one of
+// these. Each maps to a CSS variable in globals.css — change the variable
+// once → the whole platform changes automatically.
+// ============================================================================
+
+export type FinancialTone = 'profit' | 'loss' | 'warning' | 'whale' | 'neutral';
+
+/**
+ * بيرجّع الـ FinancialTone المناسب لأي status / signal / type string.
+ * - 'profit'  → TARGET_HIT, BUY, STRONG_BUY, WHALE_RADAR_BUY, PROFIT, TP1, TP2
+ * - 'loss'    → STOPPED, SELL, STRONG_SELL, LOSS, DANGER, AVOID
+ * - 'warning' → PENDING, WARNING, REDUCE, WAITING, STALKING, INCUBATOR
+ * - 'whale'   → WHALE, WHALE_RADAR, INSTITUTIONAL, SMART_MONEY, ACCUMULATE
+ * - 'neutral' → EXPIRED, CASH, HOLD, anything else
+ *
+ * @example
+ * resolveFinancialTone('TARGET_HIT')  // → 'profit'
+ * resolveFinancialTone('STOPPED')     // → 'loss'
+ * resolveFinancialTone('PENDING')     // → 'warning'
+ */
+export function resolveFinancialTone(statusOrType: string): FinancialTone {
+  const s = (statusOrType || '').toUpperCase().trim();
+  if (['TARGET_HIT', 'TP1', 'TP2', 'TRAILING_PROFIT', 'BUY', 'STRONG_BUY', 'PROFIT', 'WHALE_RADAR_BUY'].includes(s)) return 'profit';
+  if (['STOPPED', 'STOP_LOSS', 'SL', 'SELL', 'STRONG_SELL', 'LOSS', 'DANGER', 'AVOID'].includes(s)) return 'loss';
+  if (['PENDING', 'WARNING', 'STALKING', 'INCUBATOR', 'CAUTION', 'REDUCE', 'WAITING'].includes(s)) return 'warning';
+  if (['WHALE', 'WHALE_RADAR', 'INSTITUTIONAL', 'SMART_MONEY', 'ACCUMULATE'].includes(s)) return 'whale';
+  return 'neutral';
+}

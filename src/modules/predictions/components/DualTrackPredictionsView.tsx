@@ -246,7 +246,7 @@ export function DualTrackPredictionsView() {
  if (loading) {
  return (
  <div className="flex items-center justify-center py-20" dir="rtl">
- <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
+ <Loader2 className="w-6 h-6 animate-spin text-whale" />
  <span className="mr-2 text-sm text-muted-foreground">جاري تحليل التوقعات المزدوجة...</span>
  </div>
  );
@@ -265,7 +265,7 @@ export function DualTrackPredictionsView() {
  <div className="flex items-center justify-between flex-wrap gap-2">
  <div>
  <h1 className="text-xl font-bold flex items-center gap-2">
- <Layers className="w-5 h-5 text-cyan-500" />
+ <Layers className="w-5 h-5 text-whale" />
  نظام التوقعات المزدوج
  </h1>
  <p className="text-xs text-muted-foreground mt-1">
@@ -299,12 +299,12 @@ export function DualTrackPredictionsView() {
  </div>
 
  {backtestResult && (
- <Card className="bg-cyan-500/5 border-cyan-500/20">
+ <Card className="bg-whale/5 border-whale/20">
  <CardContent className="p-3">
  <div className="flex items-start gap-2">
- <CheckCircle2 className="w-4 h-4 text-cyan-500 mt-0.5 shrink-0" />
+ <CheckCircle2 className="w-4 h-4 text-whale mt-0.5 shrink-0" />
  <div className="flex-1">
- <p className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 mb-1">
+ <p className="text-xs font-semibold text-whale mb-1">
  نتيجة الـ Backtest
  </p>
  <p className="text-xs text-muted-foreground">{backtestResult}</p>
@@ -315,7 +315,7 @@ export function DualTrackPredictionsView() {
  )}
 
  {/* Combined Efficiency Hero */}
- <Card className="bg-cyan-500/5 border-cyan-500/30">
+ <Card className="bg-whale/5 border-whale/20">
  <CardHeader>
  <CardTitle className="flex items-center gap-2 text-base">
  <Brain className="w-4 h-4" />
@@ -327,7 +327,7 @@ export function DualTrackPredictionsView() {
  </CardHeader>
  <CardContent>
  <div className="flex items-center gap-4">
- <div className="text-3xl font-bold text-cyan-600 dark:text-cyan-400">
+ <div className="text-3xl font-bold text-whale dark:text-whale">
  {(combined ?? 0).toFixed(1)}%
  </div>
  <div className="flex-1">
@@ -419,7 +419,7 @@ export function DualTrackPredictionsView() {
  <Card>
  <CardHeader>
  <CardTitle className="text-sm flex items-center gap-2">
- <Zap className="w-4 h-4 text-cyan-500" />
+ <Zap className="w-4 h-4 text-whale" />
  التوقعات الحالية
  </CardTitle>
  <CardDescription className="text-xs">
@@ -449,7 +449,7 @@ export function DualTrackPredictionsView() {
  <TabsContent value={trackFilter} className="mt-3">
  {loadingPreds ? (
  <div className="flex items-center justify-center py-8">
- <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
+ <Loader2 className="w-5 h-5 animate-spin text-whale" />
  </div>
  ) : predictions.length === 0 ? (
  <div className="text-center py-8 text-xs text-muted-foreground">
@@ -509,7 +509,7 @@ function TrackCard({
  }
 
  const colorClasses = {
- cyan: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
+ cyan: 'text-whale dark:text-whale bg-whale/5 border-whale/20',
  purple: 'text-primary bg-primary/5 border-purple-500/20',
  };
 
@@ -562,7 +562,7 @@ function PredictionRow({ pred }: { pred: Prediction }) {
  'flex items-center justify-between p-2.5 rounded-lg border text-xs',
  isLiquidity
  ? 'bg-primary/5 border-purple-500/20'
- : 'bg-cyan-500/5 border-cyan-500/20',
+ : 'bg-whale/5 border-whale/20',
  isWin && 'ring-1 ring-profit/30',
  isLoss && 'ring-1 ring-loss/30',
  )}
@@ -570,7 +570,7 @@ function PredictionRow({ pred }: { pred: Prediction }) {
  <div className="flex items-center gap-2 min-w-0">
  <span className={cn(
  'text-xs font-medium px-1.5 py-0.5 rounded',
- isLiquidity ? 'bg-primary/20 text-primary' : 'bg-cyan-500/20 text-cyan-700'
+ isLiquidity ? 'bg-primary/20 text-primary' : 'bg-whale/20 text-whale'
  )}>
  {pred.track_label}
  </span>

@@ -441,7 +441,7 @@ export default function UnifiedAnalysisView() {
  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">تفاصيل الدرجات</h3>
  <ScoreBar value={Number(result.score || 0)} label="الدرجة الكلية" color="bg-whale" />
  <ScoreBar value={Number(result.technical_score || 0)} label="تقني" color="bg-primary" />
- <ScoreBar value={Number(result.volume_score || 0)} label="حجم" color="bg-cyan-500" />
+ <ScoreBar value={Number(result.volume_score || 0)} label="حجم" color="bg-whale" />
  <ScoreBar value={Number(result.candle_score || 0)} label="شموع" color="bg-warning" />
  <ScoreBar value={Number(result.confidence || 0)} label="الثقة" color="bg-profit" />
  </div>

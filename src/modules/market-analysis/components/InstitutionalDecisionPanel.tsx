@@ -181,13 +181,13 @@ const flightColorMap: Record<string, string> = {
  flying_up: 'text-lime-500 bg-lime-500/10 border-lime-500/30',
  falling_down: 'text-loss bg-loss/10 border-loss/20',
  coiling: 'text-warning bg-warning/10 border-warning/20',
- sideways: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
+ sideways: 'text-muted-foreground bg-slate-500/10 border-slate-500/30',
 };
 
 const makerColorMap: Record<string, string> = {
  absorption: 'text-profit bg-profit/10 border-profit/20',
  distribution: 'text-loss bg-loss/10 border-loss/20',
- calm: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
+ calm: 'text-muted-foreground bg-slate-500/10 border-slate-500/30',
 };
 
 const adviceColorMap: Record<string, string> = {
@@ -200,7 +200,7 @@ const adviceColorMap: Record<string, string> = {
 const qualityColorMap: Record<string, string> = {
  lime: 'text-lime-500',
  orange: 'text-warning',
- gray: 'text-slate-400',
+ gray: 'text-muted-foreground',
  red: 'text-loss',
 };
 
@@ -314,7 +314,7 @@ export function InstitutionalDecisionPanel({
  <span className={cn(
  'font-bold text-xs',
  proof.score_impact > 0 ? 'text-profit' :
- proof.score_impact < 0 ? 'text-loss' : 'text-slate-400'
+ proof.score_impact < 0 ? 'text-loss' : 'text-muted-foreground'
  )}>
  {proof.score_impact > 0 ? '+' : ''}{proof.score_impact}
  </span>
@@ -428,7 +428,7 @@ export function InstitutionalDecisionPanel({
  'text-xs py-0 px-1.5',
  fair_state === 'غالي' ? 'border-loss/20 text-loss' :
  fair_state === 'رخيص' ? 'border-profit/20 text-profit' :
- 'border-slate-500/40 text-slate-300'
+ 'border-slate-500/40 text-muted-foreground'
  )}
  >
  {fair_state} ({fair_premium > 0 ? '+' : ''}{fair_premium?.toFixed(1)}%)
@@ -464,11 +464,11 @@ export function InstitutionalDecisionPanel({
  {/* ─── 5. التقييم والتعلم الذاتي (V39 NEW) ─── */}
  <div>
  <div className="flex items-center gap-1.5 mb-1.5 px-0.5">
- <div className="h-px flex-1 bg-cyan-500/30" />
- <span className="text-xs font-bold text-cyan-400 flex items-center gap-1">
+ <div className="h-px flex-1 bg-whale/30" />
+ <span className="text-xs font-bold text-whale flex items-center gap-1">
  <Brain className="w-3 h-3" /> التقييم والتعلم الذاتي
  </span>
- <div className="h-px flex-1 bg-cyan-500/30" />
+ <div className="h-px flex-1 bg-whale/30" />
  </div>
  <div className="grid grid-cols-2 gap-1.5">
  {/* Model Quality */}
@@ -481,7 +481,7 @@ export function InstitutionalDecisionPanel({
  {/* Dynamic Threshold */}
  <div className="rounded-md border border-slate-500/20 bg-slate-500/5 p-1.5">
  <div className="text-[8px] text-muted-foreground mb-0.5">حد الشراء الديناميكي</div>
- <div className="text-xs font-bold text-cyan-400">
+ <div className="text-xs font-bold text-whale">
  {dynamic_thresh || 75} <span className="text-[8px] text-muted-foreground">(متكيف)</span>
  </div>
  {dynamic_thresh_reason && (
@@ -494,7 +494,7 @@ export function InstitutionalDecisionPanel({
  <div className={cn(
  'text-xs font-bold font-mono',
  (backtest?.win_rate || 0) >= 60 ? 'text-profit' :
- (backtest?.win_rate || 0) > 0 ? 'text-warning' : 'text-slate-400'
+ (backtest?.win_rate || 0) > 0 ? 'text-warning' : 'text-muted-foreground'
  )}>
  {backtest?.win_rate_text || 'لا يوجد صفقات سابقة'}
  </div>
@@ -505,7 +505,7 @@ export function InstitutionalDecisionPanel({
  <div className={cn(
  'text-xs font-bold font-mono',
  (backtest?.profit_factor || 0) > 1.5 ? 'text-profit' :
- (backtest?.profit_factor || 0) > 0 ? 'text-warning' : 'text-slate-400'
+ (backtest?.profit_factor || 0) > 0 ? 'text-warning' : 'text-muted-foreground'
  )}>
  {backtest?.pf_text || '0.00'}
  </div>
@@ -523,10 +523,10 @@ export function InstitutionalDecisionPanel({
 
  {/* ─── 6. خطة التداول (Risk Profile — Dynamic V39) ─── */}
  {risk_profile && (
- <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-2">
+ <div className="rounded-md border border-whale/20 bg-whale/5 p-2">
  <div className="flex items-center gap-1.5 mb-1.5">
- <Target className="w-3.5 h-3.5 text-cyan-400" />
- <span className="text-xs font-bold text-cyan-300">🎯 خطة التداول (ديناميكي)</span>
+ <Target className="w-3.5 h-3.5 text-whale" />
+ <span className="text-xs font-bold text-whale">🎯 خطة التداول (ديناميكي)</span>
  {/* V39: Dynamic indicators */}
  <div className="flex items-center gap-1 mr-auto">
  {dynamic_sl_mult && (
@@ -542,7 +542,7 @@ export function InstitutionalDecisionPanel({
  {outperforming_market !== undefined && (
  <Badge variant="outline" className={cn(
  'text-[7px] py-0 px-1',
- outperforming_market ? 'border-lime-500/30 text-lime-300' : 'border-slate-500/30 text-slate-400'
+ outperforming_market ? 'border-lime-500/30 text-lime-300' : 'border-slate-500/30 text-muted-foreground'
  )}>
  {outperforming_market ? 'أقوى من السوق' : 'أضعف من السوق'}
  </Badge>
@@ -644,14 +644,14 @@ export function InstitutionalDecisionPanel({
  <div className="rounded-md border border-slate-500/20 bg-slate-500/5 p-2.5">
  <div className="flex items-center justify-between gap-2 mb-1">
  <div className="flex items-center gap-1.5">
- <DollarSign className="w-3.5 h-3.5 text-slate-400" />
- <span className="text-xs font-black text-slate-300">💼 مدير المحفظة</span>
+ <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+ <span className="text-xs font-black text-muted-foreground">💼 مدير المحفظة</span>
  </div>
  <Button
  variant="ghost"
  size="sm"
  onClick={() => setShowPositionForm(!showPositionForm)}
- className="h-6 px-2 text-xs text-slate-300 hover:text-foreground hover:bg-slate-700/40"
+ className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-slate-700/40"
  >
  {showPositionForm ? 'إلغاء' : '+ أضف مركزك'}
  {!showPositionForm && <ChevronDown className="w-3 h-3 mr-1" />}
@@ -662,24 +662,24 @@ export function InstitutionalDecisionPanel({
  <div className="space-y-1.5 mt-2">
  <div className="grid grid-cols-2 gap-1.5">
  <div>
- <Label className="text-xs text-slate-300 mb-0.5 block">سعر الشراء</Label>
+ <Label className="text-xs text-muted-foreground mb-0.5 block">سعر الشراء</Label>
  <Input
  type="number"
  step="0.01"
  value={entryPriceInput}
  onChange={(e) => setEntryPriceInput(e.target.value)}
  placeholder="0.00"
- className="h-7 text-xs bg-slate-900/60 border-slate-600/40"
+ className="h-7 text-xs bg-muted border-slate-600/40"
  />
  </div>
  <div>
- <Label className="text-xs text-slate-300 mb-0.5 block">الكمية</Label>
+ <Label className="text-xs text-muted-foreground mb-0.5 block">الكمية</Label>
  <Input
  type="number"
  value={entryQtyInput}
  onChange={(e) => setEntryQtyInput(e.target.value)}
  placeholder="0"
- className="h-7 text-xs bg-slate-900/60 border-slate-600/40"
+ className="h-7 text-xs bg-muted border-slate-600/40"
  />
  </div>
  </div>
@@ -693,7 +693,7 @@ export function InstitutionalDecisionPanel({
  </Button>
  </div>
  ) : (
- <p className="text-xs text-slate-400 leading-relaxed">
+ <p className="text-xs text-muted-foreground leading-relaxed">
  أدخل بيانات مركزك (سعر الشراء + الكمية) لعرض نصيحة فورية:
  احتفظ / زِد / بيع / بيع جزئي.
  </p>

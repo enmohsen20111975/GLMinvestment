@@ -97,7 +97,7 @@ interface SearchResult {
 
 // ====== Helpers ======
 const AVATAR_COLORS = [
- 'bg-profit', 'bg-whale', 'bg-cyan-500', 'bg-success',
+ 'bg-profit', 'bg-whale', 'bg-whale', 'bg-success',
  'bg-lime-600', 'bg-warning', 'bg-warning', 'bg-loss',
  'bg-pink-600', 'bg-fuchsia-600', 'bg-stone-600', 'bg-warning',
 ];

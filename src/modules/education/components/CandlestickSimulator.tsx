@@ -345,7 +345,7 @@ const TYPE_META: Record<
  },
  neutral: {
  label: 'محايد',
- className: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30',
+ className: 'bg-slate-500/15 text-muted-foreground dark:text-muted-foreground border-slate-500/30',
  icon: Minus,
  },
 };
@@ -360,7 +360,7 @@ const RELIABILITY_META: Record<
  },
  medium: {
  label: 'موثوقية متوسطة',
- className: 'bg-slate-400/15 text-slate-600 dark:text-slate-300 border-slate-400/40',
+ className: 'bg-slate-400/15 text-muted-foreground dark:text-muted-foreground border-slate-400/40',
  },
  low: {
  label: 'موثوقية منخفضة',

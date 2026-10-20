@@ -245,31 +245,31 @@ const PRESET_BUTTONS: Array<{
 
 // Sector → tailwind badge colors (deterministic by sector name hash)
 const SECTOR_COLOR_MAP: Record<string, string> = {
- 'Financials': 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
- 'القطاع المالي': 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
- 'Basic Materials': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
- 'الأساسية': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ 'Financials': 'bg-profit/10 text-profit border border-profit/20 ',
+ 'القطاع المالي': 'bg-profit/10 text-profit border border-profit/20 ',
+ 'Basic Materials': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
+ 'الأساسية': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  'Real Estate': 'bg-primary text-primary/30 ',
  'العقارات': 'bg-primary text-primary/30 ',
  'Consumer Goods': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
  'الاستهلاكية': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
  'Industrials': 'bg-whale text-whale/30 ',
  'الصناعات التحويلية': 'bg-whale text-whale/30 ',
- 'Food & Beverage': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
- 'الأغذية والمشروبات': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
- 'Technology': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
- 'التكنولوجيا': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
- 'Consumer Services': 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
- 'الخدمات الاستهلاكية': 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
- 'Healthcare': 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
- 'الرعاية الصحية': 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
- 'Energy': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
- 'الطاقة': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ 'Food & Beverage': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
+ 'الأغذية والمشروبات': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
+ 'Technology': 'bg-whale/10 text-whale dark:bg-whale/10 dark:text-whale',
+ 'التكنولوجيا': 'bg-whale/10 text-whale dark:bg-whale/10 dark:text-whale',
+ 'Consumer Services': 'bg-loss/10 text-loss border border-loss/20 ',
+ 'الخدمات الاستهلاكية': 'bg-loss/10 text-loss border border-loss/20 ',
+ 'Healthcare': 'bg-loss/10 text-loss border border-loss/20 ',
+ 'الرعاية الصحية': 'bg-loss/10 text-loss border border-loss/20 ',
+ 'Energy': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
+ 'الطاقة': 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  'Telecommunications': 'bg-whale text-whale/30 ',
  'الاتصالات': 'bg-whale text-whale/30 ',
 };
 
-const SECTOR_FALLBACK_COLOR = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
+const SECTOR_FALLBACK_COLOR = 'bg-muted text-muted-foreground dark:text-muted-foreground';
 
 function getSectorColor(sector: string | undefined | null): string {
  if (!sector) return SECTOR_FALLBACK_COLOR;
@@ -429,17 +429,17 @@ const StockCard = memo(function StockCard({
  </span>
  <div className="flex gap-1">
  {stock.egx30_member && (
- <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
  30
  </span>
  )}
  {stock.egx70_member && (
- <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 font-medium">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
  70
  </span>
  )}
  {stock.egx100_member && (
- <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 font-medium">
+ <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground dark:text-muted-foreground font-medium">
  100
  </span>
  )}
@@ -598,12 +598,12 @@ const MobileStockRow = memo(function MobileStockRow({
  </span>
  <div className="flex gap-1">
  {stock.egx30_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
  30
  </span>
  )}
  {stock.egx70_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
  70
  </span>
  )}
@@ -1238,12 +1238,12 @@ export function StocksView() {
  {formatCleanTicker(String(row.ticker ?? ''))}
  </span>
  {row.egx30_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
  30
  </span>
  )}
  {row.egx70_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
  70
  </span>
  )}
@@ -1549,10 +1549,10 @@ export function StocksView() {
  const isSell = s.includes('sell') || s.includes('bear') || s.includes('avoid');
  const label = isBuy ? t('stocks.signal.buy') : isSell ? t('stocks.signal.sell') : t('stocks.signal.hold');
  const cls = isBuy
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
  : isSell
- ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ';
+ ? 'bg-loss/10 text-loss border border-loss/20 '
+ : 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ';
  return (
  <span className={cn('inline-block text-xs px-2 py-0.5 rounded font-bold', cls)}>
  {label}
@@ -2174,12 +2174,12 @@ export function StocksView() {
  {item.ticker}
  </span>
  {(item as Stock).egx30_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
  30
  </span>
  )}
  {(item as Stock).egx70_member && (
- <span className="text-xs px-1 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 font-medium">
+ <span className="text-xs px-1 py-0.5 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
  70
  </span>
  )}

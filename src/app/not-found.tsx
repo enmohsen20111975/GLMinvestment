@@ -29,7 +29,7 @@ export default function NotFound() {
  >
  <Card className="w-full max-w-md text-center">
  <CardHeader>
- <div className="mx-auto mb-3 w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+ <div className="mx-auto mb-3 w-16 h-16 rounded-full bg-warning/10 dark:bg-warning/20 flex items-center justify-center">
  <Compass className="w-8 h-8 text-warning" />
  </div>
  <CardTitle className="text-3xl font-bold">٤٠٤</CardTitle>

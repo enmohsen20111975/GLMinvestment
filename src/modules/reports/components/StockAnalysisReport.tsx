@@ -426,7 +426,7 @@ function CoverPageHeader({
  {stock.sector || '—'}
  </Badge>
  </div>
- <p className="text-base text-slate-300 truncate">
+ <p className="text-base text-muted-foreground truncate">
  {stock.name_ar || stock.name || stock.ticker}
  </p>
  </div>
@@ -445,7 +445,7 @@ function CoverPageHeader({
  {/* Price block */}
  <div className="flex items-end gap-4 flex-wrap">
  <div>
- <p className="text-xs text-slate-400 uppercase tracking-wide">السعر الحالي</p>
+ <p className="text-xs text-muted-foreground uppercase tracking-wide">السعر الحالي</p>
  <p className="text-3xl sm:text-4xl font-extrabold text-warning tabular-nums">
  {safeFmtNum(price, 2, ' ج.م')}
  </p>
@@ -467,25 +467,25 @@ function CoverPageHeader({
  {/* Mini-stats row */}
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
  <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
- <p className="text-xs text-slate-400">الافتتاح</p>
+ <p className="text-xs text-muted-foreground">الافتتاح</p>
  <p className="text-sm font-bold text-slate-100 tabular-nums">
  {safeFmtNum(stock.open_price ?? 0, 2)}
  </p>
  </div>
  <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
- <p className="text-xs text-slate-400">الأعلى</p>
+ <p className="text-xs text-muted-foreground">الأعلى</p>
  <p className="text-sm font-bold text-profit tabular-nums">
  {safeFmtNum(stock.high_price ?? 0, 2)}
  </p>
  </div>
  <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
- <p className="text-xs text-slate-400">الأدنى</p>
+ <p className="text-xs text-muted-foreground">الأدنى</p>
  <p className="text-sm font-bold text-loss tabular-nums">
  {safeFmtNum(stock.low_price ?? 0, 2)}
  </p>
  </div>
  <div className="rounded-lg bg-white/5 border border-slate-700/40 p-2">
- <p className="text-xs text-slate-400">الحجم</p>
+ <p className="text-xs text-muted-foreground">الحجم</p>
  <p className="text-sm font-bold text-slate-100 tabular-nums">
  {Number(stock.volume ?? 0) >= 1_000_000
  ? `${(Number(stock.volume ?? 0) / 1_000_000).toFixed(2)}M`
@@ -525,8 +525,8 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
  className="p-3 rounded-xl border border-slate-700/40 bg-[#0a0e1a]/60"
  >
  <div className="flex items-center gap-2 mb-2">
- <Icon className="w-4 h-4 text-slate-400" />
- <span className="text-xs font-medium text-slate-300">{card.label}</span>
+ <Icon className="w-4 h-4 text-muted-foreground" />
+ <span className="text-xs font-medium text-muted-foreground">{card.label}</span>
  </div>
  <div className="flex items-center gap-2">
  <span
@@ -534,7 +534,7 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
  >
  {card.value}
  </span>
- <span className="text-xs text-slate-500">/100</span>
+ <span className="text-xs text-muted-foreground">/100</span>
  </div>
  <Progress
  value={card.value}
@@ -585,7 +585,7 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  key={`${row.name}-${i}`}
  className="flex items-center justify-between px-4 py-2 border-b border-slate-700/30"
  >
- <span className="text-xs text-slate-400">{row.name}</span>
+ <span className="text-xs text-muted-foreground">{row.name}</span>
  <div className="flex items-center gap-2">
  <span className="text-sm font-bold text-slate-100 tabular-nums">
  {row.value || '—'}
@@ -686,13 +686,13 @@ function FundamentalSection({
  className="p-3 rounded-lg border border-slate-700/40 bg-[#0a0e1a]/60"
  >
  <div className="flex items-center gap-1.5 mb-1">
- <Icon className="w-3.5 h-3.5 text-slate-400" />
- <span className="text-xs text-slate-400">{it.label}</span>
+ <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+ <span className="text-xs text-muted-foreground">{it.label}</span>
  </div>
  <p className="text-lg font-extrabold text-warning tabular-nums">
  {it.value}
  </p>
- <p className="text-xs text-slate-500">{it.hint}</p>
+ <p className="text-xs text-muted-foreground">{it.hint}</p>
  </div>
  );
  })}
@@ -709,25 +709,25 @@ function FundamentalSection({
  </div>
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
  <div>
- <span className="text-slate-400">Graham:</span>
+ <span className="text-muted-foreground">Graham:</span>
  <p className="font-bold text-slate-100 tabular-nums">
  {safeFmtNum(analysis.fair_value.graham_number, 2)}
  </p>
  </div>
  <div>
- <span className="text-slate-400">Lynch:</span>
+ <span className="text-muted-foreground">Lynch:</span>
  <p className="font-bold text-slate-100 tabular-nums">
  {safeFmtNum(analysis.fair_value.lynch_value, 2)}
  </p>
  </div>
  <div>
- <span className="text-slate-400">DCF:</span>
+ <span className="text-muted-foreground">DCF:</span>
  <p className="font-bold text-slate-100 tabular-nums">
  {safeFmtNum(analysis.fair_value.dcf_simplified, 2)}
  </p>
  </div>
  <div>
- <span className="text-slate-400">Upside:</span>
+ <span className="text-muted-foreground">Upside:</span>
  <p className={cn('font-bold tabular-nums', analysis.fair_value.upside_to_fair > 0 ? 'text-profit' : 'text-loss')}>
  {safeFmtPct(analysis.fair_value.upside_to_fair, 2)}
  </p>
@@ -799,7 +799,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  toneClasses[it.tone],
  )}
  >
- <p className="text-xs text-slate-300 mb-0.5">{it.label}</p>
+ <p className="text-xs text-muted-foreground mb-0.5">{it.label}</p>
  <p className="text-lg font-extrabold">{it.value}</p>
  </div>
  ))}
@@ -823,19 +823,19 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  <CardContent>
  <div className="grid grid-cols-3 gap-3 mb-4">
  <div className="text-center p-3 rounded-lg bg-whale/10 border border-whale/20">
- <p className="text-xs text-slate-400 mb-1">سعر الدخول</p>
+ <p className="text-xs text-muted-foreground mb-1">سعر الدخول</p>
  <p className="text-lg font-bold text-whale tabular-nums">
  {safeFmtNum(rec.entry_price, 2)}
  </p>
  </div>
  <div className="text-center p-3 rounded-lg bg-profit/10 border border-profit/20">
- <p className="text-xs text-slate-400 mb-1">الهدف</p>
+ <p className="text-xs text-muted-foreground mb-1">الهدف</p>
  <p className="text-lg font-bold text-profit tabular-nums">
  {safeFmtNum(rec.target_price, 2)}
  </p>
  </div>
  <div className="text-center p-3 rounded-lg bg-loss/10 border border-loss/20">
- <p className="text-xs text-slate-400 mb-1">وقف الخسارة</p>
+ <p className="text-xs text-muted-foreground mb-1">وقف الخسارة</p>
  <p className="text-lg font-bold text-loss tabular-nums">
  {safeFmtNum(rec.stop_loss, 2)}
  </p>
@@ -843,19 +843,19 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  </div>
  <div className="grid grid-cols-3 gap-3 mb-4">
  <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
- <p className="text-xs text-slate-400">الثقة</p>
+ <p className="text-xs text-muted-foreground">الثقة</p>
  <p className="text-sm font-bold text-warning tabular-nums">
  {(rec.confidence ?? 0).toFixed(0)}%
  </p>
  </div>
  <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
- <p className="text-xs text-slate-400">R:R</p>
+ <p className="text-xs text-muted-foreground">R:R</p>
  <p className="text-sm font-bold text-warning tabular-nums">
  1 : {(rec.risk_reward_ratio ?? 0).toFixed(2)}
  </p>
  </div>
  <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
- <p className="text-xs text-slate-400">الأفق</p>
+ <p className="text-xs text-muted-foreground">الأفق</p>
  <p className="text-sm font-bold text-warning">
  {rec.time_horizon_ar}
  </p>
@@ -910,7 +910,7 @@ function PriceLevelsCard({
  <span
  className={cn(
  'text-xs font-medium w-20 text-left',
- level.isCurrent ? 'text-warning font-bold' : 'text-slate-400',
+ level.isCurrent ? 'text-warning font-bold' : 'text-muted-foreground',
  )}
  >
  {level.label}
@@ -1112,7 +1112,7 @@ export function StockAnalysisReport() {
  </div>
  <div>
  <h1 className="text-base font-extrabold text-warning">تقرير تحليل السهم</h1>
- <p className="text-xs text-slate-400 uppercase tracking-wide">
+ <p className="text-xs text-muted-foreground uppercase tracking-wide">
  Stock Analysis Report · Python Brain
  </p>
  </div>
@@ -1149,7 +1149,7 @@ export function StockAnalysisReport() {
  {/* Stock Selector */}
  <div className="relative print:hidden no-export" data-no-export="true" ref={dropdownRef}>
  <div className="relative">
- <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+ <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
  <Input
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
@@ -1157,11 +1157,11 @@ export function StockAnalysisReport() {
  if (searchQuery.trim()) setShowDropdown(true);
  }}
  placeholder="ابحث عن سهم (الرمز أو الاسم)..."
- className="pr-9 h-11 text-sm bg-[#0d1320] border-slate-700/50 text-slate-100 placeholder:text-slate-500"
+ className="pr-9 h-11 text-sm bg-[#0d1320] border-slate-700/50 text-slate-100 placeholder:text-muted-foreground"
  dir="rtl"
  />
  {loadingStocks && (
- <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-slate-400" />
+ <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
  )}
  </div>
  {showDropdown && (
@@ -1177,7 +1177,7 @@ export function StockAnalysisReport() {
  <p className="text-sm font-medium text-slate-100 truncate">
  {stock.name_ar || stock.name || stock.ticker}
  </p>
- <p className="text-xs text-slate-500">
+ <p className="text-xs text-muted-foreground">
  {stock.ticker} • {stock.sector || ''}
  </p>
  </div>
@@ -1187,7 +1187,7 @@ export function StockAnalysisReport() {
  </button>
  ))
  ) : debouncedQuery.trim() ? (
- <div className="px-4 py-6 text-center text-sm text-slate-500">
+ <div className="px-4 py-6 text-center text-sm text-muted-foreground">
  لا توجد نتائج لـ "{debouncedQuery}"
  </div>
  ) : null}
@@ -1228,7 +1228,7 @@ export function StockAnalysisReport() {
  <RecommendationSection analysis={analysis} />
 
  {/* Footer */}
- <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-slate-500 print:pt-2">
+ <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-muted-foreground print:pt-2">
  <p className="mb-0.5">
  تم إنشاء هذا التقرير بواسطة محرك التحليل الشامل (Python comprehensive)
  </p>
@@ -1243,12 +1243,12 @@ export function StockAnalysisReport() {
  <p className="text-base font-bold text-warning mb-1">
  تعذّر تحميل التحليل المهني لهذا السهم
  </p>
- <p className="text-xs text-slate-400 max-w-md">
+ <p className="text-xs text-muted-foreground max-w-md">
  محرك التحليل (Python comprehensive) لم يستجب. حاول مرة أخرى أو اختر سهماً آخر.
  </p>
  {comprehensive?.errors && comprehensive.errors.length > 0 && (
  <details className="mt-3 text-left max-w-md">
- <summary className="text-xs text-slate-500 cursor-pointer">
+ <summary className="text-xs text-muted-foreground cursor-pointer">
  تفاصيل أخطاء المحركات ({comprehensive.errors.length})
  </summary>
  <pre className="text-xs text-loss mt-1 overflow-auto">
@@ -1268,7 +1268,7 @@ export function StockAnalysisReport() {
  <p className="text-lg font-bold text-warning mb-1">
  اختر سهماً لعرض التقرير
  </p>
- <p className="text-sm text-slate-400 max-w-md">
+ <p className="text-sm text-muted-foreground max-w-md">
  التقرير يجمع كل قوة المشروع (التحليل الفني + الأساسي + المخاطر + التوصية)
  من محرك واحد موحد (Python comprehensive) — Rule 67.
  </p>

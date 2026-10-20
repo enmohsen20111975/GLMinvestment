@@ -410,7 +410,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  <span className="text-2xl font-bold text-profit ">
  {sow.ticker}
  </span>
- <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ">
+ <Badge variant="outline" className="bg-profit/10 text-profit border border-profit/20 ">
  {sow.path_ar || sow.path || '—'}
  </Badge>
  </div>

@@ -393,17 +393,17 @@ function StockResultItem({
  </span>
  <div className="flex gap-1 mt-0.5">
  {stock.egx30_member && (
- <span className="text-[8px] px-1 py-0 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-medium">
+ <span className="text-[8px] px-1 py-0 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
  30
  </span>
  )}
  {stock.egx70_member && (
- <span className="text-[8px] px-1 py-0 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 font-medium">
+ <span className="text-[8px] px-1 py-0 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
  70
  </span>
  )}
  {stock.egx100_member && (
- <span className="text-[8px] px-1 py-0 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 font-medium">
+ <span className="text-[8px] px-1 py-0 rounded bg-muted text-muted-foreground dark:text-muted-foreground font-medium">
  100
  </span>
  )}

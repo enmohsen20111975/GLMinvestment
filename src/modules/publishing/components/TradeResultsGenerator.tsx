@@ -413,7 +413,7 @@ export function TradeResultsGenerator({
  <span>📊</span>
  نتائج الصفقات — قوالب النشر الاجتماعي
  </DialogTitle>
- <DialogDescription className="text-slate-400">
+ <DialogDescription className="text-muted-foreground">
  اختر الفترة، عاين القالب، ثم حمّل الصورة أو انشرها مباشرة على تيليجرام.
  </DialogDescription>
  </DialogHeader>
@@ -434,12 +434,12 @@ export function TradeResultsGenerator({
  </Tabs>
 
  {/* Status strip */}
- <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-400">
+ <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-muted-foreground">
  <div className="flex items-center gap-2">
  <span className="font-mono">
  {cfg.width} × {cfg.height}px
  </span>
- <span className="text-slate-600">·</span>
+ <span className="text-muted-foreground">·</span>
  <span>{cfg.description}</span>
  </div>
  <div className="flex items-center gap-2">
@@ -460,7 +460,7 @@ export function TradeResultsGenerator({
  {/* Preview container */}
  <div className="overflow-x-auto bg-slate-900/50 rounded-lg p-4 border border-slate-800">
  {loading && (
- <div className="flex items-center justify-center py-16 text-slate-400">
+ <div className="flex items-center justify-center py-16 text-muted-foreground">
  <Loader2 className="h-6 w-6 animate-spin ml-2" />
  جارٍ تحميل النتائج...
  </div>
@@ -469,8 +469,8 @@ export function TradeResultsGenerator({
  <div className="flex flex-col items-center justify-center py-12 text-center">
  <AlertTriangle className="h-8 w-8 mb-2 text-warning" />
  <p className="text-warning mb-1 font-bold">فشل في تحميل البيانات</p>
- <p className="text-slate-500 text-sm">{error}</p>
- <p className="text-slate-600 text-xs mt-3 max-w-md">
+ <p className="text-muted-foreground text-sm">{error}</p>
+ <p className="text-muted-foreground text-xs mt-3 max-w-md">
  سيتم عرض القالب بحالة فارغة (لا توجد نتائج مؤهلة) — Rule 67: لا أرقام مبتكرة.
  </p>
  </div>
@@ -491,7 +491,7 @@ export function TradeResultsGenerator({
  size="sm"
  onClick={() => fetchData(period)}
  disabled={busy || loading}
- className="border-slate-600 text-slate-300 hover:bg-slate-800"
+ className="border-slate-600 text-muted-foreground hover:bg-slate-800"
  >
  <RefreshCw className="h-4 w-4 ml-1" />
  تحديث
@@ -528,7 +528,7 @@ export function TradeResultsGenerator({
  </div>
 
  {/* Hint */}
- <div className="text-xs text-slate-500 text-center pt-1 border-t border-slate-800 mt-1">
+ <div className="text-xs text-muted-foreground text-center pt-1 border-t border-slate-800 mt-1">
  القالب بدقة {cfg.width}×{cfg.height}px · الصورة تُصدّر بدقة مضاعفة (pixelRatio 2) ·
  <span className="text-warning/70"> invest.m2y.net</span>
  </div>

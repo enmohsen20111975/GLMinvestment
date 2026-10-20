@@ -626,7 +626,7 @@ export function UnifiedPublishButton({
  واتساب
  </DropdownMenuItem>
  <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
- <Twitter className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+ <Twitter className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />
  تويتر / X
  </DropdownMenuItem>
  <DropdownMenuItem onClick={handleLinkedIn} className="gap-2 text-xs cursor-pointer">
@@ -716,7 +716,7 @@ export function UnifiedPublishButton({
  واتساب
  </DropdownMenuItem>
  <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
- <Twitter className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+ <Twitter className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />
  تويتر / X
  </DropdownMenuItem>
  <DropdownMenuItem onClick={handleLinkedIn} className="gap-2 text-xs cursor-pointer">

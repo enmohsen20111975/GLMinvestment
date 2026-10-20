@@ -363,7 +363,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
  </Button>
  </div>
 
- <Badge className="font-mono text-xs px-2.5 py-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border border-profit">
+ <Badge className="font-mono text-xs px-2.5 py-1 bg-profit/10 text-profit border border-profit/20 border border-profit">
  {selectedTickers.length} سهم
  </Badge>
 
@@ -405,7 +405,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
  className={cn(
  'text-xs font-mono py-1 px-2.5 flex items-center gap-1.5 rounded-full',
  isPrimary
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border border-profit'
+ ? 'bg-profit/10 text-profit border border-profit/20 border border-profit'
  : 'bg-card text-foreground border border-border'
  )}
  >
@@ -710,8 +710,8 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  className={cn(
  'font-mono text-xs font-black px-2 py-0.5 rounded-full',
  isUp
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20'
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20'
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit/20'
+ : 'bg-loss/10 text-loss border border-loss/20 border-loss/20'
  )}
  >
  {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}

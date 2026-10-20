@@ -415,9 +415,9 @@ function MetricRow({ label, value, valueClass }: { label: string; value: string;
 
 function PriceTile({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
  return (
- <div className="text-center p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="text-center p-2.5 bg-slate-50/60 rounded-lg border border-border">
  <p className="text-xs sm:text-xs text-muted-foreground">{label}</p>
- <p className={`text-sm sm:text-base font-bold mt-1 ${color ?? 'text-slate-700 dark:text-slate-200'}`}>{value}</p>
+ <p className={`text-sm sm:text-base font-bold mt-1 ${color ?? 'text-muted-foreground dark:text-slate-200'}`}>{value}</p>
  {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
  </div>
  );
@@ -440,10 +440,10 @@ function SectionCard({
  emerald: 'text-profit bg-profit/10 border-profit/20',
  amber: 'text-warning bg-warning/10 border-warning/20',
  red: 'text-loss bg-loss/10 border-loss/20',
- slate: 'text-slate-600 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700',
+ slate: 'text-muted-foreground bg-slate-50/60 border-border',
  } as const;
  return (
- <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+ <Card className="bg-white border-border">
  <CardHeader className="pb-3">
  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
  <span className={`inline-flex items-center justify-center w-8 h-8 rounded-md border ${accentMap[accent]}`}>
@@ -460,12 +460,12 @@ function SectionCard({
 
 function SkeletonCard() {
  return (
- <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+ <Card className="bg-white border-border">
  <CardContent className="pt-6">
  <div className="space-y-3">
- <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-700 rounded shimmer" />
- <div className="h-8 w-2/3 bg-slate-200 dark:bg-slate-700 rounded shimmer" />
- <div className="h-3 w-1/2 bg-slate-200 dark:bg-slate-700 rounded shimmer" />
+ <div className="h-4 w-1/3 bg-muted dark:bg-slate-700 rounded shimmer" />
+ <div className="h-8 w-2/3 bg-muted dark:bg-slate-700 rounded shimmer" />
+ <div className="h-3 w-1/2 bg-muted dark:bg-slate-700 rounded shimmer" />
  </div>
  </CardContent>
  </Card>
@@ -474,7 +474,7 @@ function SkeletonCard() {
 
 function EmptyState({ msg }: { msg: string }) {
  return (
- <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-center">
+ <div className="p-3 bg-slate-50/40 rounded-lg border border-dashed border-border text-center">
  <p className="text-xs text-muted-foreground italic">{msg}</p>
  </div>
  );
@@ -517,7 +517,7 @@ function StockIcon({
  <img
  src={iconUrl}
  alt={symbol}
- className={`${cls} rounded-xl object-cover border-2 border-slate-200 dark:border-slate-700 shadow-sm bg-white`}
+ className={`${cls} rounded-xl object-cover border-2 border-border shadow-sm bg-white`}
  crossOrigin="anonymous"
  referrerPolicy="no-referrer"
  onError={(e) => {
@@ -530,7 +530,7 @@ function StockIcon({
 
  return (
  <div
- className={`${cls} rounded-xl ${gradient} flex items-center justify-center text-foreground font-bold border-2 border-white/20 dark:border-slate-700 shadow-sm`}
+ className={`${cls} rounded-xl ${gradient} flex items-center justify-center text-foreground font-bold border-2 border-white/20 shadow-sm`}
  aria-label={`${symbol} icon`}
  >
  {initials}
@@ -678,7 +678,7 @@ function CandlestickChart({
  y2={scaleY(t)}
  stroke="currentColor"
  strokeWidth={0.5}
- className="text-slate-300 dark:text-slate-700"
+ className="text-muted-foreground dark:text-muted-foreground"
  />
  <text
  x={padL - 6}
@@ -804,7 +804,7 @@ function CandlestickChart({
  y2={volTop - 6}
  stroke="currentColor"
  strokeWidth={0.5}
- className="text-slate-300 dark:text-slate-700"
+ className="text-muted-foreground dark:text-muted-foreground"
  />
 
  {/* Volume bars */}
@@ -886,7 +886,7 @@ function LiquidityFootprintSection({
  }
 
  // Color: emerald if >1.2 (strong buy), red if <0.8 (strong sell), amber otherwise.
- const ratioColor = ratio == null ? 'text-slate-600 dark:text-slate-300'
+ const ratioColor = ratio == null ? 'text-muted-foreground dark:text-muted-foreground'
  : ratio >= 1.2 ? 'text-profit'
  : ratio <= 0.8 ? 'text-loss'
  : 'text-warning';
@@ -910,17 +910,17 @@ function LiquidityFootprintSection({
  <PriceTile label="POC (نقطة التحكم)" value={fmtNum(poc)} color="text-warning" sub="أعلى سيولة" />
  <PriceTile label="VAH (قمة منطقة القيمة)" value={fmtNum(vah)} color="text-profit" />
  <PriceTile label="VAL (قاع منطقة القيمة)" value={fmtNum(val)} color="text-loss" />
- <PriceTile label="نسبة منطقة القيمة" value={fmtPct(vaPct)} color="text-slate-600 dark:text-slate-300" sub="70% من السيولة" />
+ <PriceTile label="نسبة منطقة القيمة" value={fmtPct(vaPct)} color="text-muted-foreground dark:text-muted-foreground" sub="70% من السيولة" />
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Buy vs Sell visual bar */}
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
- <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+ <div className="p-3 bg-white rounded-lg border border-border">
+ <p className="text-xs font-semibold mb-2 text-muted-foreground dark:text-slate-200 flex items-center gap-1.5">
  <TrendingUp className="w-3.5 h-3.5 text-profit" />
  توزيع التدفق: شراء vs بيع
  </p>
- <div className="flex h-6 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+ <div className="flex h-6 rounded-full overflow-hidden border border-border">
  <div
  className="bg-profit flex items-center justify-center text-xs text-foreground font-bold"
  style={{ width: `${buyPct}%` }}
@@ -946,8 +946,8 @@ function LiquidityFootprintSection({
  </div>
 
  {/* Ratio gauge */}
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
- <p className="text-xs font-semibold mb-2 text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+ <div className="p-3 bg-white rounded-lg border border-border">
+ <p className="text-xs font-semibold mb-2 text-muted-foreground dark:text-slate-200 flex items-center gap-1.5">
  <Gauge className="w-3.5 h-3.5 text-warning" />
  نسبة الشراء/البيع
  </p>
@@ -1013,14 +1013,14 @@ function LiquidityFootprintSection({
  isPoc
  ? 'bg-warning/10 border border-warning '
  : isInVA
- ? 'bg-slate-50 dark:bg-slate-800/40'
+ ? 'bg-slate-50/40'
  : 'bg-transparent'
  }`}
  >
- <span className={`w-16 text-left font-mono ${isPoc ? 'text-warning font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
+ <span className={`w-16 text-left font-mono ${isPoc ? 'text-warning font-bold' : 'text-muted-foreground dark:text-muted-foreground'}`}>
  {(lvl.price_mid ?? 0).toFixed(2)}
  </span>
- <div className="flex-1 relative h-3 rounded-sm overflow-hidden bg-slate-100 dark:bg-slate-800">
+ <div className="flex-1 relative h-3 rounded-sm overflow-hidden bg-muted">
  {/* Buy portion (left, emerald) */}
  <div
  className="absolute inset-y-0 right-0 bg-profit/70"
@@ -1040,7 +1040,7 @@ function LiquidityFootprintSection({
  <span className={`w-12 text-left ${isBuyDom ? 'text-profit' : 'text-loss'}`}>
  {isBuyDom ? '+' : ''}{fmtCompact(lvl.delta)}
  </span>
- <span className="w-12 text-left text-slate-500 dark:text-slate-400">
+ <span className="w-12 text-left text-muted-foreground dark:text-muted-foreground">
  {lvl.volume_pct != null ? `${lvl.volume_pct.toFixed(1)}%` : '—'}
  </span>
  </div>
@@ -1075,7 +1075,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  const rsiInterp = rsi == null ? { txt: '—', cls: 'text-muted-foreground' }
  : rsi < 30 ? { txt: 'تشبع بيعي — فرصة شراء محتملة', cls: 'text-profit' }
  : rsi > 70 ? { txt: 'تشبع شرائي — فرصة بيع محتملة', cls: 'text-loss' }
- : rsi >= 45 && rsi <= 55 ? { txt: 'محايد', cls: 'text-slate-500 dark:text-slate-400' }
+ : rsi >= 45 && rsi <= 55 ? { txt: 'محايد', cls: 'text-muted-foreground dark:text-muted-foreground' }
  : rsi < 45 ? { txt: 'ضعيف نسبياً', cls: 'text-warning' }
  : { txt: 'قوي نسبياً', cls: 'text-warning' };
 
@@ -1118,7 +1118,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  >
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
  {/* RSI gauge */}
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Gauge className="w-4 h-4 text-profit" /> RSI
  </h4>
@@ -1144,7 +1144,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </div>
 
  {/* MA50 */}
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <h4 className="font-semibold text-sm mb-2">MA50 (متوسط 50 يوم)</h4>
  <p className="text-3xl font-bold text-warning">{fmtNum(ma50)}</p>
  <p className={`text-xs mt-2 ${ma50Interp.cls}`}>{ma50Interp.txt}</p>
@@ -1156,9 +1156,9 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </div>
 
  {/* MA200 */}
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <h4 className="font-semibold text-sm mb-2">MA200 (متوسط 200 يوم)</h4>
- <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">{fmtNum(ma200)}</p>
+ <p className="text-3xl font-bold text-muted-foreground dark:text-muted-foreground">{fmtNum(ma200)}</p>
  <p className={`text-xs mt-2 ${ma200Interp.cls}`}>{ma200Interp.txt}</p>
  {current != null && ma200 != null && (
  <p className="text-xs text-muted-foreground mt-1">
@@ -1267,7 +1267,7 @@ function FundamentalsSection({ info }: { info: StockInfo }) {
  const divInterp = divYield == null ? null
  : divYield >= 5 ? { txt: 'عائد مرتفع', cls: 'text-profit' }
  : divYield > 0 ? { txt: 'عائد معتدل', cls: 'text-warning' }
- : { txt: 'لا يوزع', cls: 'text-slate-600' };
+ : { txt: 'لا يوزع', cls: 'text-muted-foreground' };
 
  return (
  <SectionCard
@@ -1352,12 +1352,12 @@ function FundamentalCard({
  interp: { txt: string; cls: string } | null;
 }) {
  return (
- <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="flex items-center justify-between p-2.5 bg-slate-50/60 rounded-lg border border-border">
  <div className="min-w-0">
  <p className="text-xs text-muted-foreground truncate">{label}</p>
  {interp && <p className={`text-xs ${interp.cls}`}>{interp.txt}</p>}
  </div>
- <p className="text-base font-bold text-slate-700 dark:text-slate-200 ml-2">{value}</p>
+ <p className="text-base font-bold text-muted-foreground dark:text-slate-200 ml-2">{value}</p>
  </div>
  );
 }
@@ -1398,7 +1398,7 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
  <PriceTile
  label="ROC 10 أيام (معدل التغير)"
  value={roc10d != null ? `${roc10d >= 0 ? '+' : ''}${roc10d.toFixed(2)}%` : '—'}
- color={roc10d == null ? 'text-slate-600 dark:text-slate-300' : roc10d >= 0 ? 'text-profit' : 'text-loss'}
+ color={roc10d == null ? 'text-muted-foreground dark:text-muted-foreground' : roc10d >= 0 ? 'text-profit' : 'text-loss'}
  sub="زخم 10 جلسات"
  />
  <PriceTile label="متوسط حجم 20 يوم" value={fmtInt(avgVol20)} color="text-warning" />
@@ -1410,7 +1410,7 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
  <PriceTile
  label="نسبة الحجم (يومي/20ي)"
  value={volRatio != null ? `${volRatio.toFixed(2)}x` : '—'}
- color={volRatio == null ? 'text-slate-600 dark:text-slate-300' : volRatio >= 1.5 ? 'text-profit' : volRatio < 0.7 ? 'text-loss' : 'text-warning'}
+ color={volRatio == null ? 'text-muted-foreground dark:text-muted-foreground' : volRatio >= 1.5 ? 'text-profit' : volRatio < 0.7 ? 'text-loss' : 'text-warning'}
  sub={currentVol != null ? `اليوم: ${fmtCompact(currentVol)}` : undefined}
  />
  <PriceTile label="أعلى 20 يوم" value={fmtNum(max20)} color="text-profit" />
@@ -1421,10 +1421,10 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
  color="text-warning"
  sub={max20 != null && min20 != null ? `(${min20.toFixed(2)} — ${max20.toFixed(2)})` : undefined}
  />
- <PriceTile label="آخر إغلاق" value={fmtNum(lastClose)} color="text-slate-700 dark:text-slate-200" />
+ <PriceTile label="آخر إغلاق" value={fmtNum(lastClose)} color="text-muted-foreground dark:text-slate-200" />
  </div>
  {changePct != null && (
- <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between">
+ <div className="mt-3 p-2 bg-slate-50/60 rounded-lg flex items-center justify-between">
  <span className="text-xs text-muted-foreground">تغير آخر جلسة:</span>
  <span className={`text-sm font-bold ${changePct >= 0 ? 'text-profit' : 'text-loss'}`}>
  {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
@@ -1603,7 +1603,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  ? { txt: 'صاعد', cls: 'text-profit' }
  : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
  ? { txt: 'هابط', cls: 'text-loss' }
- : { txt: trend, cls: 'text-slate-600 dark:text-slate-300' };
+ : { txt: trend, cls: 'text-muted-foreground dark:text-muted-foreground' };
 
  return (
  <SectionCard
@@ -1635,7 +1635,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  {/* R:R */}
  <div className="p-3 bg-warning/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">مخاطرة/عائد</p>
- <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-slate-600 dark:text-slate-300' : rr >= 2 ? 'text-profit' : rr >= 1 ? 'text-warning' : 'text-loss'}`}>
+ <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-muted-foreground dark:text-muted-foreground' : rr >= 2 ? 'text-profit' : rr >= 1 ? 'text-warning' : 'text-loss'}`}>
  {rr != null ? `${rr.toFixed(2)}:1` : '—'}
  </p>
  </div>
@@ -1643,7 +1643,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Signal interpretation */}
- <div className={`p-3 rounded-lg ${sigInt?.bg ?? 'bg-slate-50 dark:bg-slate-800/60'}`}>
+ <div className={`p-3 rounded-lg ${sigInt?.bg ?? 'bg-slate-50/60'}`}>
  <p className="text-xs text-muted-foreground mb-1">الإشارة</p>
  <p className="text-sm font-semibold flex items-center gap-2">
  <span className={`text-lg ${sigInt?.cls ?? 'text-muted-foreground'}`}>
@@ -1658,7 +1658,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  {signal != null && <Progress value={signal} className="h-1.5 mt-2" />}
  </div>
  {/* Trend */}
- <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+ <div className="p-3 bg-slate-50/60 rounded-lg">
  <p className="text-xs text-muted-foreground mb-1">الاتجاه العام</p>
  <p className={`text-sm font-semibold ${trendAr?.cls ?? 'text-muted-foreground'}`}>
  {trendAr?.txt ?? '—'}
@@ -1701,7 +1701,7 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
  const interp = positionPct == null ? null
  : positionPct >= 80 ? { txt: 'قريب من القمة', cls: 'text-loss' }
  : positionPct >= 60 ? { txt: 'في الثلث العلوي', cls: 'text-warning' }
- : positionPct >= 40 ? { txt: 'في المنتصف', cls: 'text-slate-600 dark:text-slate-300' }
+ : positionPct >= 40 ? { txt: 'في المنتصف', cls: 'text-muted-foreground dark:text-muted-foreground' }
  : positionPct >= 20 ? { txt: 'في الثلث السفلي', cls: 'text-warning' }
  : { txt: 'قريب من القاع', cls: 'text-profit' };
 
@@ -1718,12 +1718,12 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
  <PriceTile
  label="المسافة من القمة"
  value={distFromHigh != null ? `${distFromHigh >= 0 ? '+' : ''}${distFromHigh.toFixed(1)}%` : '—'}
- color={distFromHigh == null ? 'text-slate-600 dark:text-slate-300' : distFromHigh < 0 ? 'text-loss' : 'text-profit'}
+ color={distFromHigh == null ? 'text-muted-foreground dark:text-muted-foreground' : distFromHigh < 0 ? 'text-loss' : 'text-profit'}
  />
  <PriceTile
  label="المسافة من القاع"
  value={distFromLow != null ? `${distFromLow >= 0 ? '+' : ''}${distFromLow.toFixed(1)}%` : '—'}
- color={distFromLow == null ? 'text-slate-600 dark:text-slate-300' : distFromLow > 0 ? 'text-profit' : 'text-loss'}
+ color={distFromLow == null ? 'text-muted-foreground dark:text-muted-foreground' : distFromLow > 0 ? 'text-profit' : 'text-loss'}
  />
  </div>
 
@@ -1812,7 +1812,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
  if (score >= 40) return 'text-warning';
  return 'text-loss';
  }
- return 'text-slate-600 dark:text-slate-300';
+ return 'text-muted-foreground dark:text-muted-foreground';
  }
 
  return (
@@ -1825,7 +1825,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Flow Score */}
  {flowObj && (
- <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-4 bg-white rounded-lg border border-border">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Droplets className="w-4 h-4 text-profit" /> نقاط التدفق (Flow Score)
  </h4>
@@ -1834,7 +1834,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
  {flowScore != null ? flowScore.toFixed(0) : '—'}
  </span>
  <div className="min-w-0">
- <div className="text-base font-bold text-slate-700 dark:text-slate-200">{flowLabel ?? '—'}</div>
+ <div className="text-base font-bold text-muted-foreground dark:text-slate-200">{flowLabel ?? '—'}</div>
  <div className="text-xs text-muted-foreground mt-0.5 grid grid-cols-2 gap-x-2 gap-y-0.5">
  <span>Macro: <span className="font-medium">{macroFlow ?? '—'}</span></span>
  <span>Sector: <span className="font-medium">{sectorFlow ?? '—'}</span></span>
@@ -1847,7 +1847,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
 
  {/* Explosive Scanner */}
  {explObj && !explExcluded && (
- <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-4 bg-white rounded-lg border border-border">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Flame className="w-4 h-4 text-warning" /> ماسح القنابل (Explosive)
  </h4>
@@ -1856,7 +1856,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
  {explScore != null ? explScore.toFixed(0) : '—'}
  </span>
  <div className="min-w-0">
- <div className="text-base font-bold text-slate-700 dark:text-slate-200">
+ <div className="text-base font-bold text-muted-foreground dark:text-slate-200">
  {explLabel ?? '—'} <span className="text-xs text-muted-foreground">— {explPattern ?? '—'}</span>
  </div>
  <div className="text-xs text-muted-foreground mt-0.5">
@@ -1865,7 +1865,7 @@ function FlowExplosiveSection({ flow, explosive }: { flow: FlowData | null; expl
  </div>
  <div className="text-xs mt-1">
  <span className="text-muted-foreground">الإجراء: </span>
- <span className="font-medium text-slate-700 dark:text-slate-200">{explAction ?? '—'}</span>
+ <span className="font-medium text-muted-foreground dark:text-slate-200">{explAction ?? '—'}</span>
  {explStop != null && <span className="text-loss"> · وقف: {explStop.toFixed(1)}%</span>}
  {explTarget != null && <span className="text-profit"> · هدف: +{explTarget.toFixed(1)}%</span>}
  </div>
@@ -1919,12 +1919,12 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
 
  const phase = safeStr(maestro?.phase) ?? safeStr(maestro?.regime_phase);
  const phaseMeta: Record<string, { ar: string; cls: string }> = {
- accumulation: { ar: 'تراكم', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' },
- markup: { ar: 'تصعيد', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' },
- distribution: { ar: 'توزيع', cls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ' },
- decline: { ar: 'انخفاض', cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' },
+ accumulation: { ar: 'تراكم', cls: 'bg-profit/10 text-profit border border-profit/20 ' },
+ markup: { ar: 'تصعيد', cls: 'bg-profit/10 text-profit border border-profit/20 ' },
+ distribution: { ar: 'توزيع', cls: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ' },
+ decline: { ar: 'انخفاض', cls: 'bg-loss/10 text-loss border border-loss/20 ' },
  };
- const meta = phase ? phaseMeta[phase.toLowerCase()] ?? { ar: phase, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' } : null;
+ const meta = phase ? phaseMeta[phase.toLowerCase()] ?? { ar: phase, cls: 'bg-muted text-muted-foreground dark:text-muted-foreground' } : null;
 
  const hunterScore = safeNum(hunter?.opportunity_score) ?? safeNum(hunter?.score);
  const hunterAssessment = safeStr(hunter?.assessment) ?? safeStr(hunter?.recommendation);
@@ -1943,7 +1943,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Maestro Phase */}
  {meta && (
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
  <Activity className="w-3.5 h-3.5 text-profit" /> مرحلة المايسترو
  </p>
@@ -1953,18 +1953,18 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
 
  {/* Hunter Assessment */}
  {hunterScore != null && (
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
  <Crosshair className="w-3.5 h-3.5 text-warning" /> تقييم الـ Hunter
  </p>
  <p className="text-2xl font-bold text-warning">{(hunterScore ?? 0).toFixed(0)}</p>
- {hunterAssessment && <p className="text-xs mt-1 text-slate-700 dark:text-slate-200">{hunterAssessment}</p>}
+ {hunterAssessment && <p className="text-xs mt-1 text-muted-foreground dark:text-slate-200">{hunterAssessment}</p>}
  </div>
  )}
 
  {/* Board / Institutional Activity */}
  {(institutionalBuy != null || institutionalSell != null) && (
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
  <Building2 className="w-3.5 h-3.5 text-profit" /> نشاط المؤسسات
  </p>
@@ -1979,7 +1979,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
  </div>
  <div>
  <p className="text-muted-foreground text-xs">صافي</p>
- <p className={`font-bold ${netInstitutional == null ? 'text-slate-600 dark:text-slate-300' : netInstitutional >= 0 ? 'text-profit' : 'text-loss'}`}>
+ <p className={`font-bold ${netInstitutional == null ? 'text-muted-foreground dark:text-muted-foreground' : netInstitutional >= 0 ? 'text-profit' : 'text-loss'}`}>
  {fmtCompact(netInstitutional)}
  </p>
  </div>
@@ -1989,9 +1989,9 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
 
  {/* News */}
  {news.length > 0 && (
- <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+ <div className="p-3 bg-white rounded-lg border border-border">
  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
- <Newspaper className="w-3.5 h-3.5 text-slate-600" /> آخر الأخبار
+ <Newspaper className="w-3.5 h-3.5 text-muted-foreground" /> آخر الأخبار
  </p>
  <div className="space-y-1.5 max-h-32 overflow-y-auto">
  {news.slice(0, 3).map((n, i) => {
@@ -2001,7 +2001,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
  <div key={i} className="text-xs">
  <p className="line-clamp-1">{title}</p>
  {sentiment && (
- <span className={`text-xs ${sentiment === 'positive' || sentiment === 'POSITIVE' ? 'text-profit' : sentiment === 'negative' || sentiment === 'NEGATIVE' ? 'text-loss' : 'text-slate-500'}`}>
+ <span className={`text-xs ${sentiment === 'positive' || sentiment === 'POSITIVE' ? 'text-profit' : sentiment === 'negative' || sentiment === 'NEGATIVE' ? 'text-loss' : 'text-muted-foreground'}`}>
  {sentiment}
  </span>
  )}
@@ -2064,12 +2064,12 @@ function PositionSizingCalculator({
  <div>
  <label className="text-xs text-muted-foreground block mb-1">رأس المال (جنيه)</label>
  <div className="relative">
- <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+ <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
  <input
  type="number"
  value={capital}
  onChange={(e) => setCapital(e.target.value)}
- className="w-full pr-9 pl-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-sm"
+ className="w-full pr-9 pl-3 py-2 border border-border rounded-lg bg-background text-sm"
  placeholder="10000"
  min="0"
  />
@@ -2078,12 +2078,12 @@ function PositionSizingCalculator({
  <div>
  <label className="text-xs text-muted-foreground block mb-1">نسبة المخاطرة (%) — افتراضي 1%</label>
  <div className="relative">
- <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+ <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
  <input
  type="number"
  value={riskPct}
  onChange={(e) => setRiskPct(e.target.value)}
- className="w-full pr-9 pl-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-sm"
+ className="w-full pr-9 pl-3 py-2 border border-border rounded-lg bg-background text-sm"
  placeholder="1"
  min="0"
  max="100"
@@ -2109,9 +2109,9 @@ function PositionSizingCalculator({
  {perShareRisk != null ? `${perShareRisk.toFixed(2)} جنيه` : '—'}
  </p>
  </div>
- <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg">
+ <div className="p-3 bg-slate-50/60 rounded-lg">
  <p className="text-xs text-muted-foreground">أقصى عدد أسهم</p>
- <p className="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">
+ <p className="text-2xl font-bold text-muted-foreground dark:text-slate-200 mt-1">
  {maxShares != null ? maxShares.toLocaleString('en-US') : '—'}
  </p>
  {maxSharesValue != null && (
@@ -2207,7 +2207,7 @@ function ScoreDashboardSection({ info }: { info: StockInfo }) {
  return null;
  }
 
- const scoreColor = (s: number | null) => s == null ? 'text-slate-600 dark:text-slate-300'
+ const scoreColor = (s: number | null) => s == null ? 'text-muted-foreground dark:text-muted-foreground'
  : s >= 70 ? 'text-profit'
  : s >= 40 ? 'text-warning'
  : 'text-loss';
@@ -2225,7 +2225,7 @@ function ScoreDashboardSection({ info }: { info: StockInfo }) {
  { label: 'درجة SMC (Smart Money)', value: smcScore, icon: <Activity className="w-4 h-4" />, color: 'amber' as const },
  { label: 'الإشارة الفنية', value: signalScore, icon: <Target className="w-4 h-4" />, color: 'slate' as const },
  ].map((s, i) => (
- <div key={i} className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+ <div key={i} className="p-4 bg-white rounded-lg border border-border text-center">
  <div className="flex items-center justify-center gap-1.5 mb-2 text-muted-foreground">
  {s.icon}
  <span className="text-xs">{s.label}</span>
@@ -2273,9 +2273,9 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
  {isHalal ? '✓ متوافق' : '✗ غير متوافق'}
  </p>
  </div>
- <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg text-center">
+ <div className="p-3 bg-slate-50/60 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">المصادر المتوافقة</p>
- <p className="text-lg font-bold text-slate-700 dark:text-slate-200 mt-1">
+ <p className="text-lg font-bold text-muted-foreground dark:text-slate-200 mt-1">
  {compliantCount != null && activeCount != null ? `${compliantCount}/${activeCount}` : '—'}
  </p>
  </div>
@@ -2394,17 +2394,17 @@ function HeaderCard({
 
  const trendAr = trend == null ? null
  : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
- ? { txt: 'صاعد', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' }
+ ? { txt: 'صاعد', cls: 'bg-profit/10 text-profit border border-profit/20 ' }
  : trend === 'هابط' || trend.toLowerCase().includes('down') || trend.toLowerCase().includes('bear')
- ? { txt: 'هابط', cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' }
- : { txt: trend, cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
+ ? { txt: 'هابط', cls: 'bg-loss/10 text-loss border border-loss/20 ' }
+ : { txt: trend, cls: 'bg-muted text-muted-foreground dark:text-muted-foreground' };
 
  const shariaHalal = sharia?.success
  ? (safeNum(sharia.metric?.is_halal_consensus) === 1 || sharia.metric?.is_halal_consensus === true)
  : null;
 
  return (
- <Card className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-sm">
+ <Card className="bg-white border-2 border-border shadow-sm">
  <CardContent className="pt-6">
  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
  <div className="min-w-0 flex-1 flex items-start gap-3">
@@ -2685,7 +2685,7 @@ export function SpecialistAnalysisView() {
  </div>
  <Badge
  variant="secondary"
- className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border border-profit "
+ className="bg-profit/10 text-profit border border-profit/20 border border-profit "
  >
  <span className="w-2 h-2 rounded-full bg-profit animate-pulse ml-1" />
  السوق: {MARKET_NAMES_AR[currentMarket] || currentMarket}
@@ -2694,7 +2694,7 @@ export function SpecialistAnalysisView() {
  </div>
 
  {/* ════ Stock Selector ════ */}
- <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+ <Card className="bg-white border-border">
  <CardContent className="pt-6">
  <div className="flex flex-col sm:flex-row gap-2">
  <select
@@ -2705,7 +2705,7 @@ export function SpecialistAnalysisView() {
  if (val) fetchAnalysis(val);
  }}
  disabled={loading}
- className="flex-1 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
+ className="flex-1 px-3 sm:px-4 py-2 border border-border rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
  >
  <option value="">اختر سهماً من {MARKET_NAMES_AR[currentMarket] || currentMarket}...</option>
  {stocks.map((stock) => (
@@ -2750,7 +2750,7 @@ export function SpecialistAnalysisView() {
 
  {/* ════ Empty state ════ */}
  {!radarData && !loading && !error && (
- <Card className="p-6 sm:p-12 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+ <Card className="p-6 sm:p-12 text-center bg-white border-border">
  <Activity className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-muted-foreground mb-4" />
  <h3 className="text-base sm:text-xl font-semibold mb-2">اختر سهماً للتحليل الشامل</h3>
  <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto">
@@ -2780,10 +2780,10 @@ export function SpecialistAnalysisView() {
  accent="emerald"
  >
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <PriceTile label="الافتتاح" value={fmtNum(info.open_price)} color="text-slate-700 dark:text-slate-200" />
+ <PriceTile label="الافتتاح" value={fmtNum(info.open_price)} color="text-muted-foreground dark:text-slate-200" />
  <PriceTile label="الأعلى" value={fmtNum(info.high_price)} color="text-profit" />
  <PriceTile label="الأدنى" value={fmtNum(info.low_price)} color="text-loss" />
- <PriceTile label="الإغلاق السابق" value={fmtNum(info.previous_close)} color="text-slate-600 dark:text-slate-300" />
+ <PriceTile label="الإغلاق السابق" value={fmtNum(info.previous_close)} color="text-muted-foreground dark:text-muted-foreground" />
  <PriceTile label="حجم التداول" value={fmtCompact(info.volume)} color="text-warning" />
  <PriceTile label="قيمة التداول" value={fmtCompact(info.turnover_egp ?? info.value_traded, ' ج.م')} color="text-warning" />
  <PriceTile label="أعلى 52 أسبوع" value={fmtNum(info.high_52w)} color="text-profit" />
@@ -2812,12 +2812,12 @@ export function SpecialistAnalysisView() {
  <PriceTile
  label="متوسط الحجم"
  value={fmtCompact(info.avg_volume)}
- color="text-slate-600 dark:text-slate-300"
+ color="text-muted-foreground dark:text-muted-foreground"
  />
  <PriceTile
  label="Beta (حساسية السوق)"
  value={fmtNum(info.beta)}
- color="text-slate-600 dark:text-slate-300"
+ color="text-muted-foreground dark:text-muted-foreground"
  />
  </div>
  </SectionCard>
@@ -2901,7 +2901,7 @@ export function SpecialistAnalysisView() {
 
  {/* ── Engine errors transparency (Rule 67) ── */}
  {radarData.db_source && (
- <Card className="p-3 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700">
+ <Card className="p-3 bg-slate-50/60 border-border">
  <p className="text-xs text-muted-foreground">
  مصدر البيانات الرئيسي: <span className="font-mono font-bold">{radarData.db_source}</span> — Rule 67: البيانات حقيقية من stocks.db + predictions.db
  </p>

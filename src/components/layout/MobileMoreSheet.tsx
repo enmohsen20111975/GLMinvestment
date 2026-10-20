@@ -207,11 +207,11 @@ export function MobileMoreSheet() {
  <button
  onClick={() => { setCurrentView('admin'); closeAll(); }}
  className={cn(
- 'w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-amber-500/10 text-amber-500 transition-colors text-right min-h-[44px] font-bold border border-amber-500/20 mb-2',
- (currentView === 'admin') && 'bg-amber-500/20'
+ 'w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-warning/10 text-warning transition-colors text-right min-h-[44px] font-bold border border-warning/20 mb-2',
+ (currentView === 'admin') && 'bg-warning/10'
  )}
  >
- <Shield className="w-5 h-5 text-amber-500" />
+ <Shield className="w-5 h-5 text-warning" />
  <span className="text-sm font-bold">لوحة تحكم الإدارة</span>
  </button>
  );

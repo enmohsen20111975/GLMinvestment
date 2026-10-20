@@ -123,11 +123,11 @@ const COLOR_CLASSES: Record<
  dot: 'bg-whale',
  },
  cyan: {
- bg: 'bg-cyan-50 dark:bg-cyan-950/30',
- text: 'text-cyan-600 dark:text-cyan-400',
- border: 'border-cyan-200 dark:border-cyan-800',
+ bg: 'bg-whale/5',
+ text: 'text-whale dark:text-whale',
+ border: 'border-whale/20 dark:border-whale/30',
  gradient: 'from-cyan-500 to-whale',
- dot: 'bg-cyan-500',
+ dot: 'bg-whale',
  },
  amber: {
  bg: 'bg-warning/10',

@@ -81,7 +81,7 @@ export default function ChartControls({
  className={cn(
  'h-7 min-w-[3rem] px-2.5 text-xs font-medium rounded-md transition-all',
  timeframe === tf.key
- ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold hover:bg-cyan-500/30'
+ ? 'bg-whale/20 text-whale dark:text-whale font-bold hover:bg-whale/30'
  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
  )}
  >

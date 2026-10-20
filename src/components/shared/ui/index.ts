@@ -35,3 +35,4 @@ export { PriceText, type PriceTextProps } from './PriceText';
 export { SeverityBadge, type SeverityBadgeProps, getSeverityBadgeClass, type SeverityLevel } from './SeverityBadge';
 export { ConfidenceMeter, type ConfidenceMeterProps } from './ConfidenceMeter';
 export { PersonaEmptyState, type PersonaEmptyStateProps } from './PersonaEmptyState';
+export { FinancialBadge, type FinancialBadgeProps } from './FinancialBadge';

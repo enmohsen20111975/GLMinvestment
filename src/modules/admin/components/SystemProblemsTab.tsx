@@ -136,7 +136,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 "
+ className="gap-1 border-warning bg-warning/10 text-warning dark:text-warning border border-warning/20 "
  >
  <AlertCircle className="w-3 h-3" />
  تحذير
@@ -146,7 +146,7 @@ function SeverityBadge({ severity }: { severity: SystemIssue['severity'] }) {
  return (
  <Badge
  variant="outline"
- className="gap-1 border-profit bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 "
+ className="gap-1 border-profit bg-profit/10 text-profit border border-profit/20 "
  >
  <Info className="w-3 h-3" />
  معلومة
@@ -175,10 +175,10 @@ function IssueRow({ issue }: { issue: SystemIssue }) {
  className={cn(
  'shrink-0 mt-0.5 rounded-md p-1.5',
  isCritical
- ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-loss/10 text-loss border border-loss/20 '
  : isWarning
- ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 '
- : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
+ ? 'bg-warning/10 text-warning dark:text-warning border border-warning/20 '
+ : 'bg-profit/10 text-profit border border-profit/20 ',
  )}
  >
  <CategoryIcon category={issue.category} className="w-4 h-4" />
@@ -266,10 +266,10 @@ function SummaryStatCard({
  tone: 'red' | 'amber' | 'emerald' | 'neutral';
 }) {
  const toneClasses = {
- red: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
- amber: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ red: 'bg-loss/10 text-loss border border-loss/20 ',
+ amber: 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  emerald:
- 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
+ 'bg-profit/10 text-profit border border-profit/20 ',
  neutral: 'bg-muted text-muted-foreground',
  }[tone];
 

@@ -23,7 +23,7 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
  EGX30: { accent: 'bg-profit', ring: 'ring-profit/20', text: 'text-profit ' },
  EGX70: { accent: 'bg-warning', ring: 'ring-warning/20', text: 'text-warning ' },
  EGX100: { accent: 'bg-whale', ring: 'ring-whale/20', text: 'text-whale ' },
- EGX50: { accent: 'bg-cyan-500', ring: 'ring-cyan-500/20', text: 'text-cyan-600 dark:text-cyan-400' },
+ EGX50: { accent: 'bg-whale', ring: 'ring-cyan-500/20', text: 'text-whale dark:text-whale' },
  EGX33: { accent: 'bg-loss', ring: 'ring-loss/20', text: 'text-loss ' },
  // US
  '^GSPC': { accent: 'bg-primary', ring: 'ring-primary/20', text: 'text-primary ' },
@@ -47,7 +47,7 @@ const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; t
  { accent: 'bg-profit', ring: 'ring-profit/20', text: 'text-profit ' },
  { accent: 'bg-warning', ring: 'ring-warning/20', text: 'text-warning ' },
  { accent: 'bg-whale', ring: 'ring-whale/20', text: 'text-whale ' },
- { accent: 'bg-cyan-500', ring: 'ring-cyan-500/20', text: 'text-cyan-600 dark:text-cyan-400' },
+ { accent: 'bg-whale', ring: 'ring-cyan-500/20', text: 'text-whale dark:text-whale' },
  ],
  US: [
  { accent: 'bg-primary', ring: 'ring-primary/20', text: 'text-primary ' },
@@ -97,8 +97,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
  'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide',
  colors.ring,
  isPositive
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 '
  )}>
  {index.symbol}
  </span>

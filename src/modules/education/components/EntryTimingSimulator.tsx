@@ -508,7 +508,7 @@ export function EntryTimingSimulator() {
  {/* Ticker input + data source badge */}
  <div className="flex flex-wrap items-center gap-2" dir="rtl">
  <form onSubmit={handleTickerSubmit} className="flex items-center gap-2">
- <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <label className="text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  السهم:
  </label>
  <Input
@@ -575,7 +575,7 @@ export function EntryTimingSimulator() {
  'flex flex-col gap-1 rounded-lg border p-3 text-right transition',
  isActive
  ? 'border-warning/20 bg-warning/10 shadow-sm'
- : 'border-slate-200 bg-card hover:bg-muted/30 dark:border-slate-700',
+ : 'border-border bg-card hover:bg-muted/30',
  )}
  >
  <div className="flex items-center justify-between">
@@ -604,8 +604,8 @@ export function EntryTimingSimulator() {
  </div>
 
  {/* Active strategy description */}
- <div className="rounded-lg border border-slate-200 bg-muted/30 p-3 dark:border-slate-700" dir="rtl">
- <div className="mb-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-muted/30 p-3" dir="rtl">
+ <div className="mb-1 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  {activeDef.emoji} {activeDef.name} — {activeDef.nameEn}
  </div>
  <p className="text-xs leading-relaxed text-foreground">{activeDef.desc}</p>
@@ -635,7 +635,7 @@ export function EntryTimingSimulator() {
  icon={TrendingDown}
  label="عائد Buy & Hold"
  value={`${(active.buyHoldReturn * 100).toFixed(1)}%`}
- color={active.buyHoldReturn >= 0 ? 'text-slate-700 dark:text-slate-300' : 'text-loss '}
+ color={active.buyHoldReturn >= 0 ? 'text-muted-foreground dark:text-muted-foreground' : 'text-loss '}
  />
  <MetricCard
  icon={Target}
@@ -653,7 +653,7 @@ export function EntryTimingSimulator() {
  icon={Calendar}
  label="عدد الصفقات"
  value={String(active.numTrades)}
- color="text-slate-700 dark:text-slate-300"
+ color="text-muted-foreground dark:text-muted-foreground"
  />
  </div>
 
@@ -732,8 +732,8 @@ function EquityCurveChart({
  .join(' ');
 
  return (
- <div className="rounded-lg border border-slate-200 bg-card p-3 dark:border-slate-700" dir="rtl">
- <div className="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-card p-3" dir="rtl">
+ <div className="mb-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  منحنى رأس المال — {stratName} مقابل Buy & Hold
  </div>
  <svg
@@ -820,8 +820,8 @@ function PriceChartWithMarkers({
  const markers = result.entryMarkers.slice(0, 20);
 
  return (
- <div className="rounded-lg border border-slate-200 bg-card p-3 dark:border-slate-700" dir="rtl">
- <div className="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-card p-3" dir="rtl">
+ <div className="mb-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  رسم السعر + نقاط الدخول/الخروج
  </div>
  <svg
@@ -887,8 +887,8 @@ function PriceChartWithMarkers({
 function TradeList({ result }: { result: BacktestResult }) {
  const trades = result.trades.slice(-10).reverse(); // most recent 10
  return (
- <div className="rounded-lg border border-slate-200 bg-card dark:border-slate-700" dir="rtl">
- <div className="border-b border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-card" dir="rtl">
+ <div className="border-b border-border px-3 py-2 text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  آخر 10 صفقات
  </div>
  <div className="overflow-x-auto">
@@ -906,7 +906,7 @@ function TradeList({ result }: { result: BacktestResult }) {
  </thead>
  <tbody>
  {trades.map((t, i) => (
- <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
+ <tr key={i} className="border-t border-slate-100">
  <td className="px-2 py-1 text-muted-foreground ltr:text-left" dir="ltr">{t.entryDate}</td>
  <td className="px-2 py-1 ltr:text-left" dir="ltr">{(t.entryPrice ?? 0).toFixed(2)}</td>
  <td className="px-2 py-1 text-muted-foreground ltr:text-left" dir="ltr">{t.exitDate}</td>
@@ -952,7 +952,7 @@ function MetricCard({
  color: string;
 }) {
  return (
- <div className="rounded-lg border border-slate-200 bg-muted/30 p-2 text-center dark:border-slate-700" dir="rtl">
+ <div className="rounded-lg border border-border bg-muted/30 p-2 text-center" dir="rtl">
  <Icon className="mx-auto mb-1 h-4 w-4 opacity-70" />
  <div className="text-xs text-muted-foreground">{label}</div>
  <div className={cn('text-sm font-bold sm:text-base', color)}>{value}</div>

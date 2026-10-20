@@ -96,9 +96,9 @@ function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; 
 // ─── خريطة Money Flow (مطابقة Pine L353-366) ────────────────────────────────
 const MONEY_FLOW_STYLES: Record<string, string> = {
  'سيولة داخلة قوية': 'bg-profit text-white',
- 'سيولة داخلة': 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
- 'متوازنة': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
- 'سيولة خارجة': 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
+ 'سيولة داخلة': 'bg-profit/10 text-profit border border-profit/20 ',
+ 'متوازنة': 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ',
+ 'سيولة خارجة': 'bg-loss/10 text-loss border border-loss/20 ',
  'سيولة خارجة قوية': 'bg-loss text-white',
 };
 
@@ -173,7 +173,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  </span>
  </div>
  <div className="flex items-center gap-2">
- <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit">
+ <Badge variant="outline" className="text-xs font-bold px-2 py-0.5 bg-profit/10 text-profit border border-profit/20 border-profit">
  <Sparkles className="w-3 h-3 ml-0.5" />
  توقع طازج
  </Badge>
@@ -313,7 +313,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  </span>
  )}
  {radar?.under_microscope && (
- <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs font-bold px-2 py-0.5 rounded-full border-0">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border border-warning/20 text-xs font-bold px-2 py-0.5 rounded-full border-0">
  🔬 تحت المجهر
  </Badge>
  )}

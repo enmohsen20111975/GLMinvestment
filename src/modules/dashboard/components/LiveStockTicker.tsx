@@ -109,7 +109,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
  </span>
  </button>
  {showSeparator && (
- <span className="text-slate-300 dark:text-slate-700 select-none">
+ <span className="text-muted-foreground dark:text-muted-foreground select-none">
  •
  </span>
  )}
@@ -127,7 +127,7 @@ function TickerSkeleton() {
  {Array.from({ length: 12 }).map((_, i) => (
  <div
  key={i}
- className="h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-800"
+ className="h-3 w-20 animate-pulse rounded bg-muted"
  />
  ))}
  </div>
@@ -232,11 +232,11 @@ export function LiveStockTicker() {
  `}</style>
 
  <div
- className="relative flex h-10 items-center overflow-hidden border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60"
+ className="relative flex h-10 items-center overflow-hidden border-b border-border bg-slate-50/80/60"
  dir="rtl"
  >
  {/* شارة "مباشر" على اليمين (بداية RTL) */}
- <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-slate-200 bg-white/90 px-3 dark:border-slate-800 dark:bg-slate-950/90">
+ <div className="z-10 flex h-full shrink-0 items-center gap-1.5 border-l border-border bg-white/90 px-3 dark:bg-slate-950/90">
  <span className="relative flex h-2 w-2">
  {isOpen && (
  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-profit opacity-75" />
@@ -261,7 +261,7 @@ export function LiveStockTicker() {
  />
  )}
  {isRefreshing && (
- <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+ <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
  )}
  </div>
 
@@ -284,7 +284,7 @@ export function LiveStockTicker() {
  ))}
  </div>
  ) : (
- <div className="px-4 py-2 text-xs text-slate-400 dark:text-slate-500">
+ <div className="px-4 py-2 text-xs text-muted-foreground dark:text-muted-foreground">
  لا توجد بيانات أسهم متاحة
  </div>
  )}

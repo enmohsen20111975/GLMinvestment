@@ -414,7 +414,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-warning/20',
  headerBg: 'bg-warning/10 /20',
  iconColor: 'text-warning ',
- badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
+ badge: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ',
  border: 'border-warning/20',
  softBg: 'bg-warning/10 /10',
  },
@@ -422,7 +422,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-loss/20',
  headerBg: 'bg-loss/10 /20',
  iconColor: 'text-loss ',
- badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ',
+ badge: 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ',
  border: 'border-loss/20',
  softBg: 'bg-loss/10 /10',
  },
@@ -430,7 +430,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-profit/20',
  headerBg: 'bg-profit/10 /20',
  iconColor: 'text-profit ',
- badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
+ badge: 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ',
  border: 'border-profit/20',
  softBg: 'bg-profit/10 /10',
  },
@@ -1134,8 +1134,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  return (
  <div className="space-y-4" dir="rtl">
  {/* ===== ALPHA-INCUBATOR: "الميكروسكوب والتربص" section =====
-     Per Mohsen's directive 2026-10-20 — يعرض الأسهم اللي محققة 4/6 أو 5/6
-     شروط + مستنية trigger. بيـستهلك /api/radar/incubator endpoint. */}
+ Per Mohsen's directive 2026-10-20 — يعرض الأسهم اللي محققة 4/6 أو 5/6
+ شروط + مستنية trigger. بيـستهلك /api/radar/incubator endpoint. */}
  <IncubatorSection
  market={market === 'TADAWUL' || market === 'KSA' ? 'TADAWUL' : 'EGX'}
  refreshIntervalMs={60_000}
@@ -1162,8 +1162,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  variant="outline"
  className={
  marketStatus.isOpen
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit text-xs'
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning text-xs'
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit text-xs'
+ : 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning text-xs'
  }
  >
  <span className={`h-1.5 w-1.5 rounded-full mr-1 ${marketStatus.isOpen ? 'bg-profit animate-pulse' : 'bg-warning'}`} />
@@ -1321,7 +1321,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <span className="hidden sm:inline">دقة الرادار</span>
  </TabsTrigger>
  <TabsTrigger value="personalized-radar" className="flex items-center gap-1">
- <UserCircle className="h-4 w-4 text-cyan-600" />
+ <UserCircle className="h-4 w-4 text-whale" />
  <span className="hidden sm:inline">الرادار المخصّص</span>
  </TabsTrigger>
  </TabsList>
@@ -1355,9 +1355,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  </span>
  <Badge variant="outline" className={`text-xs font-semibold ${
  data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
- ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss '
+ ? 'bg-loss/10 text-loss border border-loss/20 border-loss '
  : data.market_regime.regime === 'AGGRESSIVE'
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit '
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit '
  : 'bg-primary text-primary border-primary '
  }`}>
  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
@@ -1776,7 +1776,7 @@ function RadarActivityCard({ data, lastUpdated, period = '7d', onPeriodChange }:
 
  // مستوى الشعل
  let level = 'هادئ';
- let levelColor = 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300';
+ let levelColor = 'text-muted-foreground bg-muted dark:text-muted-foreground';
  if (activityPct > 30) {
  level = 'شعل عالي';
  levelColor = 'text-loss bg-loss/10 ';
@@ -2021,9 +2021,9 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
  // Color coding
  const cls =
- isInflow ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ' :
- isOutflow ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ' :
- 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ';
+ isInflow ? 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ' :
+ isOutflow ? 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ' :
+ 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ';
 
  return (
  <div
@@ -2508,11 +2508,11 @@ const StockTable = memo(function StockTable({
  const state = String(stock.money_flow_state || '⚪ متوازنة');
  let bgClass = 'bg-muted/30 text-muted-foreground border-border';
  if (state.includes('🔥 دخول') || state.includes('🟢 سيولة داخلة')) {
- bgClass = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ';
+ bgClass = 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ';
  } else if (state.includes('🔥 خروج') || state.includes('🔴 سيولة خارجة')) {
- bgClass = 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ';
+ bgClass = 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ';
  } else if (state.includes('⚪')) {
- bgClass = 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ';
+ bgClass = 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ';
  }
  return (
  <Badge variant="outline" className={`text-xs font-bold ${bgClass}`}>
@@ -2615,10 +2615,10 @@ const StockTable = memo(function StockTable({
  variant="outline"
  className={`text-xs h-5 px-1.5 whitespace-nowrap ${
  isStrong
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 font-semibold'
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit/20 font-semibold'
  : isDist
- ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 font-semibold'
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 '
+ ? 'bg-loss/10 text-loss border border-loss/20 border-loss/20 font-semibold'
+ : 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 '
  }`}
  >
  {accum}
@@ -2791,7 +2791,7 @@ const StockTable = memo(function StockTable({
  const pred = predictionForTicker(stock.ticker);
  if (stock.kill_switch) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-loss/10 text-loss border border-loss/20 border-loss">
  ⚠️ حذر
  </Badge>
  );
@@ -2799,7 +2799,7 @@ const StockTable = memo(function StockTable({
  // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
  if (pred?.signal_ar) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-profit/10 text-profit border border-profit/20 border-profit">
  {pred.signal_ar}
  </Badge>
  );
@@ -3622,7 +3622,7 @@ function ProofSection() {
  </div>
  </div>
  <div className="flex items-center gap-2">
- <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning">
+ <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning">
  <Award className="h-3 w-3 ml-1" />
  بيانات حقيقية مطلوبة
  </Badge>

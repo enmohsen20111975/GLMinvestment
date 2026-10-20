@@ -681,8 +681,8 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
  <Badge className={cn(
  'text-xs px-1.5 mt-1',
  isProfitable
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 '
  )}>
  {formatPercent(item.gain_loss_percent)}
  </Badge>
@@ -955,8 +955,8 @@ export function EnhancedWatchlistView() {
  <Badge className={cn(
  'text-xs px-1.5',
  isProfitable
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 '
  )}>
  {formatPercent(item.gain_loss_percent)}
  </Badge>
@@ -1193,8 +1193,8 @@ export function EnhancedWatchlistView() {
  <Badge className={cn(
  'text-xs',
  summary.total_gain_loss >= 0
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 '
  )}>
  {formatPercent(summary.total_gain_loss_percent)}
  </Badge>

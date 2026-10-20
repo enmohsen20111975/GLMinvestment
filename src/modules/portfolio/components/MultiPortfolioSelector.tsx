@@ -49,7 +49,7 @@ export const COLOR_OPTIONS = [
  { value: 'rose', label: '🔴 أحمر / وردي (Rose)', class: 'bg-loss/20 text-loss border-loss' },
  { value: 'teal', label: '🔷 فيروزي (Teal)', class: 'bg-whale/20 text-whale border-whale' },
  { value: 'teal', label: '🪸 تركوازي (Teal)', class: 'bg-whale/20 text-whale border-whale' },
- { value: 'cyan', label: '🌐 سيان (Cyan)', class: 'bg-cyan-500/20 text-cyan-400 border-cyan-700' },
+ { value: 'cyan', label: '🌐 سيان (Cyan)', class: 'bg-whale/20 text-whale border-whale/30' },
 ];
 
 export function getPortfolioColorClass(colorName?: string): string {

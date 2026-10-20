@@ -151,7 +151,7 @@ export function AutoAnalysisWidget() {
  variant="ghost"
  onClick={handleRefresh}
  disabled={refreshing}
- className="text-slate-400 hover:text-foreground"
+ className="text-muted-foreground hover:text-foreground"
  >
  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
  </Button>
@@ -165,33 +165,33 @@ export function AutoAnalysisWidget() {
  <div className="text-2xl font-bold text-foreground">
  {safeNum(testResult.overallAccuracy).toFixed(1)}%
  </div>
- <div className="text-xs text-slate-400">الدقة الإجمالية</div>
+ <div className="text-xs text-muted-foreground">الدقة الإجمالية</div>
  </div>
  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
  <div className={`text-2xl font-bold ${safeNum(testResult.improvement) >= 0 ? 'text-success' : 'text-loss'}`}>
  {safeNum(testResult.improvement) >= 0 ? '+' : ''}{safeNum(testResult.improvement).toFixed(1)}%
  </div>
- <div className="text-xs text-slate-400">التحسن</div>
+ <div className="text-xs text-muted-foreground">التحسن</div>
  </div>
  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
  <div className="text-2xl font-bold text-foreground">
  {testResult.results?.length ?? 0}
  </div>
- <div className="text-xs text-slate-400">شهور مختبرة</div>
+ <div className="text-xs text-muted-foreground">شهور مختبرة</div>
  </div>
  </div>
 
  {/* Accuracy Progress */}
  <div className="space-y-2">
  <div className="flex items-center justify-between text-xs">
- <span className="text-slate-400">مستوى الدقة</span>
- <span className="text-slate-300">{safeNum(testResult.overallAccuracy).toFixed(1)}%</span>
+ <span className="text-muted-foreground">مستوى الدقة</span>
+ <span className="text-muted-foreground">{safeNum(testResult.overallAccuracy).toFixed(1)}%</span>
  </div>
  <Progress
  value={safeNum(testResult.overallAccuracy)}
  className="h-2 bg-slate-700"
  />
- <div className="flex justify-between text-xs text-slate-500">
+ <div className="flex justify-between text-xs text-muted-foreground">
  <span>0%</span>
  <span className="text-warning">55% (الهدف)</span>
  <span>100%</span>
@@ -200,16 +200,16 @@ export function AutoAnalysisWidget() {
 
  {/* Monthly Results */}
  <div className="space-y-2">
- <div className="text-sm font-semibold text-slate-300">النتائج الشهرية</div>
+ <div className="text-sm font-semibold text-muted-foreground">النتائج الشهرية</div>
  <div className="max-h-40 overflow-y-auto space-y-1">
  {(testResult.results ?? []).map((result, index) => (
  <div
  key={index}
  className="flex items-center justify-between bg-slate-800/30 rounded-lg p-2 text-xs"
  >
- <span className="text-slate-300">{result.month}</span>
+ <span className="text-muted-foreground">{result.month}</span>
  <div className="flex items-center gap-3">
- <span className="text-slate-500">{safeNum(result.predictions)} توقع</span>
+ <span className="text-muted-foreground">{safeNum(result.predictions)} توقع</span>
  <div className="flex items-center gap-1">
  <CheckCircle2 className="h-3 w-3 text-success" />
  <span className="text-success">{safeNum(result.successful)}</span>
@@ -244,11 +244,11 @@ export function AutoAnalysisWidget() {
  التحليل
  </span>
  </div>
- <p className="text-sm text-slate-300">{testResult.recommendation ?? 'لا يوجد توقع'}</p>
+ <p className="text-sm text-muted-foreground">{testResult.recommendation ?? 'لا يوجد توقع'}</p>
  </div>
 
  {/* Info */}
- <div className="text-xs text-slate-500 pt-2 border-t border-slate-700/50">
+ <div className="text-xs text-muted-foreground pt-2 border-t border-slate-700/50">
  <p>النظام يختبر التوقعات الموسمية شهر بشهر ويقيس الدقة الفعلية</p>
  </div>
  </CardContent>

@@ -124,7 +124,7 @@ function ReportHeader({
  </div>
  <div className="text-left">
  <h2 className="text-base sm:text-lg font-bold text-warning">{title}</h2>
- <p className="text-xs text-slate-300/90">{subtitle}</p>
+ <p className="text-xs text-muted-foreground/90">{subtitle}</p>
  <div className="flex items-center justify-end gap-2 mt-1">
  <Badge
  variant="outline"
@@ -132,7 +132,7 @@ function ReportHeader({
  >
  {market} · LIVE
  </Badge>
- <span className="text-xs text-slate-400">{dateStr}</span>
+ <span className="text-xs text-muted-foreground">{dateStr}</span>
  </div>
  </div>
  </div>
@@ -169,12 +169,12 @@ function KpiTile({
  )}
  >
  <div className="flex items-center justify-between mb-1.5">
- <span className="text-xs font-medium text-slate-300">{label}</span>
+ <span className="text-xs font-medium text-muted-foreground">{label}</span>
  <span className="opacity-70">{icon}</span>
  </div>
  <p className="text-2xl font-extrabold tabular-nums tracking-tight">{value}</p>
  {subtext && (
- <p className="text-xs text-slate-400 mt-0.5">{subtext}</p>
+ <p className="text-xs text-muted-foreground mt-0.5">{subtext}</p>
  )}
  </div>
  );
@@ -218,7 +218,7 @@ function StockMiniCard({
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 mb-0.5">
  <p className="text-sm font-bold text-foreground truncate">{symbol}</p>
- <span className="text-xs text-slate-400 truncate">{name}</span>
+ <span className="text-xs text-muted-foreground truncate">{name}</span>
  </div>
  <div className="flex items-center gap-2">
  <div className="flex-1 h-1 bg-slate-700/60 rounded-full overflow-hidden">
@@ -230,7 +230,7 @@ function StockMiniCard({
  style={{ width: `${Math.max(barWidth, 5)}%` }}
  />
  </div>
- <span className="text-xs text-slate-500 tabular-nums">
+ <span className="text-xs text-muted-foreground tabular-nums">
  {safeFmtNum(price, 2, '')}
  </span>
  </div>
@@ -270,7 +270,7 @@ function extractSectors(payload: DailyReportPayload): SectorRow[] {
 function SectorHeatmap({ sectors }: { sectors: SectorRow[] }) {
  if (sectors.length === 0) {
  return (
- <div className="text-center text-xs text-slate-500 py-6">
+ <div className="text-center text-xs text-muted-foreground py-6">
  بيانات القطاعات متاحة في التقرير الأسبوعي والشهري
  </div>
  );
@@ -325,8 +325,8 @@ function OfflineState({ reason }: { reason: string }) {
  <p className="text-base font-bold text-warning mb-1">
  تعذّر تحميل التقرير اليومي
  </p>
- <p className="text-xs text-slate-400 max-w-md">{reason}</p>
- <p className="text-xs text-slate-500 mt-3 max-w-md">
+ <p className="text-xs text-muted-foreground max-w-md">{reason}</p>
+ <p className="text-xs text-muted-foreground mt-3 max-w-md">
  محرك التقارير (Python) هو المسؤول عن توليد كل التقارير —
  Node.js للعرض فقط. أعد المحاولة بعد التأكد من تشغيل محرك التقارير.
  </p>
@@ -499,19 +499,19 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  {/* Breadth + macro rates row */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
  <div className="rounded-xl border border-profit/20 bg-profit/5 p-3">
- <p className="text-xs text-slate-300 mb-1">اتساع السوق</p>
+ <p className="text-xs text-muted-foreground mb-1">اتساع السوق</p>
  <p className="text-lg font-bold text-profit tabular-nums">
  {safeFmtNum(breadth, 2, '%')}
  </p>
  </div>
  <div className="rounded-xl border border-warning/20 bg-warning/5 p-3">
- <p className="text-xs text-slate-300 mb-1">ذهب عيار 21</p>
+ <p className="text-xs text-muted-foreground mb-1">ذهب عيار 21</p>
  <p className="text-lg font-bold text-warning tabular-nums">
  {safeFmtNum(goldPrice, 0, ' ج.م')}
  </p>
  </div>
  <div className="rounded-xl border border-slate-500/20 bg-slate-500/5 p-3">
- <p className="text-xs text-slate-300 mb-1">الدولار الأمريكي</p>
+ <p className="text-xs text-muted-foreground mb-1">الدولار الأمريكي</p>
  <p className="text-lg font-bold text-slate-200 tabular-nums">
  {safeFmtNum(usdRate, 2, ' ج.م')}
  </p>
@@ -544,7 +544,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  />
  ))
  ) : (
- <p className="text-xs text-slate-500 text-center py-4">
+ <p className="text-xs text-muted-foreground text-center py-4">
  لا توجد بيانات للصاعدات في هذا التقرير
  </p>
  )}
@@ -573,7 +573,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  />
  ))
  ) : (
- <p className="text-xs text-slate-500 text-center py-4">
+ <p className="text-xs text-muted-foreground text-center py-4">
  لا توجد بيانات للهابطات في هذا التقرير
  </p>
  )}
@@ -589,7 +589,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Layers className="w-5 h-5" />
  خريطة أداء القطاعات
- <span className="text-xs font-normal text-slate-400">
+ <span className="text-xs font-normal text-muted-foreground">
  Sector Heatmap
  </span>
  </CardTitle>
@@ -626,7 +626,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  )}
 
  {/* Footer */}
- <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-slate-500 print:pt-2">
+ <div className="text-center pt-3 border-t border-slate-700/40 text-xs text-muted-foreground print:pt-2">
  <p className="mb-0.5">تم إنشاء هذا التقرير تلقائياً بواسطة محرك التقارير (Python reports_engine)</p>
  <p className="text-xs">
  Rule 20: Node.js للعرض فقط — كل التحليل من Python · Rule 67: مصدر موحد للمبيانات

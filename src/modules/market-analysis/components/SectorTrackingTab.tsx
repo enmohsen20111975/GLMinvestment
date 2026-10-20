@@ -107,31 +107,31 @@ import {
 
 // ALPHA-COLORS-1: خريطة تعريب القطاعات — ممنوع كلمة إنجليزي في جدول قطاعات السوق المصري
 const SECTOR_ARABIC_MAP: Record<string, string> = {
-  'Finance': 'القطاع المالي',
-  'Banks': 'البنوك',
-  'Process Industries': 'الصناعات الإجرائية',
-  'Utilities': 'المرافق',
-  'Producer Manufacturing': 'التصنيع والإنتاج',
-  'Industrial Services': 'الخدمات الصناعية',
-  'Materials': 'المواد الأساسية',
-  'Basic Materials': 'المواد الأساسية',
-  'Energy': 'الطاقة',
-  'Health Care': 'الرعاية الصحية',
-  'Consumer Discretionary': 'السلع الاستهلاكية المختارة',
-  'Consumer Staples': 'السلع الاستهلاكية الأساسية',
-  'Real Estate': 'العقارات',
-  'Communication Services': 'خدمات الاتصالات',
-  'Information Technology': 'تكنولوجيا المعلومات',
-  'Insurance': 'التأمين',
-  'Conglomerates': 'الشركات القابضة',
-  'Transportation': 'النقل والمواصلات',
-  'Tourism': 'السياحة',
+ 'Finance': 'القطاع المالي',
+ 'Banks': 'البنوك',
+ 'Process Industries': 'الصناعات الإجرائية',
+ 'Utilities': 'المرافق',
+ 'Producer Manufacturing': 'التصنيع والإنتاج',
+ 'Industrial Services': 'الخدمات الصناعية',
+ 'Materials': 'المواد الأساسية',
+ 'Basic Materials': 'المواد الأساسية',
+ 'Energy': 'الطاقة',
+ 'Health Care': 'الرعاية الصحية',
+ 'Consumer Discretionary': 'السلع الاستهلاكية المختارة',
+ 'Consumer Staples': 'السلع الاستهلاكية الأساسية',
+ 'Real Estate': 'العقارات',
+ 'Communication Services': 'خدمات الاتصالات',
+ 'Information Technology': 'تكنولوجيا المعلومات',
+ 'Insurance': 'التأمين',
+ 'Conglomerates': 'الشركات القابضة',
+ 'Transportation': 'النقل والمواصلات',
+ 'Tourism': 'السياحة',
 };
 
 // تعريب القطاع (لو مش في الخريطة، رجّعه زي ما هو)
 function arSector(sector: string | null | undefined): string {
-  if (!sector) return 'غير محدد';
-  return SECTOR_ARABIC_MAP[sector] || sector;
+ if (!sector) return 'غير محدد';
+ return SECTOR_ARABIC_MAP[sector] || sector;
 }
 
 
@@ -625,7 +625,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  </span>
  ))}
  {rotation.rotation_signals?.map((sig: string, i: number) => (
- <span key={`sig-${i}`} className="text-xs px-2 py-1 rounded border bg-slate-500/10 border-slate-500/30 text-slate-700 dark:text-slate-300">
+ <span key={`sig-${i}`} className="text-xs px-2 py-1 rounded border bg-slate-500/10 border-slate-500/30 text-muted-foreground dark:text-muted-foreground">
  {sig}
  </span>
  ))}

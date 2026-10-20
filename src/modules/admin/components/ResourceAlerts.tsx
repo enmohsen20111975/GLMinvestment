@@ -92,9 +92,9 @@ const SEVERITY_CONFIG: Record<string, {
  info: {
  emoji: '🔵',
  color: '#06b6d4',
- border: 'border-cyan-500/40',
- bg: 'bg-cyan-500/5',
- text: 'text-cyan-600 dark:text-cyan-400',
+ border: 'border-whale/20/40',
+ bg: 'bg-whale/5',
+ text: 'text-whale dark:text-whale',
  },
  recovered: {
  emoji: '🟢',
@@ -337,7 +337,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
  <div>
  <div className="flex items-center justify-between mb-2">
  <span className="flex items-center gap-1.5 text-xs font-semibold">
- <Activity className="w-3.5 h-3.5 text-cyan-500" />
+ <Activity className="w-3.5 h-3.5 text-whale" />
  آخر التنبيهات
  </span>
  <Badge variant="outline" className="text-xs h-5">

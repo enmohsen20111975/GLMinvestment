@@ -394,7 +394,7 @@ function actionBadge(action: string) {
  const a = (action || 'BUY').toUpperCase();
  if (a === 'SELL') {
  return (
- <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:bg-loss border-loss">
+ <Badge className="bg-loss/10 text-loss border border-loss/20 hover:bg-loss border-loss">
  <TrendingDown className="w-3 h-3 ml-1" />
  بيع
  </Badge>
@@ -402,14 +402,14 @@ function actionBadge(action: string) {
  }
  if (a === 'HOLD') {
  return (
- <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning border-warning">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border border-warning/20 hover:bg-warning border-warning">
  <Clock className="w-3 h-3 ml-1" />
  انتظار
  </Badge>
  );
  }
  return (
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit border-profit">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 hover:bg-profit border-profit">
  <TrendingUp className="w-3 h-3 ml-1" />
  شراء
  </Badge>
@@ -420,7 +420,7 @@ function statusBadge(status: string) {
  const s = (status || 'PENDING').toUpperCase();
  if (s === 'TARGET_HIT') {
  return (
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit border-profit">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 hover:bg-profit border-profit">
  <CheckCircle2 className="w-3 h-3 ml-1" />
  ضرب الهدف
  </Badge>
@@ -428,7 +428,7 @@ function statusBadge(status: string) {
  }
  if (s === 'STOPPED') {
  return (
- <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:bg-loss border-loss">
+ <Badge className="bg-loss/10 text-loss border border-loss/20 hover:bg-loss border-loss">
  <AlertTriangle className="w-3 h-3 ml-1" />
  ضرب الوقف
  </Badge>
@@ -443,7 +443,7 @@ function statusBadge(status: string) {
  );
  }
  return (
- <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning border-warning">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border border-warning/20 hover:bg-warning border-warning">
  <Clock className="w-3 h-3 ml-1" />
  قيد التنفيذ
  </Badge>

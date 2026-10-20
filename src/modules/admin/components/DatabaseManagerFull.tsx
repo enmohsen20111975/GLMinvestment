@@ -1819,7 +1819,7 @@ export function DatabaseManagerFull() {
  {/* Terminal console output */}
  {advancedOutput && (
  <div className="space-y-1.5">
- <div className="text-xs font-semibold text-slate-500">مخرجات السكربت (Console Output):</div>
+ <div className="text-xs font-semibold text-muted-foreground">مخرجات السكربت (Console Output):</div>
  <pre className="bg-slate-950 text-slate-200 p-4 rounded-lg text-xs font-mono h-60 overflow-y-auto whitespace-pre-wrap">
  {advancedOutput}
  </pre>

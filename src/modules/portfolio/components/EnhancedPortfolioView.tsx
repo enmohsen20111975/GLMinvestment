@@ -222,12 +222,12 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 };
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
- stock: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
- gold: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ stock: 'bg-profit/10 text-profit border border-profit/20 ',
+ gold: 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  bank: 'bg-whale text-whale/30 ',
  certificate: 'bg-primary text-primary/30 ',
- fund: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
- crypto: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ fund: 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
+ crypto: 'bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  real_estate: 'bg-whale text-whale/30 ',
  other: 'bg-muted text-muted-foreground /30 ',
 };
@@ -284,9 +284,9 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
- active: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
+ active: 'bg-profit/10 text-profit border border-profit/20 ',
  paid: 'bg-whale text-whale/30 ',
- overdue: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
+ overdue: 'bg-loss/10 text-loss border border-loss/20 ',
 };
 
 // ==================== STOCK SEARCH DROPDOWN ====================
@@ -1099,7 +1099,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  other side — opens DynamicRiskProfilerModal to recompute the persona. */}
  <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
  <div className="flex items-center gap-2">
- <Badge className="text-xs gap-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ">
+ <Badge className="text-xs gap-1 bg-profit/10 text-profit border border-profit/20 border-profit ">
  <Shield className="w-3 h-3" />
  {t('portfolio.persona.label', { persona: personaLabelAr(persona) })}
  </Badge>
@@ -2155,7 +2155,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
  sortable: true,
  filterable: true,
  render: (t) => (
- <Badge className={t.type === 'income' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '}>
+ <Badge className={t.type === 'income' ? 'bg-profit/10 text-profit border border-profit/20 ' : 'bg-loss/10 text-loss border border-loss/20 '}>
  {t.type === 'income' ? 'دخل' : 'مصروف'}
  </Badge>
  ),

@@ -108,9 +108,9 @@ interface TrackingStats {
 // ============================================================
 
 const STATUS_BADGE_CLASS: Record<PickStatus, string> = {
- pending: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
- target_hit: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
- stop_hit: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ',
+ pending: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ',
+ target_hit: 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ',
+ stop_hit: 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ',
  expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-700',
 };
 

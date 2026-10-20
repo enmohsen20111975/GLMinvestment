@@ -170,9 +170,9 @@ function signalClass(text: string): string {
  const t = text.toLowerCase();
  const bull = ['إيجابي', 'صعود', 'شراء', 'اشتري', 'تشبع بيعي', 'مرتفع', 'صاعد', 'bullish', 'buy', 'positive', 'oversold', 'rising'];
  const bear = ['سلبي', 'هبوط', 'بيع', 'بع', 'تشبع شرائي', 'هبوطي', 'هابط', 'bearish', 'sell', 'negative', 'overbought', 'falling'];
- for (const w of bull) { if (t.includes(w)) return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '; }
- for (const w of bear) { if (t.includes(w)) return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '; }
- return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ';
+ for (const w of bull) { if (t.includes(w)) return 'bg-profit/10 text-profit border border-profit/20 '; }
+ for (const w of bear) { if (t.includes(w)) return 'bg-loss/10 text-loss border border-loss/20 '; }
+ return 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ';
 }
 
 function n(val: unknown, fb = 0): number {
@@ -891,9 +891,9 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
 
  const patternBadge = (type: string) => {
  switch (type) {
- case 'bullish': return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ';
- case 'bearish': return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ';
- default: return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ';
+ case 'bullish': return 'bg-profit/10 text-profit border border-profit/20 ';
+ case 'bearish': return 'bg-loss/10 text-loss border border-loss/20 ';
+ default: return 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ';
  }
  };
  const typeAr = (type: string) => {
@@ -928,8 +928,8 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  <span className={cn(
  'text-xs px-2 py-0.5 rounded-full font-medium',
  prof.patterns.ma_cross === 'golden_cross'
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-loss/10 text-loss border border-loss/20 '
  )}>
  {prof.patterns.ma_cross === 'golden_cross' ? 'تقاطع ذهبي ✦' : 'تقاطع مميت ✦'}
  </span>

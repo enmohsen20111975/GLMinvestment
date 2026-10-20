@@ -86,9 +86,9 @@ export default function Home() {
  </p>
  </header>
 
- <Alert className="border-emerald-400/50 bg-emerald-50 dark:bg-emerald-950/30">
- <AlertTitle className="text-emerald-800 dark:text-emerald-300">دمج محرك التوقعات تم — Walk-forward صادق — رسالة المدة جاهزة</AlertTitle>
- <AlertDescription className="text-emerald-800 dark:text-emerald-200/90 text-sm leading-relaxed">
+ <Alert className="border-profit/30/50 bg-profit/5">
+ <AlertTitle className="text-profit">دمج محرك التوقعات تم — Walk-forward صادق — رسالة المدة جاهزة</AlertTitle>
+ <AlertDescription className="text-profit dark:text-profit/90 text-sm leading-relaxed">
  فلتر الـ Regime أُضيف داخل <span className="font-mono">daily_predictor.py</span> (feature flag
  <span className="font-mono"> REGIME_FILTER</span> default OFF).
  Walk-forward على 19 شهر (نصفين) يكشف أنّ النتائج period-dependent.
@@ -170,7 +170,7 @@ export default function Home() {
  const consistent = h1.total_return_pct > 0 && h2.total_return_pct > 0
  && h1.max_drawdown_pct > -25 && h2.max_drawdown_pct > -25
  return (
- <TableRow key={key} className={consistent ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}>
+ <TableRow key={key} className={consistent ? "bg-profit/5" : ""}>
  <TableCell className="font-medium text-xs">{key}</TableCell>
  <TableCell className={`font-mono ${colorRet(h1.total_return_pct)}`}>{pct(h1.total_return_pct)}</TableCell>
  <TableCell className={`font-mono ${ddColor(h1.max_drawdown_pct)}`}>{pct(h1.max_drawdown_pct)}</TableCell>
@@ -334,11 +334,11 @@ export default function Home() {
  </Tabs>
 
  {/* FINAL VERDICT */}
- <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20">
+ <Card className="border-profit/20 bg-profit/5 dark:bg-profit/5">
  <CardHeader>
- <CardTitle className="text-emerald-800 dark:text-emerald-300">الحُكم النهائي — Integration جاهز + أرقام صادقة</CardTitle>
+ <CardTitle className="text-profit">الحُكم النهائي — Integration جاهز + أرقام صادقة</CardTitle>
  </CardHeader>
- <CardContent className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100/90 space-y-2">
+ <CardContent className="text-sm leading-relaxed text-profit dark:text-profit/90 space-y-2">
  <p>
  <span className="font-semibold">تم الدمج:</span> <span className="font-mono">regime_filter.py</span> مربوط في
  <span className="font-mono"> daily_predictor.py</span> خلف flag <span className="font-mono">REGIME_FILTER</span> (default OFF).

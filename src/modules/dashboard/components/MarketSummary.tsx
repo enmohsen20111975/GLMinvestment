@@ -46,8 +46,8 @@ export function MarketSummary() {
  label: 'بدون تغيير',
  value: summary.unchanged ?? 0,
  icon: Minus,
- color: 'text-slate-600 dark:text-slate-400',
- bg: 'bg-slate-50 dark:bg-slate-950/40',
+ color: 'text-muted-foreground dark:text-muted-foreground',
+ bg: 'bg-slate-50',
  },
  ];
 

@@ -154,11 +154,11 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
  // === Helpers لعرض التحليل ===
  const recColor = (rec: string): string => {
  switch (rec) {
- case 'STRONG_BUY': return 'bg-profit/20 text-profit border-emerald-500/30';
+ case 'STRONG_BUY': return 'bg-profit/20 text-profit border-profit/20';
  case 'BUY': return 'bg-green-500/20 text-success border-green-500/30';
- case 'HOLD': return 'bg-warning/20 text-amber-700 border-amber-500/30';
+ case 'HOLD': return 'bg-warning/20 text-warning border-warning/20';
  case 'REDUCE': return 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30';
- case 'SELL': return 'bg-loss/20 text-rose-700 border-rose-500/30';
+ case 'SELL': return 'bg-loss/20 text-loss border-loss/20';
  default: return 'bg-muted text-muted-foreground border-muted';
  }
  };
@@ -231,7 +231,7 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
  <div className="flex flex-col">
  <span className="font-bold text-sm">{row.ticker}</span>
  {row.prediction && (
- <Badge className="text-[9px] h-4 px-1 mt-0.5 bg-profit/20 text-profit border-emerald-500/30">
+ <Badge className="text-[9px] h-4 px-1 mt-0.5 bg-profit/20 text-profit border-profit/20">
  {row.prediction.signal}
  </Badge>
  )}
@@ -469,13 +469,13 @@ export function NetPicksTab({ market = 'EGX' }: { market?: string }) {
  <span className="text-muted-foreground">سياق السوق (EGX30):</span>
  <Badge className={`text-[9px] h-4 px-1.5 ${
  marketContext.regime === 'BULL' ? 'bg-profit/20 text-profit' :
- marketContext.regime === 'BEAR' ? 'bg-loss/20 text-rose-700' :
- 'bg-warning/20 text-amber-700'
+ marketContext.regime === 'BEAR' ? 'bg-loss/20 text-loss' :
+ 'bg-warning/20 text-warning'
  }`}>
  {regimeLabel(marketContext.regime)} ({marketContext.confidence?.toFixed(0)}%)
  </Badge>
  {marketContext.veto_buy && (
- <Badge className="text-[9px] h-4 px-1.5 bg-loss/20 text-rose-700">
+ <Badge className="text-[9px] h-4 px-1.5 bg-loss/20 text-loss">
  ⚠️ تقييد الشراء
  </Badge>
  )}

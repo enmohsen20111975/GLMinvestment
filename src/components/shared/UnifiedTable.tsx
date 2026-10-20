@@ -2362,7 +2362,7 @@ export function UnifiedTable<T extends object>({
  // (Task 37) «الجدول المتقدّم» — selection + edit styles
  excelGrid && 'cursor-cell',
  isSelected && 'bg-profit/10 ring-2 ring-profit ring-inset',
- isEditing && 'p-0 ring-2 ring-profit ring-inset bg-white dark:bg-slate-900',
+ isEditing && 'p-0 ring-2 ring-profit ring-inset bg-white',
  )}
  onClick={excelGrid ? (e) => handleCellClick(ri, colKey, e) : undefined}
  onDoubleClick={excelGrid ? (e) => handleCellDoubleClick(ri, colKey, row, e) : undefined}
@@ -2382,7 +2382,7 @@ export function UnifiedTable<T extends object>({
  cancelEdit();
  }
  }}
- className="w-full h-7 px-1 text-xs font-mono bg-white dark:bg-slate-900 outline-none"
+ className="w-full h-7 px-1 text-xs font-mono bg-white outline-none"
  dir="ltr"
  />
  ) : content == null || content === '' ? (

@@ -60,9 +60,9 @@ function VerdictBadge({ verdict, verdictAr }: { verdict: string; verdictAr: stri
  return (
  <Badge variant="outline" className={cn(
  'text-sm font-bold border-0 px-4 py-1',
- verdict === 'undervalued' && 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
- verdict === 'fair' && 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
- verdict === 'overvalued' && 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
+ verdict === 'undervalued' && 'bg-profit/10 text-profit border border-profit/20 ',
+ verdict === 'fair' && 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ',
+ verdict === 'overvalued' && 'bg-loss/10 text-loss border border-loss/20 ',
  verdict === 'unknown' && 'bg-muted text-muted-foreground /50 ',
  )}>
  {verdictAr}

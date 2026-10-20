@@ -362,7 +362,7 @@ function statusTone(status: 'online' | 'offline' | 'degraded' | 'unknown' | 'run
  case 'slow':
  return { dot: 'bg-warning', badge: 'border-warning text-warning', label: '🟡 بطيء', bg: 'bg-warning/20' };
  default:
- return { dot: 'bg-slate-400', badge: 'border-slate-400 text-slate-700', label: '⚪ غير معروف', bg: 'bg-slate-50 dark:bg-slate-900/20' };
+ return { dot: 'bg-slate-400', badge: 'border-slate-400 text-muted-foreground', label: '⚪ غير معروف', bg: 'bg-slate-50/20' };
  }
 }
 
@@ -575,14 +575,14 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  {/* Live log tail (3 lines) */}
  <div className="rounded-md bg-slate-950/95 text-slate-200 p-2 font-mono text-xs leading-tight h-16 overflow-hidden">
  {logs.length === 0 ? (
- <div className="text-slate-500 text-center pt-3">لا توجد سجلات</div>
+ <div className="text-muted-foreground text-center pt-3">لا توجد سجلات</div>
  ) : (
  logs.slice(-3).map((line, i) => (
  <div
  key={i}
  className={cn(
  'truncate',
- looksLikeError(line) ? 'text-loss' : 'text-slate-300',
+ looksLikeError(line) ? 'text-loss' : 'text-muted-foreground',
  )}
  dir="ltr"
  title={line}
@@ -695,14 +695,14 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  {/* Live log tail (3 lines) */}
  <div className="rounded-md bg-slate-950/95 text-slate-200 p-2 font-mono text-xs leading-tight h-16 overflow-hidden">
  {logs.length === 0 ? (
- <div className="text-slate-500 text-center pt-3">لا توجد سجلات</div>
+ <div className="text-muted-foreground text-center pt-3">لا توجد سجلات</div>
  ) : (
  logs.slice(-3).map((line, i) => (
  <div
  key={i}
  className={cn(
  'truncate',
- looksLikeError(line) ? 'text-loss' : 'text-slate-300',
+ looksLikeError(line) ? 'text-loss' : 'text-muted-foreground',
  )}
  dir="ltr"
  title={line}
@@ -746,7 +746,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-slate-100 dark:hover:bg-slate-900/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-muted dark:hover:bg-slate-900/30"
  onClick={(e) => { e.stopPropagation(); onOpenLiveConsole(); }}
  title="فتح الكونسول الحي"
  >
@@ -821,14 +821,14 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  {/* Live log tail (3 lines) */}
  <div className="rounded-md bg-slate-950/95 text-slate-200 p-2 font-mono text-xs leading-tight h-16 overflow-hidden">
  {logs.length === 0 ? (
- <div className="text-slate-500 text-center pt-3">لا توجد سجلات</div>
+ <div className="text-muted-foreground text-center pt-3">لا توجد سجلات</div>
  ) : (
  logs.slice(-3).map((line, i) => (
  <div
  key={i}
  className={cn(
  'truncate',
- looksLikeError(line) ? 'text-loss' : 'text-slate-300',
+ looksLikeError(line) ? 'text-loss' : 'text-muted-foreground',
  )}
  dir="ltr"
  title={line}
@@ -872,7 +872,7 @@ function EngineCard({ entry, service, controlInfo, logs, logsMtime, cronInfo, on
  <Button
  size="sm"
  variant="ghost"
- className="h-7 flex-1 text-xs gap-1 hover:bg-slate-100 dark:hover:bg-slate-900/30"
+ className="h-7 flex-1 text-xs gap-1 hover:bg-muted dark:hover:bg-slate-900/30"
  onClick={(e) => { e.stopPropagation(); onOpenLiveConsole(); }}
  title="فتح الكونسول الحي"
  >
@@ -1052,7 +1052,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  <Terminal className="w-4 h-4 text-profit" />
  كونسول حي — {entry.name_ar}
  </SheetTitle>
- <SheetDescription className="text-xs text-slate-400" dir="ltr">
+ <SheetDescription className="text-xs text-muted-foreground" dir="ltr">
  {entry.name_en} · engine={engineControlKey}
  </SheetDescription>
  </div>
@@ -1069,7 +1069,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  ? exitedSuccessfully
  ? 'border-profit text-profit bg-profit/10'
  : 'border-loss text-loss bg-loss/10'
- : 'border-slate-500 text-slate-300 bg-slate-800/50',
+ : 'border-slate-500 text-muted-foreground bg-slate-800/50',
  )}
  >
  {isRunning ? (
@@ -1097,7 +1097,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  )}
  </Badge>
  {liveStatus?.pids && liveStatus.pids.length > 0 && (
- <Badge variant="outline" className="text-xs shrink-0 border-slate-500 text-slate-300 bg-slate-800/50">
+ <Badge variant="outline" className="text-xs shrink-0 border-slate-500 text-muted-foreground bg-slate-800/50">
  PID: {liveStatus.pids.slice(0, 3).join(', ')}
  </Badge>
  )}
@@ -1111,7 +1111,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  'flex items-center gap-1 px-2 py-1 rounded-md border',
  autoRefresh
  ? 'border-profit text-profit bg-profit/10'
- : 'border-slate-500 text-slate-400 bg-slate-800/50',
+ : 'border-slate-500 text-muted-foreground bg-slate-800/50',
  )}
  >
  <RefreshCw className={cn('w-3 h-3', autoRefresh && 'animate-spin')} />
@@ -1119,7 +1119,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  </button>
  <button
  onClick={handleClear}
- className="flex items-center gap-1 px-2 py-1 rounded-md border border-slate-500 text-slate-300 bg-slate-800/50 hover:bg-slate-700/50"
+ className="flex items-center gap-1 px-2 py-1 rounded-md border border-slate-500 text-muted-foreground bg-slate-800/50 hover:bg-slate-700/50"
  >
  <Filter className="w-3 h-3" />
  مسح
@@ -1135,7 +1135,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  </button>
  )}
  <div className="flex-1" />
- <span className="text-slate-500">
+ <span className="text-muted-foreground">
  {lines.length} سطر · آخر fetch: {lastFetchedAt ? timeAgoBrief(lastFetchedAt) : '—'}
  </span>
  </div>
@@ -1149,7 +1149,7 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  dir="ltr"
  >
  {lines.length === 0 ? (
- <div className="text-slate-500 text-center py-8">
+ <div className="text-muted-foreground text-center py-8">
  {fetchError ? (
  <span className="text-loss">⚠ {fetchError}</span>
  ) : fileExists ? (
@@ -1168,10 +1168,10 @@ function LiveLogConsole({ engineControlKey, entry, actionInProgress, onClose, on
  const sev = severityOf(line);
  const color = sev === 'error' ? 'text-loss'
  : sev === 'warning' ? 'text-warning'
- : 'text-slate-300';
+ : 'text-muted-foreground';
  return (
  <div key={i} className={cn('whitespace-pre-wrap break-all', color)}>
- <span className="text-slate-600 select-none">{String(i + 1).padStart(4, ' ')}│ </span>
+ <span className="text-muted-foreground select-none">{String(i + 1).padStart(4, ' ')}│ </span>
  {line || ' '}
  </div>
  );
@@ -1334,7 +1334,7 @@ function DetailSheet({ entry, service, controlInfo, logs, onClose, onAction, act
  <div
  key={j}
  className={cn(
- looksLikeError(line) ? 'text-loss' : 'text-slate-300',
+ looksLikeError(line) ? 'text-loss' : 'text-muted-foreground',
  'whitespace-pre-wrap break-all',
  )}
  >
@@ -1592,7 +1592,7 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
  {f.exists && f.lines.length > 0 && (
  <div className="rounded bg-slate-950 text-slate-200 p-1.5 font-mono text-xs max-h-24 overflow-y-auto" dir="ltr">
  {f.lines.slice(-5).map((l, i) => (
- <div key={i} className={cn('whitespace-pre-wrap break-all truncate', looksLikeError(l) ? 'text-loss' : 'text-slate-300')}>
+ <div key={i} className={cn('whitespace-pre-wrap break-all truncate', looksLikeError(l) ? 'text-loss' : 'text-muted-foreground')}>
  {l || ' '}
  </div>
  ))}
@@ -1648,7 +1648,7 @@ function ShariaEngineDeepView({ sharia }: { sharia: ShariaApiResponse | null }) 
  {s.methodology || '—'}
  </div>
  </div>
- <Badge variant="outline" className={cn('text-xs', s.is_active ? 'border-profit text-profit' : 'border-slate-400 text-slate-500')}>
+ <Badge variant="outline" className={cn('text-xs', s.is_active ? 'border-profit text-profit' : 'border-slate-400 text-muted-foreground')}>
  {s.is_active ? 'نشط' : 'موقوف'}
  </Badge>
  </CardContent>
@@ -1811,15 +1811,15 @@ function ConsoleDeepView({ logs, engineFilter, setEngineFilter, search, setSearc
  </div>
  <div className="rounded-md bg-slate-950 text-slate-200 p-3 font-mono text-xs leading-relaxed max-h-[28rem] overflow-y-auto" dir="ltr">
  {filtered.length === 0 ? (
- <div className="text-slate-500 text-center py-8">لا توجد أخطاء 🎉</div>
+ <div className="text-muted-foreground text-center py-8">لا توجد أخطاء 🎉</div>
  ) : (
  filtered.map((err, i) => {
  const sev = severityOf(err.line);
- const color = sev === 'error' ? 'text-loss' : sev === 'warning' ? 'text-warning' : 'text-slate-300';
+ const color = sev === 'error' ? 'text-loss' : sev === 'warning' ? 'text-warning' : 'text-muted-foreground';
  return (
  <div key={i} className={cn('whitespace-pre-wrap break-all border-b border-slate-800 pb-1 mb-1', color)}>
- <span className="text-slate-500">[{err.engine}]</span>{' '}
- <span className="text-slate-500">{err.path.split('/').pop()}:</span>{' '}
+ <span className="text-muted-foreground">[{err.engine}]</span>{' '}
+ <span className="text-muted-foreground">{err.path.split('/').pop()}:</span>{' '}
  {err.line}
  </div>
  );

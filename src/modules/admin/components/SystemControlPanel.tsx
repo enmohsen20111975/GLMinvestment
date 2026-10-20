@@ -211,9 +211,9 @@ export function SystemControlPanel() {
  <div className="sticky top-0 z-40 bg-[#0a0e17]/95 backdrop-blur-xl border-b border-white/5">
  <div className="flex items-center justify-between p-3">
  <div className="flex items-center gap-2">
- <Settings className="w-5 h-5 text-cyan-400" />
+ <Settings className="w-5 h-5 text-whale" />
  <h2 className="text-sm font-bold">لوحة التحكم الشاملة</h2>
- <Badge variant="outline" className="text-cyan-400 border-cyan-500/30 text-xs">
+ <Badge variant="outline" className="text-whale border-whale/20 text-xs">
  {data?.system ? 'مباشر' : '...'}
  </Badge>
  </div>
@@ -233,7 +233,7 @@ export function SystemControlPanel() {
  className={cn(
  'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all min-h-[40px] whitespace-nowrap',
  activeTab === tab.id
- ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+ ? 'bg-whale/10 text-whale border border-whale/20'
  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
  )}
  >
@@ -257,7 +257,7 @@ export function SystemControlPanel() {
  >
  {loading && !data ? (
  <div className="flex items-center justify-center py-20">
- <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+ <Loader2 className="w-6 h-6 animate-spin text-whale" />
  </div>
  ) : (
  <>
@@ -370,7 +370,7 @@ function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[
  <Card className="bg-white/5 border-white/10 p-3">
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
- <Radar className="w-4 h-4 text-cyan-400" />
+ <Radar className="w-4 h-4 text-whale" />
  <span className="text-xs font-semibold text-muted-foreground">حالة Scrapers</span>
  </div>
  <Badge variant="outline" className="text-xs">
@@ -439,14 +439,14 @@ function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
  <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-loss/20 bg-loss/5')}>
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2 min-w-0 flex-1">
- <Database className="w-4 h-4 text-cyan-400 shrink-0" />
+ <Database className="w-4 h-4 text-whale shrink-0" />
  <div className="min-w-0">
  <div className="text-xs font-medium text-foreground truncate">{db.name}</div>
  <div className="text-xs text-muted-foreground">
  {db.size_human || meta?.sizeFormatted || '—'} • {db.tables ?? meta?.tableCount ?? 0} جداول
  {/* PHASE2-ADMIN-PANEL: row count from /api/admin/db */}
  {meta?.totalRows != null && (
- <span className="text-cyan-400/70"> • {meta.totalRows.toLocaleString()} صف</span>
+ <span className="text-whale/70"> • {meta.totalRows.toLocaleString()} صف</span>
  )}
  </div>
  {/* PHASE2-ADMIN-PANEL: last update + stale alert per-DB */}
@@ -521,14 +521,14 @@ function EnginesTab({ data }: { data: any }) {
  <Card key={eng.id} className="bg-white/5 border-white/10 p-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
- <Brain className="w-4 h-4 text-cyan-400 shrink-0" />
+ <Brain className="w-4 h-4 text-whale shrink-0" />
  <div>
  <div className="text-xs font-medium text-foreground">{eng.name}</div>
  <div className="text-xs text-muted-foreground">port {eng.port}</div>
  </div>
  </div>
  <div className="flex items-center gap-2">
- {eng.controllable && <Settings className="w-3 h-3 text-cyan-400" />}
+ {eng.controllable && <Settings className="w-3 h-3 text-whale" />}
  <div className={cn('w-2 h-2 rounded-full', eng.status === 'active' ? 'bg-profit' : 'bg-loss')} />
  </div>
  </div>
@@ -577,7 +577,7 @@ function PricesTab({ data, runAction, actionLoading }: any) {
  <div className="text-xs text-muted-foreground">طازجة</div>
  </div>
  <div className="text-center p-2 rounded-lg bg-black/30">
- <div className="text-lg font-bold text-cyan-400">{fmtNum(egxStocks)}</div>
+ <div className="text-lg font-bold text-whale">{fmtNum(egxStocks)}</div>
  <div className="text-xs text-muted-foreground">أسهم EGX</div>
  </div>
  <div className="text-center p-2 rounded-lg bg-black/30">
@@ -636,7 +636,7 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
  <div className="text-xs text-muted-foreground">معدل النجاح</div>
  </div>
  <div className="text-center p-2 rounded-lg bg-black/30">
- <div className="text-lg font-bold text-cyan-400">{fmtNum(closed)}</div>
+ <div className="text-lg font-bold text-whale">{fmtNum(closed)}</div>
  <div className="text-xs text-muted-foreground">مغلقة</div>
  </div>
  <div className="text-center p-2 rounded-lg bg-black/30">
@@ -675,7 +675,7 @@ function LogsTab({ data }: { data: any }) {
 // === Helper Components ===
 function StatCard({ icon: Icon, label, value, color }: any) {
  const colors: Record<string, string> = {
- cyan: 'text-cyan-400 bg-cyan-500/5 border-cyan-500/20',
+ cyan: 'text-whale bg-whale/5 border-whale/20',
  purple: 'text-primary bg-primary/5 border-purple-500/20',
  emerald: 'text-profit bg-profit/5 border-profit/20',
  amber: 'text-warning bg-warning/5 border-warning/20',

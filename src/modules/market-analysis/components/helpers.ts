@@ -46,11 +46,11 @@ export function pickValidPrice(...candidates: Array<unknown>): number | undefine
 export function getStatusBadge(status: LifecycleStatus | undefined): StatusBadgeStyle {
  switch (status) {
  case 'TARGET_HIT':
- return { label: '🎯 حقق الهدف', badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ', dotClass: 'bg-profit' };
+ return { label: '🎯 حقق الهدف', badgeClass: 'bg-profit/10 text-profit border border-profit/20 border-profit ', dotClass: 'bg-profit' };
  case 'STOPPED':
- return { label: '🛑 وقف الخسارة', badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ', dotClass: 'bg-loss' };
+ return { label: '🛑 وقف الخسارة', badgeClass: 'bg-loss/10 text-loss border border-loss/20 border-loss ', dotClass: 'bg-loss' };
  case 'EXPIRED':
- return { label: '⏰ انتهى', badgeClass: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ', dotClass: 'bg-warning' };
+ return { label: '⏰ انتهى', badgeClass: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning ', dotClass: 'bg-warning' };
  case 'PENDING':
  default:
  return { label: '⏳ مفتوح', badgeClass: 'bg-whale text-whale border-whale ', dotClass: 'bg-whale' };
@@ -1126,7 +1126,7 @@ export function cryptoSymbolMeta(symbol: string): { icon: string; name: string }
 export const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string; label: string }> = {
  HOT: { bg: 'bg-loss/10 border-loss/20', text: 'text-loss ', icon: '🔥', label: 'نار' },
  WARM: { bg: 'bg-warning/10 border-orange-500/30', text: 'text-warning ', icon: '☀️', label: 'دافئ' },
- NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30', text: 'text-slate-700 dark:text-slate-300', icon: '➖', label: 'محايد' },
+ NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30', text: 'text-muted-foreground dark:text-muted-foreground', icon: '➖', label: 'محايد' },
  COOL: { bg: 'bg-sky-500/10 border-sky-500/30', text: 'text-sky-700 dark:text-sky-300', icon: '💧', label: 'بارد' },
  COLD: { bg: 'bg-whale/10 border-whale/20', text: 'text-whale ', icon: '❄️', label: 'بارد جداً' },
 };

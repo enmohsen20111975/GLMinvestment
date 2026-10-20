@@ -152,7 +152,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
  return {
  label: 'متوازن',
  icon: <Scale className="w-3 h-3" />,
- color: 'text-slate-700 bg-slate-500/15 border-slate-500/40 dark:text-slate-300',
+ color: 'text-muted-foreground bg-slate-500/15 border-slate-500/40 dark:text-muted-foreground',
  };
  }
  }, [data?.interpretation]);
@@ -180,7 +180,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
  {/* ===== Header ===== */}
  <CardHeader className={cn('pb-2', compact && 'px-3 pt-0')}>
  <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
- <Activity className="w-4 h-4 text-cyan-500" />
+ <Activity className="w-4 h-4 text-whale" />
  <span>دفتر الأوامر والسيولة</span>
  <span className="text-xs text-muted-foreground font-normal">
  ({ticker.toUpperCase()})
@@ -342,14 +342,14 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
 
  {/* ---- Current price center band ---- */}
  <div className="relative -mx-2 px-2">
- <div className="h-9 rounded-md bg-cyan-500/10 border-y-2 border-cyan-500/40 flex items-center justify-between px-3">
- <span className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">
+ <div className="h-9 rounded-md bg-whale/10 border-y-2 border-whale/20/40 flex items-center justify-between px-3">
+ <span className="text-xs text-whale font-medium">
  السعر الحالي
  </span>
- <span className="font-mono text-base font-bold text-cyan-800 dark:text-cyan-200 tabular-nums">
+ <span className="font-mono text-base font-bold text-whale dark:text-whale tabular-nums">
  {fmtPrice(data.current_price)}
  </span>
- <span className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">
+ <span className="text-xs text-whale font-medium">
  EGP
  </span>
  </div>

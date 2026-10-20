@@ -215,15 +215,15 @@ interface TopPerformersResponse {
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
 const STATE_BADGE_COLORS: Record<string, string> = {
- CORRECTION_END: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
- BALANCED_MOMENTUM: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-success dark:border-success',
- NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
- AT_PEAK: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
- NEAR_PEAK: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-orange-200 dark:border-orange-800',
+ CORRECTION_END: 'bg-profit/10 text-profit border border-profit/20 border-profit ',
+ BALANCED_MOMENTUM: 'bg-profit/10 text-profit border border-profit/20 border-success dark:border-success',
+ NEAR_BREAKOUT: 'bg-whale/10 text-whale dark:bg-whale/10 border-whale/20 dark:border-whale/30',
+ AT_PEAK: 'bg-loss/10 text-loss border border-loss/20 border-loss ',
+ NEAR_PEAK: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-orange-200 dark:border-orange-800',
  NEUTRAL: 'bg-muted text-muted-foreground /60 border-border ',
- CORRECTION: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-orange-200 dark:border-orange-800',
- DECLINING: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
- INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+ CORRECTION: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-orange-200 dark:border-orange-800',
+ DECLINING: 'bg-loss/10 text-loss border border-loss/20 border-loss ',
+ INSUFFICIENT_DATA: 'bg-muted text-muted-foreground/60 dark:text-muted-foreground border-border',
 };
 
 function getStateLabels(t: (k: string, p?: any) => string): Record<string, string> {
@@ -1107,9 +1107,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  green: 'border-success/20 bg-success/10 text-success hover:bg-success/20 ',
  yellow: 'border-yellow-500/40 bg-warning/10 text-warning hover:bg-warning/20 ',
  gold: 'border-yellow-600/40 bg-warning/10 text-warning hover:bg-warning/20 ',
- cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',
+ cyan: 'border-whale/20/40 bg-whale/10 text-whale hover:bg-whale/20',
  violet: 'border-violet-500/40 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300',
- slate: 'border-slate-500/40 bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:text-slate-300',
+ slate: 'border-slate-500/40 bg-slate-500/10 text-muted-foreground hover:bg-slate-500/20 dark:text-muted-foreground',
  };
 
  const applyPreset = (preset: typeof presets[0]) => {
@@ -1439,7 +1439,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
  render: (s) =>
  s.above_ma_50 ? (
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit text-xs px-2 py-0.5">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 border-profit text-xs px-2 py-0.5">
  {t('screener.advanced.stockStateColumn.above')}
  </Badge>
  ) : (
@@ -1664,7 +1664,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  <Button
  variant="outline"
  size="sm"
- className="gap-1.5 border-slate-400/40 bg-slate-50/50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:bg-slate-800/60"
+ className="gap-1.5 border-slate-400/40 bg-slate-50/50 text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-slate-800/60"
  >
  <ChevronDown className="w-3.5 h-3.5" />
  {t('screener.advanced.presets.more')}

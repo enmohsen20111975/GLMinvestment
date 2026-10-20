@@ -534,7 +534,7 @@ export function ResourceHistoryChart({ className }: ResourceHistoryChartProps) {
  {!loading && !error && hasNet && chartData.length > 0 && (
  <div className="rounded-lg border border-border/40 p-3">
  <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
- <Wifi className="w-3.5 h-3.5 text-cyan-500" />
+ <Wifi className="w-3.5 h-3.5 text-whale" />
  شبكة I/O (KB/s)
  </div>
  <ResponsiveContainer width="100%" height={120}>

@@ -86,7 +86,7 @@ const STATUS_META: Record<
  unknown: {
  label: 'غير معروف',
  dot: 'bg-slate-400',
- badge: 'border-slate-500 text-slate-700',
+ badge: 'border-slate-500 text-muted-foreground',
  icon: 'alert',
  },
 };

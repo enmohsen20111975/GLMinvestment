@@ -250,9 +250,9 @@ export function ProcessResourceHistory({
  >
  <DialogHeader>
  <DialogTitle className="flex items-center gap-2 text-base">
- <Activity className="w-4 h-4 text-cyan-500" />
+ <Activity className="w-4 h-4 text-whale" />
  السجل التاريخي للعملية:{' '}
- <span className="font-mono text-cyan-600 dark:text-cyan-400">
+ <span className="font-mono text-whale dark:text-whale">
  {processName}
  </span>
  </DialogTitle>
@@ -271,7 +271,7 @@ export function ProcessResourceHistory({
  className={cn(
  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[32px] border',
  range === opt.key
- ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/40'
+ ? 'bg-whale/10 text-whale dark:text-whale border-whale/20/40'
  : 'text-muted-foreground hover:text-foreground border-border/60 hover:bg-muted/40',
  )}
  >

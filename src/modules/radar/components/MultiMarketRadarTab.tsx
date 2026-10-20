@@ -66,13 +66,13 @@ const MARKET_FLAG: Record<string, string> = {
 // the API response (`section.name_ar` / `pick.market_name_ar`).
 
 const REGIME_LABEL: Record<string, { color: string }> = {
- defensive: { color: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ' },
- normal: { color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ' },
- aggressive: { color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ' },
- bull: { color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ' },
- bear: { color: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ' },
- sideways: { color: 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/60 dark:text-slate-300 dark:border-slate-700' },
- unknown: { color: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-700' },
+ defensive: { color: 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning/20 ' },
+ normal: { color: 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ' },
+ aggressive: { color: 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ' },
+ bull: { color: 'bg-profit/10 text-profit border border-profit/20 border-profit/20 ' },
+ bear: { color: 'bg-loss/10 text-loss border border-loss/20 border-loss/20 ' },
+ sideways: { color: 'bg-muted text-slate-800 border-border/60 dark:text-muted-foreground' },
+ unknown: { color: 'bg-muted text-muted-foreground border-border/60 dark:text-muted-foreground' },
 };
 
 const PATH_META: Record<string, { tKey: string; icon: React.ReactNode; color: string }> = {
@@ -318,7 +318,7 @@ export function MultiMarketRadarTab() {
  <div>
  <h3 className="text-lg md:text-xl font-bold flex items-center gap-2">
  {t('radar.multiMarket.title')}
- <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ">
+ <Badge variant="outline" className="text-xs bg-profit/10 text-profit border border-profit/20 border-profit ">
  {t('radar.multiMarket.marketsCount', { count: markets.length })}
  </Badge>
  </h3>
@@ -373,7 +373,7 @@ export function MultiMarketRadarTab() {
  aria-label={`toggle ${m}`}
  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all flex items-center gap-1 ${
  selected
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 '
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit/20 '
  : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
  }`}
  >
@@ -412,7 +412,7 @@ export function MultiMarketRadarTab() {
  </div>
  </div>
  {section.is_open ? (
- <Badge className="text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ">
+ <Badge className="text-xs bg-profit/10 text-profit border border-profit/20 border-profit/20 ">
  <span className="h-1.5 w-1.5 rounded-full bg-profit mr-1 animate-pulse" />
  LIVE
  </Badge>

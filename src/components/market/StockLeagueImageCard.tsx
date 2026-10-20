@@ -130,7 +130,7 @@ function RankBadge({ rank }: { rank: number }) {
  }
  return (
  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-slate-700/60 flex items-center justify-center">
- <span className="text-sm font-bold text-slate-300">{rank}</span>
+ <span className="text-sm font-bold text-muted-foreground">{rank}</span>
  </div>
  );
 }
@@ -168,11 +168,11 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  {league.length === 0 ? (
  /* Empty state */
  <div className="py-16 text-center">
- <Trophy className="w-16 h-16 text-slate-700 mx-auto mb-4" />
- <p className="text-slate-400 text-base font-bold mb-1">
+ <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+ <p className="text-muted-foreground text-base font-bold mb-1">
  الدوري لسه ما ابدأش
  </p>
- <p className="text-slate-600 text-xs">
+ <p className="text-muted-foreground text-xs">
  استنى الصفقات — الترتيب هيظهر هنا فور إغلاقها
  </p>
  </div>
@@ -180,7 +180,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  /* League entries */
  <div className="space-y-1.5">
  {/* Table header */}
- <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-500 font-medium border-b border-slate-700/50">
+ <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground font-medium border-b border-slate-700/50">
  <span className="w-9 text-center">المركز</span>
  <span className="flex-1">السهم</span>
  <span className="w-20 text-center">السعر</span>
@@ -218,25 +218,25 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  </span>
  )}
  </div>
- <p className="text-xs text-slate-400 truncate">
+ <p className="text-xs text-muted-foreground truncate">
  {entry.name_ar || entry.ticker}
  </p>
  </div>
 
  {/* Current price */}
  <div className="w-20 text-center">
- <p className="text-xs text-slate-300 font-mono">
+ <p className="text-xs text-muted-foreground font-mono">
  {(entry.current_price ?? 0).toFixed(2)}
  </p>
- <p className="text-[8px] text-slate-600">ج.م</p>
+ <p className="text-[8px] text-muted-foreground">ج.م</p>
  </div>
 
  {/* Holding days */}
  <div className="w-16 text-center">
- <p className="text-xs text-slate-400">
+ <p className="text-xs text-muted-foreground">
  {entry.holding_days || 0}
  </p>
- <p className="text-[8px] text-slate-600">يوم</p>
+ <p className="text-[8px] text-muted-foreground">يوم</p>
  </div>
 
  {/* Profit % — the star */}
@@ -268,7 +268,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
  </div>
  <a
  href="https://invist.m2y.net"
- className="text-xs text-slate-400 hover:text-warning transition-colors"
+ className="text-xs text-muted-foreground hover:text-warning transition-colors"
  >
  invist.m2y.net
  </a>
@@ -276,7 +276,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
 
  {/* Disclaimer */}
  <div className="bg-slate-950 px-4 py-1.5 text-center">
- <p className="text-[8px] text-slate-600">
+ <p className="text-[8px] text-muted-foreground">
  ⚠️ هذه النتائج فعلية من توقعات المنصة — الأداء السابق لا يضمن المستقبل
  </p>
  </div>
@@ -315,11 +315,11 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  {trades.length === 0 ? (
  /* Empty state */
  <div className="py-12 text-center">
- <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-3" />
- <p className="text-slate-400 text-sm font-medium">
+ <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+ <p className="text-muted-foreground text-sm font-medium">
  لا توجد صفقات رابحة هذا الشهر بعد
  </p>
- <p className="text-slate-600 text-xs mt-1">
+ <p className="text-muted-foreground text-xs mt-1">
  تابع التوقعات — النتائج هتظهر هنا فور إغلاق الصفقات
  </p>
  </div>
@@ -335,8 +335,8 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
  idx === 0 ? 'bg-warning text-slate-900' :
  idx === 1 ? 'bg-slate-400 text-slate-900' :
- idx === 2 ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30' :
- 'bg-slate-700 text-slate-300'
+ idx === 2 ? 'bg-warning/10 text-warning dark:text-warning border border-warning/20' :
+ 'bg-slate-700 text-muted-foreground'
  }`}>
  {idx + 1}
  </div>
@@ -353,26 +353,26 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  </span>
  )}
  </div>
- <p className="text-xs text-slate-400 truncate">
+ <p className="text-xs text-muted-foreground truncate">
  {trade.name_ar || trade.ticker}
  </p>
  </div>
 
  {/* Entry → Exit */}
  <div className="text-center flex-shrink-0">
- <p className="text-xs text-slate-500">دخول ← خروج</p>
- <p className="text-xs text-slate-300 font-mono">
+ <p className="text-xs text-muted-foreground">دخول ← خروج</p>
+ <p className="text-xs text-muted-foreground font-mono">
  {(trade.entry_price ?? 0).toFixed(2)} ← {(trade.exit_price ?? 0).toFixed(2)}
  </p>
  </div>
 
  {/* Holding days */}
  <div className="text-center flex-shrink-0">
- <div className="flex items-center gap-0.5 text-slate-500">
+ <div className="flex items-center gap-0.5 text-muted-foreground">
  <Clock className="w-2.5 h-2.5" />
  <span className="text-xs">مدة</span>
  </div>
- <p className="text-xs text-slate-400 font-medium">
+ <p className="text-xs text-muted-foreground font-medium">
  {trade.holding_days} يوم
  </p>
  </div>
@@ -385,7 +385,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  +{(trade.profit_pct ?? 0).toFixed(1)}%
  </span>
  </div>
- <p className="text-xs text-slate-500">ربح</p>
+ <p className="text-xs text-muted-foreground">ربح</p>
  </div>
  </div>
  ))}
@@ -405,7 +405,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
  </div>
  <a
  href="https://invist.m2y.net"
- className="text-xs text-slate-400 hover:text-warning transition-colors"
+ className="text-xs text-muted-foreground hover:text-warning transition-colors"
  >
  invist.m2y.net
  </a>
@@ -413,7 +413,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
 
  {/* Disclaimer */}
  <div className="bg-slate-950 px-4 py-1.5 text-center">
- <p className="text-[8px] text-slate-600">
+ <p className="text-[8px] text-muted-foreground">
  ⚠️ هذه النتائج فعلية من توقعات المنصة — الأداء السابق لا يضمن المستقبل
  </p>
  </div>

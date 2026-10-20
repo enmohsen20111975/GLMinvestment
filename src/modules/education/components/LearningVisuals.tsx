@@ -823,7 +823,7 @@ export function LossAversionCurve() {
  const gainMarker = { x: 500, y: 100 }; // point on gain curve
 
  return (
- <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+ <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-3 shadow-sm dark:from-slate-900 dark:to-slate-950">
  <svg
  width="100%"
  height="380"
@@ -1137,7 +1137,7 @@ export function SopPipelineFlow() {
  const loopEndX = xs[0] + cardW / 2; // 116
 
  return (
- <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+ <div dir="rtl" className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-3 shadow-sm dark:from-slate-900 dark:to-slate-950">
  <svg
  width="100%"
  height="320"
@@ -1249,7 +1249,7 @@ export function SopPipelineFlow() {
  <div
  // @ts-expect-error xmlns is valid on div in JSX for foreignObject context
  xmlns="http://www.w3.org/1999/xhtml"
- className="flex h-full w-full flex-col rounded-xl border border-profit/70 bg-white p-2.5 shadow-sm /60 dark:bg-slate-900"
+ className="flex h-full w-full flex-col rounded-xl border border-profit/70 bg-white p-2.5 shadow-sm /60"
  >
  <div className="flex items-center gap-2">
  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${stage.iconBg}`}>
@@ -1268,7 +1268,7 @@ export function SopPipelineFlow() {
  {stage.items.map((item, j) => (
  <div key={j} className="flex items-start gap-1 text-xs leading-tight">
  <span className="mt-[1px] text-profit">✓</span>
- <span className="flex-1 text-slate-700 dark:text-slate-300">{item}</span>
+ <span className="flex-1 text-muted-foreground dark:text-muted-foreground">{item}</span>
  </div>
  ))}
  </div>
@@ -1276,7 +1276,7 @@ export function SopPipelineFlow() {
  <span className="rounded-full bg-profit px-1.5 py-[1px] text-xs font-bold text-profit/40 ">
  {String(i + 1).padStart(2, '0')}
  </span>
- <span className="text-[8.5px] text-slate-400" dir="ltr">
+ <span className="text-[8.5px] text-muted-foreground" dir="ltr">
  stage
  </span>
  </div>
@@ -1396,10 +1396,10 @@ const ACCENT_STYLES: Record<PipelineStage['accent'], { ring: string; badge: stri
  },
  cyan: {
  ring: 'ring-cyan-500/30',
- badge: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+ badge: 'bg-whale/10 text-whale border-whale/20',
  glow: 'shadow-[0_0_18px_-4px_rgba(34,211,238,0.55)]',
- text: 'text-cyan-300',
- border: 'border-cyan-700/50',
+ text: 'text-whale',
+ border: 'border-whale/30/50',
  },
  purple: {
  ring: 'ring-purple-500/30',
@@ -1424,7 +1424,7 @@ export function TradingSystemPipeline() {
  <h3 className="text-base font-bold text-slate-100 sm:text-lg">
  الخريطة المنطقية لنظام التداول الآلي
  </h3>
- <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+ <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
  من الإشارة إلى التنفيذ إلى المراجعة —{' '}
  <span dir="ltr" className="font-mono">
  signal → execution → review
@@ -1475,7 +1475,7 @@ export function TradingSystemPipeline() {
  LIVE
  </span>
  ) : (
- <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+ <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
  stage
  </span>
  )}
@@ -1489,13 +1489,13 @@ export function TradingSystemPipeline() {
  </div>
 
  {/* Titles */}
- <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400" dir="ltr">
+ <p className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground" dir="ltr">
  {stage.titleEn}
  </p>
  <p className="mt-0.5 text-center text-[13px] font-bold text-slate-100" dir="rtl">
  {stage.titleAr}
  </p>
- <p className="mt-1.5 text-center text-[10.5px] leading-snug text-slate-400" dir="rtl">
+ <p className="mt-1.5 text-center text-[10.5px] leading-snug text-muted-foreground" dir="rtl">
  {stage.desc}
  </p>
 
@@ -1529,7 +1529,7 @@ export function TradingSystemPipeline() {
  {/* Row connector + feedback loop visualization */}
  <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-3" dir="rtl">
  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
- <div className="flex items-center gap-2 text-xs text-slate-300">
+ <div className="flex items-center gap-2 text-xs text-muted-foreground">
  <RefreshCw className="h-3.5 w-3.5 text-primary" />
  <span>
  <span className="font-semibold text-primary">حلقة المراجعة:</span>{' '}
@@ -1553,8 +1553,8 @@ export function TradingSystemPipeline() {
  <span className="flex items-center gap-1 text-loss">
  <span className="h-2 w-2 rounded-full bg-loss" /> بوابة
  </span>
- <span className="flex items-center gap-1 text-cyan-300">
- <span className="h-2 w-2 rounded-full bg-cyan-500" /> تنفيذ
+ <span className="flex items-center gap-1 text-whale">
+ <span className="h-2 w-2 rounded-full bg-whale" /> تنفيذ
  </span>
  <span className="flex items-center gap-1 text-primary">
  <span className="h-2 w-2 rounded-full bg-primary" /> مراجعة
@@ -1647,7 +1647,7 @@ export function MarketStagesVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-4 shadow-sm dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Layers className="h-5 w-5 text-profit " />
@@ -1668,7 +1668,7 @@ export function MarketStagesVisual() {
  role="img"
  aria-label="منحنى السعر عبر مراحل السوق الأربع"
  style={{ maxWidth: '100%', height: 'auto' }}
- className="rounded-lg border border-slate-200 bg-slate-50/40 dark:border-slate-700 dark:bg-slate-950/40"
+ className="rounded-lg border border-border bg-slate-50/40"
  >
  <defs>
  <linearGradient id="stagePriceFill" x1="0" y1="0" x2="0" y2="1">
@@ -1786,7 +1786,7 @@ export function OrderFlowVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-4 shadow-sm dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Scale className="h-5 w-5 text-profit " />
@@ -1807,7 +1807,7 @@ export function OrderFlowVisual() {
  role="img"
  aria-label="سلم تسعير الـ Bid/Ask مع تدفقات الأوامر"
  style={{ maxWidth: '100%', height: 'auto' }}
- className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
+ className="rounded-lg border border-border bg-white dark:bg-slate-950"
  >
  {/* Column headers */}
  <text x="80" y="20" textAnchor="middle" fontSize="11" fontWeight="700" fill="#ef4444">طلبات البيع (Ask)</text>
@@ -1875,13 +1875,13 @@ export function OrderFlowVisual() {
  </div>
 
  {/* Imbalance bar */}
- <div className="rounded-lg border border-slate-300 bg-muted/40 p-3 dark:border-slate-700">
+ <div className="rounded-lg border border-border bg-muted/40 p-3">
  <div className="mb-1 flex items-center justify-between text-xs">
  <span className="text-loss ">بيع &lt;&lt;</span>
  <span className="font-semibold">عدم التوازن (Imbalance)</span>
  <span className="text-profit ">&gt;&gt; شراء</span>
  </div>
- <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+ <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted dark:bg-slate-700">
  <div
  className="absolute top-0 h-3"
  style={{
@@ -2027,7 +2027,7 @@ export function CandlestickPatternsVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-4 shadow-sm dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Crosshair className="h-5 w-5 text-profit " />
@@ -2048,7 +2048,7 @@ export function CandlestickPatternsVisual() {
  initial={{ opacity: 0, scale: 0.95 }}
  animate={{ opacity: 1, scale: 1 }}
  transition={{ delay: i * 0.08 }}
- className="flex flex-col rounded-xl border border-slate-200 bg-card p-3 shadow-sm dark:border-slate-700"
+ className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm"
  dir="rtl"
  >
  <div className="mb-2 flex items-center justify-between">
@@ -2177,7 +2177,7 @@ export function RiskRewardVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-4 shadow-sm dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <Scale className="h-5 w-5 text-profit " />
@@ -2198,7 +2198,7 @@ export function RiskRewardVisual() {
  role="img"
  aria-label="رسم تفاعلي للمخاطرة والعائد"
  style={{ maxWidth: '100%', height: 'auto', touchAction: 'none' }}
- className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950"
+ className="rounded-lg border border-border bg-white dark:bg-slate-950"
  onPointerMove={handlePointerMove}
  onPointerUp={handlePointerUp}
  onPointerLeave={handlePointerUp}
@@ -2311,8 +2311,8 @@ export function RiskRewardVisual() {
  <div className="text-xs text-muted-foreground">({(reward / entry * 100).toFixed(1)}%)</div>
  </div>
  <div className="rounded-lg border border-slate-400/40 bg-slate-500/10 p-3 text-center">
- <div className="text-xs text-slate-700 dark:text-slate-300">R:R</div>
- <div className="text-lg font-bold text-slate-700 dark:text-slate-300">{(rr ?? 0).toFixed(2)}</div>
+ <div className="text-xs text-muted-foreground dark:text-muted-foreground">R:R</div>
+ <div className="text-lg font-bold text-muted-foreground dark:text-muted-foreground">{(rr ?? 0).toFixed(2)}</div>
  <div className="text-xs text-muted-foreground">1 : {(rr ?? 0).toFixed(1)}</div>
  </div>
  </div>
@@ -2332,11 +2332,11 @@ export function RiskRewardVisual() {
  </div>
 
  {/* Sliders for accessibility */}
- <div className="space-y-3 rounded-lg border border-slate-200 bg-muted/30 p-3 dark:border-slate-700" dir="rtl">
+ <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3" dir="rtl">
  <div>
  <div className="mb-1 flex justify-between text-xs">
- <span className="font-semibold text-slate-700 dark:text-slate-300">سعر الدخول (Entry)</span>
- <span className="text-slate-600 dark:text-slate-400">{(entry ?? 0).toFixed(1)}</span>
+ <span className="font-semibold text-muted-foreground dark:text-muted-foreground">سعر الدخول (Entry)</span>
+ <span className="text-muted-foreground dark:text-muted-foreground">{(entry ?? 0).toFixed(1)}</span>
  </div>
  <input
  type="range"
@@ -2351,7 +2351,7 @@ export function RiskRewardVisual() {
  <div>
  <div className="mb-1 flex justify-between text-xs">
  <span className="font-semibold text-loss ">الوقف (Stop)</span>
- <span className="text-slate-600 dark:text-slate-400">{(stop ?? 0).toFixed(1)}</span>
+ <span className="text-muted-foreground dark:text-muted-foreground">{(stop ?? 0).toFixed(1)}</span>
  </div>
  <input
  type="range"
@@ -2366,7 +2366,7 @@ export function RiskRewardVisual() {
  <div>
  <div className="mb-1 flex justify-between text-xs">
  <span className="font-semibold text-profit ">الهدف (Target)</span>
- <span className="text-slate-600 dark:text-slate-400">{(target ?? 0).toFixed(1)}</span>
+ <span className="text-muted-foreground dark:text-muted-foreground">{(target ?? 0).toFixed(1)}</span>
  </div>
  <input
  type="range"
@@ -2465,7 +2465,7 @@ export function PortfolioAllocationVisual() {
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ duration: 0.45 }}
- className="my-6 overflow-hidden rounded-2xl border border-slate-200 from-white to-slate-50 p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950"
+ className="my-6 overflow-hidden rounded-2xl border border-border from-white to-slate-50 p-4 shadow-sm dark:from-slate-900 dark:to-slate-950"
  >
  <div className="mb-3 flex items-center gap-2" dir="rtl">
  <PieChart className="h-5 w-5 text-profit " />
@@ -2520,7 +2520,7 @@ export function PortfolioAllocationVisual() {
  className={cn(
  'flex items-center gap-1.5 rounded-md border px-2 py-1 text-right transition',
  active.id === a.id
- ? 'border-slate-300 bg-muted/60 dark:border-slate-600'
+ ? 'border-border bg-muted/60 dark:border-slate-600'
  : 'border-transparent hover:bg-muted/30',
  )}
  >
@@ -2563,14 +2563,14 @@ export function PortfolioAllocationVisual() {
  </div>
  <div className="rounded-md bg-muted/40 p-2">
  <div className="text-xs text-muted-foreground">الدور</div>
- <div className="text-xs font-bold text-slate-700 dark:text-slate-300">{active.role}</div>
+ <div className="text-xs font-bold text-muted-foreground dark:text-muted-foreground">{active.role}</div>
  </div>
  </div>
  </div>
 
  {/* Portfolio aggregate stats */}
- <div className="rounded-lg border border-slate-300 bg-muted/30 p-3 dark:border-slate-700">
- <div className="mb-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-300">
+ <div className="rounded-lg border border-border bg-muted/30 p-3">
+ <div className="mb-2 text-center text-xs font-semibold text-muted-foreground dark:text-muted-foreground">
  إحصائيات المحفظة الكاملة
  </div>
  <div className="grid grid-cols-3 gap-2 text-center">
@@ -2584,7 +2584,7 @@ export function PortfolioAllocationVisual() {
  </div>
  <div>
  <div className="text-xs text-muted-foreground">Sharpe</div>
- <div className="text-base font-bold text-slate-700 dark:text-slate-300">{(sharpe ?? 0).toFixed(2)}</div>
+ <div className="text-base font-bold text-muted-foreground dark:text-muted-foreground">{(sharpe ?? 0).toFixed(2)}</div>
  </div>
  </div>
  </div>

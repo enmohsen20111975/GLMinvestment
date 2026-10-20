@@ -416,7 +416,7 @@ export function UsersManagement() {
  if (isActive) {
  return <Badge className="bg-profit/10 text-profit border-profit gap-1"><Activity className="w-3 h-3" />نشط</Badge>;
  }
- return <Badge className="bg-slate-500/10 text-slate-600 border-slate-200 gap-1"><XCircle className="w-3 h-3" />غير نشط</Badge>;
+ return <Badge className="bg-slate-500/10 text-muted-foreground border-border gap-1"><XCircle className="w-3 h-3" />غير نشط</Badge>;
  };
 
  const handleOpenPromoModal = (user: UserDetails) => {

@@ -310,7 +310,7 @@ export function WatchlistIntelligenceSection() {
  {opportunities.slice(0, 3).map((opp, i) => (
  <div key={i} className="flex items-center justify-between p-2 rounded bg-profit/10">
  <div className="flex items-center gap-2">
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 ">
  {opp.ticker}
  </Badge>
  <span className="text-sm">{opp.reason_ar}</span>
@@ -338,7 +338,7 @@ export function WatchlistIntelligenceSection() {
  <div className="space-y-2">
  {warnings.slice(0, 3).map((warn, i) => (
  <div key={i} className="flex items-center gap-2 p-2 rounded bg-loss/10">
- <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ">
+ <Badge className="bg-loss/10 text-loss border border-loss/20 ">
  {warn.ticker}
  </Badge>
  <span className="text-sm">{warn.reason_ar}</span>

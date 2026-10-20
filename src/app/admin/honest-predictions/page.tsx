@@ -181,11 +181,11 @@ interface Lesson {
 // ============================================================================
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
- TARGET_HIT: { label: 'حقق الهدف', color: 'bg-profit/15 text-profit border-emerald-500/30', icon: <Trophy className="h-3 w-3" /> },
+ TARGET_HIT: { label: 'حقق الهدف', color: 'bg-profit/15 text-profit border-profit/20', icon: <Trophy className="h-3 w-3" /> },
  STOPPED: { label: 'ضرب وقف الخسارة', color: 'bg-danger/15 text-danger border-red-500/30', icon: <XCircle className="h-3 w-3" /> },
- EXPIRED: { label: 'انتهت المدة', color: 'bg-warning/15 text-warning border-amber-500/30', icon: <Clock className="h-3 w-3" /> },
+ EXPIRED: { label: 'انتهت المدة', color: 'bg-warning/15 text-warning border-warning/20', icon: <Clock className="h-3 w-3" /> },
  PENDING: { label: 'قيد التنفيذ', color: 'bg-primary/15 text-primary border-blue-500/30', icon: <Clock className="h-3 w-3" /> },
- CLOSED: { label: 'مغلقة', color: 'bg-slate-500/15 text-slate-600 border-slate-500/30', icon: <CheckCircle2 className="h-3 w-3" /> },
+ CLOSED: { label: 'مغلقة', color: 'bg-slate-500/15 text-muted-foreground border-slate-500/30', icon: <CheckCircle2 className="h-3 w-3" /> },
 };
 
 const MARKET_NAMES: Record<string, string> = {
@@ -604,7 +604,7 @@ export default function HonestPredictionsPage() {
  )}
  </div>
  <CollapsibleContent>
- <Card className="mt-3 border-emerald-500/20 bg-muted/30">
+ <Card className="mt-3 border-profit/20 bg-muted/30">
  <CardContent className="p-4 md:p-6 space-y-6">
  {/* Prediction Period */}
  <div>
@@ -1518,8 +1518,8 @@ export default function HonestPredictionsPage() {
  className={cn(
  'p-3 rounded-lg border',
  lesson.failure_rate > 70 ? 'border-red-500/30 bg-danger/5' :
- lesson.failure_rate > 50 ? 'border-amber-500/30 bg-warning/5' :
- 'border-emerald-500/30 bg-profit/5'
+ lesson.failure_rate > 50 ? 'border-warning/20 bg-warning/5' :
+ 'border-profit/20 bg-profit/5'
  )}
  >
  <div className="flex items-start justify-between mb-2">

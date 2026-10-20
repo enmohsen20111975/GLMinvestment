@@ -271,13 +271,13 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
+ 'bg-profit/10 text-profit border border-profit/20 border-profit ',
  non_compliant:
- 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
+ 'bg-loss/10 text-loss border border-loss/20 border-loss ',
  doubtful:
- 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ',
+ 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning ',
  not_available:
- 'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+ 'bg-muted text-muted-foreground/50 dark:text-muted-foreground border-border',
 };
 
 function deriveOverallStatus(row: ShariaRow): ShariaStatus {
@@ -332,7 +332,7 @@ function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
  {STATUS_EMOJI[status]} {STATUS_LABELS_AR[status]}
  </span>
  {row.is_halal_consensus === 1 && (
- <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ">
+ <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning/10 text-warning dark:text-warning border border-warning/20 ">
  <Award className="w-2.5 h-2.5 inline ml-0.5" />
  إجماع
  </span>
@@ -493,8 +493,8 @@ function ShariaStockDetailBody({ data }: { data: ShariaDetailResponse }) {
  className={cn(
  'border',
  isHalal
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit '
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ',
+ ? 'bg-profit/10 text-profit border border-profit/20 border-profit '
+ : 'bg-warning/10 text-warning dark:text-warning border border-warning/20 border-warning ',
  )}
  >
  {isHalal ? '🟢 متوافق (إجماع)' : '🟡 مشمول بالقائمة'}
@@ -1071,8 +1071,8 @@ function Alert({ variant, children }: { variant: 'error' | 'info'; children: Rea
  className={cn(
  'flex items-start gap-2 p-3 rounded-md text-xs border',
  variant === 'error'
- ? 'border-loss bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
- : 'border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
+ ? 'border-loss bg-loss/10 text-loss border border-loss/20 '
+ : 'border-warning bg-warning/10 text-warning dark:text-warning border border-warning/20/30 ',
  )}
  >
  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -1332,8 +1332,8 @@ function StatPill({
  className={cn(
  'flex h-7 w-7 items-center justify-center rounded-full',
  accent === 'emerald'
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
+ ? 'bg-profit/10 text-profit border border-profit/20 '
+ : 'bg-warning/10 text-warning dark:text-warning border border-warning/20 ',
  )}
  >
  {icon}

@@ -277,12 +277,12 @@ export function SmartAlertsPanel() {
  <CardContent className="p-3">
  <div className="flex flex-wrap gap-2 text-xs">
  {summary.by_type.profit_target > 0 && (
- <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+ <Badge variant="outline" className="bg-profit/10 text-profit border border-profit/20">
  🎯 {summary.by_type.profit_target} هدف ربح
  </Badge>
  )}
  {summary.by_type.stop_loss > 0 && (
- <Badge variant="outline" className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+ <Badge variant="outline" className="bg-loss/10 text-loss border border-loss/20">
  🛡️ {summary.by_type.stop_loss} وقف خسارة
  </Badge>
  )}
@@ -292,7 +292,7 @@ export function SmartAlertsPanel() {
  </Badge>
  )}
  {summary.by_type.resistance_near > 0 && (
- <Badge variant="outline" className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+ <Badge variant="outline" className="bg-warning/10 text-warning dark:text-warning border border-warning/20">
  📤 {summary.by_type.resistance_near} قريب من مقاومة
  </Badge>
  )}
@@ -302,12 +302,12 @@ export function SmartAlertsPanel() {
  </Badge>
  )}
  {summary.by_type.breakout > 0 && (
- <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+ <Badge variant="outline" className="bg-profit/10 text-profit border border-profit/20">
  {summary.by_type.breakout} كسر مقاومة
  </Badge>
  )}
  {summary.by_type.breakdown > 0 && (
- <Badge variant="outline" className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+ <Badge variant="outline" className="bg-loss/10 text-loss border border-loss/20">
  📉 {summary.by_type.breakdown} كسر دعم
  </Badge>
  )}

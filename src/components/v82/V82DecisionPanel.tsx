@@ -163,7 +163,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
  <Card className="p-3">
  <div className="text-xs text-muted-foreground">أفضل دخول</div>
- <div className="text-lg font-bold text-cyan-600">
+ <div className="text-lg font-bold text-whale">
  {result.best_entry_price?.toFixed(2) || '—'}
  </div>
  </Card>
@@ -220,7 +220,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  <Card>
  <CardHeader className="pb-2">
  <CardTitle className="text-sm flex items-center gap-2">
- <Activity className="w-4 h-4 text-cyan-500" />
+ <Activity className="w-4 h-4 text-whale" />
  تدفق الأموال
  </CardTitle>
  </CardHeader>
@@ -254,7 +254,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
  <div>
  <div className="text-muted-foreground">عدد الأسهم</div>
- <div className="font-bold text-cyan-600">{result.position_size || 0}</div>
+ <div className="font-bold text-whale">{result.position_size || 0}</div>
  </div>
  <div>
  <div className="text-muted-foreground">قيمة الصفقة</div>

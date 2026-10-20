@@ -522,7 +522,7 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
  return (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
  {flow && (
- <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900">
+ <div className="rounded-lg border border-border p-4 bg-white">
  <h3 className="text-sm font-bold mb-2 text-slate-900 ">نقاط التدفق (Flow Score)</h3>
  <div className="flex items-center gap-3">
  <span className="text-3xl font-bold" style={{color: (flow.color as string) === 'red' ? '#ef4444' : (flow.color as string) === 'orange' ? '#f97316' : (flow.color as string) === 'amber' ? '#f59e0b' : '#10b981'}}>
@@ -530,7 +530,7 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
  </span>
  <div>
  <div className="text-lg font-bold">{String(flow.label)}</div>
- <div className="text-xs text-slate-500">
+ <div className="text-xs text-muted-foreground">
  Macro: {String(flow.macro_flow)} | Sector: {String(flow.sector_flow)} | Stock: {String(flow.stock_flow)} | Cross: {String(flow.cross_validation)}
  </div>
  </div>
@@ -538,7 +538,7 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
  </div>
  )}
  {explosive && !explosive.excluded && (
- <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900">
+ <div className="rounded-lg border border-border p-4 bg-white">
  <h3 className="text-sm font-bold mb-2 text-slate-900 ">ماسح القنابل (Explosive)</h3>
  <div className="flex items-center gap-3">
  <span className="text-3xl font-bold" style={{color: (explosive.color as string) === 'red' ? '#ef4444' : (explosive.color as string) === 'orange' ? '#f97316' : (explosive.color as string) === 'amber' ? '#f59e0b' : '#6b7280'}}>
@@ -546,7 +546,7 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
  </span>
  <div>
  <div className="text-lg font-bold">{String(explosive.label)} - {String(explosive.pattern)}</div>
- <div className="text-xs text-slate-500">
+ <div className="text-xs text-muted-foreground">
  Vol: {String(explosive.volume_ratio)}x | {String(explosive.action)} | وقف: {String(explosive.stop_loss)}% | هدف: +{String(explosive.target)}%
  </div>
  </div>
@@ -571,13 +571,13 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
 
  if (!profile) {
  return (
- <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 mt-3 animate-pulse">
- <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-3"></div>
+ <div className="rounded-lg border border-border p-4 bg-white mt-3 animate-pulse">
+ <div className="h-4 bg-muted dark:bg-slate-700 rounded w-1/4 mb-3"></div>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
- <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
- <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
- <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
- <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded"></div>
+ <div className="h-8 bg-muted dark:bg-slate-700 rounded"></div>
+ <div className="h-8 bg-muted dark:bg-slate-700 rounded"></div>
+ <div className="h-8 bg-muted dark:bg-slate-700 rounded"></div>
+ <div className="h-8 bg-muted dark:bg-slate-700 rounded"></div>
  </div>
  </div>
  );
@@ -621,7 +621,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  !inc?.net_income && !!(profile.basic?.market_cap) && !!(profile.basic?.pe_ratio);
 
  return (
- <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-5 bg-white dark:bg-slate-950 shadow-sm mt-3" dir="rtl">
+ <div className="rounded-xl border border-border p-5 bg-white dark:bg-slate-950 shadow-sm mt-3" dir="rtl">
  {/* Header with Health Score */}
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-900">
  <div>
@@ -629,7 +629,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  <BarChart3 className="w-5 h-5 text-profit" />
  تحليل البيانات الأساسية والهيكلية للسهم
  </h3>
- <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">البيانات مستخرجة مباشرة من مركز معلومات البورصة</p>
+ <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-0.5">البيانات مستخرجة مباشرة من مركز معلومات البورصة</p>
  </div>
  {hs && (
  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold" style={{
@@ -661,7 +661,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
  activeTab === 'valuation'
  ? "border-profit text-profit "
- : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-foreground"
+ : "border-transparent text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
  )}
  >
  التقييم والربحية
@@ -672,7 +672,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
  activeTab === 'statements'
  ? "border-profit text-profit "
- : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-foreground"
+ : "border-transparent text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
  )}
  >
  القوائم المالية الهيكلية
@@ -683,7 +683,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
  activeTab === 'dividends'
  ? "border-profit text-profit "
- : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-foreground"
+ : "border-transparent text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
  )}
  >
  الأرباح والتوزيعات
@@ -694,7 +694,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  "pb-2.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap",
  activeTab === 'technical'
  ? "border-profit text-profit "
- : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-foreground"
+ : "border-transparent text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
  )}
  >
  الأداء والتحليل الفني
@@ -709,30 +709,30 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  {/* Valuation Columns */}
  <div className="space-y-2">
- <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">مكررات القيمة والتقييم (Valuation)</h4>
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider mb-2">مكررات القيمة والتقييم (Valuation)</h4>
  <div className="grid grid-cols-2 gap-3">
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مكرر الربحية (P/E)</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مكرر الربحية (P/E)</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5 flex items-center gap-1">
  <span>{val?.pe_ratio ? (val.pe_ratio ?? 0).toFixed(2) : (profile.basic?.pe_ratio ? (profile.basic.pe_ratio ?? 0).toFixed(2) : 'N/A')}</span>
  {isEst(val, 'pe_ratio') && <EstimatedBadge />}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">القيمة الدفترية (P/B)</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">القيمة الدفترية (P/B)</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5 flex items-center gap-1">
  <span>{val?.pb_ratio ? (val.pb_ratio ?? 0).toFixed(2) : (profile.basic?.pb_ratio ? (profile.basic.pb_ratio ?? 0).toFixed(2) : 'N/A')}</span>
  {isEst(val, 'pb_ratio') && <EstimatedBadge />}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مكرر المبيعات (P/S)</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مكرر المبيعات (P/S)</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5">
  {val?.ps_ratio ? (val.ps_ratio ?? 0).toFixed(2) : (profile.basic?.ps_ratio ? (profile.basic.ps_ratio ?? 0).toFixed(2) : 'N/A')}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مكرر نمو الأرباح (PEG)</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مكرر نمو الأرباح (PEG)</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5">
  {val?.peg_ratio ? (val.peg_ratio ?? 0).toFixed(2) : 'N/A'}
  </div>
@@ -742,41 +742,41 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
 
  {/* Profitability Columns */}
  <div className="space-y-3">
- <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">مؤشرات الربحية والتشغيل (Profitability)</h4>
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider">مؤشرات الربحية والتشغيل (Profitability)</h4>
  <div className="space-y-2.5">
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-slate-500">العائد على حقوق الملكية (ROE)</span>
+ <span className="text-muted-foreground">العائد على حقوق الملكية (ROE)</span>
  <span className="font-bold text-profit flex items-center gap-1">
  <span>{prof?.roe ? `${(prof.roe ?? 0).toFixed(2)}%` : (profile.basic?.roe ? `${(profile.basic.roe ?? 0).toFixed(2)}%` : 'N/A')}</span>
  {(isEst(prof, 'roe') || isEst(profile.basic, 'roe')) && <EstimatedBadge />}
  </span>
  </div>
- <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
+ <div className="w-full bg-muted rounded-full h-1.5">
  <div className="bg-profit h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.roe || profile.basic?.roe || 0, 0), 100)}%` }}></div>
  </div>
  </div>
 
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-slate-500">هامش الربح التشغيلي (Operating Margin)</span>
+ <span className="text-muted-foreground">هامش الربح التشغيلي (Operating Margin)</span>
  <span className="font-bold text-whale">
  {prof?.operating_margin ? `${(prof.operating_margin ?? 0).toFixed(2)}%` : 'N/A'}
  </span>
  </div>
- <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
+ <div className="w-full bg-muted rounded-full h-1.5">
  <div className="bg-whale h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.operating_margin || 0, 0), 100)}%` }}></div>
  </div>
  </div>
 
  <div>
  <div className="flex justify-between text-xs mb-1">
- <span className="text-slate-500">هامش صافي الربح (Net Margin)</span>
+ <span className="text-muted-foreground">هامش صافي الربح (Net Margin)</span>
  <span className="font-bold text-primary">
  {prof?.net_margin ? `${(prof.net_margin ?? 0).toFixed(2)}%` : (profile.basic?.profit_margin ? `${(profile.basic.profit_margin ?? 0).toFixed(2)}%` : 'N/A')}
  </span>
  </div>
- <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
+ <div className="w-full bg-muted rounded-full h-1.5">
  <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.net_margin || profile.basic?.profit_margin || 0, 0), 100)}%` }}></div>
  </div>
  </div>
@@ -798,25 +798,25 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  <div className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  {/* Balance Sheet Summary */}
- <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
- <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 pb-1.5 border-b border-slate-200/50 dark:border-slate-800">الميزانية العمومية</h4>
+ <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground mb-3 pb-1.5 border-b border-border/50">الميزانية العمومية</h4>
  <div className="space-y-2 text-xs">
  <div className="flex justify-between">
- <span className="text-slate-500">إجمالي الأصول</span>
+ <span className="text-muted-foreground">إجمالي الأصول</span>
  <span className="font-bold flex items-center gap-1">
  <span>{bs?.total_assets ? (bs.total_assets >= 1e9 ? `${(bs.total_assets / 1e9).toFixed(2)}B EGP` : `${(bs.total_assets / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap ? `${((profile.basic.market_cap * 1.5) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
  {(isEst(bs, 'total_assets') || totalAssetsInlineEst) && <EstimatedBadge />}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">إجمالي الالتزامات</span>
+ <span className="text-muted-foreground">إجمالي الالتزامات</span>
  <span className="font-bold text-loss flex items-center gap-1">
  <span>{bs?.total_liabilities ? (bs.total_liabilities >= 1e9 ? `${(bs.total_liabilities / 1e9).toFixed(2)}B EGP` : `${(bs.total_liabilities / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pb_ratio ? `${(((profile.basic.market_cap * 1.5) - (profile.basic.market_cap / profile.basic.pb_ratio)) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
  {(isEst(bs, 'total_liabilities') || totalLiabInlineEst) && <EstimatedBadge />}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">حقوق المساهمين</span>
+ <span className="text-muted-foreground">حقوق المساهمين</span>
  <span className="font-bold text-profit flex items-center gap-1">
  <span>{bs?.total_equity ? (bs.total_equity >= 1e9 ? `${(bs.total_equity / 1e9).toFixed(2)}B EGP` : `${(bs.total_equity / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pb_ratio ? `${((profile.basic.market_cap / profile.basic.pb_ratio) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
  {(isEst(bs, 'total_equity') || totalEquityInlineEst) && <EstimatedBadge />}
@@ -824,8 +824,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  </div>
  {(bs?.total_assets > 0 || profile.basic?.market_cap > 0) && (
  <div className="mt-3">
- <div className="text-xs text-slate-400 mb-1">نسبة الهيكل المالي (حقوق ملكية/أصول)</div>
- <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden flex">
+ <div className="text-xs text-muted-foreground mb-1">نسبة الهيكل المالي (حقوق ملكية/أصول)</div>
+ <div className="w-full bg-muted rounded-full h-2 overflow-hidden flex">
  <div className="bg-profit h-2" style={{ width: `${profile.basic?.pb_ratio ? Math.min(100, Math.max(10, (1 / profile.basic.pb_ratio) * 100)) : 60}%` }}></div>
  <div className="bg-loss h-2 flex-1"></div>
  </div>
@@ -835,31 +835,31 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  </div>
 
  {/* Income Statement Summary */}
- <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
- <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 pb-1.5 border-b border-slate-200/50 dark:border-slate-800">قائمة الدخل</h4>
+ <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground mb-3 pb-1.5 border-b border-border/50">قائمة الدخل</h4>
  <div className="space-y-2 text-xs">
  <div className="flex justify-between">
- <span className="text-slate-500">الإيرادات السنوية</span>
+ <span className="text-muted-foreground">الإيرادات السنوية</span>
  <span className="font-bold flex items-center gap-1">
  <span>{inc?.revenue ? (inc.revenue >= 1e9 ? `${(inc.revenue / 1e9).toFixed(2)}B EGP` : `${(inc.revenue / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pe_ratio ? `${(((profile.basic.market_cap / profile.basic.pe_ratio) * 4) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
  {(isEst(inc, 'revenue') || revenueInlineEst) && <EstimatedBadge />}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">نمو الإيرادات</span>
+ <span className="text-muted-foreground">نمو الإيرادات</span>
  <span className={cn("font-bold", (inc?.revenue_growth || 0) >= 0 ? "text-profit" : "text-loss")}>
  {inc?.revenue_growth ? `${inc.revenue_growth >= 0 ? '+' : ''}${(inc.revenue_growth ?? 0).toFixed(2)}%` : '—'}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">صافي الربح</span>
+ <span className="text-muted-foreground">صافي الربح</span>
  <span className="font-bold text-profit flex items-center gap-1">
  <span>{inc?.net_income ? (inc.net_income >= 1e9 ? `${(inc.net_income / 1e9).toFixed(2)}B EGP` : `${(inc.net_income / 1e6).toFixed(1)}M EGP`) : (profile.basic?.market_cap && profile.basic?.pe_ratio ? `${((profile.basic.market_cap / profile.basic.pe_ratio) / 1e9).toFixed(2)}B EGP (تقديري)` : '—')}</span>
  {(isEst(inc, 'net_income') || netIncomeInlineEst) && <EstimatedBadge />}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">ربحية السهم (EPS)</span>
+ <span className="text-muted-foreground">ربحية السهم (EPS)</span>
  <span className="font-bold flex items-center gap-1">
  <span>{inc?.eps ? `${(inc.eps ?? 0).toFixed(2)} EGP` : (profile.basic?.eps ? `${(profile.basic.eps ?? 0).toFixed(2)} EGP` : '—')}</span>
  {(isEst(inc, 'eps') || isEst(profile.basic, 'eps')) && <EstimatedBadge />}
@@ -869,29 +869,29 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  </div>
 
  {/* Cash Flow Summary */}
- <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
- <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 pb-1.5 border-b border-slate-200/50 dark:border-slate-800">التدفقات النقدية والسيولة</h4>
+ <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 dark:border-slate-900">
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground mb-3 pb-1.5 border-b border-border/50">التدفقات النقدية والسيولة</h4>
  <div className="space-y-2 text-xs">
  <div className="flex justify-between">
- <span className="text-slate-500">التدفق التشغيلي</span>
+ <span className="text-muted-foreground">التدفق التشغيلي</span>
  <span className="font-bold text-profit">
  {cf?.operating_cf ? (cf.operating_cf >= 1e9 ? `${(cf.operating_cf / 1e9).toFixed(2)}B EGP` : `${(cf.operating_cf / 1e6).toFixed(1)}M EGP`) : '—'}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">التدفق الاستثماري</span>
+ <span className="text-muted-foreground">التدفق الاستثماري</span>
  <span className="font-bold text-loss">
  {cf?.investing_cf ? (cf.investing_cf >= 1e9 ? `${(cf.investing_cf / 1e9).toFixed(2)}B EGP` : `${(cf.investing_cf / 1e6).toFixed(1)}M EGP`) : '—'}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">التدفق التمويلي</span>
+ <span className="text-muted-foreground">التدفق التمويلي</span>
  <span className="font-bold">
  {cf?.financing_cf ? (cf.financing_cf >= 1e9 ? `${(cf.financing_cf / 1e9).toFixed(2)}B EGP` : `${(cf.financing_cf / 1e6).toFixed(1)}M EGP`) : '—'}
  </span>
  </div>
- <div className="flex justify-between pt-2 border-t border-slate-200/50 dark:border-slate-800 font-bold">
- <span className="text-slate-600 dark:text-slate-400">التدفق النقدي الحر</span>
+ <div className="flex justify-between pt-2 border-t border-border/50 font-bold">
+ <span className="text-muted-foreground dark:text-muted-foreground">التدفق النقدي الحر</span>
  <span className={cn((cf?.free_cf || 0) >= 0 ? "text-profit" : "text-loss")}>
  {cf?.free_cf ? (cf.free_cf >= 1e9 ? `${(cf.free_cf / 1e9).toFixed(2)}B EGP` : `${(cf.free_cf / 1e6).toFixed(1)}M EGP`) : '—'}
  </span>
@@ -914,22 +914,22 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  {/* Dividends */}
  <div className="space-y-3">
- <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">الأرباح والتوزيعات (Dividends)</h4>
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider mb-2">الأرباح والتوزيعات (Dividends)</h4>
  <div className="grid grid-cols-2 gap-3 text-xs">
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">عائد التوزيع الحالي</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">عائد التوزيع الحالي</div>
  <div className="text-sm font-extrabold text-profit mt-0.5">{div?.div_yield ? `${(div.div_yield ?? 0).toFixed(2)}%` : '0.00%'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">توزيع السهم للسنة (DPS)</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">توزيع السهم للسنة (DPS)</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5">{div?.dps_fy ? `${(div.dps_fy ?? 0).toFixed(2)} EGP` : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">نسبة التوزيع من الأرباح</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">نسبة التوزيع من الأرباح</div>
  <div className="text-sm font-extrabold text-slate-900 mt-0.5">{div?.payout_ratio ? `${(div.payout_ratio ?? 0).toFixed(1)}%` : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">نمو التوزيعات</div>
+ <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">نمو التوزيعات</div>
  <div className="text-sm font-extrabold text-profit mt-0.5">{div?.dps_growth ? `${(div.dps_growth ?? 0).toFixed(1)}%` : 'N/A'}</div>
  </div>
  </div>
@@ -937,40 +937,40 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
 
  {/* Performance */}
  <div className="space-y-3">
- <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">الأداء التاريخي والتذبذب (Performance)</h4>
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider mb-2">الأداء التاريخي والتذبذب (Performance)</h4>
  <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">أسبوع (1W)</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">أسبوع (1W)</div>
  <div className={cn("font-bold mt-0.5", perf?.perf_1w >= 0 ? "text-profit" : "text-loss")}>
  {perf?.perf_1w ? `${perf.perf_1w >= 0 ? '+' : ''}${(perf.perf_1w ?? 0).toFixed(1)}%` : 'N/A'}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">شهر (1M)</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">شهر (1M)</div>
  <div className={cn("font-bold mt-0.5", perf?.perf_1m >= 0 ? "text-profit" : "text-loss")}>
  {perf?.perf_1m ? `${perf.perf_1m >= 0 ? '+' : ''}${(perf.perf_1m ?? 0).toFixed(1)}%` : 'N/A'}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">3 شهور (3M)</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">3 شهور (3M)</div>
  <div className={cn("font-bold mt-0.5", perf?.perf_3m >= 0 ? "text-profit" : "text-loss")}>
  {perf?.perf_3m ? `${perf.perf_3m >= 0 ? '+' : ''}${(perf.perf_3m ?? 0).toFixed(1)}%` : 'N/A'}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">سنة (1Y)</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">سنة (1Y)</div>
  <div className={cn("font-bold mt-0.5", perf?.perf_1y >= 0 ? "text-profit" : "text-loss")}>
  {perf?.perf_1y ? `${perf.perf_1y >= 0 ? '+' : ''}${(perf.perf_1y ?? 0).toFixed(1)}%` : 'N/A'}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">تذبذب شهر</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">تذبذب شهر</div>
  <div className="font-bold text-slate-950 mt-0.5">
  {perf?.volatility_1m ? `${(perf.volatility_1m ?? 0).toFixed(2)}%` : 'N/A'}
  </div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">تذبذب أسبوع</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">تذبذب أسبوع</div>
  <div className="font-bold text-slate-950 mt-0.5">
  {perf?.volatility_1w ? `${(perf.volatility_1w ?? 0).toFixed(2)}%` : 'N/A'}
  </div>
@@ -985,54 +985,54 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  {/* Technical Indicators values */}
  <div className="space-y-3">
- <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">قراءات المؤشرات الفنية اللحظية</h4>
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground uppercase tracking-wider mb-2">قراءات المؤشرات الفنية اللحظية</h4>
  <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مؤشر القوة النسبية RSI</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مؤشر القوة النسبية RSI</div>
  <div className="font-extrabold text-slate-900 mt-0.5">{tech?.rsi ? tech.rsi : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مؤشر الـ MACD</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مؤشر الـ MACD</div>
  <div className="font-extrabold text-slate-900 mt-0.5">{tech?.macd ? tech.macd : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مؤشر Stochastic</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مؤشر Stochastic</div>
  <div className="font-extrabold text-slate-900 mt-0.5">{tech?.stoch ? tech.stoch : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مؤشر الاتجاه ADX</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مؤشر الاتجاه ADX</div>
  <div className="font-extrabold text-slate-900 mt-0.5">{tech?.adx ? tech.adx : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">مؤشر التقلب ATR</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">مؤشر التقلب ATR</div>
  <div className="font-extrabold text-slate-900 mt-0.5">{tech?.atr ? tech.atr : 'N/A'}</div>
  </div>
- <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
- <div className="text-xs text-slate-500">الاتجاه العام</div>
+ <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
+ <div className="text-xs text-muted-foreground">الاتجاه العام</div>
  <div className="font-extrabold text-profit mt-0.5">{tech?.trend ? tech.trend : 'N/A'}</div>
  </div>
  </div>
  </div>
 
  {/* Ratings gauges */}
- <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-100 dark:border-slate-900 flex flex-col justify-center">
- <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 pb-1.5 border-b border-slate-200/50 dark:border-slate-800">مؤشر التقييم الفني العام</h4>
+ <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 dark:border-slate-900 flex flex-col justify-center">
+ <h4 className="text-xs font-bold text-muted-foreground dark:text-muted-foreground mb-3 pb-1.5 border-b border-border/50">مؤشر التقييم الفني العام</h4>
  <div className="space-y-3 text-xs">
  <div className="flex justify-between">
- <span className="text-slate-500">التقييم الفني الإجمالي</span>
+ <span className="text-muted-foreground">التقييم الفني الإجمالي</span>
  <span className={cn("font-bold px-2 py-0.5 rounded text-xs", 
  tech?.technical_rating?.includes('Strong Buy') || tech?.technical_rating?.includes('شراء قوي') ? "bg-profit/10 text-profit" :
- tech?.technical_rating?.includes('Buy') || tech?.technical_rating?.includes('شراء') ? "bg-profit/10 text-profit" : "bg-slate-500/10 text-slate-500"
+ tech?.technical_rating?.includes('Buy') || tech?.technical_rating?.includes('شراء') ? "bg-profit/10 text-profit" : "bg-slate-500/10 text-muted-foreground"
  )}>
  {tech?.technical_rating ? tech.technical_rating : 'Neutral'}
  </span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">تقييم المتوسطات المتحركة</span>
+ <span className="text-muted-foreground">تقييم المتوسطات المتحركة</span>
  <span className="font-bold">{tech?.ma_rating ? tech.ma_rating : 'N/A'}</span>
  </div>
  <div className="flex justify-between">
- <span className="text-slate-500">تقييم مؤشرات التذبذب</span>
+ <span className="text-muted-foreground">تقييم مؤشرات التذبذب</span>
  <span className="font-bold">{tech?.oscillators_rating ? tech.oscillators_rating : 'N/A'}</span>
  </div>
  </div>
@@ -1071,13 +1071,13 @@ export function StockDetail() {
  // ALPHA-STOCK-FEEL-1: fetch feel data from /api/stock-screener/analyze
  const [feelData, setFeelData] = useState<any>(null);
  useEffect(() => {
-   if (!selectedTicker) { setFeelData(null); return; }
-   let cancelled = false;
-   fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}`)
-     .then(r => r.json())
-     .then(d => { if (!cancelled && d) setFeelData(d); })
-     .catch(() => {});
-   return () => { cancelled = true; };
+ if (!selectedTicker) { setFeelData(null); return; }
+ let cancelled = false;
+ fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}`)
+ .then(r => r.json())
+ .then(d => { if (!cancelled && d) setFeelData(d); })
+ .catch(() => {});
+ return () => { cancelled = true; };
  }, [selectedTicker]);
  // Auto-load news and liquidity footprint when stock is selected
  useEffect(() => {
@@ -1253,17 +1253,17 @@ export function StockDetail() {
  {/* Index Membership Badges */}
  <div className="flex gap-1.5">
  {stock.egx30_member && (
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit dark:hover:bg-profit/10 border-0 text-xs px-2">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 hover:bg-profit dark:hover:bg-profit/10 border-0 text-xs px-2">
  EGX 30
  </Badge>
  )}
  {stock.egx70_member && (
- <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning dark:hover:bg-warning/10 border-0 text-xs px-2">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border border-warning/20 hover:bg-warning dark:hover:bg-warning/10 border-0 text-xs px-2">
  EGX 70
  </Badge>
  )}
  {stock.egx100_member && (
- <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border-0 text-xs px-2">
+ <Badge className="bg-muted text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-slate-700 border-0 text-xs px-2">
  EGX 100
  </Badge>
  )}
@@ -1276,13 +1276,13 @@ export function StockDetail() {
  {stock.sector}
  </Badge>
  {stock.compliance_status === 'halal' && (
- <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-0 text-xs gap-1">
+ <Badge className="bg-profit/10 text-profit border border-profit/20 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  متوافق شرعاً
  </Badge>
  )}
  {stock.compliance_status === 'doubtful' && (
- <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-0 text-xs gap-1">
+ <Badge className="bg-warning/10 text-warning dark:text-warning border border-warning/20 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  غير مؤكد
  </Badge>
@@ -1506,7 +1506,7 @@ export function StockDetail() {
 
  {/* UNIFIED-API — prediction.entry_price/target_price/stop_loss (no fabrication, Rule 27) */}
  {unifiedData?.prediction && (
- <div className="grid grid-cols-3 gap-3 text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+ <div className="grid grid-cols-3 gap-3 text-sm mt-4 pt-3 border-t border-slate-100">
  <div>
  <div className="text-xs text-muted-foreground">سعر الدخول</div>
  <div className="font-bold tabular-nums">

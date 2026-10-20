@@ -51,13 +51,13 @@ const SECTIONS = [
  icon: BarChart3,
  title: 'قراءة الشارت اللحظي',
  titleEn: 'الشارت اللحظي',
- color: 'text-cyan-400',
- bg: 'bg-cyan-950/40',
- border: 'border-cyan-800',
+ color: 'text-whale',
+ bg: 'bg-whale/10',
+ border: 'border-whale/30',
  content: (
  <div className="space-y-3 text-sm leading-relaxed">
  <p>
- يتحدّث الرسم البياني كل <strong className="text-cyan-400">5 ثوانٍ</strong> تقريباً.
+ يتحدّث الرسم البياني كل <strong className="text-whale">5 ثوانٍ</strong> تقريباً.
  عند ظهور شارة <Badge className="bg-loss text-white animate-pulse">LIVE</Badge>
  يكون السعر المعروض هو سعر تداول اليوم الفعلي، لا سعراً تاريخياً.
  </p>
@@ -65,16 +65,16 @@ const SECTIONS = [
  <p className="font-semibold mb-1">كيفية قراءة الأطر الزمنية:</p>
  <ul className="space-y-1.5 text-xs">
  <li>
- <strong className="text-cyan-400">شهري</strong> — يُنظر إليه من منظور أوسع
+ <strong className="text-whale">شهري</strong> — يُنظر إليه من منظور أوسع
  لاستيعاب الاتجاه العام (هل يغلق السهم على صعود شهرياً أم على هبوط).
  </li>
  <li>
- <strong className="text-cyan-400">أسبوعي</strong> — يوضح الاتجاه المتوسط.
+ <strong className="text-whale">أسبوعي</strong> — يوضح الاتجاه المتوسط.
  إذا كان الإطار الشهري صاعداً والأسبوعي في مرحلة تصحيح، فهذه فرصة
  محتملة.
  </li>
  <li>
- <strong className="text-cyan-400">يومي</strong> — يُستخدم لتحديد نقطة
+ <strong className="text-whale">يومي</strong> — يُستخدم لتحديد نقطة
  الدخول بدقة.
  </li>
  </ul>
@@ -110,7 +110,7 @@ const SECTIONS = [
  </div>
  <div className="p-3 rounded-lg bg-loss/10 border border-loss/20">
  <div className="flex items-center gap-2 mb-1">
- <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border border-loss animate-pulse">فخ ارتداد</Badge>
+ <Badge className="bg-loss/10 text-loss border border-loss/20 border border-loss animate-pulse">فخ ارتداد</Badge>
  <span className="text-xs text-muted-foreground">Veto -15 نقطة</span>
  </div>
  <p className="text-xs">
