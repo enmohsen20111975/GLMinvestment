@@ -43,9 +43,29 @@ from hybrid_stage_analyzer_v2 import (
 )
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import json as _json
+import numpy as _np
 
 app = Flask(__name__)
 CORS(app)
+
+
+# BRAVO-FIX (2026-10-20): custom JSON encoder عشان نـ handle numpy types
+# السبب: بعض الـ layers بترجع numpy.float64 / numpy.int64 / numpy.bool_
+# اللي Flask's jsonify مش بـ يـ serializهم. نـحوّلهم لـ Python native.
+class NumpyJSONEncoder(_json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, _np.integer):
+            return int(obj)
+        if isinstance(obj, _np.floating):
+            return float(obj)
+        if isinstance(obj, _np.bool_):
+            return bool(obj)
+        if isinstance(obj, _np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+app.json_encoder = NumpyJSONEncoder
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -185,7 +205,7 @@ def _build_stock_feel(analysis: Dict, data: Dict) -> Dict:
 
     # فوق/تحت SMA50
     sma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else (sum(closes) / len(closes) if closes else 0)
-    above_sma50 = closes[-1] > sma50 if sma50 > 0 else False
+    above_sma50 = bool(closes[-1] > sma50) if sma50 > 0 else False
     pct_from_sma50 = ((closes[-1] - sma50) / sma50 * 100) if sma50 > 0 else 0
 
     # ── تحديد correction_status ──
@@ -387,12 +407,12 @@ def analyze_ticker():
         # Build response
         response = {
             'ticker': ticker,
-            'current_price': analysis.get('current_price'),
+            'current_price': float(analysis.get('current_price') or 0),
             'last_date': data['dates'][-1] if data['dates'] else None,
-            'rsi': analysis.get('rsi'),
+            'rsi': float(analysis.get('rsi')) if analysis.get('rsi') is not None else None,
             'recommendation': analysis.get('recommendation'),
-            'hybrid_score': analysis.get('hybrid_score'),
-            'veto_applied': analysis.get('veto_applied', False),
+            'hybrid_score': float(analysis.get('hybrid_score') or 0),
+            'veto_applied': bool(analysis.get('veto_applied', False)),
             'market_context': analysis.get('market_context', {}),
             'layers': {
                 'l1_hmm_stock': {
@@ -403,9 +423,9 @@ def analyze_ticker():
                 'l2_wyckoff': {
                     'phase': analysis.get('layer2_wyckoff', {}).get('phase'),
                     'phase_ar': analysis.get('layer2_wyckoff', {}).get('phase_ar'),
-                    'has_accumulation': analysis.get('layer2_wyckoff', {}).get('has_accumulation'),
-                    'has_spring': analysis.get('layer2_wyckoff', {}).get('has_spring'),
-                    'has_sos': analysis.get('layer2_wyckoff', {}).get('has_sos'),
+                    'has_accumulation': bool(analysis.get('layer2_wyckoff', {}).get('has_accumulation', False)),
+                    'has_spring': bool(analysis.get('layer2_wyckoff', {}).get('has_spring', False)),
+                    'has_sos': bool(analysis.get('layer2_wyckoff', {}).get('has_sos', False)),
                 },
                 'l3_weinstein': {
                     'stage': analysis.get('layer3_weinstein', {}).get('stage'),
@@ -418,7 +438,7 @@ def analyze_ticker():
                     'vah': analysis.get('layer4_volume', {}).get('vah'),
                     'val': analysis.get('layer4_volume', {}).get('val'),
                     'position': analysis.get('layer4_volume', {}).get('position'),
-                    'breakout_confirmed': analysis.get('layer4_volume', {}).get('breakout_confirmed'),
+                    'breakout_confirmed': bool(analysis.get('layer4_volume', {}).get('breakout_confirmed', False)),
                 },
             },
             'dynamic_weights': analysis.get('dynamic_weights', {}),
