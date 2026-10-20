@@ -771,6 +771,38 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  // P26: خريطة الشخصية المعروضة لمفتاح analysisJson (conservative→investor، balanced→gambler كتقريب)
  const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
  const stocks = useAnalysisStore((state) => state.stocks) || [];
+
+ // ══════════════════════════════════════════════════════════════════════
+ // ALPHA-FIX Task 4 (Golden Retest): Stage filter + derivation
+ // يتم استنتاج مرحلة السهم من الـ recommendation + analysis_json
+ // 🛡️ نهاية تصحيح | ⚡ بداية انطلاق | 💎 تجميع قيعان | ⏳ جاري التصحيح
+ // ══════════════════════════════════════════════════════════════════════
+ const [stageFilter, setStageFilter] = useState<'all' | 'correction_end' | 'early_break' | 'bottom_accumulation' | 'correcting'>('all');
+
+ const deriveStage = (item: StoredAnalysisItem): 'correction_end' | 'early_break' | 'bottom_accumulation' | 'correcting' => {
+ const rec = (item.recommendation || '').toLowerCase();
+ const pd = item.analysisJson?.[_personaKey] || {};
+ const reason = String(pd.reason || item.analysisJson?.narrative?.line1 || '').toLowerCase();
+ // 💎 تجميع قيعان — whale radar picks
+ if (rec.includes('whale_radar') || rec.includes('accumulate') || reason.includes('تجميع هادئ')) return 'bottom_accumulation';
+ // ⚡ بداية انطلاق — buy signals (breaking out from correction)
+ if (rec.includes('strong_buy') || rec.includes('buy') || rec.includes('t1_buy')) return 'early_break';
+ // ⏳ جاري التصحيح — hold/wait (still in correction)
+ if (rec.includes('hold') || rec.includes('wait') || rec.includes('reduce')) return 'correcting';
+ // 🛡️ نهاية تصحيح — default for active predictions
+ return 'correction_end';
+ };
+
+ const stageMeta: Record<string, { emoji: string; label: string; className: string }> = {
+ correction_end: { emoji: '🛡️', label: 'نهاية تصحيح', className: 'bg-warning/10 text-warning border-warning/20' },
+ early_break: { emoji: '⚡', label: 'بداية انطلاق', className: 'bg-profit/10 text-profit border-profit/20' },
+ bottom_accumulation: { emoji: '💎', label: 'تجميع قيعان', className: 'bg-whale/10 text-whale border-whale/20' },
+ correcting: { emoji: '⏳', label: 'جاري التصحيح', className: 'bg-muted text-muted-foreground border-border' },
+ };
+
+ // Apply stage filter
+ const filteredItems = stageFilter === 'all' ? items : items.filter(it => deriveStage(it) === stageFilter);
+
  const stocksMap = React.useMemo(() => {
  const map = new Map<string, any>();
  stocks.forEach((s) => {
@@ -786,11 +818,37 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
 
  return (
  <div className="rounded-md border overflow-x-auto bg-card">
+ {/* ALPHA-FIX Task 4: Stage filter buttons — فلتر حركة السهم */}
+ <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/30 overflow-x-auto">
+ <span className="text-[10px] text-muted-foreground ml-1 whitespace-nowrap">المرحلة:</span>
+ {[
+ { key: 'all', emoji: '📋', label: 'الكل' },
+ { key: 'correction_end', emoji: '🛡️', label: 'نهاية تصحيح' },
+ { key: 'early_break', emoji: '⚡', label: 'بداية انطلاق' },
+ { key: 'bottom_accumulation', emoji: '💎', label: 'تجميع قيعان' },
+ { key: 'correcting', emoji: '⏳', label: 'جاري التصحيح' },
+ ].map(s => (
+ <button
+ key={s.key}
+ onClick={() => setStageFilter(s.key as typeof stageFilter)}
+ className={cn(
+ 'flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap transition-colors',
+ stageFilter === s.key
+ ? 'bg-primary/10 text-primary border border-primary/20'
+ : 'text-muted-foreground hover:bg-accent border border-transparent'
+ )}
+ >
+ <span>{s.emoji}</span>
+ {s.label}
+ </button>
+ ))}
+ </div>
  <table className="w-full text-sm min-w-[950px]">
  <thead className="bg-muted/60 text-muted-foreground">
  <tr>
  <th className="p-2 text-center font-medium w-10">#</th>
  <th className="p-2 text-right font-medium">السهم</th>
+ <th className="p-2 text-center font-medium">المرحلة</th>
  <th className="p-2 text-right font-medium">الاسم</th>
  <th className="p-2 text-center font-medium text-primary">السعر وقت التحليل</th>
  <th className="p-2 text-center font-medium">أعلى / أقل سعر</th>
@@ -805,7 +863,10 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  </tr>
  </thead>
  <tbody>
- {items.map((it, idx) => {
+ {filteredItems.map((it, idx) => {
+ // ALPHA-FIX Task 4: derive the stock's movement stage
+ const _stage = deriveStage(it);
+ const _stageInfo = stageMeta[_stage];
  // P26: استخدم _personaKey + fallback للحقول العلوية للسهم
  const pd: PersonaData = it.analysisJson?.[_personaKey] || {
  verdict: it.recommendationAr || '',
@@ -871,6 +932,12 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  />
  )}
  </div>
+ </td>
+ {/* ALPHA-FIX Task 4: Stage Tag column — مرحلة السهم */}
+ <td className="p-2 text-center">
+ <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap', _stageInfo.className)}>
+ {_stageInfo.emoji} {_stageInfo.label}
+ </span>
  </td>
  <td className="p-2 text-xs text-muted-foreground max-w-[120px] truncate" title={it.nameAr || it.name || cleanTicker}>{it.nameAr || it.name || cleanTicker}</td>
  <td className={cn("p-2 text-center font-mono text-xs font-bold", isStale || isMismatch ? "text-warning " : "text-primary")} title={isStale || isMismatch ? staleReason : undefined}>
