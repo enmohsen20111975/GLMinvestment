@@ -32,14 +32,15 @@ import {
   Newspaper,
   Crown,
   Settings,
-  Info,
   ShieldCheck,
   BarChart3,
-  History,
   TrendingUp,
   Landmark,
-  Layers,
   Microscope,
+  Zap,
+  Egg,
+  BookOpen,
+  Waves,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppView } from '@/types';
@@ -59,83 +60,77 @@ export interface NavSection {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- * TopBar — 6 بوابات (4 رئيسية + 2 مساعدة)
- * ALPHA-FIX Task 4: إعادة هيكلة لـ 4 بوابات استثمارية واضحة
+ * TopBar — 6 بوابات استثمارية رئيسية (هيكلة نظيفة ومباشرة)
  * ════════════════════════════════════════════════════════════════════════ */
 export const navSections: NavSection[] = [
-  // ─── (1) 📊 نبض السوق ───
+  // ─── (1) 📊 نبض السوق (Market Pulse) ───
   {
     id: 'market-pulse',
     label: 'نبض السوق',
     icon: Activity,
     items: [
       { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
-      { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity },
-      { id: 'sectors', label: 'حركة القطاعات', icon: Layers },
-      { id: 'market-status', label: 'حالة السوق', icon: Activity },
-      { id: 'historical-trades', label: 'الصفقات التاريخية', icon: History },
+      { id: 'liquidity-radar', label: 'رادار السيولة والقطاعات', icon: Waves },
+      { id: 'market-depth', label: 'عمق السوق والعملات', icon: Landmark },
+      { id: 'market-status', label: 'حالة وضغط الجلسة', icon: Zap },
     ],
   },
-  // ─── (2) 🎯 الفرص والتربص ───
+  // ─── (2) 🎯 الفرص والتربص (Opportunities) ───
   {
     id: 'picks-stalking',
     label: 'الفرص والتربص',
     icon: Target,
     items: [
-      { id: 'recommendations', label: 'التحليلات', icon: Target },
-      { id: 'market-depth', label: 'سيولة المستثمرين', icon: Activity, highlight: true },
-      { id: 'picks-management', label: 'إدارة الصفقات', icon: TrendingUp },
-      { id: 'specialist-analysis', label: 'التحليل المتخصص', icon: Microscope },
+      { id: 'recommendations', label: 'التوصيات الذكية', icon: Target },
+      { id: 'incubator', label: 'حاضنة الأسهم', icon: Egg },
+      { id: 'prediction-tracking', label: 'سجل وتتبع التوقعات', icon: TrendingUp },
     ],
   },
-  // ─── (3) 🔬 مجهر الأسهم ───
+  // ─── (3) 🔬 مجهر الأسهم (Stock Microscopic) ───
   {
     id: 'stock-dna',
     label: 'مجهر الأسهم',
     icon: Microscope,
     items: [
-      { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
-      { id: 'stock-filters', label: 'الفلاتر الذكية', icon: Target },
-      { id: 'screener', label: 'الفرز المتقدم', icon: BarChart3 },
-      { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
-      { id: 'smart-confluence', label: 'الذكاء الموحد', icon: TrendingUp },
+      { id: 'stocks', label: 'قائمة الأسهم والفلترة', icon: CandlestickChart },
+      { id: 'trading-chart', label: 'شارت التداول الفني', icon: BarChart3 },
+      { id: 'smart-confluence', label: 'التوافق الذكي', icon: Microscope },
     ],
   },
-  // ─── (4) 💼 الصفقات والمحفظة ───
+  // ─── (4) 💼 محفظتي وحساباتي (Portfolio & Trades) ───
   {
     id: 'portfolio',
-    label: 'محفظتي',
+    label: 'محفظتي وحساباتي',
     icon: Wallet,
     items: [
-      { id: 'portfolio', label: 'المحفظة', icon: Wallet },
+      { id: 'portfolio', label: 'المحفظة الحية', icon: Wallet },
       { id: 'watchlist', label: 'قائمة المتابعة', icon: Eye },
-      { id: 'alerts-center', label: 'مركز التنبيهات', icon: Bell },
-      { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خاسر', icon: LifeBuoy },
+      { id: 'trading-journal', label: 'سجل الصفقات', icon: BookOpen },
+      { id: 'alerts-center', label: 'التنبيهات والأهداف', icon: Bell },
+      { id: 'bagholder-rescue', label: 'خطة إنقاذ المحفظة', icon: LifeBuoy },
     ],
   },
-  // ─── (5) 🎓 التعلّم ───
+  // ─── (5) 🎓 التعلّم والمحاكاة (Learn & Simulate) ───
   {
     id: 'education',
-    label: 'التعلّم',
+    label: 'التعلّم والمحاكاة',
     icon: GraduationCap,
     items: [
-      { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
-      { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
+      { id: 'academy', label: 'أكاديمية التداول', icon: GraduationCap },
+      { id: 'simulation', label: 'محاكي التداول التجريبي', icon: Gamepad2 },
     ],
   },
-  // ─── (6) ⋯ المزيد ───
+  // ─── (6) ⚙️ المزيد والإعدادات (More & Settings) ───
   {
     id: 'more',
-    label: 'المزيد',
+    label: 'المزيد والإعدادات',
     icon: Menu,
     items: [
-      { id: 'news', label: 'الأخبار', icon: Newspaper },
-      { id: 'subscription', label: 'الاشتراك', icon: Crown, highlight: true },
-      { id: 'settings', label: 'الإعدادات', icon: Settings },
-      { id: 'sharia', label: 'التوافق الشرعي 🇪🇬', icon: ShieldCheck },
-      { id: 'zakat', label: 'الزكاة', icon: Landmark },
-      { id: 'tithes', label: 'العُشر', icon: Landmark },
-      { id: 'about', label: 'من نحن', icon: Info },
+      { id: 'news', label: 'الأخبار والإفصاحات', icon: Newspaper },
+      { id: 'sharia', label: 'الفلتر الشرعي', icon: ShieldCheck },
+      { id: 'zakat', label: 'حاسبة الزكاة', icon: Landmark },
+      { id: 'subscription', label: 'إدارة الاشتراك', icon: Crown, highlight: true },
+      { id: 'settings', label: 'إعدادات الحساب', icon: Settings },
     ],
   },
 ];

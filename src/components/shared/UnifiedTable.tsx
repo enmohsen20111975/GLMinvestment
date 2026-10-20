@@ -451,7 +451,10 @@ export function UnifiedTable<T extends object>({
  const [showCustomFilter, setShowCustomFilter] = useState(false);
 
  // ─── (Task 34-A) Excel-style state ──────────────────────────────────────
- const effectiveStorageKey = storageKey || (typeof title === 'string' ? title : 'default');
+ const columnsSignature = useMemo(() => {
+   return columns.map(c => String(c.key)).slice(0, 6).join('-');
+ }, [columns]);
+ const effectiveStorageKey = storageKey || (typeof title === 'string' && title.trim() ? title.trim() : `table-${columnsSignature}`);
  const calcStorageKey = `unified-table-calc-${effectiveStorageKey}`;
  const presetsStorageKey = `unified-table-presets-${effectiveStorageKey}`;
 
@@ -1066,9 +1069,11 @@ export function UnifiedTable<T extends object>({
  }
 
  // 3. Base minimum width for specific columns
- let minColW = 85;
+ let minColW = 95;
  if (colKey === 'sparkline' || colKey.includes('chart') || colKey.includes('spark')) minColW = 120;
  if (colKey === 'ticker' || colKey === 'symbol') minColW = 110;
+ if (colKey === 'name' || colKey === 'name_ar' || colKey.includes('name')) minColW = 140;
+ if (colKey === 'actions' || colKey === 'action') minColW = 100;
  if (col.width) {
  const pxMatch = col.width.match(/\[(\d+)px\]/);
  if (pxMatch) {
@@ -1101,7 +1106,11 @@ export function UnifiedTable<T extends object>({
  if (raw) {
  const parsed = JSON.parse(raw);
  if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+ const visibleKeys = visibleColumns.map(c => String(c.key));
+ const matchedCount = visibleKeys.filter(k => typeof parsed[k] === 'number' && parsed[k] > 40).length;
+ if (matchedCount >= Math.ceil(visibleKeys.length * 0.6)) {
  hasSavedWidths = true;
+ }
  }
  }
  } catch { /* ignore */ }

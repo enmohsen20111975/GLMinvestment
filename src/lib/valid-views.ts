@@ -23,6 +23,7 @@ export const VALID_VIEWS: readonly string[] = [
   'advanced-analysis', 'unified-analysis', 'specialist-analysis',
   'advanced-portfolio', 'seasonality',
   'prediction-tracking', 'picks-management',
+  'incubator',
   'smart-confluence',
   'liquidity-radar',
   'sectors', // حركة القطاعات — تبويب مستقل

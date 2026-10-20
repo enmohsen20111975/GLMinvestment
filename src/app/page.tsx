@@ -72,10 +72,18 @@ const ReportsView = withErrorBoundary(
   dynamicImport(() => import('@/modules/reports/components/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
 );
-// ALPHA-UX-FIX-7: standalone routes (moved from #recommendations tabs to السوق nav)
-const MarketStatusView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/market-analysis/components/MarketStatusTab').then(m => ({ default: m.MarketStatusTab })), { ssr: false, loading: () => <LazyTabLoader label="حالة السوق" /> }),
-  'حالة السوق',
+// ALPHA-UX-FIX-7: standalone routes
+const MarketRegimeBannerComp = withErrorBoundary(
+  dynamicImport(() => import('@/components/market/MarketRegimeBanner').then(m => ({ default: m.MarketRegimeBanner })), { ssr: false, loading: () => <LazyTabLoader label="درجة أمان السوق" /> }),
+  'درجة أمان السوق',
+);
+const IntradayPressureComp = withErrorBoundary(
+  dynamicImport(() => import('@/modules/dashboard/components/IntradayPressurePanel').then(m => ({ default: m.IntradayPressurePanel })), { ssr: false, loading: () => <LazyTabLoader label="ضغط الجلسة" /> }),
+  'ضغط الجلسة',
+);
+const IncubatorStandaloneView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="حاضنة الأسهم" /> }),
+  'حاضنة الأسهم',
 );
 const HistoricalTradesView = withErrorBoundary(
   dynamicImport(() => import('@/modules/market-analysis/components/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })), { ssr: false, loading: () => <LazyTabLoader label="الصفقات التاريخية" /> }),
@@ -592,13 +600,28 @@ function AppShell() {
       case 'crypto-recommendations': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
         return <MarketAnalysisView />;
       case 'market-status':
-        // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
         return (
           <div className="min-h-screen flex flex-col bg-background">
-            <Header title="حالة السوق" subtitle={MARKET_NAMES_AR[currentMarket] || currentMarket} />
-            <main className="flex-1 p-3 md:p-4 page-transition">
-              <MarketStatusView market={currentMarket} />
+            <Header title="حالة وضغط الجلسة" subtitle={`درجة أمان السوق ومؤشرات الضغط اللحظي — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+            <main className="flex-1 p-3 md:p-4 space-y-4 page-transition" dir="rtl">
+              <MarketRegimeBannerComp market={currentMarket} />
+              {currentMarket === 'EGX' ? (
+                <div className="mt-4">
+                  <IntradayPressureComp />
+                </div>
+              ) : null}
             </main>
+            <Footer />
+          </div>
+        );
+      case 'incubator':
+        return (
+          <div className="min-h-screen flex flex-col bg-background">
+            <Header title="حاضنة الأسهم" subtitle={`أسهم تحت المراقبة والتسخين والتجميع الهادئ — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+            <main className="flex-1 p-3 md:p-4 page-transition" dir="rtl">
+              <IncubatorStandaloneView market={currentMarket} />
+            </main>
+            <Footer />
           </div>
         );
       case 'historical-trades':
