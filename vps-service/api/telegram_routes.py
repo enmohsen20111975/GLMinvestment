@@ -24,7 +24,7 @@ from flask import Blueprint, request, jsonify
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from telegram.database import db_manager
+from telegram.telegram_db import db_manager
 from telegram.ai_processor import ai_processor, MessageClassifier, SymbolExtractor
 
 # Create blueprint
