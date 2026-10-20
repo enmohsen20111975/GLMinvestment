@@ -696,6 +696,8 @@ export const GUEST_ALLOWED_VIEWS = new Set<string>([
   'recommendations', // public landing driver (يـ limit server-side لـ 3 items)
   'news',
   'about',
+  'auth',
+  'subscription',
 ]);
 
 /**
