@@ -97,8 +97,8 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
  'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide',
  colors.ring,
  isPositive
- ? 'bg-profit text-profit/60 '
- : 'bg-loss text-loss/60 '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
  )}>
  {index.symbol}
  </span>

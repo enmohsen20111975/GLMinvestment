@@ -589,11 +589,11 @@ const TYPE_BADGE: Record<
  },
  gold: {
  label: 'ذهب',
- cls: 'bg-warning text-warning border-warning/20 ',
+ cls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
  },
  bank: {
  label: 'بنك',
- cls: 'bg-profit text-profit border-profit/20 ',
+ cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
  },
  cash: {
  label: 'نقد',
@@ -877,8 +877,8 @@ function MoverRow({
  ? 'text-profit '
  : 'text-loss ';
  const numBg = isGainer
- ? 'bg-profit text-profit/50 '
- : 'bg-loss text-loss/50 ';
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ';
 
  return (
  <div className="-mx-2 flex items-center justify-between rounded px-2 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30">
@@ -1286,7 +1286,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Zap,
  color: 'text-profit ',
  badge: 'أساسي',
- badgeCls: 'bg-profit text-profit/50 ',
+ badgeCls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ',
  },
  {
  label: 'قائمة الأسهم الكاملة',
@@ -1295,7 +1295,7 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
  icon: Database,
  color: 'text-warning ',
  badge: 'كل 15 دقيقة',
- badgeCls: 'bg-warning text-warning/50 ',
+ badgeCls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
  },
  {
  label: 'بيانات نهاية اليوم',

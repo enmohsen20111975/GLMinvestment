@@ -259,7 +259,7 @@ function PersonaCard({
  <span className={cn(
  'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
  fundamentals?.sector_heat === 'hot'
- ? 'bg-warning text-warning border-orange-200 /40 dark:border-orange-800'
+ ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-orange-200 /40 dark:border-orange-800'
  : fundamentals?.sector_heat === 'dead'
  ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800'
  : 'bg-muted text-muted-foreground border-border'
@@ -282,8 +282,8 @@ function PersonaCard({
  className={cn(
  'text-xs px-1.5 py-0 rounded-full border flex items-center gap-0.5',
  fundamentals.sector_role === 'leader'
- ? 'bg-profit text-profit border-profit/20 '
- : 'bg-loss text-loss border-loss/20 '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 '
  )}
  title={
  fundamentals.sector_role === 'leader'
@@ -295,7 +295,7 @@ function PersonaCard({
  </span>
  )}
  {data.is_egx30 && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning/40 border border-warning ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border border-warning ">
  EGX30
  </span>
  )}
@@ -311,7 +311,7 @@ function PersonaCard({
  المستخدم طلب: "لو السهم إشارته HOLD بس درجته عالية، اعرضه
  واكتب تحته بـ Badge لونه أصفر: مراقبة - انتظر كسر المقاومة" */}
  {isInvestor && data.signal && String(data.signal).toUpperCase() === 'HOLD' && (data.score ?? 0) >= 50 && (
- <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning bg-warning text-warning/40 ">
+ <Badge variant="outline" className="text-xs px-1.5 py-0 border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ">
  👁️ مراقبة — انتظر كسر المقاومة
  </Badge>
  )}
@@ -456,8 +456,8 @@ function PersonaCard({
  className={cn(
  'flex-1 flex flex-col items-center gap-0.5 rounded-md py-1.5 px-0.5 text-xs transition-colors cursor-default',
  gate.passed
- ? 'bg-profit text-profit/40 '
- : 'bg-loss text-loss/40 '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
+ : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 '
  )}
  >
  {gate.passed ? (
@@ -594,12 +594,12 @@ function PersonaCard({
  </span>
  )}
  {data.price_vs_sr === 'near_support' && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-profit text-profit/40 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ">
  قرب الدعم ✓
  </span>
  )}
  {data.price_vs_sr === 'near_resistance' && (
- <span className="text-xs px-1.5 py-0 rounded-full bg-warning text-warning/40 ">
+ <span className="text-xs px-1.5 py-0 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ">
  قرب المقاومة ⚡
  </span>
  )}
@@ -1976,7 +1976,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  {sectorHeat.hot.slice(0, 4).map((s) => (
  <span
  key={s.sector}
- className="px-1.5 py-0.5 rounded-full bg-warning text-warning border border-orange-200 /40 dark:border-orange-700 whitespace-nowrap"
+ className="px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border border-orange-200 /40 dark:border-orange-700 whitespace-nowrap"
  title={`avg change ${(s.avg_chg ?? 0).toFixed(2)}% — ${Math.round(s.rising_ratio * 100)}% صاعد — ${s.n} سهم — boost +${Math.round(s.boost * 100)}%`}
  >
  {s.sector} <span className="opacity-70">+{(s.avg_chg ?? 0).toFixed(1)}%</span>

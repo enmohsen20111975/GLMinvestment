@@ -463,9 +463,9 @@ const accentDark = '#0f766e'; // Teal/emerald theme
  <span
  className={`inline-flex items-center px-2 py-0.5 rounded font-bold text-xs ${
  pnl > 0
- ? 'bg-profit text-profit'
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
  : pnl < 0
- ? 'bg-loss text-loss'
+ ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
  : 'bg-zinc-100 text-zinc-600'
  }`}
  >

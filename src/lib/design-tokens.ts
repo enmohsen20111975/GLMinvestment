@@ -94,11 +94,11 @@ export const TONE_SOFT: Record<string, string> = {
 
 /** خلفية صلبة (solid) — bg-tone + text-tone-foreground */
 export const TONE_SOLID: Record<string, string> = {
-  success: 'bg-success text-success-foreground',
-  warning: 'bg-warning text-warning-foreground',
+  success: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground',
+  warning: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30-foreground',
   danger: 'bg-danger text-danger-foreground',
-  profit: 'bg-profit text-profit-foreground',
-  loss: 'bg-loss text-loss-foreground',
+  profit: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground',
+  loss: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30-foreground',
   whale: 'bg-whale text-whale-foreground',
   muted: 'bg-muted text-muted-foreground',
   primary: 'bg-primary text-primary-foreground',

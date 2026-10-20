@@ -292,14 +292,14 @@ function statusColorFor(variant: ProgressRowProps['variant'], status: string): s
 
 function statusBadgeClass(variant: ProgressRowProps['variant'], status: string): string {
  if (variant === 'stop_loss') {
- if (status === 'danger') return 'bg-loss text-loss/40 ';
- if (status === 'warning') return 'bg-warning text-warning/40 ';
- return 'bg-profit text-profit/40 ';
+ if (status === 'danger') return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ';
+ if (status === 'warning') return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ';
+ return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ';
  }
- if (status === 'hit') return 'bg-profit text-profit/40 ';
- if (status === 'approaching') return 'bg-warning text-warning/40 ';
+ if (status === 'hit') return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ';
+ if (status === 'approaching') return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ';
  if (variant === 'target_2') return 'bg-primary text-primary/40 ';
- return 'bg-warning text-warning/40 ';
+ return 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ';
 }
 
 function ProgressRow({ label, icon, price, pct, progress, status, statusLabel, variant }: ProgressRowProps) {

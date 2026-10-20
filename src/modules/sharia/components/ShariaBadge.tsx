@@ -86,11 +86,11 @@ const STATUS_EMOJI: Record<ShariaStatus, string> = {
 
 const STATUS_BADGE_CLASS: Record<ShariaStatus, string> = {
  compliant:
- 'bg-profit text-profit/50 border-profit ',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ',
  non_compliant:
- 'bg-loss text-loss/50 border-loss ',
+ 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ',
  doubtful:
- 'bg-warning text-warning/50 border-warning ',
+ 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ',
  not_available:
  'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700',
 };
@@ -396,7 +396,7 @@ function ShariaBadgePopoverOkBody({
  {summary.emoji} {summary.label}
  </span>
  {summary.isConsensus && (
- <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-warning text-warning/40 ">
+ <span className="text-xs px-1.5 py-0.5 rounded-full border border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ">
  إجماع
  </span>
  )}

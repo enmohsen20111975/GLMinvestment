@@ -430,7 +430,7 @@ export function SmartAssistantPanel() {
  </Badge>
  )}
  {stock.technicalSignals.nearResistance && (
- <Badge variant="outline" className="bg-loss text-loss border-loss">
+ <Badge variant="outline" className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss">
  قريب من مقاومة
  </Badge>
  )}

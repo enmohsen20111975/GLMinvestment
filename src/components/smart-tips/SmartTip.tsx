@@ -51,7 +51,7 @@ const CATEGORY_CONFIG: Record<string, {
  bg: 'bg-profit/80',
  text: 'text-profit',
  iconBg: 'bg-profit',
- badge: 'bg-profit text-profit',
+ badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30',
  },
  risk: {
  label: 'تجنب المخاطر',
@@ -62,7 +62,7 @@ const CATEGORY_CONFIG: Record<string, {
  bg: 'bg-loss/80',
  text: 'text-loss',
  iconBg: 'bg-loss',
- badge: 'bg-loss text-loss',
+ badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30',
  },
  analysis: {
  label: 'التحليل والقرار',
@@ -84,7 +84,7 @@ const CATEGORY_CONFIG: Record<string, {
  bg: 'bg-warning/80',
  text: 'text-warning',
  iconBg: 'bg-warning',
- badge: 'bg-warning text-warning',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30',
  },
  psychology: {
  label: 'نفسية المستثمر',
@@ -106,7 +106,7 @@ const CATEGORY_CONFIG: Record<string, {
  bg: 'bg-warning/80',
  text: 'text-warning',
  iconBg: 'bg-warning',
- badge: 'bg-warning text-warning',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30',
  },
 };
 

@@ -633,8 +633,8 @@ export function SingleStockAnalysisView({
               className={cn(
                 'font-mono text-xs font-black px-2.5 py-1 border rounded-full',
                 isUp
-                  ? 'bg-profit text-profit border-profit'
-                  : 'bg-loss text-loss border-loss'
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit'
+                  : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss'
               )}
             >
               {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
@@ -767,8 +767,8 @@ export function SingleStockAnalysisView({
         <div className="flex items-center gap-2 pt-1 text-[10px] flex-wrap">
           <span className="text-muted-foreground font-bold">وضعي:</span>
           <div className="flex bg-card border border-border rounded-xl p-0.5">
-            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-profit text-profit' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
-            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-warning text-warning' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
+            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' : 'text-muted-foreground')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
+            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30' : 'text-muted-foreground')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
           </div>
           {data?.adjustment_reason && (
             <span className="text-muted-foreground truncate max-w-md">💡 {data.adjustment_reason}</span>
@@ -796,7 +796,7 @@ export function SingleStockAnalysisView({
               className={cn(
                 'px-1.5 py-1 rounded-lg border transition-all font-mono',
                 visibleIndicators[ind.key]
-                  ? 'bg-profit text-profit border-profit font-bold'
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit font-bold'
                   : 'bg-muted text-muted-foreground border-border hover:bg-muted'
               )}
             >

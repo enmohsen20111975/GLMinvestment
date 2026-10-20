@@ -159,11 +159,11 @@ function signalBadge(signal: string): { label: string; className: string } {
  // الحل: إضافة الـ 7 levels الـ canonical.
  const s = (signal || '').toLowerCase();
  if (s.includes('strong_buy')) return { label: 'شراء قوي', className: 'bg-profit text-white' };
- if (s.includes('buy')) return { label: 'شراء', className: 'bg-profit text-profit ' };
+ if (s.includes('buy')) return { label: 'شراء', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' };
  if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-primary text-primary ' };
  if (s.includes('strong_sell')) return { label: 'بيع قوي', className: 'bg-loss text-white' };
- if (s.includes('sell')) return { label: 'بيع', className: 'bg-loss text-loss ' };
- if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-warning text-warning ' };
+ if (s.includes('sell')) return { label: 'بيع', className: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' };
+ if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ' };
  return { label: 'انتظار', className: 'bg-muted text-muted-foreground ' };
 }
 

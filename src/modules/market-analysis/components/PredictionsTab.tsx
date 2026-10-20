@@ -307,8 +307,8 @@ function ProofPredictionsTableView({
  <td className="p-3 text-center font-mono">
  <span className={cn(
  "inline-block px-2.5 py-1 rounded-md font-bold text-xs",
- pnl > 0 ? "bg-profit text-profit border border-profit" :
- pnl < 0 ? "bg-loss text-loss border border-loss" :
+ pnl > 0 ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border border-profit" :
+ pnl < 0 ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border border-loss" :
  "bg-muted text-muted-foreground"
  )}>
  {pnl > 0 ? `+${(pnl ?? 0).toFixed(2)}%` : `${(pnl ?? 0).toFixed(2)}%`}
@@ -415,8 +415,13 @@ export function PreviousPredictionsArchive({
  ? (typeof p.prediction_date === 'string' ? p.prediction_date.slice(5, 10) : '')
  : '';
  const sigColor: Record<string, string> = {
- 'STRONG_BUY': 'bg-profit', 'BUY': 'bg-success', 'ACCUMULATE': 'bg-whale',
- 'HOLD': 'bg-muted', 'REDUCE': 'bg-warning', 'SELL': 'bg-loss', 'STRONG_SELL': 'bg-loss',
+ 'STRONG_BUY': 'bg-emerald-600 text-white font-bold',
+ 'BUY': 'bg-emerald-600 text-white font-bold',
+ 'ACCUMULATE': 'bg-cyan-600 text-white font-bold',
+ 'HOLD': 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-semibold',
+ 'REDUCE': 'bg-amber-600 text-white font-bold',
+ 'SELL': 'bg-rose-600 text-white font-bold',
+ 'STRONG_SELL': 'bg-rose-700 text-white font-bold',
  };
  // P6-PREDICTIONS: قراءة القيم التاريخية بأمان (alias fallback)
  const entryVal = Number(p.entry_price || p.current_price || 0);
@@ -426,7 +431,7 @@ export function PreviousPredictionsArchive({
  <tr key={(p.ticker || '') + '-' + i} className="border-t border-border hover:bg-muted/40">
  <td className="p-2 font-bold">{p.ticker}</td>
  <td className="p-2">
- <span className={cn('inline-block px-1.5 py-0.5 rounded text-xs text-white', sigColor[p.signal || ''] || 'bg-muted')}>
+ <span className={cn('inline-block px-2 py-0.5 rounded text-xs', sigColor[p.signal || ''] || 'bg-slate-200 text-slate-800')}>
  {p.signal_ar || p.signal}
  </span>
  </td>

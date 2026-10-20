@@ -730,7 +730,7 @@ export function MarketPulseWidget() {
  className={cn(
  'flex h-7 w-7 items-center justify-center rounded-md',
  isOpen
- ? 'bg-profit text-profit/60 '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 '
  : 'bg-muted text-muted-foreground ',
  )}
  >
@@ -884,7 +884,7 @@ export function MarketPulseWidget() {
  {top && (
  <div className="flex items-center justify-between gap-2 rounded-lg border border-border to-transparent px-2.5 py-2 /30">
  <div className="flex items-center gap-2">
- <div className="flex h-7 w-7 items-center justify-center rounded-md bg-profit text-profit/60">
+ <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
  {top.avg_change >= 0 ? (
  <Signal className="h-3.5 w-3.5" />
  ) : (

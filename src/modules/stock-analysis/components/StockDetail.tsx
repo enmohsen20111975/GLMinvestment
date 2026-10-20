@@ -1253,12 +1253,12 @@ export function StockDetail() {
  {/* Index Membership Badges */}
  <div className="flex gap-1.5">
  {stock.egx30_member && (
- <Badge className="bg-profit text-profit/40 hover:bg-profit dark:hover:bg-profit/10 border-0 text-xs px-2">
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-profit dark:hover:bg-profit/10 border-0 text-xs px-2">
  EGX 30
  </Badge>
  )}
  {stock.egx70_member && (
- <Badge className="bg-warning text-warning/40 hover:bg-warning dark:hover:bg-warning/10 border-0 text-xs px-2">
+ <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 hover:bg-warning dark:hover:bg-warning/10 border-0 text-xs px-2">
  EGX 70
  </Badge>
  )}
@@ -1276,13 +1276,13 @@ export function StockDetail() {
  {stock.sector}
  </Badge>
  {stock.compliance_status === 'halal' && (
- <Badge className="bg-profit text-profit/40 border-0 text-xs gap-1">
+ <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  متوافق شرعاً
  </Badge>
  )}
  {stock.compliance_status === 'doubtful' && (
- <Badge className="bg-warning text-warning/40 border-0 text-xs gap-1">
+ <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-0 text-xs gap-1">
  <Shield className="w-3 h-3" />
  غير مؤكد
  </Badge>

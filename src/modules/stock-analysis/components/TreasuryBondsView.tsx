@@ -105,7 +105,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
  variant={daysToMaturity < 90 ? "default" : "secondary"} 
  className={cn(
  "text-xs w-fit",
- daysToMaturity < 90 && "bg-warning text-warning/30 "
+ daysToMaturity < 90 && "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 "
  )}
  >
  <Clock className="w-3 h-3 ml-1" />
@@ -224,7 +224,7 @@ const bondColumns: Column<TreasuryBond>[] = [
  className={cn(
  'text-xs w-fit',
  daysToMaturity < 90 &&
- 'bg-warning text-warning/30 ',
+ 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30/30 ',
  )}
  >
  <Clock className="w-3 h-3 ml-1" />

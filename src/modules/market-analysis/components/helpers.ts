@@ -46,11 +46,11 @@ export function pickValidPrice(...candidates: Array<unknown>): number | undefine
 export function getStatusBadge(status: LifecycleStatus | undefined): StatusBadgeStyle {
  switch (status) {
  case 'TARGET_HIT':
- return { label: '🎯 حقق الهدف', badgeClass: 'bg-profit text-profit border-profit ', dotClass: 'bg-profit' };
+ return { label: '🎯 حقق الهدف', badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit ', dotClass: 'bg-profit' };
  case 'STOPPED':
- return { label: '🛑 وقف الخسارة', badgeClass: 'bg-loss text-loss border-loss ', dotClass: 'bg-loss' };
+ return { label: '🛑 وقف الخسارة', badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss ', dotClass: 'bg-loss' };
  case 'EXPIRED':
- return { label: '⏰ انتهى', badgeClass: 'bg-warning text-warning border-warning ', dotClass: 'bg-warning' };
+ return { label: '⏰ انتهى', badgeClass: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning ', dotClass: 'bg-warning' };
  case 'PENDING':
  default:
  return { label: '⏳ مفتوح', badgeClass: 'bg-whale text-whale border-whale ', dotClass: 'bg-whale' };

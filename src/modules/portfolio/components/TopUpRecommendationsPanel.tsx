@@ -104,7 +104,7 @@ function classifyRecommendation(pnlPct: number): {
  return {
  label: 'نجم صاعد',
  badgeColor:
- 'bg-profit text-profit/40 border-profit',
+ 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit',
  icon: 'sparkles',
  };
  }
@@ -119,7 +119,7 @@ function classifyRecommendation(pnlPct: number): {
  return {
  label: 'متابعة',
  badgeColor:
- 'bg-warning text-warning/40 border-warning',
+ 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning',
  icon: 'watch',
  };
 }

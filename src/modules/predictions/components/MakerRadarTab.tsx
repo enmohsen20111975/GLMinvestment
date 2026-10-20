@@ -412,7 +412,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-warning/20',
  headerBg: 'bg-warning/10 /20',
  iconColor: 'text-warning ',
- badge: 'bg-warning text-warning border-warning/20 ',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ',
  border: 'border-warning/20',
  softBg: 'bg-warning/10 /10',
  },
@@ -420,7 +420,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-loss/20',
  headerBg: 'bg-loss/10 /20',
  iconColor: 'text-loss ',
- badge: 'bg-loss text-loss border-loss/20 ',
+ badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ',
  border: 'border-loss/20',
  softBg: 'bg-loss/10 /10',
  },
@@ -428,7 +428,7 @@ const accentClasses: Record<AccentKey, {
  card: 'border-profit/20',
  headerBg: 'bg-profit/10 /20',
  iconColor: 'text-profit ',
- badge: 'bg-profit text-profit border-profit/20 ',
+ badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ',
  border: 'border-profit/20',
  softBg: 'bg-profit/10 /10',
  },
@@ -1151,8 +1151,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  variant="outline"
  className={
  marketStatus.isOpen
- ? 'bg-profit text-profit border-profit text-xs'
- : 'bg-warning text-warning border-warning text-xs'
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit text-xs'
+ : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning text-xs'
  }
  >
  <span className={`h-1.5 w-1.5 rounded-full mr-1 ${marketStatus.isOpen ? 'bg-profit animate-pulse' : 'bg-warning'}`} />
@@ -1344,9 +1344,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  </span>
  <Badge variant="outline" className={`text-xs font-semibold ${
  data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
- ? 'bg-loss text-loss border-loss '
+ ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss '
  : data.market_regime.regime === 'AGGRESSIVE'
- ? 'bg-profit text-profit border-profit '
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit '
  : 'bg-primary text-primary border-primary '
  }`}>
  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
@@ -2010,9 +2010,9 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 
  // Color coding
  const cls =
- isInflow ? 'bg-profit text-profit border-profit/20 ' :
- isOutflow ? 'bg-loss text-loss border-loss/20 ' :
- 'bg-warning text-warning border-warning/20 ';
+ isInflow ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ' :
+ isOutflow ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ' :
+ 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ';
 
  return (
  <div
@@ -2497,11 +2497,11 @@ const StockTable = memo(function StockTable({
  const state = String(stock.money_flow_state || '⚪ متوازنة');
  let bgClass = 'bg-muted/30 text-muted-foreground border-border';
  if (state.includes('🔥 دخول') || state.includes('🟢 سيولة داخلة')) {
- bgClass = 'bg-profit text-profit border-profit/20 ';
+ bgClass = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 ';
  } else if (state.includes('🔥 خروج') || state.includes('🔴 سيولة خارجة')) {
- bgClass = 'bg-loss text-loss border-loss/20 ';
+ bgClass = 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 ';
  } else if (state.includes('⚪')) {
- bgClass = 'bg-warning text-warning border-warning/20 ';
+ bgClass = 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 ';
  }
  return (
  <Badge variant="outline" className={`text-xs font-bold ${bgClass}`}>
@@ -2604,10 +2604,10 @@ const StockTable = memo(function StockTable({
  variant="outline"
  className={`text-xs h-5 px-1.5 whitespace-nowrap ${
  isStrong
- ? 'bg-profit text-profit border-profit/20 font-semibold'
+ ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit/20 font-semibold'
  : isDist
- ? 'bg-loss text-loss border-loss/20 font-semibold'
- : 'bg-warning text-warning border-warning/20 '
+ ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss/20 font-semibold'
+ : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning/20 '
  }`}
  >
  {accum}
@@ -2780,7 +2780,7 @@ const StockTable = memo(function StockTable({
  const pred = predictionForTicker(stock.ticker);
  if (stock.kill_switch) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-loss text-loss/60 border-loss">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss">
  ⚠️ حذر
  </Badge>
  );
@@ -2788,7 +2788,7 @@ const StockTable = memo(function StockTable({
  // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
  if (pred?.signal_ar) {
  return (
- <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-profit text-profit/40 border-profit">
+ <Badge variant="outline" className="text-xs h-5 px-1.5 whitespace-nowrap bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 border-profit">
  {pred.signal_ar}
  </Badge>
  );
@@ -3611,7 +3611,7 @@ function ProofSection() {
  </div>
  </div>
  <div className="flex items-center gap-2">
- <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-warning text-warning border-warning">
+ <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning">
  <Award className="h-3 w-3 ml-1" />
  بيانات حقيقية مطلوبة
  </Badge>

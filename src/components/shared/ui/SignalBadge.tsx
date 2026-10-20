@@ -55,9 +55,9 @@ const TONE_SOFT: Record<string, string> = {
 };
 
 const TONE_SOLID: Record<string, string> = {
- profit: 'bg-profit text-profit-foreground',
- loss: 'bg-loss text-loss-foreground',
- warning: 'bg-warning text-warning-foreground',
+ profit: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30-foreground',
+ loss: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30-foreground',
+ warning: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30-foreground',
  muted: 'bg-muted text-muted-foreground',
 };
 

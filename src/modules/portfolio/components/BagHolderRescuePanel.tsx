@@ -75,8 +75,8 @@ interface RescueResult {
 }
 
 const REC_COLORS: Record<string, string> = {
- CUT_LOSS: 'bg-loss text-loss/40 border-loss',
- AVERAGE_DOWN: 'bg-warning text-warning/40 border-warning',
+ CUT_LOSS: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 border-loss',
+ AVERAGE_DOWN: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 border-warning',
  HOLD: 'bg-success text-profit/40 border-success',
 };
 

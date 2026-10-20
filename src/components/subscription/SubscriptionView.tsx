@@ -722,7 +722,7 @@ export function SubscriptionView() {
  <span className="text-base">{m.flag}</span>
  <span>{m.shortName}</span>
  {isVipTab && (
- <Badge className="bg-warning text-warning text-xs px-1.5 py-0 border-0 font-extrabold animate-pulse">
+ <Badge className="bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs px-1.5 py-0 border-0 font-extrabold animate-pulse">
  الأقوى
  </Badge>
  )}

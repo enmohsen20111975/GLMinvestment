@@ -1362,9 +1362,9 @@ export function AdminView() {
  <div className="text-center">
  <div className={cn(
  "w-20 h-20 mx-auto rounded-full flex items-center justify-center text-lg md:text-xl lg:text-2xl font-bold",
- healthScore >= 80 ? "bg-profit text-profit" :
- healthScore >= 50 ? "bg-warning text-warning" :
- "bg-loss text-loss"
+ healthScore >= 80 ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30" :
+ healthScore >= 50 ? "bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30" :
+ "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
  )}>
  {healthScore}%
  </div>
@@ -1933,16 +1933,16 @@ export function AdminView() {
 // ==================== USER FEEDBACK TAB ====================
 
 const FEEDBACK_TYPE_META: Record<string, { label: string; cls: string }> = {
- bug: { label: 'مشكلة', cls: 'border-loss bg-loss text-loss/40 ' },
- suggestion: { label: 'اقتراح', cls: 'border-warning bg-warning text-warning/40 ' },
+ bug: { label: 'مشكلة', cls: 'border-loss bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' },
+ suggestion: { label: 'اقتراح', cls: 'border-warning bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ' },
  opinion: { label: 'رأي / ملاحظة', cls: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' },
- praise: { label: 'إشادة', cls: 'border-profit bg-profit text-profit/40 ' },
+ praise: { label: 'إشادة', cls: 'border-profit bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' },
 };
 
 const FEEDBACK_STATUS_META: Record<string, { label: string; cls: string }> = {
- new: { label: 'جديد', cls: 'bg-loss text-loss/50 ' },
- reviewed: { label: 'تمت المراجعة', cls: 'bg-warning text-warning/50 ' },
- resolved: { label: 'تم الحل', cls: 'bg-profit text-profit/50 ' },
+ new: { label: 'جديد', cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ' },
+ reviewed: { label: 'تمت المراجعة', cls: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ' },
+ resolved: { label: 'تم الحل', cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' },
 };
 
 function UserFeedbackTab({

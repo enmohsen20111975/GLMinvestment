@@ -103,7 +103,7 @@ const EXIT_PATHS = [
  color: 'text-loss ',
  bg: 'bg-loss/10',
  border: 'border-loss ',
- badge: 'bg-loss text-loss/40 ',
+ badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
  },
  {
  key: 'x2_volume_divergence',
@@ -113,7 +113,7 @@ const EXIT_PATHS = [
  color: 'text-warning ',
  bg: 'bg-warning/10',
  border: 'border-warning ',
- badge: 'bg-warning text-warning/40 ',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
  },
  {
  key: 'x3_resistance_rejection',
@@ -123,7 +123,7 @@ const EXIT_PATHS = [
  color: 'text-warning ',
  bg: 'bg-warning/10',
  border: 'border-orange-200 dark:border-orange-900',
- badge: 'bg-warning text-warning/40 ',
+ badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 ',
  },
  {
  key: 'x4_exhaustion_gap',
@@ -143,7 +143,7 @@ const EXIT_PATHS = [
  color: 'text-loss ',
  bg: 'bg-loss/10',
  border: 'border-loss ',
- badge: 'bg-loss text-loss/40 ',
+ badge: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 ',
  },
 ] as const;
 

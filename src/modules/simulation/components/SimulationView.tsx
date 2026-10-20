@@ -839,7 +839,7 @@ export function SimulationView() {
  render: (s) => (
  <Badge
  variant={s.changePercent >= 0 ? 'default' : 'destructive'}
- className={cn(s.changePercent >= 0 ? 'bg-profit text-profit/30 ' : '')}
+ className={cn(s.changePercent >= 0 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' : '')}
  >
  {s.changePercent >= 0 ? '+' : ''}{(s.changePercent ?? 0).toFixed(2)}%
  </Badge>
@@ -975,7 +975,7 @@ export function SimulationView() {
  filterable: true,
  width: 'w-24',
  render: (t) => (
- <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-profit text-profit/30 ' : '')}>
+ <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 ' : '')}>
  {t.type === 'buy' ? (
  <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
  ) : (
