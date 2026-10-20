@@ -1,0 +1,623 @@
+🔍 DB Schema Inspector
+DB_DIR: /home/meme/my_apps/GLMinvestment/db
+======================================================================
+
+📊 DBs اللي هتـ فحص: 29
+  - ai_search_cache.db
+  - analytics.db
+  - auth.db
+  - community.db
+  - content.db
+  - crypto-lab.db
+  - crypto.db
+  - crypto_learning.db
+  - data-engine.db
+  - data_engine.db
+  - decision_log.db
+  - egx_data.db
+  - egx_investment.db
+  - gold_prices.db
+  - historical.db
+  - intraday.db
+  - learned.db
+  - macro.db
+  - market.db
+  - news.db
+  - old_DB.db
+  - paper_trading.db
+  - predictions.db
+  - predictions_before_dedup.db
+  - price_history.db
+  - price_history_original.db
+  - stocks.db
+  - stocks_recovered.db
+  - telegram_data.db
+
+======================================================================
+📁 ai_search_cache.db
+======================================================================
+  📏 Size: 0.02 MB
+  📋 Tables: 1
+
+  📊 search_cache: 0 rows | PK=id | 7 cols | 3 indexes
+
+======================================================================
+📁 analytics.db
+======================================================================
+  📏 Size: 0.08 MB
+  📋 Tables: 7
+
+  📊 analytics_events: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 daily_analytics_summary: 0 rows | PK=id | 17 cols | 2 indexes
+  📊 error_logs: 0 rows | PK=id | 9 cols | 0 indexes
+  📊 feature_usage: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 page_views: 0 rows | PK=id | 15 cols | 3 indexes
+  📊 resource_usage: 0 rows | PK=id | 7 cols | 0 indexes
+  📊 user_sessions: 0 rows | PK=id | 18 cols | 2 indexes
+
+======================================================================
+📁 auth.db
+======================================================================
+  📏 Size: 0.36 MB
+  📋 Tables: 22
+
+  📊 Account: 6 rows | PK=id | 12 cols | 2 indexes
+  📊 ExpertRecommendation: 17 rows | PK=id | 24 cols | 1 indexes
+  📊 ExpertTrackRecord: 0 rows | PK=id | 12 cols | 2 indexes
+  📊 Post: 0 rows | PK=id | 7 cols | 1 indexes
+  📊 PromoCode: 5 rows | PK=id | 11 cols | 2 indexes
+  📊 PromoRedemption: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 Session: 0 rows | PK=id | 4 cols | 2 indexes
+  📊 SubscriptionPlan: 10 rows | PK=id | 17 cols | 2 indexes
+  📊 User: 127 rows | PK=id | 18 cols | 3 indexes
+  📊 UserSubscription: 2 rows | PK=id | 12 cols | 2 indexes
+  📊 VerificationToken: 0 rows | PK=(none) | 3 cols | 2 indexes
+  📊 analytics_events: 0 rows | PK=id | 8 cols | 3 indexes
+  📊 api_tokens: 44 rows | PK=id | 9 cols | 4 indexes
+  📊 bot_link_tokens: 1 rows | PK=token | 6 cols | 2 indexes
+  📊 market_pricing: 23 rows | PK=id | 10 cols | 2 indexes
+  📊 portfolio_history: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 portfolio_items: 1 rows | PK=id | 12 cols | 1 indexes
+  📊 price_alerts: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 task_runs: 75 rows | PK=id | 6 cols | 1 indexes
+  📊 user_telegram_links: 2 rows | PK=id | 6 cols | 6 indexes
+  📊 user_trades: 0 rows | PK=id | 10 cols | 2 indexes
+  📊 watchlist: 0 rows | PK=id | 8 cols | 3 indexes
+
+======================================================================
+📁 community.db
+======================================================================
+  📏 Size: 0.03 MB
+  📋 Tables: 5
+
+  📊 comments: 0 rows | PK=id | 5 cols | 0 indexes
+  📊 post_likes: 0 rows | PK=id | 3 cols | 1 indexes
+  📊 posts: 0 rows | PK=id | 6 cols | 0 indexes
+  📊 rooms: 0 rows | PK=id | 6 cols | 0 indexes
+  📊 users: 0 rows | PK=id | 5 cols | 0 indexes
+
+======================================================================
+📁 content.db
+======================================================================
+  📏 Size: 12.46 MB
+  📋 Tables: 6
+
+  📊 news_articles: 7894 rows | PK=id | 15 cols | 1 indexes
+  📊 scraping_status: 3 rows | PK=id | 8 cols | 1 indexes
+  📊 telegram_messages: 58 rows | PK=id | 18 cols | 1 indexes
+  📊 telegram_news: 11 rows | PK=id | 12 cols | 0 indexes
+  📊 telegram_recommendations: 9 rows | PK=id | 17 cols | 0 indexes
+  📊 tracked_channels: 6 rows | PK=id | 10 cols | 1 indexes
+
+======================================================================
+📁 crypto-lab.db
+======================================================================
+  📏 Size: 0.02 MB
+  📋 Tables: 3
+
+  📊 crypto_lab_journal: 0 rows | PK=id | 14 cols | 0 indexes
+  📊 crypto_lab_state: 3 rows | PK=key | 2 cols | 1 indexes
+  📊 crypto_lab_trades: 0 rows | PK=id | 18 cols | 0 indexes
+
+======================================================================
+📁 crypto.db
+======================================================================
+  📏 Size: 0.82 MB
+  📋 Tables: 10
+
+  📊 btc_local_prices: 8 rows | PK=id | 7 cols | 1 indexes
+  📊 crypto_fetch_log: 144 rows | PK=id | 8 cols | 0 indexes
+  📊 crypto_metrics: 30 rows | PK=symbol | 19 cols | 3 indexes
+  📊 crypto_news: 0 rows | PK=id | 11 cols | 0 indexes
+  📊 crypto_prediction_logs: 0 rows | PK=id | 11 cols | 2 indexes
+  📊 crypto_price_history: 1062 rows | PK=id | 10 cols | 2 indexes
+  📊 crypto_recommendations: 0 rows | PK=id | 16 cols | 0 indexes
+  📊 crypto_watchlist: 0 rows | PK=id | 4 cols | 1 indexes
+  📊 cryptos: 50 rows | PK=id | 20 cols | 1 indexes
+  📊 sync_status: 1 rows | PK=id | 6 cols | 1 indexes
+
+======================================================================
+📁 crypto_learning.db
+======================================================================
+  📏 Size: 0.07 MB
+  📋 Tables: 6
+
+  📊 crypto_best_parameters: 0 rows | PK=id | 6 cols | 0 indexes
+  📊 crypto_learned_lessons: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 crypto_learning_iterations: 30 rows | PK=id | 13 cols | 0 indexes
+  📊 crypto_outcome_logs: 0 rows | PK=id | 23 cols | 1 indexes
+  📊 crypto_prediction_logs: 0 rows | PK=id | 29 cols | 2 indexes
+  📊 crypto_regime_weights: 0 rows | PK=id | 6 cols | 1 indexes
+
+======================================================================
+📁 data-engine.db
+======================================================================
+  📏 Size: 0.0 MB
+  📋 Tables: 0
+
+
+======================================================================
+📁 data_engine.db
+======================================================================
+  📏 Size: 9.3 MB
+  📋 Tables: 14
+
+  📊 btc_local_prices: 5652 rows | PK=id | 5 cols | 1 indexes
+  📊 crypto_prices: 47200 rows | PK=id | 12 cols | 1 indexes
+  📊 egksco_price_history: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 egksco_stocks: 0 rows | PK=id | 11 cols | 2 indexes
+  📊 egx_fundamentals: 0 rows | PK=ticker | 14 cols | 2 indexes
+  📊 exchange_rates: 2190 rows | PK=id | 4 cols | 1 indexes
+  📊 gold_prices: 16170 rows | PK=id | 7 cols | 1 indexes
+  📊 gold_prices_clean: 2640 rows | PK=id | 8 cols | 1 indexes
+  📊 historical_data: 0 rows | PK=id | 11 cols | 3 indexes
+  📊 silver_prices: 2310 rows | PK=id | 6 cols | 1 indexes
+  📊 stocks: 297 rows | PK=symbol | 11 cols | 1 indexes
+  📊 tab_balance_sheet: 0 rows | PK=ticker | 8 cols | 1 indexes
+  📊 tab_profitability: 0 rows | PK=ticker | 8 cols | 1 indexes
+  📊 tab_valuation: 0 rows | PK=ticker | 10 cols | 1 indexes
+
+======================================================================
+📁 decision_log.db
+======================================================================
+  📏 Size: 0.03 MB
+  📋 Tables: 1
+
+  📊 decision_log: 84 rows | PK=id | 12 cols | 2 indexes
+
+======================================================================
+📁 egx_data.db
+======================================================================
+  📏 Size: 0.06 MB
+  📋 Tables: 5
+
+  📊 investors_data: 22 rows | PK=id | 21 cols | 1 indexes
+  📊 listed_companies: 0 rows | PK=id | 11 cols | 3 indexes
+  📊 market_indices: 0 rows | PK=id | 12 cols | 0 indexes
+  📊 sectors: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 trading_statistics: 0 rows | PK=id | 14 cols | 1 indexes
+
+======================================================================
+📁 egx_investment.db
+======================================================================
+  📏 Size: 52.82 MB
+  📋 Tables: 1
+
+  📊 stock_price_history: 391280 rows | PK=id | 9 cols | 2 indexes
+
+======================================================================
+📁 gold_prices.db
+======================================================================
+  📏 Size: 0.04 MB
+  📋 Tables: 3
+
+  📊 gold_history: 5 rows | PK=id | 9 cols | 2 indexes
+  📊 gold_prices: 6 rows | PK=id | 8 cols | 2 indexes
+  📊 silver_history: 0 rows | PK=id | 9 cols | 1 indexes
+
+======================================================================
+📁 historical.db
+======================================================================
+  📏 Size: 43.69 MB
+  📋 Tables: 2
+
+  📊 daily_prices: 110 rows | PK=id | 9 cols | 2 indexes
+  📊 historical_prices: 175563 rows | PK=id | 11 cols | 5 indexes
+
+======================================================================
+📁 intraday.db
+======================================================================
+  📏 Size: 30.36 MB
+  📋 Tables: 5
+
+  📊 commodity_intraday: 16640 rows | PK=id | 6 cols | 3 indexes
+  📊 crypto_intraday: 116029 rows | PK=id | 8 cols | 3 indexes
+  📊 intraday_meta: 3 rows | PK=key | 2 cols | 1 indexes
+  📊 intraday_prices: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 stock_intraday: 18360 rows | PK=id | 10 cols | 5 indexes
+
+======================================================================
+📁 learned.db
+======================================================================
+  📏 Size: 0.01 MB
+  📋 Tables: 1
+
+  📊 learned_lessons: 0 rows | PK=id | 7 cols | 0 indexes
+
+======================================================================
+📁 macro.db
+======================================================================
+  📏 Size: 0.17 MB
+  📋 Tables: 2
+
+  📊 macro_fetch_log: 99 rows | PK=id | 8 cols | 0 indexes
+  📊 macro_prices: 81 rows | PK=trade_date | 15 cols | 2 indexes
+
+======================================================================
+📁 market.db
+======================================================================
+  📏 Size: 1708.79 MB
+  📋 Tables: 42
+
+  📊 analytics_events: 415 rows | PK=id | 10 cols | 0 indexes
+  📊 btc_local_prices: 8 rows | PK=id | 7 cols | 1 indexes
+  📊 cached_analysis: 160 rows | PK=id | 39 cols | 1 indexes
+  📊 commodity_intraday: 78882 rows | PK=id | 6 cols | 1 indexes
+  📊 crypto_fetch_log: 144 rows | PK=id | 8 cols | 0 indexes
+  📊 crypto_intraday: 334989 rows | PK=id | 8 cols | 1 indexes
+  📊 crypto_metrics: 30 rows | PK=symbol | 19 cols | 1 indexes
+  📊 crypto_price_history: 1062 rows | PK=id | 10 cols | 1 indexes
+  📊 crypto_prices: 766541 rows | PK=id | 12 cols | 1 indexes
+  📊 cryptos: 50 rows | PK=id | 20 cols | 1 indexes
+  📊 egksco_stocks: 256 rows | PK=id | 17 cols | 1 indexes
+  📊 egksco_sync_status: 451 rows | PK=id | 10 cols | 0 indexes
+  📊 exchange_rates: 80332 rows | PK=id | 4 cols | 1 indexes
+  📊 gold_prices: 414093 rows | PK=id | 7 cols | 1 indexes
+  📊 gold_prices_clean: 67626 rows | PK=id | 8 cols | 1 indexes
+  📊 intraday_meta: 3 rows | PK=key | 2 cols | 1 indexes
+  📊 macro_fetch_log: 127 rows | PK=id | 8 cols | 0 indexes
+  📊 macro_indicators: 3 rows | PK=date | 11 cols | 1 indexes
+  📊 macro_prices: 85 rows | PK=trade_date | 15 cols | 1 indexes
+  📊 market_indices: 5 rows | PK=id | 10 cols | 1 indexes
+  📊 market_regime_log: 35 rows | PK=id | 15 cols | 1 indexes
+  📊 real_evaluated_predictions: 4035 rows | PK=id | 10 cols | 0 indexes
+  📊 screener_lists: 1516 rows | PK=id | 8 cols | 1 indexes
+  📊 screener_presets: 2120 rows | PK=id | 21 cols | 1 indexes
+  📊 screener_results: 173 rows | PK=id | 9 cols | 0 indexes
+  📊 silver_prices: 80334 rows | PK=id | 6 cols | 1 indexes
+  📊 stock_daily_prices: 29781 rows | PK=id | 15 cols | 1 indexes
+  📊 stock_intraday: 1136904 rows | PK=id | 10 cols | 1 indexes
+  📊 stock_phase: 1258 rows | PK=symbol | 25 cols | 1 indexes
+  📊 stock_prices: 2493 rows | PK=id | 9 cols | 1 indexes
+  📊 stocks: 1053 rows | PK=id | 60 cols | 0 indexes
+  📊 stocks_backup: 345 rows | PK=id | 40 cols | 1 indexes
+  📊 sync_status: 1 rows | PK=id | 6 cols | 1 indexes
+  📊 tab_balance_sheet: 866 rows | PK=id | 14 cols | 1 indexes
+  📊 tab_cash_flow: 866 rows | PK=id | 9 cols | 1 indexes
+  📊 tab_dividends: 858 rows | PK=id | 11 cols | 1 indexes
+  📊 tab_income_statement: 866 rows | PK=id | 12 cols | 1 indexes
+  📊 tab_performance: 858 rows | PK=id | 16 cols | 1 indexes
+  📊 tab_profitability: 858 rows | PK=id | 13 cols | 1 indexes
+  📊 tab_technical_analysis: 863 rows | PK=id | 13 cols | 1 indexes
+  📊 tab_valuation: 858 rows | PK=id | 17 cols | 1 indexes
+  📊 tuned_predictions_summary: 1 rows | PK=id | 8 cols | 0 indexes
+
+======================================================================
+📁 news.db
+======================================================================
+  📏 Size: 4.5 MB
+  📋 Tables: 3
+
+  📊 market_news: 1406 rows | PK=id | 21 cols | 4 indexes
+  📊 news_api_keys: 0 rows | PK=id | 13 cols | 1 indexes
+  📊 news_articles: 0 rows | PK=id | 15 cols | 5 indexes
+
+======================================================================
+📁 old_DB.db
+======================================================================
+  📏 Size: 211.47 MB
+  📋 Tables: 46
+
+  📊 admin_settings: 1 rows | PK=key | 3 cols | 1 indexes
+  📊 analysis_cache: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 audit_logs: 0 rows | PK=id | 4 cols | 0 indexes
+  📊 cache_status: 1 rows | PK=id | 10 cols | 0 indexes
+  📊 cached_analysis: 1672 rows | PK=id | 14 cols | 1 indexes
+  📊 calculation_weights: 31 rows | PK=id | 11 cols | 2 indexes
+  📊 conjunction_patterns: 0 rows | PK=id | 15 cols | 2 indexes
+  📊 context_logs: 0 rows | PK=id | 14 cols | 1 indexes
+  📊 currency_rates: 6 rows | PK=id | 9 cols | 1 indexes
+  📊 db_metadata: 4 rows | PK=key | 3 cols | 1 indexes
+  📊 dividends: 0 rows | PK=id | 8 cols | 0 indexes
+  📊 egksco_price_history: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 egksco_recommendations: 0 rows | PK=id | 12 cols | 0 indexes
+  📊 egksco_stocks: 256 rows | PK=id | 17 cols | 1 indexes
+  📊 egksco_sync_status: 61 rows | PK=id | 10 cols | 0 indexes
+  📊 fatal_errors: 0 rows | PK=id | 12 cols | 0 indexes
+  📊 feedback_accuracy_summary: 0 rows | PK=id | 22 cols | 1 indexes
+  📊 gold_price_history: 66 rows | PK=id | 7 cols | 0 indexes
+  📊 gold_prices: 19 rows | PK=id | 8 cols | 1 indexes
+  📊 indicator_trust_scores: 10 rows | PK=id | 13 cols | 2 indexes
+  📊 indices: 5 rows | PK=id | 11 cols | 1 indexes
+  📊 intraday_5m: 0 rows | PK=id | 12 cols | 3 indexes
+  📊 learned_lessons: 18269 rows | PK=id | 18 cols | 1 indexes
+  📊 learning_parameters: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 market_indices: 5 rows | PK=id | 11 cols | 1 indexes
+  📊 market_regime_log: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 mirror_analysis: 0 rows | PK=id | 10 cols | 0 indexes
+  📊 news: 0 rows | PK=id | 13 cols | 0 indexes
+  📊 outcome_logs: 0 rows | PK=id | 14 cols | 2 indexes
+  📊 precomputed_cache: 315 rows | PK=cache_key | 7 cols | 3 indexes
+  📊 prediction_logs: 538396 rows | PK=id | 39 cols | 5 indexes
+  📊 predictions: 0 rows | PK=id | 7 cols | 1 indexes
+  📊 price_history: 0 rows | PK=id | 10 cols | 2 indexes
+  📊 recommendations: 0 rows | PK=id | 13 cols | 1 indexes
+  📊 regime_indicator_weights: 3 rows | PK=id | 7 cols | 1 indexes
+  📊 review_cycles: 2 rows | PK=id | 18 cols | 0 indexes
+  📊 signal_logs: 0 rows | PK=id | 28 cols | 5 indexes
+  📊 smart_tips: 19 rows | PK=id | 8 cols | 0 indexes
+  📊 stock_deep_insight_snapshots: 0 rows | PK=id | 6 cols | 2 indexes
+  📊 stock_price_history: 112805 rows | PK=id | 10 cols | 5 indexes
+  📊 stocks: 486 rows | PK=id | 48 cols | 4 indexes
+  📊 sync_log: 0 rows | PK=id | 6 cols | 0 indexes
+  📊 technical_indicators: 295 rows | PK=id | 17 cols | 1 indexes
+  📊 trade_logs: 0 rows | PK=id | 17 cols | 2 indexes
+  📊 user_stock_watchlists: 0 rows | PK=id | 11 cols | 3 indexes
+  📊 weight_adjustment_logs: 0 rows | PK=id | 8 cols | 0 indexes
+
+======================================================================
+📁 paper_trading.db
+======================================================================
+  📏 Size: 0.03 MB
+  📋 Tables: 2
+
+  📊 paper_trading_accounts: 1 rows | PK=id | 10 cols | 1 indexes
+  📊 paper_trading_orders: 0 rows | PK=id | 16 cols | 2 indexes
+
+======================================================================
+📁 predictions.db
+======================================================================
+  📏 Size: 268.2 MB
+  📋 Tables: 45
+
+  📊 ExpertRecommendation: 17 rows | PK=id | 24 cols | 1 indexes
+  📊 aiPrediction: 2613 rows | PK=id | 24 cols | 5 indexes
+  📊 aiPredictionStats: 1 rows | PK=id | 9 cols | 0 indexes
+  📊 analysis_engine_status: 1 rows | PK=id | 13 cols | 1 indexes
+  📊 analysis_jobs: 0 rows | PK=id | 13 cols | 1 indexes
+  📊 cached_analysis: 0 rows | PK=id | 18 cols | 4 indexes
+  📊 cash_transactions: 0 rows | PK=id | 8 cols | 3 indexes
+  📊 corporate_actions: 118 rows | PK=id | 7 cols | 4 indexes
+  📊 crypto_lessons: 0 rows | PK=id | 9 cols | 0 indexes
+  📊 crypto_predictions: 0 rows | PK=id | 21 cols | 0 indexes
+  📊 crypto_predictions_log: 180989 rows | PK=id | 16 cols | 2 indexes
+  📊 equity_snapshots: 0 rows | PK=id | 10 cols | 2 indexes
+  📊 exit_notifications: 4060 rows | PK=id | 15 cols | 2 indexes
+  📊 historical_trades: 22650 rows | PK=id | 17 cols | 3 indexes
+  📊 hunter_pick_tracking: 17 rows | PK=id | 16 cols | 2 indexes
+  📊 learned_lessons: 20005 rows | PK=id | 10 cols | 1 indexes
+  📊 liquidity_backtest_results: 10 rows | PK=id | 15 cols | 1 indexes
+  📊 liquidity_dynamic_threshold: 5 rows | PK=id | 8 cols | 1 indexes
+  📊 liquidity_signal_outcomes: 1308 rows | PK=id | 11 cols | 1 indexes
+  📊 live_ai_signals: 1636 rows | PK=id | 10 cols | 2 indexes
+  📊 morning_bell_signals: 82 rows | PK=id | 21 cols | 3 indexes
+  📊 optimizer_params_history: 20 rows | PK=id | 9 cols | 0 indexes
+  📊 persona_predictions: 1669 rows | PK=id | 25 cols | 7 indexes
+  📊 platform_recommendations: 0 rows | PK=id | 28 cols | 4 indexes
+  📊 portfolio_pnl_history: 0 rows | PK=id | 9 cols | 1 indexes
+  📊 portfolio_positions: 0 rows | PK=id | 7 cols | 2 indexes
+  📊 portfolio_state: 0 rows | PK=portfolio_id | 8 cols | 2 indexes
+  📊 portfolios: 4 rows | PK=id | 10 cols | 2 indexes
+  📊 prediction_lessons: 4 rows | PK=id | 9 cols | 0 indexes
+  📊 prediction_outcomes: 0 rows | PK=id | 17 cols | 3 indexes
+  📊 prediction_outcomes_old: 0 rows | PK=id | 10 cols | 0 indexes
+  📊 predictions: 1488 rows | PK=id | 75 cols | 6 indexes
+  📊 quant_cache: 538 rows | PK=ticker | 10 cols | 1 indexes
+  📊 reports: 8 rows | PK=id | 10 cols | 4 indexes
+  📊 session_event_sent_log: 0 rows | PK=id | 4 cols | 1 indexes
+  📊 session_events: 0 rows | PK=id | 15 cols | 2 indexes
+  📊 sniper_performance: 36 rows | PK=id | 16 cols | 0 indexes
+  📊 stock_stories: 1285 rows | PK=id | 8 cols | 0 indexes
+  📊 stored_analyses: 0 rows | PK=id | 52 cols | 9 indexes
+  📊 telegram_news: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 telegram_signals: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 trade_journal_entries: 0 rows | PK=trade_id | 28 cols | 4 indexes
+  📊 trade_journal_reflections: 0 rows | PK=id | 11 cols | 1 indexes
+  📊 trade_outcomes: 0 rows | PK=id | 20 cols | 3 indexes
+  📊 user_trades: 0 rows | PK=id | 9 cols | 3 indexes
+
+======================================================================
+📁 predictions_before_dedup.db
+======================================================================
+  📏 Size: 225.57 MB
+  📋 Tables: 41
+
+  📊 ExpertRecommendation: 17 rows | PK=id | 24 cols | 1 indexes
+  📊 aiPrediction: 2589 rows | PK=id | 24 cols | 5 indexes
+  📊 aiPredictionStats: 1 rows | PK=id | 9 cols | 0 indexes
+  📊 analysis_engine_status: 1 rows | PK=id | 13 cols | 1 indexes
+  📊 analysis_jobs: 0 rows | PK=id | 13 cols | 1 indexes
+  📊 cached_analysis: 0 rows | PK=id | 18 cols | 4 indexes
+  📊 cash_transactions: 0 rows | PK=id | 8 cols | 3 indexes
+  📊 corporate_actions: 86 rows | PK=id | 7 cols | 4 indexes
+  📊 crypto_lessons: 0 rows | PK=id | 9 cols | 0 indexes
+  📊 crypto_predictions: 0 rows | PK=id | 21 cols | 0 indexes
+  📊 crypto_predictions_log: 151912 rows | PK=id | 16 cols | 2 indexes
+  📊 equity_snapshots: 0 rows | PK=id | 10 cols | 2 indexes
+  📊 exit_notifications: 3893 rows | PK=id | 15 cols | 2 indexes
+  📊 historical_trades: 13117 rows | PK=id | 17 cols | 3 indexes
+  📊 learned_lessons: 9286 rows | PK=id | 10 cols | 1 indexes
+  📊 live_ai_signals: 1636 rows | PK=id | 10 cols | 2 indexes
+  📊 morning_bell_signals: 82 rows | PK=id | 21 cols | 3 indexes
+  📊 optimizer_params_history: 13 rows | PK=id | 9 cols | 0 indexes
+  📊 persona_predictions: 1669 rows | PK=id | 25 cols | 7 indexes
+  📊 platform_recommendations: 0 rows | PK=id | 28 cols | 4 indexes
+  📊 portfolio_pnl_history: 0 rows | PK=id | 9 cols | 1 indexes
+  📊 portfolio_positions: 0 rows | PK=id | 7 cols | 2 indexes
+  📊 portfolio_state: 0 rows | PK=portfolio_id | 8 cols | 2 indexes
+  📊 portfolios: 4 rows | PK=id | 10 cols | 2 indexes
+  📊 prediction_lessons: 4 rows | PK=id | 9 cols | 0 indexes
+  📊 prediction_outcomes: 0 rows | PK=id | 17 cols | 3 indexes
+  📊 prediction_outcomes_old: 0 rows | PK=id | 10 cols | 0 indexes
+  📊 predictions: 622 rows | PK=id | 66 cols | 6 indexes
+  📊 quant_cache: 524 rows | PK=ticker | 10 cols | 1 indexes
+  📊 reports: 0 rows | PK=id | 10 cols | 4 indexes
+  📊 session_event_sent_log: 0 rows | PK=id | 4 cols | 1 indexes
+  📊 session_events: 0 rows | PK=id | 15 cols | 2 indexes
+  📊 sniper_performance: 17 rows | PK=id | 16 cols | 0 indexes
+  📊 stock_stories: 899 rows | PK=id | 8 cols | 0 indexes
+  📊 stored_analyses: 547 rows | PK=id | 48 cols | 9 indexes
+  📊 telegram_news: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 telegram_signals: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 trade_journal_entries: 0 rows | PK=trade_id | 28 cols | 4 indexes
+  📊 trade_journal_reflections: 0 rows | PK=id | 11 cols | 1 indexes
+  📊 trade_outcomes: 0 rows | PK=id | 20 cols | 3 indexes
+  📊 user_trades: 0 rows | PK=id | 9 cols | 3 indexes
+
+======================================================================
+📁 price_history.db
+======================================================================
+  📏 Size: 327.75 MB
+  📋 Tables: 2
+
+  📊 price_history: 1310184 rows | PK=id | 17 cols | 7 indexes
+  📊 screener_daily: 416 rows | PK=id | 31 cols | 5 indexes
+
+======================================================================
+📁 price_history_original.db
+======================================================================
+  📏 Size: 51.96 MB
+  📋 Tables: 2
+
+  📊 index_daily_prices: 1326 rows | PK=id | 11 cols | 2 indexes
+  📊 price_history: 274574 rows | PK=id | 10 cols | 4 indexes
+
+======================================================================
+📁 stocks.db
+======================================================================
+  📏 Size: 27.17 MB
+  📋 Tables: 67
+
+  📊 ExpertRecommendation: 48 rows | PK=id | 38 cols | 1 indexes
+  📊 alert_history: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 alert_settings: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 analytics_events: 882 rows | PK=id | 13 cols | 3 indexes
+  📊 cached_analysis: 0 rows | PK=id | 39 cols | 4 indexes
+  📊 conjunction_patterns: 150 rows | PK=id | 16 cols | 2 indexes
+  📊 context_logs: 0 rows | PK=id | 15 cols | 0 indexes
+  📊 daily_analytics_summary: 0 rows | PK=id | 17 cols | 2 indexes
+  📊 egksco_price_history: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 egksco_stocks: 256 rows | PK=id | 17 cols | 1 indexes
+  📊 egksco_sync_status: 740 rows | PK=id | 10 cols | 0 indexes
+  📊 error_logs: 0 rows | PK=id | 9 cols | 0 indexes
+  📊 feature_usage: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 financial_obligations: 0 rows | PK=id | 16 cols | 0 indexes
+  📊 financial_transactions: 0 rows | PK=id | 11 cols | 0 indexes
+  📊 gold_alerts: 0 rows | PK=id | 8 cols | 0 indexes
+  📊 gold_prices: 3 rows | PK=id | 6 cols | 1 indexes
+  📊 indicator_trust_scores: 10 rows | PK=id | 13 cols | 0 indexes
+  📊 indicator_weights: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 investors_data: 34 rows | PK=id | 17 cols | 1 indexes
+  📊 learned_lessons: 0 rows | PK=id | 21 cols | 3 indexes
+  📊 macro_indicators: 3 rows | PK=date | 11 cols | 2 indexes
+  📊 maestro_personas: 0 rows | PK=id | 20 cols | 1 indexes
+  📊 market_indices: 5 rows | PK=id | 15 cols | 1 indexes
+  📊 market_pulse_cache: 5405 rows | PK=id | 20 cols | 0 indexes
+  📊 market_regime_log: 46 rows | PK=id | 30 cols | 1 indexes
+  📊 morning_reports: 0 rows | PK=id | 7 cols | 2 indexes
+  📊 news: 0 rows | PK=id | 13 cols | 0 indexes
+  📊 news_items: 0 rows | PK=id | 12 cols | 3 indexes
+  📊 obligation_payments: 0 rows | PK=id | 9 cols | 0 indexes
+  📊 outcome_logs: 8544 rows | PK=id | 15 cols | 0 indexes
+  📊 page_views: 0 rows | PK=id | 15 cols | 2 indexes
+  📊 paper_trades: 0 rows | PK=id | 26 cols | 3 indexes
+  📊 pending_settlements: 0 rows | PK=id | 12 cols | 2 indexes
+  📊 portfolio_assets: 108 rows | PK=id | 28 cols | 2 indexes
+  📊 portfolios: 9 rows | PK=id | 11 cols | 0 indexes
+  📊 prediction_logs: 0 rows | PK=id | 18 cols | 0 indexes
+  📊 predictions: 0 rows | PK=id | 22 cols | 0 indexes
+  📊 price_alerts: 0 rows | PK=id | 9 cols | 2 indexes
+  📊 radar_signal_tracking: 1164 rows | PK=id | 21 cols | 5 indexes
+  📊 real_evaluated_predictions: 4035 rows | PK=id | 10 cols | 0 indexes
+  📊 regime_indicator_weights: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 scraping_status: 0 rows | PK=id | 8 cols | 1 indexes
+  📊 screener_presets: 2175 rows | PK=id | 21 cols | 1 indexes
+  📊 screener_results: 173 rows | PK=id | 9 cols | 0 indexes
+  📊 signal_logs: 0 rows | PK=id | 22 cols | 0 indexes
+  📊 stock_adaptive_profiles: 69 rows | PK=ticker | 19 cols | 3 indexes
+  📊 stock_daily_prices: 69687 rows | PK=id | 16 cols | 4 indexes
+  📊 stock_phase: 1238 rows | PK=symbol | 25 cols | 2 indexes
+  📊 stocks: 1240 rows | PK=id | 60 cols | 2 indexes
+  📊 stocks_backup: 345 rows | PK=id | 40 cols | 1 indexes
+  📊 system_settings: 3 rows | PK=key | 7 cols | 1 indexes
+  📊 telegram_images: 0 rows | PK=id | 7 cols | 0 indexes
+  📊 telegram_messages: 0 rows | PK=id | 18 cols | 1 indexes
+  📊 telegram_news: 6 rows | PK=id | 10 cols | 0 indexes
+  📊 telegram_recommendations: 0 rows | PK=id | 17 cols | 0 indexes
+  📊 ticker_performance: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 ticker_registry: 1197 rows | PK=canonical_ticker | 12 cols | 3 indexes
+  📊 tracked_channels: 0 rows | PK=id | 10 cols | 1 indexes
+  📊 trading_lessons: 0 rows | PK=id | 12 cols | 1 indexes
+  📊 trading_rules: 0 rows | PK=id | 12 cols | 2 indexes
+  📊 tuned_predictions_summary: 1 rows | PK=id | 8 cols | 0 indexes
+  📊 user_financial_settings: 0 rows | PK=id | 4 cols | 1 indexes
+  📊 user_notifications: 199 rows | PK=id | 12 cols | 1 indexes
+  📊 user_sessions: 2 rows | PK=id | 12 cols | 2 indexes
+  📊 user_stock_watchlists: 73 rows | PK=id | 12 cols | 2 indexes
+  📊 wealth_tracking: 93 rows | PK=id | 14 cols | 1 indexes
+
+======================================================================
+📁 stocks_recovered.db
+======================================================================
+  📏 Size: 0.01 MB
+  📋 Tables: 0
+
+
+======================================================================
+📁 telegram_data.db
+======================================================================
+  📏 Size: 0.11 MB
+  📋 Tables: 6
+
+  📊 scraping_status: 3 rows | PK=id | 8 cols | 1 indexes
+  📊 telegram_images: 0 rows | PK=id | 7 cols | 0 indexes
+  📊 telegram_messages: 58 rows | PK=id | 18 cols | 1 indexes
+  📊 telegram_news: 11 rows | PK=id | 12 cols | 0 indexes
+  📊 telegram_recommendations: 9 rows | PK=id | 17 cols | 0 indexes
+  📊 tracked_channels: 6 rows | PK=id | 10 cols | 1 indexes
+
+======================================================================
+📄 Full JSON report: /home/meme/my_apps/GLMinvestment/scripts/output/db_schema_20261019_195011.json
+======================================================================
+
+📋 ملخص:
+  ✅ ai_search_cache.db: 1 tables, 0 total rows, 0.02 MB
+  ✅ analytics.db: 7 tables, 0 total rows, 0.08 MB
+  ✅ auth.db: 22 tables, 313 total rows, 0.36 MB
+  ✅ community.db: 5 tables, 0 total rows, 0.03 MB
+  ✅ content.db: 6 tables, 7981 total rows, 12.46 MB
+  ✅ crypto-lab.db: 3 tables, 3 total rows, 0.02 MB
+  ✅ crypto.db: 10 tables, 1295 total rows, 0.82 MB
+  ✅ crypto_learning.db: 6 tables, 30 total rows, 0.07 MB
+  ✅ data-engine.db: 0 tables, 0 total rows, 0.0 MB
+  ✅ data_engine.db: 14 tables, 76459 total rows, 9.3 MB
+  ✅ decision_log.db: 1 tables, 84 total rows, 0.03 MB
+  ✅ egx_data.db: 5 tables, 22 total rows, 0.06 MB
+  ✅ egx_investment.db: 1 tables, 391280 total rows, 52.82 MB
+  ✅ gold_prices.db: 3 tables, 11 total rows, 0.04 MB
+  ✅ historical.db: 2 tables, 175673 total rows, 43.69 MB
+  ✅ intraday.db: 5 tables, 151032 total rows, 30.36 MB
+  ✅ learned.db: 1 tables, 0 total rows, 0.01 MB
+  ✅ macro.db: 2 tables, 180 total rows, 0.17 MB
+  ✅ market.db: 42 tables, 3012204 total rows, 1708.79 MB
+  ✅ news.db: 3 tables, 1406 total rows, 4.5 MB
+  ✅ old_DB.db: 46 tables, 672727 total rows, 211.47 MB
+  ✅ paper_trading.db: 2 tables, 1 total rows, 0.03 MB
+  ✅ predictions.db: 45 tables, 238564 total rows, 268.2 MB
+  ✅ predictions_before_dedup.db: 41 tables, 186919 total rows, 225.57 MB
+  ✅ price_history.db: 2 tables, 1310600 total rows, 327.75 MB
+  ✅ price_history_original.db: 2 tables, 275900 total rows, 51.96 MB
+  ✅ stocks.db: 67 tables, 97943 total rows, 27.17 MB
+  ✅ stocks_recovered.db: 0 tables, 0 total rows, 0.01 MB
+  ✅ telegram_data.db: 6 tables, 87 total rows, 0.11 MB
+meme@meme:~/my_apps/GLMinvestment$

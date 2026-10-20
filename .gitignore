@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 skills/
@@ -335,3 +336,7 @@ data/db_backup*.zip
 data/db_backup*.zip.part
 data/db_snapshot_2026-10-10/db_backup_full.zip
 db/backup-unify-*/
+=======
+skills/
+node_modules/
+>>>>>>> 3f09ee0 (Initial commit)
