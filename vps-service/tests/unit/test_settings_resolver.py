@@ -387,6 +387,8 @@ class TestSchemaIntegrity:
             "confidence", "smc", "general",
             # P1.3/P1.4: categories used by V40 keys + regime-specific settings
             "evidence", "exit", "kill_filter", "absorption", "regime",
+            # P41 categories (morning_bell + exit_engine)
+            "morning_bell", "exit_engine",
         }
         unknown = {
             v["category"] for v in self.schema.values()
