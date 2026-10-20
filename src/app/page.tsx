@@ -29,7 +29,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { Header } from '@/components/layout/Header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, Lock } from 'lucide-react';
+import { Info, Lock, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -643,8 +643,24 @@ function AppShell() {
         return <PredictionTrackingView />;
       case 'dual-track':
         return <DualTrackPredictionsView />;
+      // V82 معطل مؤقتاً (SUB_ENGINE_DISABLED = True في v82_analyzer.py)
+      // بدل ما نعرض panel بيـ display "محرك متوقف"، نعرض رسالة واضحة.
+      // لما نفعّله تاني: return <V82DecisionPanel initialTicker="COMI" />;
       case 'v82':
-        return <V82DecisionPanel initialTicker="COMI" />;
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
+            <div className="text-center p-8 max-w-md">
+              <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-foreground mb-2">محرك القرار المؤسسي</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                المحرك ده قيد التطوير حالياً. استخدم شاشة التوصيات أو رادار السيولة كبديل.
+              </p>
+              <a href="#dashboard" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+                العودة للوحة التحكم
+              </a>
+            </div>
+          </div>
+        );
       case 'reports':
         return <ReportsView />;
       case 'news':

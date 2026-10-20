@@ -90,13 +90,6 @@ export default function FeaturesPage() {
               badge: "متقدم",
               link: "/#smart-confluence",
             },
-            {
-              icon: <Zap className="w-6 h-6" />,
-              title: "محرك القرار المؤسسي V82",
-              description: "V82DecisionPanel — محرك قرار زي اللي بيستخدموه المؤسسات. بياخد كل الإشارات ويطلع قرار نهائي.",
-              badge: "حصري",
-              link: "/#v82",
-            },
           ]}
         />
 
@@ -139,13 +132,6 @@ export default function FeaturesPage() {
           title="📊 تحليلات متقدمة"
           subtitle="تحليل زي المحترفين"
           features={[
-            {
-              icon: <Calendar className="w-6 h-6" />,
-              title: "الموسمية (Seasonality)",
-              description: "SeasonalitySignalsWidget + /api/seasonality — بتحلل كل سهم عبر السنين وتلاقي أنه بيرتفع في شهور معينة.",
-              badge: "متقدم",
-              link: "/#seasonality",
-            },
             {
               icon: <Search className="w-6 h-6" />,
               title: "فلتر الأسهم المتقدم",
