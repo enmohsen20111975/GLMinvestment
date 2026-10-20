@@ -113,7 +113,7 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  return (
  <div
  key={pred.id}
- className={cn('rounded-lg p-3 border transition-colors', isClosed ? 'bg-muted/50 border-border opacity-60' : 'bg-card border-border hover:border-primary/20')}
+ className={cn('rounded-lg p-3 border transition-all card-premium', isClosed ? 'bg-muted/50 border-border opacity-60' : 'bg-card border-border hover:border-primary/40 hover:shadow-md')}
  >
  <div className="flex items-center justify-between mb-2">
  <div className="flex items-center gap-2">
@@ -138,11 +138,11 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  <div className="flex items-center gap-2">
  <span className="text-muted-foreground">الثقة:</span>
  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
- <div className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'}`} style={{ width: `${pred.confidence * 100}%` }} />
+ <div className={`h-full rounded-full transition-all ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'}`} style={{ width: `${pred.confidence * 100}%` }} />
  </div>
- <span className="text-foreground">{(pred.confidence * 100).toFixed(0)}%</span>
+ <span className="text-foreground font-mono font-bold tabular-nums">{(pred.confidence * 100).toFixed(0)}%</span>
  </div>
- <div className={`flex items-center gap-1 ${potentialGain >= 0 ? 'text-success' : 'text-loss'}`}>
+ <div className={`flex items-center gap-1 font-mono font-bold tabular-nums number-ticker ${potentialGain >= 0 ? 'text-success glow-profit' : 'text-loss glow-loss'}`}>
  {potentialGain >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
  {potentialGain >= 0 ? '+' : ''}{potentialGain}%
  </div>

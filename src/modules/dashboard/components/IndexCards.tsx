@@ -125,19 +125,20 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
  {/* Change row */}
  <div className="flex items-center gap-1.5">
  <span className={cn(
- 'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-xs font-semibold tabular-nums',
+ 'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-xs font-bold tabular-nums number-ticker',
  isPositive
- ? 'bg-profit text-profit/50 '
- : 'bg-loss text-loss/50 '
+ ? 'bg-profit/10 text-profit'
+ : 'bg-loss/10 text-loss',
+ isPositive ? 'up' : 'down'
  )}>
  {isPositive ? '+' : ''}
  {safeNum(index.change_percent).toFixed(2)}%
  </span>
  <span className={cn(
- 'text-xs font-medium tabular-nums',
+ 'text-xs font-bold tabular-nums',
  isPositive
- ? 'text-profit '
- : 'text-loss '
+ ? 'text-profit glow-profit'
+ : 'text-loss glow-loss'
  )}>
  {isPositive ? '+' : ''}
  {safeNum(index.change).toFixed(2)}
