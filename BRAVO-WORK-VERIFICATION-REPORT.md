@@ -222,3 +222,89 @@ from engine.persona_engine import PersonaEngine, InvestorPersona
 - [ ] المرحلة 8 — Tests
 
 *آخر تحديث: بعد فحص المرحلة 2*
+
+---
+
+## المرحلة 3 — CALCULATION-CANONICAL (STAGE-3a + 3b)
+
+**الـ commits**: `e16f66b` (3a) + `3f1fb6a` (3b) + `c79417d` (FIX3)
+**الـ goal**: canonical indicators + delegation + no fabrication
+
+### ✅ اللي شغال صح:
+
+1. **13 canonical functions** كلها موجودة:
+   - calc_atr, calc_rsi, calc_srsi, calc_bollinger, calc_bollinger_series
+   - calc_mfi, calc_adx, calc_vwap, calc_vwap_premium, calc_volume_profile
+   - sma, ema, macd
+
+2. **delegation في 5 ملفات**:
+   - engines/backtest_engine.py (11 canonical imports, **0 fabrication** ✅)
+   - analyzers/enhanced_indicators.py (6 imports, 2 fabrication ⚠️)
+   - analyzers/sniper_engine.py (8 imports, 4 fabrication ⚠️)
+   - analyzers/core_scoring_engine.py (8 imports, 5 fabrication ⚠️)
+   - analyzers/prediction_optimizer.py (4 imports, 3 fabrication ⚠️)
+
+3. **regression test PASS** — 0 inline violations (بس بـ exclude backtest_engine)
+
+### 🔴 مشكلة 1: 46 fabrication instance لسه موجودة
+
+```
+engines/backtest_engine.py:       0 fabrication ✅
+analyzers/enhanced_indicators.py: 2 fabrication (Stochastic + Williams %R)
+analyzers/sniper_engine.py:       4 fabrication
+analyzers/core_scoring_engine.py: 5 fabrication
+analyzers/prediction_optimizer.py: 3 fabrication
++ 22 ملف تاني بـ 32 instance
+= 46 total
+```
+
+**أمثلة**:
+```python
+# enhanced_indicators.py:164 (Stochastic)
+return 50.0, 50.0  # ← fabrication
+
+# enhanced_indicators.py:231 (Williams %R)
+return -50.0  # ← fabrication
+
+# sniper_engine.py:962
+return 50.0, 0.0, 0.0  # ← fabrication
+
+# core_scoring_engine.py:60
+return 0.0, 0.0, "neutral"  # ← fabrication
+```
+
+### 🔴 مشكلة 2: regression test بـ exclude files
+
+```python
+ALLOWED_INLINE_FILES = {
+    "analyzers/indicators/rsi.py",  # ← صح (canonical source)
+    ...
+    # backtest_engine.py مش موجود في الـ list (اتشال) ✅
+}
+```
+
+**بس** الـ test بـ check `def calc_*` patterns بس. مش بـ check fabrication patterns (`return 50.0`). فالـ "0 violations" مش بـ catch الـ 46 fabrication.
+
+### 📊 التقدير: 70% سليم
+
+| | الحالة |
+|---|--------|
+| 13 canonical functions | ✅ كلها موجودة |
+| delegation | ✅ 5 ملفات |
+| backtest_engine fabrication | ✅ 0 (اتصلح) |
+| باقي الملفات fabrication | 🔴 46 instance |
+| regression test | ⚠️ بـ check def patterns بس |
+
+---
+
+## المراحل التالية:
+- [x] المرحلة 0 — fixture map
+- [x] المرحلة 1 — Engine Unification
+- [x] المرحلة 2 — core Unification
+- [x] المرحلة 3 — CALCULATION-CANONICAL
+- [ ] المرحلة 5 — API audit
+- [ ] المرحلة 6 — scripts archive
+- [ ] المرحلة 7 — Quant Canonical
+- [ ] المرحلة 8 — Tests
+
+*آخر تحديث: بعد فحص المرحلة 3*
