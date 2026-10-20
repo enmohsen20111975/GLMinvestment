@@ -169,7 +169,11 @@ def get_sector_tracking():
                 else:
                     stock_count = h['stock_count']
                     avg_ch = h['avg_change']
-                    turnover = h['turnover']
+                    # BRAVO-TURNOVER-FIX (2026-10-20, owner directive):
+                    # الـ h['turnover'] من FlowSystemEngine تراكمي تاريخي (163 مليار).
+                    # خلطه مع total_turnover اللحظي (7.45 مليار) بـ يـطلع 2194% — فضيحة.
+                    # الحل: recompute من sector_stocks (نفس مصدر total_turnover = لحظي يومي).
+                    turnover = sum(_safe_float(s['volume']) * _safe_float(s['current_price']) for s in sector_stocks) if sector_stocks else 0
                     gainers = h['gainers']
                     losers = h['losers']
                     breadth = h['breadth']

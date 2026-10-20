@@ -271,6 +271,67 @@ def _load_stock_names() -> dict:
     return _STOCK_NAMES_CACHE
 
 
+def _get_testing_candidates() -> list:
+    """BRAVO-TESTING-CANDIDATES (2026-10-20): أسهم تحت الاختبار (lifecycle_status='testing').
+
+    بـ يرجع الأسهم اللي:
+      - lifecycle_status = 'testing' (جديدة، تحت المراقبة)
+      - outcome_date IS NULL (لسه مقفولتش)
+      - R/R ≥ 1.8 (Rule 18 — محسوب من entry/target/stop)
+
+    عشان الواجهة تعرضها في تبويب "تحت الاختبار".
+    """
+    try:
+        import sqlite3 as _sqlite3
+        _db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'db', 'predictions.db')
+        if not os.path.exists(_db_path):
+            return []
+        _con = _sqlite3.connect(_db_path, timeout=5.0)
+        _con.row_factory = _sqlite3.Row
+        # check columns exist
+        _cols = {r[1] for r in _con.execute("PRAGMA table_info(predictions)").fetchall()}
+        if 'lifecycle_status' not in _cols:
+            _con.close()
+            return []
+        _where = ["lifecycle_status = 'testing'", "outcome_date IS NULL"]
+        if all(c in _cols for c in ('entry_price','target_price','stop_loss')):
+            _where.append(
+                "(entry_price > 0 AND target_price > 0 AND stop_loss > 0 "
+                "AND (target_price - entry_price) > 0 "
+                "AND (entry_price - stop_loss) > 0 "
+                "AND (target_price - entry_price) / (entry_price - stop_loss) >= 1.8)"
+            )
+        _where_sql = " AND ".join(_where)
+        _rows = _con.execute(
+            f"SELECT ticker, signal, entry_price, target_price, stop_loss, "
+            f"prediction_date, master_score, confidence, persona, created_at "
+            f"FROM predictions WHERE {_where_sql} "
+            f"ORDER BY created_at DESC LIMIT 50",
+            ()
+        ).fetchall()
+        _con.close()
+        _result = []
+        for r in _rows:
+            _rr = ((r['target_price']-r['entry_price'])/(r['entry_price']-r['stop_loss'])) if (r['entry_price']-r['stop_loss'])>0 else 0
+            _result.append({
+                'ticker': r['ticker'],
+                'signal': r['signal'],
+                'entry_price': round(r['entry_price'], 2) if r['entry_price'] else None,
+                'target_price': round(r['target_price'], 2) if r['target_price'] else None,
+                'stop_loss': round(r['stop_loss'], 2) if r['stop_loss'] else None,
+                'risk_reward': round(_rr, 2),
+                'prediction_date': r['prediction_date'],
+                'master_score': r['master_score'],
+                'confidence': r['confidence'],
+                'persona': r['persona'],
+                'created_at': r['created_at'],
+            })
+        return _result
+    except Exception as _tc_err:
+        print(f"[testing_candidates] error: {_tc_err}")
+        return []
+
+
 def _get_stock_name(ticker: str) -> dict:
     """بيرجع {'name': str, 'name_ar': str, 'sector': str, 'logo_url': str} للسهم.
     لو السهم مش موجود → {'name': ticker, 'name_ar': ticker, 'sector': '', 'logo_url': ''}
@@ -1829,6 +1890,10 @@ def rebuild_predictions():
             'top_monthly_trades': top_monthly_trades,
             'activePredictions': active_predictions,
             'closedPredictions': closed_predictions,
+            # BRAVO-TESTING-CANDIDATES (2026-10-20, owner directive):
+            # أسهم تحت الاختبار (lifecycle_status='testing') — R/R ≥ 1.8 + نشطة
+            # عشان الواجهة تعرضها في تبويب "تحت الاختبار"
+            'testing_candidates': _get_testing_candidates(),
             'stats': {
                 'today': today,
                 'weekly': weekly,
