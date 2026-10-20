@@ -677,7 +677,7 @@ def get_ticker_sector(ticker):
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
                   max_tickers=None, tickers_offset=0, force=False,
-                  market_code='EGX', tickers_filter=None):
+                  market_code='EGX'):
     """Main generation loop.
 
     Args:
@@ -685,8 +685,6 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                      مفيد لتشغيل الباكتست على دفعات في ساندبوكس بـ timeout محدود.
         tickers_offset: skip أول N tickers (للـ resume بعد run سابق).
         force: تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل.
-        tickers_filter: قائمة tickers محددة (للـ incremental trigger من الـ scraper).
-                       لو موجود، بيعالج بس دول (بعد blocklist filter).
     """
     print("=" * 80, flush=True)
     print("  V40.2 Prediction Generator (CLI-enabled)", flush=True)
@@ -804,15 +802,6 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     if max_tickers is not None and max_tickers > 0:
         tickers = tickers[:max_tickers]
         print(f"  ⚡ Limited to {max_tickers} tickers (batch mode)", flush=True)
-    # BRAVO-SCRAPER-WIRING: filter to specific tickers (incremental trigger)
-    if tickers_filter:
-        filter_set = set(t.strip().upper() for t in tickers_filter if t.strip())
-        before = len(tickers)
-        tickers = [t for t in tickers if t.upper() in filter_set]
-        print(f"  🎯 SCRAPER-WIRING: filtered to {len(tickers)}/{before} tickers (incremental trigger)", flush=True)
-        if not tickers:
-            print("  ⚠️  No matching tickers after filter — nothing to process", flush=True)
-            return {"status": "no_tickers", "tickers_processed": 0}
     print(f"📊 Scan dates: {len(scan_dates)} | Tickers: {len(tickers)}", flush=True)
     print(f"📅 Scan dates: {scan_dates}", flush=True)
 
@@ -4162,8 +4151,6 @@ def main():
                         help='⚡ BATCH MODE: limit عدد الـ tickers المتعالجًا (للـ resume في ساندبوكس بـ timeout)')
     parser.add_argument('--tickers-offset', type=int, default=0,
                         help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
-    parser.add_argument('--tickers', default=None,
-                        help='⚡ BRAVO-SCRAPER-WIRING: قائمة tickers مفصولة بفاصلة (للـ incremental trigger من الـ scraper — بيعالج بس دول)')
     parser.add_argument('--force', action='store_true',
                         help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
     parser.add_argument('--incremental', action='store_true',
@@ -4275,7 +4262,6 @@ def main():
             tickers_offset=args.tickers_offset,
             force=args.force,
             market_code=args.market,
-            tickers_filter=args.tickers.split(',') if args.tickers else None,
         )
 
 

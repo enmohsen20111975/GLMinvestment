@@ -247,8 +247,8 @@ def sync_persona_predictions(refresh_active: bool = True):
                 INSERT INTO predictions (
                     ticker, persona, signal, signal_type, prediction_date, created_at,
                     entry_price, target_price, target_price_2, stop_loss, master_score, confidence, market,
-                    notes, is_trend_following, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'testing')
+                    notes, is_trend_following
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
             ''', (
                 ticker, persona, signal, signal, now_str[:10], now_str,
                 entry, target, target2, stop, float(sc['score'] or 60), float(srow['confidence'] or 65), market,
@@ -302,8 +302,8 @@ def sync_persona_predictions(refresh_active: bool = True):
                             ticker, persona, signal, signal_type, prediction_date, created_at,
                             entry_price, target_price, target_price_2, stop_loss, master_score, confidence, market,
                             outcome_date, actual_return, actual_exit_price, exit_type, is_correct, holding_days,
-                            notes, is_trend_following, status
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'closed')
+                            notes, is_trend_following
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                     ''', (
                         ticker, p_name, sample['signal'] or 'BUY', sample['signal'] or 'BUY',
                         pred_date, f"{pred_date} 10:00:00",

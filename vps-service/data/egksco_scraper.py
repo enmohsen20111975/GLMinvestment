@@ -406,19 +406,7 @@ class EGKSCOScraper:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.db = EGKSCODatabase(db_path)
         self.db.init_tables()
-        # BRAVO-SCRAPER-WIRING: track tickers whose price changed during sync
-        self._changed_tickers = set()
         
-    def get_changed_tickers(self) -> List[str]:
-        """BRAVO-SCRAPER-WIRING: رجّع قائمة tickers اللي اتغير سعرها في آخر sync_to_db.
-        تُستخدم لـ trigger daily_predictor --incremental --tickers <changed>.
-        """
-        return sorted(self._changed_tickers)
-
-    def reset_changed_tickers(self):
-        """تصفير قائمة الـ changed tickers (بعد ما الـ predictor يستهلكها)."""
-        self._changed_tickers.clear()
-
     def fetch_page(self, url: str, output_file: str) -> bool:
         """تحميل صفحة باستخدام curl"""
         output_path = self.data_dir / output_file
@@ -665,32 +653,7 @@ class EGKSCOScraper:
                     'stocks_count': 0
                 }
         
-        # BRAVO-SCRAPER-WIRING: snapshot old prices before upsert (for change detection)
-        try:
-            _pre_conn = sqlite3.connect(self.db.db_path)
-            _pre_cur = _pre_conn.cursor()
-            _old_prices = {}
-            for row in _pre_cur.execute("SELECT symbol, last_price FROM egksco_stocks WHERE last_price IS NOT NULL").fetchall():
-                _old_prices[row[0]] = row[1]
-            _pre_conn.close()
-        except Exception:
-            _old_prices = {}
-        
         success_count, error_count = self.db.bulk_upsert_stocks(stocks)
-        
-        # BRAVO-SCRAPER-WIRING: detect which tickers had price changes
-        try:
-            _post_conn = sqlite3.connect(self.db.db_path)
-            _post_cur = _post_conn.cursor()
-            for row in _post_cur.execute("SELECT symbol, last_price FROM egksco_stocks WHERE last_price IS NOT NULL").fetchall():
-                symbol, new_price = row[0], row[1]
-                old_price = _old_prices.get(symbol)
-                # changed if: new ticker (old_price None) OR price actually different
-                if old_price is None or (new_price is not None and abs(new_price - old_price) > 1e-6):
-                    self._changed_tickers.add(symbol)
-            _post_conn.close()
-        except Exception:
-            pass
         
         # Also update the main stocks table for Next.js frontend
         main_stocks_updated = 0
