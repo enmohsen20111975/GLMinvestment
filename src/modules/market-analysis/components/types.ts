@@ -191,6 +191,25 @@ export interface PreviousPrediction {
 }
 
 // ============================================================================
+// TestingCandidate — أسهم تحت الاختبار (lifecycle_status='testing')
+// بتيجي من /api/unified/predictions تحت مفتاح testing_candidates.
+// Pattern: mirror لـ EidPredictionsWidget — قسم منفصل للأسهم اللحظية.
+// ============================================================================
+export interface TestingCandidate {
+ ticker?: string;
+ signal?: string;
+ entry_price?: number | null;
+ target_price?: number | null;
+ stop_loss?: number | null;
+ risk_reward?: number;
+ prediction_date?: string;
+ master_score?: number;
+ confidence?: number;
+ persona?: string | null;
+ created_at?: string;
+}
+
+// ============================================================================
 // Persona / Stored Analysis
 // ============================================================================
 export interface PersonaData {
