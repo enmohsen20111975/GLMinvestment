@@ -31,14 +31,14 @@ import { SectorTrackingTab } from '@/modules/market-analysis/components/SectorTr
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Shield, RefreshCw, AlertTriangle, Activity,
-  TrendingUp, TrendingDown, Layers, ChevronLeft, ChevronRight, Lock,
+  TrendingUp, TrendingDown, Layers, Lock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSession } from 'next-auth/react';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
-import { FlowPhaseTag, UnifiedEmptyState, LiquidityFlashCell } from '@/components/shared/ui';
+import { FlowPhaseTag, UnifiedEmptyState, LiquidityFlashCell, UnifiedPagination } from '@/components/shared/ui';
 import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 
@@ -590,17 +590,14 @@ export function LiquidityRadarView({
                     عرض {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredStocks.length)} من {filteredStocks.length} سهم
                     {bucketFilter !== 'all' && ` (مُصفّى: ${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label})`}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} className="h-7 gap-1 text-xs">
-                      <ChevronRight className="w-3.5 h-3.5" /> السابق
-                    </Button>
-                    <span className="text-xs font-mono tabular-nums text-muted-foreground px-2">
-                      {safePage + 1} / {totalPages}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)} className="h-7 gap-1 text-xs">
-                      التالي <ChevronLeft className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                  {/* P0-COMPONENT-UNIFICATION Phase 2.4: UnifiedPagination */}
+                  <UnifiedPagination
+                    page={safePage}
+                    totalPages={totalPages}
+                    onChange={setPage}
+                    size="sm"
+                    variant="compact"
+                  />
                 </div>
               )}
 
