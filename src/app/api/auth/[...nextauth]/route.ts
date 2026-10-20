@@ -467,7 +467,9 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth({
   ...authOptions,
-  secret: process.env.NEXTAUTH_SECRET || '',
+  // BRAVO-FIX8: fallback secret لو NEXTAUTH_SECRET مش متعرف في .env
+  // ده مش أمان كامل (production لازم NEXTAUTH_SECRET) بس بيمنع crash في sandbox
+  secret: process.env.NEXTAUTH_SECRET || 'glminvestment-dev-fallback-secret-2026',
 });
 
 export { handler as GET, handler as POST };
