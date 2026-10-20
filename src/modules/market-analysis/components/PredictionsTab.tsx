@@ -368,7 +368,17 @@ export function PreviousPredictionsArchive({
  predictions: PreviousPrediction[];
  title?: string;
 }) {
- if (!predictions || predictions.length === 0) return null;
+ const dedupedPredictions = React.useMemo(() => {
+   const seen = new Set<string>();
+   return (predictions || []).filter((p) => {
+     const key = `${p.ticker || (p as any).stock_symbol || ''}_${p.prediction_date || ''}_${p.status || ''}`;
+     if (seen.has(key)) return false;
+     seen.add(key);
+     return true;
+   });
+ }, [predictions]);
+
+ if (!dedupedPredictions || dedupedPredictions.length === 0) return null;
 
  return (
  <Card className="border-border">
@@ -396,7 +406,7 @@ export function PreviousPredictionsArchive({
  </tr>
  </thead>
  <tbody>
- {predictions.map((p, i) => {
+ {dedupedPredictions.map((p, i) => {
  const statusColor =
  p.status === 'TARGET_HIT'
  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold'
