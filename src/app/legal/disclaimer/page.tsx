@@ -146,23 +146,23 @@ export default function DisclaimerPage() {
               <div className="bg-green-50 border-r-4 border-green-400 p-4">
                 <ul className="text-gray-700 space-y-2">
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-success font-bold">✓</span>
                     <span>استثمر فقط أموالاً يمكنك تحمل خسارتها</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-success font-bold">✓</span>
                     <span>تنويع محفظتك الاستثمارية لتقليل المخاطر</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-success font-bold">✓</span>
                     <span>تعلم أساسيات الاستثمار قبل البدء</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-success font-bold">✓</span>
                     <span>تابع أخبار السوق والتطورات الاقتصادية</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-success font-bold">✓</span>
                     <span>استشر متخصصاً مالياً قبل قرارات كبيرة</span>
                   </li>
                 </ul>

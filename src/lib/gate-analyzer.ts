@@ -647,7 +647,7 @@ function determineSignal(ctx: SignalContext): {
     return {
       signal: "SELL",
       signalAr: "بيع",
-      signalColor: "bg-red-500",
+      signalColor: "bg-danger",
       narrative: `كسر الدعم الرئيسي (أقل من ${ctx.nearestSupport.toFixed(2)} × 0.98) وأسفل المتوسط 20. إشارة بيع واضحة.`,
     };
   }
@@ -667,7 +667,7 @@ function determineSignal(ctx: SignalContext): {
     return {
       signal: "SELL",
       signalAr: "بيع",
-      signalColor: "bg-red-500",
+      signalColor: "bg-danger",
       narrative: `RSI عند ${input.rsi.toFixed(1)} (مرتفع) + حجم مرتفع جداً (${ctx.volumeRatio.toFixed(1)}× المتوسط). إشارة بيع.`,
     };
   }
@@ -677,7 +677,7 @@ function determineSignal(ctx: SignalContext): {
     return {
       signal: "BUY_STRONG",
       signalAr: "شراء قوي",
-      signalColor: "bg-emerald-600",
+      signalColor: "bg-profit",
       narrative: `جميع البوابات الخمس مكتملة + نسبة عائد/مخاطرة ${ctx.rrRatio.toFixed(2)} ≥ 2.0. فرصة شراء قوية! الهدف ${ctx.targetPrice.toFixed(2)} (+${ctx.targetPct.toFixed(1)}%)، وقف الخسارة ${ctx.stopLoss.toFixed(2)} (-${ctx.stopPct.toFixed(1)}%).`,
     };
   }
@@ -705,7 +705,7 @@ function determineSignal(ctx: SignalContext): {
       return {
         signal: "BUY_CONTRARIAN",
         signalAr: "شراء عكسي",
-        signalColor: "bg-amber-500",
+        signalColor: "bg-warning",
         narrative: `RSI عند ${input.rsi.toFixed(1)} (تشبع بيعي شديد) + قرب الدعم + حجم مرتفع + MACD يتحسن. فرصة شراء عكسية للمضاربين.`,
       };
     }
@@ -721,7 +721,7 @@ function determineSignal(ctx: SignalContext): {
     return {
       signal: "ACCUMULATE",
       signalAr: "تجميع",
-      signalColor: "bg-blue-500",
+      signalColor: "bg-primary",
       narrative: `${ctx.gatesPassed}/5 بوابات مكتملة (أقل من المطلوب ${ctx.minGates}) لكن قرب الدعم ونسبة ${ctx.rrRatio.toFixed(2)} مقبولة. يمكن التجميع التدريجي.`,
     };
   }
@@ -963,7 +963,7 @@ export function analyzeGates(
           if (trendBull && volumeRatio > 1.2) {
             signalResult.signal = 'BUY';
             signalResult.signalAr = 'شراء (انضغاط بولنجر + حجم)';
-            signalResult.signalColor = 'bg-emerald-500/20 text-emerald-400';
+            signalResult.signalColor = 'bg-profit/20 text-emerald-400';
             signalResult.narrative += `\n\n⚡ BB Squeeze active (score: ${squeezeResult.squeezeScore}) — explosive move expected. Volume confirming direction.`;
           }
         }

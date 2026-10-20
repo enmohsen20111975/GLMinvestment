@@ -71,18 +71,18 @@ export function classifyRSIState(
     return { label: '— بيانات غير متاحة', color: 'text-muted-foreground', emoji: '⚪' };
   }
   if (rsi >= 70) {
-    return { label: 'تشبع شرائي', color: 'text-rose-600', emoji: '🔴' };
+    return { label: 'تشبع شرائي', color: 'text-loss', emoji: '🔴' };
   }
   if (rsi >= 55) {
-    return { label: 'إيجابي', color: 'text-emerald-600', emoji: '🟢' };
+    return { label: 'إيجابي', color: 'text-profit', emoji: '🟢' };
   }
   if (rsi >= 45) {
-    return { label: 'محايد', color: 'text-amber-600', emoji: '🟡' };
+    return { label: 'محايد', color: 'text-warning', emoji: '🟡' };
   }
   if (rsi >= 30) {
     return { label: 'سلبي', color: 'text-orange-600', emoji: '🟠' };
   }
-  return { label: 'تشبع بيعي', color: 'text-emerald-600', emoji: '🟢' };
+  return { label: 'تشبع بيعي', color: 'text-profit', emoji: '🟢' };
 }
 
 /**

@@ -123,7 +123,7 @@ export default function PaymentSuccess() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto" />
+          <Loader2 className="h-12 w-12 animate-spin text-profit mx-auto" />
           <p className="mt-4 text-gray-600">جاري معالجة الدفع وتفعيل اشتراكك...</p>
           <p className="mt-2 text-sm text-gray-500">
             سيتم تفعيل اشتراكك تلقائياً عبر Paymob. لا تغلق الصفحة.
@@ -154,7 +154,7 @@ export default function PaymentSuccess() {
           <div className="space-y-3">
             <a
               href="/dashboard"
-              className="block w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition"
+              className="block w-full bg-profit text-white py-3 rounded-lg hover:bg-emerald-700 transition"
             >
               اذهب إلى لوحة التحكم
             </a>
@@ -168,7 +168,7 @@ export default function PaymentSuccess() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-amber-500 mx-auto mb-4" />
+        <Loader2 className="h-12 w-12 animate-spin text-warning mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
           جاري معالجة الدفع
         </h1>
@@ -179,7 +179,7 @@ export default function PaymentSuccess() {
         <div className="space-y-3">
           <button
             onClick={() => router.refresh()}
-            className="block w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition"
+            className="block w-full bg-profit text-white py-3 rounded-lg hover:bg-emerald-700 transition"
           >
             تحديث الصفحة
           </button>

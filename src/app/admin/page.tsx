@@ -29,7 +29,7 @@ export default function AdminRedirectPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
       <div className="text-center space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-600 mx-auto" />
+        <Loader2 className="w-10 h-10 animate-spin text-profit mx-auto" />
         <p className="text-muted-foreground">جارٍ التحويل إلى لوحة الإدارة...</p>
       </div>
     </div>

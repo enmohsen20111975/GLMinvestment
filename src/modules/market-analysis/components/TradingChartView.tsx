@@ -791,7 +791,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  variant={extraIndicators ? 'default' : 'outline'}
  size="sm"
  onClick={toggleExtraIndicators}
- className={cn('h-7 text-xs px-2.5 rounded-lg', extraIndicators && 'bg-emerald-600 text-white')}
+ className={cn('h-7 text-xs px-2.5 rounded-lg', extraIndicators && 'bg-profit text-white')}
  >
  <Gauge className="w-3 h-3 ml-1" />
  مؤشرات
