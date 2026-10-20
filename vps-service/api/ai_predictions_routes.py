@@ -1369,14 +1369,14 @@ def cleanup_invalidated_predictions():
         if r4 > 0:
             print(f"[AI Cleanup] Marked {r4} old non-final aiPredictions as EXPIRED (preserved)")
 
-        # UPDATE old non-final predictions → closed (was: DELETE) — preserve history
+        # UPDATE old non-final predictions → EXPIRED (was: DELETE) — preserve history
         r5 = execute_db(PREDICTIONS_DB, """
             UPDATE predictions
-            SET status = 'closed', updated_at = datetime('now')
-            WHERE prediction_date < ? AND status IN ('proven', 'testing')
+            SET status = 'EXPIRED', updated_at = datetime('now')
+            WHERE prediction_date < ? AND status NOT IN ('TARGET_HIT', 'STOPPED', 'EXPIRED')
         """, (today,))
         if r5 > 0:
-            print(f"[AI Cleanup] Marked {r5} old predictions as closed (preserved)")
+            print(f"[AI Cleanup] Marked {r5} old predictions as EXPIRED (preserved)")
 
     except Exception as e:
         print(f"[AI Cleanup] Error cleaning up predictions: {e}")

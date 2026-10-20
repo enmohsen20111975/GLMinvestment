@@ -408,7 +408,7 @@ class TelegramNotifier:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """SELECT * FROM predictions
-                   WHERE status IN ('proven', 'testing')
+                   WHERE status IN ('PENDING', 'ACTIVE')
                    OR (outcome_date IS NULL AND actual_return IS NULL)
                    ORDER BY prediction_date DESC LIMIT 50"""
             ).fetchall()

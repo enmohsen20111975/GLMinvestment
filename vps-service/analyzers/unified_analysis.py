@@ -115,7 +115,7 @@ def _get_active_prediction(ticker: str) -> Optional[Dict]:
                    master_score, evidence_count, prediction_date, status,
                    kill_filter_result{extra_cols}
             FROM predictions
-            WHERE ticker = ? AND status IN ('proven', 'testing')
+            WHERE ticker = ? AND status IN ('active', 'pending', 'PENDING', 'ACTIVE')
             ORDER BY prediction_date DESC LIMIT 1
         ''', (ticker,)).fetchone()
         conn.close()

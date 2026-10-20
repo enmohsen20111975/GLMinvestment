@@ -245,7 +245,7 @@ class MarketDailyReport:
                 FROM predictions
                 WHERE market = ?
                   AND signal IN ('BUY', 'STRONG_BUY', 'STRONG BUY')
-                  AND status IN ('proven', 'testing')
+                  AND status = 'active'
                   AND outcome_date IS NULL
                   AND entry_price > 0
                   AND target_price > 0
@@ -773,8 +773,8 @@ class MarketDailyReport:
             try:
                 cursor.execute('''
                     SELECT COUNT(*) as total,
-                           SUM(CASE WHEN hit_target = 1 THEN 1 ELSE 0 END) as successful,
-                           SUM(CASE WHEN hit_stop = 1 THEN 1 ELSE 0 END) as failed
+                           SUM(CASE WHEN status = 'TARGET_HIT' OR status = 'success' THEN 1 ELSE 0 END) as successful,
+                           SUM(CASE WHEN status = 'STOPPED' OR status = 'failed' THEN 1 ELSE 0 END) as failed
                     FROM predictions
                     WHERE date(created_at) BETWEEN ? AND ?
                 ''', (start_str, end_str))

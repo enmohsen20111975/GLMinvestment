@@ -405,7 +405,7 @@ def close_master_predictions(expire_days: int, dry_run: bool,
                 cur.execute(
                     "UPDATE predictions SET outcome_date=?, exit_price=?, "
                     "actual_return=?, hit_target=?, hit_stop=?, is_correct=?, "
-                    "holding_days=?, status='closed' WHERE id=?",
+                    "holding_days=? WHERE id=?",
                     (now, result['exit_price'], result['pnl_pct'],
                      result['hit_target'], result['hit_stop'], is_correct,
                      result['holding_days'], pred['id'])

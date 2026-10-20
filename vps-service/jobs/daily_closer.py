@@ -3051,7 +3051,7 @@ class DailyCloser:
                 exit_type,
                 round(highest_price_reached, 2),
                 round(lowest_price_reached, 2) if lowest_price_reached and lowest_price_reached > 0 else None,
-                'closed',  # BRAVO-STATUS-FIX: lifecycle 'closed' (outcome detail في exit_type/hit_target/hit_stop)
+                status,
                 pred_id
             ))
             conn.commit()

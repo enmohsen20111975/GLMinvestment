@@ -1550,7 +1550,7 @@ def rebuild_predictions():
                            stop_loss, confidence, maestro_score, created_at,
                            prediction_date, kill_filter_result
                     FROM predictions
-                    WHERE status IN ('proven', 'testing')
+                    WHERE status = 'PENDING'
                     ORDER BY id DESC
                     LIMIT 30
                 """).fetchall()

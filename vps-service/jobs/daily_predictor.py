@@ -2832,7 +2832,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     # Get last 3 closed predictions for this ticker
                     _recent = _safe_conn.execute(
                         """SELECT status FROM predictions
-                           WHERE ticker = ? AND status = 'closed'
+                           WHERE ticker = ? AND status IN ('STOPPED','TARGET_HIT','EXPIRED')
                            ORDER BY id DESC LIMIT 3""",
                         (ticker,)
                     ).fetchall()
@@ -3003,7 +3003,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     # Get last 5 closed predictions for this ticker
                     _recent_5 = _cd_conn.execute(
                         """SELECT status, prediction_date FROM predictions
-                           WHERE ticker = ? AND status = 'closed'
+                           WHERE ticker = ? AND status IN ('STOPPED','TARGET_HIT','EXPIRED')
                            ORDER BY id DESC LIMIT 5""",
                         (ticker,)
                     ).fetchall()

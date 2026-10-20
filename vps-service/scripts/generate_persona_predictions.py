@@ -128,7 +128,7 @@ def sync_persona_predictions(refresh_active: bool = True):
                            hit_stop = 0,
                            is_correct = 0,
                            holding_days = CASE WHEN holding_days > 0 THEN holding_days ELSE 1 END,
-                           status = 'closed'
+                           status = 'EXPIRED'
                        WHERE ticker = ?
                          AND outcome_date IS NULL
                          AND date(prediction_date) < date(?)""",

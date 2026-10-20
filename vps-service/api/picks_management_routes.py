@@ -359,7 +359,7 @@ def get_active_management():
         # فلترة حسب السوق + استبعاد التوقعات بدون بيانات
         query = f"""
             SELECT {col_str} FROM predictions
-            WHERE (status IN ('proven', 'testing')
+            WHERE (status IN ('active', 'PENDING', 'WAITING')
                OR (status IS NULL AND outcome_date IS NULL))
               AND entry_price > 0
         """

@@ -992,7 +992,7 @@ def get_performance():
                    status, days_to_close, pnl_pct,
                    created_at, closed_at
             FROM predictions
-            WHERE status = 'closed'
+            WHERE status IN ('TARGET_HIT', 'STOPPED', 'EXPIRED')
         """)
         closed_rows = cursor.fetchall()
 
@@ -1078,7 +1078,7 @@ def get_performance():
                    status, days_to_close, pnl_pct,
                    created_at, closed_at
             FROM predictions
-            WHERE status = 'closed'
+            WHERE status IN ('TARGET_HIT', 'STOPPED', 'EXPIRED')
             ORDER BY closed_at DESC
             LIMIT 20
         """)
@@ -1219,7 +1219,7 @@ def _compute_sector_stats(cursor) -> list:
         cursor.execute("""
             SELECT ticker, status, pnl_pct, actual_return
             FROM predictions
-            WHERE status = 'closed'
+            WHERE status IN ('TARGET_HIT', 'STOPPED', 'EXPIRED')
         """)
         rows = cursor.fetchall()
 

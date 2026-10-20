@@ -913,7 +913,7 @@ def record_target_hit_in_db(item: Dict) -> bool:
         cursor.execute("""
             SELECT id, entry_price, prediction_date, notes
             FROM predictions
-            WHERE ticker = ? AND status IN ('proven', 'testing') AND outcome_date IS NULL
+            WHERE ticker = ? AND status IN ('active', 'ACTIVE', 'PENDING') AND outcome_date IS NULL
             ORDER BY id DESC LIMIT 1
         """, (tk,))
         row = cursor.fetchone()
@@ -926,7 +926,7 @@ def record_target_hit_in_db(item: Dict) -> bool:
 
             cursor.execute("""
                 UPDATE predictions
-                SET status = 'closed',
+                SET status = 'TARGET_HIT',
                     hit_target = 1,
                     outcome_date = ?,
                     actual_exit_price = ?,
