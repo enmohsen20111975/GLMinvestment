@@ -484,18 +484,26 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     limit_up = check_limit_up_trap(closes)
     kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
 
-    # BRAVO-FLOW-GATE (2026-10-20, owner directive):
-    # لو السهم متصنف "تجميع هادئ" بس السيولة سالبة (net_flow_egp < 0)
-    # → ده تصريف مش تجميع. ألغي الـ winner_path.
-    # السبب: COMI خرج منه -165M ومتصنف "تجميع" — فضيحة.
+    # BRAVO-FLOW-GATE-ALL (2026-10-20, owner directive — P0-RADAR-FLOW-GATE-ALL):
+    # تعميم الـ flow gate على كل المسارات الصاعدة (مش quiet بس).
+    # ممنوع منعاً باتاً أي سهم سيولته الـ 5 أيام سالبة (net_flow_egp < 0)
+    # ياخد مسار صعود أو pre_surge أو explosive أو early_break.
+    # السبب: POUL (-66.2M) و UEGC (-21.8M) و INFI (-10.2M) عدّوا كـ pre_surge
+    # رغم إن سيولتهم خارجة — فضيحة.
     _net_flow = money_flow.get('net_flow_egp', 0) or 0
-    if winner_path in ('B_quiet_accumulation_strong', 'C_quiet_accumulation_weak') and _net_flow < 0:
+    _BULLISH_PATHS = ('A_pre_surge', 'B_quiet_accumulation_strong', 'C_quiet_accumulation_weak', 'D_explosive_surge', 'E_early_break')
+    _distribution_flag = False  # عشان نـ markه في الـ output
+    if winner_path in _BULLISH_PATHS and _net_flow < 0:
         _flow_m = _net_flow / 1_000_000
+        _distribution_flag = True
         winner_path = None
         winner_position_size = 0.0
-        winner_reason = f'تصريف صريح — السيولة خارجة ({_flow_m:+.1f}M EGP) → مش تجميع'
-        # mark under_microscope = False
-        quiet = False  # عشان ما يـ showش في الـ quiet_list
+        winner_reason = f'تصريف صريح — السيولة خارجة ({_flow_m:+.1f}M EGP)'
+        # mark under_microscope = False + clear all bullish flags
+        quiet = False
+        pre_surge = False
+        explosive = False
+        early_break = False
 
     # لو Kill Switch triggered → نقلل الحجم للنص أو نلغي
     if kill_triggered:
@@ -642,6 +650,8 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'path': winner_path,
         'position_size': winner_position_size,
         'reason': final_reason,
+        # BRAVO-FLOW-GATE-ALL: flag للأسهم اللي في تصريف صريح
+        'distribution_flag': _distribution_flag,
         'pre_surge_details': pre_surge_details if pre_surge else None,
         'quiet_details': quiet_details if quiet else None,
         'explosive_details': explosive_details if explosive else None,
@@ -1179,6 +1189,15 @@ def main():
     explosive_list = [r for r in under_microscope_raw if r['path'] in ('D_explosive_surge', 'B_explosive_surge')]
     early_break_list = [r for r in under_microscope_raw if r['path'] in ('E_early_break', 'C_early_break')]
 
+    # BRAVO-FLOW-GATE-ALL: distribution_list = أسهم في تصريف صريح (سيولة سالبة قوية)
+    # بـ تـ collect من كل results (مش بس under_microscope) عشان نـ عرضها للواجهة.
+    distribution_list = [
+        r for r in results
+        if r.get('distribution_flag') and (r.get('net_flow_egp') or 0) < 0
+    ]
+    # ترتيب: أكتر سيولة خارجة أول (أكثر سلبية)
+    distribution_list.sort(key=lambda r: (r.get('net_flow_egp') or 0))
+
     # 3. ترتيب حسب: signals → volume_ratio → price_stability (للـ quiet)
     def quiet_sort_key(r):
         qd = r.get('quiet_details', {}) or {}
@@ -1274,10 +1293,12 @@ def main():
             'pre_surge_count': len(pre_surge_list),
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
+            'distribution_count': len(distribution_list),
             'quiet_list': quiet_list,
             'pre_surge_list': pre_surge_list,
             'explosive_list': explosive_list,
             'early_break_list': early_break_list,
+            'distribution_list': distribution_list,
             'under_microscope': under_microscope,
             'all_results': results,
         }, f, ensure_ascii=False, indent=2, default=str)
