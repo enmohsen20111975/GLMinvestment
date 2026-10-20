@@ -1016,19 +1016,19 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
 export function getVerdictColor(verdict: string | undefined): { bg: string; text: string; border: string } {
  const v = (verdict || '').toLowerCase();
  if (v.includes('فرصة') || v.includes('ادخل') || v.includes('قوي') || v.includes('شراء')) {
- return { bg: 'bg-profit/40', text: 'text-profit ', border: 'border-profit ' };
+ return { bg: 'bg-profit/10', text: 'text-profit', border: 'border-profit/20' };
  }
  // DYNAMIC-SYSTEM-001: تجميع (ACCUMULATE) — لون teal مميز
  if (v.includes('تجميع')) {
- return { bg: 'bg-whale /40', text: 'text-whale ', border: 'border-whale ' };
+ return { bg: 'bg-whale/10', text: 'text-whale', border: 'border-whale/20' };
  }
  if (v.includes('انتظر')) {
- return { bg: 'bg-warning /40', text: 'text-warning ', border: 'border-warning ' };
+ return { bg: 'bg-warning/10', text: 'text-warning', border: 'border-warning/20' };
  }
  if (v.includes('ابعد') || v.includes('بيع') || v.includes('تجنب') || v.includes('اخرج')) {
- return { bg: 'bg-loss/40', text: 'text-loss ', border: 'border-loss ' };
+ return { bg: 'bg-loss/10', text: 'text-loss', border: 'border-loss/20' };
  }
- return { bg: 'bg-muted', text: 'text-muted-foreground', border: 'border-border' };
+ return { bg: 'bg-muted/20', text: 'text-muted-foreground', border: 'border-border/30' };
 }
 
 /** Score bar color */
