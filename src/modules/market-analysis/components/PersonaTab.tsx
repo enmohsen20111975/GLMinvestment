@@ -2264,7 +2264,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
  - لما السوق دفاعي: يظهر في أول الصفحة (فوق التوقعات).
  - لما السوق طبيعي: يظهر بعد التوقعات النشطة (كـ "coming up" preview).
  ============================================================================ */}
- <div className={isDefensive ? 'order-first' : ''}>
+ <div className={marketRegime?.regime === 'DEFENSIVE' ? 'order-first' : ''}>
  <IncubatorSection
  market={MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market]}
  refreshIntervalMs={60_000}

@@ -67,15 +67,18 @@ export async function GET(req: NextRequest) {
   try {
     db = dbOpen();
   } catch (e) {
+    // BRAVO-FIX (per Mohsen's directive): return 200 with graceful fallback
+    // instead of 500 — the frontend should never see a 500 for missing sharia data.
     return NextResponse.json(
-      { success: false, error: 'db_open_failed', detail: String(e) },
-      { status: 500 }
+      { success: true, status: 'unknown', error: 'db_open_failed', detail: String(e), rows: [], message: 'Sharia database not available — showing neutral status' },
+      { status: 200 }
     );
   }
   if (!db) {
+    // BRAVO-FIX: return 200 with unknown status instead of 503
     return NextResponse.json(
-      { success: false, error: 'data_engine_db_missing', path: DATA_ENGINE_DB },
-      { status: 503 }
+      { success: true, status: 'unknown', error: 'data_engine_db_missing', rows: [], message: 'Sharia database not found — showing neutral status' },
+      { status: 200 }
     );
   }
 
@@ -261,7 +264,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error('[GET /api/sharia] Error:', e);
-    return NextResponse.json({ success: false, error: 'internal_error', detail: String(e) }, { status: 500 });
+    // BRAVO-FIX (per Mohsen's directive): return 200 with fallback instead of 500
+    return NextResponse.json({ success: true, status: 'unknown', error: 'internal_error', detail: String(e), rows: [], message: 'Sharia data temporarily unavailable' }, { status: 200 });
   } finally {
     try {
       db?.close();

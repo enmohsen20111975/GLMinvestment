@@ -110,15 +110,19 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[/api/stocks/delta-volume] Error:', error);
-    // FIX (2026-10-01): return 200 with fallback data instead of 500
+    // BRAVO-FIX (per Mohsen's directive): return 200 with fallback data instead of 500.
+    // NOTE: ticker may not be defined if the error happened before searchParams parsing.
+    // Using optional chaining + fallback to avoid ReferenceError in the catch block.
+    const safeTicker = typeof ticker === 'string' ? ticker.toUpperCase() : '';
     return NextResponse.json({
       success: false,
       error: 'delta_volume_data_unavailable',
-      ticker: ticker?.toUpperCase() || '',
+      ticker: safeTicker,
       fallback: true,
       latest: null,
       history: [],
       summary: null,
+      message: 'No delta volume data available for this ticker',
     }, { status: 200 });
   }
 }
