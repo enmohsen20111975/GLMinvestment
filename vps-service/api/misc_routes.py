@@ -14,6 +14,9 @@ from datetime import datetime
 import time
 import sys
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1531,13 +1534,13 @@ def rebuild_predictions():
                 env['V40_EXPLOSIVE_UNCAP'] = '1'
                 cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'daily_predictor.py'), '--today-only', '--max-picks', '10']
                 try:
-                    subprocess.run(cmd, env=env, timeout=60)
+                    subprocess.run(cmd, env=env, timeout=120)
                 except Exception as _e:
                     logger.error(f"[rebuild-predictions] Error running daily generator: {_e}")
                 if mode == 'intraday':
                     cmd_intra = [python_bin, str(_root / 'vps-service' / 'jobs' / 'intraday_scanner.py'), '--limit', '5']
                     try:
-                        subprocess.run(cmd_intra, env=env, timeout=30)
+                        subprocess.run(cmd_intra, env=env, timeout=60)
                     except Exception as _e:
                         logger.error(f"[rebuild-predictions] Error running intraday scanner: {_e}")
 
@@ -1550,7 +1553,8 @@ def rebuild_predictions():
                            stop_loss, confidence, maestro_score, created_at,
                            prediction_date, kill_filter_result
                     FROM predictions
-                    WHERE status = 'PENDING'
+                    WHERE status IN ('PENDING', 'active', 'ACTIVE')
+                       OR lifecycle_status IN ('testing', 'proven', 'active')
                     ORDER BY id DESC
                     LIMIT 30
                 """).fetchall()
