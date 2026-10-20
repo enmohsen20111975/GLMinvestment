@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionExpiredModal } from '@/components/auth/SessionExpiredModal';
 // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): cookie-based i18n context.
 // I18nProvider reads the NEXT_LOCALE cookie, loads messages/{locale}.json,
@@ -10,6 +11,30 @@ import { SessionExpiredModal } from '@/components/auth/SessionExpiredModal';
 import { I18nProvider } from '@/lib/i18n-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+ // P0-COMPONENT-UNIFICATION (Phase 0.8): QueryClient for TanStack Query.
+ // الـ instance بـ يتم إنشاؤه مرة واحدة لكل browser session (مش per-render)
+ // عشان ما يـفقدش الـ cache عند الـ re-renders. الـ useState بـ يـضمن إنه
+ // stable للـ lifecycle بتاع الـ component.
+ //
+ // Default options:
+ // - staleTime: 30s — الـ data بـ تـفضل "fresh" لـ 30 ثانية قبل ما
+ //   الـ query يحتاج refetch. كده الـ tab switches ما بـ تـعملش refetch
+ //   فوراً لو الـ data لسه fresh.
+ // - refetchOnWindowFocus: false — ما نـعملش refetch لما المستخدم يرجع
+ //   للـ tab. الـ manual refresh بـ يـكفي.
+ // - retry: 1 — نـحاول مرة واحدة بس لو الـ fetch فشل (مش 3 مرات الافتراضية).
+ const [queryClient] = useState(() =>
+ new QueryClient({
+ defaultOptions: {
+ queries: {
+ staleTime: 30_000, // 30 ثانية
+ refetchOnWindowFocus: false,
+ retry: 1,
+ },
+ },
+ })
+ );
+
  useEffect(() => {
  // Keepalive ping to prevent server auto-shutdown on Hostinger
  if (process.env.NODE_ENV === 'production') {
@@ -77,6 +102,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
  }, []);
 
  return (
+ <QueryClientProvider client={queryClient}>
  <SessionProvider>
  <I18nProvider>
  <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
@@ -89,5 +115,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
  </ThemeProvider>
  </I18nProvider>
  </SessionProvider>
+ </QueryClientProvider>
  );
 }
