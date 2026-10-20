@@ -40,7 +40,7 @@ export function Header({ title, subtitle }: HeaderProps) {
  };
 
  return (
- <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+ <header className="sticky top-0 z-30 glass-header">
  <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3">
  {/* Mobile "More" sections button — replaces the bottom bar's 6th item (P5-MOBILE-UX) */}
  <MobileMoreButton />
