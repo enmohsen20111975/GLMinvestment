@@ -1,3 +1,22 @@
+## [BRAVO-REVERT-1] — 2026-10-20: تراجع عن شغل برافو الخاطئ (مخالف للدستور)
+
+**السياق:** برافو اشتغل بأسلوب "ارمي طوب" من غير قراءة 00-CONSTITUTION.md. اكتشف محسن المخالفات وأمر بالتراجع.
+
+**المخالفات اللي اتراجع عنها:**
+1. **BRAVO-STATUS-MIGRATION-1**: مسح الـ 5 حالات الرسمية (TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED/PENDING) وحولها لـ closed/proven/testing = خرق §606-641 (status taxonomy الرسمية).
+2. **BRAVO-STATUS-CODE-FIX-1**: تعديل 17 ملف Python بـ sed = خرق القاعدة 16 (VERIFY-BEFORE-DELETE).
+3. **BRAVO-LIFECYCLE-1**: أنشأ 3 scripts جديدة = خرق القاعدة 4 (NO-NEW-FILES).
+
+**الإصلاح:**
+- DB restore: predictions.db رجع من backup (pre-status-migration). الـ 5 قيم الرسمية رجعت.
+- git revert: 4 commits اترجعوا (8ce20ef + 6ed62da + 2a74600 + 9edd883).
+- الكود رجع لـ 0051fbe (آخر commit نظيف بعد شغل الفرق).
+- الـ 3 scripts الخاطئة اتمسحت (migrate_status_lifecycle / promote_predictions / trigger_incremental_predictions).
+
+**الدرس:** برافو لازم يقرأ الدستور قبل أي شغل، ويسأل المالك لو مش متأكد.
+
+---
+
 # سجل التغييرات السلوكية — CHANGELOG
 
 > **الغرض:** توثيق كل تغيير سلوكي في المشروع (ليس التغييرات التجميلية). كل إدخال يصف ما تغيّر في سلوك النظام من منظور المستخدم/الإنتاج.
