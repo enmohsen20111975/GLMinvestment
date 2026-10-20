@@ -484,6 +484,19 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     limit_up = check_limit_up_trap(closes)
     kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
 
+    # BRAVO-FLOW-GATE (2026-10-20, owner directive):
+    # لو السهم متصنف "تجميع هادئ" بس السيولة سالبة (net_flow_egp < 0)
+    # → ده تصريف مش تجميع. ألغي الـ winner_path.
+    # السبب: COMI خرج منه -165M ومتصنف "تجميع" — فضيحة.
+    _net_flow = money_flow.get('net_flow_egp', 0) or 0
+    if winner_path in ('B_quiet_accumulation_strong', 'C_quiet_accumulation_weak') and _net_flow < 0:
+        _flow_m = _net_flow / 1_000_000
+        winner_path = None
+        winner_position_size = 0.0
+        winner_reason = f'تصريف صريح — السيولة خارجة ({_flow_m:+.1f}M EGP) → مش تجميع'
+        # mark under_microscope = False
+        quiet = False  # عشان ما يـ showش في الـ quiet_list
+
     # لو Kill Switch triggered → نقلل الحجم للنص أو نلغي
     if kill_triggered:
         winner_position_size = winner_position_size * 0.5  # نص الحجم
@@ -561,9 +574,35 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         stale_warn = f'⚠️ DATA STALE — آخر إغلاق تاريخي = {last_close_date_str} ({staleness_days}d قديم). entry_price قد لا يعكس السعر الفعلي.'
         final_reason = f'{stale_warn} | {final_reason}' if final_reason else stale_warn
 
+    # BRAVO-LEVELS (2026-10-20, owner directive): احسب entry/stop/target لكل سهم
+    # بدل ما الواجهة تعرض "—" لـ stop/target.
+    # entry = current_price, stop = entry - 1.5×ATR, target = entry + 2.7×ATR (R/R=1.8)
+    _entry_price = round(current_price, 2)
+    _atr_val = 0.0
+    if len(closes) >= 15 and len(highs) >= 15 and len(lows) >= 15:
+        _tr_list = []
+        for _i in range(1, min(15, len(closes))):
+            _h = highs[-_i] if _i <= len(highs) and highs[-_i] > 0 else closes[-_i]
+            _l = lows[-_i] if _i <= len(lows) and lows[-_i] > 0 else closes[-_i]
+            _pc = closes[-_i-1] if _i+1 <= len(closes) and closes[-_i-1] > 0 else closes[-_i]
+            if _h > 0 and _l > 0 and _pc > 0 and _h >= _l:
+                _tr = max(_h - _l, abs(_h - _pc), abs(_l - _pc))
+                if 0 < _tr < closes[-1] * 0.20:  # skip TR > 20% (غلط)
+                    _tr_list.append(_tr)
+        _atr_val = sum(_tr_list) / len(_tr_list) if _tr_list else closes[-1] * 0.03
+    if _atr_val <= 0:
+        _atr_val = _entry_price * 0.03  # fallback 3%
+    # clamp ATR لـ [2%, 10%]
+    _atr_val = max(_entry_price * 0.02, min(_entry_price * 0.10, _atr_val))
+    _stop_loss = round(_entry_price - (1.5 * _atr_val), 2)
+    _target_price = round(_entry_price + (2.7 * _atr_val), 2)  # R/R = 2.7/1.5 = 1.8
+
     return {
         'ticker': ticker,
         'current_price': round(current_price, 2),
+        'entry_price': _entry_price,
+        'stop_loss': _stop_loss,
+        'target_price': _target_price,
         'change_1d': change_1d,
         'change_percent': change_1d,
         'price_bucket': classify_price_bucket(current_price),
