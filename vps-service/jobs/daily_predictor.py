@@ -816,6 +816,41 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     engine._load_fundamentals()
     engine._load_benchmark()  # V40.2: load benchmark per market
 
+    # BRAVO-SPEED-FIX (2026-10-20): pre-cache price_history لكل الـ tickers مرة واحدة
+    # الـ bottleneck كان: get_price_data بـ 0.78s/ticker × 289 = 225s
+    # الـ batch query بـ 1.4s لكل الـ tickers = تحسين 180×
+    try:
+        import time as _cache_time
+        _cache_t0 = _cache_time.time()
+        _ph_db_path = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+        if os.path.exists(_ph_db_path):
+            _cache_con = sqlite3.connect(f'file:{_ph_db_path}?mode=ro', uri=True, timeout=30.0)
+            _cache_con.row_factory = sqlite3.Row
+            # batch query: كل الـ tickers + آخر 3 سنين (كفاية للـ MA200 + ATR + indicators)
+            _ticker_placeholders = ','.join('?' * len(tickers))
+            _cache_rows = _cache_con.execute(f"""
+                SELECT ticker, date, open_price, high_price, low_price, close_price, volume
+                FROM price_history
+                WHERE UPPER(ticker) IN ({_ticker_placeholders})
+                AND close_price IS NOT NULL AND close_price > 0
+                AND date >= date('now', '-3 years')
+                ORDER BY ticker, date ASC
+            """, [t.upper() for t in tickers]).fetchall()
+            _cache_con.close()
+            # group by ticker
+            _price_cache = defaultdict(list)
+            for r in _cache_rows:
+                _price_cache[r['ticker'].upper()].append(
+                    (r['date'], r['open_price'], r['high_price'], r['low_price'], r['close_price'], r['volume'])
+                )
+            engine._price_cache = dict(_price_cache)
+            _cache_elapsed = _cache_time.time() - _cache_t0
+            print(f"  ⚡ BRAVO-SPEED-FIX: pre-cached {len(_price_cache)} tickers × {len(_cache_rows)} rows in {_cache_elapsed:.2f}s (batch query)", flush=True)
+        else:
+            print(f"  ⚠️  price_history.db not found at {_ph_db_path} — falling back to per-ticker queries", flush=True)
+    except Exception as _cache_err:
+        print(f"  ⚠️  pre-cache failed ({type(_cache_err).__name__}: {_cache_err}) — falling back to per-ticker queries", flush=True)
+
     signals_by_date = defaultdict(list)
     total_tickers = len(tickers)
     processed = 0

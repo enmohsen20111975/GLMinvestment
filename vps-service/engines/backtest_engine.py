@@ -1372,34 +1372,49 @@ class V38BacktestEngine:
         
         يدمج التاريخ الطويل من price_history.db مع أحدث الشموع من egksco_price_history
         و stock_daily_prices (حتى تاريخ اليوم).
+        
+        BRAVO-SPEED-FIX (2026-10-20): لو self._price_cache موجود (pre-loaded batch)،
+        استخدمه بدل الـ per-ticker query (تحسين 180×).
         """
         data_by_date = {}
 
-        # 1. EXTENDED: price_history.db (تاريخ طويل — 25 سنة)
-        try:
-            _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
-            if os.path.exists(_ph_db):
-                conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True, timeout=10.0)
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT date, open_price, high_price, low_price, close_price, volume
-                    FROM price_history
-                    WHERE ticker = ? COLLATE NOCASE
-                    AND close_price IS NOT NULL AND close_price > 0
-                    ORDER BY date ASC
-                """, (ticker,))
-                for r in cur.fetchall():
-                    d = str(r[0])[:10]
-                    data_by_date[d] = (
-                        float(r[1] or r[4] or 0),
-                        float(r[2] or r[4] or 0),
-                        float(r[3] or r[4] or 0),
-                        float(r[4] or 0),
-                        parse_volume(r[5])
-                    )
-                conn.close()
-        except Exception:
-            pass
+        # 0. BRAVO-SPEED-FIX: استخدم pre-cached price_history لو موجود
+        if hasattr(self, '_price_cache') and ticker.upper() in self._price_cache:
+            for r in self._price_cache[ticker.upper()]:
+                d = str(r[0])[:10]
+                data_by_date[d] = (
+                    float(r[1] or r[4] or 0),
+                    float(r[2] or r[4] or 0),
+                    float(r[3] or r[4] or 0),
+                    float(r[4] or 0),
+                    parse_volume(r[5])
+                )
+        else:
+            # 1. EXTENDED: price_history.db (تاريخ طويل — 25 سنة)
+            try:
+                _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+                if os.path.exists(_ph_db):
+                    conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True, timeout=10.0)
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT date, open_price, high_price, low_price, close_price, volume
+                        FROM price_history
+                        WHERE ticker = ? COLLATE NOCASE
+                        AND close_price IS NOT NULL AND close_price > 0
+                        ORDER BY date ASC
+                    """, (ticker,))
+                    for r in cur.fetchall():
+                        d = str(r[0])[:10]
+                        data_by_date[d] = (
+                            float(r[1] or r[4] or 0),
+                            float(r[2] or r[4] or 0),
+                            float(r[3] or r[4] or 0),
+                            float(r[4] or 0),
+                            parse_volume(r[5])
+                        )
+                    conn.close()
+            except Exception:
+                pass
 
         # 2. PRIMARY INTRADAY/DAILY: data_engine.db (egksco_price_history — طازج)
         try:
