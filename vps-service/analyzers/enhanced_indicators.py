@@ -111,12 +111,12 @@ class EnhancedIndicators:
         بيرجع (macd_line, signal_line, histogram) لآخر قيمة بس.
         """
         if len(prices) < slow:
-            return 0.0, 0.0, 0.0
+            return None, None, None  # Rule 27: no fabrication
 
         ema_fast = EnhancedIndicators.calc_ema(prices, fast)
         ema_slow = EnhancedIndicators.calc_ema(prices, slow)
         if not ema_fast or not ema_slow:
-            return 0.0, 0.0, 0.0
+            return None, None, None  # Rule 27: no fabrication
 
         # محاذاة الطول — ema_slow أقصر من ema_fast بفرق (slow - fast)
         offset = len(ema_fast) - len(ema_slow)

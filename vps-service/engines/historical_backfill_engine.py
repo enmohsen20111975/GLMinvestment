@@ -34,6 +34,9 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 import logging
 
+# BRAVO UNIFY (Rule 67 + Rule 27): delegate Bollinger to canonical (no fabrication)
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -224,31 +227,15 @@ class TechnicalCalculator:
         return round(macd, 4), round(signal, 4), trend
     
     @staticmethod
-    def calculate_bollinger(prices: List[float], period: int = 20) -> Tuple[float, float, float, float]:
-        """حساب Bollinger Bands"""
-        if len(prices) < period:
-            current = prices[-1] if prices else 0
-            return current * 1.02, current, current * 0.98, 0.5
-        
-        sma = sum(prices[-period:]) / period
-        
-        # Standard deviation
-        variance = sum((p - sma) ** 2 for p in prices[-period:]) / period
-        std = math.sqrt(variance)
-        
-        upper = sma + (2 * std)
-        lower = sma - (2 * std)
-        
-        current = prices[-1]
-        
-        # Position within bands (0 = lower, 1 = upper)
-        if upper != lower:
-            position = (current - lower) / (upper - lower)
-        else:
-            position = 0.5
-        
-        return round(upper, 4), round(lower, 4), round(position, 2), round(sma, 4)
-    
+    def calculate_bollinger(prices: List[float], period: int = 20) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
+        """حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical.
+        Rule 27 (NO-FAKE-DATA): returns (None, None, None, None) on insufficient data (was ±2% fabrication).
+        """
+        result = _canonical_bollinger(prices, period, 2.0)
+        if result is None:
+            return None, None, None, None
+        return (result['upper'], result['middle'], result['lower'], result['percent_b'])
+
     @staticmethod
     def calculate_adx(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> float:
         """حساب ADX (simplified)"""
