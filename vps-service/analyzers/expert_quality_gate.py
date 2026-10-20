@@ -174,11 +174,16 @@ def _calculate_vwap(history: List[Dict]) -> Optional[float]:
     return total_pv / total_v
 
 
-def _calculate_percentile(current_price: float, history: List[Dict], window: int = 252) -> float:
-    """يحسب فين السعر بالنسبة لتاريخه (0-100%)"""
+def _calculate_percentile(current_price: float, history: List[Dict], window: int = 252) -> Optional[float]:
+    """يحسب فين السعر بالنسبة لتاريخه (0-100%)
+
+    Rule 27: percentile is a positional INDICATOR (not a score) — returns None
+    when no valid historical prices are available instead of fabricating 50.0.
+    Caller (test_percentile) handles None with an early-pass TestResult.
+    """
     prices = [float(h.get('close_price', 0)) for h in history if float(h.get('close_price', 0)) > 0]
     if not prices:
-        return 50.0
+        return None
     prices = prices[-window:]
     below = sum(1 for p in prices if p < current_price)
     return (below / len(prices)) * 100
@@ -501,6 +506,9 @@ def test_percentile(ticker: str, recommendation: str, history: List[Dict], stock
         return TestResult(test_name, test_name_ar, True, 0, "مفيش سعر — يعدي")
     
     percentile = _calculate_percentile(current_price, history)
+    if percentile is None:
+        # No valid historical close prices — skip the test gracefully
+        return TestResult(test_name, test_name_ar, True, 0, "مفيش أسعار تاريخ صالحة — يعدي")
     is_buy = recommendation.upper() in ['BUY', 'STRONG_BUY']
     
     # 🧠 الخبير الجديد — قاعدة المضارب: ممنوع BUY فوق percentile 80%

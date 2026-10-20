@@ -281,6 +281,7 @@ class VolumeScorer:
         current_volume = price_data.get("current_volume", 0)
 
         if not volumes or len(volumes) < 5:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"volume_data": "غير متاح"}
 
         avg_volume = sum(volumes[-20:]) / min(20, len(volumes))
@@ -330,6 +331,7 @@ class CandlestickScorer:
         closes = price_data.get("closes", [])
 
         if len(closes) < 3:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"pattern": "غير كافٍ"}
 
         pattern, pattern_score = detect_candlestick_pattern(opens, highs, lows, closes)
@@ -356,6 +358,7 @@ class FundamentalScorer:
         """
         fundamental = price_data.get("fundamental", {})
         if not fundamental:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50.0, {"fundamental_data": "غير متاح - استخدم 50 محايد"}
 
         score = 50.0

@@ -569,6 +569,7 @@ class AIPatternAnalyzer:
         This makes analysis independent of price scale
         """
         if len(prices) < 20:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50, 'NEUTRAL', 50
         
         # Calculate percentage returns for trend analysis
@@ -579,6 +580,7 @@ class AIPatternAnalyzer:
                 returns.append(ret)
         
         if len(returns) < 19:
+            # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
             return 50, 'NEUTRAL', 50
         
         # Calculate trend from returns

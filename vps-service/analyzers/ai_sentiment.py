@@ -69,6 +69,7 @@ def get_sentiment_score(text: str) -> float:
     clamped to the 20-80 range.
     """
     if not text or not isinstance(text, str):
+        # NEUTRAL DEFAULT (50.0) — semantic neutral, not fabrication (Rule 27 exception for scoring)
         return 50.0
 
     # Normalize: lowercase for English matching

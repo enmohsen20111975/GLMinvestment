@@ -96,10 +96,15 @@ def _compute_volume_ratio(volumes: List[float], window: int = 20) -> float:
     return last / avg
 
 
-def _compute_simple_rsi(closes: List[float], period: int = 14) -> float:
-    """حساب RSI مبسّط من closes (للاستخدام في fallback narrative)."""
+def _compute_simple_rsi(closes: List[float], period: int = 14) -> Optional[float]:
+    """حساب RSI مبسّط من closes (للاستخدام في fallback narrative).
+
+    Rule 27: RSI is a technical INDICATOR (not a score) — returns None when
+    data is insufficient instead of fabricating a 50.0 neutral value.
+    Caller (build_humanized_reason) falls back to 50 via `or 50`.
+    """
     if not closes or len(closes) < period + 1:
-        return 50.0
+        return None
     try:
         gains = 0.0
         losses = 0.0
@@ -116,7 +121,7 @@ def _compute_simple_rsi(closes: List[float], period: int = 14) -> float:
         rs = avg_gain / avg_loss
         return round(100.0 - (100.0 / (1.0 + rs)), 2)
     except Exception:
-        return 50.0
+        return None
 
 
 # ============================================================================
