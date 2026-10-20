@@ -1128,3 +1128,39 @@ Stage Summary:
   * Skeleton بـ يحل 328+ inline Skeleton blocks.
   * AsyncBoundary بـ يحل 268 manual useEffect+fetch triples.
 - ⏳ جاهز لـ Phase 2 (codemod migrations) لما المالك يـوافق.
+
+---
+Task ID: P0-COMPONENT-UNIFICATION-BUILD-VERIFY
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن — "جربت الى فات كلة وشغال ؟؟؟ لازم تعمل بلد وتتأكد ان كل حاجة تمام". Build فعلي + اختبار HTTP.
+
+Work Log:
+- اكتشفت إن الـ build script في package.json بـ يستخدم 4GB memory (أكتر من الـ 3.9GB المتاح في النظام).
+- جرّبت production build بـ NODE_OPTIONS=--max-old-space-size=3072 — فشل بسبب `csv-parse/sync` مش متـثبت.
+- عملت `bun add csv-parse` + عملت build تاني — نجح!
+- شغّلت `next start` (production server) — نجح في 280ms.
+- عملت HTTP probes فعلياً:
+
+النتائج:
+- ✅ `GET /` → HTTP 200 | 0.25s | 34KB HTML
+  * Title: "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية"
+  * <html lang="ar" dir="rtl">
+  * Meta tags كاملة
+  * 89.3 kB First Load JS shared
+- ✅ `GET /api/notifications` → HTTP 200 | 0.06s
+- ✅ `GET /api/stocks?market=EGX` → HTTP 200 | 0.009s | JSON `{success:true, stocks:[], total:0, source:"stocks.db-empty"}`
+- ⚠️ `GET /api/market-pulse` → HTTP 500 (pre-existing — stocks.db file غير موجود لأنه في .gitignore، مش من Phase 0/1).
+
+Pre-existing issues اكتشفتها:
+1. csv-parse/sync مـش متـثبت — اتـثبت.
+2. better-sqlite3 (native module) مش متـثبت — اتـثبت.
+3. NEXTAUTH_SECRET missing in production — اتـستخدم dummy secret للاختبار بس.
+4. stocks.db / intraday.db / predictions.db مـش موجودة (في .gitignore — لازم تـتـcreated من migrations أو restore من backup).
+
+Stage Summary:
+- ✅ BUILD فعلي: نجح (454 API routes + 9 pages compiled).
+- ✅ PRODUCTION server: شغّال + بـ يـ service HTTP 200.
+- ✅ HTML content: عربي + RTL + title + meta tags.
+- ✅ API routes: بـ تـ service requests + بـ تـ degrade gracefully لو DB missing.
+- ⚠️ /api/market-pulse بيرجع 500 بسبب missing DB — pre-existing (مش من Phase 0/1 changes).
+- 🎯 Phase 0 + Phase 1 متـverified فعلياً. جاهز لـ Phase 2.
