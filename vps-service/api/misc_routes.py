@@ -2512,10 +2512,32 @@ def unified_predictions():
                     if "created_at" in _pred_cols:
                         _where_parts.append("date(created_at) < date(?)")
                         _where_args.append(_today_str_h)
+                    # BRAVO-HARD-KILL (2026-10-20, owner directive):
+                    # استبعاد التوقعات المقفولة (lifecycle_status='closed')
+                    # + التوقعات المنتهية (status IN EXPIRED/STOPPED/TARGET_HIT)
+                    # + التوقعات اللي عدّ عليها أكتر من 5 أيام تداول (stale)
+                    # السبب: الكود القديم كان بيرجع توقعات قديمة مقفولة (ORAS/QGRI/GBCO)
+                    # للعميل على إنها "توصيات حية" — فضيحة.
+                    if "lifecycle_status" in _pred_cols:
+                        _where_parts.append("(lifecycle_status IS NULL OR lifecycle_status NOT IN ('closed'))")
+                    if "status" in _pred_cols:
+                        _where_parts.append("(status IS NULL OR status NOT IN ('EXPIRED','STOPPED','TARGET_HIT'))")
+                    if "created_at" in _pred_cols:
+                        _where_parts.append("date(created_at) >= date('now', '-5 days')")
                     if "hit_target" in _pred_cols:
                         _where_parts.append("(hit_target != 1 OR hit_target IS NULL)")
                     if "hit_stop" in _pred_cols:
                         _where_parts.append("(hit_stop != 1 OR hit_stop IS NULL)")
+                    # BRAVO-RR-GATE (Rule 18): R/R ≥ 1.8 floor إلزامي
+                    # الـ risk_reward column ممكن يكون NULL (backfill scripts قديمة)
+                    # فبنحسبه من entry/target/stop لو موجودين.
+                    if "entry_price" in _pred_cols and "target_price" in _pred_cols and "stop_loss" in _pred_cols:
+                        _where_parts.append(
+                            "(entry_price > 0 AND target_price > 0 AND stop_loss > 0 "
+                            "AND (target_price - entry_price) > 0 "
+                            "AND (entry_price - stop_loss) > 0 "
+                            "AND (target_price - entry_price) / (entry_price - stop_loss) >= 1.8)"
+                        )
                     _where_sql = " AND ".join(_where_parts)
                     _order_col = "created_at" if "created_at" in _pred_cols else "rowid"
                     _hist_rows = conn.execute(
