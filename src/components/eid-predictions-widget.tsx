@@ -34,8 +34,11 @@ interface Prediction {
  confidence: number;
  reasoning: string;
  created_at: string;
- // ALPHA-UX-FIX-9: status من الـ engine (برافو). undefined → 'proven' (backward-compat)
- status?: 'proven' | 'testing' | 'closed';
+ // ALPHA-API-STATUS-1: lifecycle_status من الـ engine (برافو — column جديد دستوري).
+ // undefined → 'proven' (backward-compat). status الرسمية محفوظة.
+ lifecycle_status?: 'proven' | 'testing' | 'closed';
+ // status الرسمية (الـ 5 قيم) — للـ outcome detail + inferring lifecycle
+ status?: string;
 }
 
 const iconMap: Record<string, any> = {
@@ -82,6 +85,21 @@ function getPotentialGain(pred: Prediction) {
 }
 
 /**
+ * getLifecycle — ALPHA-API-STATUS-1: بيرجّع lifecycle_status مع backward-compat.
+ * لو lifecycle_status موجود → بيرجّعه. لو null → بـ infer من status الرسمية:
+ * TARGET_HIT/STOPPED/EXPIRED → 'closed'. active/PENDING/ACTIVE → 'proven'.
+ */
+function getLifecycle(pred: Prediction): 'proven' | 'testing' | 'closed' {
+ if (pred.lifecycle_status) return pred.lifecycle_status as 'proven' | 'testing' | 'closed';
+ if (pred.status) {
+ const s = pred.status.toUpperCase();
+ if (['TARGET_HIT', 'STOPPED', 'EXPIRED'].includes(s)) return 'closed';
+ if (['ACTIVE', 'PENDING', 'WAITING'].includes(s)) return 'proven';
+ }
+ return 'proven';
+}
+
+/**
  * PredictionCard — ALPHA-UX-FIX-9: prediction card بـ status badge + token colors.
  * - proven (أو undefined): الكارت العادي (bg-card).
  * - testing: badge «🟡 تحت الاختبار» (warning).
@@ -91,7 +109,7 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  const Icon = iconMap[pred.symbol] || TrendingUp;
  const SignalIcon = signalIcons[pred.signal];
  const potentialGain = parseFloat(getPotentialGain(pred));
- const isClosed = pred.status === 'closed';
+ const isClosed = getLifecycle(pred) === 'closed';
  return (
  <div
  key={pred.id}
@@ -103,8 +121,8 @@ function PredictionCard({ pred }: { pred: Prediction }) {
  <Icon className="h-4 w-4 text-foreground" />
  </div>
  <span className="font-bold text-foreground">{pred.symbol}</span>
- {pred.status === 'testing' && (<Badge className="bg-warning/15 text-warning border-warning/40 text-[10px]">🟡 تحت الاختبار</Badge>)}
- {pred.status === 'closed' && (<Badge className="bg-muted text-muted-foreground border-border text-[10px]">🔴 منتهية</Badge>)}
+ {getLifecycle(pred) === 'testing' && (<Badge className="bg-warning/15 text-warning border-warning/40 text-[10px]">🟡 تحت الاختبار</Badge>)}
+ {getLifecycle(pred) === 'closed' && (<Badge className="bg-muted text-muted-foreground border-border text-[10px]">🔴 منتهية</Badge>)}
  </div>
  <Badge className={signalColors[pred.signal]}>
  <SignalIcon className="h-3 w-3 mr-1" />
@@ -258,9 +276,9 @@ export function EidPredictionsWidget() {
 
  {/* ALPHA-UX-FIX-9: 3 sections — main (proven) / testing / closed */}
  {(() => {
- const proven = displayPredictions.filter(p => (p.status || 'proven') === 'proven');
- const testing = displayPredictions.filter(p => p.status === 'testing');
- const closed = displayPredictions.filter(p => p.status === 'closed');
+ const proven = displayPredictions.filter(p => getLifecycle(p) === 'proven');
+ const testing = displayPredictions.filter(p => getLifecycle(p) === 'testing');
+ const closed = displayPredictions.filter(p => getLifecycle(p) === 'closed');
  return (
  <>
  {proven.length > 0 && (

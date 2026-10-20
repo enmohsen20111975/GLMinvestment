@@ -157,6 +157,7 @@ export async function GET(request: NextRequest) {
           master_score, technical_score, fundamental_score, confidence, persona,
           market, outcome_date, exit_price, actual_return,
           hit_target, hit_stop, is_correct, holding_days,
+          lifecycle_status,
           status, risk_reward, created_at, analysis_json
         FROM predictions
         WHERE ticker = ? ${marketClause}
@@ -380,6 +381,7 @@ export async function GET(request: NextRequest) {
         hit_stop,
         is_correct,
         holding_days,
+        lifecycle_status,
         created_at,
         analysis_json
       FROM predictions
