@@ -19,6 +19,7 @@ import {
  AlertTriangle
 } from 'lucide-react';
 import { toArabicError } from '@/lib/safe-error';
+import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 // ALPHA-UX-FIX-5: guest freemium preview CTA (3 predictions + register for more)
 import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
@@ -33,6 +34,8 @@ interface Prediction {
  confidence: number;
  reasoning: string;
  created_at: string;
+ // ALPHA-UX-FIX-9: status من الـ engine (برافو). undefined → 'proven' (backward-compat)
+ status?: 'proven' | 'testing' | 'closed';
 }
 
 const iconMap: Record<string, any> = {
@@ -54,6 +57,82 @@ const signalIcons: Record<string, any> = {
  'SELL': TrendingDown,
  'HOLD': Minus
 };
+
+// ALPHA-UX-FIX-9: module-level helpers (مستخدمة في PredictionCard)
+function formatPrice(price: number | null | undefined, symbol: string) {
+ if (price == null || Number.isNaN(price)) return '—';
+ if (symbol === 'BTC' || symbol === 'ETH') {
+ return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+ } else if (symbol === 'GOLD') {
+ return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+ } else {
+ return `${(price ?? 0).toFixed(2)} ج.م`;
+ }
+}
+
+function getPotentialGain(pred: Prediction) {
+ const entry = pred.entryPrice;
+ const target = pred.targetPrice;
+ if (entry == null || target == null || entry === 0 || Number.isNaN(entry) || Number.isNaN(target)) {
+ return '0.0';
+ }
+ const gain = ((target - entry) / entry) * 100;
+ if (!Number.isFinite(gain)) return '0.0';
+ return (gain ?? 0).toFixed(1);
+}
+
+/**
+ * PredictionCard — ALPHA-UX-FIX-9: prediction card بـ status badge + token colors.
+ * - proven (أو undefined): الكارت العادي (bg-card).
+ * - testing: badge «🟡 تحت الاختبار» (warning).
+ * - closed: كارت خافت (opacity-60) + badge «🔴 منتهية».
+ */
+function PredictionCard({ pred }: { pred: Prediction }) {
+ const Icon = iconMap[pred.symbol] || TrendingUp;
+ const SignalIcon = signalIcons[pred.signal];
+ const potentialGain = parseFloat(getPotentialGain(pred));
+ const isClosed = pred.status === 'closed';
+ return (
+ <div
+ key={pred.id}
+ className={cn('rounded-lg p-3 border transition-colors', isClosed ? 'bg-muted/50 border-border opacity-60' : 'bg-card border-border hover:border-primary/40')}
+ >
+ <div className="flex items-center justify-between mb-2">
+ <div className="flex items-center gap-2">
+ <div className="p-1.5 rounded-lg bg-muted">
+ <Icon className="h-4 w-4 text-foreground" />
+ </div>
+ <span className="font-bold text-foreground">{pred.symbol}</span>
+ {pred.status === 'testing' && (<Badge className="bg-warning/15 text-warning border-warning/40 text-[10px]">🟡 تحت الاختبار</Badge>)}
+ {pred.status === 'closed' && (<Badge className="bg-muted text-muted-foreground border-border text-[10px]">🔴 منتهية</Badge>)}
+ </div>
+ <Badge className={signalColors[pred.signal]}>
+ <SignalIcon className="h-3 w-3 mr-1" />
+ {pred.signal === 'BUY' ? 'شراء' : pred.signal === 'SELL' ? 'بيع' : 'انتظار'}
+ </Badge>
+ </div>
+ <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+ <div><span className="text-muted-foreground">الدخول</span><p className="text-foreground font-mono">{formatPrice(pred.entryPrice, pred.symbol)}</p></div>
+ <div><span className="text-muted-foreground">الهدف</span><p className="text-success font-mono">{formatPrice(pred.targetPrice, pred.symbol)}</p></div>
+ <div><span className="text-muted-foreground">وقف الخسارة</span><p className="text-loss font-mono">{formatPrice(pred.stopLoss, pred.symbol)}</p></div>
+ </div>
+ <div className="flex items-center justify-between text-xs">
+ <div className="flex items-center gap-2">
+ <span className="text-muted-foreground">الثقة:</span>
+ <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+ <div className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'}`} style={{ width: `${pred.confidence * 100}%` }} />
+ </div>
+ <span className="text-foreground">{(pred.confidence * 100).toFixed(0)}%</span>
+ </div>
+ <div className={`flex items-center gap-1 ${potentialGain >= 0 ? 'text-success' : 'text-loss'}`}>
+ {potentialGain >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+ {potentialGain >= 0 ? '+' : ''}{potentialGain}%
+ </div>
+ </div>
+ <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-2">{pred.reasoning}</p>
+ </div>
+ );
+}
 
 export function EidPredictionsWidget() {
  const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -102,31 +181,11 @@ export function EidPredictionsWidget() {
  fetchPredictions();
  }, [fetchPredictions]);
 
- const formatPrice = (price: number | null | undefined, symbol: string) => {
- if (price == null || Number.isNaN(price)) return '—';
- if (symbol === 'BTC' || symbol === 'ETH') {
- return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
- } else if (symbol === 'GOLD') {
- return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
- } else {
- return `${(price ?? 0).toFixed(2)} ج.م`;
- }
- };
-
- const getPotentialGain = (pred: Prediction) => {
- const entry = pred.entryPrice;
- const target = pred.targetPrice;
- if (entry == null || target == null || entry === 0 || Number.isNaN(entry) || Number.isNaN(target)) {
- return '0.0';
- }
- const gain = ((target - entry) / entry) * 100;
- if (!Number.isFinite(gain)) return '0.0';
- return (gain ?? 0).toFixed(1);
- };
+ // ALPHA-UX-FIX-9: formatPrice + getPotentialGain انتقلوا لـ module level (شوف فوق)
 
  if (loading) {
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="bg-card border-border">
  <CardHeader>
  <div className="flex items-center gap-2">
  <Sparkles className="h-5 w-5 text-warning" />
@@ -144,7 +203,7 @@ export function EidPredictionsWidget() {
 
  if (error) {
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="bg-card border-border">
  <CardHeader>
  <div className="flex items-center gap-2">
  <AlertTriangle className="h-5 w-5 text-loss" />
@@ -163,7 +222,7 @@ export function EidPredictionsWidget() {
  }
 
  return (
- <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
+ <Card className="bg-card border-border">
  <CardHeader className="pb-2">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
@@ -177,13 +236,13 @@ export function EidPredictionsWidget() {
  variant="ghost"
  onClick={() => fetchPredictions(true)}
  disabled={refreshing}
- className="text-slate-400 hover:text-foreground"
+ className="text-muted-foreground hover:text-foreground"
  >
  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
  </Button>
  </div>
  {lastUpdate && (
- <p className="text-xs text-slate-500 mt-1">
+ <p className="text-xs text-muted-foreground mt-1">
  آخر تحديث: {new Date(lastUpdate).toLocaleString('ar-EG')}
  </p>
  )}
@@ -197,74 +256,41 @@ export function EidPredictionsWidget() {
  </p>
  </div>
 
- {/* Predictions List */}
- {displayPredictions.map((pred) => {
- const Icon = iconMap[pred.symbol] || TrendingUp;
- const SignalIcon = signalIcons[pred.signal];
- const potentialGain = parseFloat(getPotentialGain(pred));
-
+ {/* ALPHA-UX-FIX-9: 3 sections — main (proven) / testing / closed */}
+ {(() => {
+ const proven = displayPredictions.filter(p => (p.status || 'proven') === 'proven');
+ const testing = displayPredictions.filter(p => p.status === 'testing');
+ const closed = displayPredictions.filter(p => p.status === 'closed');
  return (
- <div
- key={pred.id}
- className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-colors"
- >
- <div className="flex items-center justify-between mb-2">
- <div className="flex items-center gap-2">
- <div className="p-1.5 rounded-lg bg-slate-700/50">
- <Icon className="h-4 w-4 text-slate-300" />
- </div>
- <span className="font-bold text-foreground">{pred.symbol}</span>
- </div>
- <Badge className={signalColors[pred.signal]}>
- <SignalIcon className="h-3 w-3 mr-1" />
- {pred.signal === 'BUY' ? 'شراء' : pred.signal === 'SELL' ? 'بيع' : 'انتظار'}
- </Badge>
- </div>
-
- <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+ <>
+ {proven.length > 0 && (
  <div>
- <span className="text-slate-500">الدخول</span>
- <p className="text-slate-200 font-mono">{formatPrice(pred.entryPrice, pred.symbol)}</p>
+ <h4 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1">🟢 التوقعات الأساسية <span className="text-muted-foreground font-normal">({proven.length})</span></h4>
+ <div className="space-y-2">{proven.map(p => <PredictionCard key={p.id} pred={p} />)}</div>
  </div>
+ )}
+ {testing.length > 0 && (
  <div>
- <span className="text-slate-500">الهدف</span>
- <p className="text-success font-mono">{formatPrice(pred.targetPrice, pred.symbol)}</p>
+ <h4 className="text-xs font-bold text-warning mb-2 flex items-center gap-1">🟡 تحت الاختبار <span className="text-muted-foreground font-normal">({testing.length})</span></h4>
+ <p className="text-[10px] text-muted-foreground mb-2">فرص جديدة بتتـ validate — لو ثبتت معانا بتنتقل للتوقعات الأساسية.</p>
+ <div className="space-y-2">{testing.map(p => <PredictionCard key={p.id} pred={p} />)}</div>
  </div>
- <div>
- <span className="text-slate-500">وقف الخسارة</span>
- <p className="text-loss font-mono">{formatPrice(pred.stopLoss, pred.symbol)}</p>
- </div>
- </div>
-
- <div className="flex items-center justify-between text-xs">
- <div className="flex items-center gap-2">
- <span className="text-slate-500">الثقة:</span>
- <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
- <div
- className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'}`}
- style={{ width: `${pred.confidence * 100}%` }}
- />
- </div>
- <span className="text-slate-300">{(pred.confidence * 100).toFixed(0)}%</span>
- </div>
- <div className={`flex items-center gap-1 ${potentialGain >= 0 ? 'text-success' : 'text-loss'}`}>
- {potentialGain >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
- {potentialGain >= 0 ? '+' : ''}{potentialGain}%
- </div>
- </div>
-
- <p className="text-xs text-slate-400 mt-2 border-t border-slate-700/50 pt-2">
- {pred.reasoning}
- </p>
- </div>
+ )}
+ {closed.length > 0 && (
+ <details className="mt-2">
+ <summary className="text-xs font-bold text-muted-foreground cursor-pointer">🔴 منتهية ({closed.length})</summary>
+ <div className="space-y-2 mt-2">{closed.map(p => <PredictionCard key={p.id} pred={p} />)}</div>
+ </details>
+ )}
+ </>
  );
- })}
+ })()}
 
  {/* ALPHA-UX-FIX-5: guest freemium CTA — بتشوف 3 من الكل، سجل للمزيد */}
  <GuestLimitCta shown={displayPredictions.length} total={predictions.length} itemLabel="توقعًا" itemLabelPlural="توقعات" />
 
  {/* Memory Stats */}
- <div className="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-500">
+ <div className="mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
  <p>التوقعات تُحدّث يومياً بناءً على تحليل السوق</p>
  </div>
  </CardContent>
