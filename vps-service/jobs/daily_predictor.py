@@ -4395,54 +4395,6 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
               f"MB={mb['ticker'] if mb else '-'}({'✅' if mb and mb['is_win'] else '❌'}) | "
               f"avg_ev={daily_summary[-1]['avg_evidence']}", flush=True)
 
-    # ============================================================================
-    # WHALE_RADAR HUNTER MODE (Per Mohsen's directive 2026-10-20)
-    # ============================================================================
-    # When the market is DEFENSIVE/correction AND the classic Trend Following
-    # engine produced no breakout picks (total_generated == 0), activate
-    # Hunter Mode: read the maker_radar Quiet Accumulation picks and generate
-    # WHALE_RADAR predictions so the user sees whale activity instead of an
-    # empty defensive screen.
-    #
-    # Trigger conditions:
-    #   1. regime is DEFENSIVE/BEAR/STRONG_BEAR, OR
-    #   2. total_generated == 0 (no classic picks — fallback to whale radar)
-    #
-    # The whale radar picks are ADDED on top of any classic picks (they don't
-    # replace them). They are tagged with:
-    #   - signal = 'WHALE_RADAR_BUY'
-    #   - who_is_buying_state = 'WHALE_RADAR'
-    #   - persona = 'gambler' (high-risk)
-    #   - position_size = 2% (strict risk management)
-    #
-    # The frontend (PersonaTab) shows these in a special "Smart Money Radar"
-    # section when market is defensive.
-    # ============================================================================
-    _whale_trigger = (
-        _regime_name in ('DEFENSIVE', 'BEAR', 'STRONG_BEAR')
-        or total_generated == 0
-    )
-    if _whale_trigger and not _dry_run_no_write:
-        print("\n" + "=" * 80, flush=True)
-        print("  🐋 WHALE_RADAR HUNTER MODE ACTIVATED", flush=True)
-        print(f"  🌐 Market regime: {_regime_name} | Classic picks: {total_generated}", flush=True)
-        print("  → Surfacing whale accumulation picks from maker_radar...", flush=True)
-        print("=" * 80, flush=True)
-        _whale_ref = [total_generated]  # mutable ref for the inner function
-        _whale_count = _integrate_whale_radar_predictions(
-            scan_date=scan_date,
-            market_code=market_code,
-            tracker=tracker,
-            total_generated_ref=_whale_ref,
-        )
-        # Update total_generated with the whale picks count
-        total_generated = _whale_ref[0]
-        if _whale_count > 0:
-            print(f"  🐋 Hunter Mode added {_whale_count} whale radar pick(s) on top of classic picks.", flush=True)
-        else:
-            print(f"  🐋 Hunter Mode found no qualifying whale radar picks today.", flush=True)
-    elif _whale_trigger and _dry_run_no_write:
-        print("  🐋 [WHALE_RADAR] Skipped in dry-run mode (would have activated Hunter Mode)", flush=True)
 
     # Compute PF from stored trades
     wins_pnl = [s['pnl_pct'] for s in all_stored if s['pnl_pct'] > 0]
