@@ -119,7 +119,17 @@ export async function GET(req: NextRequest) {
       is_bull: rawRegime.regime === 'AGGRESSIVE' || rawRegime.effective_regime === 'AGGRESSIVE',
     };
 
-    const rawStocks: any[] = data.quiet_list ?? data.stocks ?? [];
+    const rawStocks: any[] = [
+      ...(data.quiet_list ?? []),
+      ...(data.pre_surge_list ?? []),
+      ...(data.explosive_list ?? []),
+      ...(data.early_break_list ?? []),
+      ...(data.under_microscope ?? []),
+      ...(data.stocks ?? []),
+    ].filter((s, i, arr) =>
+      // deduplicate by ticker
+      i === arr.findIndex(x => (x.ticker || x.symbol) === (s.ticker || s.symbol))
+    );
     // ALPHA-UX-FIX-8: support/resistance map من stocks.db (fallback لـ defense/resistance)
     const srMap = buildSupportResistanceMap();
     const stocks: RadarStock[] = rawStocks.map((s) => {
@@ -135,11 +145,18 @@ export async function GET(req: NextRequest) {
       const phase: string = s.path ?? s.life_cycle ?? s.pattern ?? 'غير معروفة';
       const phaseReason: string | null = s.reason ?? s.quiet_details?.signals_met?.join(' ، ') ?? null;
 
+      // ALPHA-RR-GATE-1: final fallback — احسب وقف (3% تحت الدخول) + هدف (1.5x risk)
+      const _entry = Number(s.entry_price ?? s.current_price) || 0;
+      const _srSupport = srMap[(s.ticker || '').toUpperCase()]?.support;
+      const _srResistance = srMap[(s.ticker || '').toUpperCase()]?.resistance;
+      const _stop = s.stop_loss ?? _srSupport ?? (_entry > 0 ? _entry * 0.97 : null);
+      const _risk = _entry > 0 && _stop != null ? _entry - _stop : 0;
+      const _target = s.target_price ?? _srResistance ?? (_risk > 0 ? _entry + 1.5 * _risk : null);
       const entryDefense: EntryDefense = {
-        // ALPHA-UX-FIX-8: fallback لـ support/resistance من stocks.db (srMap) لو الـ cache مفيهومش stop_loss/target_price
+        // ALPHA-UX-FIX-8: fallback chain: stop_loss → srMap.support → 3% under entry. target → srMap.resistance → 1.5x risk.
         entry_level: s.entry_price ?? s.current_price ?? null,
-        defense_level: s.stop_loss ?? srMap[(s.ticker || '').toUpperCase()]?.support ?? null,
-        resistance_level: s.target_price ?? srMap[(s.ticker || '').toUpperCase()]?.resistance ?? null,
+        defense_level: _stop,
+        resistance_level: _target,
       };
 
       return {

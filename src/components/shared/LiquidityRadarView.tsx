@@ -656,7 +656,7 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-profit" />
           </span>
-          <span className="font-mono text-[10px] text-profit uppercase tracking-widest">WYCKOFF-RADAR-V4</span>
+          <span className="font-mono text-[10px] text-profit uppercase tracking-widest">رادار سيولة صانع السوق</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-1.5 text-xs">
