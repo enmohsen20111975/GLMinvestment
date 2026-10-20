@@ -103,7 +103,7 @@ export function RoboNotifierToggle() {
  title={label}
  >
  {icon}
- <span className="hidden sm:inline">{running ? 'حي' : 'تنبيهات'}</span>
+ <span className="hidden sm:inline">{running ? '🔔 تنبيهات نشطة' : 'تفعيل التنبيهات'}</span>
  </Button>
  );
 }

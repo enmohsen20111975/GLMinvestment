@@ -42,28 +42,35 @@ const KNOWN_ICONS = new Set([
 /**
  * Get the stock icon URL if it exists
  * @param ticker - Stock ticker symbol (e.g., "CIBC", "COMI", "ABUK")
+ * @param logoUrl - Optional logo URL from API (logoUrl or logo_url field)
  * @returns URL string if icon likely exists, null otherwise
+ *
+ * ALPHA-FIX Task 3: Added TradingView CDN fallback for tickers not in KNOWN_ICONS.
+ * Priority: API logoUrl → local SVG → TradingView CDN → null (component fallback).
  */
 export function getStockIconUrl(ticker: string, logoUrl?: string | null): string | null {
-  if (logoUrl && logoUrl.trim()) return logoUrl.trim();
+  // (1) API-provided logo URL (highest priority)
+  if (logoUrl && logoUrl.trim().startsWith('http')) return logoUrl.trim();
+
   if (!ticker) return null;
-  
-  const normalizedTicker = ticker.toUpperCase().trim();
-  
-  // Check exact match first
-  if (KNOWN_ICONS.has(normalizedTicker)) {
-    return `/stock-icons/${normalizedTicker}.svg`;
+
+  const clean = ticker.toUpperCase().replace(/\.(CA|SR|KW|QA)$/, '').trim();
+
+  // (2) Check local SVG files
+  if (KNOWN_ICONS.has(clean)) {
+    return `/stock-icons/${clean}.svg`;
   }
-  
-  // Check lowercase version (for full company names)
+
+  // (3) Check lowercase version (for full company names)
   const lowerTicker = ticker.toLowerCase().trim();
   if (KNOWN_ICONS.has(lowerTicker)) {
     return `/stock-icons/${lowerTicker}.svg`;
   }
-  
-  // Unknown ticker — don't request a (probably missing) file. Returning null
-  // lets the component fall back to the sector emoji instead of 404-ing.
-  return null;
+
+  // (4) ALPHA-FIX: TradingView CDN fallback — smart fallback for unknown tickers.
+  // Returns the TradingView logo CDN URL. The StockIcon component handles
+  // onError by falling back to a circular badge with the first 2 letters.
+  return `https://s3-symbol-logo.tradingview.com/${clean.toLowerCase()}--big.svg`;
 }
 
 /**

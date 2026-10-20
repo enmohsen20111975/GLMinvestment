@@ -1,21 +1,20 @@
 /**
  * nav-config.ts — المصدر الوحيد للقوائم الثلاث (TopBar / MobileNav / MobileMoreSheet)
  * =====================================================================
- * الترتيب المطلوب من المالك (2026-10-19):
+ * ALPHA-FIX Task 4 (2026-10-20): إعادة هيكلة لـ 4 بوابات استثمارية واضحة:
  *
- * TopBar → 6 بوابات:
- * 1. home — الرئيسية → dashboard
- * 2. market — السوق → stocks / liquidity-radar / trading-chart
- * 3. analysis — التحليل → recommendations / market-depth ★
- * 4. portfolio — محفظتي → portfolio / watchlist / alerts-center / bagholder-rescue
- * 5. education — التعلّم → academy / simulation
- * 6. more — المزيد → news / subscription ★ / settings / sharia 🇪🇬 / zakat / tithes / about
+ * TopBar → 6 بوابات (4 رئيسية + 2 مساعدة):
+ * 1. 📊 نبض السوق (Market Pulse) — dashboard + liquidity-radar + sectors + market-status + historical-trades
+ * 2. 🎯 الفرص والتربص (Picks & Stalking) — recommendations + market-depth + picks-management + specialist-analysis
+ * 3. 🔬 مجهر الأسهم (Stock DNA) — stocks + stock-filters + screener + trading-chart + smart-confluence
+ * 4. 💼 الصفقات والمحفظة (Portfolio) — portfolio + watchlist + alerts-center + bagholder-rescue
+ * 5. 🎓 التعلّم (Education) — academy + simulation
+ * 6. ⋯ المزيد (More) — news + subscription + settings + sharia + zakat + tithes + about
  *
  * MobileNav → 5 أزرار (بدون تغيير):
  * dashboard / stocks / recommendations / portfolio / market-depth
  *
- * MobileMoreSheet → أقسام أخرى (بدون تغيير):
- * bagholder-rescue / watchlist / simulation / academy / news / subscription / zakat / tithes / settings / about
+ * MobileMoreSheet → أقسام أخرى (بدون تغيير)
  */
 
 import {
@@ -40,6 +39,7 @@ import {
   TrendingUp,
   Landmark,
   Layers,
+  Microscope,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppView } from '@/types';
@@ -59,40 +59,49 @@ export interface NavSection {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- * TopBar — 6 بوابات (الترتيب المطلوب من المالك)
+ * TopBar — 6 بوابات (4 رئيسية + 2 مساعدة)
+ * ALPHA-FIX Task 4: إعادة هيكلة لـ 4 بوابات استثمارية واضحة
  * ════════════════════════════════════════════════════════════════════════ */
 export const navSections: NavSection[] = [
+  // ─── (1) 📊 نبض السوق ───
   {
-    id: 'home',
-    label: 'الرئيسية',
-    icon: LayoutDashboard,
+    id: 'market-pulse',
+    label: 'نبض السوق',
+    icon: Activity,
     items: [
       { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
-    ],
-  },
-  {
-    id: 'market',
-    label: 'السوق',
-    icon: CandlestickChart,
-    items: [
-      { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity },
       { id: 'sectors', label: 'حركة القطاعات', icon: Layers },
-      { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
-      // ALPHA-UX-FIX-7: اتنقلوا من #recommendations tabs لروابط مستقلة تحت السوق
       { id: 'market-status', label: 'حالة السوق', icon: Activity },
       { id: 'historical-trades', label: 'الصفقات التاريخية', icon: History },
     ],
   },
+  // ─── (2) 🎯 الفرص والتربص ───
   {
-    id: 'analysis',
-    label: 'التحليل',
+    id: 'picks-stalking',
+    label: 'الفرص والتربص',
     icon: Target,
     items: [
       { id: 'recommendations', label: 'التحليلات', icon: Target },
       { id: 'market-depth', label: 'سيولة المستثمرين', icon: Activity, highlight: true },
+      { id: 'picks-management', label: 'إدارة الصفقات', icon: TrendingUp },
+      { id: 'specialist-analysis', label: 'التحليل المتخصص', icon: Microscope },
     ],
   },
+  // ─── (3) 🔬 مجهر الأسهم ───
+  {
+    id: 'stock-dna',
+    label: 'مجهر الأسهم',
+    icon: Microscope,
+    items: [
+      { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
+      { id: 'stock-filters', label: 'الفلاتر الذكية', icon: Target },
+      { id: 'screener', label: 'الفرز المتقدم', icon: BarChart3 },
+      { id: 'trading-chart', label: 'الشارت التفاعلي', icon: BarChart3 },
+      { id: 'smart-confluence', label: 'الذكاء الموحد', icon: TrendingUp },
+    ],
+  },
+  // ─── (4) 💼 الصفقات والمحفظة ───
   {
     id: 'portfolio',
     label: 'محفظتي',
@@ -104,6 +113,7 @@ export const navSections: NavSection[] = [
       { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خاسر', icon: LifeBuoy },
     ],
   },
+  // ─── (5) 🎓 التعلّم ───
   {
     id: 'education',
     label: 'التعلّم',
@@ -113,6 +123,7 @@ export const navSections: NavSection[] = [
       { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
     ],
   },
+  // ─── (6) ⋯ المزيد ───
   {
     id: 'more',
     label: 'المزيد',

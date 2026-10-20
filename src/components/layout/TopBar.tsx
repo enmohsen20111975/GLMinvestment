@@ -54,6 +54,8 @@ import {
  MARKET_CURRENCY_LABEL,
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
+// ALPHA-FIX Task 2: market session badge (مباشر/مغلق) from market-hours.ts
+import { getMarketStatus } from '@/lib/market-hours';
 import type { AppView } from '@/types';
 // SCREENS-REORG: nav config — المصدر الوحيد للـ TopBar/MobileNav/MobileMoreSheet.
 // التوحيد + عدم التكرار: أي تعديل في القوائم يبقى في مكان واحد (src/lib/nav-config.ts).
@@ -88,6 +90,9 @@ export function TopBar() {
  const t = useTranslation();
  const { data: session, status } = useSession();
  const { theme, setTheme } = useTheme();
+
+ // ALPHA-FIX Task 2: Market session status badge (مباشر / مغلق)
+ const marketStatus = getMarketStatus(currentMarket);
  const [mounted, setMounted] = useState(false);
  const [activeSection, setActiveSection] = useState<string | null>(null);
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -216,6 +221,19 @@ export function TopBar() {
  <span className="hidden sm:inline">{activeMarketOption.label}</span>
  <span className="text-xs font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
  {activeMarketCurrency}
+ </span>
+ {/* ALPHA-FIX Task 2: Market session badge — مباشر/مغلق بمواعيد البورصة الرسمية */}
+ <span
+ className={cn(
+ 'hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border',
+ marketStatus.isOpen
+ ? 'bg-profit/10 text-profit border-profit/20'
+ : 'bg-muted text-muted-foreground border-border'
+ )}
+ title={marketStatus.reason}
+ >
+ {marketStatus.isOpen ? '🔴' : '⚪'}
+ {marketStatus.isOpen ? 'مباشر' : 'مغلق'}
  </span>
  <ChevronDown
  className={cn(

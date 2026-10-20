@@ -10,16 +10,19 @@ import { getStockIconUrl, getSectorIcon, STOCK_ICON_SIZES, type StockIconProps }
  * Displays a stock icon from logoUrl (database TradingView URL) or /stock-icons/{ticker}.svg
  * Falls back to an elegant 2-letter avatar badge with sector indicator
  */
-export function StockIcon({ 
- ticker, 
- name, 
- sector, 
+export function StockIcon({
+ ticker,
+ name,
+ sector,
  logoUrl,
- size = 'md', 
- className 
+ size = 'md',
+ className,
+ ...rest
 }: StockIconProps) {
  const [imageError, setImageError] = useState(false);
- const iconUrl = (!imageError && (logoUrl || getStockIconUrl(ticker))) || null;
+ // ALPHA-FIX Task 3: support both logoUrl (camelCase) and logo_url (snake_case from Python API)
+ const resolvedLogoUrl = logoUrl || (rest as Record<string, unknown>).logo_url as string | null | undefined;
+ const iconUrl = (!imageError && (resolvedLogoUrl || getStockIconUrl(ticker, resolvedLogoUrl))) || null;
  const sizeClass = STOCK_ICON_SIZES[size];
  const fallbackEmoji = getSectorIcon(sector);
  const cleanTicker = (ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
@@ -61,15 +64,18 @@ export function StockIcon({
 /**
  * StockIconMini - A smaller version for table rows and list items
  */
-export function StockIconMini({ 
- ticker, 
- name, 
+export function StockIconMini({
+ ticker,
+ name,
  sector,
  logoUrl,
- className 
+ className,
+ ...rest
 }: Omit<StockIconProps, 'size'>) {
  const [imageError, setImageError] = useState(false);
- const iconUrl = (!imageError && (logoUrl || getStockIconUrl(ticker))) || null;
+ // ALPHA-FIX Task 3: support both logoUrl and logo_url
+ const resolvedLogoUrl = logoUrl || (rest as Record<string, unknown>).logo_url as string | null | undefined;
+ const iconUrl = (!imageError && (resolvedLogoUrl || getStockIconUrl(ticker, resolvedLogoUrl))) || null;
  const fallbackEmoji = getSectorIcon(sector);
  const cleanTicker = (ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
  
