@@ -30,8 +30,8 @@ from typing import Optional
 
 import pandas as pd
 
-from ..core.base import Position, RiskPlan, TakeProfitTier
-from ..core.indicators import atr, donchian_channels
+from glminvestment_engines.core.base import Position, RiskPlan, TakeProfitTier
+from glminvestment_engines.core.indicators import atr, donchian_channels
 
 
 # ──────────────────────────────────────────────────────────────────────────
