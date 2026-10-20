@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+// DESIGN-SYSTEM-1: StatusBadge is the single source of truth for badge colors.
+import { StatusBadge } from '@/components/shared/ui';
 import {
  TrendingUp, TrendingDown, Clock, Calendar,
  BarChart3, Target, AlertTriangle, CheckCircle,
@@ -397,16 +399,9 @@ export function PreviousPredictionsArchive({
  </thead>
  <tbody>
  {predictions.map((p, i) => {
- const statusColor =
- p.status === 'TARGET_HIT'
- ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold'
- : p.status === 'TRAILING_PROFIT'
- ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border-emerald-500/40 font-semibold'
- : p.status === 'STOPPED'
- ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 font-semibold'
- : p.status === 'EXPIRED'
- ? 'bg-slate-200/60 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300/60 dark:border-slate-700 font-semibold'
- : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 font-semibold';
+ // DESIGN-SYSTEM-1: removed local statusColor ternary + sigColor map.
+ // Now using <StatusBadge> from '@/components/shared/ui' which imports
+ // from '@/lib/design-tokens' (SIGNAL_BADGE_STYLES + STATUS_BADGE_STYLES).
  const ret = p.actual_return;
  const retColor = ret === null || ret === undefined
  ? 'text-muted-foreground'
@@ -414,10 +409,6 @@ export function PreviousPredictionsArchive({
  const dateStr = p.prediction_date
  ? (typeof p.prediction_date === 'string' ? p.prediction_date.slice(5, 10) : '')
  : '';
- const sigColor: Record<string, string> = {
- 'STRONG_BUY': 'bg-profit', 'BUY': 'bg-success', 'ACCUMULATE': 'bg-whale',
- 'HOLD': 'bg-muted', 'REDUCE': 'bg-warning', 'SELL': 'bg-loss', 'STRONG_SELL': 'bg-loss',
- };
  // P6-PREDICTIONS: قراءة القيم التاريخية بأمان (alias fallback)
  const entryVal = Number(p.entry_price || p.current_price || 0);
  const maxHigh = Number(p.max_high_since_pred ?? p.highest_price_reached ?? p.high_price ?? entryVal) || entryVal;
@@ -426,27 +417,23 @@ export function PreviousPredictionsArchive({
  <tr key={(p.ticker || '') + '-' + i} className="border-t border-border hover:bg-muted/40">
  <td className="p-2 font-bold">{p.ticker}</td>
  <td className="p-2">
- <span className={cn('inline-block px-1.5 py-0.5 rounded text-xs text-white', sigColor[p.signal || ''] || 'bg-muted')}>
- {p.signal_ar || p.signal}
- </span>
+ <StatusBadge signal={p.signal} labelAr={p.signal_ar} size="sm" />
  </td>
  <td className="p-2 hidden sm:table-cell">{entryVal > 0 ? (entryVal ?? 0).toFixed(2) : '—'}</td>
  <td className="p-2 hidden sm:table-cell">{p.target_price ? Number(p.target_price).toFixed(2) : '—'}</td>
  {/* P6-PREDICTIONS: القيم التاريخية */}
  <td className="p-2 hidden md:table-cell font-mono text-xs">
  {maxHigh > 0
- ? <span className="text-profit ">▲ {Number(maxHigh).toFixed(2)}</span>
+ ? <span className="text-profit">▲ {Number(maxHigh).toFixed(2)}</span>
  : <span className="text-muted-foreground">—</span>}
  </td>
  <td className="p-2 hidden md:table-cell font-mono text-xs">
  {minLow > 0
- ? <span className="text-loss ">▼ {Number(minLow).toFixed(2)}</span>
+ ? <span className="text-loss">▼ {Number(minLow).toFixed(2)}</span>
  : <span className="text-muted-foreground">—</span>}
  </td>
  <td className="p-2">
- <span className={cn('inline-block px-2 py-0.5 rounded text-xs border', statusColor)}>
- {p.status_ar || p.status}
- </span>
+ <StatusBadge status={p.status} labelAr={p.status_ar} size="sm" />
  </td>
  <td className={cn('p-2 font-medium', retColor)}>
  {ret === null || ret === undefined

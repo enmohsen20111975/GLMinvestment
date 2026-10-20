@@ -1,129 +1,62 @@
 'use client';
 
 /**
- * StatusBadge — P0-COMPONENT-UNIFICATION (Phase 1.3)
+ * StatusBadge — Unified Financial Design System Badge Engine
  * ====================================================================
- * بادج موحّد لعرض status الرسمية (TARGET_HIT / STOPPED / EXPIRED / …).
- * ----------------------------------------------------------------------------
- * قبل كده: كان فيه 22 inline ternary chain بـ نفس الـ bug المشهور:
+ * Per Mohsen's directive 2026-10-20 — النظام الموحد للبادجات.
  *
- *   const statusColor =
- *     p.status === 'TARGET_HIT'
- *       ? 'bg-success text-success /40 border-success'  // ← bug! space before /
- *       : p.status === 'STOPPED'
- *       ? 'bg-loss text-loss /40 border-loss'
- *       : 'bg-warning text-warning /40 border-warning';
+ * الـ component ده هو المسؤول الوحيد عن:
+ *   1. حساب الـ contrast (text + bg من درجات مختلفة من نفس العائلة).
+ *   2. ضمان readability في Light + Dark mode.
+ *   3. استيراد الـ colors من design-tokens.ts (لا ألوان ad-hoc).
  *
- * نفس الـ bug اتكرر في:
- *   - PredictionsTab.tsx (PreviousPredictionsArchive)
- *   - PersonaTab.tsx (Testing Candidates section + previous archive)
- *   - EidPredictionsWidget
- *   - MarketStatusTab
- *   - CanonicalWhoIsBuyingBanner
+ * ممنوع أي مكون يكتب statusColor / sigColor محلي — استخدم StatusBadge.
  *
- * ده بـ يـحل الـ 22 مكان + 3 re-implementations of getStatusBadge().
+ * Props:
+ *   - status: TARGET_HIT | TRAILING_PROFIT | STOPPED | EXPIRED | PENDING | ...
+ *   - signal: BUY | STRONG_BUY | SELL | STRONG_SELL | HOLD | ACCUMULATE | WHALE_RADAR_BUY | ...
+ *   - label: نص مخصص (يـoverride الـ labelAr الافتراضي)
+ *   - showIcon: show the emoji icon (default: true)
+ *   - size: 'sm' | 'md' | 'lg'
+ *   - className: extra classes
  *
- * Status taxonomy (دستور §606-641) — 5 official values:
- *   - TARGET_HIT      → اتحقّق الهدف
- *   - TRAILING_PROFIT → ربح لحظي + trailing stop
- *   - STOPPED         → ضرب وقف الخسارة
- *   - EXPIRED         → انتهى الوقت
- *   - PENDING         → لسه معلّق
+ * لو status موجود → بـ يستخدم STATUS_BADGE_STYLES
+ * لو signal موجود (وبس) → بـ يستخدم SIGNAL_BADGE_STYLES
+ * لو الاتنين موجودين → priority للـ status (لأنه الأحداث)
  * ====================================================================
  */
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import {
+  SIGNAL_BADGE_STYLES,
+  STATUS_BADGE_STYLES,
+  getSignalBadgeStyle,
+  getStatusBadgeStyle,
+  NEUTRAL_BADGE,
+  type BadgeStyle,
+} from '@/lib/design-tokens';
 
 export interface StatusBadgeProps {
-  /** الـ status string (TARGET_HIT / STOPPED / …). */
-  status: string | null | undefined;
+  /** حالة الصفقة (priority على signal لو موجود). */
+  status?: string | null;
+  /** إشارة التداول (يـستخدم لو status مش موجود). */
+  signal?: string | null;
+  /** نص مخصص (يـoverride الـ labelAr الافتراضي). */
+  label?: string | null;
   /** Arabic label override (لو موجود من الـ backend). */
-  statusAr?: string | null;
-  /** حجم البادج. */
-  size?: 'sm' | 'md' | 'lg';
-  /** variant: soft (default) | solid. */
-  variant?: 'soft' | 'solid';
-  /** Show the icon. */
+  labelAr?: string | null;
+  /** عرض الأيقونة (default: true). */
   showIcon?: boolean;
+  /** حجم البادج. default: sm. */
+  size?: 'sm' | 'md' | 'lg';
+  /** className إضافي. */
   className?: string;
 }
 
-// ============================================================
-// Canonical STATUS_STYLES map
-// ============================================================
-
-type Tone = 'profit' | 'success' | 'loss' | 'muted' | 'warning';
-
-interface StatusStyle {
-  emoji: string;
-  tone: Tone;
-  labelAr: string;
-}
-
-/**
- * Canonical status → style map. Single source of truth.
- * لو الـ status مش معروف → بيرجّع fallback (muted tone).
- */
-const STATUS_STYLES: Record<string, StatusStyle> = {
-  TARGET_HIT: {
-    emoji: '✅',
-    tone: 'success',
-    labelAr: 'تحقّق الهدف',
-  },
-  TRAILING_PROFIT: {
-    emoji: '📈',
-    tone: 'profit',
-    labelAr: 'ربح لحظي',
-  },
-  STOPPED: {
-    emoji: '🛑',
-    tone: 'loss',
-    labelAr: 'ضرب وقف الخسارة',
-  },
-  EXPIRED: {
-    emoji: '⌛',
-    tone: 'muted',
-    labelAr: 'انتهى الوقت',
-  },
-  PENDING: {
-    emoji: '⏳',
-    tone: 'warning',
-    labelAr: 'معلّق',
-  },
-  ACTIVE: {
-    emoji: '🟢',
-    tone: 'profit',
-    labelAr: 'نشط',
-  },
-  WAITING: {
-    emoji: '⏸️',
-    tone: 'warning',
-    labelAr: 'في انتظار',
-  },
-};
-
-const FALLBACK_STYLE: StatusStyle = {
-  emoji: '•',
-  tone: 'muted',
-  labelAr: 'غير محدد',
-};
-
-const TONE_SOFT: Record<Tone, string> = {
-  profit: 'bg-profit/15 text-profit border-profit/40',
-  success: 'bg-success/15 text-success border-success/40',
-  loss: 'bg-loss/15 text-loss border-loss/40',
-  muted: 'bg-muted text-muted-foreground border-border',
-  warning: 'bg-warning/15 text-warning border-warning/40',
-};
-
-const TONE_SOLID: Record<Tone, string> = {
-  profit: 'bg-profit text-profit-foreground border-profit',
-  success: 'bg-success text-success-foreground border-success',
-  loss: 'bg-loss text-loss-foreground border-loss',
-  muted: 'bg-muted text-muted-foreground border-border',
-  warning: 'bg-warning text-warning-foreground border-warning',
-};
+// ────────────────────────────────────────────────────────────────────────────
+// Size classes
+// ────────────────────────────────────────────────────────────────────────────
 
 const SIZE_CLASS = {
   sm: 'text-[10px] px-2 py-0.5 gap-1',
@@ -131,46 +64,45 @@ const SIZE_CLASS = {
   lg: 'text-sm px-3 py-1.5 gap-2',
 } as const;
 
-// ============================================================
+// ────────────────────────────────────────────────────────────────────────────
 // Component
-// ============================================================
+// ────────────────────────────────────────────────────────────────────────────
 
-/**
- * @example
- * // Basic
- * <StatusBadge status="TARGET_HIT" />
- * // → ✅ تحقّق الهدف (success tone)
- *
- * @example
- * // With Arabic label from backend
- * <StatusBadge status={p.status} statusAr={p.status_ar} />
- *
- * @example
- * // Solid variant
- * <StatusBadge status="STOPPED" variant="solid" />
- */
 export function StatusBadge({
   status,
-  statusAr,
-  size = 'sm',
-  variant = 'soft',
+  signal,
+  label,
+  labelAr,
   showIcon = true,
+  size = 'sm',
   className,
 }: StatusBadgeProps) {
-  const key = (status || '').toString().toUpperCase().trim();
-  const style = STATUS_STYLES[key] || FALLBACK_STYLE;
-  const label = statusAr && typeof statusAr === 'string' && statusAr.trim().length > 0
-    ? statusAr
-    : style.labelAr;
-  const toneClass = variant === 'soft' ? TONE_SOFT[style.tone] : TONE_SOLID[style.tone];
+  // (1) Determine which style to use — status takes priority over signal
+  let style: BadgeStyle;
+  let resolvedLabel: string;
 
-  if (!status) {
+  if (status) {
+    style = getStatusBadgeStyle(status);
+    resolvedLabel = label || labelAr || style.labelAr || String(status);
+  } else if (signal) {
+    style = getSignalBadgeStyle(signal);
+    resolvedLabel = label || labelAr || style.labelAr || String(signal);
+  } else {
+    // Neither status nor signal — show neutral "—" badge
+    style = NEUTRAL_BADGE;
+    resolvedLabel = '—';
+  }
+
+  // (2) Empty state — if both null/undefined, show dash
+  if (!status && !signal) {
     return (
       <span
         className={cn(
           'inline-flex items-center rounded-full border font-semibold',
           SIZE_CLASS[size],
-          TONE_SOFT.muted,
+          style.bg,
+          style.text,
+          style.border,
           className
         )}
         dir="rtl"
@@ -180,25 +112,32 @@ export function StatusBadge({
     );
   }
 
+  // (3) Render the badge with high-contrast styling
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full border font-semibold',
         SIZE_CLASS[size],
-        toneClass,
+        style.bg,
+        style.text,
+        style.border,
         className
       )}
       dir="rtl"
     >
-      {showIcon && <span aria-hidden>{style.emoji}</span>}
-      <span>{label}</span>
+      {showIcon && <span aria-hidden>{style.icon}</span>}
+      <span>{resolvedLabel}</span>
     </span>
   );
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Helper exports (for migration of inline ternary chains)
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
- * Helper function for cases where you just need the className string
- * (for migration of inline ternary chains). Phase 2 codemod بـ يستخدمها.
+ * Helper: get the badge className string for a status.
+ * For migration of inline ternary chains in components that use <Badge>.
  *
  * @example
  * <Badge className={cn('border', getStatusBadgeClass(p.status))}>
@@ -206,19 +145,24 @@ export function StatusBadge({
  * </Badge>
  */
 export function getStatusBadgeClass(
-  status: string | null | undefined,
-  variant: 'soft' | 'solid' = 'soft'
+  status: string | null | undefined
 ): string {
-  const key = (status || '').toString().toUpperCase().trim();
-  const style = STATUS_STYLES[key] || FALLBACK_STYLE;
-  return variant === 'soft' ? TONE_SOFT[style.tone] : TONE_SOLID[style.tone];
+  const style = getStatusBadgeStyle(status);
+  return cn(style.bg, style.text, style.border);
 }
 
 /**
- * Helper for getting the Arabic label only (no className).
- *
- * @example
- * const label = getStatusLabelAr(p.status, p.status_ar);
+ * Helper: get the badge className string for a signal.
+ */
+export function getSignalBadgeClass(
+  signal: string | null | undefined
+): string {
+  const style = getSignalBadgeStyle(signal);
+  return cn(style.bg, style.text, style.border);
+}
+
+/**
+ * Helper: get the Arabic label for a status (no className).
  */
 export function getStatusLabelAr(
   status: string | null | undefined,
@@ -227,8 +171,29 @@ export function getStatusLabelAr(
   if (statusAr && typeof statusAr === 'string' && statusAr.trim().length > 0) {
     return statusAr;
   }
-  const key = (status || '').toString().toUpperCase().trim();
-  return (STATUS_STYLES[key] || FALLBACK_STYLE).labelAr;
+  return getStatusBadgeStyle(status).labelAr || (status ? String(status) : '—');
 }
+
+/**
+ * Helper: get the Arabic label for a signal (no className).
+ */
+export function getSignalLabelAr(
+  signal: string | null | undefined,
+  signalAr?: string | null
+): string {
+  if (signalAr && typeof signalAr === 'string' && signalAr.trim().length > 0) {
+    return signalAr;
+  }
+  return getSignalBadgeStyle(signal).labelAr || (signal ? String(signal) : '—');
+}
+
+// Re-export the style maps for components that need direct access
+export {
+  SIGNAL_BADGE_STYLES,
+  STATUS_BADGE_STYLES,
+  NEUTRAL_BADGE,
+  getSignalBadgeStyle,
+  getStatusBadgeStyle,
+};
 
 export default StatusBadge;

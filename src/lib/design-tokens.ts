@@ -155,3 +155,234 @@ export const PALETTE_MIGRATION: Record<string, string> = {
   'text-blue-600': 'text-primary',
   'bg-blue-500': 'bg-primary',
 };
+
+// ============================================================================
+// 🎨 MASTER BADGE TOKENS (Per Mohsen's directive 2026-10-20 — Design System)
+// ============================================================================
+// النظام الموحد للبادجات — Single Source of Truth.
+// ممنوع أي مكون يكتب ألوان ad-hoc. كل بادج بـ يـستورد من هنا.
+//
+// القاعدة الذهبية: text + bg من نفس العائلة بس بـ درجات مختلفة عشان
+// الضمان readability في Light + Dark mode (no text-loss on bg-loss!).
+// ============================================================================
+
+// ────────────────────────────────────────────────────────────────────────────
+// (A) إشارات التداول (Trading Signals) — للـ SignalBadge / StatusBadge
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface BadgeStyle {
+  bg: string;
+  text: string;
+  border: string;
+  icon: string;
+  labelAr?: string;
+}
+
+export const SIGNAL_BADGE_STYLES: Record<string, BadgeStyle> = {
+  // ─── شراء ───
+  STRONG_BUY: {
+    bg: 'bg-emerald-500/15',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    border: 'border-emerald-500/30',
+    icon: '🟢',
+    labelAr: 'شراء قوي',
+  },
+  BUY: {
+    bg: 'bg-emerald-500/10',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    border: 'border-emerald-500/20',
+    icon: '🟢',
+    labelAr: 'شراء',
+  },
+  ACCUMULATE: {
+    bg: 'bg-cyan-500/15',
+    text: 'text-cyan-700 dark:text-cyan-400',
+    border: 'border-cyan-500/30',
+    icon: '🐋',
+    labelAr: 'تجميع',
+  },
+  WHALE_RADAR_BUY: {
+    bg: 'bg-cyan-500/15',
+    text: 'text-cyan-700 dark:text-cyan-400',
+    border: 'border-cyan-500/30',
+    icon: '🐋',
+    labelAr: 'شراء رادار حيتان',
+  },
+  // ─── محايد ───
+  HOLD: {
+    bg: 'bg-slate-200/80 dark:bg-slate-800',
+    text: 'text-slate-700 dark:text-slate-300',
+    border: 'border-slate-300 dark:border-slate-700',
+    icon: '⏸️',
+    labelAr: 'احتفاظ',
+  },
+  WAIT: {
+    bg: 'bg-slate-200/80 dark:bg-slate-800',
+    text: 'text-slate-700 dark:text-slate-300',
+    border: 'border-slate-300 dark:border-slate-700',
+    icon: '⏸️',
+    labelAr: 'انتظار',
+  },
+  // ─── تحذير ───
+  REDUCE: {
+    bg: 'bg-amber-500/15',
+    text: 'text-amber-700 dark:text-amber-400',
+    border: 'border-amber-500/30',
+    icon: '⚠️',
+    labelAr: 'تخفيض',
+  },
+  // ─── بيع ───
+  SELL: {
+    bg: 'bg-rose-500/15',
+    text: 'text-rose-700 dark:text-rose-400',
+    border: 'border-rose-500/30',
+    icon: '🔴',
+    labelAr: 'بيع',
+  },
+  STRONG_SELL: {
+    bg: 'bg-rose-500/15',
+    text: 'text-rose-700 dark:text-rose-400',
+    border: 'border-rose-500/30',
+    icon: '🔴',
+    labelAr: 'بيع قوي',
+  },
+  AVOID: {
+    bg: 'bg-rose-500/15',
+    text: 'text-rose-700 dark:text-rose-400',
+    border: 'border-rose-500/30',
+    icon: '🔴',
+    labelAr: 'تجنّب',
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// (B) حالات الصفقات (Prediction & Trade Statuses) — للـ StatusBadge
+// ────────────────────────────────────────────────────────────────────────────
+
+export const STATUS_BADGE_STYLES: Record<string, BadgeStyle> = {
+  TARGET_HIT: {
+    bg: 'bg-emerald-500/15',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-500/30',
+    icon: '✅',
+    labelAr: 'تم الهدف',
+  },
+  TRAILING_PROFIT: {
+    bg: 'bg-teal-500/15',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-500/30',
+    icon: '💰',
+    labelAr: 'ربح محقق',
+  },
+  STOPPED: {
+    bg: 'bg-rose-500/15',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-500/30',
+    icon: '🛑',
+    labelAr: 'وقف خسارة',
+  },
+  EXPIRED: {
+    bg: 'bg-slate-200/70 dark:bg-slate-800',
+    text: 'text-slate-600 dark:text-slate-400',
+    border: 'border-slate-300 dark:border-slate-700',
+    icon: '⌛',
+    labelAr: 'منتهية',
+  },
+  PENDING: {
+    bg: 'bg-blue-500/15',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-500/30',
+    icon: '⏳',
+    labelAr: 'نشطة',
+  },
+  ACTIVE: {
+    bg: 'bg-blue-500/15',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-500/30',
+    icon: '🟢',
+    labelAr: 'نشط',
+  },
+  WAITING: {
+    bg: 'bg-amber-500/15',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-500/30',
+    icon: '⏸️',
+    labelAr: 'في انتظار',
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// (C) حالات الجاهزية (Incubator / Readiness) — للـ IncubatorSection
+// ────────────────────────────────────────────────────────────────────────────
+
+export const READINESS_BADGE_STYLES: Record<string, BadgeStyle> = {
+  HEATING_UP: {
+    bg: 'bg-amber-500/15',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-500/30',
+    icon: '🌡️',
+    labelAr: 'تسخين',
+  },
+  APPROACHING_TRIGGER: {
+    bg: 'bg-emerald-500/15',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-500/30',
+    icon: '🔥',
+    labelAr: 'على وشك',
+  },
+  COMPLETE: {
+    bg: 'bg-emerald-500/15',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-500/30',
+    icon: '✅',
+    labelAr: 'مكتمل',
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// (D) حالات المراقبة (Stale / Mismatch) — للـ PersonaTab archive
+// ────────────────────────────────────────────────────────────────────────────
+
+export const ARCHIVE_BADGE_STYLES: Record<string, BadgeStyle> = {
+  STALE: {
+    bg: 'bg-amber-500/15',
+    text: 'text-amber-800 dark:text-amber-300',
+    border: 'border-amber-500/30',
+    icon: '⚠️',
+    labelAr: 'قديمة',
+  },
+  MISMATCH: {
+    bg: 'bg-rose-500/15',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-500/30',
+    icon: '🔴',
+    labelAr: 'منتهية',
+  },
+};
+
+// ============================================================================
+// Helper: get badge style by signal or status (with fallback)
+// ============================================================================
+
+/** بيرجّع الـ BadgeStyle للـ signal المحدد (fallback → muted neutral). */
+export function getSignalBadgeStyle(signal: string | null | undefined): BadgeStyle {
+  if (!signal) return NEUTRAL_BADGE;
+  const key = String(signal).toUpperCase().trim();
+  return SIGNAL_BADGE_STYLES[key] || NEUTRAL_BADGE;
+}
+
+/** بيرجّع الـ BadgeStyle للـ status المحدد (fallback → neutral). */
+export function getStatusBadgeStyle(status: string | null | undefined): BadgeStyle {
+  if (!status) return NEUTRAL_BADGE;
+  const key = String(status).toUpperCase().trim();
+  return STATUS_BADGE_STYLES[key] || NEUTRAL_BADGE;
+}
+
+/** Neutral fallback — للـ signals/statuses مش المتعرفة. */
+export const NEUTRAL_BADGE: BadgeStyle = {
+  bg: 'bg-slate-200/70 dark:bg-slate-800',
+  text: 'text-slate-600 dark:text-slate-400',
+  border: 'border-slate-300 dark:border-slate-700',
+  icon: '•',
+  labelAr: 'غير محدد',
+};
