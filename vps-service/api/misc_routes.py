@@ -1606,16 +1606,19 @@ def rebuild_predictions():
                         logger.error(f"[rebuild-predictions] Error running intraday scanner: {_e}")
 
             # 1. جلب آخر التوقعات النشطة من stored_analyses و predictions
+            # BRAVO-STALE-FIX (جيمي directive): فلتر زمني صارم — أي توقع أقدم من 48 ساعة
+            # يُعتبر STALE ويُستبعد فوراً. لو مفيش صفقات مؤهلة → قائمة فاضية + رسالة "كاش وانتظار".
             active_predictions = []
             try:
-                # أولاً: توقعات V40.2 النشطة من جدول predictions
+                # أولاً: توقعات V40.2 النشطة من جدول predictions (آخر 48 ساعة فقط)
                 pred_rows = conn.execute("""
                     SELECT ticker, signal, signal_type, entry_price, target_price,
                            stop_loss, confidence, maestro_score, created_at,
                            prediction_date, kill_filter_result
                     FROM predictions
-                    WHERE status IN ('PENDING', 'active', 'ACTIVE')
-                       OR lifecycle_status IN ('testing', 'proven', 'active')
+                    WHERE (status IN ('PENDING', 'active', 'ACTIVE')
+                       OR lifecycle_status IN ('testing', 'proven', 'active'))
+                      AND date(created_at) >= date('now', '-2 days')
                     ORDER BY id DESC
                     LIMIT 30
                 """).fetchall()
@@ -1646,12 +1649,13 @@ def rebuild_predictions():
                         })
                         seen_tickers.add(pticker)
 
-                # ثانياً: استكمال من stored_analyses
+                # ثانياً: استكمال من stored_analyses (آخر 48 ساعة فقط — BRAVO-STALE-FIX)
                 rows = conn.execute("""
                     SELECT ticker, recommendation, maestro_score, target_price,
                            stop_loss, entry_price, confidence, updated_at,
                            ai_decision, ai_confidence
                     FROM stored_analyses
+                    WHERE date(updated_at) >= date('now', '-2 days')
                     ORDER BY updated_at DESC
                     LIMIT 100
                 """).fetchall()
@@ -1894,6 +1898,8 @@ def rebuild_predictions():
             # أسهم تحت الاختبار (lifecycle_status='testing') — R/R ≥ 1.8 + نشطة
             # عشان الواجهة تعرضها في تبويب "تحت الاختبار"
             'testing_candidates': _get_testing_candidates(),
+            # BRAVO-STALE-FIX (جيمي directive): لو مفيش توقعات طازة → رسالة واضحة
+            'market_status': 'كاش وانتظار — لا توجد إشارات شراء جديدة في آخر 48 ساعة' if not active_predictions else 'نشط',
             'stats': {
                 'today': today,
                 'weekly': weekly,

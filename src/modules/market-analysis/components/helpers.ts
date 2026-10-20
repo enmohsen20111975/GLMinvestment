@@ -372,6 +372,20 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
  : persona === 'balanced'
  ? 'المتوازن ⚖️'
  : 'المضارب 🎯';
+ // BRAVO-STALE-FIX (جيمي directive): لو مفيش توقعات طازة → رسالة "كاش وانتظار"
+ // بدل ما نطبع تاريخ اليوم فوق أسهم قديمة ونضلل الناس
+ if (!items || items.length === 0) {
+ let text = `📊 *توقعات ${personaName} - ${marketName}*\n`;
+ text += `📅 ${formatDateLabel().dateStr}\n`;
+ text += `━━━━━━━━━━━━━━━━━━━\n\n`;
+ text += `⚖️ السوق في حالة كاش وانتظار\n\n`;
+ text += `محرك الكمي لم يرصد فرص شراء آمنة بنسبة مخاطرة مقبولة اليوم.\n`;
+ text += `الكاش استراتيجية — ستعود الفرص عند تحسن السوق.\n`;
+ text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+ text += `⚠️ تحليل تلقائي — ليس نصيحة استثمارية\n`;
+ text += `🔗 invist.m2y.net`;
+ return text;
+ }
  let text = `📊 *توقعات ${personaName} - ${marketName}*\n`;
  text += `📅 ${formatDateLabel().dateStr}\n`;
  text += `━━━━━━━━━━━━━━━━━━━\n\n`;
