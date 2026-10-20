@@ -6,8 +6,8 @@ Investor Persona Engine
 بناءً على ANALYSIS_STRATEGY_BIBLE_v1.0.md
 
 الاستخدام:
-    from engine.persona_engine import PersonaEngine, InvestorPersona
-    
+    from engines.persona_engine import PersonaEngine, InvestorPersona
+
     engine = PersonaEngine()
     persona = engine.get_persona('balanced')
     adjusted_threshold = persona.get_adjusted_threshold(65)

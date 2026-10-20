@@ -152,16 +152,16 @@ class EnhancedIndicators:
     @staticmethod
     def calc_stochastic(highs: list[float], lows: list[float], closes: list[float],
                         k_period: int = 14, d_period: int = 3
-                        ) -> tuple[float, float]:
+                        ) -> tuple[Optional[float], Optional[float]]:
         """
         حساب Stochastic Oscillator.
         %K = (close - lowest_low) / (highest_high - lowest_low) * 100
         %D = SMA(d_period) من %K
-        بيرجع (%K, %D) لآخر قيمة.
+        Rule 27 (NO-FAKE-DATA): بيرجع (None, None) لو البيانات غير كافية.
         """
         n = min(len(highs), len(lows), len(closes))
         if n < k_period:
-            return 50.0, 50.0
+            return None, None  # Rule 27: no fabrication
 
         # نحسب %K لكل نافذة كاملة
         k_values: list[float] = []
@@ -172,13 +172,13 @@ class EnhancedIndicators:
             ll = min(window_low)
             close = closes[i]
             if hh - ll == 0:
-                k = 50.0
+                k = 50.0  # neutral within calculation (not fallback)
             else:
                 k = (close - ll) / (hh - ll) * 100.0
             k_values.append(k)
 
         if not k_values:
-            return 50.0, 50.0
+            return None, None  # Rule 27: no fabrication
 
         current_k = k_values[-1]
         if len(k_values) < d_period:
@@ -220,15 +220,16 @@ class EnhancedIndicators:
     # ---------- Williams %R ----------
     @staticmethod
     def calc_williams_r(highs: list[float], lows: list[float], closes: list[float],
-                        period: int = 14) -> float:
+                        period: int = 14) -> Optional[float]:
         """
         حساب Williams %R.
         %R = (highest_high - close) / (highest_high - lowest_low) * -100
         بيرجع قيمة بين -100 و 0.
+        Rule 27 (NO-FAKE-DATA): بيرجّع None لو البيانات غير كافية.
         """
         n = min(len(highs), len(lows), len(closes))
         if n < period:
-            return -50.0
+            return None  # Rule 27: no fabrication
 
         window_high = highs[n - period: n]
         window_low = lows[n - period: n]
@@ -237,7 +238,7 @@ class EnhancedIndicators:
         close = closes[-1]
 
         if hh - ll == 0:
-            return -50.0
+            return None  # Rule 27: no fabrication (flat line)
 
         return (hh - close) / (hh - ll) * -100.0
 

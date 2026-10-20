@@ -959,7 +959,7 @@ class SniperEngine:
           - Otherwise: scaled 20-50
         """
         if len(closes) < period or len(highs) < period or len(lows) < period:
-            return 50.0, 0.0, 0.0
+            return None, None, None  # Rule 27: no fabrication
 
         recent_highs = highs[-period:]
         recent_lows = lows[-period:]
@@ -968,7 +968,7 @@ class SniperEngine:
         current = closes[-1]
 
         if upper_channel <= 0:
-            return 50.0, round(upper_channel, 4), round(lower_channel, 4)
+            return None, None, None  # Rule 27: no fabrication
 
         if current > upper_channel:
             # Breakout above 55-day high!
@@ -1803,9 +1803,10 @@ class SniperEngine:
           - Aggressive:   SL=2.0×ATR, Trail=2.5×ATR, TP=3.5×ATR
 
         Returns: (stop_loss, target_price, risk_reward, trailing_stop_atr_mult, initial_stop_atr_mult)
+        Rule 27 (NO-FAKE-DATA): بيرجّع (None, None, None, None, None) لو price <= 0.
         """
         if price <= 0:
-            return 0.0, 0.0, 0.0, 3.0, 3.0
+            return None, None, None, None, None  # Rule 27: no fabrication
 
         # Persona-based ATR multipliers
         persona_params = {
