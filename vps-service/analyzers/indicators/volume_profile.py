@@ -78,6 +78,9 @@ def calc_volume_profile(closes: List[float], volumes: List[float],
 
     for i in range(len(closes)):
         bin_idx = int((closes[i] - price_min) / bin_width)
+        # BRAVO FIX: handle negative bin_idx (floating point rounding edge case)
+        if bin_idx < 0:
+            bin_idx = 0
         if bin_idx >= bins:
             bin_idx = bins - 1
         bin_volumes[bin_idx] += volumes[i]

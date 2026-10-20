@@ -20,6 +20,7 @@ Author: دليل الاستثمار (GLMinvestment)
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 import math
 
 # BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate Bollinger/ATR/ADX to canonical.
@@ -140,10 +141,11 @@ class EnhancedIndicators:
         """
         حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
         بيرجع (upper, middle, lower, percent_b).
+        Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع (None, None, None, None).
         """
         result = _canonical_bollinger(prices, period, std_dev)
         if result is None:
-            return 0.0, 0.0, 0.0, 50.0
+            return None, None, None, None
         return (result['upper'], result['middle'], result['lower'], result['percent_b'])
 
     # ---------- Stochastic ----------
@@ -190,28 +192,29 @@ class EnhancedIndicators:
     # ---------- ATR ----------
     @staticmethod
     def calc_atr(highs: list[float], lows: list[float], closes: list[float],
-                 period: int = 14) -> float:
+                 period: int = 14) -> Optional[float]:
         """
         حساب Average True Range — BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.
         Rule 67: canonical بـ Wilder's smoothing (مش SMA القديم).
+        Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع None (مش 0.0).
         True Range = max(high-low, |high-prev_close|, |low-prev_close|)
         ATR = Wilder's smoothing(TR, period).
         """
-        result = _canonical_atr(highs, lows, closes, period)
-        return result if result is not None else 0.0
+        return _canonical_atr(highs, lows, closes, period)
 
     # ---------- ADX ----------
     @staticmethod
     def calc_adx(highs: list[float], lows: list[float], closes: list[float],
-                 period: int = 14) -> tuple[float, float, float, bool]:
+                 period: int = 14) -> tuple[Optional[float], Optional[float], Optional[float], bool]:
         """
         حساب ADX — BRAVO UNIFY: delegates to canonical analyzers.indicators.adx (Wilder's).
+        Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع (None, None, None, False).
         بيرجع (adx, plus_di, minus_di, trending).
         trending = True لو ADX > 25.
         """
         result = _canonical_adx(highs, lows, closes, period)
         if result is None:
-            return 0.0, 0.0, 0.0, False
+            return None, None, None, False
         return (result['adx'], result['plus_di'], result['minus_di'], result['adx'] > 25.0)
 
     # ---------- Williams %R ----------

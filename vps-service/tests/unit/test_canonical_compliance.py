@@ -37,7 +37,9 @@ INLINE_PATTERNS = [
     (r"^\s*def\s+calc_volume_profile\s*\(", "Volume Profile"),
 ]
 
-# الملفات المسموح لها بـ inline (canonical source + backward-compat wrappers)
+# الملفات المسموح لها بـ inline (canonical source فقط)
+# BRAVO FIX: شيلت backtest_engine.py — الـ series versions بـ delegate لـ canonical
+# والـ test بيـ skipهم تلقائياً (لأنهم بـ mention "canonical" في الـ body)
 ALLOWED_INLINE_FILES = {
     # analyzers/indicators/ نفسها (canonical source)
     "analyzers/indicators/rsi.py",
@@ -49,8 +51,6 @@ ALLOWED_INLINE_FILES = {
     "analyzers/indicators/volume_profile.py",
     "analyzers/indicators/ma.py",
     "analyzers/indicators/srsi.py",
-    # engines/backtest_engine.py — series versions بـ delegate لـ canonical
-    "engines/backtest_engine.py",
 }
 
 

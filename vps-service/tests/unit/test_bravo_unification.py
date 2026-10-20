@@ -185,11 +185,12 @@ def test_quant_fair_value():
     from utils.fair_value import (
         calc_fundamental_fair_value, calc_upside_percent, calc_vwap_fair_value
     )
-    # fundamental: max(PE×EPS, BV×1.5) = max(37.5, 30) = 37.5
+    # fundamental: median(PE×EPS, BV×1.5) = median(37.5, 30.0) = 33.75
+    # (BRAVO FIX: changed from max to median per Jimmy's review — max was magnifying outliers)
     fv = calc_fundamental_fair_value(pe_ratio=15, eps=2.5, book_value_per_share=20)
-    assert fv == 37.5, f"fair_value: expected 37.5, got {fv}"
+    assert fv == 33.75, f"fair_value: expected 33.75 (median), got {fv}"
 
-    # ma_200 fallback
+    # ma_200 fallback (single candidate → median = the value itself)
     fv2 = calc_fundamental_fair_value(pe_ratio=None, eps=None, book_value_per_share=None, ma_200=150)
     assert fv2 == 150.0, f"ma_200 fallback: expected 150, got {fv2}"
 
@@ -203,7 +204,13 @@ def test_quant_fair_value():
     closes = [100, 102, 101, 103, 105]
     volumes = [1000, 1100, 900, 1200, 1500]
     fv_vwap, premium = calc_vwap_fair_value(highs, lows, closes, volumes, period=5)
+    assert fv_vwap is not None, "vwap fair_value should not be None"
     assert fv_vwap > 0, f"vwap fair_value should be > 0, got {fv_vwap}"
+
+    # Rule 27 (NO-FAKE-DATA): empty data → (None, None) not (0.0, 0.0)
+    fv_empty, prem_empty = calc_vwap_fair_value([], [], [], [], period=5)
+    assert fv_empty is None, f"empty data should return None, got {fv_empty}"
+    assert prem_empty is None, f"empty data premium should return None, got {prem_empty}"
 
 
 def test_quant_position_sizing():
@@ -228,6 +235,77 @@ def test_quant_position_sizing():
     assert kelly is not None, "Kelly returned None"
     assert abs(kelly['kelly_pct'] - 40.0) < 0.1, f"Kelly %: expected 40, got {kelly['kelly_pct']}"
     assert abs(kelly['position_pct'] - 20.0) < 0.1, f"Kelly position_pct: expected 20, got {kelly['position_pct']}"
+
+    # BRAVO FIX (Jimmy issue #1): kelly position_size = shares (not value) when entry provided
+    kelly_with_entry = calculate_kelly_position(
+        win_rate=0.6, win_loss_ratio=2.0, capital=10000,
+        kelly_fraction=0.5, entry=100
+    )
+    assert kelly_with_entry is not None
+    # position_value = 10000 × 20% = 2000, position_size (shares) = 2000 / 100 = 20
+    assert kelly_with_entry['position_value'] == 2000.0
+    assert kelly_with_entry['position_size'] == 20.0, \
+        f"kelly position_size should be shares (20), got {kelly_with_entry['position_size']}"
+
+    # without entry → position_size = position_value (backward compat)
+    kelly_no_entry = calculate_kelly_position(
+        win_rate=0.6, win_loss_ratio=2.0, capital=10000, kelly_fraction=0.5
+    )
+    assert kelly_no_entry['position_size'] == kelly_no_entry['position_value']
+
+
+def test_no_fake_data_fallbacks():
+    """Rule 27 (NO-FAKE-DATA) — fallbacks بـ return None مش fabricated values."""
+    from analyzers.enhanced_indicators import EnhancedIndicators
+    from analyzers.core_scoring_engine import calc_bollinger as cse_bb
+    from engines.backtest_engine import calc_bollinger_bands
+
+    ei = EnhancedIndicators()
+
+    # insufficient data → None (not fabricated values)
+    short_closes = [100, 102, 101]  # only 3 bars, need 20
+
+    # enhanced_indicators
+    bb_ei = ei.calc_bollinger(short_closes, 20, 2.0)
+    assert bb_ei[0] is None, f"enhanced_indicators Bollinger should return None, got {bb_ei}"
+
+    atr_ei = ei.calc_atr([101], [99], [100], 14)
+    assert atr_ei is None, f"enhanced_indicators ATR should return None, got {atr_ei}"
+
+    adx_ei = ei.calc_adx([101], [99], [100], 14)
+    assert adx_ei[0] is None, f"enhanced_indicators ADX should return None, got {adx_ei}"
+
+    # core_scoring_engine
+    upper, mid, lower = cse_bb(short_closes, 20)
+    assert upper is None, f"core_scoring_engine Bollinger should return None, got {(upper, mid, lower)}"
+
+    # backtest_engine
+    mid_s, upper_s, lower_s = calc_bollinger_bands(short_closes, 20, 2.0)
+    # first 19 entries should be None (not fabricated)
+    assert mid_s[0] is None, f"backtest_engine Bollinger[0] should be None, got {mid_s[0]}"
+
+
+def test_indicator_edge_cases_fixed():
+    """BRAVO FIX (Jimmy issues #4 + #5) — edge cases for period=0 + negative bin_idx."""
+    from analyzers.indicators import calc_vwap, calc_volume_profile
+
+    closes = [100, 102, 101, 103, 105]
+    highs = [c + 1 for c in closes]
+    lows = [c - 1 for c in closes]
+    volumes = [1000, 1100, 900, 1200, 1500]
+
+    # calc_vwap period=0 → None (not full list)
+    vwap_zero = calc_vwap(highs, lows, closes, volumes, period=0)
+    assert vwap_zero is None, f"calc_vwap(period=0) should return None, got {vwap_zero}"
+
+    # calc_vwap period=-1 → None
+    vwap_neg = calc_vwap(highs, lows, closes, volumes, period=-1)
+    assert vwap_neg is None, f"calc_vwap(period=-1) should return None, got {vwap_neg}"
+
+    # calc_volume_profile — normal case (no negative bin_idx)
+    vp = calc_volume_profile(closes, volumes, bins=5)
+    assert vp is not None, "Volume Profile should work on normal data"
+    assert vp['poc'] > 0
 
 
 # ============================================================================

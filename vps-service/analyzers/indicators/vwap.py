@@ -63,6 +63,8 @@ def calc_vwap(highs: List[float], lows: List[float], closes: List[float],
     volumes = volumes[-min_len:]
 
     if period is not None:
+        if period <= 0:
+            return None  # invalid period
         if min_len < period:
             return None
         highs = highs[-period:]

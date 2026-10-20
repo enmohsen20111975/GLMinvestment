@@ -89,7 +89,10 @@ def calc_fundamental_fair_value(
                   if v is not None and v > 0]
     if not candidates:
         return None
-    return round(max(candidates), 4)
+    # BRAVO FIX: استخدم median بدل max — max بيـ magnify الـ outliers (PE عالي = fair_value مبالغ)
+    # median أكثر conservative + representative للقيمة العادلة الحقيقية
+    import statistics
+    return round(statistics.median(candidates), 4)
 
 
 def calc_upside_percent(fair_value: Optional[float],
@@ -135,14 +138,14 @@ def calc_vwap_fair_value(
         (fair_value, fair_premium):
         - fair_value: VWAP-based fair value
         - fair_premium: مدى بُعد السعر عن fair_value %
-        لو مفيش بيانات → (last_close, 0.0)
+        Rule 27 (NO-FAKE-DATA): لو مفيش بيانات أو volume=0 → بيرجّع (None, None).
     """
     if not closes or not highs or not lows or not volumes:
-        return 0.0, 0.0
+        return None, None
 
     n = min(period, len(closes))
     if n == 0:
-        return closes[-1], 0.0
+        return None, None
 
     # ناخد آخر n بار
     h_slice = highs[-n:]
@@ -152,12 +155,14 @@ def calc_vwap_fair_value(
 
     total_vol = sum(v_slice)
     if total_vol <= 0:
-        return closes[-1], 0.0
+        return None, None
 
     typical_prices = [(h_slice[i] + l_slice[i] + c_slice[i]) / 3 for i in range(n)]
     weighted = sum(typical_prices[i] * v_slice[i] for i in range(n))
 
     fv = weighted / total_vol
-    premium = ((closes[-1] - fv) / fv) * 100 if fv > 0 else 0.0
+    if fv <= 0:
+        return None, None
+    premium = ((closes[-1] - fv) / fv) * 100
 
     return round(fv, 4), round(premium, 4)

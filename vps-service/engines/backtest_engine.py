@@ -283,19 +283,18 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float], period:
     return result
 
 
-def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[float], List[float], List[float]]:
-    """Bollinger Bands (middle, upper, lower) — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger."""
+def calc_bollinger_bands(closes: List[float], period: int = 20, std_dev: float = 2.0) -> Tuple[List[Optional[float]], List[Optional[float]], List[Optional[float]]]:
+    """Bollinger Bands (middle, upper, lower) — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+    Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع lists بـ None values (مش fabrication).
+    """
     result = _canonical_bollinger_series(closes, period, std_dev)
     if result is None:
-        # fallback: لو البيانات أقل من period — استخدم calc_sma series (اللي بدورها بستورد canonical)
-        mid = calc_sma(closes, period)
-        return mid, mid, mid
-    # fill None values (first period-1 entries) بأول قيمة محسوبة — preserve old behavior
-    mid_raw = result['middle']
-    first_val = next((v for v in mid_raw if v is not None), 0.0)
-    mid_list = [v if v is not None else first_val for v in mid_raw]
-    upper_list = [v if v is not None else mid_list[i] for i, v in enumerate(result['upper'])]
-    lower_list = [v if v is not None else mid_list[i] for i, v in enumerate(result['lower'])]
+        # Rule 27: return None lists (not fabricated values)
+        return [None] * len(closes), [None] * len(closes), [None] * len(closes)
+    # preserve None values (first period-1 entries) — caller must handle None
+    mid_list = result['middle']
+    upper_list = result['upper']
+    lower_list = result['lower']
     return mid_list, upper_list, lower_list
 
 

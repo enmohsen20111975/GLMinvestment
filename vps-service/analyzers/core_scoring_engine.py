@@ -105,15 +105,14 @@ def calc_atr(highs: List[float], lows: List[float], closes: List[float],
         return sum(trs[-period:]) / period if len(trs) >= period else sum(trs) / len(trs)
 
 
-def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[float, float, float]:
+def calc_bollinger(closes: List[float], period: int = 20) -> Tuple[Optional[float], Optional[float], Optional[float]]:
     """حساب Bollinger Bands — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
+    Rule 27 (NO-FAKE-DATA): لو البيانات غير كافية → بيرجّع (None, None, None).
     بيرجع (upper, middle, lower).
     """
     result = _canonical_bollinger_cse(closes, period, 2.0)
     if result is None:
-        # fallback: لو البيانات أقل من period — استخدم آخر سعر ± 2%
-        mid = closes[-1] if closes else 0.0
-        return round(mid * 1.02, 4), round(mid, 4), round(mid * 0.98, 4)
+        return None, None, None
     return (result['upper'], result['middle'], result['lower'])
 
 

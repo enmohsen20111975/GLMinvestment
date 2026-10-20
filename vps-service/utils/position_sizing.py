@@ -127,6 +127,7 @@ def calculate_kelly_position(
     capital: float,
     kelly_fraction: float = 0.5,
     max_position_pct: float = 25.0,
+    entry: Optional[float] = None,
 ) -> Optional[Dict[str, float]]:
     """حساب حجم المركز بناءً على Kelly Criterion (canonical).
 
@@ -139,10 +140,13 @@ def calculate_kelly_position(
         capital: رأس المال
         kelly_fraction: نسبة Kelly (0.5 = Half Kelly, 1.0 = Full Kelly)
         max_position_pct: أقصى نسبة للمركز
+        entry: سعر الدخول (لو متاح — بـ يسمح بحساب position_size كـ shares)
 
     Returns:
         dict: {kelly_pct, position_pct, position_value, position_size}
         أو None لو البيانات غير صالحة.
+        - position_size: قيمة المركز بالمال لو entry=None، عدد الأسهم لو entry متاح.
+        - position_value: قيمة المركز بالمال (دائماً).
     """
     if not (0 <= win_rate <= 1) or win_loss_ratio <= 0 or capital <= 0:
         return None
@@ -159,9 +163,15 @@ def calculate_kelly_position(
 
     position_value = capital * position_pct / 100.0
 
+    # position_size: shares لو entry متاح، value لو entry=None
+    if entry is not None and entry > 0:
+        position_size = position_value / entry
+    else:
+        position_size = position_value
+
     return {
         "kelly_pct": round(kelly_pct * 100, 2),
         "position_pct": round(position_pct, 2),
         "position_value": round(position_value, 2),
-        "position_size": round(position_value, 4),  # shares = value (caller divides by entry)
+        "position_size": round(position_size, 4),
     }

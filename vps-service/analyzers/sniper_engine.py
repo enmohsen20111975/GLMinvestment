@@ -344,21 +344,21 @@ class SniperEngine:
         """
         Bollinger Bands(20, 2) — BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.
         بيرجع {upper, middle, lower, bandwidth, percent_b}.
-        ملاحظة: percent_b هنا 0-1 (مش 0-100) للحفاظ على الـ API القديم.
+        Rule 67: percent_b موحّد 0-100 (matching canonical API).
         """
         result = _canonical_bollinger(closes, period, num_std)
         if result is None:
             return {
-                'upper': 0.0, 'middle': 0.0, 'lower': 0.0,
-                'bandwidth': 0.0, 'percent_b': 0.5,
+                'upper': None, 'middle': None, 'lower': None,
+                'bandwidth': None, 'percent_b': None,
             }
-        # canonical بترجع percent_b 0-100، نحوّلها لـ 0-1 (preserve old API)
+        # Rule 67: percent_b 0-100 (matching canonical — no conversion)
         return {
             'upper': result['upper'],
             'middle': result['middle'],
             'lower': result['lower'],
             'bandwidth': round(result['bandwidth'], 2),
-            'percent_b': round(max(0, min(1, result['percent_b'] / 100.0)), 4),
+            'percent_b': result['percent_b'],
         }
 
     def calc_sma(self, closes: List[float], periods: List[int] = None) -> Dict:
