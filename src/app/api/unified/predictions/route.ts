@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPredictionsFallback, getPerformanceFallback, getTestingCandidatesFallback } from '@/lib/flutter-sqlite-fallback';
+import { enrichWithLogos } from '@/lib/logo-helper';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,7 @@ export const revalidate = 0;
 // Fallback (FLUTTER-FULL-AUDIT): predictions.db — split by status
 //   (active vs closed). Flutter's "Live Tracking" tab calls this and
 //   without the fallback it shows "no data" whenever Python is down.
+// BRAVO-FIX9: logo_url injection في كل الحالات (عقيدة السعر الواحد).
 
 export async function GET(req: NextRequest) {
   const qs = req.nextUrl.searchParams.toString();
@@ -26,6 +28,12 @@ export async function GET(req: NextRequest) {
     if (res.ok) {
       const data = await res.json();
       if (data && data.success !== false) {
+        // BRAVO-FIX9: inject logo_url في كل الـ arrays (عقيدة السعر الواحد)
+        if (data.predictions) enrichWithLogos(data.predictions);
+        if (data.closed_predictions) enrichWithLogos(data.closed_predictions);
+        if (data.active_predictions) enrichWithLogos(data.active_predictions);
+        if (data.previous_predictions) enrichWithLogos(data.previous_predictions);
+        if (data.testing_candidates) enrichWithLogos(data.testing_candidates);
         return NextResponse.json(data, {
           headers: {
             'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
@@ -43,11 +51,11 @@ export async function GET(req: NextRequest) {
   const market = req.nextUrl.searchParams.get('market') || undefined;
   const limit = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 100, 200);
 
-  const active = getPredictionsFallback(limit, 'active', market);
-  const closed = getPredictionsFallback(limit, 'closed', market);
+  const active = enrichWithLogos(getPredictionsFallback(limit, 'active', market));
+  const closed = enrichWithLogos(getPredictionsFallback(limit, 'closed', market));
   const perf = getPerformanceFallback(market);
   // P0-INTRADAY-PULSE: include testing_candidates في الـ fallback (mirror لـ Python)
-  const testingCandidates = getTestingCandidatesFallback(market, limit);
+  const testingCandidates = enrichWithLogos(getTestingCandidatesFallback(market, limit));
   return NextResponse.json(
     {
       success: true,

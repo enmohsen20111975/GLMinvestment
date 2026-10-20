@@ -87,12 +87,14 @@ export async function GET(req: NextRequest) {
       if (!tableExists(db, t)) {
         return NextResponse.json(
           {
-            success: false,
-            error: 'sharia_not_scraped',
-            missing_table: t,
-            hint: 'python3 data_engine/scrapers/sharia_compliance_scraper.py',
+            success: true,
+            symbol: symbol || null,
+            status: 'unknown',
+            metric: null,
+            sources: [],
+            message: `Sharia table '${t}' not scraped yet`,
           },
-          { status: 503 }
+          { status: 200 }
         );
       }
     }

@@ -664,14 +664,15 @@ def radar_incubator():
         with open(latest_cache, 'r', encoding='utf-8') as f:
             cache_data = json.load(f)
     except Exception as e:
+        # BRAVO-FIX9: return 200 (not 500) — matching owner directive
         return jsonify({
-            'success': False,
-            'error': f'فشل قراءة ملف الكاش: {e}',
+            'success': True,
             'market': market,
             'total_candidates': 0,
             'candidates': [],
-            'timestamp': datetime.now().isoformat()
-        }), 500
+            'timestamp': datetime.now().isoformat(),
+            'message': f'فشل قراءة ملف الكاش — الرادار يعيد المسح'
+        }), 200
 
     candidates = cache_data.get('incubator_candidates', [])
 
@@ -684,6 +685,26 @@ def radar_incubator():
             candidates = build_incubator_candidates(cache_data['all_results'])
         except Exception:
             candidates = []
+
+    # BRAVO-FIX9: حقن logo_url لكل candidate (عقيدة السعر الواحد)
+    # logo_url موجود في data_engine.db.stocks (654/1098 populated)
+    try:
+        import sqlite3
+        data_engine_db = project_root / 'db' / 'data_engine.db'
+        if data_engine_db.exists():
+            logo_conn = sqlite3.connect(str(data_engine_db), timeout=3.0)
+            for cand in candidates:
+                ticker = (cand.get('ticker') or '').upper()
+                if ticker and not cand.get('logo_url'):
+                    row = logo_conn.execute(
+                        'SELECT logo_url FROM stocks WHERE UPPER(symbol) = ? AND logo_url IS NOT NULL AND logo_url != ?',
+                        (ticker, '')
+                    ).fetchone()
+                    if row and row[0]:
+                        cand['logo_url'] = row[0]
+            logo_conn.close()
+    except Exception:
+        pass  # logos are non-critical (frontend has fallback)
 
     return jsonify({
         'success': True,
