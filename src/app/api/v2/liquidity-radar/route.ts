@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRadarCache } from '@/modules/radar/lib/radar-cache';
+import { getStocksDb } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,28 @@ function flowStrength(netFlow: number | null | undefined): string | null {
   return 'بدون';
 }
 
+/**
+ * buildSupportResistanceMap — ALPHA-UX-FIX-8: يجيب support/resistance من stocks.db
+ * لكل سهم، عشان الـ defense/resistance columns في الرادار تتبقى عاملة (مش "—")
+ * حتى لو الـ radar cache مفيهومش stop_loss/target_price.
+ */
+function buildSupportResistanceMap(): Record<string, { support: number | null; resistance: number | null }> {
+  const map: Record<string, { support: number | null; resistance: number | null }> = {};
+  try {
+    const db = getStocksDb();
+    const rows = db.prepare(
+      'SELECT ticker, support_level, resistance_level FROM stocks WHERE support_level IS NOT NULL OR resistance_level IS NOT NULL'
+    ).all() as Array<{ ticker: string; support_level: number | null; resistance_level: number | null }>;
+    for (const r of rows) {
+      if (r.ticker) map[r.ticker.toUpperCase()] = {
+        support: r.support_level != null ? Number(r.support_level) : null,
+        resistance: r.resistance_level != null ? Number(r.resistance_level) : null,
+      };
+    }
+  } catch { /* stocks.db unavailable → empty map → columns stay "—" (honest) */ }
+  return map;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
@@ -97,6 +120,8 @@ export async function GET(req: NextRequest) {
     };
 
     const rawStocks: any[] = data.quiet_list ?? data.stocks ?? [];
+    // ALPHA-UX-FIX-8: support/resistance map من stocks.db (fallback لـ defense/resistance)
+    const srMap = buildSupportResistanceMap();
     const stocks: RadarStock[] = rawStocks.map((s) => {
       const netFlow = s.net_flow_egp ?? s.net_flow ?? null;
       const whale: WhaleInfo = {
@@ -111,9 +136,10 @@ export async function GET(req: NextRequest) {
       const phaseReason: string | null = s.reason ?? s.quiet_details?.signals_met?.join(' ، ') ?? null;
 
       const entryDefense: EntryDefense = {
+        // ALPHA-UX-FIX-8: fallback لـ support/resistance من stocks.db (srMap) لو الـ cache مفيهومش stop_loss/target_price
         entry_level: s.entry_price ?? s.current_price ?? null,
-        defense_level: s.stop_loss ?? null,
-        resistance_level: s.target_price ?? null,
+        defense_level: s.stop_loss ?? srMap[(s.ticker || '').toUpperCase()]?.support ?? null,
+        resistance_level: s.target_price ?? srMap[(s.ticker || '').toUpperCase()]?.resistance ?? null,
       };
 
       return {

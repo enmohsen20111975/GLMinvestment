@@ -88,9 +88,11 @@ interface RadarStock {
 
 
 // ─── TASK-ALPHA-C: Tactical liquidity-bucket filters + pagination ─────────
-type BucketKey = 'all' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
+type BucketKey = 'all' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
 const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
   { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
+  // ALPHA-UX-FIX-8: 'quiet_accumulation' (تجميع هادئ) — ده الـ signal اللي بيتعرض أكتر
+  { key: 'quiet_accumulation', label: 'تجميع هادئ', icon: '🟢', cls: 'bg-whale/10 text-whale border-whale/30' },
   { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/30' },
   { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/30' },
   { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/30' },
@@ -175,6 +177,23 @@ function getPhaseInfo(rawPhase?: string | null): { label: string; cls: string } 
   };
 }
 
+/**
+ * phaseToBucket — ALPHA-UX-FIX-8: maps the phase (اللي موجود دايمًا) لـ bucket key
+ * عشان الفلاتر تشتغل حتى لو الـ API ميرجّعش liquidity_bucket (مش بيرجعها غالبًا).
+ * الـ phase هو الـ signal الحقيقي (تجميع هادئ / صعود / تصريف / ...) — بنشتغل بيه.
+ */
+function phaseToBucket(phase?: string | null): string {
+  if (!phase) return 'neutral';
+  const p = phase.toLowerCase().trim();
+  if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) return 'quiet_accumulation';
+  if (p.includes('inflow') || p.includes('بيتحضر') || p.includes('صعود') || p.includes('surge')) return 'whale_inflow';
+  if (p.includes('distribution') || p.includes('بيصرف') || p.includes('تصريف') || p.includes('outflow')) return 'whale_outflow';
+  if (p.includes('absorption') || p.includes('قيعان')) return 'bottom_absorption';
+  if (p.includes('correction') || p.includes('تصحيح')) return 'correction_exhaustion';
+  if (p.includes('accumulation') || p.includes('تجميع')) return 'quiet_accumulation';
+  return 'neutral';
+}
+
 const MARKET_OPTIONS = [
   { code: 'EGX', label: '🇪🇬 مصر', currency: 'ج.م' },
   { code: 'TADAWUL', label: '🇸🇦 السعودية', currency: 'ر.س' },
@@ -251,7 +270,11 @@ export function LiquidityRadarView({ market: marketProp }: { market?: string }) 
     const list = data?.stocks ?? [];
     let out = list;
     if (bucketFilter !== 'all') {
-      out = out.filter((s) => (s.liquidity_bucket || 'neutral') === bucketFilter);
+      // ALPHA-UX-FIX-8: filter by liquidity_bucket OR derive from phase (الـ API ميرجّعش liquidity_bucket دايمًا)
+      out = out.filter((s) => {
+        const bucket = s.liquidity_bucket || phaseToBucket(s.phase) || 'neutral';
+        return bucket === bucketFilter;
+      });
     }
     if (hideInactive) {
       out = out.filter((s) => {
