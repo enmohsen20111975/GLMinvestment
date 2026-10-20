@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, X, RefreshCw, Shield, TrendingUp, BarChart3, Brain, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 
 // ==================== TYPES ====================
 
@@ -517,11 +518,14 @@ export function AllTipsView() {
  </AnimatePresence>
  </div>
 
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState بدل inline empty */}
  {displayedTips.length === 0 && (
- <div className="text-center py-12 text-muted-foreground">
- <Lightbulb size={40} className="mx-auto mb-3 opacity-30" />
- <p>لا توجد نصائح في هذه الفئة</p>
- </div>
+ <UnifiedEmptyState
+ variant="empty"
+ icon={<Lightbulb size={40} className="opacity-30" />}
+ title="مفيش نصائح في الفئة دي"
+ description="جرّب فئة تانية أو تحديث الصفحة"
+ />
  )}
  </div>
  );

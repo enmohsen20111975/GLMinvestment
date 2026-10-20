@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import {
  TrendingUp, TrendingDown, Clock, Calendar,
@@ -679,10 +680,13 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  onRowClick={(s) => setExpandedSector(prev => prev === s.sector ? null : s.sector)}
  />
  )}
+ {/* P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState بدل inline empty div */}
  {data && sectors.length === 0 && (
- <div className="text-center text-muted-foreground py-8">
- لا توجد قطاعات مطابقة للفلاتر الحالية
- </div>
+ <UnifiedEmptyState
+ variant="empty"
+ title="مفيش قطاعات مطابقة"
+ description="مفيش قطاعات مطابقة للفلاتر الحالية — جرّب غيّر الفلاتر"
+ />
  )}
  </div>
 

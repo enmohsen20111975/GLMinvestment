@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -234,22 +235,14 @@ export function TopUpRecommendationsPanel() {
  </div>
  )}
 
- {/* Empty state */}
+ {/* Empty state — P0-COMPONENT-UNIFICATION Phase 2.2: UnifiedEmptyState */}
  {!loading && topUps.length === 0 && (
- <div className="text-center py-8 text-muted-foreground">
- <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-40" />
- <p className="text-sm">لا توجد أسهم رابحة ≥ 10% حالياً</p>
- <p className="text-xs mt-1">
- عندما يحقق السهم ربحاً بنسبة 10%+، يظهر هنا كفرصة لزيادة المركز.
- </p>
- {summary && (
- <p className="text-xs mt-2 text-muted-foreground/70">
- إجمالي الرابحين في محفظتك: {AR_NUM.format(summary.winners || 0)} من {
- AR_NUM.format((summary.winners || 0) + (summary.losers || 0))
- }
- </p>
- )}
- </div>
+ <UnifiedEmptyState
+ variant="empty"
+ icon={<Sparkles className="h-8 w-8 opacity-40" />}
+ title="مفيش أسهم رابحة ≥ 10% حالياً"
+ description="عندما يحقق السهم ربحاً بنسبة 10%+، يظهر هنا كفرصة لزيادة المركز."
+ />
  )}
 
  {/* Loading skeleton */}
