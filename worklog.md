@@ -68573,24 +68573,142 @@ Stage Summary:
 - ⚠️ لازم فلتر regime (skip BEAR years زي 2024)
 - 🎯 جاهز للـ Paper Trading (بعد Position Sizing + Regime filter)
 
-
 ---
-Task ID: CLEANUP-PLAN-1
-Agent: جون (المدير التنفيذي + كبير المهندسين) — تخطيط
-Task: محسن — خطة تنظيف شاملة مقسومة بين ألفا + برافو بـ اختبارات صارمة + مبدأ الشك.
+Task ID: deploy-replace-1
+Agent: Bravo (backend/quant dragon)
+Task: نقل مستودع GLMinvestment إلى /home/z/my-project (استبدال كامل للساندبوكس) وتشغيله على port 3000
 
 Work Log:
-- بنيت inventory كامل لـ 1,668 ملف / 653,852 سطر.
-- كشفت 146 ملف dead (~35,400 سطر) + 8 حالات تكرار + 150 ملف copy-paste.
-- كتبت خطة شاملة في agent-ctx/CLEANUP-PLAN-ALPHA-BRAVO.md:
-  * ألفا: 7 مراحل (A1-A7) — أرشفة dead UI/libs/barrels + إحياء dead libs + توحيد مكونات + استخراج helpers.
-  * برافو: 6 مراحل (B1-B6) — أرشفة dead scripts + حل route conflict + duplicate engine + SQL CREATE TABLE.
-- كل مرحلة فيها اختبارات صارمة (lint + tsc + py_compile + browser + curl).
-- مبدأ الشك: كل ملف قبل الحذف لازم 0 importers + مش في cron/PM2 + مش RESTORED.
+- محاولة استنساخ أولى timeout (المستودع 1.4GB كامل) → استنساخ shallow --depth 1 (677MB، 3200 ملف).
+- البيئة عملت reset بين الرسايلتين: /home/z/GLMinvestment اختفى، الساندبوكس رجع لافتراضي. أعيد الاستنساخ.
+- فحص المنصة: Caddy شغّال من /app/Caddyfile (root-owned، ثابت: :81 → localhost:3000 + XTransformPort). مفيش pm2/supervisor. dev.sh بيعمل disown للـ dev server قبل الخروج.
+- حفظ بنية المنصة: skills/ (67 entry) اتشال بره قبل الـ wipe، upload/ (root-owned) اتسيب.
+- backup للساندبوكس في /home/z/sandbox-backup (.env، Caddyfile، package.json، .zscripts).
+- wipe /home/z/my-project (عدا upload/) → نقل /home/z/GLMinvestment/* + dotfiles → استرجاع skills/.
+- إنشاء .env: DATABASE_URL=file:/home/z/my-project/db/custom.db.
+- bun install: 1122 حزمة في 11.35s (postinstall: prisma generate ×3 + patch-html2canvas → exit 0).
+- prisma db push ×3: custom.db (main schema)، auth.db (auth-schema)، predictions.db (predictions-schema). كله exit 0.
+- محاولة تشغيل أولى بـ setsid (بدون --fork): الـ server مات بصمت بعد "Ready" (SIGHUP لما الـ shell خرج).
+- إعادة التشغيل بـ setsid --fork: الـ server بقى PPID 1 (daemonized صح). Next.js 14.2.28، Ready في 1374ms.
+- التحقق: curl GET / → HTTP 200 (36KB، 31s أول compile). الـ server فضل شغّال.
+- Agent Browser: الصفحة بترندر (title "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية"، RTL Arabic). onboarding flow تفاعلي. بعد "تخطي": dashboard كامل (navigation + widgets: ملخص السوق، نبض السوق، تدفّق المستثمرين، توقعات اليوم، الأكثر تحركاً + search + currency toggle + dark mode). footer موجود. مفيش page errors.
 
 Stage Summary:
-- ✅ الخطتين جاهزتين في agent-ctx/CLEANUP-PLAN-ALPHA-BRAVO.md.
-- ✅ 13 مرحلة إجمالي (7 ألفا + 6 برافو).
-- ✅ اختبارات صارمة بعد كل مرحلة.
-- ✅ مبدأ الشك مطلق.
-- ⏳ ألفا + برافو يبدأوا التنفيذ.
+- المستودع شغّال على /home/z/my-project، port 3000، عبر gateway Caddy (:81).
+- Next.js 14.2.28 (مش 16 — المستودع شغّال بـ Next 14، اتنقل زي ما هو حسب اختيار المالك).
+- 3 قواعد بيانات SQLite اتعملوا (custom/auth/predictions) — فاضية (محتاجة data feeds/backend).
+- ملاحظات runtime (مش deployment failures):
+  * WebSocket error: الـ mini-services/ فاضي في المستودع → socket.io server مش شغّال (الأرجح في vps-service/ Python).
+  * "Failed to load market overview: internal_error": الـ DB فاضي، الـ API مفيهوش بيانات.
+- skills/ (بنية المنصة) محفوظة. upload/ محفوظ. backup في /home/z/sandbox-backup.
+- token GitHub اتشال من .git/config بعد الاستنساخ.
+
+---
+Task ID: BRAVO-PREDICTIONS-STATUS-RECON-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — راجع آخر تحديثات الجيت هب (شغل ألفا ALPHA-UX-FIX-9) + استكمال شغل التوقعات event-driven + status lifecycle (testing/proven/closed) من الباك إند.
+
+Work Log:
+- git fetch origin (transient token, ما اتسجلش): local up-to-date مع origin/main (c1568e2 = ALPHA-UX-FIX-9). أنا 0 خلف، 1 قدام (auto-commit ae1a6dd للـ deploy).
+- قرأت سجل العمل: آخر شغل كمي ليا كان BRAVO-EVENT-DRIVEN-STATISTICAL-VALIDATION-1 (استراتيجية event-driven = شراء بعد تصحيحات، p<1% في 3/4 سنين). ده STRATEGY مش ARCHITECTURE — مختلف عن طلب محسن الحالي.
+- عقد ألفا (eid-predictions-widget.tsx): status?: 'proven'|'testing'|'closed'، undefined→'proven'. 3 أقسام + badges. متدفع c1568e2.
+- الـ schema (prisma/predictions-schema.prisma): Prediction.status String? موجود (سطر 97). StoredAnalysis.analysis_type في 'incremental'. AnalysisJob queue فيها job_type='incremental'. بنية incremental شبه موجودة.
+- BLOCKER — status column overloaded: اكتشفت 9 قيم مختلفة في 3 فئات دلالية:
+  * lifecycle: 'closed' (prediction_tracker.py lowercase)، 'active'/'ACTIVE'/'PENDING' (daily_predictor mixed case)
+  * outcome: 'STOPPED'/'TARGET_HIT'/'EXPIRED' (daily_predictor uppercase)
+  * error: 'NOT_FOUND'/'PRICE_UNAVAILABLE'
+  → مستحيل أضيف 'testing'/'proven' من غير ما أوحد الدلالة. لو سبته، توقعات STOPPED هتظهر كـ 'proven' في واجهة ألفا = كارثة.
+- daily_predictor.py (4300+ سطر): فيه --incremental (سطر 4156) + auto_incremental default. بس cron-triggered (مرتين/يوم: 3AM + 1:30PM)، مش event-driven من scraper.
+- egksco_scraper.py: class-based، upsert للـ DB، مفيش change-event/callback. مفيش wiring بين scraper و predictor.
+- /api/predictions/eid (src/ — مجال ألفا): بـ build توقعات synthetically من أسعار حية (crypto/gold/stocks) — مش بياخد من predictions.db أصلاً. يعني الـ shell بتاع ألفا على widget مش متصل بالمحرك الحقيقي.
+
+Stage Summary:
+- محسن عايز: event-driven (تحديث على كل بيانات) + status lifecycle (testing→proven→closed) + promotion logic.
+- اللي موجود: status column (ملوث) + daily_predictor --incremental (مش event-driven) + prediction_tracker بيكتب 'closed'.
+- BLOCKER: لزم نصلح تلوث الـ status column قبل أي حاجة (design decision لمحسن: (أ) توحيد status لـ lifecycle ونقل outcome لـ exit_type، أو (ب) column جديد lifecycle_status).
+- الـ shell بتاع ألفا على EidPredictionsWidget مش متصل بـ predictions.db — لازم يتطبق على widgets بتقرأ المحرك الحقيقي (UnifiedPredictionsTab/PredictionsTab) = شغل ألفا.
+- مجال برافو: (1) توحيد status + migration، (2) engine يكتب 'testing' على الجديد، (3) promotion job (testing→proven)، (4) wiring scraper→predictor incremental. مجال ألفا: API routes ترجع status + تطبيق الـ shell على الـ widgets الحقيقية.
+- بانتظار قرار محسن على design الـ status قبل ما أبدأ.
+
+---
+Task ID: BRAVO-STATUS-MIGRATION-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — الاختيار (أ): توحيد عمود status في predictions.db ليكون lifecycle (testing/proven/closed) + فرد كل ملفات الـ DB المضغوطة من data/.
+
+Work Log:
+- فحص data/: predictions.db.zip (30MB→281MB) + db_backup_2026-10-18T14-54-47_* (16 جزء متقسم، 261MB) + db_backup_2026-10-08T10-08-10_* (backup أقدم).
+- STEP 1 — predictions.db.zip: فك الضغط → db/predictions.db (281MB، 1488 توقع). integrity ok.
+- فحص القيم الفعلية لـ status في البيانات (مش من الكود):
+  * EXPIRED: 1058 | TARGET_HIT: 296 | STOPPED: 134 (مفيش closed/active/PENDING/testing/proven إطلاقًا)
+  * exit_type فيه 22 قيمة تفصيلية (SL/TP1/TP2/trailing_profit/MAX_DAYS_60d/...)
+  * 62 توقع "open" (outcome_date=NULL) بس status='EXPIRED' = bug بيانات قديم
+  * 195 بـ EXPIRED بس hit_stop=1 + 107 بـ EXPIRED بس hit_target=1 = status غير موثوق
+  * hit_target/hit_stop هم المصدر الحقيقي للـ outcome
+- STEP 2 — Migration script (scripts/migrate_status_lifecycle.py):
+  * design: outcome_date NOT NULL → 'closed' | outcome_date NULL → 'proven'
+  * أمان: backup + transaction + verify (before/after) + dry-run mode
+  * نفذت على predictions.db.zip: 1488→1488 (1426 closed + 62 proven) ✓
+- STEP 3 — Full backup extraction:
+  * git checkout لكل 16 جزء من 2026-10-18 backup (blobs موجودة في shallow clone)
+  * reassemble split parts (part2/part4/part6/part7 = concat .zip.part files)
+  * extract → 4 DBs: data_engine.db (461M) + intraday.db (428M) + predictions.db (278M، أحدث بـ 9 ساعات) + price_history.db (336M)
+  * intraday.db: VACUUM (428M→154M، نظف 274M bloat) + REINDEX (صلح index تالف) → ok
+  * استبدلت predictions.db بالأحدث (1491 توقع) وأعدت الـ migration: 1491→1491 (1428 closed + 63 proven، حتى صف 'active' واحد → 'proven') ✓
+- STEP 4 — final DB inventory (كلهم ok):
+  * auth.db 0.3MB (18 tables) | custom.db 24K (2 tables، فاضي)
+  * data_engine.db 483MB (29 tables) | intraday.db 161MB (6 tables)
+  * predictions.db 291MB (46 tables، migrated) | price_history.db 352MB (3 tables)
+
+Stage Summary:
+- ✅ كل ملفات الـ DB المضغوطة اتفردت (predictions.db.zip + 16 جزء multi-part backup). ~1.5GB بيانات إنتاج حقيقية.
+- ✅ predictions.db status اتوحد لـ lifecycle: 1428 'closed' + 63 'proven'. مفيش فقد بيانات. exit_type + hit_target + hit_stop محفوظين.
+- ✅ backups محفوظة في db/backups/ (pre-migration snapshots).
+- ⏳ BLOCKER التالي: الكود لسه بيقرأ القيم القديمة. 21 ملف Python في vps-service/ + TS routes في src/ (مجال ألفا).
+  * queries بتقرأ status IN ('TARGET_HIT','STOPPED') → هترجع 0 صفوف دلوقتي
+  * queries بتقرأ status IN ('active','ACTIVE','PENDING') → هترجع 0 صفوف دلوقتي
+  * لازم BRAVO-STATUS-CODE-FIX-1 (vps-service/) + ALPHA-API-STATUS-1 (src/)
+- مجال برافو جاهز للكود فيكس. بانتظار إشارة محسن.
+
+---
+Task ID: BRAVO-STATUS-CODE-FIX-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — إصلاح كل queries في vps-service/ اللي بتقرأ/تكتب status على جدول predictions بالقيم القديمة (TARGET_HIT/STOPPED/EXPIRED/active/PENDING) → lifecycle (closed/proven/testing).
+
+Work Log:
+- AUDIT كامل: grep كل status queries في vps-service/. لقيت ~100 hit عبر 21+ ملف. التحقق من table context (FROM/UPDATE clause) لكل hit:
+  * 11 ملف بيلمس جدول `predictions` → MUST FIX
+  * 10+ ملفات على جداول تانية (persona_predictions, aiPrediction, hunter_pick_tracking, paper_trades, crypto_simulation, ExpertRecommendation, learned_lessons) → DO NOT TOUCH (ليها status semantics بتاعتها)
+- READs (12 site → fixed):
+  * enhanced_prediction_tracker.py (4): `status IN ('active','ACTIVE','PENDING')` → `status IN ('proven','testing')`
+  * unified_analysis.py (1): same pattern
+  * market_daily_report.py:248 (1): `status = 'active'` → `status IN ('proven','testing')`
+  * market_daily_report.py:776 (1): `CASE WHEN status='TARGET_HIT'` → `CASE WHEN hit_target=1` (use detail column)
+  * misc_routes.py:1553 (1): `status = 'PENDING'` → `status IN ('proven','testing')`
+  * v2_routes.py:1053 (1): `status IN ('PENDING','ACTIVE')` → `status IN ('proven','testing')`
+  * telegram_notifier.py:411 (1): same pattern
+  * prediction_tracker.py:529 (1): `status IN ('TARGET_HIT','STOPPED')` → `status = 'closed'`
+  * daily_predictor.py:2835,3006 (2): `status IN ('STOPPED','TARGET_HIT','EXPIRED')` → `status = 'closed'`
+  * prediction_optimizer.py:1005,1015 (2): `p.status IN ('target_hit','stopped')` → `p.status = 'closed'`
+  * sniper_routes.py:995,1081,1222 (3): `status IN ('TARGET_HIT','STOPPED','EXPIRED')` → `status = 'closed'`
+  * telegram_target_hit_tracker.py:916 (1): READ fixed
+  * picks_management_routes.py:361 (1): `status IN ('active','PENDING','WAITING')` → `status IN ('proven','testing')`
+- WRITEs (4 sites → fixed):
+  * daily_closer.py:3054 (الـ MAIN close path): `status,` (variable) → `'closed',` (literal). المتغير الداخلي يفضل outcome للحسابات (hit_target/hit_stop/notifications) — الـ DB write بس اللي اتغير.
+  * telegram_target_hit_tracker.py:929: `SET status = 'TARGET_HIT'` → `SET status = 'closed'`
+  * generate_persona_predictions.py:131: `status = 'EXPIRED'` → `status = 'closed'`
+  * close_predictions.py:408: أضفت `status='closed'` للـ UPDATE (كان مكتوبش status خالص = bug)
+  * ai_predictions_routes.py:1374: `SET status = 'EXPIRED'` → `SET status = 'closed'` + `NOT IN (...)` → `IN ('proven','testing')`
+- LOCAL VAR logic (1 file → fixed):
+  * learning_engine.py:196,245: `if status == 'TARGET_HIT'` → `if pred.get('hit_target') == 1` (post-migration status='closed' مستحيل يبقى TARGET_HIT)
+- VERIFICATION:
+  * 17 ملفاً كلهم py_compile → ✓ (0 syntax errors)
+  * final grep: 0 DB queries على predictions table بتستخدم قيم قديمة (التغطية الكاملة)
+  * spot-check DB: status IN (proven,testing) = 63 rows | status = closed = 1428 rows | hit_target=1 = 254 | hit_stop=1 = 351
+  * dev server: HTTP 200 (لسه شغّال)
+
+Stage Summary:
+- ✅ كل vps-service/ Python backend متوافق مع lifecycle status الجديد (closed/proven/testing).
+- ✅ المنطق الداخلي (hit_target/hit_stop/exit_type computation) محفوظ — الـ outcome detail سليم.
+- ✅ 4 false positives متبقية في grep (local vars + log strings + aiPrediction table) — متحقق منها، DO NOT TOUCH.
+- ⏳ الـ TS side (src/) لسه محتاج إصلاح — ده مجال ألفا. البرومبت جاهز تحت.
+- مجال برافو جاهز للمهمة التالية: (1) engine يكتب status='testing' على الجديد، (2) wiring scraper→predictor incremental، (3) promotion logic (testing→proven).

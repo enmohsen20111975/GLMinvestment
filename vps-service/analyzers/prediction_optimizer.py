@@ -1002,7 +1002,7 @@ class PredictionOptimizer:
                     SELECT p.*, m.regime
                     FROM predictions p
                     LEFT JOIN market_regime_log m ON DATE(p.created_at) = DATE(m.date)
-                    WHERE p.status IN ('target_hit', 'stopped')
+                    WHERE p.status = 'closed'
                     AND p.created_at >= ?
                     ORDER BY p.created_at DESC
                 ''', (cutoff,))
@@ -1012,7 +1012,7 @@ class PredictionOptimizer:
                 cur.execute('''
                     SELECT *
                     FROM predictions
-                    WHERE status IN ('target_hit', 'stopped')
+                    WHERE status = 'closed'
                     AND created_at >= ?
                     ORDER BY created_at DESC
                 ''', (cutoff,))

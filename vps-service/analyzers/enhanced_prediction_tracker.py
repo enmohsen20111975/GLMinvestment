@@ -443,12 +443,12 @@ class EnhancedPredictionTracker:
         try:
             if market:
                 rows = conn.execute(
-                    "SELECT ticker, market FROM predictions WHERE status IN ('active', 'ACTIVE', 'PENDING') AND market = ?",
+                    "SELECT ticker, market FROM predictions WHERE status IN ('proven', 'testing') AND market = ?",
                     (market,)
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    "SELECT ticker, market FROM predictions WHERE status IN ('active', 'ACTIVE', 'PENDING')"
+                    "SELECT ticker, market FROM predictions WHERE status IN ('proven', 'testing')"
                 ).fetchall()
 
             results: Dict[str, Any] = {
@@ -892,7 +892,7 @@ class EnhancedPredictionTracker:
                               stop_loss, prediction_date, market, morning_bell, persona,
                               maestro_score, confidence
                        FROM predictions
-                       WHERE status IN ('active', 'ACTIVE', 'PENDING') AND market = ?
+                       WHERE status IN ('proven', 'testing') AND market = ?
                        ORDER BY maestro_score DESC, prediction_date DESC
                        LIMIT ?''',
                     (market, limit)
@@ -903,7 +903,7 @@ class EnhancedPredictionTracker:
                               stop_loss, prediction_date, market, morning_bell, persona,
                               maestro_score, confidence
                        FROM predictions
-                       WHERE status IN ('active', 'ACTIVE', 'PENDING')
+                       WHERE status IN ('proven', 'testing')
                        ORDER BY maestro_score DESC, prediction_date DESC
                        LIMIT ?''',
                     (limit,)

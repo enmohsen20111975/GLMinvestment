@@ -526,7 +526,7 @@ class PredictionTracker:
                 _kill_cur = _kill_conn.cursor()
                 _kill_rows = _kill_cur.execute("""
                     SELECT actual_return, created_at FROM predictions
-                    WHERE status IN ('TARGET_HIT', 'STOPPED')
+                    WHERE status = 'closed'
                     AND actual_return IS NOT NULL AND actual_return != 0
                     AND actual_return != 50.0
                     ORDER BY created_at DESC LIMIT 100

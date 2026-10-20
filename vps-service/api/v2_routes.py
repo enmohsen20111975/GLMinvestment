@@ -1050,7 +1050,7 @@ def morning_recommendations():
                     FROM predictions
                     WHERE ticker = ? COLLATE NOCASE
                       AND signal IN ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY')
-                      AND (status IS NULL OR status = '' OR status IN ('PENDING', 'ACTIVE'))
+                      AND (status IS NULL OR status = '' OR status IN ('proven', 'testing'))
                     ORDER BY prediction_date DESC, id DESC
                     LIMIT 1
                 """, (ticker,))

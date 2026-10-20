@@ -193,7 +193,7 @@ class LearningEngine:
             if signal not in signal_stats:
                 signal_stats[signal] = {'success': 0, 'failure': 0, 'returns': []}
 
-            if status == 'TARGET_HIT':
+            if pred.get("hit_target") == 1:
                 signal_stats[signal]['success'] += 1
             else:
                 signal_stats[signal]['failure'] += 1
@@ -242,7 +242,7 @@ class LearningEngine:
             if market not in market_stats:
                 market_stats[market] = {'success': 0, 'failure': 0, 'returns': []}
 
-            if status == 'TARGET_HIT':
+            if pred.get("hit_target") == 1:
                 market_stats[market]['success'] += 1
             else:
                 market_stats[market]['failure'] += 1
