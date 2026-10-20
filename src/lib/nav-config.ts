@@ -32,6 +32,7 @@ import {
   Newspaper,
   Crown,
   Settings,
+  Info,
   ShieldCheck,
   BarChart3,
   TrendingUp,
