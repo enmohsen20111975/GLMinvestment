@@ -437,9 +437,9 @@ function SectionCard({
  children: React.ReactNode;
 }) {
  const accentMap = {
- emerald: 'text-profit bg-profit /30 border-profit /60',
- amber: 'text-warning bg-warning /30 border-warning /60',
- red: 'text-loss bg-loss /30 border-loss /60',
+ emerald: 'text-profit bg-profit/10 border-profit/20',
+ amber: 'text-warning bg-warning/10 border-warning/20',
+ red: 'text-loss bg-loss/10 border-loss/20',
  slate: 'text-slate-600 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700',
  } as const;
  return (
@@ -1011,7 +1011,7 @@ function LiquidityFootprintSection({
  key={`lvl-${i}`}
  className={`flex items-center gap-2 px-2 py-1 rounded text-xs ${
  isPoc
- ? 'bg-warning /40 border border-warning '
+ ? 'bg-warning/10 border border-warning '
  : isInVA
  ? 'bg-slate-50 dark:bg-slate-800/40'
  : 'bg-transparent'
@@ -1032,7 +1032,7 @@ function LiquidityFootprintSection({
  style={{ width: `${(widthPct * sellPctLvl) / 100}%` }}
  />
  {isPoc && (
- <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warning ">
+ <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warning">
  POC
  </span>
  )}
@@ -1168,7 +1168,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </div>
 
  {/* Support */}
- <div className="p-3 bg-profit /30 rounded-lg border border-profit /60">
+ <div className="p-3 bg-profit/10 rounded-lg border border-profit/20">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Shield className="w-4 h-4 text-profit" /> الدعم
  </h4>
@@ -1179,7 +1179,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </div>
 
  {/* Resistance */}
- <div className="p-3 bg-loss /30 rounded-lg border border-loss /60">
+ <div className="p-3 bg-loss/10 rounded-lg border border-loss/20">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Target className="w-4 h-4 text-loss" /> المقاومة
  </h4>
@@ -1190,7 +1190,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
  </div>
 
  {/* Signal */}
- <div className="p-3 bg-warning /30 rounded-lg border border-warning /60">
+ <div className="p-3 bg-warning/10 rounded-lg border border-warning/20">
  <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
  <Activity className="w-4 h-4 text-warning" /> الإشارة
  </h4>
@@ -1482,12 +1482,12 @@ function PredictionHistorySection({ data }: { data: PredictionsResponse | null }
  accent="amber"
  >
  {showAccuracy && (
- <div className="mb-3 p-3 bg-warning /30 border border-warning /60 rounded-lg">
+ <div className="mb-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
  <div className="flex items-center justify-between">
- <p className="text-sm font-semibold text-warning ">
+ <p className="text-sm font-semibold text-warning">
  دقة التوقعات المغلقة
  </p>
- <p className="text-2xl font-bold text-warning ">{accuracy}%</p>
+ <p className="text-2xl font-bold text-warning">{accuracy}%</p>
  </div>
  <p className="text-xs text-muted-foreground mt-1">
  {hits} ناجحة من {closedCount} توقعات مغلقة — Rule 67: لا تُعرض الإحصائية إلا بعد ≥5 توقعات مغلقة
@@ -1591,12 +1591,12 @@ function RecommendationSection({ info }: { info: StockInfo }) {
 
  // UNIFY-FIX (Rule 73): توحيد thresholds مع canonical 78/65/55/40/25
  const sigInt = signal == null ? null
- : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-profit', bg: 'bg-profit /30' }
- : signal >= 65 ? { txt: 'شراء', cls: 'text-profit', bg: 'bg-profit /30' }
- : signal >= 55 ? { txt: 'تجميع', cls: 'text-whale', bg: 'bg-whale /30' }
- : signal >= 40 ? { txt: 'انتظار', cls: 'text-warning', bg: 'bg-warning /30' }
- : signal >= 25 ? { txt: 'تقليل', cls: 'text-warning', bg: 'bg-warning /30' }
- : { txt: 'بيع', cls: 'text-loss', bg: 'bg-loss /30' };
+ : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-profit', bg: 'bg-profit/10' }
+ : signal >= 65 ? { txt: 'شراء', cls: 'text-profit', bg: 'bg-profit/10' }
+ : signal >= 55 ? { txt: 'تجميع', cls: 'text-whale', bg: 'bg-whale/10' }
+ : signal >= 40 ? { txt: 'انتظار', cls: 'text-warning', bg: 'bg-warning/10' }
+ : signal >= 25 ? { txt: 'تقليل', cls: 'text-warning', bg: 'bg-warning/10' }
+ : { txt: 'بيع', cls: 'text-loss', bg: 'bg-loss/10' };
 
  const trendAr = trend == null ? null
  : trend === 'صاعد' || trend.toLowerCase().includes('up') || trend.toLowerCase().includes('bull')
@@ -1614,7 +1614,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  >
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
  {/* Entry zone */}
- <div className="p-3 bg-profit /30 rounded-lg text-center">
+ <div className="p-3 bg-profit/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">منطقة الدخول</p>
  <p className="text-lg font-bold text-profit mt-1">
  {entryLow != null && entryHigh != null
@@ -1623,17 +1623,17 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  </p>
  </div>
  {/* Target = resistance */}
- <div className="p-3 bg-profit /40 rounded-lg text-center">
+ <div className="p-3 bg-profit/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">الهدف (مقاومة)</p>
  <p className="text-lg font-bold text-profit mt-1">{fmtNum(resistance)}</p>
  </div>
  {/* Stop = support */}
- <div className="p-3 bg-loss /30 rounded-lg text-center">
+ <div className="p-3 bg-loss/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">وقف الخسارة (دعم)</p>
  <p className="text-lg font-bold text-loss mt-1">{fmtNum(support)}</p>
  </div>
  {/* R:R */}
- <div className="p-3 bg-warning /30 rounded-lg text-center">
+ <div className="p-3 bg-warning/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">مخاطرة/عائد</p>
  <p className={`text-lg font-bold mt-1 ${rr == null ? 'text-slate-600 dark:text-slate-300' : rr >= 2 ? 'text-profit' : rr >= 1 ? 'text-warning' : 'text-loss'}`}>
  {rr != null ? `${rr.toFixed(2)}:1` : '—'}
@@ -2097,13 +2097,13 @@ function PositionSizingCalculator({
  </div>
 
  <div className="space-y-2">
- <div className="p-3 bg-profit /30 rounded-lg">
+ <div className="p-3 bg-profit/10 rounded-lg">
  <p className="text-xs text-muted-foreground">المبلغ المخاطر به</p>
  <p className="text-xl font-bold text-profit mt-1">
  {riskAmount != null ? `${riskAmount.toFixed(2)} جنيه` : '—'}
  </p>
  </div>
- <div className="p-3 bg-warning /30 rounded-lg">
+ <div className="p-3 bg-warning/10 rounded-lg">
  <p className="text-xs text-muted-foreground">المخاطرة لكل سهم (دخول − وقف)</p>
  <p className="text-xl font-bold text-warning mt-1">
  {perShareRisk != null ? `${perShareRisk.toFixed(2)} جنيه` : '—'}
@@ -2120,7 +2120,7 @@ function PositionSizingCalculator({
  </p>
  )}
  </div>
- <div className="p-3 bg-profit /40 rounded-lg">
+ <div className="p-3 bg-profit/10 rounded-lg">
  <p className="text-xs text-muted-foreground">نسبة المخاطرة/العائد الفعلية</p>
  <p className="text-lg font-bold text-profit mt-1">
  {rrRatio != null ? `${rrRatio.toFixed(2)}:1` : '—'}
@@ -2157,11 +2157,11 @@ function PriceLevelsLadderSection({ info }: { info: StockInfo }) {
  }
 
  const rows: Array<{ label: string; value: number | null; color: string; bg: string }> = [
- { label: 'أعلى 52 أسبوع', value: high52w, color: 'text-loss', bg: 'bg-loss /30 border-loss /60' },
- { label: 'المقاومة', value: resistance, color: 'text-warning', bg: 'bg-warning /30 border-warning /60' },
- { label: 'السعر الحالي', value: current, color: 'text-profit', bg: 'bg-profit /40 border-profit ' },
- { label: 'الدعم', value: support, color: 'text-profit', bg: 'bg-profit /30 border-profit /60' },
- { label: 'أدنى 52 أسبوع', value: low52w, color: 'text-loss', bg: 'bg-loss /30 border-loss /60' },
+ { label: 'أعلى 52 أسبوع', value: high52w, color: 'text-loss', bg: 'bg-loss/10 border-loss/20' },
+ { label: 'المقاومة', value: resistance, color: 'text-warning', bg: 'bg-warning/10 border-warning/20' },
+ { label: 'السعر الحالي', value: current, color: 'text-profit', bg: 'bg-profit/10 border-profit ' },
+ { label: 'الدعم', value: support, color: 'text-profit', bg: 'bg-profit/10 border-profit/20' },
+ { label: 'أدنى 52 أسبوع', value: low52w, color: 'text-loss', bg: 'bg-loss/10 border-loss/20' },
  ].filter((r) => r.value != null) as Array<{ label: string; value: number | null; color: string; bg: string }>;
 
  return (
@@ -2267,7 +2267,7 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
  accent={isHalal ? 'emerald' : 'red'}
  >
  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
- <div className={`p-3 rounded-lg text-center ${isHalal ? 'bg-profit /30' : 'bg-loss /30'}`}>
+ <div className={`p-3 rounded-lg text-center ${isHalal ? 'bg-profit/10' : 'bg-loss/10'}`}>
  <p className="text-xs text-muted-foreground">الحكم</p>
  <p className={`text-lg font-bold mt-1 ${isHalal ? 'text-profit' : 'text-loss'}`}>
  {isHalal ? '✓ متوافق' : '✗ غير متوافق'}
@@ -2279,7 +2279,7 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
  {compliantCount != null && activeCount != null ? `${compliantCount}/${activeCount}` : '—'}
  </p>
  </div>
- <div className="p-3 bg-warning /30 rounded-lg text-center">
+ <div className="p-3 bg-warning/10 rounded-lg text-center">
  <p className="text-xs text-muted-foreground">نسبة التطهير (S&P)</p>
  <p className="text-lg font-bold text-warning mt-1">
  {purRatePct != null ? `${purRatePct.toFixed(2)}%` : '—'}
@@ -2300,7 +2300,7 @@ function ShariaSection({ data }: { data: ShariaResponse | null }) {
  </p>
  )}
  {needsReview && (
- <div className="mt-3 p-2 bg-warning /20 border border-warning /60 rounded text-xs text-warning ">
+ <div className="mt-3 p-2 bg-warning/20 border border-warning/20 rounded text-xs text-warning">
  ⚠️ يحتاج مراجعة يدوية — رمز مختلف أو تعارض بين المصادر
  </div>
  )}
@@ -2413,16 +2413,16 @@ function HeaderCard({
  <div className="flex flex-wrap items-center gap-2 mb-1">
  <h2 className="text-2xl sm:text-3xl font-bold">{symbol}</h2>
  {trendAr && <Badge className={`text-xs ${trendAr.cls}`}>{trendAr.txt}</Badge>}
- {isEgx30 && <Badge variant="outline" className="text-xs border-profit text-profit ">EGX30</Badge>}
- {isEgx70 && <Badge variant="outline" className="text-xs border-warning text-warning ">EGX70</Badge>}
+ {isEgx30 && <Badge variant="outline" className="text-xs border-profit text-profit">EGX30</Badge>}
+ {isEgx70 && <Badge variant="outline" className="text-xs border-warning text-warning">EGX70</Badge>}
  {isEgx100 && <Badge variant="outline" className="text-xs">EGX100</Badge>}
  {shariaHalal != null && (
  <Badge
  variant="outline"
  className={`text-xs ${
  shariaHalal
- ? 'border-profit text-profit bg-profit /30'
- : 'border-loss text-loss bg-loss /30'
+ ? 'border-profit text-profit bg-profit/10'
+ : 'border-loss text-loss bg-loss/10'
  }`}
  >
  {shariaHalal ? '✓ متوافق شرعياً' : '✗ غير متوافق'}
@@ -2668,7 +2668,7 @@ export function SpecialistAnalysisView() {
  return (
  <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 bg-white dark:bg-slate-950 min-h-screen" dir="rtl">
  {/* ════ Header ════ */}
- <div className="rounded-xl border border-profit/60 /40 bg-gradient-to-l from-profit via-warning/40 to-slate-50 /30 dark:via-warning/20 dark:to-slate-900/40 p-4 sm:p-5">
+ <div className="rounded-xl border border-profit/20 /40 bg-gradient-to-l from-profit via-warning/40 to-slate-50 /30 dark:via-warning/20 dark:to-slate-900/40 p-4 sm:p-5">
  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
  <div className="flex items-start gap-3">
  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-profit to-warning flex items-center justify-center flex-shrink-0 shadow-md">
@@ -2724,7 +2724,7 @@ export function SpecialistAnalysisView() {
 
  {/* ════ Error ════ */}
  {error && !loading && (
- <Card className="p-4 bg-loss /30 border-loss ">
+ <Card className="p-4 bg-loss/10 border-loss ">
  <div className="flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-loss flex-shrink-0 mt-0.5" />
  <div>
@@ -2885,12 +2885,12 @@ export function SpecialistAnalysisView() {
  <ShareButtons info={info} ticker={radarData.ticker ?? ticker.toUpperCase()} />
 
  {/* ── §16. Disclaimer ── */}
- <Card className="p-4 bg-warning /20 border-warning ">
+ <Card className="p-4 bg-warning/20 border-warning ">
  <div className="flex items-start gap-3">
  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
  <div>
  <h4 className="font-bold text-warning mb-1 text-sm">إخلاء المسؤولية</h4>
- <p className="text-xs text-warning ">
+ <p className="text-xs text-warning">
  هذا التحليل لأغراض تعليمية وإعلامية فقط وليس توصية استثمارية.
  القرار النهائي مسؤولية العميل. قرارات الاستثمار يجب أن تبنى على تقييمك الشخصي
  ومشورة مستشار مالي محترف. الأداء السابق لا يضمن النتائج المستقبلية.

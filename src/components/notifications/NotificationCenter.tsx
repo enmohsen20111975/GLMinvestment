@@ -43,15 +43,15 @@ function getNotificationIconElement(type: Notification['type'], className: strin
 function getNotificationColor(type: Notification['type']) {
  switch (type) {
  case 'price_alert':
- return 'text-profit bg-profit /30 border-profit /40';
+ return 'text-profit bg-profit/10 border-profit/20';
  case 'portfolio_update':
- return 'text-warning bg-warning /30 border-warning /40';
+ return 'text-warning bg-warning/10 border-warning/20';
  case 'market_event':
- return 'text-whale bg-primary /30 border-whale /40';
+ return 'text-whale bg-primary/10 border-whale/20';
  case 'system':
- return 'text-muted-foreground bg-muted border-border';
+ return 'text-muted-foreground bg-muted/30 border-border/40';
  default:
- return 'text-muted-foreground bg-muted border-border';
+ return 'text-muted-foreground bg-muted/30 border-border/40';
  }
 }
 
