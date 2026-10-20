@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 skills/
@@ -133,6 +134,12 @@ server.log
 !src/app/api/admin/engines/logs/**
 
 # Next.js
+=======
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
 /.pnp
 .pnp.*
 .yarn/*
@@ -143,10 +150,17 @@ server.log
 
 # testing
 /coverage
+<<<<<<< HEAD
 # Smoke load test results (generated artifact, not source code)
 scripts/smoke_load_test_results.json
 # Vitest cache
 .vitest/
+=======
+
+# next.js
+/.next/
+/out/
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
 
 # production
 /build
@@ -163,8 +177,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+<<<<<<< HEAD
 # P0-AUDIT-H FIX (2026-10-14): Allow .env.example (template with no real secrets)
 !.env.example
+=======
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
 
 # vercel
 .vercel
@@ -176,6 +193,7 @@ next-env.d.ts
 local-*
 .claude
 .z-ai-config
+<<<<<<< HEAD
 test
 prompt
 
@@ -340,3 +358,14 @@ db/backup-unify-*/
 skills/
 node_modules/
 >>>>>>> 3f09ee0 (Initial commit)
+=======
+*.log
+dev.log
+dev.out.log
+test
+prompt
+
+server.log
+# Skills directory
+/skills/
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)

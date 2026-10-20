@@ -1,12 +1,19 @@
 import type { NextConfig } from "next";
+<<<<<<< HEAD
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+=======
+
+const nextConfig: NextConfig = {
+  output: "standalone",
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+<<<<<<< HEAD
   // UNIFY-FIX (2026-10-08): تعطيل standalone — يسبب مشاكل مع next start + ecosystem.config.js
   // البناء العادي يعمل بشكل صحيح مع pm2 + next start
   // output: 'standalone',
@@ -41,3 +48,8 @@ export default withSentryConfig(nextConfig, {
   widenClientFileUpload: true,
   autoInstrumentServerFunctions: false, // UNIFY-FIX: تعطيل لتسريع البناء
 });
+=======
+};
+
+export default nextConfig;
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)

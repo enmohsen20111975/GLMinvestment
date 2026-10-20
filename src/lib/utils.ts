@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -337,3 +338,11 @@ export const portfolioDashboardApi = {
   smartSignals: (userId: string) =>
     pythonFetch(`/portfolio/smart-monitor/signals?user_id=${userId}`),
 };
+=======
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)

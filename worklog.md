@@ -68572,3 +68572,25 @@ Stage Summary:
 - ⚠️ لازم Position Sizing صغير (0.5% risk) بسبب التباين العالي
 - ⚠️ لازم فلتر regime (skip BEAR years زي 2024)
 - 🎯 جاهز للـ Paper Trading (بعد Position Sizing + Regime filter)
+
+
+---
+Task ID: CLEANUP-PLAN-1
+Agent: جون (المدير التنفيذي + كبير المهندسين) — تخطيط
+Task: محسن — خطة تنظيف شاملة مقسومة بين ألفا + برافو بـ اختبارات صارمة + مبدأ الشك.
+
+Work Log:
+- بنيت inventory كامل لـ 1,668 ملف / 653,852 سطر.
+- كشفت 146 ملف dead (~35,400 سطر) + 8 حالات تكرار + 150 ملف copy-paste.
+- كتبت خطة شاملة في agent-ctx/CLEANUP-PLAN-ALPHA-BRAVO.md:
+  * ألفا: 7 مراحل (A1-A7) — أرشفة dead UI/libs/barrels + إحياء dead libs + توحيد مكونات + استخراج helpers.
+  * برافو: 6 مراحل (B1-B6) — أرشفة dead scripts + حل route conflict + duplicate engine + SQL CREATE TABLE.
+- كل مرحلة فيها اختبارات صارمة (lint + tsc + py_compile + browser + curl).
+- مبدأ الشك: كل ملف قبل الحذف لازم 0 importers + مش في cron/PM2 + مش RESTORED.
+
+Stage Summary:
+- ✅ الخطتين جاهزتين في agent-ctx/CLEANUP-PLAN-ALPHA-BRAVO.md.
+- ✅ 13 مرحلة إجمالي (7 ألفا + 6 برافو).
+- ✅ اختبارات صارمة بعد كل مرحلة.
+- ✅ مبدأ الشك مطلق.
+- ⏳ ألفا + برافو يبدأوا التنفيذ.
