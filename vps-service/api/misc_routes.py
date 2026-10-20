@@ -1700,8 +1700,7 @@ def rebuild_predictions():
                            stop_loss, confidence, maestro_score, created_at,
                            prediction_date, kill_filter_result
                     FROM predictions
-                    WHERE (status IN ('PENDING', 'active', 'ACTIVE')
-                       OR lifecycle_status IN ('testing', 'proven', 'active'))
+                    WHERE status IN ('PENDING', 'active', 'ACTIVE')
                       AND date(created_at) >= date('now', '-2 days')
                     ORDER BY id DESC
                     LIMIT 30
