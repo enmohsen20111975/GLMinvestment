@@ -23,8 +23,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPagination } from '@/components/shared/ui';
 import {
- History, RefreshCw, AlertCircle, ChevronRight, ChevronLeft,
+ History, RefreshCw, AlertCircle,
  TrendingUp, TrendingDown, Minus, Filter, Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -529,29 +530,16 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
  <span className="font-bold">{toRow.toLocaleString('ar-EG')}</span> من{' '}
  <span className="font-bold">{total.toLocaleString('ar-EG')}</span>
  </div>
- <div className="flex items-center gap-1">
- <Button
- variant="outline"
+ {/* P0-COMPONENT-UNIFICATION Phase 2.4: UnifiedPagination بـ disabled=loading
+     بدل inline ChevronRight/ChevronLeft + Buttons + counter */}
+ <UnifiedPagination
+ page={page}
+ totalPages={totalPages}
+ onChange={setPage}
  size="sm"
- onClick={() => setPage(Math.max(0, page - 1))}
- disabled={page === 0 || loading}
- >
- <ChevronRight className="h-3.5 w-3.5" />
- السابق
- </Button>
- <span className="text-xs text-muted-foreground px-2">
- {page + 1} / {totalPages.toLocaleString('ar-EG')}
- </span>
- <Button
- variant="outline"
- size="sm"
- onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
- disabled={page + 1 >= totalPages || loading}
- >
- التالي
- <ChevronLeft className="h-3.5 w-3.5" />
- </Button>
- </div>
+ variant="compact"
+ disabled={loading}
+ />
  </div>
  )}
  </CardContent>

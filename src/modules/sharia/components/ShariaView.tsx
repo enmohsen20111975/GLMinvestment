@@ -41,8 +41,6 @@ import {
  TrendingDown,
  Info,
  AlertTriangle,
- ChevronLeft,
- ChevronRight,
  Loader2,
  Users,
  Building2,
@@ -84,6 +82,7 @@ import {
  SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { UnifiedPagination } from '@/components/shared/ui';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -1291,26 +1290,15 @@ function ShariaStocksListTab({ onOpenDetail }: StocksListTabProps) {
  صفحة {safePage + 1} من {totalPages} · إجمالي {filteredRows.length} سهماً
  </span>
  <div className="flex gap-1">
- <Button
- variant="outline"
+ {/* P0-COMPONENT-UNIFICATION Phase 2.4: UnifiedPagination بدل inline buttons */}
+ <UnifiedPagination
+ page={safePage}
+ totalPages={totalPages}
+ onChange={setPage}
  size="sm"
- disabled={safePage === 0}
- onClick={() => setPage((p) => Math.max(0, p - 1))}
- className="h-8 px-2"
- aria-label="السابق"
- >
- <ChevronRight className="w-4 h-4" />
- </Button>
- <Button
- variant="outline"
- size="sm"
- disabled={safePage >= totalPages - 1}
- onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
- className="h-8 px-2"
- aria-label="التالي"
- >
- <ChevronLeft className="w-4 h-4" />
- </Button>
+ variant="compact"
+ showCounter={false}
+ />
  </div>
  </div>
  )}

@@ -34,6 +34,8 @@ export interface UnifiedPaginationProps {
   variant?: 'compact' | 'full';
   /** عرض الـ counter "1 / 5". default: true. */
   showCounter?: boolean;
+  /** Disable BOTH buttons (e.g., during async loading). default: false. */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -64,6 +66,7 @@ export function UnifiedPagination({
   size = 'sm',
   variant = 'compact',
   showCounter = true,
+  disabled = false,
   className,
 }: UnifiedPaginationProps) {
   // لو فيه صفحة واحدة بس، ما نعرضش الـ pagination
@@ -88,7 +91,7 @@ export function UnifiedPagination({
         <Button
           variant="outline"
           size={buttonSize}
-          disabled={isFirst}
+          disabled={isFirst || disabled}
           onClick={() => onChange(0)}
           aria-label="الصفحة الأولى"
         >
@@ -101,7 +104,7 @@ export function UnifiedPagination({
       <Button
         variant="outline"
         size={buttonSize}
-        disabled={isFirst}
+        disabled={isFirst || disabled}
         onClick={() => onChange(Math.max(0, page - 1))}
         aria-label="السابق"
         className="gap-1"
@@ -121,7 +124,7 @@ export function UnifiedPagination({
       <Button
         variant="outline"
         size={buttonSize}
-        disabled={isLast}
+        disabled={isLast || disabled}
         onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
         aria-label="التالي"
         className="gap-1"
@@ -135,7 +138,7 @@ export function UnifiedPagination({
         <Button
           variant="outline"
           size={buttonSize}
-          disabled={isLast}
+          disabled={isLast || disabled}
           onClick={() => onChange(totalPages - 1)}
           aria-label="الصفحة الأخيرة"
         >
