@@ -151,8 +151,12 @@ const PHASE_COLORS: Record<string, string> = {
   'بيانات غير كافية': 'bg-muted text-muted-foreground border-border',
 };
 
-function getPhaseInfo(rawPhase?: string | null): { label: string; cls: string } {
+function getPhaseInfo(rawPhase?: string | null, netFlow?: number | null): { label: string; cls: string } {
   if (!rawPhase) return { label: '—', cls: 'bg-muted text-muted-foreground border-border' };
+  // P0-FIX: لو السيولة سالبة بـ ملايين → تصريف وحذر (أحمر), مش أخضر
+  if (netFlow != null && Number(netFlow) < -5_000_000) {
+    return { label: 'تصريف وحذر', cls: 'bg-loss/10 text-loss border-loss/20' };
+  }
   const p = rawPhase.toLowerCase().trim();
   if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) {
     return { label: 'تجميع هادئ', cls: 'bg-whale/10 text-whale border-whale/20' };
@@ -390,10 +394,10 @@ export function LiquidityRadarView({
       sortable: true,
       width: 'w-28',
       align: 'center',
-      sortValue: (row) => getPhaseInfo(row.phase).label,
-      filterValue: (row) => getPhaseInfo(row.phase).label,
+      sortValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
+      filterValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
       render: (row) => {
-        const info = getPhaseInfo(row.phase);
+        const info = getPhaseInfo(row.phase, row.whale?.net_flow_egp);
         return (
           <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
             <Layers className="w-3 h-3" />
@@ -527,7 +531,7 @@ export function LiquidityRadarView({
                 {BUCKET_FILTERS.map((f) => {
                   const count = f.key === 'all'
                     ? (data?.stocks?.length ?? 0)
-                    : (data?.stocks ?? []).filter((st) => (st.liquidity_bucket || 'neutral') === f.key).length;
+                    : (data?.stocks ?? []).filter((st) => phaseToBucket(st.phase) === f.key).length;
                   const active = bucketFilter === f.key;
                   return (
                     <button
