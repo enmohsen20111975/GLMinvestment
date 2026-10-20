@@ -365,9 +365,17 @@ def _load_stocks_fundamentals_batch() -> dict:
                 fair_value = 0.0
 
             # حساب volume_ratio لو مش موجود صراحة
+            # BRAVO-FIX10: cap على volume_ratio بحد أقصى 15x (منع أرقام 155M× الوهمية)
+            # السبب: لو volume = shares_outstanding (مش daily volume) + avg_volume = 0.57
+            # → volume_ratio = 101M× = رقم وهمي يخلي السهم يطلع "شراء مضاربي قوي"
+            MAX_VOLUME_RATIO = 15.0  # cap واقعي (10x نادر، 15x أقصى حد للمضاربة)
             volume_ratio = 1.0
             if avg_volume and avg_volume > 0 and volume > 0:
-                volume_ratio = round(volume / avg_volume, 2)
+                raw_ratio = volume / avg_volume
+                if raw_ratio > MAX_VOLUME_RATIO:
+                    volume_ratio = MAX_VOLUME_RATIO  # cap
+                else:
+                    volume_ratio = round(raw_ratio, 2)
 
             # حساب fair_value_upside:
             # Method 1: من fair_value column (لو موجود)
@@ -816,13 +824,32 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
     timeframe = 'يومي-أسبوعي' if persona == 'gambler' else '6-12 شهر'
 
     # Volume & Liquidity metrics
+    # BRAVO-FIX10: cap على vol_ratio_val (منع أرقام 155M× الوهمية)
     try:
         vol_ratio_val = float(row.get('volume_ratio') or 1.0)
+        # cap على 15x (نفس الـ cap في حساب volume_ratio)
+        if vol_ratio_val > 15.0:
+            vol_ratio_val = 15.0
     except (ValueError, TypeError):
         vol_ratio_val = 1.0
 
     turnover_egp = float(row.get('turnover_egp') or 0.0)
     turnover_m = turnover_egp / 1_000_000.0 if turnover_egp > 0 else vol_ratio_val
+
+    # BRAVO-FIX10: Liquidity Filter — استبعاد الأسهم الميتة (turnover < 1.5M EGP)
+    # السبب: CRST كان volume=57.9M (shares outstanding مش daily volume) → turnover وهمي
+    MIN_TURNOVER_EGP = 1_500_000  # 1.5M EGP — أقل سيولة مقبولة للمضاربة
+    is_illiquid = (turnover_egp > 0 and turnover_egp < MIN_TURNOVER_EGP)
+
+    # BRAVO-FIX10: Anti-FOMO Filter — منع شراء القمم (change_1d > 4% = شراء بعد الانفجار)
+    # السبب: ABUK صعد 6.2% في جلسة واحدة → السيستم قال "شراء قوي" عند القمة = فخ
+    # القاعدة: لو السهم صعد > 4% في جلسة واحدة → تحول لـ "انتظار تصحيح" (Pullback Watch)
+    chg_1d_val = 0.0
+    try:
+        chg_1d_val = float(chg_1d)
+    except (ValueError, TypeError):
+        chg_1d_val = 0.0
+    is_fomo_spike = (chg_1d_val > 4.0)  # صعود أكتر من 4% = فخ محتمل
 
     def _smc_reason() -> str:
         parts = []
@@ -849,9 +876,9 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
     # المستثمر بيفكر بـ: أساسيات (P/E, ROE) + قيمة عادلة + استقرار.
     def _gambler_signature_reason(prefix: str = '') -> str:
         momentum_parts = []
-        if vr_fund and vr_fund >= 1.5:
-            momentum_parts.append(f"زخم قوي (حجم {vr_fund:.1f}x)")
-        elif vol_ratio_val and vol_ratio_val >= 1.5:
+        # BRAVO-FIX10: استخدم vol_ratio_val اللي اتعمله cap (max 15x)
+        # بدل vr_fund اللي ممكن يكون 155M× (الـ bug الأصلي)
+        if vol_ratio_val and vol_ratio_val >= 1.5:
             momentum_parts.append(f"زخم قوي (حجم {vol_ratio_val:.1f}x)")
         if abs(chg_1d) >= 2.0:
             direction = 'صاعد' if chg_1d > 0 else 'هابط'
@@ -893,6 +920,27 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
                 'tp1': tp1, 'tp2': tp2, 'risk_reward': rr, 'timeframe': timeframe,
                 'reason': _gambler_signature_reason('توصية بيع — زخم هابط واختراق دعم'),
             }
+
+        # BRAVO-FIX10: Liquidity Filter — استبعاد الأسهم الميتة (CRST bug)
+        # لو السهم illiquid (turnover < 1.5M) → "انتظر" بدل "شراء"
+        if is_illiquid:
+            return {
+                'verdict': 'انتظر', 'signal': 'HOLD', 'score': score,
+                'entry': None, 'target': None, 'stop': None,
+                'tp1': None, 'tp2': None, 'risk_reward': rr, 'timeframe': timeframe,
+                'reason': f'سيولة غير كافية ({turnover_m:.1f}M ج.م < 1.5M) — السهم ميت أو بيانات حجم غير صحيحة. انتظار.',
+            }
+
+        # BRAVO-FIX10: Anti-FOMO Filter — منع شراء القمم (ABUK bug)
+        # لو السهم صعد > 4% في جلسة واحدة → "انتظار تصحيح" بدل "شراء قوي"
+        if is_fomo_spike and (rec in ('strong_buy', 'buy') or score >= 50):
+            return {
+                'verdict': 'انتظر', 'signal': 'HOLD', 'score': score,
+                'entry': None, 'target': None, 'stop': None,
+                'tp1': None, 'tp2': None, 'risk_reward': rr, 'timeframe': timeframe,
+                'reason': f'⚠️ شراء القمة محظور — السهم صعد {chg_1d_val:+.1f}% في جلسة واحدة (> 4%). انتظار تصحيح (Pullback) للدخول بأسعار أرخص.',
+            }
+
         if rec in ('strong_buy', 'buy', 'swing_buy', 't1_buy') or score >= 50:
             if score >= 55 and rr >= 1.2:
                 return {
@@ -938,6 +986,24 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
                 'entry': None, 'target': None, 'stop': None,
                 'tp1': None, 'tp2': None, 'risk_reward': rr, 'timeframe': timeframe,
                 'reason': 'المستثمر طويل الأجل لا يبيع في القيعان — انتظار تحسن الاتجاه.',
+            }
+
+        # BRAVO-FIX10: Liquidity Filter للمستثمر كمان (لا تشتري أسهم ميتة)
+        if is_illiquid:
+            return {
+                'verdict': 'انتظر', 'signal': 'HOLD', 'score': score,
+                'entry': None, 'target': None, 'stop': None,
+                'tp1': None, 'tp2': None, 'risk_reward': rr, 'timeframe': timeframe,
+                'reason': f'سيولة غير كافية ({turnover_m:.1f}M ج.م < 1.5M) — السهم غير مناسب للاستثمار. انتظار.',
+            }
+
+        # BRAVO-FIX10: Anti-FOMO Filter للمستثمر (لا تشتري بعد انفجار +4%)
+        if is_fomo_spike and (rec in ('strong_buy', 'buy') or score >= 55):
+            return {
+                'verdict': 'انتظر', 'signal': 'HOLD', 'score': score,
+                'entry': None, 'target': None, 'stop': None,
+                'tp1': None, 'tp2': None, 'risk_reward': rr, 'timeframe': timeframe,
+                'reason': f'⚠️ السهم صعد {chg_1d_val:+.1f}% في جلسة واحدة — انتظار تصحيح للدخول بسعر أفضّل.',
             }
         if rec in ('strong_buy', 'buy', 'swing_buy', 't1_buy') or score >= 55:
             if score >= 60 and rr >= 1.5:
