@@ -18,17 +18,14 @@ export async function POST(req: NextRequest) {
     const qs = url.searchParams.toString();
     const bodyText = await req.text();
 
-    // 1. Trigger live refresh in background
-    try {
-      await fetch(`${PY}/api/daily/live-refresh-analyses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch (_) {
-      // non-blocking
-    }
+    // 1. Trigger live refresh in background (fire-and-forget — ALPHA-FIX: مابيعملش block على rebuild)
+    // جيمى لقى إن الـ await كان بيأخر الـ rebuild بـ 5 ثواني. دلوقتي fire-and-forget.
+    fetch(`${PY}/api/daily/live-refresh-analyses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(15000),
+    }).catch(() => { /* non-blocking — fire-and-forget */ });
 
     // 2. Call rebuild-predictions
     let data;
@@ -38,7 +35,7 @@ export async function POST(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: bodyText || '{}',
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(120000),
       };
       const res = await fetch(targetUrl, options);
       data = await res.json();
