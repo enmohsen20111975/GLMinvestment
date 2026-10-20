@@ -654,8 +654,8 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'reason': final_reason,
         # BRAVO-FLOW-GATE-ALL: flag للأسهم اللي في تصريف صريح
         'distribution_flag': _distribution_flag,
-        'pre_surge_details': pre_surge_details if pre_surge else None,
-        'quiet_details': quiet_details if quiet else None,
+        'pre_surge_details': pre_surge_details,  # BRAVO-INCUBATOR: always include for incubator scanning
+        'quiet_details': quiet_details,  # BRAVO-INCUBATOR: always include for incubator scanning
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
     }
@@ -782,6 +782,261 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
     conn.commit()
     conn.close()
     log(f"📝 Signal tracking: {inserted} signals saved to radar_signal_tracking (date={scan_date})")
+
+
+# ============================================================================
+# BRAVO-INCUBATOR: محرك "رادار التربص والتحضير" (The Incubator & Stalking Engine)
+# يكشف الأسهم التي حققت 4/6 أو 5/6 إشارات (قيد التسخين) ويستخرج الشرط الناقص
+# ============================================================================
+def extract_missing_trigger(stock_data: dict) -> dict:
+    """استخراج وتوصيف الشرط الناقص لسهم قيد التسخين (Incubator candidate).
+
+    Args:
+        stock_data: نتيجة سهم من analyze_stock (تحتوي quiet_details أو pre_surge_details)
+
+    Returns:
+        dict: {type, condition_ar, trigger_price, distance_to_trigger_pct}
+        - type: 'VOLUME_SURGE' | 'RESISTANCE_BREAK' | 'SUPPORT_CONFIRM' | None
+        - condition_ar: وصف الشرط بالعربية
+        - trigger_price: سعر التفعيل (None لـ VOLUME_SURGE)
+        - distance_to_trigger_pct: المسافة للهدف %
+    """
+    path = stock_data.get('path', '')
+    current_price = stock_data.get('current_price', 0) or 0
+
+    # حدد أي details نستخدم
+    details = None
+    total_signals = 6  # quiet default
+    if path in ('B_quiet_accumulation_strong', 'C_quiet_accumulation_weak', 'A_quiet_accumulation'):
+        details = stock_data.get('quiet_details') or {}
+        total_signals = 6
+    elif path == 'A_pre_surge':
+        details = stock_data.get('pre_surge_details') or {}
+        total_signals = 4
+    else:
+        # محاولة fallback: نستخدم أي details متاحة
+        details = stock_data.get('quiet_details') or stock_data.get('pre_surge_details') or {}
+        total_signals = 6 if stock_data.get('quiet_details') else 4
+
+    if not details:
+        return {
+            'type': None,
+            'condition_ar': 'لا توجد بيانات إشارات كافية',
+            'trigger_price': None,
+            'distance_to_trigger_pct': None,
+        }
+
+    signals_failed = details.get('signals_failed', [])
+    if not signals_failed:
+        # كل الإشارات متحققة → مش incubator (سهم كامل)
+        return {
+            'type': None,
+            'condition_ar': 'كل الإشارات متحققة — سهم جاهز للشراء',
+            'trigger_price': None,
+            'distance_to_trigger_pct': None,
+        }
+
+    # خذ أول إشارة ساقطة
+    first_failed = signals_failed[0].lower()
+
+    # حدد trigger_type بناءً على الإشارة الساقطة
+    # Rule 2: لو الإشارة الناقصة هي no_distribution → مرفوض (سهم في تصريف)
+    if 'no_distribution' in first_failed or 'distribution' in first_failed:
+        return {
+            'type': None,
+            'condition_ar': 'مرفوض — السهم في مرحلة تصريف',
+            'trigger_price': None,
+            'distance_to_trigger_pct': None,
+        }
+
+    # Rule: لو not_explosive ساقطة → السهم انفجر بالفعل (مش incubator)
+    if 'not_explosive' in first_failed or 'explosive' in first_failed:
+        return {
+            'type': None,
+            'condition_ar': 'السهم انفجر بالفعل — انتقل لمسار الانفجار',
+            'trigger_price': None,
+            'distance_to_trigger_pct': None,
+        }
+
+    # 1. VOLUME_SURGE: لو الإشارة الناقصة volume_high_recurring أو volume_not_low أو volume_gradient
+    if 'volume_high_recurring' in first_failed or 'volume_not_low' in first_failed or 'volume_gradient' in first_failed:
+        return {
+            'type': 'VOLUME_SURGE',
+            'condition_ar': 'بانتظار شمعة فوليوم تأكيدية تخترق 1.5x متوسط 20 يوم',
+            'trigger_price': None,
+            'distance_to_trigger_pct': None,
+        }
+
+    # 2. RESISTANCE_BREAK: لو الإشارة الناقصة compressed أو range_compressed
+    #    السهم محتاج يكسر المقاومة (أعلى قمة أخيرة)
+    if 'compressed' in first_failed or 'range_compressed' in first_failed:
+        # trigger_price = أعلى قمة في آخر 10 أيام (resistance)
+        # نحاول نحسبها من البيانات المتاحة في stock_data
+        trigger_price = None
+        # لو عندنا range_10d_pct → نقدر نحسب تقريبي
+        range_pct = details.get('range_10d_pct')
+        if range_pct is not None and current_price > 0:
+            # تقريبي: max_10 = current_price * (1 + range_pct/200)
+            trigger_price = round(current_price * (1 + range_pct / 200), 2)
+        if trigger_price is None or trigger_price <= current_price:
+            trigger_price = round(current_price * 1.03, 2)  # fallback: +3%
+
+        distance_pct = round(((trigger_price - current_price) / current_price) * 100, 2) if current_price > 0 else None
+        return {
+            'type': 'RESISTANCE_BREAK',
+            'condition_ar': f'بانتظار اختراق وتأكيد أعلى {trigger_price}',
+            'trigger_price': trigger_price,
+            'distance_to_trigger_pct': distance_pct,
+        }
+
+    # 3. SUPPORT_CONFIRM: لو الإشارة الناقصة buy_pressure أو buy_days أو price_near_ma
+    #    السهم محتاج يثبت فوق الدعم
+    if 'buy_pressure' in first_failed or 'buy_days' in first_failed or 'price_near_ma' in first_failed:
+        # trigger_price = أدنى قاع في آخر 10 أيام (support)
+        trigger_price = None
+        range_pct = details.get('range_10d_pct')
+        if range_pct is not None and current_price > 0:
+            # تقريبي: min_10 = current_price * (1 - range_pct/200)
+            trigger_price = round(current_price * (1 - range_pct / 200), 2)
+        if trigger_price is None or trigger_price >= current_price:
+            trigger_price = round(current_price * 0.97, 2)  # fallback: -3%
+
+        distance_pct = round(((trigger_price - current_price) / current_price) * 100, 2) if current_price > 0 else None
+        return {
+            'type': 'SUPPORT_CONFIRM',
+            'condition_ar': f'بانتظار استقرار السعر أعلى دعم {trigger_price}',
+            'trigger_price': trigger_price,
+            'distance_to_trigger_pct': distance_pct,
+        }
+
+    # fallback: إشارة غير معروفة
+    return {
+        'type': 'VOLUME_SURGE',
+        'condition_ar': f'بانتظار تأكيد إشارة إضافية ({first_failed})',
+        'trigger_price': None,
+        'distance_to_trigger_pct': None,
+    }
+
+
+def build_incubator_candidates(results: list) -> list:
+    """بناء قائمة incubator_candidates من نتائج الفحص.
+
+    incubator_candidates = أسهم حققت 4/6 أو 5/6 إشارات (قيد التسخين) في مسار
+    B_quiet_accumulation_strong أو A_pre_surge، وغير في مرحلة تصريف.
+
+    Rule 1 (no hardcoded readiness): readiness_pct = (passed / total) * 100
+    Rule 2 (no distribution): ممنوع إدخال أسهم في مسار تصريف
+    Rule 3 (real OHLCV): التريجر مرتبط بسعر/فوليوم حقيقي
+
+    Args:
+        results: قائمة كل نتائج الفحص (all_results)
+
+    Returns:
+        list of incubator candidate dicts matching the API Response Contract
+    """
+    candidates = []
+
+    for stock in results:
+        path = stock.get('path', '')
+
+        # Rule 2: ممنوع أسهم في تصريف
+        if stock.get('distribution_flag'):
+            continue
+        if path == 'distribution':
+            continue
+
+        # حدد details + total_signals
+        details = None
+        total_signals = 6
+        if path in ('B_quiet_accumulation_strong', 'C_quiet_accumulation_weak', 'A_quiet_accumulation'):
+            details = stock.get('quiet_details')
+            total_signals = 6
+        elif path == 'A_pre_surge':
+            details = stock.get('pre_surge_details')
+            total_signals = 4
+        else:
+            # fallback: نجرّب quiet_details الأول
+            details = stock.get('quiet_details')
+            if details:
+                total_signals = 6
+            else:
+                details = stock.get('pre_surge_details')
+                if details:
+                    total_signals = 4
+
+        if not details:
+            continue
+
+        signals_passed = details.get('signal_count', 0)
+        if signals_passed < 4:
+            continue  # محتاج على الأقل 4/6 أو 3/4
+
+        # Rule 1: readiness_pct = (passed / total) * 100 — رياضي، مش hardcoded
+        readiness_pct = round((signals_passed / total_signals) * 100)
+
+        # لو 100% → سهم كامل (مش incubator)
+        if readiness_pct >= 100:
+            continue
+
+        # استخرج الشرط الناقص
+        trigger = extract_missing_trigger(stock)
+
+        # لو trigger type = None (مرفوض أو سهم كامل) → skip
+        if trigger.get('type') is None:
+            continue
+
+        # خذ passed_reasons من signals_met
+        signals_met = details.get('signals_met', [])
+        # حوّل لأسباب عربية مختصرة
+        passed_reasons = []
+        reason_map = {
+            'volume_high_recurring': 'حجم متكرر فوق المتوسط',
+            'volume_not_low': 'سيولة متدفقة مقبولة',
+            'buy_pressure': 'ضغط شرائي مؤسسي',
+            'compressed': 'انضغاط سعري (تجميع صامت)',
+            'not_explosive': 'غياب الانفجار المبكر',
+            'no_distribution': 'غياب تام لمظاهر التصريف',
+            'volume_gradient': 'تدرج حجمي صاعد',
+            'range_compressed': 'نطاق سعري محبوس',
+            'buy_days': 'أيام شراء متماسكة',
+            'price_near_ma': 'سعر قريب من المتوسط المتحرك',
+        }
+        for sig in signals_met:
+            for key, reason_ar in reason_map.items():
+                if key in sig.lower():
+                    passed_reasons.append(reason_ar)
+                    break
+
+        # entry/stop/target من stock_data
+        entry = stock.get('entry_price') or stock.get('current_price', 0)
+        stop = stock.get('stop_loss', 0)
+        target = stock.get('target_price', 0)
+
+        # R/R calculation
+        risk = entry - stop if entry > stop else 0
+        reward = target - entry if target > entry else 0
+        risk_reward = round(reward / risk, 1) if risk > 0 else 0
+
+        candidate = {
+            'ticker': stock.get('ticker', ''),
+            'name_ar': stock.get('name_ar') or stock.get('ticker', ''),
+            'current_price': stock.get('current_price', 0),
+            'readiness_pct': readiness_pct,
+            'signals_passed': signals_passed,
+            'total_signals': total_signals,
+            'passed_reasons': passed_reasons,
+            'trigger': trigger,
+            'target_if_promoted': target,
+            'stop_loss_if_promoted': stop,
+            'risk_reward': risk_reward,
+            'stage': 'HEATING_UP',
+            'path': path,
+        }
+        candidates.append(candidate)
+
+    # ترتيب: أعلى readiness أول
+    candidates.sort(key=lambda c: -c['readiness_pct'])
+    return candidates
 
 
 def main():
@@ -1306,10 +1561,14 @@ def main():
             'explosive_list': explosive_list,
             'early_break_list': early_break_list,
             'distribution_list': distribution_list,
+            'incubator_candidates': build_incubator_candidates(results),
             'under_microscope': under_microscope,
             'all_results': results,
         }, f, ensure_ascii=False, indent=2, default=str)
     log(f"\n✅ JSON saved: {json_path}")
+
+    incubator_count = len(build_incubator_candidates(results))
+    log(f"    🔭 Incubator Candidates (heating up): {incubator_count}")
 
     # ── Task IMPROVEMENT-22-2026-10-07: تسجيل الإشارات في radar_signal_tracking ──
     # بعد كل تشغيل، سجّل كل سهم تحت الميكروسكوب في DB عشان نقدر نتتبعها

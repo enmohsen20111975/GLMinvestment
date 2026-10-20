@@ -14,6 +14,7 @@ from datetime import datetime
 import time
 import sys
 import os
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -609,6 +610,89 @@ def get_cache_status():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
+# RADAR INCUBATOR ENDPOINT — رادار التربص وقيد التسخين
+# ============================================================================
+
+@misc_bp.route('/api/radar/incubator', methods=['GET'])
+def radar_incubator():
+    """🔭 رادار التربص وقيد التسخين — The Incubator & Stalking Engine.
+
+    GET /api/radar/incubator?market=EGX
+
+    بيرجّع قائمة الأسهم اللي محققة 4/6 أو 5/6 إشارات (قيد التسخين) في مسار
+    B_quiet_accumulation_strong أو A_pre_surge. كل سهم معاه الشرط الناقص
+    (trigger) وأرقام الصفقة المتوقعة في حالة التفعيل.
+
+    Response Contract:
+    {
+        "success": true,
+        "market": "EGX",
+        "total_candidates": N,
+        "candidates": [...],
+        "timestamp": "ISO"
+    }
+    """
+    import os
+    import glob
+    from pathlib import Path
+
+    market = (request.args.get('market') or 'EGX').strip().upper()
+
+    # ابحث عن أحدث cache file للسوق المطلوب
+    project_root = Path(__file__).resolve().parents[2]
+    output_dir = project_root / 'scripts' / 'output'
+
+    # pattern: maker_radar_{MARKET}_{YYYYMMDD}.json
+    pattern = str(output_dir / f'maker_radar_{market}_*.json')
+    cache_files = sorted(glob.glob(pattern), reverse=True)
+
+    if not cache_files:
+        return jsonify({
+            'success': True,
+            'market': market,
+            'total_candidates': 0,
+            'candidates': [],
+            'timestamp': datetime.now().isoformat(),
+            'message': 'الرادار يمسح السوق حالياً — لا توجد بيانات متاحة'
+        })
+
+    latest_cache = cache_files[0]
+    try:
+        with open(latest_cache, 'r', encoding='utf-8') as f:
+            cache_data = json.load(f)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'فشل قراءة ملف الكاش: {e}',
+            'market': market,
+            'total_candidates': 0,
+            'candidates': [],
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+    candidates = cache_data.get('incubator_candidates', [])
+
+    # لو مفيش incubator_candidates في الكاش (نسخة قديمة)، نحاول نبنيها من all_results
+    if not candidates and cache_data.get('all_results'):
+        try:
+            import sys
+            sys.path.insert(0, str(project_root / 'scripts'))
+            from maker_radar import build_incubator_candidates
+            candidates = build_incubator_candidates(cache_data['all_results'])
+        except Exception:
+            candidates = []
+
+    return jsonify({
+        'success': True,
+        'market': market,
+        'total_candidates': len(candidates),
+        'candidates': candidates,
+        'timestamp': cache_data.get('generated_at', datetime.now().isoformat()),
+        'cache_file': os.path.basename(latest_cache),
+    })
 
 
 # ============================================================================
