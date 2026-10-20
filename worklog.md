@@ -139,3 +139,36 @@ Stage Summary:
 - ✅ Rule 59 (P0-WAVE-TESTS) محترمة — 15 pytest tests بـ assert.
 - 🙏 اعتذار للمالك: برافو عمل fallbacks fabrication خطيرة (ATR=0 ممكن يسبب خساير). جيمي كشفها. دلوقتي اتحلت.
 - 🎯 المشروع دلوقتي آمن + صادق + مختبر بـ pytest حقيقي.
+
+---
+Task ID: BRAVO-INCUBATOR-1
+Agent: برافو (تنين الباك إند والكم المجنح — Bravo backend/quant)
+Task: محسن — بناء محرك "رادار التربص والتحضير" (The Incubator & Stalking Engine) حسب المانيفستو التفصيلي.
+
+Work Log:
+- قرأت المانيفستو بالكامل. 3 مكونات: (1) Core Engine في maker_radar.py، (2) API endpoint في misc_routes.py، (3) Intraday Promotion Hook في intraday_scanner.py.
+- فحصت shared_liquidity.py لفهم الـ 6 إشارات (quiet_accumulation): volume_high_recurring, buy_pressure, compressed, volume_not_low, not_explosive, no_distribution. + 4 إشارات (pre_surge): volume_gradient, range_compressed, buy_days, price_near_ma.
+- **Component 1 — maker_radar.py**:
+  * `extract_missing_trigger(stock_data)`: parses signals_failed → trigger type (VOLUME_SURGE / RESISTANCE_BREAK / SUPPORT_CONFIRM / None-reject)
+  * `build_incubator_candidates(results)`: filters 4/6+ signals, rejects distribution (Rule 2), readiness_pct = (passed/total)*100 (Rule 1), trigger from real OHLCV (Rule 3)
+  * Modified JSON output: always include quiet_details/pre_surge_details + added `incubator_candidates` array
+- **Component 2 — misc_routes.py**: `GET /api/radar/incubator?market=EGX` — reads latest cache, returns Response Contract {success, market, total_candidates, candidates[], timestamp}
+- **Component 3 — intraday_scanner.py**: `promote_incubator_candidates(market)` — reads cache, checks trigger conditions (RESISTANCE_BREAK: price>trigger, VOLUME_SURGE: vol>1.5×avg), on trigger → INSERT prediction signal='BUY' track='RADAR_PROMOTED'. Called in scan_intraday() every 5 min.
+- **Verification على بيانات حقيقية**: scan 30 سهم EGX → 1 incubator candidate (ORTE — 4/6 signals, 67% readiness, VOLUME_SURGE trigger, stage=HEATING_UP).
+
+Verification:
+- syntax check: 3/3 files OK ✅
+- mock test: extract_missing_trigger + build_incubator_candidates assertions pass ✅
+- real scan: incubator_candidates في JSON output ✅ (ORTE — 4/6, 67%)
+- promote_incubator_candidates: callable, returns [] (no live intraday data) ✅
+- Rule 1 (no hardcoded readiness): readiness_pct = round((passed/total)*100) ✅
+- Rule 2 (no distribution): distribution_flag → skip ✅
+- Rule 3 (real OHLCV): trigger_price from swing high/low ✅
+- commit c0f541b → push 614d3c1 على origin/main
+
+Stage Summary:
+- ✅ المحرك شغال على بيانات حقيقية (ORTE — أول incubator candidate).
+- ✅ الـ 3 محظورات كلها محترمة (no hardcoded + no distribution + real OHLCV).
+- ✅ API endpoint جاهز للـ ALPHA (GET /api/radar/incubator).
+- ✅ Intraday hook جاهز (promote_incubator_candidates في scan_intraday).
+- 🎯 الواجهة (ALPHA) تقدر تـ consume الـ API على طول.
