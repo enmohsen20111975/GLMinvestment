@@ -32,6 +32,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+// P0-COMPONENT-UNIFICATION Phase 2.7: canonical fmtPrice from '@/lib/utils'
+import { fmtPrice } from '@/lib/utils';
 import { useTranslation } from '@/lib/i18n-context';
 import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import type { MarketType } from '@/lib/store';
@@ -165,10 +167,8 @@ const REGIME_STYLES: Record<string, { color: string; bg: string; border: string;
 // ============================================================================
 // Helpers
 // ============================================================================
-function fmtPrice(n?: number | null): string {
- if (n == null || Number.isNaN(n)) return '—';
- return (n ?? 0).toFixed(2);
-}
+// P0-COMPONENT-UNIFICATION Phase 2.7: removed local fmtPrice — now imported from '@/lib/utils'.
+// (was: function fmtPrice(n?: number | null) { if (n == null || isNaN(n)) return '—'; return (n ?? 0).toFixed(2); })
 
 function fmtPct(n?: number | null, withSign = true): string {
  if (n == null || Number.isNaN(n)) return '—';

@@ -53,6 +53,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { StockSearchDropdown } from '@/modules/portfolio/components/StockSearchDropdown';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+// P0-COMPONENT-UNIFICATION Phase 2.7: canonical fmtPrice from '@/lib/utils'
+import { fmtPrice } from '@/lib/utils';
 import {
  TrendingUp,
  TrendingDown,
@@ -175,10 +177,8 @@ function fmtPct(v: number | null | undefined): string {
  return pctFmt.format(v);
 }
 
-function fmtPrice(v: number | null | undefined): string {
- if (v == null || !Number.isFinite(v)) return '—';
- return (v ?? 0).toFixed(2);
-}
+// P0-COMPONENT-UNIFICATION Phase 2.7: removed local fmtPrice — now imported from '@/lib/utils'.
+// (was: function fmtPrice(v) { if (v == null...) return '—'; return (v ?? 0).toFixed(2); })
 
 function pnlColor(v: number | null | undefined): string {
  if (v == null) return 'text-muted-foreground';

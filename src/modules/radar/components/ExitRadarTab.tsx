@@ -38,6 +38,8 @@ import {
  CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+// P0-COMPONENT-UNIFICATION Phase 2.7: canonical fmtPrice from '@/lib/utils'
+import { fmtPrice } from '@/lib/utils';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useAppStore } from '@/lib/store';
 import { getTrialStatus } from '@/lib/subscription-gate';
@@ -155,10 +157,8 @@ function fmtVolRatio(n?: number): string {
  return `${(n ?? 0).toFixed(2)}×`;
 }
 
-function fmtPrice(n?: number): string {
- if (n == null || Number.isNaN(n)) return '—';
- return (n ?? 0).toFixed(2);
-}
+// P0-COMPONENT-UNIFICATION Phase 2.7: removed local fmtPrice — now imported from '@/lib/utils'.
+// (was: function fmtPrice(n?: number) { if (n == null || isNaN(n)) return '—'; return (n ?? 0).toFixed(2); })
 
 function fmtPct(n?: number | null, withSign = true): string {
  if (n == null || Number.isNaN(n)) return '—';

@@ -38,7 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { cn, fmtPrice } from '@/lib/utils';
 
 // ============================================================================
 // Types — mirror the API contract
@@ -83,10 +83,8 @@ function fmtVol(n: number | null | undefined): string {
  return (n ?? 0).toFixed(0);
 }
 
-function fmtPrice(n: number | null | undefined): string {
- if (n == null || !Number.isFinite(n) || n === 0) return '—';
- return (n ?? 0).toFixed(2);
-}
+// P0-COMPONENT-UNIFICATION Phase 2.7: removed local fmtPrice — now imported from '@/lib/utils'.
+// (was: function fmtPrice(n) { if (n == null...) return '—'; return n.toFixed(2); })
 
 function fmtPct(n: number | null | undefined): string {
  if (n == null || !Number.isFinite(n)) return '0.0%';

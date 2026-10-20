@@ -17,7 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, fmtPrice } from '@/lib/utils';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
@@ -126,10 +126,8 @@ function fmtFlow(n: number | null | undefined): string {
   return `${sign}${abs.toFixed(0)}`;
 }
 
-function fmtPrice(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(Number(n))) return '—';
-  return Number(n).toFixed(2);
-}
+// P0-COMPONENT-UNIFICATION Phase 2.7: removed local fmtPrice — now imported from '@/lib/utils'.
+// (was: function fmtPrice(n) { if (n == null...) return '—'; return Number(n).toFixed(2); })
 
 function fmtPct(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(Number(n))) return '—';
