@@ -32,7 +32,7 @@ export function RefreshAnalyticsButton({
 
  setIsRefreshing(true);
  const toastId = toast.loading('جاري توليد توقعات جديدة...', {
- description: 'نظام التحليل بفحص السوق ويولّد أحدث الفرص.',
+ description: 'المحرك بيفحص 289 سهم — بياخد 60-90 ثانية. استني...',
  });
 
  try {

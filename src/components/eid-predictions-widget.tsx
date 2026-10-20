@@ -161,7 +161,16 @@ export function EidPredictionsWidget() {
  // ALPHA-UX-FIX-5: guest freemium — guest يشوف 3 توقعات، الباقي خلف CTA
  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
  const GUEST_PREDICTION_LIMIT = 3;
- const displayPredictions = !isAuthenticated ? predictions.slice(0, GUEST_PREDICTION_LIMIT) : predictions;
+ const displayPredictions = (!isAuthenticated ? predictions.slice(0, GUEST_PREDICTION_LIMIT) : predictions).filter(p => {
+ // HARD GATE: R/R >= 1.5 for BUY (Rule: no BUY with R/R < 1.5 — no Zبالة)
+ if (p.signal === 'BUY') {
+ const risk = p.entryPrice - p.stopLoss;
+ const reward = p.targetPrice - p.entryPrice;
+ if (risk <= 0 || reward <= 0) return false;
+ return (reward / risk) >= 1.5;
+ }
+ return true;
+ });
 
  const fetchPredictions = useCallback(async (forceRefresh = false) => {
  try {
