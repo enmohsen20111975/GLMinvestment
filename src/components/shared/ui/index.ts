@@ -37,5 +37,5 @@ export { ConfidenceMeter, type ConfidenceMeterProps } from './ConfidenceMeter';
 export { PersonaEmptyState, type PersonaEmptyStateProps } from './PersonaEmptyState';
 export { FinancialBadge, type FinancialBadgeProps } from './FinancialBadge';
 export { TrendIndicator, type TrendIndicatorProps } from './TrendIndicator';
-export { StockCard, type StockCardProps } from './StockCard';
+export { StockCard, type StockCardProps, type StockTrack, isWarningOrVeto, isBuyOpportunity } from './StockCard';
 export { MarketTable, type MarketTableColumn, type MarketTableProps } from './MarketTable';
