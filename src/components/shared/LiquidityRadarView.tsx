@@ -153,11 +153,24 @@ function getPhaseInfo(rawPhase?: string | null, netFlow?: number | null): { labe
  if (!rawPhase) return { label: '—', cls: 'bg-muted text-muted-foreground border-border' };
  // P0-FIX (جيمي directive): أي سهم سيولته الـ 5 أيام سالبة (netFlow < 0)
  // ياخد لون الحذر والتصريف فوراً — ممنوع نهائياً يشوف اللون الأخضر.
- // الـ threshold القديم كان -1_000_000 (استهبال — سهم خارج منه 500K كان بياخد أخضر).
  if (netFlow != null && Number(netFlow) < 0) {
  return { label: 'تصريف وحذر', cls: 'bg-loss/10 text-loss border-loss/20' };
  }
  const p = rawPhase.toLowerCase().trim();
+ // ALPHA-PHASE3: دعم حالات الـ RVOL الصادرة من محرك بايثون
+ if (p.includes('dry_accumulation')) {
+ return { label: 'جفاف سيولة (تربص)', cls: 'bg-whale/10 text-whale border-whale/20' };
+ }
+ if (p.includes('accumulation_confirmed')) {
+ return { label: 'اختراق وتأكيد تجميع', cls: 'bg-profit/10 text-profit border-profit/20' };
+ }
+ if (p.includes('distribution_risk')) {
+ return { label: 'ذروة شراء وخطر تصريف', cls: 'bg-warning/10 text-warning border-warning/20' };
+ }
+ if (p.includes('illiquid_trap')) {
+ return { label: 'سهم ميت (مصيدة)', cls: 'bg-muted text-muted-foreground border-border' };
+ }
+ // Legacy phases (backward compat)
  if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) {
  return { label: 'تجميع هادئ', cls: 'bg-whale/10 text-whale border-whale/20' };
  }
@@ -256,8 +269,9 @@ export function LiquidityRadarView({
  setLoading(true);
  setError(null);
  try {
+ // ALPHA-PHASE3: تحويل مصدر البيانات لـ /api/market/liquidity-radar
  const res = await fetch(
- `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
+ `/api/market/liquidity-radar?market=${encodeURIComponent(market)}`,
  { cache: 'no-store' },
  );
  if (!res.ok) { setError('تعذّر الاتصال بالخادم'); setData(null); return; }

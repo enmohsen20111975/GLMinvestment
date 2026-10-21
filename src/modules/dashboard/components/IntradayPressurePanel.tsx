@@ -1,372 +1,259 @@
 'use client';
 
 /**
- * IntradayPressurePanel — ضغط الشراء/البيع داخل الجلسة لسهم معيّن
+ * IntradayPressurePanel — ضغط EGX30 الكلي + أعلى 10 أسهم قيادية
  * ===================================================================
- * يعرض:
- * - لكل باكت زمني: شريط مكدّس (أخضر=شراء | أحمر=بيع) + الوقت + الضغط الصافي
- * - بطاقات ملخّص الجلسة: الضغط الصافي، نسبة شراء:بيع، VWAP، OHLC، الحجم الكلي
- * - شارة تفسير (ضغط شرائي/بيعي/متوازن)
+ * ALPHA-PHASE1 (2026-10-20): Rewrite to consume Python backend.
  *
- * NO mock data — كل البيانات من /api/market/intraday-pressure (اللي بدورها من intraday.db).
+ * API: /api/market/intraday-pressure
+ * Response:
+ * {
+ *   "cumulative_pressure": {
+ *     "buy_pct": 96.4, "sell_pct": 3.6,
+ *     "net_pressure_egp": 679748941, "direction": "BUYING"
+ *   },
+ *   "top_stocks": [
+ *     { "ticker": "COMI", "price": 129.0, "change_pct": 2.46,
+ *       "buy_pct": 62.3, "sell_pct": 37.7, "net_pressure_egp": 108674111 }
+ *   ]
+ * }
+ *
+ * NO mock data — كل الأرقام من Python Backend.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gauge, TrendingUp, TrendingDown, Loader2, Search, Activity, Scale } from 'lucide-react';
+import { Gauge, TrendingUp, TrendingDown, Loader2, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { formatNumber } from '@/lib/format';
 
-interface Bucket {
- bucket_start: string;
- bucket_end: string;
- time_label: string;
- buy_volume: number;
- sell_volume: number;
- neutral_volume: number;
- total_volume: number;
- buy_pressure_pct: number;
- sell_pressure_pct: number;
- net_pressure: number;
- vwap: number;
- avg_price: number;
- tick_count: number;
- open_price: number;
- close_price: number;
- high_price: number;
- low_price: number;
+// ─── API Types (matching Python response) ───────────────────────────────
+
+interface CumulativePressure {
+  buy_pct: number;
+  sell_pct: number;
+  net_pressure_egp: number;
+  direction: string;
 }
 
-interface SessionSummary {
- total_buy_volume: number;
- total_sell_volume: number;
- total_neutral_volume: number;
- total_volume: number;
- net_pressure: number;
- buy_pressure_pct: number;
- sell_pressure_pct: number;
- buy_sell_ratio: number | null;
- session_vwap: number;
- session_open: number;
- session_close: number;
- session_high: number;
- session_low: number;
- tick_count: number;
+interface TopStock {
+  ticker: string;
+  price: number;
+  change_pct: number;
+  buy_pct: number;
+  sell_pct: number;
+  net_pressure_egp: number;
 }
 
-interface PressureData {
- success: boolean;
- ticker: string;
- period: string;
- date: string | null;
- buckets: Bucket[];
- session_summary: SessionSummary | null;
- note?: string;
+interface PressureResponse {
+  success: boolean;
+  source?: string;
+  cumulative_pressure?: CumulativePressure | null;
+  top_stocks?: TopStock[];
+  message?: string;
 }
 
-type PeriodKey = '5min' | '15min' | '30min' | '1h' | 'session';
-const PERIOD_LABEL: Record<PeriodKey, string> = {
- '5min': '5 دقائق',
- '15min': '15 دقيقة',
- '30min': '30 دقيقة',
- '1h': 'ساعة',
- session: 'الجلسة كاملة',
-};
+// ─── Helpers (NO calculations — just formatting from API values) ────────
 
-interface Props {
- initialTicker?: string;
+function fmtEGP(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return '—';
+  const abs = Math.abs(v);
+  const sign = v >= 0 ? '+' : '-';
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2)} مليار`;
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)} مليون`;
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(0)} ألف`;
+  return `${sign}${abs.toFixed(0)}`;
 }
 
-export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
- const [ticker, setTicker] = useState(initialTicker.toUpperCase());
- const [tickerInput, setTickerInput] = useState(initialTicker.toUpperCase());
- const [period, setPeriod] = useState<PeriodKey>('30min');
- const [loading, setLoading] = useState(true);
- const [data, setData] = useState<PressureData | null>(null);
- const [error, setError] = useState<string | null>(null);
-
- const loadData = useCallback(async () => {
- setLoading(true);
- setError(null);
- try {
- const res = await fetch(
- `/api/market/intraday-pressure?ticker=${encodeURIComponent(ticker)}&period=${period}`,
- { cache: 'no-store' }
- );
- if (!res.ok) {
- setError('تعذّر جلب البيانات. يرجى المحاولة مرة أخرى.');
- setData(null);
- return;
- }
- const json = (await res.json()) as PressureData;
- if (!json.success) {
- // PRED-RADAR-GAP-AUDIT fix: لا تعرض رسالة الخطأ الخام — اعرض رسالة عربية منسقة
- const rawNote = json.note || json.error || '';
- if (rawNote.includes('no intraday data') || rawNote.includes('no data')) {
- setError(`لا توجد بيانات لحظية لسهم ${ticker} — قد تكون الجلسة مغلقة أو البيانات غير متوفرة`);
- } else {
- setError(rawNote || 'تعذّر جلب البيانات');
- }
- setData(null);
- return;
- }
- setData(json);
- } catch (e) {
- setError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
- setData(null);
- } finally {
- setLoading(false);
- }
- }, [ticker, period]);
-
- useEffect(() => {
- loadData();
- }, [loadData]);
-
- const handleSearch = () => {
- const t = tickerInput.trim().toUpperCase();
- if (t && t !== ticker) {
- setTicker(t);
- }
- };
-
- const session = data?.session_summary;
- const buyPressure = session?.buy_pressure_pct ?? 0;
- const interpretation: { label: string; tone: 'buy' | 'sell' | 'neutral' } = buyPressure > 55
- ? { label: 'ضغط شرائي', tone: 'buy' }
- : buyPressure < 45
- ? { label: 'ضغط بيعي', tone: 'sell' }
- : { label: 'متوازن', tone: 'neutral' };
-
- return (
- <Card dir="rtl" className="w-full">
- <CardHeader className="pb-2">
- <div className="flex items-center justify-between gap-2 flex-wrap">
- <CardTitle className="text-sm flex items-center gap-2">
- <Gauge className="w-4 h-4 text-primary" />
- ضغط الشراء/البيع داخل الجلسة
- </CardTitle>
- <div className="flex items-center gap-1.5">
- <Input
- value={tickerInput}
- onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
- onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
- placeholder="الرمز"
- className="h-7 w-20 sm:w-24 text-xs"
- aria-label="رمز السهم"
- />
- <Button
- type="button"
- size="sm"
- variant="outline"
- className="h-7 px-2"
- onClick={handleSearch}
- aria-label="بحث"
- >
- <Search className="w-3.5 h-3.5" />
- </Button>
- <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
- <SelectTrigger className="h-7 w-[110px] text-xs">
- <SelectValue />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="5min">{PERIOD_LABEL['5min']}</SelectItem>
- <SelectItem value="15min">{PERIOD_LABEL['15min']}</SelectItem>
- <SelectItem value="30min">{PERIOD_LABEL['30min']}</SelectItem>
- <SelectItem value="1h">{PERIOD_LABEL['1h']}</SelectItem>
- <SelectItem value="session">{PERIOD_LABEL['session']}</SelectItem>
- </SelectContent>
- </Select>
- </div>
- </div>
- </CardHeader>
-
- <CardContent className="space-y-4">
- {loading ? (
- <>
- <Skeleton className="h-4 w-32" />
- <Skeleton className="h-48 w-full" />
- <Skeleton className="h-20 w-full" />
- </>
- ) : error || !data || !data.session_summary ? (
- <div className="text-center text-xs py-6 space-y-2">
- {error ? (
- <div className="flex flex-col items-center gap-1">
- <span className="text-warning text-sm">⚠️ {error}</span>
- <Button variant="outline" size="sm" className="h-6 text-xs mt-1" onClick={loadData}>
- إعادة المحاولة
- </Button>
- </div>
- ) : data?.note ? (
- <span className="text-warning ">{data.note}</span>
- ) : (
- <span className="text-muted-foreground">لا توجد بيانات تداول داخل الجلسة لهذا السهم</span>
- )}
- </div>
- ) : (
- <>
- {/* Header strip */}
- <div className="flex items-center gap-2 flex-wrap text-xs">
- <Badge variant="outline" className="text-xs">{data.ticker}</Badge>
- {data.date && <Badge variant="outline" className="text-xs">{data.date}</Badge>}
- <Badge variant="outline" className="text-xs">{PERIOD_LABEL[data.period as PeriodKey]}</Badge>
- <Badge
- className={cn(
- 'text-xs',
- interpretation.tone === 'buy'
- ? 'bg-profit/10 text-profit border-profit/20'
- : interpretation.tone === 'sell'
- ? 'bg-loss/10 text-loss border-loss/20'
- : 'bg-warning/10 text-warning border-warning/20'
- )}
- >
- {interpretation.tone === 'buy' ? <TrendingUp className="w-3 h-3 ml-1" /> :
- interpretation.tone === 'sell' ? <TrendingDown className="w-3 h-3 ml-1" /> :
- <Scale className="w-3 h-3 ml-1" />}
- {interpretation.label}
- </Badge>
- </div>
-
- {/* Session summary cards */}
- <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
- <SummaryCell
- label="الضغط الصافي"
- value={`${session!.net_pressure > 0 ? '+' : ''}${formatNumber(session!.net_pressure)}`}
- tone={session!.net_pressure > 0 ? 'pos' : session!.net_pressure < 0 ? 'neg' : 'neutral'}
- />
- <SummaryCell
- label="شراء : بيع"
- value={session!.buy_sell_ratio != null ? session!.buy_sell_ratio.toFixed(2) : '—'}
- tone={session!.buy_sell_ratio != null && session!.buy_sell_ratio > 1 ? 'pos' : session!.buy_sell_ratio != null && session!.buy_sell_ratio < 1 ? 'neg' : 'neutral'}
- />
- <SummaryCell label="VWAP الجلسة" value={(session!.session_vwap ?? 0).toFixed(2)} />
- <SummaryCell label="الافتتاح" value={(session!.session_open ?? 0).toFixed(2)} />
- <SummaryCell label="الإغلاق" value={(session!.session_close ?? 0).toFixed(2)} tone={(session!.session_close ?? 0) >= (session!.session_open ?? 0) ? 'pos' : 'neg'} />
- <SummaryCell label="أعلى / أدنى" value={`${(session!.session_high ?? 0).toFixed(2)} / ${(session!.session_low ?? 0).toFixed(2)}`} />
- </div>
-
- {/* Buy/Sell pressure bars per bucket */}
- <div>
- <div className="flex items-center justify-between mb-1.5">
- <div className="flex items-center gap-1.5">
- <Activity className="w-3.5 h-3.5 text-primary" />
- <span className="text-xs font-semibold">الضغط عبر الوقت</span>
- </div>
- <div className="flex items-center gap-2 text-xs text-muted-foreground">
- <span className="flex items-center gap-1">
- <span className="inline-block w-2 h-2 rounded-sm bg-profit/70" /> شراء
- </span>
- <span className="flex items-center gap-1">
- <span className="inline-block w-2 h-2 rounded-sm bg-loss/70" /> بيع
- </span>
- </div>
- </div>
-
- {data.buckets.length === 0 ? (
- <div className="text-center text-xs text-muted-foreground py-6">
- لا توجد باكتات زمنية في هذه الجلسة
- </div>
- ) : (
- <div className="max-h-80 overflow-y-auto rounded-md border border-border/30 bg-muted/10 pr-1
- [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent
- [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-thumb]:rounded-full">
- {data.buckets.map((b, idx) => {
- const total = Math.max(b.buy_pressure_pct + b.sell_pressure_pct, 0.0001);
- const buyWidth = (b.buy_pressure_pct / total) * 100;
- const sellWidth = (b.sell_pressure_pct / total) * 100;
- const netTone = b.net_pressure > 0 ? 'pos' : b.net_pressure < 0 ? 'neg' : 'neutral';
- return (
- <div
- key={b.bucket_start + idx}
- className="flex items-center gap-2 py-1.5 px-2 border-b border-border/20 last:border-0 hover:bg-muted/30"
- >
- <div className="text-xs text-muted-foreground w-12 flex-shrink-0 font-mono" title={b.bucket_start}>
- {b.time_label}
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex h-4 w-full overflow-hidden rounded-sm border border-border/40">
- <div
- className="bg-profit/70 transition-all"
- style={{ width: `${buyWidth}%` }}
- title={`شراء: ${(b.buy_pressure_pct ?? 0).toFixed(1)}%`}
- />
- <div
- className="bg-loss/70 transition-all"
- style={{ width: `${sellWidth}%` }}
- title={`بيع: ${(b.sell_pressure_pct ?? 0).toFixed(1)}%`}
- />
- </div>
- <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-between">
- <span>{formatNumber(b.total_volume)} حصة</span>
- <span>شراء {(b.buy_pressure_pct ?? 0).toFixed(0)}% / بيع {(b.sell_pressure_pct ?? 0).toFixed(0)}%</span>
- </div>
- </div>
- <div
- className={cn(
- 'text-xs font-bold w-16 text-left whitespace-nowrap',
- netTone === 'pos' ? 'text-profit ' :
- netTone === 'neg' ? 'text-loss ' : 'text-muted-foreground'
- )}
- title="الضغط الصافي (شراء - بيع)"
- >
- {b.net_pressure > 0 ? '+' : ''}
- {formatNumber(b.net_pressure)}
- </div>
- </div>
- );
- })}
- </div>
- )}
- </div>
-
- {/* Volume totals */}
- <div className="grid grid-cols-3 gap-2 text-xs">
- <div className="rounded-md bg-profit/5 border border-profit/20 p-2">
- <div className="text-xs text-muted-foreground">إجمالي شراء</div>
- <div className="font-bold text-profit ">{formatNumber(session!.total_buy_volume)}</div>
- </div>
- <div className="rounded-md bg-warning/5 border border-warning/20 p-2">
- <div className="text-xs text-muted-foreground">محايد</div>
- <div className="font-bold text-warning ">{formatNumber(session!.total_neutral_volume)}</div>
- </div>
- <div className="rounded-md bg-loss/5 border border-loss/20 p-2">
- <div className="text-xs text-muted-foreground">إجمالي بيع</div>
- <div className="font-bold text-loss ">{formatNumber(session!.total_sell_volume)}</div>
- </div>
- </div>
- </>
- )}
- </CardContent>
- </Card>
- );
+function directionMeta(dir: string | undefined): { label: string; className: string } {
+  const d = (dir || '').toUpperCase();
+  if (d === 'BUYING') return { label: 'ضغط شرائي كاسح', className: 'bg-profit/10 text-profit border-profit/20' };
+  if (d === 'SELLING') return { label: 'ضغط بيعي مكثف', className: 'bg-loss/10 text-loss border-loss/20' };
+  return { label: 'سوق متوازن', className: 'bg-muted text-muted-foreground border-border' };
 }
 
-function SummaryCell({
- label,
- value,
- tone = 'neutral',
-}: {
- label: string;
- value: string;
- tone?: 'pos' | 'neg' | 'neutral';
-}) {
- return (
- <div className="rounded-md bg-muted/40 p-2">
- <div className="text-xs text-muted-foreground">{label}</div>
- <div
- className={cn(
- 'text-sm font-bold',
- tone === 'pos' ? 'text-profit ' :
- tone === 'neg' ? 'text-loss ' : ''
- )}
- >
- {value}
- </div>
- </div>
- );
+// ─── Component ──────────────────────────────────────────────────────────
+
+export function IntradayPressurePanel() {
+  const [data, setData] = useState<PressureResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch('/api/market/intraday-pressure', {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json: PressureResponse = await res.json();
+      setData(json);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  // ─── Loading ───
+  if (loading) {
+    return (
+      <Card className="border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-primary" />
+            ضغط الجلسة — EGX30
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ─── Error ───
+  if (error) {
+    return (
+      <Card className="border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-primary" />
+            ضغط الجلسة — EGX30
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground">تعذّر تحميل البيانات: {error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const cp = data?.cumulative_pressure;
+  const stocks = data?.top_stocks || [];
+  const dirInfo = directionMeta(cp?.direction);
+
+  return (
+    <Card className="border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-primary" />
+          ضغط الجلسة — EGX30
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* ─── (1) مؤشر ضغط السوق الكلي (Gauge / Progress Bar) ─── */}
+        {cp ? (
+          <div className="space-y-2">
+            {/* الشريط العريض: شراء مقابل بيع */}
+            <div className="relative h-8 rounded-full overflow-hidden bg-muted">
+              <div
+                className="absolute inset-y-0 right-0 bg-profit/80 flex items-center justify-end px-2"
+                style={{ width: `${cp.buy_pct}%` }}
+              >
+                <span className="text-[10px] font-bold text-white">
+                  {cp.buy_pct.toFixed(1)}% شراء
+                </span>
+              </div>
+              <div
+                className="absolute inset-y-0 left-0 bg-loss/80 flex items-center justify-start px-2"
+                style={{ width: `${cp.sell_pct}%` }}
+              >
+                <span className="text-[10px] font-bold text-white">
+                  {cp.sell_pct.toFixed(1)}% بيع
+                </span>
+              </div>
+            </div>
+
+            {/* صافي الضغط + شارة الاتجاه */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] text-muted-foreground block">صافي الضغط</span>
+                <span className={cn(
+                  'font-mono font-bold text-sm tabular-nums',
+                  cp.net_pressure_egp >= 0 ? 'text-profit' : 'text-loss',
+                )}>
+                  {fmtEGP(cp.net_pressure_egp)} ج.م
+                </span>
+              </div>
+              <Badge className={cn('border text-[10px] font-bold', dirInfo.className)}>
+                {dirInfo.label}
+              </Badge>
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground text-center py-4">
+            {data?.message || 'مفيش بيانات ضغط متاحة حالياً'}
+          </div>
+        )}
+
+        {/* ─── (2) جدول أعلى 10 أسهم قيادية محركة للسيولة ─── */}
+        {stocks.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-[10px] font-bold text-muted-foreground">أعلى الأسهم القيادية محركة للسيولة</div>
+            <div className="rounded-md border border-border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/60 text-muted-foreground">
+                  <tr>
+                    <th className="p-1.5 text-right font-medium">السهم</th>
+                    <th className="p-1.5 text-center font-medium">السعر</th>
+                    <th className="p-1.5 text-center font-medium">التغير%</th>
+                    <th className="p-1.5 text-center font-medium">شراء%</th>
+                    <th className="p-1.5 text-center font-medium">بيع%</th>
+                    <th className="p-1.5 text-center font-medium">صافي الضغط</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stocks.slice(0, 10).map((s) => {
+                    const isBuy = s.net_pressure_egp >= 0;
+                    return (
+                      <tr key={s.ticker} className="border-t border-border/50">
+                        <td className="p-1.5 font-bold">{s.ticker}</td>
+                        <td className="p-1.5 text-center font-mono tabular-nums">
+                          {s.price?.toFixed(2) || '—'}
+                        </td>
+                        <td className={cn(
+                          'p-1.5 text-center font-mono tabular-nums font-medium',
+                          s.change_pct >= 0 ? 'text-profit' : 'text-loss',
+                        )}>
+                          {s.change_pct >= 0 ? '+' : ''}{s.change_pct?.toFixed(2) || '—'}%
+                        </td>
+                        <td className="p-1.5 text-center text-profit font-medium">
+                          {s.buy_pct?.toFixed(1) || '—'}%
+                        </td>
+                        <td className="p-1.5 text-center text-loss font-medium">
+                          {s.sell_pct?.toFixed(1) || '—'}%
+                        </td>
+                        <td className={cn(
+                          'p-1.5 text-center font-mono tabular-nums font-bold',
+                          isBuy ? 'text-profit' : 'text-loss',
+                        )}>
+                          {fmtEGP(s.net_pressure_egp)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+      </CardContent>
+    </Card>
+  );
 }
+
+export default IntradayPressurePanel;
