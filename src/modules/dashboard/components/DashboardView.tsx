@@ -17,8 +17,6 @@ import { MarketSentiment } from '@/modules/dashboard/components/MarketSentiment'
 import { CryptoSignalsWidget } from '@/modules/dashboard/components/CryptoSignalsWidget';
 import { SeasonalitySignalsWidget } from '@/modules/dashboard/components/SeasonalitySignalsWidget';
 import { EidPredictionsWidget } from '@/components/eid-predictions-widget';
-// ALPHA-PHASE2: SovereignMetalsDesk — مكتب الذهب والعملات المستقل (بدون كريبتو/أسهم)
-import { SovereignMetalsDesk } from '@/modules/dashboard/components/SovereignMetalsDesk';
 import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
 // ─── PHASE-0 (Task UNIFICATION-PHASE-0) ──────────────────────────────────
 // MaestroWidget import تم تعطيله (Rule 73: SINGLE-DISPLAY-SOURCE).
@@ -237,19 +235,13 @@ export function DashboardView() {
  // 2. توقعات اليوم — ALPHA-PHASE2: ممنوع خلط الكريبتو بالأسهم
  // قبل: EidPredictionsWidget كان بـ يخلط BTC + ETH + COMI + GOLD في كارت واحد
  // بعد: العرض فقط لأسهم EGX (Golden Dip) — الكريبتو في تبويبه الخاص
- {
- id: 'eid-predictions',
- title: 'توقعات اليوم',
- visible: () => currentMarket !== 'CRYPTO',
- render: () => <EidPredictionsWidget />,
- },
- // 2.5. مكتب الذهب والعملات السيادي — ALPHA-PHASE2: مستقل عن الأسهم والكريبتو
- {
- id: 'metals-desk',
- title: 'الذهب والعملات',
- visible: () => currentMarket !== 'CRYPTO',
- render: () => <SovereignMetalsDesk />,
- },
+ // BRAVO-FIX: شيلنا EidPredictionsWidget نهائياً (كان بـ يخلط BTC/ETH/COMI/GOLD)
+ // {
+ // id: 'eid-predictions',
+ // title: 'توقعات اليوم',
+ // visible: () => currentMarket !== 'CRYPTO',
+ // render: () => <EidPredictionsWidget />,
+ // },
  // 3. التحليل الآلي — تم إزالته (Owner directive: "مش شايفله أي لزمة")
  // 4. الأكثر تحركاً (تتبع السوق — Owner directive)
  {
@@ -571,8 +563,8 @@ export function DashboardView() {
  );
  })()}
 
- {/* 3. توقعات اليوم */}
- {(() => {
+ {/* 3. توقعات اليوم — BRAVO-FIX: EidPredictionsWidget removed (was mixing crypto) */}
+ {/* {(() => {
  const w = layout.find((x) => x.id === 'eid-predictions');
  if (!w || w.pinned) return null;
  return (
@@ -580,7 +572,7 @@ export function DashboardView() {
  {renderWrapped(w)}
  </section>
  );
- })()}
+ })()} */}
 
  {/* 4. الأكثر تحركاً */}
  {(() => {
