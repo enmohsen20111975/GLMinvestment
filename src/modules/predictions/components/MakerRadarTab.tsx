@@ -2704,7 +2704,7 @@ const StockTable = memo(function StockTable({
  const badge = source === 'ai' ? '🤖' : source === 'technical' ? '📊' : '';
  return (
  <span className="font-mono font-bold text-warning inline-flex items-center gap-1">
- {badge && <span title={source === 'ai' ? 'توصية AI' : 'مستوى فني'}>{badge}</span>}
+ {badge && <span title={source === 'ai' ? 'توقع AI' : 'مستوى فني'}>{badge}</span>}
  {fmtNum(trig)}
  </span>
  );
@@ -2734,7 +2734,7 @@ const StockTable = memo(function StockTable({
  const slPrice = levels?.stop ?? null;
  const rr = levels?.riskReward ?? null;
  const badge = source === 'ai'
- ? '🤖 توصية AI'
+ ? '🤖 توقع AI'
  : source === 'technical'
  ? '📊 مستوى فني'
  : null;
@@ -3429,7 +3429,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
  // كان الكود يحسب قرار تداول من above_ma10 + vol_ratio (client-side — مخالف Rule 20).
  // الآن: recommendation تأتي ONLY من prediction.signal_ar (Python V40.2).
  // لو لا توقع → "راجع التوصية الرسمية" (لا fabrication).
- const recommendation = pred?.signal_ar || 'راجع التوصية الرسمية من المحرك';
+ const recommendation = pred?.signal_ar || 'راجع التوقع الفني من المحرك';
 
  // Gain / loss percentages — only if prediction values exist (no fabrication)
  const t1Gain = (entry_price && target_1) ? ((target_1 - entry_price) / entry_price) * 100 : null;

@@ -439,16 +439,18 @@ export function formatComprehensiveStockText(item: StoredAnalysisItem, market: M
  const gam = item.analysisJson?.gambler || {};
  const fund = item.fundamentals || {};
 
- const price = pickValidPrice(stockDetail?.current_price, inv.entry, gam.entry, fund.pe_ratio) || 0;
- const changePct = stockDetail?.change_percent != null
+  // SSOT FIX: Price comes strictly from stockDetail current_price or close — NEVER guessed from entry or pe_ratio!
+  const price = stockDetail?.current_price ?? stockDetail?.close ?? 0;
+ const changePctRaw = stockDetail?.change_percent != null
  ? stockDetail.change_percent
  : fund?.change_1d != null
  ? fund.change_1d
  : 0;
+ const changePct = Number(changePctRaw) || 0;
  const changeIcon = changePct > 0 ? '🟢' : changePct < 0 ? '🔴' : '🟡';
 
  let text = `📊 تحليل شامل: ${name} (${ticker})\n`;
- text += `السعر الحالي: ${price ? price.toFixed(2) : '—'} جنيه | التغير اليومي: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% ${changeIcon}\n\n`;
+ text += `السعر الحالي: ${price ? Number(price).toFixed(2) : '—'} جنيه | التغير اليومي: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}% ${changeIcon}\n\n`;
 
  // ── الخلاصة التنفيذية ──
  text += `📌 الخلاصة التنفيذية:\n`;

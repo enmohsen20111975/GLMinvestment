@@ -130,9 +130,10 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
  const isUp = isBuySignalLabel(stock.signal);
  const isDown = isSellSignalLabel(stock.signal);
  const signalColor = isUp ? 'bg-profit/10 text-profit border border-profit/20 ' : isDown ? 'bg-loss/10 text-loss border border-loss/20 ' : 'bg-muted text-muted-foreground';
- const curPrice = pickValidPrice(stock.current_price, stock.close, stock.entry_price);
- const highPrice = pickValidPrice(stock.high_price, stock.high_52w, stock.resistance);
- const lowPrice = pickValidPrice(stock.low_price, stock.low_52w, stock.support);
+ // SSOT FIX: Price comes strictly from current_price — NEVER guessed from entry_price!
+ const curPrice = stock.current_price;
+ const highPrice = (stock as unknown as Record<string, unknown>).high_price as number | undefined;
+ const lowPrice = (stock as unknown as Record<string, unknown>).low_price as number | undefined;
  return (
  <tr key={stock.id || idx} className="border-t border-border hover:bg-muted/40 transition-colors">
  <td className="p-2 text-center font-mono text-xs">{idx + 1}</td>

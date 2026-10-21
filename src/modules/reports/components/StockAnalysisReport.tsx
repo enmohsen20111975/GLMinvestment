@@ -817,7 +817,7 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  <CardHeader className="pb-2">
  <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
  <Shield className="w-5 h-5" />
- الخلاصة والتوصية · Conclusion
+ الخلاصة والتوقع الفني · Conclusion
  </CardTitle>
  </CardHeader>
  <CardContent>

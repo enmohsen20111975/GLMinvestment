@@ -79,7 +79,7 @@ export const navSections: NavSection[] = [
     label: 'الفرص والتربص',
     icon: Target,
     items: [
-      { id: 'recommendations', label: 'التوصيات الذكية', icon: Target },
+      { id: 'recommendations', label: 'التوقعات الذكية', icon: Target },
       { id: 'incubator', label: 'حاضنة الأسهم', icon: Egg },
       { id: 'prediction-tracking', label: 'سجل وتتبع التوقعات', icon: TrendingUp },
     ],

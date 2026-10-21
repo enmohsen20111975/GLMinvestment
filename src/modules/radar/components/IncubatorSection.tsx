@@ -393,7 +393,7 @@ export function IncubatorSection({
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              أسهم حققت معظم الشروط وتنتظر تأكيد السيولة للترقية لتوصيات حية
+              أسهم حققت معظم الشروط وتنتظر تأكيد السيولة للترقية لتوقعات حية
             </p>
           </div>
         </div>

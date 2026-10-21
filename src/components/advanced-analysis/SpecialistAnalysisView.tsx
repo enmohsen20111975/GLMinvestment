@@ -1608,7 +1608,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
  return (
  <SectionCard
  icon={<Target className="w-4 h-4" />}
- title="التوصية والأسعار المستهدفة"
+ title="التوقع الفني والأسعار المستهدفة"
  description="من stock_info: signal + support + resistance + trend (Rule 67 — أرقام حقيقية فقط)"
  accent="amber"
  >
