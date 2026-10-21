@@ -15,6 +15,7 @@ import {
  Database, HardDrive, Upload, RefreshCw, Loader2, Archive,
  CheckCircle2, AlertCircle, Trash2, Github, FileArchive,
  Layers, CheckSquare, Square, AlertTriangle, ShieldAlert,
+ Code2, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,14 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
+
+interface CodeBackupItem {
+  name: string;
+  size_bytes: number;
+  size_mb: string;
+  created: string;
+  download_url: string;
+}
 
 interface DbInfo {
  name: string;
@@ -198,9 +207,75 @@ export function DbBackupPanel() {
  }
  }, []);
 
+ // Code Backup State (Task 2026-10-21)
+ const [codeBackups, setCodeBackups] = useState<CodeBackupItem[]>([]);
+ const [loadingCodeBackups, setLoadingCodeBackups] = useState<boolean>(false);
+ const [creatingCodeBackup, setCreatingCodeBackup] = useState<boolean>(false);
+
+ const fetchCodeBackups = useCallback(async () => {
+ setLoadingCodeBackups(true);
+ try {
+ const res = await fetch('/api/admin/code-backup', { credentials: 'same-origin' });
+ const json = await res.json();
+ if (json.success && Array.isArray(json.backups)) {
+ setCodeBackups(json.backups);
+ }
+ } catch {
+ // silent
+ } finally {
+ setLoadingCodeBackups(false);
+ }
+ }, []);
+
+ const handleCreateCodeBackup = async () => {
+ setCreatingCodeBackup(true);
+ try {
+ toast.info('جاري تجهيز وتجميع ملفات الكود المصدري بدون ملفات التشغيل...');
+ const res = await fetch('/api/admin/code-backup', {
+ method: 'POST',
+ credentials: 'same-origin',
+ });
+ const json = await res.json();
+ if (json.success) {
+ toast.success(`تم إنشاء نسخة كود نظيفة (${json.size_mb} MB)`, {
+ description: json.archive_name,
+ });
+ fetchCodeBackups();
+ } else {
+ toast.error(json.error || 'فشل إنشاء نسخة الكود');
+ }
+ } catch (e) {
+ toast.error(e instanceof Error ? e.message : 'خطأ أثناء إنشاء نسخة الكود');
+ } finally {
+ setCreatingCodeBackup(false);
+ }
+ };
+
+ const handleDeleteCodeBackup = async (fileName: string) => {
+ if (!confirm(`هل أنت متأكد من حذف نسخة الكود ${fileName}؟`)) return;
+ try {
+ const res = await fetch('/api/admin/code-backup', {
+ method: 'DELETE',
+ headers: { 'Content-Type': 'application/json' },
+ credentials: 'same-origin',
+ body: JSON.stringify({ fileName }),
+ });
+ const json = await res.json();
+ if (json.success) {
+ toast.success('تم حذف النسخة بنجاح');
+ fetchCodeBackups();
+ } else {
+ toast.error(json.error || 'فشل حذف النسخة');
+ }
+ } catch {
+ toast.error('خطأ أثناء حذف النسخة');
+ }
+ };
+
  useEffect(() => {
  fetchData();
- }, [fetchData]);
+ fetchCodeBackups();
+ }, [fetchData, fetchCodeBackups]);
 
  // NEW (Task PUSH-STRATEGY-2026-10-06): جلب حالة الـ git — سيتم تعريفها لاحقاً، لكن useEffect بيتعمل بعد التعريف
  // (مكان useEffect ده تم نقله بعد تعريف fetchGitStatus في الأسفل)
@@ -1024,6 +1099,113 @@ export function DbBackupPanel() {
  size="icon"
  onClick={() => openDeleteModalForArchive(arc)}
  className="size-7 text-muted-foreground hover:text-loss hover:bg-loss dark:hover:bg-loss/10"
+ title="حذف هذا الأرشيف"
+ >
+ <Trash2 className="w-3.5 h-3.5" />
+ </Button>
+ </td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+ )}
+ </CardContent>
+ </Card>
+
+ {/* Code-Only Project Backup (Task 2026-10-21) */}
+ <Card className="border-border/70 shadow-sm border-indigo-500/30 bg-indigo-500/[0.02]">
+ <CardHeader className="pb-3">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+ <div>
+ <CardTitle className="text-base flex items-center gap-2 text-indigo-500 font-bold">
+ <Code2 className="w-5 h-5" />
+ نسخة احتياطية للكود المصدري فقط (Clean Source Code Backup)
+ </CardTitle>
+ <CardDescription className="text-xs mt-1">
+ نسخة مضغوطة نظيفة لكود المشروع فقط بدون ملفات التشغيل والاعتماديات الثقيلة (مستثنى: node_modules, .next, venv, db, logs, .git, data).
+ </CardDescription>
+ </div>
+
+ <div className="flex items-center gap-2">
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={fetchCodeBackups}
+ disabled={loadingCodeBackups || creatingCodeBackup}
+ className="h-8 text-xs gap-1.5"
+ >
+ {loadingCodeBackups ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+ تحديث
+ </Button>
+ <Button
+ type="button"
+ size="sm"
+ onClick={handleCreateCodeBackup}
+ disabled={creatingCodeBackup}
+ className="h-8 text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+ >
+ {creatingCodeBackup ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+ {creatingCodeBackup ? 'جاري الضغط...' : 'إنشاء نسخة كود الآن'}
+ </Button>
+ </div>
+ </div>
+ </CardHeader>
+ <CardContent>
+ {loadingCodeBackups && codeBackups.length === 0 ? (
+ <div className="space-y-2">
+ <Skeleton className="h-10 w-full" />
+ <Skeleton className="h-10 w-full" />
+ </div>
+ ) : codeBackups.length === 0 ? (
+ <div className="text-center py-6 text-muted-foreground text-sm border rounded-md border-dashed">
+ <Code2 className="w-7 h-7 mx-auto mb-1.5 opacity-40 text-indigo-500" />
+ لا توجد نسخ كود مصدري حالياً في مجلد data/. اضغط &quot;إنشاء نسخة كود الآن&quot; لإنشاء أرشيف نظيف للكود.
+ </div>
+ ) : (
+ <div className="max-h-56 overflow-y-auto border rounded-md">
+ <table className="w-full text-sm">
+ <thead className="sticky top-0 bg-muted/80 backdrop-blur z-10 border-b">
+ <tr className="text-right">
+ <th className="p-2.5 font-medium">اسم الملف</th>
+ <th className="p-2.5 font-medium">الحجم</th>
+ <th className="p-2.5 font-medium">تاريخ الإنشاء</th>
+ <th className="p-2.5 font-medium text-center">تحميل</th>
+ <th className="p-2.5 font-medium text-center">حذف</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-border/40">
+ {codeBackups.map((bk) => (
+ <tr key={bk.name} className="hover:bg-muted/30 transition-colors">
+ <td className="p-2.5 font-mono text-xs font-semibold" dir="ltr">
+ {bk.name}
+ </td>
+ <td className="p-2.5 whitespace-nowrap">
+ <Badge variant="secondary" className="font-mono text-xs bg-indigo-500/10 text-indigo-500 border-indigo-500/20">
+ {bk.size_mb} MB
+ </Badge>
+ </td>
+ <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">
+ {formatRelative(bk.created)}
+ </td>
+ <td className="p-2.5 text-center">
+ <a
+ href={bk.download_url}
+ download
+ className="inline-flex items-center justify-center size-7 rounded-md text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+ title="تحميل الأرشيف"
+ >
+ <Download className="w-4 h-4" />
+ </a>
+ </td>
+ <td className="p-2.5 text-center">
+ <Button
+ type="button"
+ variant="ghost"
+ size="icon"
+ onClick={() => handleDeleteCodeBackup(bk.name)}
+ className="size-7 text-muted-foreground hover:text-loss hover:bg-loss/10"
  title="حذف هذا الأرشيف"
  >
  <Trash2 className="w-3.5 h-3.5" />
