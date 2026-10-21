@@ -17,6 +17,8 @@ import { cn, safeNum } from '@/lib/utils';
 import { signalAr } from '@/lib/canonical-signal';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
+// ALPHA Page Refactoring: use TrendIndicator instead of inline changeColorClass + formatPercent
+import { TrendIndicator } from '@/components/shared/ui';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -210,12 +212,7 @@ function formatPercent(val: number | null | undefined, decimals = 2): string {
  return `${val >= 0 ? '+' : ''}${val.toFixed(decimals)}%`;
 }
 
-function changeColorClass(val: number | null | undefined): string {
- if (val == null || !Number.isFinite(val)) return 'text-muted-foreground';
- if (val > 0) return 'text-profit ';
- if (val < 0) return 'text-loss ';
- return 'text-muted-foreground';
-}
+// ALPHA Page Refactoring: changeColorClass removed — replaced by <TrendIndicator>
 
 const PRESET_OPTIONS = [
  { key: 'all', label: 'كل الأسهم', icon: '📋' },
@@ -1382,11 +1379,7 @@ export function StocksView() {
  // (Task STOCKS-TABLE-V2) متاح افتراضياً (كان مخفي في الـ fix السابق).
  render: (row) => {
  const change1w = row.change_1w ?? null;
- return (
- <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1w))}>
- {formatPercent(change1w)}
- </span>
- );
+ return <TrendIndicator value={change1w} format="percent" size="xs" />;
  },
  },
  );
@@ -1401,11 +1394,7 @@ export function StocksView() {
  hidden: true, // (Task STOCKS-TABLE-FIX) مخفي افتراضياً
  render: (row) => {
  const change1m = row.change_1m ?? null;
- return (
- <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1m))}>
- {formatPercent(change1m)}
- </span>
- );
+ return <TrendIndicator value={change1m} format="percent" size="xs" />;
  },
  });
  }
@@ -2226,9 +2215,7 @@ export function StocksView() {
  <div className="grid grid-cols-3 gap-2 mt-2">
  <div className="bg-muted/40 rounded-lg p-1.5 text-center">
  <p className="text-xs text-muted-foreground mb-0.5">{t('stocks.mobile.week')}</p>
- <p className={cn('text-xs font-semibold tabular-nums', changeColorClass(change1w))}>
- {formatPercent(change1w)}
- </p>
+ <TrendIndicator value={change1w} format="percent" size="xs" />
  </div>
  <div className="bg-muted/40 rounded-lg p-1.5 text-center">
  <p className="text-xs text-muted-foreground mb-0.5">{t('stocks.mobile.fairValue')}</p>
