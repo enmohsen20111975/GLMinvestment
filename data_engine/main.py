@@ -896,6 +896,13 @@ def sync_databases():
                         ))
                     result['updated'] += 1
                 else:
+                    # Quarantine Guard: Never insert deformed scraper symbols (e.g. ending in D, len > 8, ISIN, or concatenated)
+                    sym = stock['symbol']
+                    if len(sym) > 8 or sym.endswith('D') or 'EGS' in sym or not sym.isalnum():
+                        if len(result['details']) < 10:
+                            result['details'].append(f"Quarantined suspect symbol: {sym}")
+                        continue
+
                     # Insert new stock
                     dst_cursor.execute('''
                         INSERT INTO stocks (
