@@ -54,7 +54,34 @@ import type {
   IndicatorData,
   FullChartProps,
 } from './types';
-import { CHART_GRID } from './types';
+// ALPHA-RESTORE: import ALL chart theme constants (fixes ReferenceError: CHART_TEXT is not defined)
+import {
+  CHART_GRID,
+  CHART_TEXT,
+  CHART_BG,
+  UP_COLOR,
+  DOWN_COLOR,
+  SMA20_COLOR,
+  SMA50_COLOR,
+  SMA200_COLOR,
+  BB_UPPER_COLOR,
+  BB_MIDDLE_COLOR,
+  BB_LOWER_COLOR,
+  BB_SQUEEZE_COLOR,
+  SUPPORT_COLOR,
+  RESISTANCE_COLOR,
+  PIVOT_COLOR,
+  RSI_COLOR,
+  CMF_COLOR,
+  EMA9_COLOR,
+  EMA21_COLOR,
+  MACD_LINE_COLOR,
+  MACD_SIGNAL_COLOR,
+  MACD_HIST_POS,
+  MACD_HIST_NEG,
+  OBV_COLOR,
+  FIB_COLOR,
+} from './types';
 import {
   toTime,
   timeToNumber,

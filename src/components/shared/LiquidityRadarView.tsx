@@ -89,10 +89,16 @@ interface RadarStock {
 
 
 // ─── TASK-ALPHA-C: Tactical liquidity-bucket filters + pagination ─────────
-type BucketKey = 'all' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
+// ALPHA-RESTORE: BucketKey محدّث ليتطابق مع classification من Python RVOL engine
+type BucketKey = 'all' | 'dry_accumulation' | 'accumulation_confirmed' | 'distribution_risk' | 'illiquid_trap' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
 const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
  { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
- // ALPHA-UX-FIX-8: 'quiet_accumulation' (تجميع هادئ) — ده الـ signal اللي بيتعرض أكتر
+ // RVOL classifications (from Python engine)
+ { key: 'dry_accumulation', label: 'جفاف سيولة (تربص)', icon: '🔵', cls: 'bg-whale/10 text-whale border-whale/20' },
+ { key: 'accumulation_confirmed', label: 'اختراق وتأكيد تجميع', icon: '✅', cls: 'bg-profit/10 text-profit border-profit/20' },
+ { key: 'distribution_risk', label: 'خطر تصريف', icon: '⚠️', cls: 'bg-warning/10 text-warning border-warning/20' },
+ { key: 'illiquid_trap', label: 'سهم ميت (مصيدة)', icon: '⛔', cls: 'bg-muted text-muted-foreground border-border' },
+ // Legacy buckets (backward compat)
  { key: 'quiet_accumulation', label: 'تجميع هادئ', icon: '🟢', cls: 'bg-whale/10 text-whale border-whale/20' },
  { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/20' },
  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/20' },
@@ -310,9 +316,9 @@ export function LiquidityRadarView({
  }
  if (hideInactive) {
  out = out.filter((s) => {
- const vol = Number(s.volume ?? s.whale?.net_flow_egp ?? 0);
- const flow = Math.abs(Number(s.whale?.net_flow_egp ?? 0));
- return flow >= INACTIVE_VOLUME_THRESHOLD || vol > 0;
+ // ALPHA-RESTORE: فحص السيولة الحقيقية — Python بيبعت turnover_egp (مش volume/net_flow_egp)
+ const turnover = Number(s.turnover_egp ?? s.volume ?? s.whale?.net_flow_egp ?? 0);
+ return turnover >= 1500000; // 1.5M EGP minimum liquidity
  });
  }
  // GUEST: limit to 5 rows max — clear table, no blur

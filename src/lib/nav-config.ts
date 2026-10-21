@@ -40,6 +40,7 @@ import {
   Egg,
   BookOpen,
   Waves,
+  FileBarChart,
   type LucideIcon,
 } from 'lucide-react';
 import type { AppView } from '@/types';
@@ -71,6 +72,7 @@ export const navSections: NavSection[] = [
       { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
       { id: 'liquidity-radar', label: 'رادار السيولة والقطاعات', icon: Waves },
       { id: 'market-status', label: 'حالة وضغط الجلسة', icon: Zap },
+      { id: 'reports', label: 'التقارير اليومية والأسبوعية', icon: FileBarChart, highlight: true },
     ],
   },
   // ─── (2) 🎯 الفرص والتربص (Opportunities) ───
