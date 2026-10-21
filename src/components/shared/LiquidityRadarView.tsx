@@ -40,6 +40,8 @@ import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
 import { FlowPhaseTag, UnifiedEmptyState, LiquidityFlashCell, UnifiedPagination } from '@/components/shared/ui';
 import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
+// FRONTEND-1: Public trust badge — shows data freshness to end users.
+import { DataTrustBadge } from '@/components/shared/DataTrustBadge';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 
 // ============================================================================
@@ -692,6 +694,8 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
  </div>
  <div className="h-4 w-px bg-border" />
  <span className="font-mono text-[10px] text-muted-foreground">مرقوب: {scannedCount} سهم</span>
+ <div className="h-4 w-px bg-border" />
+ <DataTrustBadge />
  </div>
  </div>
  );

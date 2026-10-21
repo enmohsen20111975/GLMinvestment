@@ -82,6 +82,7 @@ import {
  Film,
  Megaphone,
  Cpu,
+ HeartPulse,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
@@ -117,6 +118,8 @@ import { ShariaManagementTab } from './ShariaManagementTab';
 import { SourceAuthorityTab } from './SourceAuthorityTab';
 // Task 28-B (Fix 3) — Fix Battalion: Validation Monitor tab (Rule 65).
 import { ValidationMonitorTab } from './ValidationMonitorTab';
+// FRONTEND-1: Data Health dashboard — surfaces backend freshness to admin UI.
+import { DataHealthTab } from './DataHealthTab';
 // Task 28-B (Fix 4) — Fix Battalion: Cron Health dashboard.
 import { CronHealthTab } from './CronHealthTab';
 // Task 28-B (Fix 5) — Fix Battalion: Pricing + paywall gates status.
@@ -412,6 +415,8 @@ type AdminTab =
  | 'source-authority'
  // Task 28-B (Fix 3) — Fix Battalion: Validation Monitor tab (Rule 65).
  | 'validation-monitor'
+ // FRONTEND-1 — Data Health dashboard.
+ | 'data-health'
  // Task 28-B (Fix 4) — Fix Battalion: Cron Health dashboard.
  | 'cron-health'
  // Task 28-B (Fix 5) — Fix Battalion: Pricing + paywall gates status.
@@ -1044,6 +1049,8 @@ export function AdminView() {
  icon: <Database className="w-4 h-4" />,
  accent: 'border-sky-500/40 bg-sky-500/5',
  tabs: [
+ // FRONTEND-1: Data Health — top of data hub so admins see freshness first.
+ { id: 'data-health', label: 'صحة البيانات', icon: <HeartPulse className="w-3.5 h-3.5" />, desc: 'طزاجة كل مصدر لكل سوق' },
  { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" />, desc: 'إدارة DBs' },
  { id: 'db-backup', label: 'النسخ الاحتياطي', icon: <Upload className="w-3.5 h-3.5" />, desc: 'backup/restore' },
  { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" />, desc: 'scraper + sync + cron' },
@@ -1870,6 +1877,12 @@ export function AdminView() {
  {/* ==================== SOURCE AUTHORITY TAB (Task 28-B Fix 2) ==================== */}
  {activeTab === 'source-authority' && (
  <SourceAuthorityTab />
+ )}
+
+ {/* ==================== DATA HEALTH TAB (FRONTEND-1) ==================== */}
+ {/* Surfaces backend freshness: per-market × per-source matrix, egksco_stocks status, overall health badge. */}
+ {activeTab === 'data-health' && (
+ <DataHealthTab />
  )}
 
  {/* ==================== VALIDATION MONITOR TAB (Task 28-B Fix 3) ==================== */}
