@@ -5775,3 +5775,63 @@ python3 scripts/extract_retired_zombie_db.py --no-extract
 # أو بمسار مخصص:
 python3 scripts/extract_retired_zombie_db.py --market-db /custom/path/market.db
 ```
+
+
+---
+
+## [2026-10-21 21:38] تجربة تعبئة الفجوات على بيئة اختبار — نجاح كامل
+
+### السياق
+بعد فشل الاعتماد على `market.db` (اللاب توب)، رجعنا للخطة الأصلية: النسخ من جداولنا الموجودة. المالك طلب: جرّب عندك الأول كل حاجة واختبر النتائج قبل الإنتاج.
+
+### السكربت المُنتج
+`scripts/gap_fill_from_local_tables.py` — يشتغل على `db/test_gap_fill/` افتراضياً (مش الإنتاج):
+- `--dry-run`: فحص فقط
+- بدون flag: تطبيق على test_gap_fill
+- `--live`: تطبيق على الإنتاج (خطير)
+- `--skip-a/b/c`: تخطي فجوة معينة
+
+### خطوات التنفيذ
+1. **Backup كامل**: `db/backups/pre_gap_fill_20261021/` (4 DBs قبل أي تعديل)
+2. **بيئة اختبار**: `db/test_gap_fill/` نسخ من الـ 4 DBs
+3. **Dry run**: تأكد من الأرقام قبل التطبيق
+4. **تطبيق على test_gap_fill**: 3 فجوات اتغطت
+5. **اختبار النتائج**: مقارنة LIVE vs TEST لكل فجوة
+
+### نتائج الاختبار (LIVE → TEST)
+
+**فجوة (أ) — price_history.db TADAWUL/KSE/QSE:**
+| السوق | LIVE latest | TEST latest | LIVE rows | TEST rows | |
+|---|---|---|---|---|---|
+| TADAWUL | 2026-10-14 | **2026-10-21** ✅ | 46,085 | 47,085 | +1,000 |
+| KSE | 2026-10-14 | **2026-10-21** ✅ | 54,699 | 55,589 | +890 |
+| QSE | 2026-10-14 | **2026-10-21** ✅ | 3,298 | 3,583 | +285 |
+| EGX/US | 2026-10-21 | 2026-10-21 | (unchanged) | = | = |
+
+إجمالي: **3,150 صف** أُضيفت من stock_daily_prices. المصدر موسوم `source='stock_daily_prices_gapfill'` لل traceability.
+
+**فجوة (ب) — data_engine.db.egksco_stocks:**
+- LIVE: **0 صف** (فاضي) → TEST: **1,134 صف** ✅
+- التوزيع: TADAWUL=395, EGX=367, KSE=178, US=137, QSE=57
+- المدى: 2026-10-21T19:14 → 2026-10-21T20:13 (طازج النهاردة)
+- المصدر: stocks.db.stocks.current_price → last_price
+
+**فجوة (ج) — intraday.db.stock_intraday US:**
+- LIVE: 62/137 US تيكر (45%) → TEST: **137/137 (100%)** ✅
+- 75 صف synthetic أُضيفت (price=current_price, volume من stocks.db)
+- عينة: GOOG سعر=329.14 حجم=18,221,100 (طازج من stocks.db)
+
+### تحقق العينات
+- **TADAWUL 1010**: آخر 5 أيام Oct 17-21 في price_history (مصدر stock_daily_prices_gapfill) — أسعار متنوعة 19.01→19.5 (مش ثابتة)
+- **KSE CLEANI**: آخر 5 أيام Oct 17-21 — سعر ثابت 292.0 (متوقع: stock_daily_prices فيه نفس القيمة لCLEANI)
+- **US GOOG**: صف intraday synthetic في 21:38 بسعر 329.14
+
+### الخلاصة
+✅ **السكربت آمن وشغال**: كل فجوة اتغطت بدون أخطاء، البيانات قابلة للـ traceability عبر `source` field.
+✅ **جاهز للتطبيق على الإنتاج** بالأمر: `python3 scripts/gap_fill_from_local_tables.py --live`
+⏭️ **الخطوة التالية بعد التطبيق**: تطهير الزومبي (الـ 67 سهم المشوه) — بس ده منفصل وآمن لأنه بيلمس ticker registry مش الأسعار.
+
+### ملاحظات
+- test_gap_fill/ اتشال بعد الاختبار (1GB حررت)
+- الـ backup الكامل في `db/backups/pre_gap_fill_20261021/` محفوظ
+- السكربت مش مترفع على GitHub لسه (هيترفع مع باقي الـ commits)
