@@ -29,7 +29,7 @@ class ScanConfig:
     market_name: str = 'EGX'
     timeframe: str = 'daily'  # daily, weekly, intraday
     min_score: float = 50.0
-    min_rr: float = 1.5  # Rule: R/R >= 1.5
+    min_rr: float = 2.0  # Rule 4: R/R >= 2.0 الصارم
     max_picks: int = 5
     min_turnover_egp: float = 1_500_000  # Rule: liquidity filter
     max_volume_ratio: float = 15.0  # Rule: cap phantom volume
@@ -204,89 +204,91 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     dist_to_support = ((current_price - support) / support * 100) if support > 0 else 100
     dist_to_resistance = ((resistance - current_price) / current_price * 100) if current_price > 0 else 100
 
-    # 3b. Macro Location — التموضع السعري (52-week high/low)
-    # نقرأ high_52w/low_52w من stocks.db (لو متاح)
-    high_52w = max(highs) if highs else current_price
-    low_52w = min(lows) if lows else current_price
-    try:
-        stocks_db = project_root / 'db' / 'stocks.db'
-        if stocks_db.exists():
-            sconn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=3.0)
-            srow = sconn.execute(
-                "SELECT high_52w, low_52w FROM stocks WHERE ticker = ?", (ticker,)
-            ).fetchone()
-            sconn.close()
-            if srow and srow[0] and srow[0] > 0:
-                high_52w = srow[0]
-            if srow and srow[1] and srow[1] > 0:
-                low_52w = srow[1]
-    except Exception:
-        pass
+    # 3b. التموضع الهيكلي من محرك الذاكرة التراكمية (MacroStateEngine)
+    from core.macro_state_engine import MacroStateEngine
+    macro_info = MacroStateEngine.calculate_macro_location_ratio(ticker, current_price)
+    mlr = macro_info.get("mlr", 0.5)
+    macro_zone = macro_info.get("zone", "MID_RANGE")
+    high_52w = macro_info.get("high_52w", max(highs) if highs else current_price)
+    low_52w = macro_info.get("low_52w", min(lows) if lows else current_price)
 
     dist_to_52w_high = round(((high_52w - current_price) / high_52w * 100), 2) if high_52w > 0 else 0
     dist_to_52w_low = round(((current_price - low_52w) / low_52w * 100), 2) if low_52w > 0 else 0
 
-    # Macro location classification:
-    # NEAR_HIGH: within 5% of 52w high (طاير في القمة — FOMO risk)
-    # NEAR_LOW: within 10% of 52w low (مخلص تصحيح في القاع — فرصة دخول)
-    # MID_RANGE: بين الاثنين
-    if dist_to_52w_high <= 5.0:
-        macro_location = 'NEAR_HIGH'
-    elif dist_to_52w_low <= 10.0:
-        macro_location = 'NEAR_LOW'
-    else:
-        macro_location = 'MID_RANGE'
-
-    # 4. Liquidity filter (Rule: turnover >= 1.5M)
+    # 4. فلتر السيولة الصارم (turnover >= 1.5M EGP)
     turnover = current_price * volumes[-1] if volumes else 0
     is_illiquid = turnover < config.min_turnover_egp
 
-    # 5. Anti-FOMO (Rule: chg > 4% = pullback wait)
-    is_fomo = chg_1d > config.fomo_spike_threshold
-
-    # 6. ATR stop + target (Rule 8: [5%, 9%])
+    # 5. ATR stop + target بمعدل مخاطرة لعائد حقيقي (R/R >= 2.0)
     atr_pct = (atr / current_price * 100) if atr and current_price > 0 else 0
     atr_pct = max(config.min_atr_stop_pct, min(config.max_atr_stop_pct, atr_pct))
     stop_loss = current_price * (1 - atr_pct / 100)
-    target_price = current_price * (1 + atr_pct * 1.8 / 100)  # R/R = 1.8
+    target_price = current_price * (1 + atr_pct * 2.1 / 100)  # يستهدف R/R >= 2.0
     risk = current_price - stop_loss
     reward = target_price - current_price
     rr = round(reward / risk, 2) if risk > 0 else 0
 
-    # 7. Confluence proofs
+    # 6. فحص شروط القواعد الأربعة الصارمة (The 4 Street-Smart Rules)
+    # القاعدة 1: منطقة ألغام القمم (أعلى 10% من رينج السنة)
+    is_peak_minefield = (mlr >= 0.90)
+
+    # القاعدة 2: السكين الساقطة (هبوط قوي بفوليوم عالي)
+    is_falling_knife = (chg_1d < -2.0 and vol_ratio >= 1.4) or (adx and adx.get('minus_di', 0) > adx.get('plus_di', 0) * 1.6)
+
+    # القاعدة 3: بروتوكول صيد قاع التصحيح (The Golden Dip)
+    # هبوط بهدوء (فوليوم جاف) + ارتداد من دعم + شمعة خضراء + سيولة حوت
+    recent_drop_dry = False
+    if len(volumes) >= 4:
+        avg_drop_vol = sum(volumes[-4:-1]) / 3
+        recent_drop_dry = (avg_drop_vol <= vol_avg * 0.85)
+
+    is_golden_dip = (
+        recent_drop_dry and
+        dist_to_support <= 3.5 and
+        chg_1d > 0.0 and
+        vol_ratio >= 1.3 and
+        not is_peak_minefield and
+        rr >= config.min_rr
+    )
+
+    # 7. براهين التوافق (Confluence Proofs)
     proofs = 0
     reasons = []
 
-    if vol_ratio >= 2.0 and chg_1d > 0:
-        proofs += 1; reasons.append(f"vol_surge={vol_ratio:.1f}x")
-    if vol_ratio >= 1.5 and close_pct >= 70:
-        proofs += 1; reasons.append(f"accum={close_pct:.0f}%")
-    if current_price >= resistance * 0.98 and chg_1d > 0:
-        proofs += 1; reasons.append("breakout")
-    if rsi and 40 <= rsi <= 60 and vol_ratio >= 1.2:
-        proofs += 1; reasons.append(f"rsi_neutral={rsi:.0f}")
-    if dist_to_support <= 3.0 and chg_1d > -1.0:
-        proofs += 1; reasons.append(f"near_support={dist_to_support:.1f}%")
-    # Macro location proof: سهم مخلص تصحيح في القاع = فرصة دخول
-    if macro_location == 'NEAR_LOW' and chg_1d > -1.0:
-        proofs += 1; reasons.append(f"near_52w_low={dist_to_52w_low:.1f}%")
+    if is_golden_dip:
+        proofs += 3
+        reasons.append("GOLDEN_DIP_CONFIRMED")
+    else:
+        if vol_ratio >= 2.0 and chg_1d > 0:
+            proofs += 1; reasons.append(f"vol_surge={vol_ratio:.1f}x")
+        if vol_ratio >= 1.5 and close_pct >= 70:
+            proofs += 1; reasons.append(f"accum={close_pct:.0f}%")
+        # اختراق حقيقي فقط فوق المقاومة بفوليوم (وليس وقوف تحتها)
+        if current_price > resistance and vol_ratio >= 1.5 and chg_1d > 0.5:
+            proofs += 2; reasons.append("TRUE_BREAKOUT")
+        if rsi and 40 <= rsi <= 60 and vol_ratio >= 1.2:
+            proofs += 1; reasons.append(f"rsi_neutral={rsi:.0f}")
+        if dist_to_support <= 3.0 and chg_1d > -0.5:
+            proofs += 1; reasons.append(f"near_support={dist_to_support:.1f}%")
+        if macro_zone == 'GOLDEN_DIP_ZONE' and chg_1d > 0:
+            proofs += 1; reasons.append(f"macro_dip_zone={mlr:.2f}")
 
-    # 8. Distribution veto
-    dist_warn = 0
-    if chg_1d < -2.0 and vol_ratio >= 1.5:
-        dist_warn += 1
-    if adx and adx['minus_di'] > adx['plus_di'] * 1.5:
-        dist_warn += 1
-
-    # 9. Decision
+    # 8. إصدار القرار الصارم (Strict Decision Gate)
     if is_illiquid:
         signal, track = 'HOLD', 'ILLIQUID'
-    elif dist_warn >= 2:
-        signal, track = 'HOLD', 'DISTRIBUTION_VETO'
+    elif is_falling_knife:
+        signal, track = 'HOLD', 'FALLING_KNIFE_VETO'  # سكين ساقطة: ممنوع أهداف فوق
+        reasons.append("falling_knife_detected")
     elif rr < config.min_rr:
-        signal, track = 'HOLD', 'LOW_RR'  # Rule: R/R >= 1.5
-    elif is_fomo and proofs >= 2 and macro_location != 'NEAR_LOW':
-        # FOMO spike → PULLBACK_WAIT (إلا لو السهم في قاع 52w = فرصة تصحيح من قاع)
+        signal, track = 'HOLD', 'LOW_RR'  # القاعدة 4: R/R < 2 مرفوض
+    elif is_peak_minefield:
+        # القاعدة 1: قمة سنوية = منطقة ألغام، ممنوع شراء، انتظار تصحيح
+        signal, track = 'WATCH', 'PEAK_MINEFIELD_WAIT'
+        reasons.append(f"peak_minefield_mlr={mlr:.2f}")
+    elif is_golden_dip:
+        # القاعدة 3: الصفقة الذهبية المسموحة
+        signal, track = 'STRONG_BUY', 'GOLDEN_DIP'
+    elif chg_1d > config.fomo_spike_threshold and proofs >= 2:
         signal, track = 'WATCH', 'PULLBACK_WAIT'
     elif proofs >= 3:
         signal, track = 'STRONG_BUY', 'WHALE_CONFLUENCE'
@@ -297,7 +299,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     else:
         signal, track = 'HOLD', 'NO_PROOF'
 
-    # 10. Score (0-100)
+    # 9. Score (0-100)
     score = min(100, proofs * 20 + (10 if rsi and 40 <= rsi <= 60 else 0) + (10 if vol_ratio >= 1.5 else 0))
 
     return {
@@ -325,7 +327,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         'low_52w': round(low_52w, 2),
         'dist_to_52w_high': dist_to_52w_high,
         'dist_to_52w_low': dist_to_52w_low,
-        'macro_location': macro_location,
+        'macro_location': macro_zone,
         'entry_price': round(current_price, 2),
         'stop_loss': round(stop_loss, 2),
         'target_price': round(target_price, 2),
@@ -336,7 +338,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         'track': track,
         'reasons': reasons,
         'is_illiquid': is_illiquid,
-        'is_fomo': is_fomo,
+        'is_fomo': (chg_1d > config.fomo_spike_threshold),
     }
 
 
