@@ -16,7 +16,7 @@ import { MarketSentiment } from '@/modules/dashboard/components/MarketSentiment'
 
 import { CryptoSignalsWidget } from '@/modules/dashboard/components/CryptoSignalsWidget';
 import { SeasonalitySignalsWidget } from '@/modules/dashboard/components/SeasonalitySignalsWidget';
-import { EidPredictionsWidget } from '@/components/eid-predictions-widget';
+// ALPHA-PIPE-FIX: EidPredictionsWidget import removed — was mixing BTC+ETH with EGX stocks
 // ALPHA-PHASE2: SovereignMetalsDesk — مكتب الذهب والعملات المستقل (بدون كريبتو/أسهم)
 import { SovereignMetalsDesk } from '@/modules/dashboard/components/SovereignMetalsDesk';
 import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
