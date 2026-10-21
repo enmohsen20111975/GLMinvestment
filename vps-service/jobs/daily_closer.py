@@ -864,6 +864,61 @@ class DailyCloser:
 
             days_elapsed = i + 1 if not (i == 0 and day.get('date') == start_date) else i
 
+            # ── BRAVO-EXIT-PROTOCOL: TP1 Exit (+6.5%) ──────────────────
+            # لو السهم وصل للهدف الأول (tp1_price) → سجل إغلاق نصف الكمية + breakeven + trailing
+            _tp1_price = float(prediction.get('tp1_price', 0) or 0)
+            _max_hold = int(prediction.get('max_hold_days', 5) or 5)
+            _trailing_pct = float(prediction.get('trailing_stop_pct', 2.5) or 2.5)
+            _exit_protocol = prediction.get('exit_protocol', '') or ''
+
+            if _exit_protocol == 'TP1_6PCT_TIME_STOP_5D' and _tp1_price > 0:
+                # أ) قاعدة الهدف الأول (TP1)
+                if high >= _tp1_price and not prediction.get('partial_done'):
+                    # سجل إغلاق نصف الكمية (partial exit at TP1)
+                    _tp1_return = ((_tp1_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
+                    try:
+                        with _open_db(self.db_path, writable=True) as _tp1_conn:
+                            _tp1_conn.execute("""
+                                UPDATE predictions SET
+                                    partial_done = 1,
+                                    partial_exit_price = ?,
+                                    partial_exit_date = ?,
+                                    partial_return_pct = ?,
+                                    stop_loss = ?  -- breakeven: وقف الخسارة = سعر الدخول
+                                WHERE id = ?
+                            """, (_tp1_price, day.get('date', ''), _tp1_return, entry_price, pred_id))
+                            _tp1_conn.commit()
+                    except Exception:
+                        pass
+                    # فعل الوقف المتحرك (trailing stop) بنسبة 2.5% تحت أعلى سعر
+                    _new_trailing = highest_price_reached * (1 - _trailing_pct / 100)
+                    if _new_trailing > current_stop:
+                        current_stop = _new_trailing
+                    print(f"[TP1-EXIT] {ticker} {day.get('date','')}: TP1 hit at {_tp1_price} "
+                          f"(+{_tp1_return:.1f}%) → partial 50% + breakeven + trailing {_trailing_pct}%", flush=True)
+
+                # ب) قاعدة الوقف الزمني (5-Day Time Stop)
+                if days_elapsed >= _max_hold:
+                    # افحص هل السهم كسر قمة جديدة اليوم؟
+                    _broke_new_high = (high >= highest_price_reached) if highest_price_reached > 0 else False
+                    if not _broke_new_high:
+                        # أغلق الصفقة فوراً بسعر الإغلاق الحالي
+                        _time_return = ((close - entry_price) / entry_price * 100) if entry_price > 0 else 0
+                        print(f"[TIME-STOP-5D] {ticker} {day.get('date','')}: "
+                              f"{days_elapsed}d >= {_max_hold}d, no new high → EXIT (return={_time_return:.1f}%)", flush=True)
+                        return self._mark_closed(
+                            pred_id, ticker, 'CLOSED', _time_return,
+                            highest_price_reached, lowest_price_reached, days_elapsed,
+                            day.get('date', ''),
+                            exit_type='TIME_STOP_5D_EXPIRED',
+                            highest_price_reached=highest_price_reached,
+                            lowest_price_reached=lowest_price_reached,
+                            holding_days=days_elapsed,
+                        )
+                    else:
+                        print(f"[TIME-STOP-5D] {ticker} {day.get('date','')}: "
+                              f"{days_elapsed}d >= {_max_hold}d BUT new high → extend hold", flush=True)
+
             # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
             # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة"
             # تحقق قبل ما نـ trigger trailing stop — لو السهم بدأ يتعافى، نأجل ليوم واحد.

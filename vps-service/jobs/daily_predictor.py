@@ -879,6 +879,18 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
                 f"⚠️ صفقة رادار حيتان — مخاطرة محسوبة، إدارة رأس مال صارمة (2% من المحفظة)."
             )
 
+            # BRAVO-EXIT-PROTOCOL: حساب tp1_price (+6.5%) + user_advice_ar
+            _tp1_price = round(entry * 1.065, 2)  # هدف أول +6.5%
+            _tp2_price = round(entry * 1.15, 2)   # هدف ثاني +15%
+            # حدد user_advice_ar بناءً على macro_location
+            _macro = cand.get('macro_location', 'MID_RANGE')
+            if _macro == 'NEAR_LOW':
+                _user_advice = f"سهم ريّح عند الدعم. بيع نص الكمية عند {_tp1_price} جنيه، ومتطمعش: قدامك 5 أيام تداول وتخرج كاش."
+            elif _macro == 'NEAR_HIGH':
+                _user_advice = "السهم في قمة سنوية.. متشتريش هنا، استنى لما يصحح ويثبت."
+            else:
+                _user_advice = f"دخول تكتيكي. هدف أول {_tp1_price} جنيه. وقف خسارة {stop:.2f}. مدة الصفقة 5 أيام تداول كحد أقصى."
+
             try:
                 # (3a) Store in predictions table via PredictionTracker
                 pred_id = tracker.record_prediction(
@@ -894,6 +906,13 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
                     who_is_buying_state='WHALE_RADAR',
                     evidence_count=signal_count,
                     prediction_date=scan_date,
+                    # BRAVO-EXIT-PROTOCOL: خطة الخروج الثلاثية
+                    tp1_price=_tp1_price,
+                    tp2_price=_tp2_price,
+                    trailing_stop_pct=2.5,
+                    max_hold_days=5,
+                    exit_protocol='TP1_6PCT_TIME_STOP_5D',
+                    user_advice_ar=_user_advice,
                 )
 
                 # (3b) Store in stored_analyses table (for PersonaTab UI)

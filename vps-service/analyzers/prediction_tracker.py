@@ -403,6 +403,12 @@ class PredictionTracker:
         kill_filter_result: str = '',
         risk_reward: Optional[float] = None,           # P0 FIX (V402-DIAGNOSIS R5)
         who_is_buying_state: str = '',                 # P0 FIX (V402-DIAGNOSIS R6)
+        tp1_price: Optional[float] = None,
+        tp2_price: Optional[float] = None,
+        trailing_stop_pct: float = 2.5,
+        max_hold_days: int = 5,
+        exit_protocol: str = 'TP1_6PCT_TIME_STOP_5D',
+        user_advice_ar: str = '',
     ) -> int:
         """
         Record a new prediction.
@@ -733,8 +739,9 @@ class PredictionTracker:
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
                     evidence_count, morning_bell, kill_filter_result,
-                    risk_reward, who_is_buying, lifecycle_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing')
+                    risk_reward, who_is_buying, lifecycle_status,
+                    tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing', ?, ?, ?, ?, ?, ?)
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -746,6 +753,7 @@ class PredictionTracker:
                 _target_price_2, _explosive_score, _explosive_label,
                 _evidence_count, _morning_bell, _kill_filter_result,
                 risk_reward, who_is_buying_state,
+                tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar,
             ))
         except Exception as _primary_err:
             # BRAVO-LOG-EXCEPT (2026-10-19): كان الـ except بـ يبتلع الـ exception
@@ -773,8 +781,9 @@ class PredictionTracker:
                         notes, persona, created_at, atr_at_entry,
                         target_price_2, explosive_score, explosive_label,
                         evidence_count, morning_bell, kill_filter_result,
-                        risk_reward, who_is_buying, lifecycle_status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing')
+                        risk_reward, who_is_buying, lifecycle_status,
+                        tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'testing', ?, ?, ?, ?, ?, ?)
                 ''', (
                     ticker, signal, signal_type,
                     get_prediction_date_str(datetime.now()),
@@ -786,6 +795,7 @@ class PredictionTracker:
                     _target_price_2, _explosive_score, _explosive_label,
                     _evidence_count, _morning_bell, _kill_filter_result,
                     risk_reward, who_is_buying_state,
+                    tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar,
                 ))
             except Exception as _fallback_err:
                 # BRAVO-LOG-EXCEPT: log الـ fallback exception كمان
