@@ -13,7 +13,7 @@ export const revalidate = 0;
 export const maxDuration = 300; // V40.2 can take 60-90s on the full 272-ticker universe
 
 const PROJECT_ROOT = process.cwd();
-const SCRIPT_PATH = path.join(PROJECT_ROOT, 'vps-service', 'jobs', 'daily_predictor.py');
+const SCRIPT_PATH = path.join(PROJECT_ROOT, 'vps-service', 'core', 'sync_scanner_to_db.py');
 const STATUS_FILE = path.join(PROJECT_ROOT, 'db', 'v40_generation_status.json');
 
 interface V40Status {
