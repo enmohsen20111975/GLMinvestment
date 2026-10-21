@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// TradingChartView owns the per-ticker data fetch + tooling header.
-// InteractiveChart was REMOVED (per owner directive 2026-10-21: persistent
-// CHART_GRID ReferenceError from stale cached chunks). TradingViewChart is now
-// the sole chart renderer.
+// ALPHA-CHART-MERGE-1: TradingChartView now renders InteractiveChart directly
+// (replaces ProfessionalTradingChart which was removed). TradingChartView owns
+// the per-ticker data fetch + tooling header; InteractiveChart renders the
+// professional sections (Decision Header / Trade Plan / Reasons / Technical
+// Details / Rescue CTA) plus the chart itself.
+import { InteractiveChart } from './InteractiveChart';
 import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
+import { ChartToggle } from '@/components/shared/ChartToggle';
 import { AlertPanel } from './AlertPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -440,12 +443,12 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
  );
 }
 
-// ─── Per-ticker chart card ──────────────────────────────────────────────────
+// ─── ALPHA-CHART-MERGE-1: Per-ticker chart card ──────────────────────────────
 // Owns the data-fetch state (moved here from ProfessionalTradingChart) and the
-// tooling header (search / timeframe / refresh / alerts / screenshot).
-// InteractiveChart removed by owner directive; TradingViewChart is the sole chart.
+// tooling header (search / timeframe / refresh / alerts / screenshot). Renders
+// InteractiveChart with all the professional sections enabled.
 function TickerChartCard({ initialTicker }: { initialTicker: string }) {
- const { stocks, currentMarket } = useAppStore();
+ const { stocks, currentMarket, chartPreference } = useAppStore();
  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket] || 'ج.م';
  const isCrypto = currentMarket === 'CRYPTO';
  const [ticker, setTicker] = useState(initialTicker);
@@ -655,6 +658,27 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  const tickerName =
  data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker;
 
+ // ─── Canonical props bundle for InteractiveChart ─────────────────────────────
+ const canonicalProp = canonical
+ ? {
+ signal: signalFinal || undefined,
+ signal_ar: canonical.canonical?.signal_ar || undefined,
+ entry_price: entry,
+ stop_loss: stop,
+ target_price: target1,
+ target_price_2: target2,
+ tech_score: techScore,
+ risk_reward: rr,
+ }
+ : undefined;
+
+ const decisionDataProp = decision
+ ? {
+ path_taken: decision.path_taken,
+ adjustment_reason: decision.adjustment_reason,
+ }
+ : undefined;
+
  return (
  <div
  id={`chart-card-${ticker.toUpperCase()}`}
@@ -775,7 +799,11 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  </div>
  </div>
 
- {/* Body — chart (TradingViewChart only; InteractiveChart removed by owner directive) */}
+ {/* Body — chart (toggle between InteractiveChart and TradingViewChart) */}
+ {/* ALPHA-CHART-TOGGLE-1: user can switch between InteractiveChart and TradingViewChart */}
+ <div className="flex justify-end mb-1">
+ <ChartToggle />
+ </div>
  <div className={cn('flex-1 min-h-0', isMaximized ? 'h-[600px]' : 'h-[500px]')}>
  {loading && !data ? (
  <div className="w-full h-full p-4 space-y-3">
@@ -792,7 +820,47 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  </Button>
  </div>
  ) : data && data.ohlcv && data.ohlcv.length > 0 ? (
+ chartPreference === 'tradingview' ? (
  <TradingViewChart ticker={ticker} stockName={tickerName} />
+ ) : (
+ <InteractiveChart
+ ohlcv={data.ohlcv}
+ indicators={data.indicators || {}}
+ visibleIndicators={visibleIndicators}
+ levels={data.levels}
+ regimeColor={data.market_regime?.color}
+ targetPrice={target1 ?? undefined}
+ stopLossPrice={stop ?? undefined}
+ entryPrice={entry ?? undefined}
+ target2Price={target2 ?? undefined}
+ bbSqueezeLevel={data.bb_squeeze?.state}
+ bosEvents={data.bos_events}
+ livePrice={liveData?.today_candle?.close ?? null}
+ cmfData={data.cmf_data}
+ macdProjection={data.macd_projection}
+ smartMarkers={data.smart_markers}
+ smcData={data.smc_data}
+ fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
+ // ALPHA-CHART-MERGE-1: professional sections props
+ canonical={canonicalProp}
+ decisionData={decisionDataProp}
+ flightState={decision?.flight_state}
+ makerState={decision?.maker_state}
+ stockDna={data.stock_dna ?? undefined}
+ confluence={data.confluence}
+ currentIndicators={data.current_indicators}
+ suggestedPositionSizePct={data.suggested_position_size_pct}
+ analysisText={data.analysis_text}
+ smcAnalysis={data.smc_analysis}
+ showDecisionHeader
+ showTradePlan
+ showReasons
+ showTechnicalDetails
+ showRescueCTA
+ tickerName={tickerName}
+ currencyLabel={currencyLabel}
+ />
+ )
  ) : (
  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
  <div className="text-center space-y-1">

@@ -5,9 +5,7 @@ export { MarketAnalysisView } from './components/MarketAnalysisView';
 export { default as UnifiedAnalysisView } from './components/UnifiedAnalysisView';
 export { TradingChartView } from './components/TradingChartView';
 export { SingleStockAnalysisView } from './components/SingleStockAnalysisView';
-// InteractiveChart export removed by owner directive (2026-10-21):
-// persistent CHART_GRID ReferenceError from stale cached chunks.
-// TradingViewChart is the sole chart renderer now.
+export { InteractiveChart } from './components/InteractiveChart';
 export { default as ChartControls } from './components/ChartControls';
 export { InstitutionalDecisionPanel } from './components/InstitutionalDecisionPanel';
 export { LiveDashboardWidget, HeartbeatStatusBar, WhaleAlertListener } from './components/LiveDashboard';

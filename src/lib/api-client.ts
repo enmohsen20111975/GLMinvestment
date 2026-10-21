@@ -276,19 +276,7 @@ export const apiClient = {
   getEgxPilotNews: (limit: number): Promise<unknown> =>
     unwrap(apiGet<unknown>(`/api/egxpilot/news${qs({ limit })}`)),
 
-  /**
-   * GET professional analysis for a ticker.
-   *
-   * The legacy `/api/stocks/[ticker]/professional-analysis` route is now
-   * 410 Gone (deprecated — see route.ts). The canonical replacement is
-   * `/api/stocks/[ticker]/recommendation` which proxies the same Python
-   * upstream and falls back to the same SQLite record, returning the same
-   * `{success, source, ticker, data}` shape.
-   *
-   * This method keeps its old name so existing callers (store.loadProfessionalAnalysis,
-   * StockAnalysisReport, etc.) don't break — it transparently points at the
-   * canonical route under the hood.
-   */
+  /** GET /api/stocks/[ticker]/professional-analysis */
   getProfessionalAnalysis: (ticker: string): Promise<unknown> =>
-    unwrap(apiGet<unknown>(`/api/stocks/${encodeURIComponent(ticker)}/recommendation`)),
+    unwrap(apiGet<unknown>(`/api/stocks/${encodeURIComponent(ticker)}/professional-analysis`)),
 };

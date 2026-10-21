@@ -1,10 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-// InteractiveChart removed by owner directive (2026-10-21): persistent
-// CHART_GRID ReferenceError from stale cached chunks. TradingViewChart is the
-// sole chart renderer now.
-import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
+import { InteractiveChart } from './InteractiveChart';
 import ChartControls from './ChartControls';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
 // CANONICAL: بانر محرك القرار المؤسسي V60.2 — WHO IS BUYING (مطابق Pine Script)
@@ -857,7 +854,26 @@ export function SingleStockAnalysisView({
  </Button>
  </div>
  ) : data && data.ohlcv && data.ohlcv.length > 0 ? (
- <TradingViewChart ticker={ticker} stockName={data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker} />
+ <InteractiveChart
+ ohlcv={data.ohlcv}
+ indicators={data.indicators}
+ visibleIndicators={visibleIndicators}
+ levels={data.levels}
+ regimeColor={data.market_regime?.color}
+ targetPrice={data.risk?.target}
+ stopLossPrice={data.risk?.stop_loss}
+ entryPrice={data.risk?.entry}
+ target2Price={data.risk?.target_2}
+ target3Price={data.risk?.target_2 ? data.risk.target_2 * 1.05 : null}
+ bbSqueezeLevel={data.bb_squeeze?.state}
+ bosEvents={data.bos_events}
+ livePrice={liveData?.today_candle?.close ?? null}
+ cmfData={data.cmf_data}
+ macdProjection={data.macd_projection}
+ smartMarkers={data.smart_markers}
+ smcData={data.smc_data as unknown as React.ComponentProps<typeof InteractiveChart>['smcData']}
+ fusionMetrics={data.fusion_metrics as unknown as NonNullable<React.ComponentProps<typeof InteractiveChart>['fusionMetrics']>}
+ />
  ) : (
  <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
  لا توجد بيانات كافية لهذا السهم

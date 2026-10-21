@@ -15,7 +15,7 @@ import {
  Database, HardDrive, Upload, RefreshCw, Loader2, Archive,
  CheckCircle2, AlertCircle, Trash2, Github, FileArchive,
  Layers, CheckSquare, Square, AlertTriangle, ShieldAlert,
- Code2, Download, Terminal,
+ Code2, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -93,8 +93,6 @@ interface PostResult {
  };
  errors: string[];
  error?: string;
- // ALPHA-CONSOLE: سجل تفصيلي لكل خطوة (compress / split / git add / commit / push)
- steps?: string[];
 }
 
 interface DeleteResult {
@@ -150,8 +148,6 @@ export function DbBackupPanel() {
  const [loading, setLoading] = useState(false);
  const [busy, setBusy] = useState(false);
  const [busyLabel, setBusyLabel] = useState('');
- // ALPHA-CONSOLE: سجل تفصيلي لكل خطوة وقت الضغط والرفع
- const [consoleLog, setConsoleLog] = useState<string[]>([]);
 
  // Form options
  const [selectedDbs, setSelectedDbs] = useState<Set<string>>(new Set());
@@ -346,14 +342,8 @@ export function DbBackupPanel() {
 
  setBusy(true);
  setBusyLabel(pushToGithub ? 'جاري الضغط والتجزئة والرفع إلى GitHub...' : 'جاري ضغط وتجزئة القواعد المحددة...');
- setConsoleLog([]); // مسح السجل القديم
- const log: string[] = [];
- const addLog = (msg: string) => { log.push(msg); setConsoleLog([...log]); };
- addLog(`▶ [${new Date().toLocaleTimeString('ar-EG')}] بدء العملية — ${selectedDbs.size} قاعدة بيانات، رفع لـ GitHub: ${pushToGithub ? 'نعم' : 'لا'}`);
- addLog(`▶ الحد الأقصى لكل جزء: ${maxPartSizeMb} MB`);
 
  try {
- addLog('▶ إرسال الطلب لـ /api/admin/db-backup...');
  const res = await fetch('/api/admin/db-backup', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -363,6 +353,7 @@ export function DbBackupPanel() {
  prune_older_than_days: pruneOld ? 30 : 0,
  selected_dbs: Array.from(selectedDbs),
  max_part_size_mb: maxPartSizeMb,
+ // NEW: خيارات الرفع المتقدمة
  selected_archives: selectedArchives.size > 0 ? Array.from(selectedArchives) : undefined,
  push_strategy: pushStrategy,
  rollback_last_commit: rollbackLastCommit || undefined,
@@ -370,91 +361,62 @@ export function DbBackupPanel() {
  }),
  });
 
- addLog(`▶ استلام الرد: HTTP ${res.status} ${res.ok ? '✅' : '❌'}`);
  const json: PostResult = await res.json();
-
- // ALPHA-CONSOLE: عرض خطوات الـ API إن وُجدت
- if (json.steps && json.steps.length > 0) {
- for (const step of json.steps) addLog(`  ${step}`);
- }
-
  if (json.success) {
  const created = json.archives?.length || 0;
  const totalMb = json.archives?.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024;
- addLog(`✅ تم إنشاء ${created} ملف أرشيف (الحجم: ${(totalMb ?? 0).toFixed(1)} MB)`);
 
- // عرض تفاصيل كل أرشيف
- for (const arc of json.archives || []) {
- addLog(`  📦 ${arc.archive_name} — ${arc.size_mb} MB — يحتوي: ${arc.included_dbs.join(', ')}`);
+ if (created > 0) {
+ toast.success(`تم إنشاء ${created} ملف أرشيف (الحجم الإجمالي: ${(totalMb ?? 0).toFixed(1)} MB) بمقاس أقصى ${maxPartSizeMb} MB`);
  }
 
  if (pushToGithub) {
- addLog('─'.repeat(40));
- addLog('▶ مرحلة الرفع إلى GitHub:');
  if (json.git?.pushed) {
  const aheadBehind = json.git.ahead_behind ? ` (ahead: ${json.git.ahead_behind.ahead}, behind: ${json.git.ahead_behind.behind})` : '';
- addLog(`  ✅ تم رفع ${json.git.archived_to_push?.length || created} ملف إلى GitHub${aheadBehind}`);
- addLog(`  📝 ${json.git.message}`);
- addLog(`  📋 استراتيجية: ${json.git.push_strategy}`);
  toast.success(`تم رفع ${json.git.archived_to_push?.length || created} ملف إلى GitHub بنجاح${aheadBehind}`, {
  description: `${json.git.message} | strategy: ${json.git.push_strategy}`,
  });
  } else if (json.git?.committed) {
- addLog(`  ⚠️ تم حفظ الـ Commit محلياً ولكن تعذر الرفع`);
- addLog(`  📝 ${json.git.message}`);
  toast.warning('تم حفظ الـ Commit محلياً ولكن تعذر الرفع (push)', {
  description: json.git.message,
  });
  } else {
- addLog(`  ⚠️ لم يكتمل الرفع: ${json.git?.message || 'غير معروف'}`);
  toast.warning(json.git?.message || 'لم يكتمل الرفع إلى GitHub');
  }
 
- // عرض warnings
+ // عرض الـ warnings (لو فيه)
  if (json.git?.warnings && json.git.warnings.length > 0) {
- addLog('  ⚠️ تحذيرات:');
- for (const w of json.git.warnings) {
- addLog(`    • ${w}`);
+ for (const w of json.git.warnings.slice(0, 5)) {
  toast.warning(w, { duration: 8000 });
  }
  }
  if (json.git?.rollback_performed) {
- addLog('  ↩️ تم التراجع عن آخر commit قبل الرفع');
  toast.info('تم التراجع عن آخر commit قبل الرفع');
  }
  if (json.git?.remote_archives_deleted && json.git.remote_archives_deleted.length > 0) {
- addLog(`  🗑️ تم مسح ${json.git.remote_archives_deleted.length} أرشيف قديم من GitHub`);
  toast.info(`تم مسح ${json.git.remote_archives_deleted.length} أرشيف قديم من GitHub`);
  }
  }
 
- // عرض أخطاء
  if (json.errors?.length) {
- addLog('─'.repeat(40));
- addLog('❌ أخطاء:');
- for (const err of json.errors.slice(0, 10)) {
- addLog(`  • ${err}`);
+ for (const err of json.errors.slice(0, 3)) {
  toast.error(err, { duration: 8000 });
  }
  }
 
- addLog(`✅ [${new Date().toLocaleTimeString('ar-EG')}] انتهت العملية بنجاح`);
  fetchData();
+ // refresh git status
  fetchGitStatus();
  } else {
- addLog(`❌ فشلت العملية: ${json.error || 'غير معروف'}`);
  toast.error(json.error || 'فشلت عملية النسخ الاحتياطي');
  }
  } catch (e) {
- addLog(`❌ خطأ في الاتصال: ${e instanceof Error ? e.message : String(e)}`);
  toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
  } finally {
  setBusy(false);
  setBusyLabel('');
  }
  };
-
-
 
  // 2b. NEW: جلب حالة الـ git (ahead/behind/rebase in progress)
  const fetchGitStatus = useCallback(async () => {
@@ -882,53 +844,6 @@ export function DbBackupPanel() {
  حذف القواعد المحددة ({selectedSummary.count})
  </Button>
  </div>
-
- {/* ALPHA-CONSOLE: سجل تفصيلي لكل خطوة وقت الضغط والرفع */}
- {(busy || consoleLog.length > 0) && (
- <Card className="mt-3 border-border/60 bg-slate-950">
- <CardHeader className="pb-2">
- <CardTitle className="text-xs font-mono text-slate-300 flex items-center gap-2">
- <Terminal className="h-3.5 w-3.5" />
- كونسول العمليات {busy && <Loader2 className="h-3 w-3 animate-spin" />}
- </CardTitle>
- </CardHeader>
- <CardContent className="p-0">
- <div
- className="max-h-80 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed bg-slate-950"
- dir="ltr"
- >
- {consoleLog.length === 0 ? (
- <span className="text-slate-500">في انتظار بدء العملية...</span>
- ) : (
- consoleLog.map((line, i) => {
- const isError = line.includes('❌');
- const isWarning = line.includes('⚠️');
- const isSuccess = line.includes('✅');
- const isStep = line.includes('▶');
- const isDivider = line.includes('─');
- return (
- <div
- key={i}
- className={cn(
- 'whitespace-pre-wrap break-words py-0.5',
- isError ? 'text-red-400'
- : isWarning ? 'text-amber-400'
- : isSuccess ? 'text-emerald-400'
- : isStep ? 'text-sky-400'
- : isDivider ? 'text-slate-600'
- : 'text-slate-300'
- )}
- >
- {line}
- </div>
- );
- })
- )}
- {busy && <span className="text-slate-500 animate-pulse">▊</span>}
- </div>
- </CardContent>
- </Card>
- )}
 
  {/* Summary Cards */}
  {data && (
