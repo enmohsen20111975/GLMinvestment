@@ -48,6 +48,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import sma as _canonical_sma
+
 # P1.5: migrated 6 constants to engine_settings. الـ constants المحلية بقت
 # بـ read من engine_settings عبر get_setting() (لا fallback default — بـ يـ use
 # DEFAULT_SETTINGS[key] داخليًا).
@@ -270,34 +273,38 @@ def decide_t1_holdthrough(
 # حساب ATR (للـ trailing + volatility-expand)
 # ──────────────────────────────────────────────────────────────────────────
 def _compute_atr(price_history: List[Dict], end_idx: int, period: int = 14) -> float:
-    """احسب ATR(14) لـ price_history حتى end_idx (Wilder's smoothing)."""
+    """احسب ATR(14) لـ price_history حتى end_idx (Wilder's smoothing).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if end_idx < period or len(price_history) <= end_idx:
         return 0.0
     try:
-        trs = []
-        for i in range(1, end_idx + 1):
-            h = float(price_history[i].get('high', 0) or 0)
-            l = float(price_history[i].get('low', 0) or 0)
-            prev_c = float(price_history[i - 1].get('close', 0) or 0)
-            if h <= 0 or l <= 0:
-                continue
-            tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
-            trs.append(tr)
-        if len(trs) < period:
+        slice_hist = price_history[:end_idx + 1]
+        highs = [float(r.get('high', 0) or 0) for r in slice_hist]
+        lows = [float(r.get('low', 0) or 0) for r in slice_hist]
+        closes = [float(r.get('close', 0) or 0) for r in slice_hist]
+        valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+        if len(valid) < period + 1:
             return 0.0
-        atr = sum(trs[:period]) / period
-        for i in range(period, len(trs)):
-            atr = (atr * (period - 1) + trs[i]) / period
-        return round(atr, 4)
+        v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+        atr = _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
+        return atr if atr is not None else 0.0
     except (IndexError, ValueError):
         return 0.0
 
 
 def _compute_sma(closes: List[float], period: int) -> float:
-    """احسب SMA(period) لآخر N عناصر."""
+    """احسب SMA(period) لآخر N عناصر.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma.
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if len(closes) < period:
         return 0.0
-    return sum(closes[-period:]) / period
+    sma_val = _canonical_sma(closes, period)
+    return sma_val if sma_val is not None else 0.0
 
 
 # ──────────────────────────────────────────────────────────────────────────

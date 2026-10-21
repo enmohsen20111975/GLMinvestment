@@ -31,6 +31,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
 
@@ -145,18 +147,15 @@ def _get_active_prediction(ticker: str) -> Optional[Dict]:
 
 
 def _compute_atr(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> float:
-    """ATR(14)."""
+    """ATR(14).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0) on insufficient data.
+    """
     if len(closes) < 2 or len(highs) < 2:
         return 0
-    trs = []
-    for i in range(1, min(len(closes), period + 1)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    return sum(trs) / len(trs) if trs else 0
+    atr = _canonical_calc_atr(highs, lows, closes, period=period)
+    return atr if atr is not None else 0
 
 
 def analyze_stock_unified(ticker: str) -> Dict[str, Any]:

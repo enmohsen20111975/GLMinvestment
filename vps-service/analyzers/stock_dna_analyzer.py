@@ -38,6 +38,8 @@ from datetime import datetime, date
 import sqlite3
 import math
 import os
+
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -682,23 +684,22 @@ class StockDNAAnalyzer:
     @staticmethod
     def _compute_atr_series(highs: List[float], lows: List[float],
                             closes: List[float], period: int = 14) -> List[float]:
-        """حساب سلسلة ATR لكل نقطة (بعد أول period)."""
+        """حساب سلسلة ATR لكل نقطة (بعد أول period).
+
+        BRAVO UNIFY: delegates per-point to canonical analyzers.indicators.atr.calc_atr
+        (Wilder's smoothing) — returns one ATR per index >= period.
+        """
         n = min(len(highs), len(lows), len(closes))
         if n < period + 1:
             return []
-        trs = []
-        for i in range(1, n):
-            pc = closes[i - 1]
-            if pc <= 0:
-                trs.append(0.0)
-                continue
-            tr = max(highs[i] - lows[i], abs(highs[i] - pc), abs(lows[i] - pc))
-            trs.append(max(0.0, tr))
-        # ATR = rolling mean of TR over `period`
-        atrs = []
-        for i in range(period - 1, len(trs)):
-            window = trs[i - period + 1: i + 1]
-            atrs.append(sum(window) / period)
+        atrs: List[float] = []
+        # Compute ATR for each suffix starting at index `period` (i.e. closes[:i+1])
+        for i in range(period, n):
+            atr = _canonical_calc_atr(highs[:i + 1], lows[:i + 1], closes[:i + 1], period=period)
+            if atr is not None:
+                atrs.append(atr)
+            else:
+                atrs.append(0.0)
         return atrs
 
     @staticmethod

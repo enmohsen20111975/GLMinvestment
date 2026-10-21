@@ -19,6 +19,8 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import math
 
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_calc_bollinger
+
 
 # ============================================================================
 # WEIGHTS CONFIGURATION - EGX SPECIFIC
@@ -223,29 +225,29 @@ class TechnicalAnalyzerWeighted:
     # =========================================================================
     
     def bollinger_bands(self, prices: List[float], period: int = 20) -> Optional[Dict]:
-        """Bollinger Bands."""
+        """Bollinger Bands.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.calc_bollinger.
+        Returns the same dict shape the caller expects (upper/middle/lower/position).
+        """
         if len(prices) < period:
             return None
-        
-        recent = prices[-period:]
-        sma_value = sum(recent) / period
-        variance = sum((p - sma_value) ** 2 for p in recent) / period
-        std_dev = variance ** 0.5
-        
-        upper = sma_value + (2 * std_dev)
-        lower = sma_value - (2 * std_dev)
-        
+        bb = _canonical_calc_bollinger(prices, period=period, std_dev=2.0)
+        if bb is None:
+            return None
         current_price = prices[-1]
+        upper = bb['upper']
+        lower = bb['lower']
+        middle = bb['middle']
         if current_price >= upper:
             position = "UPPER"
         elif current_price <= lower:
             position = "LOWER"
         else:
             position = "MIDDLE"
-        
         return {
             'upper': round(upper, 4),
-            'middle': round(sma_value, 4),
+            'middle': round(middle, 4),
             'lower': round(lower, 4),
             'position': position
         }

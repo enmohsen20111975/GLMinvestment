@@ -42,9 +42,12 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field, asdict
 
 # BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate ATR/Bollinger/VWAP to canonical.
+# BRAVO-SSOT Stage 4: also delegate EMA + MACD to canonical analyzers.indicators.ma.
 from analyzers.indicators.atr import calc_atr as _canonical_atr
 from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
 from analyzers.indicators.vwap import calc_vwap as _canonical_vwap
+from analyzers.indicators.ma import ema as _canonical_ema
+from analyzers.indicators.ma import macd as _canonical_macd
 
 # ---------------------------------------------------------------------------
 # Optional imports — try/except with fallback
@@ -288,33 +291,36 @@ class SniperEngine:
     calc_rsi = _calc_rsi_legacy
 
     def calc_ema(self, data: List[float], period: int) -> List[float]:
-        """Calculate Exponential Moving Average."""
-        if not data:
+        """Calculate Exponential Moving Average — BRAVO-SSOT Stage 4: delegates to
+        canonical analyzers.indicators.ma.ema.
+        Returns the EMA series (length = len(data) - period + 1).
+        """
+        if not data or period <= 0 or len(data) < period:
             return []
-        k = 2 / (period + 1)
-        result = [data[0]]
-        for i in range(1, len(data)):
-            result.append(data[i] * k + result[-1] * (1 - k))
-        return result
+        # Build EMA series by calling canonical ema on progressively larger slices.
+        # This preserves the series return type while delegating the calculation logic.
+        ema_series: List[float] = []
+        for i in range(period, len(data) + 1):
+            val = _canonical_ema(data[:i], period)
+            if val is not None:
+                ema_series.append(val)
+        return ema_series
 
     def calc_macd(self, closes: List[float]) -> Dict:
         """
-        MACD(12,26,9) — CORRECT implementation with EMA-9 signal line.
+        MACD(12,26,9) — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.macd (correct EMA-9 signal line).
 
-        The signal line is the EMA-9 of the MACD line, NOT macd*0.9 or any
-        other shortcut. This is the standard definition.
+        The signal line is the EMA-9 of the MACD line (canonical, standard definition).
+        Returns dict {macd, signal, histogram, direction} with backward-compat shape.
         """
-        if len(closes) < 26:
+        result = _canonical_macd(closes)
+        if result is None:
             return {'macd': 0, 'signal': 0, 'histogram': 0, 'direction': 'NEUTRAL'}
 
-        ema12 = self.calc_ema(closes, 12)
-        ema26 = self.calc_ema(closes, 26)
-        macd_line = [a - b for a, b in zip(ema12, ema26)]
-        signal_line = self.calc_ema(macd_line, 9)  # EMA-9 of MACD line
-
-        macd_val = macd_line[-1]
-        sig_val = signal_line[-1]
-        hist = macd_val - sig_val
+        macd_val = result['line']
+        sig_val = result['signal']
+        hist = result['histogram']
 
         if macd_val > sig_val and hist > 0:
             direction = 'BULLISH'

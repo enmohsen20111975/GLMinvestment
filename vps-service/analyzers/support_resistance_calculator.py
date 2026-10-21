@@ -33,6 +33,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 # ==================== CONFIG ====================
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -166,23 +168,24 @@ def _calculate_atr(rows: List[Dict], period: int = 14) -> float:
     """
     بتحسب الـ Average True Range (ATR) للبيانات المعطاة.
     ATR بيقيس التقلبات — لو عالي يعني السهم متقلب كتير.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
     """
     try:
         n = len(rows)
         if n < 2:
             return 0.0
-        atr_values = []
-        for i in range(1, min(n, period + 1)):
-            high = float(rows[i].get("high_price") or 0)
-            low = float(rows[i].get("low_price") or 0)
-            prev_close = float(rows[i - 1].get("close_price") or 0)
-            if high <= 0 or low <= 0:
-                continue
-            tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
-            atr_values.append(tr)
-        if not atr_values:
+        highs = [float(r.get("high_price") or 0) for r in rows]
+        lows = [float(r.get("low_price") or 0) for r in rows]
+        closes = [float(r.get("close_price") or 0) for r in rows]
+        # filter invalid rows
+        valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+        if len(valid) < 2:
             return 0.0
-        return sum(atr_values) / len(atr_values)
+        v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+        atr = _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
+        return atr if atr is not None else 0.0
     except Exception:
         return 0.0
 

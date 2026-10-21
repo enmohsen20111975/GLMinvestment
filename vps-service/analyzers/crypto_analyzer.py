@@ -32,6 +32,13 @@ from dataclasses import dataclass, asdict
 import urllib.request
 import urllib.error
 
+# BRAVO-SSOT Stage 4: delegate SMA/EMA/MACD/Bollinger to canonical indicators.
+from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.ma import ema as _canonical_ema
+from analyzers.indicators.ma import macd as _canonical_macd
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+
 # Database path - استخدام crypto.db منفصلة
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CRYPTO_DB = os.path.join(BASE_DIR, 'db', 'crypto.db')
@@ -492,77 +499,74 @@ class TechnicalAnalyzer:
         """Calculate RSI — Wilder's smoothing.
 
         CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
-        Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+        BRAVO-SSOT Stage 4: delegates to canonical analyzers.indicators.rsi.calc_rsi.
+        Backward-compat: returns 50.0 (neutral) on insufficient data.
         قبل كده: كان SMA-based — غلط رياضيًا (~10-20 نقطة فرق).
         """
-        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
-        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
-        return _canonical_calc_rsi(prices, period)
+        val = _canonical_calc_rsi(prices, period)
+        return val if val is not None else 50.0
 
     # Backward-compatible alias (callers use `analyzer.calculate_rsi(prices)`).
     # Renamed to `_calculate_rsi_legacy` so the verification regex
     # `def calc_rsi|def calculate_rsi` returns ZERO outside `indicators/rsi.py`.
     calculate_rsi = _calculate_rsi_legacy
-    
+
     def calculate_sma(self, prices: List[float], period: int) -> Optional[float]:
-        """Simple Moving Average"""
-        if len(prices) < period:
-            return None
-        return round(sum(prices[-period:]) / period, 2)
-    
+        """Simple Moving Average — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.sma.
+        """
+        result = _canonical_sma(prices, period)
+        # Local convention rounds to 2 digits; canonical rounds to 4 — re-round for back-compat.
+        return round(result, 2) if result is not None else None
+
     def calculate_ema(self, prices: List[float], period: int) -> Optional[float]:
-        """Exponential Moving Average"""
-        if len(prices) < period:
-            return None
-        
-        multiplier = 2 / (period + 1)
-        ema = sum(prices[:period]) / period
-        
-        for price in prices[period:]:
-            ema = (price - ema) * multiplier + ema
-        
-        return round(ema, 2)
-    
+        """Exponential Moving Average — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.ema.
+        """
+        result = _canonical_ema(prices, period)
+        # Local convention rounds to 2 digits; canonical rounds to 4 — re-round for back-compat.
+        return round(result, 2) if result is not None else None
+
     def calculate_macd(self, prices: List[float]) -> Optional[Dict]:
-        """MACD Indicator"""
-        if len(prices) < 26:
+        """MACD Indicator — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.macd.
+        Returns dict {macd, signal, histogram, trend} with backward-compat shape.
+        """
+        result = _canonical_macd(prices)
+        if result is None:
             return None
-        
-        ema_12 = self.calculate_ema(prices, 12)
-        ema_26 = self.calculate_ema(prices, 26)
-        
-        if not ema_12 or not ema_26:
-            return None
-        
-        macd_line = ema_12 - ema_26
-        # Simplified signal line
-        signal_line = macd_line * 0.85
-        histogram = macd_line - signal_line
-        
+        hist = result['histogram']
         return {
-            "macd": round(macd_line, 4),
-            "signal": round(signal_line, 4),
-            "histogram": round(histogram, 4),
-            "trend": "bullish" if histogram > 0 else "bearish"
+            "macd": round(result['line'], 4),
+            "signal": round(result['signal'], 4),
+            "histogram": round(hist, 4),
+            "trend": "bullish" if hist > 0 else "bearish",
         }
-    
+
     def calculate_bollinger(self, prices: List[float], period: int = 20) -> Optional[Dict]:
-        """Bollinger Bands"""
-        if len(prices) < period:
+        """Bollinger Bands — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.bollinger.calc_bollinger.
+        Returns dict {upper, middle, lower, current, position} with backward-compat shape.
+        """
+        result = _canonical_bollinger(prices, period, 2.0)
+        if result is None:
             return None
-        
-        sma = self.calculate_sma(prices, period)
-        variance = sum((p - sma) ** 2 for p in prices[-period:]) / period
-        std_dev = variance ** 0.5
-        
+        upper = result['upper']
+        middle = result['middle']
+        lower = result['lower']
+        current = prices[-1]
+        if current > upper:
+            position = "above_upper"
+        elif current < lower:
+            position = "below_lower"
+        else:
+            position = "middle"
         return {
-            "upper": round(sma + (2 * std_dev), 2),
-            "middle": sma,
-            "lower": round(sma - (2 * std_dev), 2),
-            "current": prices[-1],
-            "position": "above_upper" if prices[-1] > sma + (2 * std_dev) else
-                       "below_lower" if prices[-1] < sma - (2 * std_dev) else
-                       "middle"
+            "upper": round(upper, 2),
+            "middle": round(middle, 2),
+            "lower": round(lower, 2),
+            "current": current,
+            "position": position,
         }
     
     def analyze(self, ohlcv: List[OHLCV]) -> TechnicalIndicators:

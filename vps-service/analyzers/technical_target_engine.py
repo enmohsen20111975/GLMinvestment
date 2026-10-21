@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 
 # ==================== CONFIG ====================
 
@@ -625,12 +627,15 @@ class TechnicalTargetEngine:
     # ==================== ATR CALCULATION ====================
 
     def _calculate_atr(self, price_history: List[Dict], period: int = 14) -> float:
-        """Calculate ATR from price history"""
+        """Calculate ATR from price history.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+        Keeps backward-compat fallback (0.0) on insufficient data.
+        """
         if not price_history or len(price_history) < period + 1:
             return 0
 
         try:
-            from analyzers.core_scoring_engine import calc_atr
             highs = [float(r.get('high_price', 0)) for r in price_history if r.get('high_price')]
             lows = [float(r.get('low_price', 0)) for r in price_history if r.get('low_price')]
             closes = [float(r.get('close_price', 0)) for r in price_history if r.get('close_price')]
@@ -638,36 +643,11 @@ class TechnicalTargetEngine:
             if len(highs) < period + 1 or len(lows) < period + 1 or len(closes) < period + 1:
                 return closes[-1] * 0.03 if closes else 0
 
-            return calc_atr(highs, lows, closes, period)
-        except ImportError:
-            pass
+            atr = _canonical_calc_atr(highs, lows, closes, period)
+            return atr if atr is not None else 0.0
         except Exception as e:
             print(f"[TechnicalTargetEngine] ATR calculation error: {e}")
-
-        # Fallback ATR calculation
-        if len(price_history) < period + 1:
-            return 0
-
-        trs = []
-        for i in range(1, len(price_history)):
-            high = float(price_history[i].get('high_price', 0))
-            low = float(price_history[i].get('low_price', 0))
-            prev_close = float(price_history[i - 1].get('close_price', 0))
-
-            if high <= 0 or low <= 0 or prev_close <= 0:
-                continue
-
-            tr = max(
-                high - low,
-                abs(high - prev_close),
-                abs(low - prev_close)
-            )
-            trs.append(tr)
-
-        if len(trs) < period:
-            return sum(trs) / len(trs) if trs else 0
-
-        return sum(trs[-period:]) / period
+            return 0.0
 
     # ==================== 30-DAY RANGE ====================
 

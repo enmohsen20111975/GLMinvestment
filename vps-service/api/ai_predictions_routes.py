@@ -21,6 +21,8 @@ import threading
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 # (أغسطس 2026 — PRODUCTION-PREDICTION-KILLER FIX)
 # Flask is used ONLY for the HTTP route decorators in this module. The server
 # itself is FastAPI (main.py runs Uvicorn), so these Flask routes are dead code
@@ -225,21 +227,22 @@ def _get_historical_prices(symbol: str, limit: int = 30) -> List[Dict]:
 
 
 def _compute_atr(historical: List[Dict], period: int = 14) -> float:
-    """حساب ATR من البيانات التاريخية"""
+    """حساب ATR من البيانات التاريخية.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if not historical or len(historical) < period + 1:
         return 0.0
     highs = [float(r.get('high', 0) or 0) for r in historical]
     lows = [float(r.get('low', 0) or 0) for r in historical]
     closes = [float(r.get('close', 0) or 0) for r in historical]
-    atr_values = []
-    for i in range(1, min(period + 1, len(highs))):
-        tr = max(
-            highs[-i] - lows[-i],
-            abs(highs[-i] - (closes[-i - 1] if i < len(closes) else highs[-i])),
-            abs(lows[-i] - (closes[-i - 1] if i < len(closes) else lows[-i])),
-        )
-        atr_values.append(tr)
-    return sum(atr_values) / len(atr_values) if atr_values else 0.0
+    valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+    if len(valid) < 2:
+        return 0.0
+    v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+    atr = _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
+    return atr if atr is not None else 0.0
 
 
 def calculate_target(entry_price: float, signal_type: str, confidence: float, symbol: str = '') -> float:

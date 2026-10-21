@@ -24,9 +24,12 @@ from typing import Optional
 import math
 
 # BRAVO UNIFY (Rule 67 — CALCULATION-CANONICAL): delegate Bollinger/ATR/ADX to canonical.
+# BRAVO-SSOT Stage 4: also delegate EMA + MACD to canonical analyzers.indicators.ma.
 from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
 from analyzers.indicators.atr import calc_atr as _canonical_atr
 from analyzers.indicators.adx import calc_adx as _canonical_adx
+from analyzers.indicators.ma import ema as _canonical_ema
+from analyzers.indicators.ma import macd as _canonical_macd
 
 
 @dataclass
@@ -75,7 +78,8 @@ class EnhancedIndicators:
     @staticmethod
     def calc_ema(values: list[float], period: int) -> list[float]:
         """
-        حساب EMA لقائمة قيم.
+        حساب EMA لقائمة قيم — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.ema.
         الصيغة: ema[i] = price[i] * multiplier + ema[i-1] * (1 - multiplier)
         multiplier = 2 / (period + 1)
         أول قيمة = SMA للـ period الأول.
@@ -84,55 +88,30 @@ class EnhancedIndicators:
         if not values or period <= 0 or len(values) < period:
             return []
 
-        multiplier = 2.0 / (period + 1)
-        ema: list[float] = []
-        # أول قيمة = SMA للنافذة الأولى
-        first_window = values[:period]
-        sma = sum(first_window) / period
-        ema.append(sma)
-
-        # بقية القيم بالصيغة التكرارية
-        for i in range(period, len(values)):
-            prev = ema[-1]
-            new_ema = values[i] * multiplier + prev * (1 - multiplier)
-            ema.append(new_ema)
-
-        return ema
+        # Build EMA series by calling canonical ema on progressively larger slices.
+        # This preserves the series return type while delegating the calculation logic.
+        ema_series: list[float] = []
+        for i in range(period, len(values) + 1):
+            val = _canonical_ema(values[:i], period)
+            if val is not None:
+                ema_series.append(val)
+        return ema_series
 
     # ---------- MACD ----------
     @staticmethod
     def calc_macd(prices: list[float], fast: int = 12, slow: int = 26,
                   signal: int = 9) -> tuple[float, float, float]:
         """
-        حساب MACD.
+        حساب MACD — BRAVO-SSOT Stage 4: delegates to canonical analyzers.indicators.ma.macd.
         MACD line = EMA(fast) - EMA(slow)
         Signal line = EMA(signal) من MACD line
         Histogram = MACD - Signal
         بيرجع (macd_line, signal_line, histogram) لآخر قيمة بس.
         """
-        if len(prices) < slow:
+        result = _canonical_macd(prices, fast, slow, signal)
+        if result is None:
             return None, None, None  # Rule 27: no fabrication
-
-        ema_fast = EnhancedIndicators.calc_ema(prices, fast)
-        ema_slow = EnhancedIndicators.calc_ema(prices, slow)
-        if not ema_fast or not ema_slow:
-            return None, None, None  # Rule 27: no fabrication
-
-        # محاذاة الطول — ema_slow أقصر من ema_fast بفرق (slow - fast)
-        offset = len(ema_fast) - len(ema_slow)
-        macd_line = [ema_fast[i + offset] - ema_slow[i] for i in range(len(ema_slow))]
-
-        signal_line = EnhancedIndicators.calc_ema(macd_line, signal)
-        if not signal_line:
-            # لو معندناش signal كافي، نرجّع MACD و histogram = MACD
-            current_macd = macd_line[-1] if macd_line else 0.0
-            return current_macd, 0.0, current_macd
-
-        current_macd = macd_line[-1]
-        current_signal = signal_line[-1]
-        hist = current_macd - current_signal
-
-        return current_macd, current_signal, hist
+        return (result['line'], result['signal'], result['histogram'])
 
     # ---------- Bollinger ----------
     @staticmethod

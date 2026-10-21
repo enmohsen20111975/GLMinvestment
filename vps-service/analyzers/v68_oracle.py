@@ -43,6 +43,8 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Tuple, Dict, Any
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # 1. Helpers (Safe statistics)
@@ -73,20 +75,15 @@ def _safe_stdev(values: List[float], period: int) -> float:
 
 def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """Average True Range — safe for short arrays."""
+    """Average True Range — safe for short arrays.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if len(closes) < 2 or not highs or not lows:
         return 0.0
-    trs = []
-    for i in range(1, min(len(closes), period + 1)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    if not trs:
-        return 0.0
-    return sum(trs) / len(trs)
+    atr = _canonical_calc_atr(highs, lows, closes, period=period)
+    return atr if atr is not None else 0.0
 
 
 def _linear_regression_slope(values: List[float], period: int = 21) -> float:

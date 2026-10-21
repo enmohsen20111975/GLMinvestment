@@ -18,11 +18,12 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import os
-# BRAVO INDICATOR-UNIFY: canonical SMA
+# BRAVO INDICATOR-UNIFY: canonical SMA + ADX
 _VPS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if _VPS_ROOT not in sys.path:
     sys.path.insert(0, _VPS_ROOT)
 from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.adx import calc_adx as _canonical_adx
 
 logger = logging.getLogger(__name__)
 
@@ -270,50 +271,18 @@ class MarketRegimeEngine:
 
     def _calc_adx(self, closes: list, period: int = 14) -> float:
         """
-        Simplified ADX calculation based on directional movement.
+        ADX — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.adx.calc_adx (Wilder's smoothing).
         Returns a value 0-100. Higher = stronger trend.
-        This is a simplified approximation; for production, consider using TA-Lib.
+        Backward-compat: returns 0.0 on insufficient data.
+
+        Note: local signature only takes `closes` — we pass closes as proxy for
+        highs/lows (consistent with Rule 67 single-source delegation).
         """
-        if len(closes) < period * 3:
+        result = _canonical_adx(closes, closes, closes, period)
+        if result is None:
             return 0.0
-
-        # Calculate true directional movement
-        deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
-
-        # Positive and negative directional movement
-        plus_dm = [max(d, 0) for d in deltas]
-        minus_dm = [max(-d, 0) for d in deltas]
-
-        # Smooth with rolling average
-        def smooth(data, p):
-            result = []
-            for i in range(p - 1, len(data)):
-                result.append(sum(data[i - p + 1:i + 1]) / p)
-            return result
-
-        smooth_plus = smooth(plus_dm, period)
-        smooth_minus = smooth(minus_dm, period)
-
-        if len(smooth_plus) < period:
-            return 0.0
-
-        # Calculate DX values
-        dx_values = []
-        for i in range(len(smooth_plus)):
-            total = smooth_plus[i] + smooth_minus[i]
-            if total == 0:
-                dx_values.append(0.0)
-            else:
-                dx_values.append(
-                    abs(smooth_plus[i] - smooth_minus[i]) / total * 100
-                )
-
-        # ADX is the smoothed average of DX
-        if len(dx_values) < period:
-            return sum(dx_values) / len(dx_values) if dx_values else 0.0
-
-        adx = sum(dx_values[-period:]) / period
-        return adx
+        return result['adx']
 
     # ------------------------------------------------------------------
     # Stage classification

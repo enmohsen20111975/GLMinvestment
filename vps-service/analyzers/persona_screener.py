@@ -42,6 +42,8 @@ from dataclasses import dataclass
 from analyzers.persona_investor import analyze_investor, InvestorResult
 from analyzers.persona_gambler import analyze_gambler, GamblerResult
 from analyzers.support_resistance_calculator import calculate_support_resistance
+from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
 
 # ─── مسارات الداتابيز ───
 _PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
@@ -390,40 +392,34 @@ def _load_price_history(ticker: str, days: int = 60) -> List[Dict[str, Any]]:
 
 
 def _compute_sma(prices: List[float], period: int) -> float:
-    """حساب المتوسط المتحرك البسيط (SMA)."""
+    """حساب المتوسط المتحرك البسيط (SMA).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma.
+    Keeps backward-compat fallback (0.0) on insufficient data.
+
+    Note: caller passes prices in DESC order (latest first); canonical sma
+    expects latest at the end — so we reverse before delegating.
+    """
     if len(prices) < period:
         return 0.0
-    return sum(prices[:period]) / period
+    sma_val = _canonical_sma(list(reversed(prices)), period)
+    return sma_val if sma_val is not None else 0.0
 
 
 def _compute_rsi_from_prices(closes: List[float], period: int = 14) -> float:
     """
     حساب RSI من قائمة أسعار الإغلاق.
     closes: مرتبة من الأحدث للأقدم (زي ما بتيجي من DB).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi.calc_rsi (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
     """
     if len(closes) < period + 1:
         return 0.0
-    # عكس الترتيب: من الأقدم للأحدث
+    # عكس الترتيب: من الأقدم للأحدث (canonical expects latest at end)
     closes_asc = list(reversed(closes))
-    gains = []
-    losses = []
-    for i in range(1, len(closes_asc)):
-        change = closes_asc[i] - closes_asc[i - 1]
-        if change > 0:
-            gains.append(change)
-            losses.append(0.0)
-        else:
-            gains.append(0.0)
-            losses.append(abs(change))
-    if len(gains) < period:
-        return 0.0
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    rsi = 100.0 - (100.0 / (1.0 + rs))
-    return round(rsi, 2)
+    rsi = _canonical_calc_rsi(closes_asc, period=period)
+    return rsi if rsi is not None else 0.0
 
 
 def _compute_volume_ratio(ticker: str) -> Tuple[float, float]:
@@ -1578,7 +1574,12 @@ class PersonaScreener:
     # ═══════════════════════════════════════════════════════
 
     def _compute_rsi_for_stock(self, ticker: str, stock: Dict[str, Any]) -> float:
-        """حساب RSI للسهم — من stocks.db أو من price_history (مع كاش)."""
+        """حساب RSI للسهم — من stocks.db أو من price_history (مع كاش).
+
+        BRAVO UNIFY: transitively delegates to canonical analyzers.indicators.rsi.calc_rsi
+        via _compute_rsi_from_prices (Wilder's smoothing). Keeps backward-compat
+        fallback (0.0) on insufficient data.
+        """
         # ─── Method 1: من stocks.db ───
         rsi = _safe_float(stock.get('rsi'), default=0)
         if rsi > 0:
@@ -1626,7 +1627,11 @@ class PersonaScreener:
     def _compute_sma_for_stock(
         self, ticker: str, stock: Dict[str, Any],
     ) -> Tuple[float, float]:
-        """حساب SMA20 و SMA50 — من price_history (مع كاش)."""
+        """حساب SMA20 و SMA50 — من price_history (مع كاش).
+
+        BRAVO UNIFY: transitively delegates to canonical analyzers.indicators.ma.sma
+        via _compute_sma. Keeps backward-compat fallback (0.0) on insufficient data.
+        """
         try:
             rows = self._get_price_history(ticker, days=60)
             if rows:

@@ -35,7 +35,12 @@ from pathlib import Path
 import logging
 
 # BRAVO UNIFY (Rule 67 + Rule 27): delegate Bollinger to canonical (no fabrication)
+# BRAVO-SSOT Stage 4: also delegate SMA/EMA/MACD to canonical analyzers.indicators.ma.
 from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.ma import ema as _canonical_ema
+from analyzers.indicators.ma import macd as _canonical_macd
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -165,36 +170,35 @@ class TechnicalCalculator:
     
     @staticmethod
     def calculate_sma(prices: List[float], period: int) -> float:
-        """حساب المتوسط المتحرك البسيط"""
-        if len(prices) < period:
-            return prices[-1] if prices else 0
-        return sum(prices[-period:]) / period
-    
+        """حساب المتوسط المتحرك البسيط — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.sma.
+        Backward-compat: returns prices[-1] (or 0) on insufficient data.
+        """
+        result = _canonical_sma(prices, period)
+        if result is not None:
+            return result
+        return prices[-1] if prices else 0
+
     @staticmethod
     def calculate_ema(prices: List[float], period: int) -> float:
-        """حساب المتوسط المتحرك الأسي"""
-        if len(prices) < period:
-            return prices[-1] if prices else 0
-        
-        multiplier = 2 / (period + 1)
-        ema = sum(prices[:period]) / period
-        
-        for price in prices[period:]:
-            ema = (price - ema) * multiplier + ema
-        
-        return ema
-    
+        """حساب المتوسط المتحرك الأسي — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.ema.
+        Backward-compat: returns prices[-1] (or 0) on insufficient data.
+        """
+        result = _canonical_ema(prices, period)
+        if result is not None:
+            return result
+        return prices[-1] if prices else 0
+
     @staticmethod
     def _calculate_rsi_legacy(prices: List[float], period: int = 14) -> float:
         """حساب RSI — Wilder's smoothing.
 
         CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
-        Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+        BRAVO-SSOT Stage 4: delegates to canonical analyzers.indicators.rsi.calc_rsi.
         قبل كده: كان SMA-based على آخر `period` شمعة فقط — غلط رياضيًا.
         Returns 50.0 (neutral) when data is insufficient — matches legacy contract.
         """
-        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
-        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
         val = _canonical_calc_rsi(prices, period)
         return val if val is not None else 50.0
 
@@ -202,29 +206,27 @@ class TechnicalCalculator:
     # Renamed to `_calculate_rsi_legacy` so the verification regex
     # `def calc_rsi|def calculate_rsi` returns ZERO outside `indicators/rsi.py`.
     calculate_rsi = _calculate_rsi_legacy
-    
+
     @staticmethod
     def calculate_macd(prices: List[float]) -> Tuple[float, float, str]:
-        """حساب MACD"""
-        if len(prices) < 26:
+        """حساب MACD — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.ma.macd.
+        Returns (macd, signal, trend) with backward-compat shape.
+        Backward-compat: returns (0.0, 0.0, "neutral") on insufficient data.
+        """
+        result = _canonical_macd(prices)
+        if result is None:
             return 0.0, 0.0, "neutral"
-        
-        ema_12 = TechnicalCalculator.calculate_ema(prices, 12)
-        ema_26 = TechnicalCalculator.calculate_ema(prices, 26)
-        macd = ema_12 - ema_26
-        
-        # Signal line (9-day EMA of MACD)
-        # Simplified: use current MACD as approximation
-        signal = macd * 0.8  # Rough approximation
-        
-        if macd > signal:
+
+        macd_val = result['line']
+        sig_val = result['signal']
+        if macd_val > sig_val:
             trend = "bullish"
-        elif macd < signal:
+        elif macd_val < sig_val:
             trend = "bearish"
         else:
             trend = "neutral"
-        
-        return round(macd, 4), round(signal, 4), trend
+        return round(macd_val, 4), round(sig_val, 4), trend
     
     @staticmethod
     def calculate_bollinger(prices: List[float], period: int = 20) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:

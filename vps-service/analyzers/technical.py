@@ -20,6 +20,9 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import math
 
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_calc_bollinger
+from analyzers.indicators.ma import ema as _canonical_ema
+
 
 @dataclass
 class TechnicalIndicators:
@@ -235,13 +238,23 @@ class TechnicalAnalyzer:
         def _ema_full(data: List[float], period: int) -> List[float]:
             """EMA computed over the full series — seeds with first value
             (NOT SMA) so the result has the same length as input. This is the
-            standard EMA-on-full-series approach (matches TradingView)."""
+            standard EMA-on-full-series approach (matches TradingView).
+
+            BRAVO UNIFY: delegates per-point to canonical analyzers.indicators.ma.ema
+            so each point uses the canonical recursive EMA seed. Falls back to
+            first-value seeding when canonical returns None for short series."""
             if not data:
                 return []
             k = 2 / (period + 1)
             result = [data[0]]
             for i in range(1, len(data)):
-                result.append(data[i] * k + result[-1] * (1 - k))
+                # Try canonical ema on the prefix; if None (too short), fall back
+                # to the recursive seeding so the series stays full length.
+                canon = _canonical_ema(data[:i + 1], period)
+                if canon is not None:
+                    result.append(canon)
+                else:
+                    result.append(data[i] * k + result[-1] * (1 - k))
             return result
 
         # Compute EMA-12 and EMA-26 series (full length of prices)
@@ -277,31 +290,31 @@ class TechnicalAnalyzer:
     # =========================================================================
     
     def bollinger_bands(self, prices: List[float], period: int = 20) -> Optional[Dict]:
-        """Bollinger Bands."""
+        """Bollinger Bands.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.calc_bollinger.
+        Returns the same dict shape the caller expects (upper/middle/lower/width/position).
+        """
         if len(prices) < period:
             return None
-        
-        recent = prices[-period:]
-        sma_value = sum(recent) / period
-        variance = sum((p - sma_value) ** 2 for p in recent) / period
-        std_dev = variance ** 0.5
-        
-        upper = sma_value + (2 * std_dev)
-        lower = sma_value - (2 * std_dev)
-        
+        bb = _canonical_calc_bollinger(prices, period=period, std_dev=2.0)
+        if bb is None:
+            return None
         current_price = prices[-1]
+        upper = bb['upper']
+        lower = bb['lower']
+        sma_value = bb['middle']
         if current_price >= upper:
             position = "UPPER"
         elif current_price <= lower:
             position = "LOWER"
         else:
             position = "MIDDLE"
-        
         return {
             'upper': round(upper, 4),
             'middle': round(sma_value, 4),
             'lower': round(lower, 4),
-            'width': round((upper - lower) / sma_value * 100, 2) if sma_value else 0,
+            'width': round(bb.get('bandwidth', 0.0), 2),
             'position': position
         }
     

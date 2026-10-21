@@ -34,6 +34,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+from analyzers.indicators.ma import sma as _canonical_sma
+
 logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -179,20 +182,12 @@ class HistoricalTradeGenerator:
     # ─── Technical Indicators (simple, fast) ─────────────────────────────
 
     def _calc_rsi(self, closes: List[float], period: int = 14) -> Optional[float]:
-        """RSI سريع."""
-        if len(closes) < period + 1:
-            return None
-        gains, losses = [], []
-        for i in range(1, period + 1):
-            change = closes[i] - closes[i - 1]
-            gains.append(max(change, 0))
-            losses.append(max(-change, 0))
-        avg_gain = sum(gains) / period
-        avg_loss = sum(losses) / period
-        if avg_loss == 0:
-            return 100.0
-        rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
+        """RSI سريع.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi.calc_rsi
+        (Wilder's smoothing). Returns None on insufficient data.
+        """
+        return _canonical_calc_rsi(closes, period=period)
 
     def _calc_volume_ratio(self, volumes: List[float], idx: int, period: int = 20) -> Optional[float]:
         """نسبة حجم اليوم لمتوسط آخر period يوم."""
@@ -204,9 +199,8 @@ class HistoricalTradeGenerator:
         return volumes[idx] / avg
 
     def _calc_sma(self, closes: List[float], period: int) -> Optional[float]:
-        if len(closes) < period:
-            return None
-        return sum(closes[-period:]) / period
+        """SMA — BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma."""
+        return _canonical_sma(closes, period)
 
     def _detect_market_condition(self, closes: List[float]) -> str:
         """يحدد حالة السوق قبل الشراء (bull/bear/sideways)."""

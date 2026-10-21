@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 # CRITICAL FIX 2026-08-15 (P2-ARCH-1): add vps-service/ to sys.path so that
 # `from data.prices import load_price_history` (Rule #12 canonical source) and
 # `from utils.lesson_store import ...` and `from utils.live_price import ...`
@@ -539,6 +541,10 @@ class DailyCloser:
 
         Returns:
             ATR value at entry time, or 0.0 if unavailable
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr
+        (Wilder's smoothing). Keeps backward-compat fallback (0.0) on
+        insufficient data or error.
         """
         try:
             # Fetch 50 days before entry for ATR calculation
@@ -548,29 +554,16 @@ class DailyCloser:
             if len(prices) < period + 1:
                 return 0.0
 
-            # Compute True Range and ATR
-            true_ranges = []
-            for i in range(1, len(prices)):
-                high = float(prices[i].get('high', 0) or 0)
-                low = float(prices[i].get('low', 0) or 0)
-                prev_close = float(prices[i - 1].get('close', 0) or 0)
-
-                if high <= 0 or low <= 0:
-                    continue
-
-                tr = max(
-                    high - low,
-                    abs(high - prev_close) if prev_close > 0 else 0,
-                    abs(low - prev_close) if prev_close > 0 else 0,
-                )
-                true_ranges.append(tr)
-
-            if len(true_ranges) < period:
+            highs = [float(p.get('high', 0) or 0) for p in prices]
+            lows = [float(p.get('low', 0) or 0) for p in prices]
+            closes = [float(p.get('close', 0) or 0) for p in prices]
+            # filter invalid rows
+            valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+            if len(valid) < period + 1:
                 return 0.0
-
-            # Simple moving average of last `period` true ranges
-            atr = sum(true_ranges[-period:]) / period
-            return atr
+            v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+            atr = _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
+            return atr if atr is not None else 0.0
 
         except Exception as e:
             logger.warning(f"Error computing ATR at entry for {ticker}: {e}")

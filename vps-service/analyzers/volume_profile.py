@@ -22,6 +22,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
+from analyzers.indicators.vwap import calc_vwap as _canonical_calc_vwap
+
 
 # ==================== DATACLASS ====================
 
@@ -80,14 +82,19 @@ def _extract_series(prices: List[Any], volumes: List[Any]) -> Tuple[List[float],
 
 
 def _calc_vwap(closes: List[float], volumes: List[float]) -> float:
-    """حساب VWAP = Σ(price × volume) / Σ(volume)"""
+    """حساب VWAP = Σ(price × volume) / Σ(volume).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.vwap.calc_vwap.
+    Uses closes for highs/lows (typical_price ≡ close in the simple mode) so the
+    canonical session/cumulative VWAP matches the legacy simple formula.
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if not closes or not volumes:
         return 0.0
-    pv = sum(c * v for c, v in zip(closes, volumes))
-    total_vol = sum(volumes)
-    if total_vol == 0:
+    vwap = _canonical_calc_vwap(closes, closes, closes, volumes, period=None)
+    if vwap is None:
         return closes[-1] if closes else 0.0
-    return pv / total_vol
+    return vwap
 
 
 def _calc_obv(closes: List[float], volumes: List[float]) -> float:

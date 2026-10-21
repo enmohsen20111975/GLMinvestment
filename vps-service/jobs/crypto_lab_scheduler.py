@@ -47,6 +47,11 @@ _VPS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _VPS_ROOT not in sys.path:
     sys.path.insert(0, _VPS_ROOT)
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import ema as _canonical_ema, macd as _canonical_macd
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+from analyzers.indicators.bollinger import calc_bollinger as _canonical_calc_bollinger
+
 logger = logging.getLogger(__name__)
 
 # ── Database paths ────────────────────────────────────────────────────────
@@ -561,88 +566,78 @@ class CryptoLabScheduler:
     # ------------------------------------------------------------------
     @staticmethod
     def _sma(values: List[float], period: int) -> Optional[float]:
-        """Simple Moving Average."""
+        """Simple Moving Average (kept inline — not in delegation scope)."""
         if len(values) < period:
             return None
         return sum(values[-period:]) / period
 
     @staticmethod
     def _ema(values: List[float], period: int) -> List[float]:
-        """Exponential Moving Average (SMA-seeded)."""
+        """Exponential Moving Average (SMA-seeded) — full series.
+
+        BRAVO UNIFY: delegates per-point to canonical analyzers.indicators.ma.ema
+        so the entire series uses the canonical recursive EMA seed. Returns []
+        on insufficient data (same contract as legacy).
+        """
         if len(values) < period:
             return []
-        mult = 2.0 / (period + 1)
-        ema: List[float] = []
-        # seed with SMA of first `period` values
-        sma_seed = sum(values[:period]) / period
-        ema.append(sma_seed)
-        for v in values[period:]:
-            ema.append((v - ema[-1]) * mult + ema[-1])
-        return ema
+        out: List[float] = []
+        for i in range(len(values)):
+            if i + 1 < period:
+                continue
+            canon = _canonical_ema(values[:i + 1], period)
+            if canon is not None:
+                out.append(canon)
+        return out
 
     @classmethod
     def _calc_macd(cls, closes: List[float]) -> Tuple[Optional[float], Optional[float], Optional[float]]:
-        """(macd_line, signal_line, histogram) — last values only."""
-        if len(closes) < 35:  # need 26 for slow EMA + 9 for signal
+        """(macd_line, signal_line, histogram) — last values only.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.macd.
+        """
+        result = _canonical_macd(closes, fast=12, slow=26, signal_period=9)
+        if result is None:
             return None, None, None
-        ema_fast = cls._ema(closes, 12)
-        ema_slow = cls._ema(closes, 26)
-        # Align: ema_slow starts at index 25, ema_fast at index 11.
-        # We need the overlapping tail (same length).
-        n = min(len(ema_fast), len(ema_slow))
-        macd_line_arr = [ema_fast[-n + i] - ema_slow[-n + i] for i in range(n)]
-        if len(macd_line_arr) < 9:
-            return None, None, None
-        signal_arr = cls._ema(macd_line_arr, 9)
-        if not signal_arr:
-            return None, None, None
-        macd_line = macd_line_arr[-1]
-        signal_line = signal_arr[-1]
-        hist = macd_line - signal_line
-        return macd_line, signal_line, hist
+        return result.get('line'), result.get('signal'), result.get('histogram')
 
     @staticmethod
     def _calc_rsi(closes: List[float], period: int = 14) -> Optional[float]:
-        """Wilder's RSI."""
-        if len(closes) < period + 1:
-            return None
-        gains = []
-        losses = []
-        for i in range(-period, 0):
-            chg = closes[i] - closes[i - 1]
-            gains.append(max(0.0, chg))
-            losses.append(max(0.0, -chg))
-        avg_gain = sum(gains) / period
-        avg_loss = sum(losses) / period
-        if avg_loss == 0:
-            return 100.0 if avg_gain > 0 else 50.0
-        rs = avg_gain / avg_loss
-        return 100.0 - (100.0 / (1.0 + rs))
+        """Wilder's RSI.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.rsi.calc_rsi
+        (Wilder's smoothing). Returns None on insufficient data; the caller
+        treats None as 50.0 (neutral).
+        """
+        return _canonical_calc_rsi(closes, period=period)
 
     @staticmethod
     def _calc_bollinger(closes: List[float], period: int = 20) -> Tuple[Optional[float], Optional[float], Optional[float]]:
-        """(middle, upper, lower) — Bollinger Bands (SMA ± 2*stddev)."""
-        if len(closes) < period:
+        """(middle, upper, lower) — Bollinger Bands (SMA ± 2*stddev).
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.bollinger.calc_bollinger.
+        """
+        bb = _canonical_calc_bollinger(closes, period=period, std_dev=2.0)
+        if bb is None:
             return None, None, None
-        window = closes[-period:]
-        mean = sum(window) / period
-        var = sum((x - mean) ** 2 for x in window) / period
-        std = var ** 0.5
-        return mean, mean + 2 * std, mean - 2 * std
+        return bb['middle'], bb['upper'], bb['lower']
 
     @staticmethod
     def _calc_atr(ohlcv: List[Dict[str, Any]], period: int = 14) -> Optional[float]:
-        """Average True Range."""
+        """Average True Range.
+
+        BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr
+        (Wilder's smoothing).
+        """
         if len(ohlcv) < period + 1:
             return None
-        trs = []
-        for i in range(-period, 0):
-            h = float(ohlcv[i]['high'])
-            l = float(ohlcv[i]['low'])
-            prev_c = float(ohlcv[i - 1]['close'])
-            tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
-            trs.append(tr)
-        return sum(trs) / period
+        try:
+            highs = [float(c['high']) for c in ohlcv]
+            lows = [float(c['low']) for c in ohlcv]
+            closes = [float(c['close']) for c in ohlcv]
+        except (KeyError, TypeError, ValueError):
+            return None
+        return _canonical_calc_atr(highs, lows, closes, period=period)
 
     @staticmethod
     def _calc_volume_ratio(ohlcv: List[Dict[str, Any]], period: int = 20) -> float:

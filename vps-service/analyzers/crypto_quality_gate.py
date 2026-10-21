@@ -93,6 +93,9 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import math
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import sma as _canonical_sma
+
 # ==================== CONFIG ====================
 # مسار قاعدة البيانات — نفس نمط باقي الـ crypto analyzers
 BASE_DIR = Path(__file__).parent.parent.parent.resolve()
@@ -200,10 +203,10 @@ def _calculate_sma(prices: List[float], period: int) -> Optional[float]:
     """
     يحسب المتوسط المتحرك البسيط / Calculates Simple Moving Average.
     SMA(n) = sum(last n prices) / n
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma.
     """
-    if not prices or len(prices) < period:
-        return None
-    return sum(prices[-period:]) / period
+    return _canonical_sma(prices, period)
 
 
 def _calculate_atr(highs: List[float], lows: List[float], closes: List[float],
@@ -212,25 +215,17 @@ def _calculate_atr(highs: List[float], lows: List[float], closes: List[float],
     يحسب متوسط المدى الحقيقي / Calculates Average True Range.
     ATR(n) = average of True Range over last n periods.
     True Range = max(H-L, |H-Cp|, |L-Cp|) where Cp = previous close.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
     """
     if len(highs) < period + 1 or len(lows) < period + 1 or len(closes) < period + 1:
         return None
-
-    true_ranges: List[float] = []
-    for i in range(1, len(highs)):
-        h = highs[i]
-        l = lows[i]
-        cp = closes[i - 1]  # إغلاق اليوم السابق / previous close
-        if any(v <= 0 for v in [h, l, cp]):
-            continue
-        tr = max(h - l, abs(h - cp), abs(l - cp))
-        true_ranges.append(tr)
-
-    if len(true_ranges) < period:
-        # لو البيانات أقل من الفترة، نحسب متوسط اللي عندنا
-        return sum(true_ranges) / len(true_ranges) if true_ranges else None
-
-    return sum(true_ranges[-period:]) / period
+    # filter invalid rows
+    valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+    if len(valid) < 2:
+        return None
+    v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+    return _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
 
 
 def _count_events_in_period(events: List[Dict], days: int = 30) -> int:

@@ -22,6 +22,8 @@ Date: 2026-09-02
 from __future__ import annotations
 from typing import List, Optional, Dict, Any
 
+from analyzers.indicators.ma import sma as _canonical_sma
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # Config
@@ -38,21 +40,26 @@ REGIME_MODE_B_SMA_LONG = 50
 # ═══════════════════════════════════════════════════════════════════════
 
 def _sma(values: List[float], period: int) -> Optional[float]:
-    """Simple Moving Average — identical to strict_entry_filters._sma."""
+    """Simple Moving Average — identical to strict_entry_filters._sma.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.sma.
+    """
     if len(values) < period or period <= 0:
         return None
-    return sum(values[-period:]) / period
+    return _canonical_sma(values, period)
 
 
 def compute_sma_series(closes: List[float], period: int) -> List[Optional[float]]:
-    """Compute SMA series (None for warmup period)."""
+    """Compute SMA series (None for warmup period).
+
+    BRAVO UNIFY: delegates per-point to canonical analyzers.indicators.ma.sma.
+    """
     out: List[Optional[float]] = []
     for i in range(len(closes)):
         if i + 1 < period:
             out.append(None)
         else:
-            window = closes[i + 1 - period: i + 1]
-            out.append(sum(window) / period)
+            out.append(_canonical_sma(closes[:i + 1], period))
     return out
 
 

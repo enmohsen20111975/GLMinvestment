@@ -31,7 +31,11 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 # BRAVO UNIFY (Rule 67 + Rule 27): delegate Bollinger to canonical (no fabrication)
+# BRAVO-SSOT Stage 4: also delegate ATR/MACD/ADX to canonical.
 from analyzers.indicators.bollinger import calc_bollinger as _canonical_bollinger
+from analyzers.indicators.atr import calc_atr as _canonical_atr
+from analyzers.indicators.ma import macd as _canonical_macd
+from analyzers.indicators.adx import calc_adx as _canonical_adx
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -1202,18 +1206,12 @@ class PredictionOptimizer:
     def _calc_atr(
         self, highs: List[float], lows: List[float], closes: List[float], period: int = 14
     ) -> float:
-        """حساب ATR."""
-        if len(closes) < period + 1:
-            return 0.03 * closes[-1] if closes else 1.0
-        trs = []
-        for i in range(1, min(period + 1, len(closes))):
-            tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - closes[i-1]),
-                abs(lows[i] - closes[i-1])
-            )
-            trs.append(tr)
-        return sum(trs) / len(trs) if trs else 0.03 * closes[-1]
+        """حساب ATR — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+        Backward-compat: returns 0.0 on insufficient data (was 0.03 * closes[-1] fabrication).
+        """
+        result = _canonical_atr(highs, lows, closes, period)
+        return result if result is not None else 0.0
 
     def _calc_ema(self, values: List[float], period: int) -> List[float]:
         """حساب EMA."""
@@ -1228,15 +1226,14 @@ class PredictionOptimizer:
     def _calc_macd(
         self, prices: List[float], fast: int = 12, slow: int = 26, signal: int = 9
     ) -> Tuple[float, float, float]:
-        """حساب MACD (line, signal, histogram)."""
-        if len(prices) < slow + signal:
+        """حساب MACD (line, signal, histogram) — BRAVO-SSOT Stage 4: delegates to
+        canonical analyzers.indicators.ma.macd.
+        Backward-compat: returns (0, 0, 0) on insufficient data.
+        """
+        result = _canonical_macd(prices, fast, slow, signal)
+        if result is None:
             return 0, 0, 0
-        ema_fast = self._calc_ema(prices, fast)
-        ema_slow = self._calc_ema(prices, slow)
-        macd_line = [f - s for f, s in zip(ema_fast, ema_slow)]
-        macd_signal_list = self._calc_ema(macd_line, signal)
-        macd_hist = macd_line[-1] - macd_signal_list[-1]
-        return macd_line[-1], macd_signal_list[-1], macd_hist
+        return (result['line'], result['signal'], result['histogram'])
 
     def _calc_stochastic(
         self, highs: List[float], lows: List[float], closes: List[float],
@@ -1257,63 +1254,14 @@ class PredictionOptimizer:
     def _calc_adx(
         self, highs: List[float], lows: List[float], closes: List[float], period: int = 14
     ) -> float:
-        """حساب ADX الحقيقي باستخدام تنعيم Wilder."""
-        if len(closes) < period * 2:
-            return 25.0
-        
-        n = len(closes)
-        tr_all = []
-        dm_plus_all = []
-        dm_minus_all = []
-        
-        for i in range(1, n):
-            h_diff = highs[i] - highs[i-1]
-            l_diff = lows[i-1] - lows[i]
-            
-            tr = max(highs[i] - lows[i], abs(highs[i] - closes[i-1]), abs(lows[i] - closes[i-1]))
-            tr_all.append(tr)
-            
-            if h_diff > l_diff and h_diff > 0:
-                dm_plus_all.append(h_diff)
-            else:
-                dm_plus_all.append(0)
-                
-            if l_diff > h_diff and l_diff > 0:
-                dm_minus_all.append(l_diff)
-            else:
-                dm_minus_all.append(0)
-                
-        atr = sum(tr_all[:period])
-        plus_dm_sum = sum(dm_plus_all[:period])
-        minus_dm_sum = sum(dm_minus_all[:period])
-        
-        dx_values = []
-        
-        plus_di = (plus_dm_sum / atr * 100) if atr > 0 else 0
-        minus_di = (minus_dm_sum / atr * 100) if atr > 0 else 0
-        denom = plus_di + minus_di
-        dx = (abs(plus_di - minus_di) / denom * 100) if denom > 0 else 0
-        dx_values.append(dx)
-        
-        for i in range(period, len(tr_all)):
-            atr = atr - (atr / period) + tr_all[i]
-            plus_dm_sum = plus_dm_sum - (plus_dm_sum / period) + dm_plus_all[i]
-            minus_dm_sum = minus_dm_sum - (minus_dm_sum / period) + dm_minus_all[i]
-            
-            plus_di = (plus_dm_sum / atr * 100) if atr > 0 else 0
-            minus_di = (minus_dm_sum / atr * 100) if atr > 0 else 0
-            denom = plus_di + minus_di
-            dx = (abs(plus_di - minus_di) / denom * 100) if denom > 0 else 0
-            dx_values.append(dx)
-            
-        if len(dx_values) < period:
-            return 25.0
-        
-        adx = sum(dx_values[:period]) / period
-        for i in range(period, len(dx_values)):
-            adx = (adx * (period - 1) + dx_values[i]) / period
-            
-        return adx
+        """حساب ADX — BRAVO-SSOT Stage 4: delegates to canonical
+        analyzers.indicators.adx.calc_adx (Wilder's smoothing).
+        Returns the ADX value (0.0 on insufficient data — backward-compat fallback).
+        """
+        result = _canonical_adx(highs, lows, closes, period)
+        if result is None:
+            return 0.0
+        return result['adx']
 
     def _calc_target_stop(
         self, current: float, support: float, resistance: float,

@@ -28,6 +28,8 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import math
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 
 # ============================================================================
 # CRITICAL THRESHOLDS - عتبات حرجة
@@ -239,12 +241,12 @@ def calculate_atr_stop_loss(
 ) -> Dict:
     """
     حساب وقف الخسارة بناءً على ATR (Average True Range)
-    
+
     الطريقة دي أحسن من النسبة الثابتة لأنها بتاخد في الاعتبار:
     - تذبذب السهم
     - السيولة
     - ظروف السوق
-    
+
     Returns:
         Dict: {
             'atr': float,
@@ -252,6 +254,10 @@ def calculate_atr_stop_loss(
             'stop_loss_price': float,
             'volatility_level': str
         }
+
+    BRAVO UNIFY: ATR calculation delegates to canonical
+    analyzers.indicators.atr.calc_atr (Wilder's smoothing). Stop-loss logic
+    (multiplier, caps, volatility level) is preserved unchanged.
     """
     if len(prices) < period + 1:
         # بيانات غير كافية - استخدم نسبة ثابتة محافظة
@@ -261,39 +267,26 @@ def calculate_atr_stop_loss(
             'stop_loss_price': prices[-1] * 0.92 if prices else 0,
             'volatility_level': 'UNKNOWN'
         }
-    
-    # Calculate True Range
-    true_ranges = []
-    for i in range(1, len(prices)):
-        if highs and lows:
-            tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - prices[i-1]),
-                abs(lows[i] - prices[i-1])
-            )
-        else:
-            # Use close prices only
-            tr = abs(prices[i] - prices[i-1])
-        true_ranges.append(tr)
-    
-    # Calculate ATR
-    if len(true_ranges) >= period:
-        atr = sum(true_ranges[-period:]) / period
+
+    # Delegate ATR to canonical calc_atr — handles Wilder's smoothing
+    if highs and lows:
+        atr = _canonical_calc_atr(highs, lows, prices, period=period) or 0.0
     else:
-        atr = sum(true_ranges) / len(true_ranges) if true_ranges else 0
-    
+        # Use close prices only — pass closes for highs/lows (TR collapses to |Δclose|)
+        atr = _canonical_calc_atr(prices, prices, prices, period=period) or 0.0
+
     current_price = prices[-1]
-    
+
     # Calculate stop loss percentage
     if current_price > 0 and atr > 0:
         atr_pct = (atr / current_price) * 100
         stop_loss_pct = atr_pct * multiplier
-        
+
         # Cap at reasonable limits (5% - 15%)
         stop_loss_pct = max(5.0, min(15.0, stop_loss_pct))
     else:
         stop_loss_pct = 8.0  # Default 8%
-    
+
     # Determine volatility level
     if stop_loss_pct < 6:
         volatility_level = 'LOW'
@@ -303,7 +296,7 @@ def calculate_atr_stop_loss(
         volatility_level = 'HIGH'
     else:
         volatility_level = 'VERY_HIGH'
-    
+
     return {
         'atr': round(atr, 4),
         'stop_loss_pct': round(stop_loss_pct, 2),

@@ -50,6 +50,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 # DYNAMIC-SYSTEM-001: إعدادات ديناميكية + سياق السوق
 try:
     from analyzers.engine_settings import (
@@ -227,32 +229,20 @@ class DynamicTargetResult:
 
 def calculate_atr(highs: List[float], lows: List[float], closes: List[float],
                   period: int = 14) -> float:
-    """حساب ATR من الشموع اليابانية"""
+    """حساب ATR من الشموع اليابانية.
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0) on insufficient data.
+    """
     if len(closes) < period + 1:
         return 0.0
-
-    true_ranges = []
-    for i in range(1, len(closes)):
-        if i >= len(highs) or i >= len(lows):
-            break
-        h = highs[i] if i < len(highs) else closes[i]
-        l = lows[i] if i < len(lows) else closes[i]
-        pc = closes[i - 1]
-
-        if h <= 0 or l <= 0 or pc <= 0:
-            continue
-
-        tr = max(
-            h - l,
-            abs(h - pc),
-            abs(l - pc)
-        )
-        true_ranges.append(tr)
-
-    if len(true_ranges) < period:
-        return sum(true_ranges) / len(true_ranges) if true_ranges else 0.0
-
-    return sum(true_ranges[-period:]) / period
+    # filter invalid rows
+    valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+    if len(valid) < 2:
+        return 0.0
+    v_highs, v_lows, v_closes = (list(t) for t in zip(*valid))
+    atr = _canonical_calc_atr(v_highs, v_lows, v_closes, period=period)
+    return atr if atr is not None else 0.0
 
 
 # ==================== SWING DETECTION ====================
@@ -1551,7 +1541,11 @@ class DynamicTargetEngine:
         }
 
     def _calculate_atr_from_history(self, price_history: List[Dict], period: int = 14) -> float:
-        """Calculate ATR from price history"""
+        """Calculate ATR from price history.
+
+        BRAVO UNIFY: transitively delegates to canonical analyzers.indicators.atr.calc_atr
+        via calculate_atr (Wilder's smoothing).
+        """
         if not price_history or len(price_history) < period + 1:
             return 0.0
 

@@ -20,25 +20,25 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Dict, Any, Tuple
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+from analyzers.indicators.ma import ema as _canonical_ema
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════
 
-def _safe_atr(highs: List[float], lows: List[float], closes: List[float], 
+def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """ATR(14)."""
+    """ATR(14).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0) on insufficient data.
+    """
     if len(closes) < 2:
         return 0
-    trs = []
-    for i in range(max(1, len(closes) - period), len(closes)):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    return sum(trs) / len(trs) if trs else 0
+    atr = _canonical_calc_atr(highs, lows, closes, period=period)
+    return atr if atr is not None else 0
 
 
 def _median(values: List[float]) -> float:
@@ -53,14 +53,15 @@ def _median(values: List[float]) -> float:
 
 
 def _ema(values: List[float], period: int) -> float:
-    """EMA of a list (last value)."""
+    """EMA of a list (last value).
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.ma.ema (recursive).
+    Keeps backward-compat fallback (0) on insufficient data.
+    """
     if not values:
         return 0
-    k = 2 / (period + 1)
-    ema = values[0]
-    for v in values[1:]:
-        ema = v * k + ema * (1 - k)
-    return ema
+    ema_val = _canonical_ema(values, period)
+    return ema_val if ema_val is not None else 0
 
 
 def _find_pivots(highs: List[float], lows: List[float], 

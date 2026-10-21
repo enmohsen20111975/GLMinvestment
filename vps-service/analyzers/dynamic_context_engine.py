@@ -34,6 +34,8 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 from datetime import datetime
 
+from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+
 logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -191,25 +193,24 @@ def _calculate_atr(history: list) -> Tuple[float, float]:
     """
     احسب ATR (Average True Range) من الـ history.
     Returns: (atr_value, atr_pct) — atr_pct = ATR كنسبة من آخر سعر (%)
+
+    BRAVO UNIFY: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's smoothing).
+    Keeps backward-compat fallback (0.0, 0.0) on insufficient data.
     """
     if len(history) < 2:
         return (0.0, 0.0)
-    true_ranges = []
-    for i in range(1, len(history)):
-        high = float(history[i][1] or 0)
-        low = float(history[i][2] or 0)
-        prev_close = float(history[i - 1][3] or 0)
-        if high <= 0 or low <= 0 or prev_close <= 0:
-            continue
-        tr = max(
-            high - low,
-            abs(high - prev_close),
-            abs(low - prev_close),
-        )
-        true_ranges.append(tr)
-    if not true_ranges:
+    highs = [float(row[1] or 0) for row in history]
+    lows = [float(row[2] or 0) for row in history]
+    closes = [float(row[3] or 0) for row in history]
+    if any(h <= 0 for h in highs) or any(l <= 0 for l in lows) or any(c <= 0 for c in closes):
+        # fall back to filtered valid rows
+        valid = [(h, l, c) for h, l, c in zip(highs, lows, closes) if h > 0 and l > 0 and c > 0]
+        if len(valid) < 2:
+            return (0.0, 0.0)
+        highs, lows, closes = (list(t) for t in zip(*valid))
+    atr = _canonical_calc_atr(highs, lows, closes, period=14)
+    if atr is None:
         return (0.0, 0.0)
-    atr = sum(true_ranges) / len(true_ranges)
     last_close = float(history[-1][3] or 0)
     atr_pct = (atr / last_close * 100) if last_close > 0 else 0.0
     return (atr, atr_pct)
