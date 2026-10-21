@@ -1,0 +1,26 @@
+{
+  "EGX30": [
+    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
+    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
+    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE"
+  ],
+  "EGX70": [
+    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
+    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
+    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE",
+    "ABUK", "ACAP", "ADRI", "AINT", "ALCN", "ALEX", "AMAI", "AMER", "AMSW", "ANFI",
+    "APRI", "ARAB", "BPAV", "BRSh", "CAVA", "CICH", "CLHO", "CODB", "CRST", "DCGH",
+    "DMNT", "DMNH", "EDFM", "EGTS", "EUTE", "FWRY", "GBCG", "GTHE", "HRHO", "KZPC",
+    "MAAL", "MEDH", "MNHD", "MTMT", "NREA", "OCDI", "ORHD", "ORTE", "PIOH", "PORT"
+  ],
+  "EGX100": [
+    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
+    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
+    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE",
+    "ABUK", "ACAP", "ADRI", "AINT", "ALCN", "ALEX", "AMAI", "AMER", "AMSW", "ANFI",
+    "APRI", "ARAB", "BPAV", "BRSh", "CAVA", "CICH", "CLHO", "CODB", "CRST", "DCGH",
+    "DMNT", "DMNH", "EDFM", "EGTS", "EUTE", "FWRY", "GBCG", "GTHE", "HRHO", "KZPC",
+    "MAAL", "MEDH", "MNHD", "MTMT", "NREA", "OCDI", "ORHD", "ORTE", "PIOH", "PORT",
+    "SBCE", "SIPS", "SWDY", "TALA", "TOEUB", "UEFM", "UNIT", "UPAC", "VBCO", "WADI"
+  ]
+}

@@ -402,3 +402,83 @@ def liquidity_radar():
             except Exception:
                 pass
         return jsonify({'success': False, 'error': str(e)}), 200
+
+
+# ============================================================================
+# 5. /api/market/indices/constituents — أسهم المؤشرات الرسمية
+# ============================================================================
+@market_master_bp.route('/indices/constituents', methods=['GET'])
+def indices_constituents():
+    """يرجع أسهم المؤشر المطلوب (EGX30/EGX70/EGX100) ببياناتهم المالية اللحظية."""
+    index_name = (request.args.get('index') or 'EGX30').upper()
+
+    # اقرأ الملف الدستوري
+    import json as _json
+    canonical_path = _PROJECT_ROOT / 'vps-service' / 'data' / 'canonical_indices.json'
+    if not canonical_path.exists():
+        return jsonify({'success': False, 'error': 'canonical_indices.json not found'}), 200
+
+    try:
+        with open(canonical_path, 'r', encoding='utf-8') as f:
+            indices = _json.load(f)
+    except Exception:
+        return jsonify({'success': False, 'error': 'Failed to read canonical file'}), 200
+
+    tickers = indices.get(index_name, [])
+    if not tickers:
+        return jsonify({
+            'success': True,
+            'index': index_name,
+            'available': False,
+            'message': f'المؤشر {index_name} غير معرف',
+            'constituents': [],
+        }), 200
+
+    conn = None
+    try:
+        conn = _open_stocks_db()
+        if not conn:
+            return jsonify({'success': False, 'error': 'DB unavailable'}), 200
+
+        placeholders = ','.join('?' * len(tickers))
+        rows = conn.execute(f"""
+            SELECT ticker, name_ar, current_price, change_percent, volume,
+                   market_cap, sector, is_egx30, is_egx70, is_egx100
+            FROM stocks
+            WHERE ticker IN ({placeholders})
+            ORDER BY market_cap DESC
+        """, tickers).fetchall()
+
+        conn.close()
+        conn = None
+
+        constituents = []
+        for r in rows:
+            constituents.append({
+                'ticker': r[0],
+                'name_ar': r[1] or r[0],
+                'price': float(r[2] or 0),
+                'change_pct': float(r[3] or 0),
+                'volume': float(r[4] or 0),
+                'market_cap': float(r[5] or 0),
+                'sector': r[6] or '',
+                'is_egx30': bool(r[7]),
+                'is_egx70': bool(r[8]),
+                'is_egx100': bool(r[9]),
+            })
+
+        return jsonify({
+            'success': True,
+            'index': index_name,
+            'available': True,
+            'count': len(constituents),
+            'constituents': constituents,
+            'source': 'canonical_indices.json + stocks.db',
+        })
+    except Exception as e:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return jsonify({'success': False, 'error': str(e)}), 200
