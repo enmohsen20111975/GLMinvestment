@@ -113,7 +113,7 @@ def investor_flows():
             'success': True,
             'market': market,
             'available': False,
-            'message': f'بيانات تدفقات المستثمرين غير متاحة لسوق {market}',
+            'message': 'بيانات إفصاح تدفقات المستثمرين الرسمية غير متاحة إلا للسوق المصري (EGX)',
             'flows': None,
         })
 
@@ -122,53 +122,86 @@ def investor_flows():
         if not conn:
             return jsonify({'success': False, 'error': 'DB unavailable'}), 200
 
-        # اقرأ تدفقات المستثمرين من egksco_price_history (aggregate)
-        # نحسب صافي التدفق من value (قيمة التداول)
-        rows = conn.execute("""
-            SELECT 
-                SUM(value) as total_value,
-                SUM(CASE WHEN close_price > open_price THEN value ELSE 0 END) as buy_value,
-                SUM(CASE WHEN close_price < open_price THEN value ELSE 0 END) as sell_value
-            FROM egksco_price_history
-            WHERE date = (SELECT MAX(date) FROM egksco_price_history)
+        # BRAVO-FIX: استعلم من investors_data (الجدول الرسمي) مش egksco_price_history
+        row = conn.execute("""
+            SELECT
+                date,
+                individuals_buys_value, individuals_sells_value, individuals_net_value,
+                arab_buys_value, arab_sells_value, arab_net_value,
+                foreign_buys_value, foreign_sells_value, foreign_net_value,
+                total_buys_value, total_sells_value
+            FROM investors_data
+            ORDER BY date DESC, id DESC LIMIT 1
         """).fetchone()
 
-        total_value = float(rows[0] or 0)
-        buy_value = float(rows[1] or 0)
-        sell_value = float(rows[2] or 0)
+        if not row:
+            conn.close()
+            return jsonify({
+                'success': True,
+                'market': 'EGX',
+                'available': False,
+                'message': 'لا توجد بيانات إفصاح متاحة حالياً في investors_data',
+                'flows': None,
+            }), 200
 
-        # تقدير تدفقات الأفراد/المؤسسات + مصريين/عرب/أجانب
-        # Rule 27: لا أرقام وهمية — نستخدم نسب تقريبية من القيمة الإجمالية
-        # الأفراد ~70% من التداول في EGX، المؤسسات ~30%
-        individuals = total_value * 0.70
-        institutions = total_value * 0.30
-        # مصريين ~85%، عرب ~10%، أجانب ~5%
-        egyptians = total_value * 0.85
-        arabs = total_value * 0.10
-        foreigners = total_value * 0.05
+        date = row[0]
+        ind_buys = float(row[1] or 0)
+        ind_sells = float(row[2] or 0)
+        ind_net = float(row[3] or 0)
+        arab_buys = float(row[4] or 0)
+        arab_sells = float(row[5] or 0)
+        arab_net = float(row[6] or 0)
+        foreign_buys = float(row[7] or 0)
+        foreign_sells = float(row[8] or 0)
+        foreign_net = float(row[9] or 0)
+        total_buys = float(row[10] or 0)
+        total_sells = float(row[11] or 0)
+        total_net = total_buys - total_sells
+
+        # صافي المؤسسات = الإجمالي - الأفراد
+        institutions_net = total_net - ind_net
 
         conn.close()
         return jsonify({
             'success': True,
             'market': 'EGX',
             'available': True,
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'total_value_egp': round(total_value, 0),
-            'buy_value_egp': round(buy_value, 0),
-            'sell_value_egp': round(sell_value, 0),
-            'net_flow_egp': round(buy_value - sell_value, 0),
+            'date': date,
+            'total_buys_egp': round(total_buys, 2),
+            'total_sells_egp': round(total_sells, 2),
+            'total_net_egp': round(total_net, 2),
             'flows': {
                 'by_investor_type': {
-                    'individuals_egp': round(individuals, 0),
-                    'institutions_egp': round(institutions, 0),
+                    'individuals': {
+                        'buys_egp': round(ind_buys, 2),
+                        'sells_egp': round(ind_sells, 2),
+                        'net_egp': round(ind_net, 2),
+                    },
+                    'institutions': {
+                        'buys_egp': round(total_buys - ind_buys, 2),
+                        'sells_egp': round(total_sells - ind_sells, 2),
+                        'net_egp': round(institutions_net, 2),
+                    },
                 },
                 'by_nationality': {
-                    'egyptians_egp': round(egyptians, 0),
-                    'arabs_egp': round(arabs, 0),
-                    'foreigners_egp': round(foreigners, 0),
+                    'egyptians': {
+                        'buys_egp': round(ind_buys + (total_buys - ind_buys - arab_buys - foreign_buys), 2),
+                        'sells_egp': round(ind_sells + (total_sells - ind_sells - arab_sells - foreign_sells), 2),
+                        'net_egp': round(ind_net + (total_net - ind_net - arab_net - foreign_net), 2),
+                    },
+                    'arabs': {
+                        'buys_egp': round(arab_buys, 2),
+                        'sells_egp': round(arab_sells, 2),
+                        'net_egp': round(arab_net, 2),
+                    },
+                    'foreigners': {
+                        'buys_egp': round(foreign_buys, 2),
+                        'sells_egp': round(foreign_sells, 2),
+                        'net_egp': round(foreign_net, 2),
+                    },
                 },
             },
-            'note': 'تقدير من قيمة التداول الفعلية — البيانات الرسمية CBE/FRA تتطلب API منفصل',
+            'source': 'investors_data table (official EGX disclosure)',
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 200
