@@ -418,3 +418,91 @@ export function resolveFinancialTone(statusOrType: string): FinancialTone {
   if (['WHALE', 'WHALE_RADAR', 'INSTITUTIONAL', 'SMART_MONEY', 'ACCUMULATE'].includes(s)) return 'whale';
   return 'neutral';
 }
+
+// ============================================================================
+// 🎨 COMPLETE THEME CONFIGURATION (Per ALPHA Mission Directive 2026-10-20)
+// ============================================================================
+// النظام الموحد الشامل — SINGLE SOURCE OF TRUTH لكل الأنماط البصرية.
+// مبدأ: غيّر متغير في globals.css → كل المنصة تتغير فوراً.
+// ============================================================================
+
+// ────────────────────────────────────────────────────────────────────────────
+// (E) TYPOGRAPHY — موحد للخطوط والأحجام
+// ────────────────────────────────────────────────────────────────────────────
+
+export const TYPOGRAPHY_SCALE = {
+  // Labels (عناوين صغيرة فوق البيانات)
+  labelXs: 'text-[10px] font-medium',
+  labelSm: 'text-xs font-medium',
+  labelMd: 'text-sm font-medium',
+  // Values (أرقام + بيانات)
+  valueSm: 'text-sm font-bold tabular-nums',
+  valueMd: 'text-lg font-bold tabular-nums',
+  valueLg: 'text-xl font-bold tabular-nums',
+  valueXl: 'text-2xl font-bold tabular-nums',
+  // Headings (عناوين أقسام)
+  h3: 'text-base font-bold',
+  h2: 'text-lg font-bold',
+  h1: 'text-xl font-bold',
+} as const;
+
+// ────────────────────────────────────────────────────────────────────────────
+// (F) SHAPES — موحد للأشكال والحدود
+// ────────────────────────────────────────────────────────────────────────────
+
+export const SHAPE = {
+  radius: {
+    none: 'rounded-none',
+    sm: 'rounded-md',
+    md: 'rounded-lg',
+    lg: 'rounded-xl',
+    xl: 'rounded-2xl',
+    pill: 'rounded-full',
+  },
+  border: {
+    thin: 'border',
+    medium: 'border-2',
+    thick: 'border-4',
+  },
+} as const;
+
+// ────────────────────────────────────────────────────────────────────────────
+// (G) SHADOWS — موحد للظلال
+// ────────────────────────────────────────────────────────────────────────────
+
+export const SHADOW = {
+  none: 'shadow-none',
+  xs: 'shadow-xs',
+  sm: 'shadow-sm',
+  md: 'shadow-md',
+  lg: 'shadow-lg',
+  xl: 'shadow-xl',
+  glow: 'shadow-[0_0_20px_rgba(0,0,0,0.1)]',
+} as const;
+
+// ────────────────────────────────────────────────────────────────────────────
+// (H) BUTTON VARIANT GUIDE — دليل أزرار المنصة الموحد
+// ────────────────────────────────────────────────────────────────────────────
+// كل زر في المنصة لازم يستخدم أحد الـ variants دي. ممنوع كتابة
+// className عشوائي للأزرار — استخدم <Button variant="success" />.
+//
+// | Variant    | CSS Variable | الاستخدام                    | مثال                    |
+// |------------|-------------|------------------------------|-------------------------|
+// | default    | --primary   | الأزرار الأساسية              | "عرض التحليل"            |
+// | success    | --profit    | موافق / شراء / تأكيد إيجابي  | "تنفيذ صفقة شراء"        |
+// | danger     | --loss      | رفض / بيع / إلغاء             | "إلغاء الطلب"            |
+// | warning    | --warning   | تحذير / انتظار / تنبيه        | "إيقاف مؤقت"             |
+// | whale      | --whale     | حيتان / مؤسسي / رادار         | "حقن توصيات الحيتان"     |
+// | outline    | --border    | أزرار ثانوية                 | "تحديث"                  |
+// | ghost      | --accent   | أزرار شفافة (icons)          | زر القائمة               |
+// | secondary  | --secondary | بديل لـ default              | "نسخ"                    |
+// | link       | --primary   | روابط نصية                   | "عرض المزيد"             |
+// | destructive| --destructive| حذف / تدمير                  | "حذف المحفظة"            |
+// ────────────────────────────────────────────────────────────────────────────
+
+export const BUTTON_VARIANTS = [
+  'default', 'success', 'danger', 'warning', 'whale',
+  'outline', 'ghost', 'secondary', 'link', 'destructive',
+] as const;
+
+export type ButtonVariant = typeof BUTTON_VARIANTS[number];

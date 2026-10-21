@@ -20,6 +20,23 @@ const buttonVariants = cva(
  ghost:
  "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
  link: "text-primary underline-offset-4 hover:underline",
+ // ════════════════════════════════════════════════════════════════
+ // ALPHA Unified Design System (2026-10-20):
+ // Financial button variants — ALL use CSS variables from globals.css.
+ // تغيير --profit في globals.css = كل أزرار "موافق/شراء" تتغير فوراً.
+ // ════════════════════════════════════════════════════════════════
+ // موافق / شراء / تأكيد إيجابي → أخضر (profit)
+ success:
+ "bg-profit text-profit-foreground shadow-xs hover:bg-profit/90 focus-visible:ring-profit/20",
+ // رفض / بيع / إلغاء سلبي → أحمر (loss)
+ danger:
+ "bg-loss text-loss-foreground shadow-xs hover:bg-loss/90 focus-visible:ring-loss/20",
+ // تحذير / انتظار / تنبيه → كهرماني (warning)
+ warning:
+ "bg-warning text-warning-foreground shadow-xs hover:bg-warning/90 focus-visible:ring-warning/20",
+ // حيتان / مؤسسي / رادار → سماوي (whale)
+ whale:
+ "bg-whale text-whale-foreground shadow-xs hover:bg-whale/90 focus-visible:ring-whale/20",
  },
  size: {
  default: "h-9 px-4 py-2 has-[>svg]:px-3",
