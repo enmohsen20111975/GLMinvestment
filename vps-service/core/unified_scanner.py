@@ -237,19 +237,37 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
 
     # القاعدة 3: بروتوكول صيد قاع التصحيح (The Golden Dip)
     # هبوط بهدوء (فوليوم جاف) + ارتداد من دعم + شمعة خضراء + سيولة حوت
+    # 6. توسيع صيد التصحيح (The Enhanced Golden Dip Protocol)
+    # عمق التصحيح بين 4% إلى 16% من القمة الأخيرة
+    recent_high = max(highs[-15:]) if len(highs) >= 15 else high_52w
+    dip_depth_pct = ((recent_high - current_price) / recent_high * 100) if recent_high > 0 else 0
+    is_valid_dip_depth = (4.0 <= dip_depth_pct <= 16.0)
+
+    # جفاف الفوليوم أثناء الهبوط (متوسط آخر 3 أيام هبوط <= 88% من متوسط 20 يوم)
     recent_drop_dry = False
     if len(volumes) >= 4:
         avg_drop_vol = sum(volumes[-4:-1]) / 3
-        recent_drop_dry = (avg_drop_vol <= vol_avg * 0.85)
+        recent_drop_dry = (avg_drop_vol <= vol_avg * 0.88)
+
+    # فحص الدعم: قرب دعم قاع سابق أو SMA20
+    near_sma20 = (abs(current_price - sma20) / current_price * 100 <= 2.5) if sma20 else False
+    near_support = (dist_to_support <= 4.0 or near_sma20)
 
     is_golden_dip = (
         recent_drop_dry and
-        dist_to_support <= 3.5 and
+        is_valid_dip_depth and
+        near_support and
         chg_1d > 0.0 and
-        vol_ratio >= 1.3 and
+        vol_ratio >= 1.25 and
         not is_peak_minefield and
         rr >= config.min_rr
     )
+
+    # بروتوكول الخروج الذكي (The Golden Exit Strategy)
+    tp1_price = round(current_price * 1.065, 2)  # هدف أول +6.5% لجني نصف الكمية
+    tp2_price = round(target_price, 2)          # هدف ثانٍ كامل
+    trailing_stop_pct = 2.5                     # وقف متحرك 2.5% تحت أعلى قمة جديدة
+    max_hold_days = 5                           # Time Stop: 5 أيام عمل كحد أقصى للفرقعة
 
     # 7. براهين التوافق (Confluence Proofs)
     proofs = 0
@@ -257,7 +275,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
 
     if is_golden_dip:
         proofs += 3
-        reasons.append("GOLDEN_DIP_CONFIRMED")
+        reasons.append(f"GOLDEN_DIP_D{dip_depth_pct:.1f}%")
     else:
         if vol_ratio >= 2.0 and chg_1d > 0:
             proofs += 1; reasons.append(f"vol_surge={vol_ratio:.1f}x")
@@ -331,6 +349,11 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         'entry_price': round(current_price, 2),
         'stop_loss': round(stop_loss, 2),
         'target_price': round(target_price, 2),
+        'tp1_price': tp1_price,
+        'tp2_price': tp2_price,
+        'trailing_stop_pct': trailing_stop_pct,
+        'max_hold_days': max_hold_days,
+        'exit_protocol': 'TP1_6PCT_TIME_STOP_5D',
         'risk_reward': rr,
         'proofs': proofs,
         'score': score,
