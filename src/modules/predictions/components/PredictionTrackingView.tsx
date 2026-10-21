@@ -398,8 +398,11 @@ export function PredictionTrackingView() {
  cache: 'no-store',
  });
  const json = await res.json();
- if (json.success && Array.isArray(json.data)) {
- setPicks(json.data as TrackedPick[]);
+ // ALPHA-FIX: API يعيد json.predictions (مش json.data) — نقرأ الاتنين للأمان
+ const rawList = Array.isArray(json.predictions) ? json.predictions
+ : (Array.isArray(json.data) ? json.data : []);
+ if (json.success && rawList.length > 0) {
+ setPicks(rawList as TrackedPick[]);
  } else {
  setPicks([]);
  }

@@ -144,38 +144,39 @@ export interface FullChartProps {
 }
 
 // ─── Theme Constants (CHART-UX-030: TradingView Dark Theme) ──────────────────
+// ALPHA-FIX: exported so InteractiveChart.tsx can import them (fixes ReferenceError)
 
-const CHART_BG = '#131722'; // TradingView dark background
-const CHART_GRID = '#363c4e'; // TradingView grid lines (was #1e222d — too dark)
-const CHART_TEXT = '#d1d4dc'; // TradingView text color
-const UP_COLOR = '#26a69a'; // TradingView bullish candle
-const DOWN_COLOR = '#ef5350'; // TradingView bearish candle
+export const CHART_BG = '#131722'; // TradingView dark background
+export const CHART_GRID = '#363c4e'; // TradingView grid lines (was #1e222d — too dark)
+export const CHART_TEXT = '#d1d4dc'; // TradingView text color
+export const UP_COLOR = '#26a69a'; // TradingView bullish candle
+export const DOWN_COLOR = '#ef5350'; // TradingView bearish candle
 
-const SMA20_COLOR = '#f0b90b'; // gold
-const SMA50_COLOR = '#ff9800'; // CHART-UX-030: orange (was #2196f3 blue)
-const SMA200_COLOR = '#2196f3'; // CHART-UX-030: blue (was #9c27b0 purple)
-const BB_UPPER_COLOR = '#607d8b';
-const BB_MIDDLE_COLOR = '#78909c';
-const BB_LOWER_COLOR = '#607d8b';
-const BB_SQUEEZE_COLOR = '#f97316'; // Orange for squeeze
+export const SMA20_COLOR = '#f0b90b'; // gold
+export const SMA50_COLOR = '#ff9800'; // CHART-UX-030: orange (was #2196f3 blue)
+export const SMA200_COLOR = '#2196f3'; // CHART-UX-030: blue (was #9c27b0 purple)
+export const BB_UPPER_COLOR = '#607d8b';
+export const BB_MIDDLE_COLOR = '#78909c';
+export const BB_LOWER_COLOR = '#607d8b';
+export const BB_SQUEEZE_COLOR = '#f97316'; // Orange for squeeze
 
-const SUPPORT_COLOR = '#26a69a';
-const RESISTANCE_COLOR = '#ef5350';
-const PIVOT_COLOR = '#ff9800';
+export const SUPPORT_COLOR = '#26a69a';
+export const RESISTANCE_COLOR = '#ef5350';
+export const PIVOT_COLOR = '#ff9800';
 
-const RSI_COLOR = '#e040fb';
-const CMF_COLOR = '#00bcd4';
+export const RSI_COLOR = '#e040fb';
+export const CMF_COLOR = '#00bcd4';
 
-const EMA9_COLOR = '#ff6b6b';
-const EMA21_COLOR = '#4ecdc4';
+export const EMA9_COLOR = '#ff6b6b';
+export const EMA21_COLOR = '#4ecdc4';
 
-const MACD_LINE_COLOR = '#2196f3';
-const MACD_SIGNAL_COLOR = '#ff6b6b';
-const MACD_HIST_POS = '#26a69a';
-const MACD_HIST_NEG = '#ef5350';
+export const MACD_LINE_COLOR = '#2196f3';
+export const MACD_SIGNAL_COLOR = '#ff6b6b';
+export const MACD_HIST_POS = '#26a69a';
+export const MACD_HIST_NEG = '#ef5350';
 
-const OBV_COLOR = '#ab47bc';
-const FIB_COLOR = '#ffd700';
+export const OBV_COLOR = '#ab47bc';
+export const FIB_COLOR = '#ffd700';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
