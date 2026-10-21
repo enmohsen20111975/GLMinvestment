@@ -39,3 +39,5 @@ export { FinancialBadge, type FinancialBadgeProps } from './FinancialBadge';
 export { TrendIndicator, type TrendIndicatorProps } from './TrendIndicator';
 export { StockCard, type StockCardProps, type StockTrack, isWarningOrVeto, isBuyOpportunity } from './StockCard';
 export { MarketTable, type MarketTableColumn, type MarketTableProps } from './MarketTable';
+export { WickLiquidityBar, type WickLiquidityBarProps } from './WickLiquidityBar';
+export { StockRescueModal, type StockRescueModalProps } from './StockRescueModal';
