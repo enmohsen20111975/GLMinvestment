@@ -123,14 +123,15 @@ def _is_fresh(timestamp_str: Optional[str], max_hours: int = STALENESS_HOURS) ->
 # المصدر 1: intraday.db.stock_intraday — نفس مسار الشارت
 # ============================================================================
 def _price_from_intraday(ticker: str) -> Tuple[float, str, Optional[str]]:
-    """اقرأ آخر سعر من intraday.db.intraday_prices.
+    """اقرأ آخر سعر من intraday.db.stock_intraday.
 
-    Schema الفعلي (موثّق من PRAGMA table_info — سبتمبر 2026):
-      intrayday_prices(id, ticker, price_time, price, volume, bid, ask,
-                       source, created_at)
-    ملاحظة: الـ table اسمها `intraday_prices` (مش `stock_intraday`)، والعمود
-    `price_time` (مش `timestamp`). الكود القديم كان بـ يستخدم أسماء غلط →
-    silent OperationalError → المصدر ده بـ يفشل دايماً → fallback لـ data_engine.
+    BRAVO-FIX (2026-10-21): was reading from `intraday_prices` (0 rows — broken).
+    Now reads from `stock_intraday` (81,830 rows — the real live data).
+
+    Schema (from PRAGMA):
+      stock_intraday(id, ticker, market, timestamp, price, change_percent,
+                     volume, open, high, low, buy_volume, sell_volume,
+                     delta_volume, delta_pct, pressure)
 
     Returns:
         (price, source_label, timestamp_str) أو (0.0, '', None) لو فشل.
@@ -143,23 +144,23 @@ def _price_from_intraday(ticker: str) -> Tuple[float, str, Optional[str]]:
             return (0.0, '', None)
         try:
             cur = conn.cursor()
-            # intraday_prices(ticker, price_time, price, volume, bid, ask, source, created_at)
+            # stock_intraday(ticker, timestamp, price) — 81K rows (the real data)
             cur.execute('''
-                SELECT price, price_time
-                FROM intraday_prices
+                SELECT price, timestamp
+                FROM stock_intraday
                 WHERE ticker = ? AND price > 0
-                ORDER BY price_time DESC
+                ORDER BY timestamp DESC
                 LIMIT 1
             ''', (ticker.upper(),))
             row = cur.fetchone()
             if row and row['price']:
                 price = float(row['price'])
-                ts = row['price_time']
+                ts = row['timestamp']
                 if price > 0:
                     return (round(price, 4), 'intraday', ts)
         except sqlite3.OperationalError as e:
-            # ممكن الـ table مش موجودة لو الـ intraday_storage ما اشتغلش لسه
-            logger.debug(f"[live_price] intraday.intraday_prices not available for {ticker}: {e}")
+            # fallback: try old intraday_prices table (backward compat)
+            logger.debug(f"[live_price] stock_intraday not available for {ticker}: {e}")
         finally:
             conn.close()
     except Exception as e:

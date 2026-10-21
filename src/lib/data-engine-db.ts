@@ -46,13 +46,31 @@ export function getDataEngineDb(): Database.Database {
 
 /**
  * Get price_history.db connection (historical data)
- * 
- * NOTE: price_history.db was removed. Now reads from data_engine.db.egksco_price_history.
- * Returns the same connection as getDataEngineDb() for backward compatibility.
+ *
+ * BRAVO-FIX (2026-10-21): price_history.db is RESTORED (1.31M rows, latest 2026-10-21).
+ * Previously redirected to data_engine.db.egksco_price_history (0 rows — broken).
+ * Now reads directly from price_history.db (the canonical source with 1.31M rows).
  */
+let _priceHistoryDb: Database.Database | null = null;
 export function getPriceHistoryDb(): Database.Database {
-  // Backward-compatible: route to data_engine.db connection
-  return getDataEngineDb();
+  if (_priceHistoryDb) {
+    try { _priceHistoryDb.prepare('SELECT 1').get(); return _priceHistoryDb; }
+    catch { try { _priceHistoryDb.close(); } catch { /* ignore */ } _priceHistoryDb = null; }
+  }
+  const dbPath = path.join(process.cwd(), 'db', 'price_history.db');
+  if (!existsSync(dbPath)) {
+    // Fallback: if price_history.db doesn't exist, use data_engine.db (backward compat)
+    return getDataEngineDb();
+  }
+  const busyTimeout = 10000;
+  try {
+    _priceHistoryDb = new Database(dbPath, { readonly: true, timeout: busyTimeout });
+    _priceHistoryDb.pragma(`busy_timeout = ${busyTimeout}`);
+  } catch (e) {
+    // Fallback to data_engine.db if read-only fails
+    return getDataEngineDb();
+  }
+  return _priceHistoryDb;
 }
 
 /**
