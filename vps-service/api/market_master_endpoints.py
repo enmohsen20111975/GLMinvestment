@@ -35,6 +35,7 @@ def _open_stocks_db():
 @market_master_bp.route('/intraday-pressure', methods=['GET'])
 def intraday_pressure():
     """ضغط الجلسة التراكمي للمؤشر EGX30 + أعلى 10 أسهم قيادية."""
+    conn = None
     try:
         conn = _open_stocks_db()
         if not conn:
@@ -88,6 +89,7 @@ def intraday_pressure():
         }
 
         conn.close()
+        conn = None  # mark as closed
         return jsonify({
             'success': True,
             'market': 'EGX',
@@ -96,6 +98,11 @@ def intraday_pressure():
             'top_stocks': stocks[:10],
         })
     except Exception as e:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
         return jsonify({'success': False, 'error': str(e)}), 200
 
 
@@ -117,6 +124,7 @@ def investor_flows():
             'flows': None,
         })
 
+    conn = None
     try:
         conn = _open_stocks_db()
         if not conn:
@@ -136,6 +144,7 @@ def investor_flows():
 
         if not row:
             conn.close()
+            conn = None  # mark as closed
             return jsonify({
                 'success': True,
                 'market': 'EGX',
@@ -162,6 +171,7 @@ def investor_flows():
         institutions_net = total_net - ind_net
 
         conn.close()
+        conn = None  # mark as closed
         return jsonify({
             'success': True,
             'market': 'EGX',
@@ -204,6 +214,11 @@ def investor_flows():
             'source': 'investors_data table (official EGX disclosure)',
         })
     except Exception as e:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
         return jsonify({'success': False, 'error': str(e)}), 200
 
 
@@ -214,6 +229,7 @@ def investor_flows():
 def metals_forex_summary():
     """أسعار الذهب (عيار 24/21/18 + جنيه الذهب) + صرف الدولار/اليورو/الريال.
     معزول تماماً عن الأسهم والعملات الرقمية."""
+    conn = None
     try:
         conn = _open_stocks_db()
         if not conn:
@@ -248,6 +264,7 @@ def metals_forex_summary():
         }
 
         conn.close()
+        conn = None  # mark as closed
         return jsonify({
             'success': True,
             'metals': {
@@ -259,6 +276,11 @@ def metals_forex_summary():
             'isolated': True,  # مؤكد: معزول عن الأسهم والكريبتو
         })
     except Exception as e:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
         return jsonify({'success': False, 'error': str(e)}), 200
 
 
@@ -268,6 +290,7 @@ def metals_forex_summary():
 @market_master_bp.route('/liquidity-radar', methods=['GET'])
 def liquidity_radar():
     """رادار السيولة الحقيقي — RVOL + Wick + Turnover gates."""
+    conn = None
     try:
         market = (request.args.get('market') or 'EGX').upper()
         conn = _open_stocks_db()
@@ -358,6 +381,7 @@ def liquidity_radar():
             })
 
         conn.close()
+        conn = None  # mark as closed
         return jsonify({
             'success': True,
             'market': market,
@@ -372,4 +396,9 @@ def liquidity_radar():
             'stocks': results,
         })
     except Exception as e:
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
         return jsonify({'success': False, 'error': str(e)}), 200
