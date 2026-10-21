@@ -232,11 +232,13 @@ export function DashboardView() {
  visible: () => currentMarket === 'EGX',
  render: () => <InvestorsFlowPanel />,
  },
- // 2. توقعات اليوم (تتبع السوق المختار — Owner directive)
+ // 2. توقعات اليوم — ALPHA-PHASE2: ممنوع خلط الكريبتو بالأسهم
+ // قبل: EidPredictionsWidget كان بـ يخلط BTC + ETH + COMI + GOLD في كارت واحد
+ // بعد: العرض فقط لأسهم EGX (Golden Dip) — الكريبتو في تبويبه الخاص
  {
  id: 'eid-predictions',
  title: 'توقعات اليوم',
- visible: () => true,
+ visible: () => currentMarket !== 'CRYPTO',
  render: () => <EidPredictionsWidget />,
  },
  // 3. التحليل الآلي — تم إزالته (Owner directive: "مش شايفله أي لزمة")
