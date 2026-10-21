@@ -578,9 +578,8 @@ function AppShell() {
       case 'stocks':
       case 'stock-detail':
       case 'crypto-live': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough (shell handles CRYPTO market)
-        return <StocksView />;
-      case 'stock-filters':
-      case 'crypto-screener': // P0-COMPONENT-UNIFICATION Phase 3.1: fallthrough
+      case 'stock-filters': // ALPHA-SCREENER-UNIFY: دمج الفاحص في شاشة الأسهم
+      case 'crypto-screener': // ALPHA-SCREENER-UNIFY: fallthrough
         return <StockScreenerAdvancedView />;
       // #top-performers merged into #stock-filters (Tab 2). Redirect safely.
       case 'top-performers':

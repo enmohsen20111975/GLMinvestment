@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// ALPHA-SCREENER-UNIFY: Tabs imports removed — no more outer Tabs wrapper
 import { Skeleton } from '@/components/ui/skeleton';
 import { Activity, Layers, Target, History } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
@@ -95,7 +95,8 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  // FOCUS-AUDIT-FIX (2026-10-01): default tab بقى 'predictions' (التاب الموحّد)
  // بدل 'balanced' (اللي كان تاب منفصل). الـ 3 تابات القديمة (tracking + executive-report
  // + balanced) ادمجوا في تاب واحد بـ 3 sub-views.
- const [activeTab, setActiveTab] = useState('predictions');
+ // ALPHA-SCREENER-UNIFY: activeTab removed — no more outer Tabs
+ const _activeTab = 'predictions'; // legacy compat (some code may reference)
  const { currentMarket, setCurrentMarket } = useAppStore();
  const t = useTranslation();
  const marketCode = MARKET_CODES[currentMarket];
@@ -205,41 +206,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  {/* MorningBellSection — UNIFIED-BALANCED-ONLY: متعطل */}
  <HorizontalSectorsBar marketCode={marketCode} />
 
- <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
- {/* Task 9-B Step 2: 5 radar tabs (exit-radar / weekly-report /
- multi-market-radar / radar-accuracy / personalized-radar) moved to
- #liquidity-radar (MakerRadarTab) as internal sub-tabs. #recommendations
- now has 5 tabs only: predictions / status / sectors-tracking /
- historical-trades / net-picks. */}
- <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-2 lg:grid-cols-2 h-auto gap-1">
- {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل الـ 3 المنفصلة */}
- <TabsTrigger value="predictions" className="flex items-center gap-1">
- <Target className="h-4 w-4 text-profit" />
- <span className="hidden sm:inline">{t('marketAnalysis.tabs.predictions')}</span>
- </TabsTrigger>
- {/* ALPHA-UX-FIX-7: status + historical-trades اتنقلوا لروابط مستقلة تحت السوق (#market-status, #historical-trades) */}
- {/* TabsTrigger value="status" removed — see #market-status route */}
- {/* TabsTrigger value="historical-trades" removed — see #historical-trades route */}
- {/* ALPHA-UX-FIX-6: الغِ تبويب «صافى التوقعات» (net-picks) — حسب طلب المالك */}
- {/* TabsTrigger value="net-picks" removed */}
- {/* ALPHA-PHASE4: حذف تبويب التقارير — لها مسارها المستقل #reports */}
- {/* TabsTrigger value="reports" removed — ممنوع دفن التقارير داخل التوصيات */}
- </TabsList>
-
- {/* FOCUS-AUDIT-FIX (2026-10-01): التاب الموحّد بدل 3 تابات منفصلة.
- الـ 3 sub-views (الحالية / الأداء / الملخص) بتقرأ من نفس المصدر
- (predictions.db.predictions) عبر نفس الـ cache → بيانات متوافقة 100%. */}
- <TabsContent value="predictions" className="mt-4">
+ {/* ALPHA-SCREENER-UNIFY: إزالة الـ Tabs الخارجية العقيمة.
+ كان فيه Tabs بـ trigger واحد بس (predictions) + باقي التابات محذوفة.
+ الشاشة دلوقتي تفتح مباشرة على صيد القيعان (Golden Dip) + الصفقات الحية. */}
+ <div className="mt-4">
  <UnifiedPredictionsTab market={currentMarket} />
- </TabsContent>
-
- {/* ALPHA-UX-FIX-7: status + historical-trades TabsContent اتشالت — دلوقتي routes مستقلة (#market-status, #historical-trades) تحت السوق */}
-
- {/* ALPHA-UX-FIX-6: net-picks tab اتشال — حسب طلب المالك */}
-
- {/* ALPHA-PHASE4: حذف تبويب التقارير — لها مسارها المستقل #reports */}
- {/* TabsContent value="reports" removed */}
- </Tabs>
+ </div>
 
  {/* Social Share Footer — BLUEPRINT Phase 2: ActionMenu موحد */}
  <Card className="mt-4 bg-muted/50">

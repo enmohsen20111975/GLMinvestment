@@ -86,9 +86,19 @@ function IndexSymbolBadge({ symbol }: { symbol: string }) {
 
 function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: string; ring: string; text: string } }) {
  const isPositive = index.change >= 0;
+ const { setCurrentView } = useAppStore();
+
+ // ALPHA-SCREENER-UNIFY: كارت EGX30 قابل للنقر → ينقل لـ #stocks مفلتر
+ const isClickable = index.symbol?.toUpperCase().includes('EGX');
 
  return (
- <Card className="relative overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200 group">
+ <Card
+ className={cn(
+ 'relative overflow-hidden border-0 shadow-sm transition-all duration-200 group',
+ isClickable && 'cursor-pointer hover:shadow-lg hover:ring-2 hover:ring-primary/20'
+ )}
+ onClick={isClickable ? () => setCurrentView('stocks' as any) : undefined}
+ >
  <IndexSymbolBadge symbol={index.symbol} />
  <CardContent className="p-2.5 relative z-10">
  {/* Index identifier pill */}
