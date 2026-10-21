@@ -234,16 +234,10 @@ export function DashboardView() {
  visible: () => currentMarket === 'EGX',
  render: () => <InvestorsFlowPanel />,
  },
- // 2. توقعات اليوم — ALPHA-PHASE2: ممنوع خلط الكريبتو بالأسهم
- // قبل: EidPredictionsWidget كان بـ يخلط BTC + ETH + COMI + GOLD في كارت واحد
- // بعد: العرض فقط لأسهم EGX (Golden Dip) — الكريبتو في تبويبه الخاص
- {
- id: 'eid-predictions',
- title: 'توقعات اليوم',
- visible: () => currentMarket !== 'CRYPTO',
- render: () => <EidPredictionsWidget />,
- },
- // 2.5. مكتب الذهب والعملات السيادي — ALPHA-PHASE2: مستقل عن الأسهم والكريبتو
+ // ALPHA-PIPE-FIX: حذف eid-predictions نهائياً — كان بـ يخلط BTC+ETH+COMI+GOLD
+ // استُبدل بـ SovereignMetalsDesk (ذهب + عملات بس) في الأسفل
+ // { id: 'eid-predictions' } — REMOVED (ممنوع BTC/ETH في داشبورد EGX)
+ // 2. مكتب الذهب والعملات السيادي — ALPHA-PHASE2: مستقل عن الأسهم والكريبتو
  {
  id: 'metals-desk',
  title: 'الذهب والعملات',
@@ -571,16 +565,7 @@ export function DashboardView() {
  );
  })()}
 
- {/* 3. توقعات اليوم */}
- {(() => {
- const w = layout.find((x) => x.id === 'eid-predictions');
- if (!w || w.pinned) return null;
- return (
- <section aria-label="توقعات اليوم">
- {renderWrapped(w)}
- </section>
- );
- })()}
+ {/* ALPHA-PIPE-FIX: eid-predictions section removed — was mixing BTC+ETH with EGX stocks */}
 
  {/* 4. الأكثر تحركاً */}
  {(() => {
