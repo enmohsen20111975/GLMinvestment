@@ -18,6 +18,10 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 
+# BRAVO-SSOT Stage 4: delegate to canonical (Rule 67)
+from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.rsi import calc_rsi as _canonical_rsi
+
 
 # ==================== DATACLASSES (الـ API الجديد) ====================
 
@@ -85,29 +89,18 @@ def _to_float(v: Any, fallback: float = 0.0) -> float:
 
 
 def _sma(data: List[float], period: int) -> Optional[float]:
-    """حساب المتوسط المتحرك البسيط — بيرجع None لو البيانات أقل من الفترة"""
-    if not data or period <= 0 or len(data) < period:
-        return None
-    return sum(data[-period:]) / period
+    """SMA — BRAVO-SSOT: delegates to canonical analyzers.indicators.ma.sma (بيرجع None لو البيانات أقل من الفترة)"""
+    return _canonical_sma(data, period)
 
 
 def _rsi(closes: List[float], period: int = 14) -> float:
-    """حساب RSI مبسط (SMA بدل Wilder's) — بيرجع 50 لو البيانات قليلة"""
-    if len(closes) < period + 1:
-        return 50.0
-    gains, losses = [], []
-    for i in range(1, len(closes)):
-        ch = closes[i] - closes[i - 1]
-        gains.append(ch if ch > 0 else 0.0)
-        losses.append(-ch if ch < 0 else 0.0)
-    avg_gain = sum(gains[-period:]) / period
-    avg_loss = sum(losses[-period:]) / period
-    if avg_loss == 0:
-        return 100.0
-    if avg_gain == 0:
-        return 0.0
-    rs = avg_gain / avg_loss
-    return 100.0 - (100.0 / (1.0 + rs))
+    """RSI — BRAVO-SSOT: delegates to canonical analyzers.indicators.rsi.calc_rsi (Wilder's).
+
+    Backward-compat wrapper: canonical بترجع None لو البيانات قليلة،
+    احنا بنرجّع 50.0 (محايد) للحفاظ على السلوك القديم.
+    """
+    result = _canonical_rsi(closes, period)
+    return result if result is not None else 50.0  # backward compat: 50.0 neutral fallback
 
 
 def _extract_closes(price_history: List[Any]) -> List[float]:

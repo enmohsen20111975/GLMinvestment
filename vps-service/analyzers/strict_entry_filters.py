@@ -43,6 +43,10 @@ from __future__ import annotations
 import math
 from typing import List, Dict, Any, Optional, Tuple
 
+# BRAVO-SSOT Stage 4: delegate to canonical (Rule 67)
+from analyzers.indicators.ma import sma as _canonical_sma
+from analyzers.indicators.rsi import calc_rsi as _canonical_rsi
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # Config (thresholds — EGX-calibrated)
@@ -90,23 +94,18 @@ def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
 
 
 def _sma(values: List[float], period: int) -> float:
-    """Simple Moving Average."""
-    if len(values) < period:
-        return sum(values) / len(values) if values else 0.0
-    return sum(values[-period:]) / period
+    """SMA — BRAVO-SSOT: delegates to canonical analyzers.indicators.ma.sma."""
+    return _canonical_sma(values, period)
 
 
 def _rsi(closes: List[float], period: int = 14) -> float:
-    """RSI(14) — Wilder's smoothing.
+    """RSI — BRAVO-SSOT: delegates to canonical analyzers.indicators.rsi.calc_rsi (Wilder's).
 
-    CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
-    Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
-    قبل كده: كان SMA-based على آخر `period` شمعة فقط — غلط رياضيًا.
+    Backward-compat wrapper: canonical بترجع None لو البيانات قليلة،
+    احنا بنرجّع 50.0 (محايد) للحفاظ على السلوك القديم.
     """
-    # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
-    from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
-    val = _canonical_calc_rsi(closes, period)
-    return val if val is not None else 50.0
+    result = _canonical_rsi(closes, period)
+    return result if result is not None else 50.0  # backward compat: 50.0 neutral fallback
 
 
 # ═══════════════════════════════════════════════════════════════════════
