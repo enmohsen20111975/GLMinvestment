@@ -113,6 +113,8 @@ BLUEPRINTS = [
     # V38-INSTITUTIONAL: V38 Institutional Decision Engine Backtest
     # محرك القرار المؤسسي V38 — محاكاة + نتائج + إثباتات
     ('api.v38_backtest_routes', 'v38_backtest_bp'),
+    # BRAVO-EPIC: market master endpoints (intraday-pressure + investor-flows + metals-forex + liquidity-radar)
+    ('api.market_master_endpoints', 'market_master_bp'),
 ]
 
 for mod_name, bp_name in BLUEPRINTS:
