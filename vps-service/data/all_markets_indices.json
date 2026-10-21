@@ -1,9 +1,107 @@
 {
   "_meta": {
-    "description": "ملف شامل بكل أسهم كل المؤشرات في كل الأسواق",
+    "description": "ملف شامل مدمج — كل أسهم كل الأسواق + weights + audit + sources",
     "generated_at": "2026-10-21",
     "total_markets": 5,
-    "total_stocks": 1240
+    "total_stocks": 1240,
+    "owner_file_version": "0.1.0",
+    "owner_file_status": "PARTIAL_VERIFIED_STARTER_NOT_COMPLETE",
+    "merged_at": "2026-10-21"
+  },
+  "metadata": {
+    "dataset": "GLMinvestment Market Index Constituents",
+    "version": "0.1.0",
+    "generated_at": "2026-10-21",
+    "status": "PARTIAL_VERIFIED_STARTER_NOT_COMPLETE",
+    "important_notice": "This file is a verified starter dataset and source/audit manifest, NOT a complete constituents-and-weights database for all indices in all five markets. Missing data is explicitly marked rather than guessed.",
+    "markets_requested": [
+      "EGX",
+      "TADAWUL",
+      "KSE",
+      "QSE",
+      "US"
+    ],
+    "weight_definition": "Percentage weight of a constituent within the specified index.",
+    "rules": [
+      "A stock can appear in multiple index records, with a separate weight for each index.",
+      "Do not treat null weights as zero.",
+      "Do not infer current membership from a symbol list alone.",
+      "Verify each index's official methodology and effective date before production use."
+    ]
+  },
+  "market_sources_and_coverage": [
+    {
+      "market": "EGX",
+      "market_name": "Egyptian Exchange",
+      "coverage_status": "NOT_YET_COLLECTED",
+      "official_source": "https://www.egx.com.eg/",
+      "required_next_steps": [
+        "Inventory official benchmark, sector, capped, and other active EGX indices.",
+        "Collect each index constituent list and official weight data where published.",
+        "Record effective dates and distinguish official weights from calculated estimates."
+      ]
+    },
+    {
+      "market": "TADAWUL",
+      "market_name": "Saudi Exchange",
+      "coverage_status": "SOURCE_IDENTIFIED_DATA_NOT_COLLECTED",
+      "official_source": "https://www.saudiexchange.sa/wps/portal/saudiexchange/trading/market-services/market-information-services/indices-data?locale=en",
+      "source_notes": "Saudi Exchange describes an Index Weightage Report with constituent weights in TASI.",
+      "required_next_steps": [
+        "Inventory relevant broad-market, sector, and other active indices.",
+        "Obtain official constituent/weightage reports and their effective dates."
+      ]
+    },
+    {
+      "market": "KSE",
+      "market_name": "Boursa Kuwait",
+      "coverage_status": "NOT_YET_COLLECTED",
+      "official_source": "https://www.boursakuwait.com.kw/",
+      "required_next_steps": [
+        "Inventory active Premier, Main, sector, and other relevant indices.",
+        "Collect constituents and official weights for each index."
+      ]
+    },
+    {
+      "market": "QSE",
+      "market_name": "Qatar Stock Exchange",
+      "coverage_status": "PARTIAL_VERIFIED",
+      "official_source": "https://www.qe.com.qa/en/index-constituents",
+      "source_notes": "QSE publishes constituent pages and review notices. A separate Al Rayan ETF page lists index holdings and weights effective 2026-09-01.",
+      "required_next_steps": [
+        "Collect the latest official constituent and weighting files for QE Index, QE All Share, sector indices, and QE Al Rayan Islamic Index.",
+        "Cross-check the Al Rayan holdings below against the latest official QSE notice."
+      ]
+    },
+    {
+      "market": "US",
+      "market_name": "United States",
+      "coverage_status": "SOURCE_IDENTIFIED_DATA_NOT_COLLECTED",
+      "official_sources": [
+        "https://www.spglobal.com/spdji/en/indices/equity/sp-500/",
+        "https://indexes.nasdaqomx.com/",
+        "https://www.nyse.com/nyse-100-index"
+      ],
+      "source_notes": "US is not one index. The project must explicitly define which index families to include (for example S&P 500, Nasdaq-100, Dow Jones, Russell, NYSE indices). Full constituent weights may require licensed data or official provider downloads.",
+      "required_next_steps": [
+        "Confirm the project's intended US index universe.",
+        "Collect index-by-index constituents, weights, effective dates, and licensing/source metadata."
+      ]
+    }
+  ],
+  "audit": {
+    "complete_for_all_five_markets": false,
+    "indices_fully_collected": 0,
+    "indices_partially_collected": 2,
+    "markets_with_full_coverage": [],
+    "known_gaps": [
+      "EGX index universe and constituents/weights not collected.",
+      "TADAWUL index universe and full constituents/weights not collected.",
+      "KSE index universe and constituents/weights not collected.",
+      "QSE coverage is only partial; other index constituents and weights are missing.",
+      "US coverage is only partial; S&P 500 top constituents are listed but individual weights and the remaining constituents are missing.",
+      "Some QSE ticker symbols should be validated against the exchange's current security master before production use."
+    ]
   },
   "markets": {
     "EGX": {
@@ -12428,6 +12526,153 @@
             "WDAM",
             "ZHCD"
           ]
+        },
+        "QE_AL_RAYAN_ISLAMIC": {
+          "count": 23,
+          "tickers": [
+            "QIBK",
+            "ORDS",
+            "IQCD",
+            "MARK",
+            "QIIK",
+            "QGTS",
+            "QFLS",
+            "MPHC",
+            "DUBK",
+            "VFQS",
+            "QEWS",
+            "BRES",
+            "QAMC",
+            "IGRD",
+            "UDCD",
+            "AHCS",
+            "BLDN",
+            "ERES",
+            "MCCS",
+            "MERS",
+            "MEZA",
+            "QISI",
+            "QNCD"
+          ],
+          "stocks": [
+            {
+              "symbol": "QIBK",
+              "company_name": "مصرف قطر الإسلامي",
+              "weight_percent": 15.0
+            },
+            {
+              "symbol": "ORDS",
+              "company_name": "أوريدو",
+              "weight_percent": 12.0
+            },
+            {
+              "symbol": "IQCD",
+              "company_name": "صناعات قطر",
+              "weight_percent": 10.0
+            },
+            {
+              "symbol": "MARK",
+              "company_name": "بنك الريان",
+              "weight_percent": 7.5
+            },
+            {
+              "symbol": "QIIK",
+              "company_name": "بنك قطر الدولي الإسلامي",
+              "weight_percent": 7.5
+            },
+            {
+              "symbol": "QGTS",
+              "company_name": "شركة ملاحة",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "QFLS",
+              "company_name": "وقود",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "MPHC",
+              "company_name": "مسيعيد للبتروكيماويات القابضة",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "DUBK",
+              "company_name": "بنك دخان",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "VFQS",
+              "company_name": "فودافون قطر",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "QEWS",
+              "company_name": "نبراس للطاقة",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "BRES",
+              "company_name": "مجموعة بروة العقارية",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "QAMC",
+              "company_name": "قطر لصناعة الألمنيوم",
+              "weight_percent": 5.0
+            },
+            {
+              "symbol": "IGRD",
+              "company_name": "استثمار القابضة",
+              "weight_percent": 2.5
+            },
+            {
+              "symbol": "UDCD",
+              "company_name": "المتحدة للتنمية",
+              "weight_percent": 2.5
+            },
+            {
+              "symbol": "AHCS",
+              "company_name": "أعمال",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "BLDN",
+              "company_name": "بلدنا",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "ERES",
+              "company_name": "إزدان القابضة",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "MCCS",
+              "company_name": "مجموعة مديكير",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "MERS",
+              "company_name": "الميرة للمواد الاستهلاكية",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "MEZA",
+              "company_name": "ميزة",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "QISI",
+              "company_name": "الإسلامية للتأمين",
+              "weight_percent": 0.375
+            },
+            {
+              "symbol": "QNCD",
+              "company_name": "قطر الوطنية لصناعة الإسمنت",
+              "weight_percent": 0.375
+            }
+          ],
+          "weight_source": "Al Rayan Qatar ETF holdings page; source attribution on page: Qatar Stock Exchange, Bloomberg, Al Rayan Investment",
+          "weight_date": "2026-09-01"
         }
       }
     },
@@ -12986,8 +13231,272 @@
             "XLV",
             "XOM"
           ]
+        },
+        "SP500": {
+          "count": 10,
+          "tickers": [
+            "NVDA",
+            "AAPL",
+            "MSFT",
+            "AMZN",
+            "GOOGL",
+            "AVGO",
+            "GOOG",
+            "META",
+            "MU",
+            "TSLA"
+          ],
+          "stocks": [
+            {
+              "symbol": "NVDA",
+              "company_name": "Nvidia Corp",
+              "weight_percent": null
+            },
+            {
+              "symbol": "AAPL",
+              "company_name": "Apple Inc.",
+              "weight_percent": null
+            },
+            {
+              "symbol": "MSFT",
+              "company_name": "Microsoft Corp",
+              "weight_percent": null
+            },
+            {
+              "symbol": "AMZN",
+              "company_name": "Amazon.com Inc",
+              "weight_percent": null
+            },
+            {
+              "symbol": "GOOGL",
+              "company_name": "Alphabet Inc Class A",
+              "weight_percent": null
+            },
+            {
+              "symbol": "AVGO",
+              "company_name": "Broadcom Inc",
+              "weight_percent": null
+            },
+            {
+              "symbol": "GOOG",
+              "company_name": "Alphabet Inc Class C",
+              "weight_percent": null
+            },
+            {
+              "symbol": "META",
+              "company_name": "Meta Platforms Inc Class A",
+              "weight_percent": null
+            },
+            {
+              "symbol": "MU",
+              "company_name": "Micron Technology Inc",
+              "weight_percent": null
+            },
+            {
+              "symbol": "TSLA",
+              "company_name": "Tesla Inc",
+              "weight_percent": null
+            }
+          ],
+          "weight_source": "S&P Dow Jones Indices official index page",
+          "weight_date": "2026-08-31"
         }
       }
     }
-  }
+  },
+  "indices_with_weights": [
+    {
+      "market": "QSE",
+      "index_code": "QE_AL_RAYAN_ISLAMIC",
+      "index_name": "QE Al Rayan Islamic Index",
+      "weight_date": "2026-09-01",
+      "weight_source": "Al Rayan Qatar ETF holdings page; source attribution on page: Qatar Stock Exchange, Bloomberg, Al Rayan Investment",
+      "source_url": "https://qatr.com.qa/etf-index/constituents",
+      "weight_status": "PUBLISHED_WEIGHTS",
+      "constituents": [
+        {
+          "symbol": "QIBK",
+          "company_name": "مصرف قطر الإسلامي",
+          "weight_percent": 15.0
+        },
+        {
+          "symbol": "ORDS",
+          "company_name": "أوريدو",
+          "weight_percent": 12.0
+        },
+        {
+          "symbol": "IQCD",
+          "company_name": "صناعات قطر",
+          "weight_percent": 10.0
+        },
+        {
+          "symbol": "MARK",
+          "company_name": "بنك الريان",
+          "weight_percent": 7.5
+        },
+        {
+          "symbol": "QIIK",
+          "company_name": "بنك قطر الدولي الإسلامي",
+          "weight_percent": 7.5
+        },
+        {
+          "symbol": "QGTS",
+          "company_name": "شركة ملاحة",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "QFLS",
+          "company_name": "وقود",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "MPHC",
+          "company_name": "مسيعيد للبتروكيماويات القابضة",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "DUBK",
+          "company_name": "بنك دخان",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "VFQS",
+          "company_name": "فودافون قطر",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "QEWS",
+          "company_name": "نبراس للطاقة",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "BRES",
+          "company_name": "مجموعة بروة العقارية",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "QAMC",
+          "company_name": "قطر لصناعة الألمنيوم",
+          "weight_percent": 5.0
+        },
+        {
+          "symbol": "IGRD",
+          "company_name": "استثمار القابضة",
+          "weight_percent": 2.5
+        },
+        {
+          "symbol": "UDCD",
+          "company_name": "المتحدة للتنمية",
+          "weight_percent": 2.5
+        },
+        {
+          "symbol": "AHCS",
+          "company_name": "أعمال",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "BLDN",
+          "company_name": "بلدنا",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "ERES",
+          "company_name": "إزدان القابضة",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "MCCS",
+          "company_name": "مجموعة مديكير",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "MERS",
+          "company_name": "الميرة للمواد الاستهلاكية",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "MEZA",
+          "company_name": "ميزة",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "QISI",
+          "company_name": "الإسلامية للتأمين",
+          "weight_percent": 0.375
+        },
+        {
+          "symbol": "QNCD",
+          "company_name": "قطر الوطنية لصناعة الإسمنت",
+          "weight_percent": 0.375
+        }
+      ]
+    },
+    {
+      "market": "US",
+      "index_code": "SP500",
+      "index_name": "S&P 500",
+      "weight_date": "2026-08-31",
+      "weight_source": "S&P Dow Jones Indices official index page",
+      "source_url": "https://www.spglobal.com/spdji/en/indices/equity/sp-500/",
+      "weight_status": "PARTIAL_TOP_CONSTITUENTS_ONLY",
+      "index_statistics": {
+        "constituent_count_reported": 503,
+        "largest_constituent_weight_percent": 8.1,
+        "top_10_combined_weight_percent": 37.8
+      },
+      "constituents": [
+        {
+          "symbol": "NVDA",
+          "company_name": "Nvidia Corp",
+          "weight_percent": null
+        },
+        {
+          "symbol": "AAPL",
+          "company_name": "Apple Inc.",
+          "weight_percent": null
+        },
+        {
+          "symbol": "MSFT",
+          "company_name": "Microsoft Corp",
+          "weight_percent": null
+        },
+        {
+          "symbol": "AMZN",
+          "company_name": "Amazon.com Inc",
+          "weight_percent": null
+        },
+        {
+          "symbol": "GOOGL",
+          "company_name": "Alphabet Inc Class A",
+          "weight_percent": null
+        },
+        {
+          "symbol": "AVGO",
+          "company_name": "Broadcom Inc",
+          "weight_percent": null
+        },
+        {
+          "symbol": "GOOG",
+          "company_name": "Alphabet Inc Class C",
+          "weight_percent": null
+        },
+        {
+          "symbol": "META",
+          "company_name": "Meta Platforms Inc Class A",
+          "weight_percent": null
+        },
+        {
+          "symbol": "MU",
+          "company_name": "Micron Technology Inc",
+          "weight_percent": null
+        },
+        {
+          "symbol": "TSLA",
+          "company_name": "Tesla Inc",
+          "weight_percent": null
+        }
+      ],
+      "notes": "Official page identifies these top constituents but the retrieved page output did not expose individual weight percentages. They are left null rather than fabricated."
+    }
+  ]
 }
