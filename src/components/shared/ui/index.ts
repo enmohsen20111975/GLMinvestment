@@ -36,3 +36,6 @@ export { SeverityBadge, type SeverityBadgeProps, getSeverityBadgeClass, type Sev
 export { ConfidenceMeter, type ConfidenceMeterProps } from './ConfidenceMeter';
 export { PersonaEmptyState, type PersonaEmptyStateProps } from './PersonaEmptyState';
 export { FinancialBadge, type FinancialBadgeProps } from './FinancialBadge';
+export { TrendIndicator, type TrendIndicatorProps } from './TrendIndicator';
+export { StockCard, type StockCardProps } from './StockCard';
+export { MarketTable, type MarketTableColumn, type MarketTableProps } from './MarketTable';
