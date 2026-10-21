@@ -37,8 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { TradingViewChart } from './TradingViewChart';
-import { ChartToggle } from '@/components/shared/ChartToggle';
-import { TradingChartView } from '@/modules/market-analysis/components/TradingChartView';
+// ChartToggle + TradingChartView removed: InteractiveChart gone by owner directive.
 import { StockFeelCard } from '@/components/shared/StockFeelCard';
 import { DeepAnalysis } from './DeepAnalysis';
 import { StockNews } from './StockNews';
@@ -1056,7 +1055,6 @@ export function StockDetail() {
  selectedTicker,
  loadStockNews,
  currentMarket,
- chartPreference,
  } = useAppStore();
  const [exporting, setExporting] = useState(false);
  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
@@ -1451,16 +1449,9 @@ export function StockDetail() {
  />
  </div>
 
- {/* Stock Chart — ALPHA-CHART-TOGGLE-1: user can switch between TradingViewChart and InteractiveChart */}
+ {/* Stock Chart — InteractiveChart removed by owner directive; TradingViewChart is sole chart */}
  <ErrorBoundary title="الرسم البياني">
- <div className="flex justify-end mb-2">
- <ChartToggle />
- </div>
- {chartPreference === 'tradingview' ? (
  <TradingViewChart ticker={stock.ticker} stockName={stock.name_ar} />
- ) : (
- <TradingChartView initialTicker={stock.ticker} />
- )}
  </ErrorBoundary>
 
  {/* UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)

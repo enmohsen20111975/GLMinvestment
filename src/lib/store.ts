@@ -798,7 +798,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   selectedTicker: null,
   sidebarOpen: false,
   currentMarket: hydrateFromStorage<MarketType>(CURRENT_MARKET_KEY, 'EGX'),
-  chartPreference: hydrateFromStorage<'tradingview' | 'interactive'>('chart-pref', 'interactive'),
+  // InteractiveChart removed by owner directive (2026-10-21): persistent
+  // CHART_GRID ReferenceError from stale cached chunks. Default is now
+  // 'tradingview'. Even if localStorage has stale 'interactive', no chart
+  // toggle renders InteractiveChart anymore — all paths use TradingViewChart.
+  chartPreference: hydrateFromStorage<'tradingview' | 'interactive'>('chart-pref', 'tradingview'),
   setChartPreference: (pref) => {
     set({ chartPreference: pref });
     try {
