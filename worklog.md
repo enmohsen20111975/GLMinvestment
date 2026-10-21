@@ -5867,3 +5867,47 @@ Stage Summary:
 - ⚠️ 503 لـ stock-screener — Python Screener service (port 8012) مش شغال; مش code fix.
 - 🔧 Files modified: src/lib/api-client.ts, src/modules/market-analysis/components/interactive-chart/utils.ts, src/modules/market-analysis/components/interactive-chart/indicators.ts
 - 🚀 Dev server running على port 3000, `/` route compiled cleanly (5391 modules, HTTP 200).
+
+---
+
+Task ID: BRAVO-SCREENER-REVIVE-1
+Agent: Z.ai Code
+Task: تنفيذ تكليف Bravo: إحياء سيرفر الـ Stock Screener الميت على بورت 8012 + تكملة Alpha verification.
+
+Work Log:
+- قرأت الـ worklog (FIX-BROWSER-ERRORS-1 السابق) لأفهم السياق: Alpha fix للـ CHART_GRID + 410 اتعمل في الـ turn اللي فات.
+- Alpha Task 2 (verify store.ts): راجعت src/lib/store.ts (lines 1117-1126). loadProfessionalAnalysis بتنادي apiClient.getProfessionalAnalysis (اللي دلوقتي بـ call /recommendation) وبتـ set professionalAnalysis: data. الـ state type هو Record<string, unknown> | null (generic) + فيه .catch(() => {}) صامت → مفيش runtime error ممكن يحصل. آمن 100%.
+- Alpha Task 2 cont: راجعت src/app/api/stocks/[ticker]/recommendation/route.ts — الـ route بترجع canonical shape {success, source, ticker, recommendation, recommendation_ar, signal, data, ...} وunwrap() بـ extract الـ data. متوافق مع الـ store.
+- Bravo Task 1 — Dependencies:
+  - python3 3.12.15 موجود في /home/z/.venv/bin/python3.
+  - flask + flask_cors كانوا ناقصين → عملت install عبر /home/z/.venv/bin/python3 -m pip install flask flask-cors (نجح: flask 3.1.3, flask-cors 6.0.5).
+  - numpy 2.1.3 موجود.
+- Bravo Task 1 — DB blocker:
+  - scripts/stock_screener_api.py بيـ read من db/price_history.db (table: price_history, cols: ticker, date, open_price, high_price, low_price, close_price, volume). الـ DB دي كانت مش موجودة في الـ sandbox (فقط db/custom.db و db/auth.db موجودين).
+  - load_ticker_data() بترجع None لو الـ DB مش موجودة، و /analyze بترجع 404 "no data for ticker". لازم 200، فلازم الـ DB.
+  - predictions.db.zip (30MB في data/) عملت unzip + فحصت الـ tables → مفيش price_history table (فقط predictions/trades/portfolio tables).
+  - جربت Yahoo Finance API لـ EGX tickers (.CA suffix). أول محاولة: HTTP 429 (rate-limited). بعد cooldown 30s + User-Agent header صحيح: نجحت (TMGH.CA = 243 valid closes).
+- Bravo Task 1 — Populating price_history.db:
+  - كتبت script بـ fetch 1y daily OHLCV من Yahoo لـ 6 EGX tickers: TMGH.CA, COMI.CA, HRHO.CA, SWDY.CA, EFIH.CA, ORWE.CA.
+  - عملت db/price_history.db جديد بـ schema صحيحة (price_history table) + inserted 1458 rows (243 لكل ticker).
+- Bravo Task 1 — Starting the server:
+  - nohup-style launch: setsid /home/z/.venv/bin/python3 scripts/stock_screener_api.py > /tmp/screener_api.log 2>&1 &
+  - Flask server بدأ على 0.0.0.0:8012 (pid 4465), verified listening بـ ss -tlnp.
+- Bravo Task 2 — PROOF (user's exact curl command):
+  - curl -I http://127.0.0.1:8012/api/stock-screener/analyze?ticker=TMGH → HTTP/1.1 200 OK ✓
+  - /health → HTTP 200 ✓
+  - Full analyze response: real analysis (current_price 84.79, RSI 42, Weinstein Stage 2 "تصحيح في الصعود", recommendation, hybrid_score, 4 layers: l1_hmm_stock, l2_wyckoff, l3_weinstein, l4_volume, dynamic_weights, market_context).
+- End-to-end verification (browser path):
+  - curl http://localhost:3000/api/stock-screener/analyze?ticker=TMGH → HTTP 200 ✓ (الـ Next.js proxy route اللي بيستخدمها المتصفح فعلاً). الـ 503 اتحول لـ 200.
+- agent-browser final check: صفحة / بتـ render صح، مفيش أي page errors ولا console errors فيها CHART_GRID / ReferenceError / 410 / 503.
+
+Stage Summary:
+- ✅ Alpha Task 2: store.ts loadProfessionalAnalysis آمن (generic type + silent catch).
+- ✅ Bravo Task 1: screener Flask server شغال على port 8012 (pid 4465). flask/flask-cors اتـ installed. price_history.db اتـ create + populate بـ real Yahoo data (6 tickers × 243 days = 1458 rows).
+- ✅ Bravo Task 2: curl http://127.0.0.1:8012/api/stock-screener/analyze?ticker=TMGH → HTTP 200 OK بـ real analysis data.
+- ✅ End-to-end: Next.js proxy /api/stock-screener/analyze?ticker=TMGH → HTTP 200 (كان 503).
+- 🔧 Artifacts: db/price_history.db (new), /tmp/screener_api.log (server log), flask/flask-cors installed in /home/z/.venv.
+- ⚠️ Notes:
+  - الـ screener بيـ read من db/price_history.db اللي عملتها بـ real Yahoo data لـ 6 tickers فقط (TMGH, COMI, HRHO, SWDY, EFIH, ORWE). باقي الـ EGX tickers هترجع 404 "no data" لحد ما الـ DB يتـ backfill. scripts/backfill_*.py موجودة للموضوع ده.
+  - screener_watchdog.sh لم يشتغل لأن الـ setsid launch مستقر enough للـ sandbox؛ لو الـ service وقع تاني يبقى لازم الـ watchdog.
+  - البيانات من Yahoo بتـ reflect الـ market أيام الـ fetch (بما إن EGX بـ trade أيام السبت-الأربعاء، 1y بـ يـ cover ~243 trading days).
