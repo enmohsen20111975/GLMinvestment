@@ -183,8 +183,8 @@ export function getTopMoversFallback(
     // the route layer is responsible for defaulting to 'EGX' when no
     // market is specified.
     const whereClause = market
-      ? `WHERE is_active = 1 AND change_percent IS NOT NULL AND UPPER(market) = UPPER(?)`
-      : `WHERE is_active = 1 AND change_percent IS NOT NULL`;
+      ? `WHERE is_active = 1 AND change_percent IS NOT NULL AND UPPER(market) = UPPER(?) AND ABS(change_percent) < 100.0`
+      : `WHERE is_active = 1 AND change_percent IS NOT NULL AND ABS(change_percent) < 100.0`;
     const stmtArgs = market ? [market] : [];
     const rows = db
       .prepare(
@@ -210,13 +210,13 @@ export function getTopMoversFallback(
     });
 
     const gainers = withDerived
-      .filter((s) => Number(s.price_change) > 0)
+      .filter((s) => Number(s.price_change) > 0 && Number(s.price_change) < 100)
       .sort((a, b) => Number(b.price_change) - Number(a.price_change))
       .slice(0, limit)
       .map((s) => ({ ...s, change_type: 'gainer' as const }));
 
     const losers = withDerived
-      .filter((s) => Number(s.price_change) < 0)
+      .filter((s) => Number(s.price_change) < 0 && Number(s.price_change) > -100)
       .sort((a, b) => Number(a.price_change) - Number(b.price_change))
       .slice(0, limit)
       .map((s) => ({ ...s, change_type: 'loser' as const }));
