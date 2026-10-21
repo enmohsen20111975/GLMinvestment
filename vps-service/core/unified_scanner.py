@@ -128,21 +128,35 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
 
     project_root = Path(__file__).resolve().parents[2]
 
-    # 1. قراءة بيانات السعر من price_history.db
+    # 1. قراءة بيانات السعر — نجرّب price_history.db الأول، ثم stocks.db.stock_daily_prices
     ph_db = project_root / 'db' / 'price_history.db'
-    if not ph_db.exists():
-        return None
+    rows = None
+    if ph_db.exists():
+        try:
+            conn = sqlite3.connect(f"file:{ph_db}?mode=ro", uri=True, timeout=5.0)
+            rows = conn.execute("""
+                SELECT date, open_price, high_price, low_price, close_price, volume
+                FROM price_history WHERE ticker = ?
+                ORDER BY date DESC LIMIT 30
+            """, (ticker,)).fetchall()
+            conn.close()
+        except Exception:
+            pass
 
-    try:
-        conn = sqlite3.connect(f"file:{ph_db}?mode=ro", uri=True, timeout=5.0)
-        rows = conn.execute("""
-            SELECT date, open_price, high_price, low_price, close_price, volume
-            FROM price_history WHERE ticker = ?
-            ORDER BY date DESC LIMIT 30
-        """, (ticker,)).fetchall()
-        conn.close()
-    except Exception:
-        return None
+    # fallback: stocks.db.stock_daily_prices
+    if not rows:
+        stocks_db = project_root / 'db' / 'stocks.db'
+        if stocks_db.exists():
+            try:
+                conn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=5.0)
+                rows = conn.execute("""
+                    SELECT price_date, open, high, low, close, volume
+                    FROM stock_daily_prices WHERE ticker = ?
+                    ORDER BY price_date DESC LIMIT 30
+                """, (ticker,)).fetchall()
+                conn.close()
+            except Exception:
+                pass
 
     if not rows or len(rows) < 15:
         return None
@@ -190,6 +204,39 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     dist_to_support = ((current_price - support) / support * 100) if support > 0 else 100
     dist_to_resistance = ((resistance - current_price) / current_price * 100) if current_price > 0 else 100
 
+    # 3b. Macro Location — التموضع السعري (52-week high/low)
+    # نقرأ high_52w/low_52w من stocks.db (لو متاح)
+    high_52w = max(highs) if highs else current_price
+    low_52w = min(lows) if lows else current_price
+    try:
+        stocks_db = project_root / 'db' / 'stocks.db'
+        if stocks_db.exists():
+            sconn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=3.0)
+            srow = sconn.execute(
+                "SELECT high_52w, low_52w FROM stocks WHERE ticker = ?", (ticker,)
+            ).fetchone()
+            sconn.close()
+            if srow and srow[0] and srow[0] > 0:
+                high_52w = srow[0]
+            if srow and srow[1] and srow[1] > 0:
+                low_52w = srow[1]
+    except Exception:
+        pass
+
+    dist_to_52w_high = round(((high_52w - current_price) / high_52w * 100), 2) if high_52w > 0 else 0
+    dist_to_52w_low = round(((current_price - low_52w) / low_52w * 100), 2) if low_52w > 0 else 0
+
+    # Macro location classification:
+    # NEAR_HIGH: within 5% of 52w high (طاير في القمة — FOMO risk)
+    # NEAR_LOW: within 10% of 52w low (مخلص تصحيح في القاع — فرصة دخول)
+    # MID_RANGE: بين الاثنين
+    if dist_to_52w_high <= 5.0:
+        macro_location = 'NEAR_HIGH'
+    elif dist_to_52w_low <= 10.0:
+        macro_location = 'NEAR_LOW'
+    else:
+        macro_location = 'MID_RANGE'
+
     # 4. Liquidity filter (Rule: turnover >= 1.5M)
     turnover = current_price * volumes[-1] if volumes else 0
     is_illiquid = turnover < config.min_turnover_egp
@@ -220,6 +267,9 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         proofs += 1; reasons.append(f"rsi_neutral={rsi:.0f}")
     if dist_to_support <= 3.0 and chg_1d > -1.0:
         proofs += 1; reasons.append(f"near_support={dist_to_support:.1f}%")
+    # Macro location proof: سهم مخلص تصحيح في القاع = فرصة دخول
+    if macro_location == 'NEAR_LOW' and chg_1d > -1.0:
+        proofs += 1; reasons.append(f"near_52w_low={dist_to_52w_low:.1f}%")
 
     # 8. Distribution veto
     dist_warn = 0
@@ -235,7 +285,8 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         signal, track = 'HOLD', 'DISTRIBUTION_VETO'
     elif rr < config.min_rr:
         signal, track = 'HOLD', 'LOW_RR'  # Rule: R/R >= 1.5
-    elif is_fomo and proofs >= 2:
+    elif is_fomo and proofs >= 2 and macro_location != 'NEAR_LOW':
+        # FOMO spike → PULLBACK_WAIT (إلا لو السهم في قاع 52w = فرصة تصحيح من قاع)
         signal, track = 'WATCH', 'PULLBACK_WAIT'
     elif proofs >= 3:
         signal, track = 'STRONG_BUY', 'WHALE_CONFLUENCE'
@@ -270,6 +321,11 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         'resistance': round(resistance, 2),
         'dist_to_support': round(dist_to_support, 2),
         'dist_to_resistance': round(dist_to_resistance, 2),
+        'high_52w': round(high_52w, 2),
+        'low_52w': round(low_52w, 2),
+        'dist_to_52w_high': dist_to_52w_high,
+        'dist_to_52w_low': dist_to_52w_low,
+        'macro_location': macro_location,
         'entry_price': round(current_price, 2),
         'stop_loss': round(stop_loss, 2),
         'target_price': round(target_price, 2),

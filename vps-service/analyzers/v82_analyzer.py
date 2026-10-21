@@ -39,6 +39,9 @@ from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 from pathlib import Path
 
+# BRAVO-SSOT Stage 4: delegate to canonical (Rule 67)
+from analyzers.indicators.ma import sma as _canonical_sma
+
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -397,9 +400,8 @@ class V82Analyzer:
 
     @staticmethod
     def _sma(values: List[float], period: int) -> float:
-        if len(values) < period:
-            return sum(values) / len(values) if values else 0
-        return sum(values[-period:]) / period
+        """SMA — BRAVO-SSOT: delegates to canonical analyzers.indicators.ma.sma."""
+        return _canonical_sma(values, period)
 
     @staticmethod
     def _median(values: List[float]) -> float:

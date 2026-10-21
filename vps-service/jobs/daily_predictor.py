@@ -771,6 +771,39 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
             print(f"  🐋 [WHALE_RADAR] No stocks passed all 4 filters (path + signals>=5 + turnover>=10M + no distribution)", flush=True)
             return 0
 
+        # BRAVO-SSOT Stage 3: enrich candidates with unified_scanner confluence data
+        # (macro_location + dist_to_52w + proofs + distribution veto)
+        try:
+            import sys as _ss_sys
+            _vps_root = os.path.join(PROJECT_ROOT, 'vps-service')
+            if _vps_root not in _ss_sys.path:
+                _ss_sys.path.insert(0, _vps_root)
+            from core.unified_scanner import _scan_single_stock, ScanConfig
+            _ss_config = ScanConfig(market_name=market_code, min_turnover_egp=0, min_score=0)
+            for cand in candidates:
+                _ss_result = _scan_single_stock(cand.get('ticker', ''), _ss_config)
+                if _ss_result:
+                    cand['macro_location'] = _ss_result.get('macro_location', 'MID_RANGE')
+                    cand['dist_to_52w_high'] = _ss_result.get('dist_to_52w_high', 0)
+                    cand['dist_to_52w_low'] = _ss_result.get('dist_to_52w_low', 0)
+                    cand['confluence_proofs'] = _ss_result.get('proofs', 0)
+                    cand['confluence_reasons'] = _ss_result.get('reasons', [])
+                    # Veto: لو الـ unified_scanner قال DISTRIBUTION_VETO → شيله
+                    if _ss_result.get('track') == 'DISTRIBUTION_VETO':
+                        cand['_vetoed'] = True
+            # شيل الـ vetoed
+            before_veto = len(candidates)
+            candidates = [c for c in candidates if not c.get('_vetoed')]
+            vetoed_count = before_veto - len(candidates)
+            if vetoed_count > 0:
+                print(f"  🐋 [WHALE_RADAR] {vetoed_count} stock(s) vetoed by unified_scanner (distribution)", flush=True)
+        except Exception as _ss_err:
+            print(f"  🐋 [WHALE_RADAR] unified_scanner enrichment failed: {_ss_err}", flush=True)
+
+        if not candidates:
+            print(f"  🐋 [WHALE_RADAR] All candidates vetoed by unified_scanner", flush=True)
+            return 0
+
         print(f"  🐋 [WHALE_RADAR] {len(candidates)} stock(s) passed Hunter Mode filters:", flush=True)
 
         # (3) Generate a prediction for each candidate
