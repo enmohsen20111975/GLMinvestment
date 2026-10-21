@@ -29,7 +29,7 @@ class ScanConfig:
     market_name: str = 'EGX'
     timeframe: str = 'daily'  # daily, weekly, intraday
     min_score: float = 50.0
-    min_rr: float = 1.5  # Rule: R/R >= 1.5
+    min_rr: float = 2.0  # BRAVO-URGENT: R/R >= 2.0 mandatory (was 1.5)
     max_picks: int = 5
     min_turnover_egp: float = 1_500_000  # Rule: liquidity filter
     max_volume_ratio: float = 15.0  # Rule: cap phantom volume
@@ -204,6 +204,60 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     dist_to_support = ((current_price - support) / support * 100) if support > 0 else 100
     dist_to_resistance = ((resistance - current_price) / current_price * 100) if current_price > 0 else 100
 
+    # 3a. BRAVO-RVOL: قواعد RVOL النسبية الصارمة
+    # ──────────────────────────────────────────────
+    # ATR(5) vs ATR(20) للانكماش
+    atr_5 = None
+    atr_20 = None
+    if len(closes) >= 21:
+        tr_list = []
+        for i in range(1, len(closes)):
+            _h = highs[i]
+            _l = lows[i]
+            _pc = closes[i - 1]
+            tr_list.append(max(_h - _l, abs(_h - _pc), abs(_l - _pc)))
+        if len(tr_list) >= 5:
+            atr_5 = sum(tr_list[-5:]) / 5
+        if len(tr_list) >= 20:
+            atr_20 = sum(tr_list[-20:]) / 20
+    is_contracted = (atr_5 is not None and atr_20 is not None and atr_5 < atr_20)
+
+    # تحديد الأسهم القيادية (turnover >= 50M = قيادي)
+    turnover_now = current_price * volumes[-1] if volumes else 0
+    is_large_cap = ticker in ('COMI', 'TMGH', 'ETEL', 'SWDY', 'HRHO', 'CIEB', 'HDBK', 'FWRY')
+
+    # RVOL thresholds:
+    # - Large caps: rvol <= 0.60 for dryness
+    # - Small/mid caps: rvol <= 0.50 for dryness
+    # - Explosion: rvol >= 1.80
+    dryness_threshold = 0.60 if is_large_cap else 0.50
+    explosion_threshold = 1.80
+    is_dry = (vol_ratio <= dryness_threshold and is_contracted)
+    is_explosion = (vol_ratio >= explosion_threshold)
+
+    # Turnover gates:
+    # - Min: 1.5M EGP
+    # - Large caps: 3M EGP
+    min_turnover = 3_000_000 if is_large_cap else config.min_turnover_egp
+    turnover_ok = turnover_now >= min_turnover
+
+    # Wick anatomy (from real_liquidity_radar logic)
+    # rows format: (date, open, high, low, close, volume) — reversed = oldest first
+    _last_row = rows[-1] if rows else None
+    today_open = float(_last_row[1] if _last_row and len(_last_row) > 1 else 0) or 0
+    today_high = highs[-1] if highs else 0
+    today_low = lows[-1] if lows else 0
+    today_close = closes[-1] if closes else 0
+    range_hl = today_high - today_low + 1e-6
+    upper_wick_pct = ((today_high - max(today_open, today_close)) / range_hl) * 100
+    lower_wick_pct = ((min(today_open, today_close) - today_low) / range_hl) * 100
+
+    # Distribution risk: rvol >= 1.80 + price in upper third OR upper wick >= 40%
+    is_distribution_risk = is_explosion and (close_pct >= 67 or upper_wick_pct >= 40)
+
+    # Accumulation buy: price at support + lower wick >= 40%
+    is_accumulation_buy = (dist_to_support <= 3.0 and lower_wick_pct >= 40 and not is_explosion)
+
     # 3b. Macro Location — التموضع السعري (52-week high/low)
     # نقرأ high_52w/low_52w من stocks.db (لو متاح)
     high_52w = max(highs) if highs else current_price
@@ -352,19 +406,27 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     if liq_classification in ('DIRTY_DISTRIBUTION', 'FALLING_KNIFE'):
         dist_warn += 2  # auto-veto
 
-    # 9. Decision (enhanced with liquidity classification)
+    # 9. Decision (BRAVO-URGENT: RVOL gates + R/R >= 2.0 + math invariants)
+    # Math invariant: stop_loss < current_price <= entry_price < target_price
+    # R/R >= 2.0 mandatory — أي صفقة < 2.0 تُعدم فوراً
     if liq_classification == 'FALLING_KNIFE':
         signal, track = 'HOLD', 'FALLING_KNIFE_VETO'
-    elif is_illiquid:
+    elif is_illiquid or not turnover_ok:
         signal, track = 'HOLD', 'ILLIQUID'
+    elif is_distribution_risk:
+        # rvol >= 1.80 + upper third OR upper wick >= 40% = DISTRIBUTION_RISK
+        signal, track = 'HOLD', 'DISTRIBUTION_RISK'
     elif dist_warn >= 2:
         signal, track = 'HOLD', 'DISTRIBUTION_VETO'
     elif rr < config.min_rr:
-        signal, track = 'HOLD', 'LOW_RR'
+        signal, track = 'HOLD', 'LOW_RR'  # R/R < 2.0 = إعدام فوري
     elif liq_classification == 'DIRTY_DISTRIBUTION':
         signal, track = 'HOLD', 'DIRTY_DIST'
     elif is_fomo and score >= 50 and macro_location != 'NEAR_LOW':
         signal, track = 'WATCH', 'PEAK_MINEFIELD_WAIT'
+    elif is_accumulation_buy and score >= 60:
+        # price at support + lower wick >= 40% = ACCUMULATION_BUY
+        signal, track = 'STRONG_BUY', 'ACCUMULATION_BUY'
     elif score >= 70 and liq_classification in ('ACCUMULATION_CONFIRMED', 'DRY_EXPLOSION_READY'):
         signal, track = 'STRONG_BUY', 'GOLDEN_DIP'
     elif score >= 60:
