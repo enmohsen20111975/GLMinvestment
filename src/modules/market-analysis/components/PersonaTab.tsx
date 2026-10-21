@@ -908,7 +908,45 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  const isStale = Boolean(it.stale);
  const isMismatch = Boolean(it.priceTargetMismatch);
  const staleReason = (it.staleReason as string) || '';
- const rowOpacity = isMismatch ? 'opacity-50' : (isStale ? 'opacity-70' : '');
+
+ // ════════════════════════════════════════════════════════════════════
+ // PRICE INVARIANT GUARD (Client-side safety check)
+ // Per ALPHA Operational Directive — منع عرض توصيات متناقضة.
+ // مثال: سهم بلتون سعره 2.64 والدخول 3.16 والوقف 2.97 ← لازم يـبان
+ // كـ "ملغية" مش "شراء قوي".
+ // ════════════════════════════════════════════════════════════════════
+ const _entryVal = pd.entry ? Number(pd.entry) : null;
+ const _stopVal = pd.stop ? Number(pd.stop) : null;
+ const _targetVal = pd.target ? Number(pd.target) : null;
+ const _curVal = curPrice ? Number(curPrice) : null;
+
+ // (1) فحص الوقف المضروب: stop >= current → الصفقة ميتة (STOPPED_OUT)
+ const _isStoppedOut = _stopVal != null && _curVal != null && _stopVal >= _curVal;
+
+ // (2) فحص الهدف المحقق: current >= target → الصفقة منتهية بالهدف (TARGET_HIT)
+ const _isTargetHit = _targetVal != null && _curVal != null && _curVal >= _targetVal;
+
+ // (3) فحص الشذوذ السعري: |cur - entry| / entry > 8% → بيانات قديمة
+ const _isPriceMismatch = _entryVal != null && _curVal != null
+ && _entryVal > 0
+ && Math.abs(_curVal - _entryVal) / _entryVal > 0.08;
+
+ // (4) R/R غير صالح: لو الوقف أعلى من السعر الحالي
+ const _isRRInvalid = _isStoppedOut;
+
+ // الحالة الموحدة (priority: stopped > target_hit > stale)
+ const _invariantStatus = _isStoppedOut ? 'STOPPED_OUT'
+ : _isTargetHit ? 'TARGET_HIT'
+ : _isPriceMismatch ? 'STALE'
+ : null;
+
+ // دمج مع الـ backend flags
+ const _showStoppedOut = _isStoppedOut || isMismatch;
+ const _showTargetHit = _isTargetHit || isMismatch;
+ const _showStale = _isPriceMismatch || isStale;
+ const _anyInvariant = _showStoppedOut || _showTargetHit || _showStale;
+
+ const rowOpacity = _showStoppedOut ? 'opacity-50' : (_showStale ? 'opacity-70' : '');
 
  return (
  <tr key={cleanTicker} className={cn("border-t border-border hover:bg-muted/40 transition-colors cursor-pointer", rowOpacity)} onClick={() => onSelectItem?.(it)}>
@@ -923,13 +961,21 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  className="w-6 h-6"
  />
  <span>{cleanTicker}</span>
- {(isStale || isMismatch) && (
- <StatusBadge
- status={isMismatch ? 'TARGET_HIT' : 'WAITING'}
- label={isMismatch ? 'منتهية' : `قديمة ${it.stalePct ? `${it.stalePct}%` : ''}`}
- size="sm"
- className="cursor-help"
- />
+ {/* PRICE INVARIANT GUARD: badge يوضح حالة الصفقة بشكل صريح */}
+ {_anyInvariant && (
+ _showStoppedOut ? (
+ <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-loss/20 bg-loss/10 text-loss whitespace-nowrap" title="الوقف أعلى من السعر الحالي — الصفقة ميتة">
+ 🚫 ملغية - كسر الوقف
+ </span>
+ ) : _showTargetHit ? (
+ <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-profit/20 bg-profit/10 text-profit whitespace-nowrap" title="السعر الحالي ≥ الهدف — الهدف تحقق">
+ ✅ تحقق الهدف
+ </span>
+ ) : _showStale ? (
+ <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-warning/20 bg-warning/10 text-warning whitespace-nowrap" title="السعر الحالي بعيد عن الدخول بـ >8% — بيانات قديمة">
+ ⚠️ بيانات قديمة
+ </span>
+ ) : null
  )}
  </div>
  </td>
@@ -940,7 +986,7 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  </span>
  </td>
  <td className="p-2 text-xs text-muted-foreground max-w-[120px] truncate" title={it.nameAr || it.name || cleanTicker}>{it.nameAr || it.name || cleanTicker}</td>
- <td className={cn("p-2 text-center font-mono text-xs font-bold", isStale || isMismatch ? "text-warning " : "text-primary")} title={isStale || isMismatch ? staleReason : undefined}>
+ <td className={cn("p-2 text-center font-mono text-xs font-bold", _anyInvariant ? "text-warning" : "text-primary")} title={_anyInvariant ? 'الصفقة فيها شذوذ سعري' : undefined}>
  {fmtPrice(curPrice)}
  </td>
  <td className="p-2 text-center font-mono text-xs whitespace-nowrap">
@@ -949,13 +995,18 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  <span className="text-loss font-semibold">▼ {fmtPrice(lowPrice)}</span>
  </td>
  <td className="p-2 text-center">
- {isMismatch ? (
+ {/* PRICE INVARIANT GUARD: منع إظهار "شراء قوي" للصفقات الميتة */}
+ {_showStoppedOut ? (
  <Badge className="text-xs font-bold border border-loss/20 bg-loss/10 text-loss">
- منتهية
+ ملغية - كسر الوقف
  </Badge>
- ) : isStale ? (
- <Badge className="text-xs font-bold border border-warning/20 bg-warning/10 text-warning dark:text-warning" title={staleReason}>
- ⚠️ قديمة
+ ) : _showTargetHit ? (
+ <Badge className="text-xs font-bold border border-profit/20 bg-profit/10 text-profit">
+ تحقق الهدف
+ </Badge>
+ ) : _showStale ? (
+ <Badge className="text-xs font-bold border border-warning/20 bg-warning/10 text-warning" title={staleReason}>
+ بيانات قديمة
  </Badge>
  ) : (
  <Badge style={{ backgroundColor: style.bg, color: style.color }} className="text-xs font-bold border-0">
@@ -969,8 +1020,9 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
  <td className="p-2 text-center font-mono text-xs tabular-nums">{fmtPrice(pd.entry)}</td>
  <td className="p-2 text-center font-mono text-xs tabular-nums text-profit glow-profit">{fmtPrice(pd.target)}</td>
  <td className="p-2 text-center font-mono text-xs tabular-nums text-loss glow-loss">{fmtPrice(pd.stop)}</td>
- <td className={cn('p-2 text-center font-mono text-xs tabular-nums font-bold', rrColor(rr))}>
- {rr != null ? `${rr.toFixed(2)}:1` : '—'}
+ {/* R/R — ممنوع إظهار قيمة موجبة للصفقات المكسورة */}
+ <td className={cn('p-2 text-center font-mono text-xs tabular-nums font-bold', _isRRInvalid ? 'text-muted-foreground' : rrColor(rr))}>
+ {_isRRInvalid ? '—' : (rr != null ? `${rr.toFixed(2)}:1` : '—')}
  </td>
  <td className="p-2 text-center text-xs hidden md:table-cell">{pd.timeframe || '—'}</td>
  <td className="p-2 text-right hidden lg:table-cell text-xs text-muted-foreground max-w-[250px] truncate" title={pd.reason}>{pd.reason || '—'}</td>
