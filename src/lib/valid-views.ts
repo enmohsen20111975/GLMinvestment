@@ -98,3 +98,27 @@ export function resolveCryptoRedirect(view: string): string | null {
   return CRYPTO_VIEW_REDIRECTS[view] ?? null;
 }
 
+// ─── ALPHA Navigation Cleanup: Redirects للشاشات المحذوفة ──────────────
+// الشاشات دي مـش حذفينها من VALID_VIEWS عشان الروابط الخارجية متـنكسرش.
+// بس بـ نـعمل redirect لـ الشاشة الموحدة البديلة.
+//
+// Mapping (المحذوف → البديل):
+//   market-depth     → liquidity-radar  (رادار السيولة الحقيقي)
+//   smart-confluence → recommendations  (التوصيات الموحدة)
+//   v82              → recommendations  (محرك القرار مدمج في التوصيات)
+//   tithes           → sharia           (الحسابات الشرعية الموحدة)
+//   zakat            → sharia           (الحسابات الشرعية الموحدة)
+export const LEGACY_VIEW_REDIRECTS: Readonly<Record<string, string>> = {
+  'market-depth': 'liquidity-radar',
+  'smart-confluence': 'recommendations',
+  'v82': 'recommendations',
+  'tithes': 'sharia',
+  'zakat': 'sharia',
+} as const;
+
+// ── لو الـ view هو محذوف، نرجّع البديل المناسب ──────────────────────────
+// returns null لو مش محذوف (يعني view عادي)
+export function resolveLegacyRedirect(view: string): string | null {
+  return LEGACY_VIEW_REDIRECTS[view] ?? null;
+}
+

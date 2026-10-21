@@ -1,20 +1,18 @@
 /**
  * nav-config.ts — المصدر الوحيد للقوائم الثلاث (TopBar / MobileNav / MobileMoreSheet)
  * =====================================================================
- * ALPHA-FIX Task 4 (2026-10-20): إعادة هيكلة لـ 4 بوابات استثمارية واضحة:
+ * ALPHA Navigation Cleanup (2026-10-20):
+ * - حذف الشاشات الوهمية (market-depth, smart-confluence, tithes منفصلة)
+ * - دمج الحسابات الشرعية والزكاة في خيار واحد
+ * - استبدال market-depth في الموبايل بـ liquidity-radar
  *
- * TopBar → 6 بوابات (4 رئيسية + 2 مساعدة):
- * 1. 📊 نبض السوق (Market Pulse) — dashboard + liquidity-radar + sectors + market-status + historical-trades
- * 2. 🎯 الفرص والتربص (Picks & Stalking) — recommendations + market-depth + picks-management + specialist-analysis
- * 3. 🔬 مجهر الأسهم (Stock DNA) — stocks + stock-filters + screener + trading-chart + smart-confluence
- * 4. 💼 الصفقات والمحفظة (Portfolio) — portfolio + watchlist + alerts-center + bagholder-rescue
- * 5. 🎓 التعلّم (Education) — academy + simulation
- * 6. ⋯ المزيد (More) — news + subscription + settings + sharia + zakat + tithes + about
- *
- * MobileNav → 5 أزرار (بدون تغيير):
- * dashboard / stocks / recommendations / portfolio / market-depth
- *
- * MobileMoreSheet → أقسام أخرى (بدون تغيير)
+ * TopBar → 6 بوابات:
+ * 1. 📊 نبض السوق — dashboard + liquidity-radar + market-status
+ * 2. 🎯 الفرص والتربص — recommendations + incubator + prediction-tracking
+ * 3. 🔬 مجهر الأسهم — stocks + trading-chart
+ * 4. 💼 المحفظة — portfolio + watchlist + trading-journal + alerts + rescue
+ * 5. 🎓 التعلّم — academy + simulation
+ * 6. ⚙️ المزيد — news + sharia(زكاة+شرعية) + subscription + settings
  */
 
 import {
@@ -61,7 +59,7 @@ export interface NavSection {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- * TopBar — 6 بوابات استثمارية رئيسية (هيكلة نظيفة ومباشرة)
+ * TopBar — 6 بوابات استثمارية رئيسية
  * ════════════════════════════════════════════════════════════════════════ */
 export const navSections: NavSection[] = [
   // ─── (1) 📊 نبض السوق (Market Pulse) ───
@@ -72,7 +70,6 @@ export const navSections: NavSection[] = [
     items: [
       { id: 'dashboard', label: 'نظرة عامة', icon: LayoutDashboard },
       { id: 'liquidity-radar', label: 'رادار السيولة والقطاعات', icon: Waves },
-      { id: 'market-depth', label: 'عمق السوق والعملات', icon: Landmark },
       { id: 'market-status', label: 'حالة وضغط الجلسة', icon: Zap },
     ],
   },
@@ -95,7 +92,6 @@ export const navSections: NavSection[] = [
     items: [
       { id: 'stocks', label: 'قائمة الأسهم والفلترة', icon: CandlestickChart },
       { id: 'trading-chart', label: 'شارت التداول الفني', icon: BarChart3 },
-      { id: 'smart-confluence', label: 'التوافق الذكي', icon: Microscope },
     ],
   },
   // ─── (4) 💼 محفظتي وحساباتي (Portfolio & Trades) ───
@@ -128,8 +124,7 @@ export const navSections: NavSection[] = [
     icon: Menu,
     items: [
       { id: 'news', label: 'الأخبار والإفصاحات', icon: Newspaper },
-      { id: 'sharia', label: 'الفلتر الشرعي', icon: ShieldCheck },
-      { id: 'zakat', label: 'حاسبة الزكاة', icon: Landmark },
+      { id: 'sharia', label: 'الحسابات الشرعية والزكاة', icon: ShieldCheck },
       { id: 'subscription', label: 'إدارة الاشتراك', icon: Crown, highlight: true },
       { id: 'settings', label: 'إعدادات الحساب', icon: Settings },
     ],
@@ -137,18 +132,20 @@ export const navSections: NavSection[] = [
 ];
 
 /* ════════════════════════════════════════════════════════════════════════
- * MobileNav — 5 أزرار سفلية (بدون تغيير)
+ * MobileNav — 5 أزرار سفلية
+ * استبدلنا market-depth بـ liquidity-radar (شاشة حقيقية مش وهمية)
  * ════════════════════════════════════════════════════════════════════════ */
 export const bottomNavItems: NavItem[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
   { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
   { id: 'recommendations', label: 'التحليلات', icon: TrendingUp },
   { id: 'portfolio', label: 'المحفظة', icon: Wallet },
-  { id: 'market-depth', label: 'السيولة', icon: Activity },
+  { id: 'liquidity-radar', label: 'رادار السيولة', icon: Waves },
 ];
 
 /* ════════════════════════════════════════════════════════════════════════
- * MobileMoreSheet — أقسام أخرى (بدون تغيير)
+ * MobileMoreSheet — أقسام أخرى
+ * دمجنا zakat + tithes في خيار واحد (الحسابات الشرعية)
  * ════════════════════════════════════════════════════════════════════════ */
 export const moreNavItems: NavItem[] = [
   { id: 'bagholder-rescue', label: '🆘 إنقاذ سهم خاسر', icon: LifeBuoy },
@@ -157,8 +154,7 @@ export const moreNavItems: NavItem[] = [
   { id: 'academy', label: 'الأكاديمية', icon: GraduationCap },
   { id: 'news', label: 'الأخبار', icon: Newspaper },
   { id: 'subscription', label: 'الاشتراك', icon: Crown, highlight: true },
-  { id: 'zakat', label: 'الزكاة', icon: Landmark },
-  { id: 'tithes', label: 'العُشر', icon: Landmark },
+  { id: 'sharia', label: 'الحسابات الشرعية والزكاة', icon: ShieldCheck },
   { id: 'settings', label: 'الإعدادات', icon: Settings },
   { id: 'about', label: 'من نحن', icon: Info },
 ];
