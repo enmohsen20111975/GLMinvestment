@@ -5911,3 +5911,26 @@ Stage Summary:
   - الـ screener بيـ read من db/price_history.db اللي عملتها بـ real Yahoo data لـ 6 tickers فقط (TMGH, COMI, HRHO, SWDY, EFIH, ORWE). باقي الـ EGX tickers هترجع 404 "no data" لحد ما الـ DB يتـ backfill. scripts/backfill_*.py موجودة للموضوع ده.
   - screener_watchdog.sh لم يشتغل لأن الـ setsid launch مستقر enough للـ sandbox؛ لو الـ service وقع تاني يبقى لازم الـ watchdog.
   - البيانات من Yahoo بتـ reflect الـ market أيام الـ fetch (بما إن EGX بـ trade أيام السبت-الأربعاء، 1y بـ يـ cover ~243 trading days).
+
+---
+
+Task ID: GIT-PUSH-1
+Agent: Z.ai Code
+Task: رفع تعديلات Alpha (CHART_GRID fix + 410 fix) + Bravo worklog على GitHub.
+
+Work Log:
+- اكتشفت إن local ahead بـ 2 commits (الـ auto-commit hook عمل commit لتعديلاتي بـ UUID messages: 0af5aa2 + 604eddf).
+- عملت git fetch → لقيت origin/main ahead بـ 3 commits جديدة (feat(data-recovery), feat(data-sync), merge) لم تكن عندى.
+- الـ remote commits دي كانت بتـ touch نفس الـ 3 ملفات بتوعي بس بـ OLD content (بدون exports/imports — يعني الـ fixes بتاعي ما كانتش على GitHub).
+- عملت git pull --rebase origin main: تعارض في worklog.md بس (ملفات الكود auto-merged بنجاح لأن نص different).
+- حلّلت تعارض worklog.md بإبقاء القسمين (gap-fill report من remote + FIX-BROWSER-ERRORS-1 worklog بتاعي).
+- GIT_EDITOR=true git rebase --continue — تم بنجاح.
+- Verified: utils.ts (6 exports), indicators.ts (4 exports), api-client.ts (recommendation) — كلها موجودة post-rebase.
+- git push origin main: e9bdcd8..01770d2 ✓ — تم بنجاح.
+- git fetch + git status: ## main...origin/main (synced, no ahead/behind).
+
+Stage Summary:
+- ✅ التعديلات مترفعة على https://github.com/enmohsen20111975/GLMinvestment branch main.
+- ✅ Commit hashes على GitHub: c80f8d7 (code fixes) + 01770d2 (worklog Bravo section).
+- ✅ الـ 3 ملفات بتاعت Alpha على GitHub دلوقتي: src/lib/api-client.ts, src/modules/market-analysis/components/interactive-chart/utils.ts, src/modules/market-analysis/components/interactive-chart/indicators.ts.
+- 🔧 التعارض اتحل بإبقاء القسمين في worklog.md (gap-fill + browser-errors).
