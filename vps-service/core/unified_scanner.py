@@ -29,7 +29,7 @@ class ScanConfig:
     market_name: str = 'EGX'
     timeframe: str = 'daily'  # daily, weekly, intraday
     min_score: float = 50.0
-    min_rr: float = 2.0  # Rule 4: R/R >= 2.0 الصارم
+    min_rr: float = 1.5  # Rule: R/R >= 1.5
     max_picks: int = 5
     min_turnover_egp: float = 1_500_000  # Rule: liquidity filter
     max_volume_ratio: float = 15.0  # Rule: cap phantom volume
@@ -204,121 +204,179 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     dist_to_support = ((current_price - support) / support * 100) if support > 0 else 100
     dist_to_resistance = ((resistance - current_price) / current_price * 100) if current_price > 0 else 100
 
-    # 3b. التموضع الهيكلي من محرك الذاكرة التراكمية (MacroStateEngine)
-    from core.macro_state_engine import MacroStateEngine
-    macro_info = MacroStateEngine.calculate_macro_location_ratio(ticker, current_price)
-    mlr = macro_info.get("mlr", 0.5)
-    macro_zone = macro_info.get("zone", "MID_RANGE")
-    high_52w = macro_info.get("high_52w", max(highs) if highs else current_price)
-    low_52w = macro_info.get("low_52w", min(lows) if lows else current_price)
+    # 3b. Macro Location — التموضع السعري (52-week high/low)
+    # نقرأ high_52w/low_52w من stocks.db (لو متاح)
+    high_52w = max(highs) if highs else current_price
+    low_52w = min(lows) if lows else current_price
+    try:
+        stocks_db = project_root / 'db' / 'stocks.db'
+        if stocks_db.exists():
+            sconn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=3.0)
+            srow = sconn.execute(
+                "SELECT high_52w, low_52w FROM stocks WHERE ticker = ?", (ticker,)
+            ).fetchone()
+            sconn.close()
+            if srow and srow[0] and srow[0] > 0:
+                high_52w = srow[0]
+            if srow and srow[1] and srow[1] > 0:
+                low_52w = srow[1]
+    except Exception:
+        pass
 
     dist_to_52w_high = round(((high_52w - current_price) / high_52w * 100), 2) if high_52w > 0 else 0
     dist_to_52w_low = round(((current_price - low_52w) / low_52w * 100), 2) if low_52w > 0 else 0
 
-    # 4. فلتر السيولة الصارم (turnover >= 1.5M EGP)
+    # Macro location classification:
+    # NEAR_HIGH: within 5% of 52w high (طاير في القمة — FOMO risk)
+    # NEAR_LOW: within 10% of 52w low (مخلص تصحيح في القاع — فرصة دخول)
+    # MID_RANGE: بين الاثنين
+    if dist_to_52w_high <= 5.0:
+        macro_location = 'NEAR_HIGH'
+    elif dist_to_52w_low <= 10.0:
+        macro_location = 'NEAR_LOW'
+    else:
+        macro_location = 'MID_RANGE'
+
+    # 4. Liquidity filter (Rule: turnover >= 1.5M)
     turnover = current_price * volumes[-1] if volumes else 0
     is_illiquid = turnover < config.min_turnover_egp
 
-    # 5. ATR stop + target بمعدل مخاطرة لعائد حقيقي (R/R >= 2.0)
+    # 5. Anti-FOMO (Rule: chg > 4% = pullback wait)
+    is_fomo = chg_1d > config.fomo_spike_threshold
+
+    # 6. ATR stop + target (Rule 8: [5%, 9%])
     atr_pct = (atr / current_price * 100) if atr and current_price > 0 else 0
     atr_pct = max(config.min_atr_stop_pct, min(config.max_atr_stop_pct, atr_pct))
     stop_loss = current_price * (1 - atr_pct / 100)
-    target_price = current_price * (1 + atr_pct * 2.1 / 100)  # يستهدف R/R >= 2.0
+    target_price = current_price * (1 + atr_pct * 1.8 / 100)  # R/R = 1.8
     risk = current_price - stop_loss
     reward = target_price - current_price
     rr = round(reward / risk, 2) if risk > 0 else 0
 
-    # 6. فحص شروط القواعد الأربعة الصارمة (The 4 Street-Smart Rules)
-    # القاعدة 1: منطقة ألغام القمم (أعلى 10% من رينج السنة)
-    is_peak_minefield = (mlr >= 0.90)
+    # 7. BRAVO-QUAD-SCORE: السكور الرباعي (30/30/20/20) — لا معادلات V38
+    # ────────────────────────────────────────────────────────────
+    # 30% Volume Profile (المسافة من POC + Value Area)
+    # 30% SMC (Order Block + كسر الهيكل)
+    # 20% رادار السيولة الواقعي (من real_liquidity_radar)
+    # 20% الموسمية الإحصائية للشهر الحالي
 
-    # القاعدة 2: السكين الساقطة (هبوط قوي بفوليوم عالي)
-    is_falling_knife = (chg_1d < -2.0 and vol_ratio >= 1.4) or (adx and adx.get('minus_di', 0) > adx.get('plus_di', 0) * 1.6)
+    # ── 7a. Volume Profile Score (0-30) ──
+    # المسافة من منتصف الـ range = قرب من POC
+    vp_score = 0.0
+    if vol_ratio >= 2.0 and chg_1d > 0:
+        vp_score += 15  # volume surge + price up = قوي
+    elif vol_ratio >= 1.5 and close_pct >= 70:
+        vp_score += 12  # accumulation
+    elif vol_ratio >= 1.2:
+        vp_score += 6
+    # قرب من POC (منتصف الـ range)
+    if 40 <= close_pct <= 80:
+        vp_score += 10
+    elif 30 <= close_pct <= 90:
+        vp_score += 5
+    vp_score = min(30.0, vp_score)
 
-    # القاعدة 3: بروتوكول صيد قاع التصحيح (The Golden Dip)
-    # هبوط بهدوء (فوليوم جاف) + ارتداد من دعم + شمعة خضراء + سيولة حوت
-    # 6. توسيع صيد التصحيح (The Enhanced Golden Dip Protocol)
-    # عمق التصحيح بين 4% إلى 16% من القمة الأخيرة
-    recent_high = max(highs[-15:]) if len(highs) >= 15 else high_52w
-    dip_depth_pct = ((recent_high - current_price) / recent_high * 100) if recent_high > 0 else 0
-    is_valid_dip_depth = (4.0 <= dip_depth_pct <= 16.0)
+    # ── 7b. SMC Score (0-30) — Order Block + Structure Break ──
+    smc_score = 0.0
+    if current_price >= resistance * 0.98 and chg_1d > 0:
+        smc_score += 15  # كسر مقاومة = structure break
+    if dist_to_support <= 3.0 and chg_1d > -1.0:
+        smc_score += 10  # قرب دعم = order block
+    if adx and adx.get('adx', 0) > 25:
+        smc_score += 5  # ترند قوي
+    smc_score = min(30.0, smc_score)
 
-    # جفاف الفوليوم أثناء الهبوط (متوسط آخر 3 أيام هبوط <= 88% من متوسط 20 يوم)
-    recent_drop_dry = False
-    if len(volumes) >= 4:
-        avg_drop_vol = sum(volumes[-4:-1]) / 3
-        recent_drop_dry = (avg_drop_vol <= vol_avg * 0.88)
+    # ── 7c. Real Liquidity Radar Score (0-20) ──
+    liq_score = 0.0
+    liq_classification = 'SUSPICIOUS_WATCH'
+    liq_reason = ''
+    liq_mlr = 0.0
+    try:
+        from core.real_liquidity_radar import analyze_liquidity
+        # convert rows to dict format for liquidity radar
+        liq_input = []
+        for r in reversed(rows):
+            liq_input.append({
+                'open': r[1] if len(r) > 1 else 0,
+                'high': r[2] if len(r) > 2 else 0,
+                'low': r[3] if len(r) > 3 else 0,
+                'close': r[4] if len(r) > 4 else 0,
+                'volume': r[5] if len(r) > 5 else 0,
+            })
+        liq_result = analyze_liquidity(ticker, liq_input)
+        liq_classification = liq_result.classification
+        liq_reason = liq_result.reason_ar
+        liq_mlr = liq_result.mlr
 
-    # فحص الدعم: قرب دعم قاع سابق أو SMA20
-    near_sma20 = (abs(current_price - sma20) / current_price * 100 <= 2.5) if sma20 else False
-    near_support = (dist_to_support <= 4.0 or near_sma20)
+        if liq_classification == 'ACCUMULATION_CONFIRMED':
+            liq_score = 20.0
+        elif liq_classification == 'DRY_EXPLOSION_READY':
+            liq_score = 16.0
+        elif liq_classification == 'SUSPICIOUS_WATCH':
+            liq_score = 8.0
+        # DIRTY_DISTRIBUTION + FALLING_KNIFE = 0 (vetoed below)
+    except Exception as e:
+        logger.debug(f"liquidity radar failed for {ticker}: {e}")
 
-    is_golden_dip = (
-        recent_drop_dry and
-        is_valid_dip_depth and
-        near_support and
-        chg_1d > 0.0 and
-        vol_ratio >= 1.25 and
-        not is_peak_minefield and
-        rr >= config.min_rr
-    )
+    # ── 7d. Seasonality Score (0-20) ──
+    season_score = 10.0  # default neutral
+    try:
+        from datetime import datetime
+        month = datetime.now().month
+        # موسمية بسيطة: شهور الربيع (Mar-May) + خريف (Sep-Nov) = إيجابي للـ EGX
+        if month in (3, 4, 5, 9, 10, 11):
+            season_score = 16.0
+        elif month in (12, 1, 2):
+            season_score = 8.0
+        else:
+            season_score = 12.0
+    except Exception:
+        pass
 
-    # بروتوكول الخروج الذكي (The Golden Exit Strategy)
-    tp1_price = round(current_price * 1.065, 2)  # هدف أول +6.5% لجني نصف الكمية
-    tp2_price = round(target_price, 2)          # هدف ثانٍ كامل
-    trailing_stop_pct = 2.5                     # وقف متحرك 2.5% تحت أعلى قمة جديدة
-    max_hold_days = 5                           # Time Stop: 5 أيام عمل كحد أقصى للفرقعة
+    # ── 7e. Net Score (0-100) ──
+    score = round(vp_score + smc_score + liq_score + season_score, 1)
+    proofs = int(vp_score / 10) + int(smc_score / 10) + int(liq_score / 10)  # backward compat
+    reasons = [
+        f"VP={vp_score:.0f}/30",
+        f"SMC={smc_score:.0f}/30",
+        f"Liq={liq_score:.0f}/20 ({liq_classification})",
+        f"Season={season_score:.0f}/20",
+    ]
 
-    # 7. براهين التوافق (Confluence Proofs)
-    proofs = 0
-    reasons = []
+    # 8. Distribution veto (enhanced with liquidity radar)
+    dist_warn = 0
+    if chg_1d < -2.0 and vol_ratio >= 1.5:
+        dist_warn += 1
+    if adx and adx['minus_di'] > adx['plus_di'] * 1.5:
+        dist_warn += 1
+    if liq_classification in ('DIRTY_DISTRIBUTION', 'FALLING_KNIFE'):
+        dist_warn += 2  # auto-veto
 
-    if is_golden_dip:
-        proofs += 3
-        reasons.append(f"GOLDEN_DIP_D{dip_depth_pct:.1f}%")
-    else:
-        if vol_ratio >= 2.0 and chg_1d > 0:
-            proofs += 1; reasons.append(f"vol_surge={vol_ratio:.1f}x")
-        if vol_ratio >= 1.5 and close_pct >= 70:
-            proofs += 1; reasons.append(f"accum={close_pct:.0f}%")
-        # اختراق حقيقي فقط فوق المقاومة بفوليوم (وليس وقوف تحتها)
-        if current_price > resistance and vol_ratio >= 1.5 and chg_1d > 0.5:
-            proofs += 2; reasons.append("TRUE_BREAKOUT")
-        if rsi and 40 <= rsi <= 60 and vol_ratio >= 1.2:
-            proofs += 1; reasons.append(f"rsi_neutral={rsi:.0f}")
-        if dist_to_support <= 3.0 and chg_1d > -0.5:
-            proofs += 1; reasons.append(f"near_support={dist_to_support:.1f}%")
-        if macro_zone == 'GOLDEN_DIP_ZONE' and chg_1d > 0:
-            proofs += 1; reasons.append(f"macro_dip_zone={mlr:.2f}")
-
-    # 8. إصدار القرار الصارم (Strict Decision Gate)
-    if is_illiquid:
+    # 9. Decision (enhanced with liquidity classification)
+    if liq_classification == 'FALLING_KNIFE':
+        signal, track = 'HOLD', 'FALLING_KNIFE_VETO'
+    elif is_illiquid:
         signal, track = 'HOLD', 'ILLIQUID'
-    elif is_falling_knife:
-        signal, track = 'HOLD', 'FALLING_KNIFE_VETO'  # سكين ساقطة: ممنوع أهداف فوق
-        reasons.append("falling_knife_detected")
+    elif dist_warn >= 2:
+        signal, track = 'HOLD', 'DISTRIBUTION_VETO'
     elif rr < config.min_rr:
-        signal, track = 'HOLD', 'LOW_RR'  # القاعدة 4: R/R < 2 مرفوض
-    elif is_peak_minefield:
-        # القاعدة 1: قمة سنوية = منطقة ألغام، ممنوع شراء، انتظار تصحيح
+        signal, track = 'HOLD', 'LOW_RR'
+    elif liq_classification == 'DIRTY_DISTRIBUTION':
+        signal, track = 'HOLD', 'DIRTY_DIST'
+    elif is_fomo and score >= 50 and macro_location != 'NEAR_LOW':
         signal, track = 'WATCH', 'PEAK_MINEFIELD_WAIT'
-        reasons.append(f"peak_minefield_mlr={mlr:.2f}")
-    elif is_golden_dip:
-        # القاعدة 3: الصفقة الذهبية المسموحة
+    elif score >= 70 and liq_classification in ('ACCUMULATION_CONFIRMED', 'DRY_EXPLOSION_READY'):
         signal, track = 'STRONG_BUY', 'GOLDEN_DIP'
-    elif chg_1d > config.fomo_spike_threshold and proofs >= 2:
-        signal, track = 'WATCH', 'PULLBACK_WAIT'
-    elif proofs >= 3:
-        signal, track = 'STRONG_BUY', 'WHALE_CONFLUENCE'
-    elif proofs == 2:
+    elif score >= 60:
         signal, track = 'BUY', 'CONFIRMED'
-    elif proofs == 1:
+    elif score >= 40:
         signal, track = 'WATCH', 'WEAK_PROOF'
     else:
         signal, track = 'HOLD', 'NO_PROOF'
 
-    # 9. Score (0-100)
-    score = min(100, proofs * 20 + (10 if rsi and 40 <= rsi <= 60 else 0) + (10 if vol_ratio >= 1.5 else 0))
+    # 10. Exit Protocol (TP1 + Trailing + Time Stop)
+    tp1_price = round(current_price * 1.065, 2)  # +6.5%
+    tp2_price = round(current_price * 1.15, 2)    # +15%
 
     return {
         'ticker': ticker,
@@ -345,23 +403,33 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         'low_52w': round(low_52w, 2),
         'dist_to_52w_high': dist_to_52w_high,
         'dist_to_52w_low': dist_to_52w_low,
-        'macro_location': macro_zone,
+        'macro_location': macro_location,
         'entry_price': round(current_price, 2),
         'stop_loss': round(stop_loss, 2),
         'target_price': round(target_price, 2),
+        'risk_reward': rr,
+        # BRAVO-QUAD-SCORE breakdown
+        'vp_score': vp_score,
+        'smc_score': smc_score,
+        'liq_score': liq_score,
+        'season_score': season_score,
+        # Real Liquidity Radar
+        'liquidity_classification': liq_classification,
+        'liquidity_reason': liq_reason,
+        'liquidity_mlr': liq_mlr,
+        # Exit Protocol
         'tp1_price': tp1_price,
         'tp2_price': tp2_price,
-        'trailing_stop_pct': trailing_stop_pct,
-        'max_hold_days': max_hold_days,
+        'trailing_stop_pct': 2.5,
+        'max_hold_days': 5,
         'exit_protocol': 'TP1_6PCT_TIME_STOP_5D',
-        'risk_reward': rr,
         'proofs': proofs,
         'score': score,
         'signal': signal,
         'track': track,
         'reasons': reasons,
         'is_illiquid': is_illiquid,
-        'is_fomo': (chg_1d > config.fomo_spike_threshold),
+        'is_fomo': is_fomo,
     }
 
 
