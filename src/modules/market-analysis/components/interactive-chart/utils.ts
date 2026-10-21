@@ -1,7 +1,12 @@
 import type { Time } from 'lightweight-charts';
 import type { ChartData, IndicatorData } from './types';
+// ALPHA-FIX: import color constants used by formatVolumeData — previously
+// referenced as free variables (ReferenceError at runtime when the function
+// ran). See InteractiveChart.tsx import of CHART_GRID which failed because
+// this whole module failed to initialize due to the broken UP_COLOR binding.
+import { UP_COLOR, DOWN_COLOR } from './types';
 
-function toTime(timeVal: string | number): Time {
+export function toTime(timeVal: string | number): Time {
  if (typeof timeVal === 'number') {
  return timeVal as Time;
  }
@@ -41,7 +46,7 @@ function toTime(timeVal: string | number): Time {
 // ── P32 TASK 1+2: time → numeric seconds (for sort/dedup) ──
 // lightweight-charts requires strictly ascending, unique times. Mixed string/number
 // times (daily 'yyyy-mm-dd' vs intraday unix-seconds) must be comparable.
-function timeToNumber(t: Time): number {
+export function timeToNumber(t: Time): number {
  if (typeof t === 'number') return t;
  const s = String(t);
  const p = s.split('-');
@@ -58,7 +63,7 @@ function timeToNumber(t: Time): number {
 // drops candles with unparseable time (prevents "Invalid date string=26/07 09:00"),
 // sorts ascending by time, and dedupes by time (keeps last).
 // This is the exact filter the client requested: no null candle may reach the chart.
-function sanitizeCandles(data: ChartData[]): ChartData[] {
+export function sanitizeCandles(data: ChartData[]): ChartData[] {
  const cleaned: ChartData[] = [];
  for (const d of data) {
  const o = Number(d.open);
@@ -105,7 +110,7 @@ function sanitizeCandles(data: ChartData[]): ChartData[] {
  return out;
 }
 
-function fmtDateLabel(timeVal: string | number): string {
+export function fmtDateLabel(timeVal: string | number): string {
  let date: Date;
  if (typeof timeVal === 'number') {
  date = new Date(timeVal * 1000);
@@ -120,7 +125,7 @@ function fmtDateLabel(timeVal: string | number): string {
  return `${day}/${month} ${hour}:${minute}`;
 }
 
-function formatLineData(data: IndicatorData[]) {
+export function formatLineData(data: IndicatorData[]) {
  return data
  .filter((d) => d.value !== null && d.value !== undefined && !isNaN(d.value))
  .map((d) => ({
@@ -129,7 +134,7 @@ function formatLineData(data: IndicatorData[]) {
  }));
 }
 
-function formatVolumeData(data: ChartData[]) {
+export function formatVolumeData(data: ChartData[]) {
  return data.map((d) => ({
  time: toTime(d.time),
  value: d.volume,

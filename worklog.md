@@ -5835,3 +5835,35 @@ python3 scripts/extract_retired_zombie_db.py --market-db /custom/path/market.db
 - test_gap_fill/ اتشال بعد الاختبار (1GB حررت)
 - الـ backup الكامل في `db/backups/pre_gap_fill_20261021/` محفوظ
 - السكربت مش مترفع على GitHub لسه (هيترفع مع باقي الـ commits)
+
+---
+
+Task ID: FIX-BROWSER-ERRORS-1
+Agent: Z.ai Code
+Task: إصلاح أخطاء الـ browser console اللي بعت بيها المستخدم:
+  1. localhost:3000/api/market-pulse?action=stats — ERR_SSL_PROTOCOL_ERROR
+  2. /api/stocks/CPMEC/professional-analysis — 410 Gone
+  3. /api/stock-screener/analyze?ticker=CPMEC — 503 Service Unavailable
+  4. ReferenceError: CHART_GRID is not defined (at InteractiveChart)
+
+Work Log:
+- قرأت الـ worklog + dev.log + Caddyfile + package.json لأفهم سياق المشروع (GLMinvestment, Next.js 14.2.28, Caddy gateway على :81 يـ proxy لـ localhost:3000).
+- حققت في error #4 (CHART_GRID): لقيت إن Import ثابت في InteractiveChart.tsx (line 59) والـ export موجود في types.ts (line 150). فعملت clear لـ .next و restart للـ dev server.
+- بعد الـ recompile, ظهرت الأخطاء الحقيقية في dev.log: "Attempted import error: 'toTime' is not exported from './utils'" + نفس النمط لـ fmtDateLabel, calcEMA, calcMACD, calcOBV, calcFibLevels. ده الـ ROOT CAUSE فعلاً — الـ functions معرفة من غير `export` keyword فالـ named imports فشلت, والـ module كله ما initializeش صح فالـ CHART_GRID binding مكانش في scope وقت الـ runtime.
+- Fix #4a: `src/modules/market-analysis/components/interactive-chart/utils.ts` — ضفت `export` لـ 6 functions (toTime, timeToNumber, sanitizeCandles, fmtDateLabel, formatLineData, formatVolumeData) + ضفت `import { UP_COLOR, DOWN_COLOR } from './types'` لأن formatVolumeData كانت reference ألوان كـ free variables (نفس الـ root cause).
+- Fix #4b: `src/modules/market-analysis/components/interactive-chart/indicators.ts` — ضفت `export` لـ 4 functions (calcEMA, calcMACD, calcOBV, calcFibLevels) + ضفت `import { LineStyle } from 'lightweight-charts'` لأن calcFibLevels كانت تستخدم LineStyle كـ free variable.
+- Fix #2 (410): `src/lib/api-client.ts` — الـ `getProfessionalAnalysis(ticker)` كانت بتـ call `/api/stocks/[ticker]/professional-analysis` اللي هو 410 Gone (deprecated, شوف route.ts). غيّرته لـ call الـ canonical route `/api/stocks/[ticker]/recommendation` اللي بـ proxy لنفس الـ Python upstream وبيقّع على نفس الـ SQLite record بنفس الـ response shape. الـ method name اتفضل زي ما هو عشان الـ callers (store.loadProfessionalAnalysis, StockAnalysisReport) ما تتكسرش.
+- Verified: `curl /api/stocks/CPMEC/recommendation` → HTTP 200 ✓. الـ deprecated route لسه بـ 410 (intentional deprecation marker), بس الـ frontend دلوقتي ما بـ callوش هـ أصلاً.
+- Verified: بعد الـ fixes, dev server عمل `✓ Compiled / in 30.9s (5391 modules)` + `GET / 200` من غير أي "Attempted import error".
+- Verified مع agent-browser: صفحة `/` بتـ render صح (title "دليل الاستثمار", 1714 chars محتوى), console errors خلت من CHART_GRID و ReferenceError و 410. الـ dashboard اشتغل (onboarding modal → EGX selection → dashboard بـ navigation و market pulse و search).
+- Note: dev server حصل لـ OOM kill مرتين (sandbox عنده 4GB RAM فقط والمشروع ضخم — 5391 modules). أعدت تشغيله واتـ verified. ده environment constraint مش code issue.
+- Note على error #1 (ERR_SSL_PROTOCOL_ERROR لـ localhost:3000): root cause إن المستخدم بيفتح `http://localhost:3000` مباشرة بدل ما يستخدم الـ Preview Panel (الـ gateway HTTPS). Chrome HSTS list بتـ upgrade `http://localhost` لـ `https://localhost`, و port 3000 بـ speaks HTTP فقط فالـ SSL handshake بـ يفشل. الحل: استخدم الـ Preview Panel الموجود على اليمين. الـ code نفسه بيستخدم relative URLs صح (`/api/market-pulse?market=...`) فالمشكلة مش في الكود.
+- Note على error #3 (503 لـ stock-screener): الـ route `/api/stock-screener/analyze` بيـ proxy لـ Python Screener service على port 8012. الخدمة دي مش شغالة في الـ sandbox دي. الـ route بـ يرجّع 503 بـ message واضح ("محرك تحليل الأسهم (Python Screener) غير متاح على port 8012"). عشان الـ 503 يختفي, لازم الـ Python screener service يشتغل (مش code fix — infrastructure).
+
+Stage Summary:
+- ✅ ReferenceError: CHART_GRID is not defined — اتعالج root cause (missing `export` keywords في utils.ts و indicators.ts + missing color/LineStyle imports).
+- ✅ /api/stocks/CPMEC/professional-analysis 410 — الـ frontend دلوقتي بـ call الـ canonical `/recommendation` (200) بدلاً منه.
+- ⚠️ ERR_SSL_PROTOCOL_ERROR لـ localhost:3000 — environment/HSTS issue; المستخدم لازم يستخدم الـ Preview Panel مش `http://localhost:3000` مباشرة.
+- ⚠️ 503 لـ stock-screener — Python Screener service (port 8012) مش شغال; مش code fix.
+- 🔧 Files modified: src/lib/api-client.ts, src/modules/market-analysis/components/interactive-chart/utils.ts, src/modules/market-analysis/components/interactive-chart/indicators.ts
+- 🚀 Dev server running على port 3000, `/` route compiled cleanly (5391 modules, HTTP 200).

@@ -1,6 +1,10 @@
 import type { ChartData } from './types';
+// ALPHA-FIX: import LineStyle (used by calcFibLevels) — previously a free
+// variable, ReferenceError at runtime. Same root cause as the utils.ts color
+// constants and the CHART_GRID error in InteractiveChart.tsx.
+import { LineStyle } from 'lightweight-charts';
 
-function calcEMA(data: number[], period: number): (number | null)[] {
+export function calcEMA(data: number[], period: number): (number | null)[] {
  const result: (number | null)[] = new Array(data.length).fill(null);
  if (data.length < period) return result;
 
@@ -20,7 +24,7 @@ function calcEMA(data: number[], period: number): (number | null)[] {
  return result;
 }
 
-function calcMACD(closes: number[]): {
+export function calcMACD(closes: number[]): {
  macdLine: (number | null)[];
  signalLine: (number | null)[];
  histogram: (number | null)[];
@@ -65,7 +69,7 @@ function calcMACD(closes: number[]): {
  return { macdLine, signalLine, histogram };
 }
 
-function calcOBV(ohlcv: ChartData[]): number[] {
+export function calcOBV(ohlcv: ChartData[]): number[] {
  const obv: number[] = [0];
  for (let i = 1; i < ohlcv.length; i++) {
  if (ohlcv[i].close > ohlcv[i - 1].close) {
@@ -79,7 +83,7 @@ function calcOBV(ohlcv: ChartData[]): number[] {
  return obv;
 }
 
-function calcFibLevels(
+export function calcFibLevels(
  high: number,
  low: number
 ): { level: number; price: number; label: string; style: LineStyle }[] {
