@@ -83,6 +83,7 @@ import {
  Megaphone,
  Cpu,
  HeartPulse,
+ Users,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
