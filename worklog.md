@@ -6656,3 +6656,26 @@ Task: محسن: "انت لازم تعمل جرد لكل مكان بيستخدم 
 الرسالة اللي بعتها محسن متاريخة 25 أكتوبر (الأحد القادم).
 دي رسالة مستقبلية مجدولة من الـ auto_post_scheduler.py.
 حتى لو وقّفنا الـ telegram-poster دلوقتي, الرسالة دي هتبعت الأحد. (docs(worklog): تحديث worklog بـ Task 2 + Task 3 + حفظ GLM team history)
+
+---
+Task ID: 4
+Agent: Alpha
+Task: إنهاء كل شغل ألفا الممكن بدون برافو (A2 fallback + A3 widget كامل) + push لكل التعديلات.
+
+Work Log:
+- اكتشفت إن كل شغلي السابق ما اترفعش على GitHub (كسر Rule 75). عملت soft reset + 4 commits منظمة بـ messages مفهومة (مش UUID) + rebase على شغل برافو الجديد + push بنجاح.
+- A2 (OpportunityCalculatorWidget): عدّلته يـ fetch من /api/market/top-movers (برافو B2) مع fallback للـ store (marketOverview.gainers). لو الـ endpoint لسه مش متاح، بيشتغل بالـ fallback. أول ما برافو يخلص B2، الـ widget هيتظبط أوتوماتيك (مش محتاج تعديل code). أضفت sector display + skeleton loaders.
+- A3 (PriorityNotificationsWidget): عملته جديد (255 سطر). يـ fetch من /api/notifications/priority (برافو B3). ألوان severity كاملة (danger/opportunity/warning/info/success) + icons + empty state نظيف ("مفيش تنبيهات مهمة — كله تمام ✅") + CTA لـ NotificationCenter. لو الـ endpoint فشل → clean empty state (مش fake).
+- سجّلت PriorityNotificationsWidget في PinnableWidget registry في DashboardView.tsx (id: 'priority-notifications').
+- compile check: HTTP 200 بدون errors (compile 24.7s).
+- commit: 0ee77bf "feat(dashboard): A2 ربط /api/market/top-movers + A3 PriorityNotificationsWidget" (3 files، +424 سطر).
+- rebase + push بنجاح: 32ba81c..0ee77bf main -> main.
+
+Stage Summary:
+- كل شغل ألفا (A1-A4) اتعمل واترفع على GitHub.
+- A1 + A4: شغالة دلوقتي بالكامل (بيانات من /api/live-monitor + store).
+- A2: شغالة بالـ fallback، جاهزة تشتغل بالكامل أول ما برافو يخلص B2 (/api/market/top-movers).
+- A3: جاهز بالكامل، جاهز يشتغل أول ما برافو يخلص B3 (/api/notifications/priority).
+- كل widgets في PinnableWidget registry (Rule 52) + قابلة للـ pin/unpin.
+- Rule 75 compliance: كل commit = push فوري.
+- Rule 76 compliance: git pull --rebase قبل كل push.
