@@ -6332,3 +6332,26 @@ Push: commit `f0cc5334` (بعد rebase فوق commits الإنتاج EGX indices
 - auth.db على الساند بوكس ناقص `Session` table — بس ده مش مشكلة للـ Phase 5b/6 (auth مش متورط).
 
 الخطوة اللي بعد كده: محسن يشغل `audit_production_db.py` على الإنتاج الأول، يبعتلي الـ output، وبعدها نقرر نكمل deploy ولا لأ.
+
+---
+Task ID: DEEP-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: بعد الـ audit الأول على الإنتاج، اكتشفت إن price_history.db فيه 3 tables (مش 2) و data_engine.db فيه 29 tables (مش 19). محتاج فحص أعمق.
+
+كتبت `scripts/deep_schema_audit.py` (173 lines) بيعمل:
+- فحص كل الـ tables (مش بس required)
+- فحص كل الـ views (CREATE VIEW)
+- فحص كل الـ triggers (مهمة — ALTER TABLE ممكن يكسرها)
+- فحص كل الـ indexes
+- unify safety check: هل فيه view/trigger بيـ query على price_history table؟
+
+اختبار على الساند بوكس:
+- لقيت 2 views في stocks.db:
+  - `price_history` view = SELECT from stock_daily_prices (alias)
+  - `stock_price_history` view = SELECT from stock_daily_prices (alias)
+- الـ views دي مش هتتأثر بالـ unify (بتـ query من stock_daily_prices في stocks.db، مش من price_history.db).
+- false positive في الـ warning بس كويس نعرف إنهم موجودين.
+
+Push: commit `01945dc0` (بعد rebase فوق commits الإنتاج `f0cc5334..7e79f625`).
+
+الخطوة الجاية: محسن يشغل `deep_schema_audit.py` على الإنتاج عشان نكتشف الـ triggers/views اللي ممكن تتأثر بـ ALTER TABLE.
