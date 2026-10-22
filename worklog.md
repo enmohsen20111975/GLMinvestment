@@ -6486,3 +6486,47 @@ Task: اتحلّت مشاكل الـ 502/503 بعد restart نظيف لـ python
 - 🟡 [sniper:scan] TimeoutError — pre-existing.
 
 🎯 **الـ deployment كامل. خطة التوحيد (Phase 0-6) اشتغلت على الإنتاج بنجاح.**
+
+---
+Task ID: RADAR-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني — رادار السيولة)
+Task: محسن اشتكا: "رادار السيولة متكتف، 7 أسهم بس، 90% من الفلاتر بتدي لا توجد أسهم، فيه أسهم غريبة زي EGS3I0S1C019".
+
+اللي اكتشفته:
+
+🔴 **المشكلة 1: 18 ISIN-style ticker في stocks.db**
+- في `stocks.db.stocks` فيه 18 صفوف بـ ticker = ISIN (EGS3I0S1C019, EGS220N1C016, إلخ).
+- دول ISIN codes (14 digit) مش ticker symbols حقيقية.
+- كلهم `name_ar = None` (مش عندهم اسم عربي).
+- كلهم `is_active = 1` → بيظهروا في الـ radar.
+- كلهم عندهم بيانات في price_history.db (13-31 rows، max=2026-10-21).
+- المصدر: غالباً scraper زي TradingView أو egksco بيجيب ISIN بدل ticker.
+- الـ impact: بيظهروا في الـ radar بـ ticker غريب بدل ما الـ frontend يعرض الـ ticker الصح.
+
+🔴 **المشكلة 2: الـ under_microscope count**
+- `maker_radar.py` scan كل الأسهم (~427 EGX).
+- بس بـ filter لـ paths محددة: A_pre_surge, B_quiet_accumulation_strong, D_explosive_surge, E_early_break.
+- النتيجة على الساند بوكس: 27 under_microscope (مش 7).
+- الفرق بين 27 و 7 = الـ frontend بيعمل filter إضافي (محتاج فحص).
+
+🔴 **المشكلة 3: الـ filter "نهاية تصحيح" بيرجع 0 أسهم**
+- محتاج فحص الـ frontend filters + الـ classification logic.
+- غالباً الـ "correction_status" field مش بيتأكل صح من الـ cache.
+
+🟡 **المشكلة 4: Total stocks scanned = 0 في cache**
+- `stocks: []` في الـ cache (فاضي!).
+- بس `under_microscope: 27` (مليان).
+- ده معناه إن `maker_radar.py` بيكتب الـ under_microscope بس، و ما بيكتبش كل الـ scanned stocks.
+- الـ frontend بياخد الـ stocks من cache، فبيقى فاضي.
+- بس الـ frontend بيـ display 7 أسهم → دي مش من الـ stocks field، دي من تحت الميكروسكوب.
+
+الـ root causes:
+1. Scraper بيجيب ISIN بدل ticker → بيانات مشوهة.
+2. maker_radar.py ما بيكتبش كل الـ scanned stocks في الـ cache.
+3. frontend filters strictة جداً (90% بتدي "لا توجد أسهم").
+
+الخطوات الجاية:
+1. فحص الـ frontend filters (correction_status, نهاية تصحيح).
+2. فحص الـ maker_radar.py output structure (ليه stocks=[]).
+3. فحص الـ scraper اللي بيجيب ISIN.
+4. اقتراح fixes.
