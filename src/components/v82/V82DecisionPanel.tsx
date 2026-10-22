@@ -18,6 +18,7 @@ import {
  Target, Shield, TrendingUp, TrendingDown, Zap, AlertTriangle,
  CheckCircle2, XCircle, Activity, Fuel, DollarSign, Gauge, Loader2,
 } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -77,7 +78,10 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  if (!ticker.trim()) return;
  setLoading(true);
  try {
- const res = await fetch(`/api/v82?ticker=${ticker.toUpperCase()}&market=EGX&days=365`);
+ // FIX (Oct 2026 — owner directive "مؤشرات وبيانات مصرية بتظهر فى باقى الاسواق"):
+ // respect currentMarket from the unified store instead of hardcoding EGX.
+ const market = useAppStore.getState().currentMarket;
+ const res = await fetch(`/api/v82?ticker=${ticker.toUpperCase()}&market=${market}&days=365`);
  const data = await res.json();
  setResult(data);
  } catch (e) {
@@ -87,9 +91,12 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  }
  }, [ticker]);
 
+ // re-run analysis when the active market changes
+ const currentMarket = useAppStore((s) => s.currentMarket);
  React.useEffect(() => {
  analyze();
- }, [analyze]);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [analyze, currentMarket]);
 
  const action = result?.action || 'WAIT';
  const gateConditions = result?.gate_conditions || {};

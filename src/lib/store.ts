@@ -815,6 +815,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
         window.localStorage.setItem(CURRENT_MARKET_KEY, JSON.stringify(market));
       }
     } catch { /* silent */ }
+    // FIX (Oct 2026 — owner directive "لا يوجد تغير اتوماتيكى للعملة"):
+    // auto-sync displayCurrency to match the selected market so currency labels
+    // follow the market automatically. EGX→EGP, TADAWUL→SAR, US/CRYPTO→USD.
+    // KSE/QSE fall back to USD (KWD/QAR not in DisplayCurrency union — Rule 4: extend type only if needed).
+    const MARKET_DEFAULT_CURRENCY: Record<MarketType, DisplayCurrency> = {
+      EGX: 'EGP',
+      TADAWUL: 'SAR',
+      US: 'USD',
+      CRYPTO: 'USD',
+      KSE: 'USD',
+      QSE: 'USD',
+    };
+    const newCurrency = MARKET_DEFAULT_CURRENCY[market];
+    if (newCurrency && newCurrency !== get().displayCurrency) {
+      set({ displayCurrency: newCurrency });
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(DISPLAY_CURRENCY_KEY, JSON.stringify(newCurrency));
+        }
+      } catch { /* silent */ }
+    }
     // FIX (Aug 2026): شيلنا window.__currentMarket — كل الـ components دلوقتي بتستخدم useAppStore مباشرة
     // Crypto uses a unified loader that adapts coins into the stocks array
     if (market === 'CRYPTO') {

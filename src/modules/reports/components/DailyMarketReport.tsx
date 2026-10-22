@@ -54,6 +54,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import {
  fetchDailyReport,
@@ -344,7 +345,11 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  const fetchData = useCallback(async () => {
  setLoading(true);
  try {
- const data = await fetchDailyReport({ market: 'EGX' });
+ // FIX (Oct 2026 — owner directive "مؤشرات وبيانات مصرية بتظهر فى باقى الاسواق"):
+ // respect currentMarket from the unified store instead of hardcoding EGX.
+ // ReportsView.tsx (line 243) already uses the same pattern.
+ const market = useAppStore.getState().currentMarket;
+ const data = await fetchDailyReport({ market });
  setReport(data);
  } catch {
  setReport({
@@ -357,9 +362,11 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
  }
  }, []);
 
+ // re-fetch when the active market changes (auto currency/data sync)
+ const currentMarket = useAppStore((s) => s.currentMarket);
  useEffect(() => {
  fetchData();
- }, [fetchData]);
+ }, [fetchData, currentMarket]);
 
  const handleExportPng = async () => {
  if (!reportRef.current) {
