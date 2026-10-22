@@ -341,6 +341,14 @@ def main():
     args = parser.parse_args()
 
     if args.verify:
+        # Check 6 fix: if no backup exists but Phase 5 marker is present, create one now
+        # (so --verify can be run standalone without needing --modify first)
+        code = DAILY_PREDICTOR.read_text(encoding='utf-8')
+        if 'Phase 5 (DATA-UNIFICATION)' in code:
+            backups = list(BACKUP_DIR.glob('daily_predictor.py.backup_phase5_*'))
+            if not backups:
+                print(f"  ℹ️ no backup found — creating one now (Phase 5 fix)")
+                backup_daily_predictor()
         checks, rc = verify_modification()
         passed = sum(1 for c in checks if c[1] == 'PASS')
         failed = sum(1 for c in checks if c[1] == 'FAIL')

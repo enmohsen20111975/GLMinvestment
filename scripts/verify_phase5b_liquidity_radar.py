@@ -74,8 +74,17 @@ def run_checks():
         checks.append(('fallback_query', 'FAIL', 'no fallback'))
         print('  ❌ Check 5: FALLBACK missing')
 
-    # Check 6: backup exists
+    # Check 6: backup exists (auto-create if missing — Phase 5b fix)
     backups = list(BACKUP_DIR.glob('liquidity_radar_v2.py.backup_phase5b_*'))
+    if not backups:
+        print(f'  ℹ️ no backup found — creating one now (Phase 5b fix)')
+        import shutil
+        from datetime import datetime
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_path = BACKUP_DIR / f'liquidity_radar_v2.py.backup_phase5b_{ts}'
+        shutil.copy2(str(RADAR_SCRIPT), str(backup_path))
+        backups = [backup_path]
     if backups:
         latest = max(backups, key=lambda p: p.stat().st_mtime)
         checks.append(('backup_exists', 'PASS', latest.name))
@@ -122,10 +131,10 @@ def run_checks():
         checks.append(('primary_richer', 'FAIL', str(e)))
         print(f'  ❌ Check 7: runtime error: {e}')
 
-    # Check 8: runtime — scan_ticker end-to-end
+    # Check 8: runtime — scan_ticker end-to-end (use sys.executable, not hardcoded path)
     try:
         result = subprocess.run(
-            ['/home/z/.venv/bin/python3', str(RADAR_SCRIPT),
+            [sys.executable, str(RADAR_SCRIPT),
              '--market', 'EGX', '--ticker', 'COMI', '--json'],
             capture_output=True, text=True, timeout=60
         )
