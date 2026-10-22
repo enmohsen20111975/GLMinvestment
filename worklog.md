@@ -6385,3 +6385,38 @@ Push: commit `32fbf4bb` (deploy_production.sh script).
   Step 8: Runtime test (daily_predictor + radar)
 
 الـ script بيقف على أي error (set -e) و بي hỗف backup location للـ rollback.
+
+---
+Task ID: PROD-DEPLOY-1
+Agent: Z.ai Code (الفاحص التقني — مراقب الـ deploy)
+Task: محسن شغّل deploy_production.sh على الإنتاج. حللت النتائج.
+
+النتائج على الإنتاج (`/root/GLMinvestment`):
+
+✅ **Step 0: Backup** — 10 DBs، 1.3G في `db/pre_deploy_backup_20261022_143547`
+✅ **Step 1: git pull** — Fast-forward ناجح
+✅ **Step 2: yfinance** — v1.5.2 (قديم — محتاج upgrade)
+✅ **Step 3: Audit** — 9/9 DBs، 0 issues
+✅ **Step 4: Phase 2 unify** — **+87,061 rows unified!**
+  - BEFORE: 1,314,698 rows
+  - AFTER:  1,401,759 rows
+  - egksco: +206 new
+  - historical_data: +86,855 new  ← كان ناقص!
+  - stock_daily: +0 (all duplicates)
+  - 7/7 verification checks PASS
+✅ **Step 5: Phase 5 verify** — 6/6 PASS
+✅ **Step 6: Phase 5b verify** — 8/8 PASS (COMI: price_history=5328 ≥ stock_daily=41)
+🟡 **Step 7: Phase 6 verify** — 7/8 PASS
+  - Check 8 فشل: yfinance fetch failed (API change في v1.5.2)
+  - الحل: .venv/bin/pip install --upgrade yfinance
+
+🔴 **الـ runtime test ما اتشغلش** عشان الـ script وقف بعد Check 8 fail.
+
+الخطوة الجاية:
+1. محسن يـ upgrade yfinance: `.venv/bin/pip install --upgrade yfinance`
+2. يشغل runtime test يدوي:
+   - `cd vps-service && .venv/bin/python3 -m jobs.daily_predictor --today-only --max-tickers 10`
+   - `.venv/bin/python3 scripts/liquidity_radar_v2.py --market EGX --ticker COMI --json`
+3. يراقب pm2 logs لـ 30 دقيقة
+
+الـ deploy ناجح 95%. باقي runtime test + yfinance upgrade.
