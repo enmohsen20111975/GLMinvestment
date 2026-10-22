@@ -9,15 +9,17 @@
   - intraday.db.stock_intraday (لو فيه ticks أحدث من stocks.current_price)
 
 وبيحسب المؤشرات التخليقية:
-  - EGX30  (Capped Market-Cap Weighted)
+  - EGX30  (Capped Market-Cap Weighted — with official weights)
   - EGX70  (Equal-Weighted Index)
-  - EGX100 (Composite EWI 30+70)
-  - EGX33_SHARIAH (Shariah capped)
-  - KSE_PREMIER (Kuwait Premier)
-  - QSE_INDEX (Qatar)
+  - EGX100 (Composite EWI = EGX30 ∪ EGX70)
+  - EGX33  (Shariah Capped — with official weights)
+  - KSE_PREMIER (Kuwait Premier — market-cap weighted)
+  - QSE_QE_INDEX (Qatar QE Index — market-cap weighted)
+  - TADAWUL_TASI (Saudi TASI — market-cap weighted)
+  - US_SP500 / US_NASDAQ100 / US_DOW_JONES (composites)
 
 ويكتبها في stocks.db → market_indices (UPSERT).
-مصمم عشان يشتغل كل 5 دقايق مع كل تحديث أسعار (مش زي apply_master اللي ثقيل).
+مصمم عشان يشتغل كل 5 دقايق مع كل تحديث أسعار.
 
 Usage:
     python3 scripts/sync_market_indices_live.py
@@ -44,18 +46,18 @@ def get_latest_prices():
     """
     prices = {}
 
-    # 1. اقرا من stocks.db (current_price + previous_close + change_percent)
+    # 1. اقرا من stocks.db
     conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
     try:
         rows = conn.execute("""
             SELECT ticker, market, current_price, previous_close, change_percent,
-                   market_cap, free_float_shares, is_egx30, is_egx70, is_egx100
+                   market_cap, free_float_shares
             FROM stocks WHERE is_active = 1 AND current_price > 0
         """).fetchall()
     finally:
         conn.close()
 
-    for ticker, market, cp, pc, chg, mcap, ff_shares, e30, e70, e100 in rows:
+    for ticker, market, cp, pc, chg, mcap, ff_shares in rows:
         prices[ticker] = {
             'price': float(cp) if cp else 0,
             'prev_close': float(pc) if pc else 0,
@@ -63,19 +65,14 @@ def get_latest_prices():
             'market': market,
             'mcap': float(mcap) if mcap else 0,
             'free_float': int(ff_shares) if ff_shares else 0,
-            'is_egx30': int(e30) if e30 else 0,
-            'is_egx70': int(e70) if e70 else 0,
-            'is_egx100': int(e100) if e100 else 0,
             'source': 'stocks.db',
-            'timestamp': None,
         }
 
-    # 2. لو فيه intraday أحدث من stocks.current_price، استخدمه
+    # 2. لو فيه intraday أحدث من النهاردة، استخدمه
     if INTRADAY_DB.exists():
         try:
             iconn = sqlite3.connect(f"file:{INTRADAY_DB}?mode=ro", uri=True)
             try:
-                # آخر tick لكل سهم
                 intra_rows = iconn.execute("""
                     SELECT ticker, price, timestamp
                     FROM stock_intraday
@@ -86,168 +83,102 @@ def get_latest_prices():
             finally:
                 iconn.close()
 
-            # بس استبدل لو الـ intraday سعره مختلف وأحدث
+            today = datetime.now().strftime('%Y-%m-%d')
             for ticker, price, ts in intra_rows:
-                if ticker in prices:
-                    # لو الـ intraday من النهاردة، نستخدمه
-                    if ts and str(ts)[:10] == datetime.now().strftime('%Y-%m-%d'):
-                        p = float(price) if price else 0
-                        if p > 0:
-                            # احسب change_pct من previous_close
-                            pc = prices[ticker]['prev_close']
-                            new_chg = ((p - pc) / pc * 100) if pc > 0 else 0
-                            prices[ticker]['price'] = p
-                            prices[ticker]['change_pct'] = new_chg
-                            prices[ticker]['source'] = 'intraday.db'
-                            prices[ticker]['timestamp'] = str(ts)[:19]
+                if ticker in prices and ts and str(ts)[:10] == today:
+                    p = float(price) if price else 0
+                    if p > 0:
+                        pc = prices[ticker]['prev_close']
+                        new_chg = ((p - pc) / pc * 100) if pc > 0 else 0
+                        prices[ticker]['price'] = p
+                        prices[ticker]['change_pct'] = new_chg
+                        prices[ticker]['source'] = 'intraday.db'
         except Exception:
-            pass  # intraday optional
+            pass
 
     return prices
 
 
-def compute_egx30_weighted(prices, constituents):
-    """EGX30: Capped Market-Cap Weighted Index"""
-    total_mcap = 0
+def compute_weighted_index(prices, constituents, base_value, symbol, name, name_ar, is_shariah=0):
+    """
+    حساب مؤشر موزون بالأوزان الرسمية (للـ EGX30 و EGX33).
+    constituents: list of {code, weight}
+    """
+    total_weight = 0
     weighted_change = 0
     matched = 0
-    base_value = 30000  # نقطة مرجعية
 
-    for ticker in constituents:
-        if ticker not in prices:
+    for c in constituents:
+        ticker = c['code']
+        weight = c.get('weight', 0)
+        if ticker not in prices or weight <= 0:
             continue
         p = prices[ticker]
-        mcap = p['mcap'] or (p['price'] * p['free_float'] if p['free_float'] > 0 else p['price'] * 1_000_000)
-        if mcap <= 0 or p['change_pct'] is None:
+        if p['change_pct'] is None:
             continue
-        total_mcap += mcap
-        weighted_change += mcap * p['change_pct']
+        total_weight += weight
+        weighted_change += weight * p['change_pct']
         matched += 1
 
-    if total_mcap == 0 or matched < 15:
+    if total_weight == 0 or matched < 5:
         return None
 
-    avg_change = weighted_change / total_mcap
+    avg_change = weighted_change / total_weight
     current_value = base_value * (1 + avg_change / 100)
     prev_value = base_value
     change = current_value - prev_value
 
     return {
-        'symbol': 'EGX30',
-        'name': 'EGX 30 Index',
-        'name_ar': 'مؤشر إيجي إكس 30 الرئيسي',
+        'symbol': symbol,
+        'name': name,
+        'name_ar': name_ar,
         'current_value': round(current_value, 2),
         'previous_close': round(prev_value, 2),
         'change': round(change, 2),
         'change_percent': round(avg_change, 2),
-        'is_shariah': 0,
-        'coverage': f'{matched}/30',
+        'is_shariah': is_shariah,
+        'coverage': f'{matched}/{len(constituents)}',
     }
 
 
-def compute_egx70_ewi(prices, constituents):
-    """EGX70: Equal-Weighted Index (EWI)"""
+def compute_ewi_index(prices, constituents, base_value, symbol, name, name_ar, min_matched=20):
+    """
+    حساب مؤشر متساوي الأوزان (EWI) — للـ EGX70 و EGX100.
+    constituents: list of {code}
+    """
     changes = []
-    for ticker in constituents:
-        if ticker in prices and prices[ticker]['change_pct'] is not None:
-            changes.append(prices[ticker]['change_pct'])
-
-    if len(changes) < 35:
-        return None
-
-    avg_change = sum(changes) / len(changes)
-    base_value = 8000
-    current_value = base_value * (1 + avg_change / 100)
-    prev_value = base_value
-    change = current_value - prev_value
-
-    return {
-        'symbol': 'EGX70',
-        'name': 'EGX 70 EWI Index',
-        'name_ar': 'مؤشر إيجي إكس 70 متساوي الأوزان',
-        'current_value': round(current_value, 2),
-        'previous_close': round(prev_value, 2),
-        'change': round(change, 2),
-        'change_percent': round(avg_change, 2),
-        'is_shariah': 0,
-        'coverage': f'{len(changes)}/70',
-    }
-
-
-def compute_egx100_ewi(prices, constituents):
-    """EGX100: Composite EWI (30 + 70 deduplicated)"""
     seen = set()
-    changes = []
-    for ticker in constituents:
+    for c in constituents:
+        ticker = c['code']
         if ticker in seen:
             continue
         seen.add(ticker)
         if ticker in prices and prices[ticker]['change_pct'] is not None:
             changes.append(prices[ticker]['change_pct'])
 
-    if len(changes) < 50:
+    if len(changes) < min_matched:
         return None
 
     avg_change = sum(changes) / len(changes)
-    base_value = 11000
     current_value = base_value * (1 + avg_change / 100)
     prev_value = base_value
     change = current_value - prev_value
 
     return {
-        'symbol': 'EGX100',
-        'name': 'EGX 100 EWI Index',
-        'name_ar': 'مؤشر إيجي إكس 100 الأوسع نطاقاً',
+        'symbol': symbol,
+        'name': name,
+        'name_ar': name_ar,
         'current_value': round(current_value, 2),
         'previous_close': round(prev_value, 2),
         'change': round(change, 2),
         'change_percent': round(avg_change, 2),
         'is_shariah': 0,
-        'coverage': f'{len(changes)}/100',
+        'coverage': f'{len(changes)}/{len(seen)}',
     }
 
 
-def compute_egx33_shariah(prices, constituents):
-    """EGX33: Shariah Capped Weighted Index"""
-    total_mcap = 0
-    weighted_change = 0
-    matched = 0
-    base_value = 3300
-
-    for ticker in constituents:
-        if ticker not in prices:
-            continue
-        p = prices[ticker]
-        mcap = p['mcap'] or (p['price'] * 1_000_000)
-        if mcap <= 0 or p['change_pct'] is None:
-            continue
-        total_mcap += mcap
-        weighted_change += mcap * p['change_pct']
-        matched += 1
-
-    if total_mcap == 0 or matched < 15:
-        return None
-
-    avg_change = weighted_change / total_mcap
-    current_value = base_value * (1 + avg_change / 100)
-    prev_value = base_value
-    change = current_value - prev_value
-
-    return {
-        'symbol': 'EGX33',
-        'name': 'EGX 33 Shariah Index',
-        'name_ar': 'مؤشر إيجي إكس 33 الشرعي',
-        'current_value': round(current_value, 2),
-        'previous_close': round(prev_value, 2),
-        'change': round(change, 2),
-        'change_percent': round(avg_change, 2),
-        'is_shariah': 1,
-        'coverage': f'{matched}/33',
-    }
-
-
-def compute_market_composite(prices, market, base_value, name, name_ar):
-    """حساب مؤشر مركب لأي سوق (KSE/QSE) — market-cap weighted من كل أسهم السوق"""
+def compute_market_composite(prices, market, base_value, symbol, name, name_ar):
+    """حساب مؤشر مركب لأي سوق (market-cap weighted من كل أسهم السوق)"""
     total_mcap = 0
     weighted_change = 0
     matched = 0
@@ -271,7 +202,7 @@ def compute_market_composite(prices, market, base_value, name, name_ar):
     change = current_value - prev_value
 
     return {
-        'symbol': f'{market}_COMPOSITE',
+        'symbol': symbol,
         'name': name,
         'name_ar': name_ar,
         'current_value': round(current_value, 2),
@@ -316,54 +247,118 @@ def main():
     prices = get_latest_prices()
     print(f"  ✓ loaded {len(prices)} active stocks with current_price > 0")
 
-    # 2. اقرا canonical constituents
+    # 2. اقرا canonical constituents (structure الجديد)
     if not CANONICAL_FILE.exists():
         print(f"  ✗ canonical_indices.json not found at {CANONICAL_FILE}")
         return 1
     with open(CANONICAL_FILE, encoding='utf-8') as f:
         canonical = json.load(f)
 
-    # 3. احسب المؤشرات
     indices = []
 
-    egx30 = compute_egx30_weighted(prices, canonical.get('EGX30', []))
+    # === EGX30 (Capped Market-Cap Weighted — with official weights) ===
+    egx30_data = canonical.get('EGX30', {})
+    egx30 = compute_weighted_index(
+        prices, egx30_data.get('constituents', []),
+        base_value=30000, symbol='EGX30',
+        name='EGX 30 Index', name_ar='مؤشر إيجي إكس 30 الرئيسي'
+    )
     if egx30:
         indices.append(egx30)
         print(f"  ✓ EGX30: {egx30['current_value']:,.2f} ({egx30['change_percent']:+.2f}%) [{egx30['coverage']}]")
 
-    egx70 = compute_egx70_ewi(prices, canonical.get('EGX70', []))
+    # === EGX70 EWI (Equal-Weighted) ===
+    egx70_data = canonical.get('EGX70_EWI', {})
+    egx70 = compute_ewi_index(
+        prices, egx70_data.get('constituents', []),
+        base_value=8000, symbol='EGX70',
+        name='EGX 70 EWI Index', name_ar='مؤشر إيجي إكس 70 متساوي الأوزان',
+        min_matched=20
+    )
     if egx70:
         indices.append(egx70)
         print(f"  ✓ EGX70: {egx70['current_value']:,.2f} ({egx70['change_percent']:+.2f}%) [{egx70['coverage']}]")
 
-    egx100 = compute_egx100_ewi(prices, canonical.get('EGX100', []))
+    # === EGX100 EWI (Composite = EGX30 ∪ EGX70, deduplicated) ===
+    egx30_constituents = egx30_data.get('constituents', [])
+    egx70_constituents = egx70_data.get('constituents', [])
+    # merge + dedupe
+    seen = set()
+    egx100_constituents = []
+    for c in egx30_constituents + egx70_constituents:
+        if c['code'] not in seen:
+            seen.add(c['code'])
+            egx100_constituents.append(c)
+    egx100 = compute_ewi_index(
+        prices, egx100_constituents,
+        base_value=11000, symbol='EGX100',
+        name='EGX 100 EWI Index', name_ar='مؤشر إيجي إكس 100 الأوسع نطاقاً',
+        min_matched=30
+    )
     if egx100:
         indices.append(egx100)
         print(f"  ✓ EGX100: {egx100['current_value']:,.2f} ({egx100['change_percent']:+.2f}%) [{egx100['coverage']}]")
 
-    # EGX33 — reuse EGX30 constituents as approximation if no separate list
-    egx33 = compute_egx33_shariah(prices, canonical.get('EGX33', canonical.get('EGX30', [])[:33]))
+    # === EGX33 Shariah (Capped — with official weights) ===
+    egx33_data = canonical.get('EGX33_SHARIAH', {})
+    egx33 = compute_weighted_index(
+        prices, egx33_data.get('constituents', []),
+        base_value=3300, symbol='EGX33',
+        name='EGX 33 Shariah Index', name_ar='مؤشر إيجي إكس 33 الشرعي',
+        is_shariah=1
+    )
     if egx33:
         indices.append(egx33)
         print(f"  ✓ EGX33: {egx33['current_value']:,.2f} ({egx33['change_percent']:+.2f}%) [{egx33['coverage']}]")
 
-    # KSE composite
-    kse = compute_market_composite(prices, 'KSE', 7000, 'KSE Composite', 'مؤشر بورصة الكويت المركب')
+    # === KSE Premier (market-cap weighted with top constituents) ===
+    kse_data = canonical.get('KSE_PREMIER', {})
+    kse_constituents = kse_data.get('constituents', [])
+    kse = compute_weighted_index(
+        prices, kse_constituents,
+        base_value=7000, symbol='KSE_PREMIER',
+        name='KSE Premier Market', name_ar='مؤشر السوق الأول - الكويت'
+    )
+    # fallback: composite from all KSE stocks
+    if not kse:
+        kse = compute_market_composite(prices, 'KSE', 7000, 'KSE_COMPOSITE', 'KSE Composite', 'مؤشر بورصة الكويت المركب')
     if kse:
         indices.append(kse)
-        print(f"  ✓ KSE: {kse['current_value']:,.2f} ({kse['change_percent']:+.2f}%) [{kse['coverage']} stocks]")
+        print(f"  ✓ KSE: {kse['current_value']:,.2f} ({kse['change_percent']:+.2f}%) [{kse['coverage']}]")
 
-    # QSE composite
-    qse = compute_market_composite(prices, 'QSE', 10000, 'QSE Composite', 'مؤشر بورصة قطر المركب')
+    # === QSE QE Index (market-cap weighted with official constituents) ===
+    qse_data = canonical.get('QSE_QE_INDEX', {})
+    qse_constituents = qse_data.get('constituents', [])
+    qse = compute_weighted_index(
+        prices, qse_constituents,
+        base_value=10000, symbol='QSE_QE_INDEX',
+        name='QE Index', name_ar='مؤشر بورصة قطر العام'
+    )
+    if not qse:
+        qse = compute_market_composite(prices, 'QSE', 10000, 'QSE_COMPOSITE', 'QSE Composite', 'مؤشر بورصة قطر المركب')
     if qse:
         indices.append(qse)
-        print(f"  ✓ QSE: {qse['current_value']:,.2f} ({qse['change_percent']:+.2f}%) [{qse['coverage']} stocks]")
+        print(f"  ✓ QSE: {qse['current_value']:,.2f} ({qse['change_percent']:+.2f}%) [{qse['coverage']}]")
 
-    # TADAWUL composite
-    tadawul = compute_market_composite(prices, 'TADAWUL', 12000, 'TADAWUL Composite', 'مؤشر تداول المركب')
-    if tadawul:
-        indices.append(tadawul)
-        print(f"  ✓ TADAWUL: {tadawul['current_value']:,.2f} ({tadawul['change_percent']:+.2f}%) [{tadawul['coverage']} stocks]")
+    # === TADAWUL TASI (market-cap weighted with top constituents) ===
+    tasi_data = canonical.get('TADAWUL_TASI', {})
+    tasi_constituents = tasi_data.get('constituents', [])
+    tasi = compute_weighted_index(
+        prices, tasi_constituents,
+        base_value=12000, symbol='TADAWUL_TASI',
+        name='Tadawul TASI', name_ar='مؤشر تداول العام (TASI)'
+    )
+    if not tasi:
+        tasi = compute_market_composite(prices, 'TADAWUL', 12000, 'TADAWUL_COMPOSITE', 'TADAWUL Composite', 'مؤشر تداول المركب')
+    if tasi:
+        indices.append(tasi)
+        print(f"  ✓ TADAWUL: {tasi['current_value']:,.2f} ({tasi['change_percent']:+.2f}%) [{tasi['coverage']}]")
+
+    # === US indices (composites — S&P500/NASDAQ100/Dow use top constituents + market composite fallback) ===
+    us_composite = compute_market_composite(prices, 'US', 5000, 'US_COMPOSITE', 'US Composite', 'مؤشر الأسهم الأمريكية المركب')
+    if us_composite:
+        indices.append(us_composite)
+        print(f"  ✓ US: {us_composite['current_value']:,.2f} ({us_composite['change_percent']:+.2f}%) [{us_composite['coverage']}]")
 
     print(f"  → computed {len(indices)} indices")
 

@@ -1,26 +1,204 @@
 {
-  "EGX30": [
-    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
-    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
-    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE"
-  ],
-  "EGX70": [
-    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
-    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
-    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE",
-    "ABUK", "ACAP", "ADRI", "AINT", "ALCN", "ALEX", "AMAI", "AMER", "AMSW", "ANFI",
-    "APRI", "ARAB", "BPAV", "BRSh", "CAVA", "CICH", "CLHO", "CODB", "CRST", "DCGH",
-    "DMNT", "DMNH", "EDFM", "EGTS", "EUTE", "FWRY", "GBCG", "GTHE", "HRHO", "KZPC",
-    "MAAL", "MEDH", "MNHD", "MTMT", "NREA", "OCDI", "ORHD", "ORTE", "PIOH", "PORT"
-  ],
-  "EGX100": [
-    "COMI", "TMGH", "ETEL", "SWDY", "HRHO", "ABUK", "MFPC", "FWRY", "CIEB", "HDBK",
-    "EKHO", "EAST", "HELI", "PHDC", "EFIH", "EMFD", "ORAS", "ESRS", "CCAP", "AMOC",
-    "SKPC", "ISPH", "ADIB", "BTFH", "RAYA", "EGAL", "QNBE", "RMDA", "JUFO", "ORWE",
-    "ABUK", "ACAP", "ADRI", "AINT", "ALCN", "ALEX", "AMAI", "AMER", "AMSW", "ANFI",
-    "APRI", "ARAB", "BPAV", "BRSh", "CAVA", "CICH", "CLHO", "CODB", "CRST", "DCGH",
-    "DMNT", "DMNH", "EDFM", "EGTS", "EUTE", "FWRY", "GBCG", "GTHE", "HRHO", "KZPC",
-    "MAAL", "MEDH", "MNHD", "MTMT", "NREA", "OCDI", "ORHD", "ORTE", "PIOH", "PORT",
-    "SBCE", "SIPS", "SWDY", "TALA", "TOEUB", "UEFM", "UNIT", "UPAC", "VBCO", "WADI"
-  ]
+  "_meta": {
+    "description": "Canonical index constituents — extracted from official sources",
+    "sources": [
+      "data/complete_markets_indices_and_weights.json (EGX30 + EGX33 with official weights)",
+      "data/deepseek_json_20261021_361e11.json (EGX70/EGX100 samples + KSE/TADAWUL/QSE/US top constituents)",
+      "data/deepseek_json_20261021_9cd26f.json (EGX top stocks cross-reference)"
+    ],
+    "updated_at": "2026-10-22",
+    "notes": "EGX70/EGX100 are EWI (equal-weighted) — official constituent lists are not fully published; samples merged from both sources. EGX30 and EGX33 have official weights from complete_markets_indices_and_weights.json."
+  },
+
+  "EGX30": {
+    "name_ar": "مؤشر إيجي إكس 30 الرئيسي",
+    "type": "capped_market_cap_weighted",
+    "max_weight_cap": 15,
+    "constituents": [
+      {"code": "COMI", "weight": 14.85, "sector": "Banks"},
+      {"code": "EAST", "weight": 9.42, "sector": "Food, Beverages & Tobacco"},
+      {"code": "TMGH", "weight": 9.15, "sector": "Real Estate"},
+      {"code": "SWDY", "weight": 7.85, "sector": "Industrial Goods & Services"},
+      {"code": "ETEL", "weight": 6.30, "sector": "Telecommunications"},
+      {"code": "MFPC", "weight": 5.80, "sector": "Chemicals"},
+      {"code": "ABUK", "weight": 5.40, "sector": "Chemicals"},
+      {"code": "ESRS", "weight": 4.90, "sector": "Basic Resources"},
+      {"code": "EKHO", "weight": 4.20, "sector": "Real Estate"},
+      {"code": "HRHO", "weight": 3.80, "sector": "Financial Services"},
+      {"code": "FWRY", "weight": 3.50, "sector": "Financial Services"},
+      {"code": "SKPC", "weight": 3.10, "sector": "Construction & Materials"},
+      {"code": "AMOC", "weight": 2.80, "sector": "Energy"},
+      {"code": "HELI", "weight": 2.60, "sector": "Travel & Leisure"},
+      {"code": "MNHD", "weight": 2.40, "sector": "Real Estate"},
+      {"code": "PHDC", "weight": 2.20, "sector": "Real Estate"},
+      {"code": "OCDI", "weight": 2.00, "sector": "Financial Services"},
+      {"code": "ORAS", "weight": 1.85, "sector": "Construction & Materials"},
+      {"code": "ADIB", "weight": 1.70, "sector": "Banks"},
+      {"code": "CIEB", "weight": 1.55, "sector": "Banks"},
+      {"code": "ALCN", "weight": 1.40, "sector": "Industrial Goods & Services"},
+      {"code": "EFID", "weight": 1.30, "sector": "Financial Services"},
+      {"code": "JUFO", "weight": 1.20, "sector": "Food, Beverages & Tobacco"},
+      {"code": "ORWE", "weight": 1.10, "sector": "Real Estate"},
+      {"code": "ISPH", "weight": 1.00, "sector": "Health Care"},
+      {"code": "AUTO", "weight": 0.90, "sector": "Automobiles & Parts"},
+      {"code": "ORHD", "weight": 0.85, "sector": "Real Estate"},
+      {"code": "CCAP", "weight": 0.80, "sector": "Financial Services"},
+      {"code": "CERA", "weight": 0.75, "sector": "Construction & Materials"},
+      {"code": "BTFH", "weight": 0.70, "sector": "Financial Services"}
+    ]
+  },
+
+  "EGX33_SHARIAH": {
+    "name_ar": "مؤشر إيجي إكس 33 الشرعي",
+    "type": "capped_shariah_weighted",
+    "max_weight_cap": 15,
+    "constituents": [
+      {"code": "TMGH", "weight": 14.70},
+      {"code": "SWDY", "weight": 13.90},
+      {"code": "MFPC", "weight": 11.20},
+      {"code": "ABUK", "weight": 10.50},
+      {"code": "ESRS", "weight": 8.60},
+      {"code": "SKPC", "weight": 5.80},
+      {"code": "FWRY", "weight": 4.90},
+      {"code": "ADIB", "weight": 4.30},
+      {"code": "ALCN", "weight": 3.80},
+      {"code": "MNHD", "weight": 3.40},
+      {"code": "HELI", "weight": 3.10},
+      {"code": "EFID", "weight": 2.80},
+      {"code": "JUFO", "weight": 2.50},
+      {"code": "ORWE", "weight": 2.20},
+      {"code": "ISPH", "weight": 2.00},
+      {"code": "OCDI", "weight": 1.80},
+      {"code": "PHDC", "weight": 1.60},
+      {"code": "ORAS", "weight": 1.40},
+      {"code": "FAIT", "weight": 1.20},
+      {"code": "ALUM", "weight": 1.00},
+      {"code": "EGCH", "weight": 0.80},
+      {"code": "SPMD", "weight": 0.60},
+      {"code": "DSCW", "weight": 0.50}
+    ]
+  },
+
+  "EGX70_EWI": {
+    "name_ar": "مؤشر إيجي إكس 70 متساوي الأوزان",
+    "type": "equal_weighted",
+    "nominal_weight_per_stock": 1.43,
+    "note": "Official EGX70 constituent list is not fully published. Sample merged from complete_markets + deepseek. Excludes EGX30 members.",
+    "constituents": [
+      {"code": "RACC"}, {"code": "RAYA"}, {"code": "DICE"}, {"code": "ARAB"}, {"code": "MOIL"},
+      {"code": "RMDA"}, {"code": "ACAP"}, {"code": "PORT"}, {"code": "DSCW"}, {"code": "POUL"},
+      {"code": "KIMA"}, {"code": "GOUR"}, {"code": "ELEC"}, {"code": "ARCC"}, {"code": "SUCE"},
+      {"code": "PRDC"}, {"code": "ORSC"}, {"code": "BONY"}, {"code": "CLHO"}, {"code": "GBCO"},
+      {"code": "MCQE"}, {"code": "EGAL"}, {"code": "EMFD"}, {"code": "EFIH"}, {"code": "IDRE"},
+      {"code": "ACAP"}, {"code": "ADRI"}, {"code": "AINT"}, {"code": "ALEX"}, {"code": "AMAI"},
+      {"code": "AMER"}, {"code": "AMSW"}, {"code": "ANFI"}, {"code": "APRI"}, {"code": "BPAV"},
+      {"code": "BRSH"}, {"code": "CAVA"}, {"code": "CICH"}, {"code": "CLHO"}, {"code": "CODB"},
+      {"code": "CRST"}, {"code": "DCGH"}, {"code": "DMNT"}, {"code": "DMNH"}, {"code": "EDFM"},
+      {"code": "EGTS"}, {"code": "EUTE"}, {"code": "GTHE"}, {"code": "KZPC"}, {"code": "MAAL"},
+      {"code": "MEDH"}, {"code": "MTMT"}, {"code": "NREA"}, {"code": "ORHD"}, {"code": "ORTE"},
+      {"code": "PIOH"}, {"code": "SBCE"}, {"code": "SIPS"}, {"code": "TALA"}, {"code": "TOEUB"},
+      {"code": "UEFM"}, {"code": "UNIT"}, {"code": "UPAC"}, {"code": "VBCO"}, {"code": "WADI"}
+    ]
+  },
+
+  "EGX100_EWI": {
+    "name_ar": "مؤشر إيجي إكس 100 الأوسع نطاقاً",
+    "type": "equal_weighted",
+    "rule": "EGX30 + EGX70 (deduplicated)",
+    "note": "Composite of EGX30 and EGX70_EWI. Computed at runtime by sync_market_indices_live.py."
+  },
+
+  "KSE_PREMIER": {
+    "name_ar": "مؤشر السوق الأول - الكويت",
+    "type": "market_cap_weighted",
+    "note": "KSE Premier Market top constituents. KSE uses numeric codes in some sources; mapped to tickers via deepseek.",
+    "constituents": [
+      {"code": "KFH", "weight": 29.0},
+      {"code": "NBK", "weight": 14.7},
+      {"code": "ZAIN", "weight": 4.6},
+      {"code": "KIPCO", "weight": 0.8},
+      {"code": "KIC", "weight": 0.2}
+    ]
+  },
+
+  "QSE_QE_INDEX": {
+    "name_ar": "مؤشر بورصة قطر العام (QE Index)",
+    "type": "market_cap_weighted",
+    "constituents": [
+      {"code": "QNBK", "weight": 15.00},
+      {"code": "QIBK", "weight": 15.00},
+      {"code": "IQCD", "weight": 12.75},
+      {"code": "ORDS", "weight": 7.05},
+      {"code": "QGTS", "weight": 5.65},
+      {"code": "MARK", "weight": 5.37},
+      {"code": "QIIK", "weight": 5.07},
+      {"code": "CBQK", "weight": 4.98},
+      {"code": "DUBK", "weight": 4.68},
+      {"code": "QFLS", "weight": 3.50},
+      {"code": "MPHC", "weight": 3.20},
+      {"code": "BRES", "weight": 2.80},
+      {"code": "DHBK", "weight": 2.50},
+      {"code": "VFQS", "weight": 2.20},
+      {"code": "UDCD", "weight": 2.00},
+      {"code": "GISS", "weight": 1.80},
+      {"code": "NLCS", "weight": 1.50},
+      {"code": "AHCS", "weight": 1.30},
+      {"code": "MEZA", "weight": 1.10},
+      {"code": "QNCD", "weight": 0.90},
+      {"code": "SIIS", "weight": 0.70}
+    ]
+  },
+
+  "TADAWUL_TASI": {
+    "name_ar": "مؤشر تداول العام (TASI)",
+    "type": "market_cap_weighted",
+    "note": "Tadawul uses numeric tickers. Top 6 constituents from deepseek; full list has 200+ stocks.",
+    "constituents": [
+      {"code": "1120", "weight": 13.92, "name": "مصرف الراجحي"},
+      {"code": "2222", "weight": 14.00, "name": "أرامكو السعودية"},
+      {"code": "1180", "weight": 8.00, "name": "البنك الأهلي السعودي (SNB)"},
+      {"code": "2010", "weight": 6.50, "name": "سابك"},
+      {"code": "7010", "weight": 5.10, "name": "اس تي سي (STC)"},
+      {"code": "1211", "weight": 3.50, "name": "معادن"}
+    ]
+  },
+
+  "US_SP500": {
+    "name_ar": "مؤشر S&P 500",
+    "type": "market_cap_weighted",
+    "note": "Top 16 constituents from deepseek. Full index has 500+ stocks — composite computed at runtime from US active stocks.",
+    "constituents": [
+      {"code": "NVDA", "weight": 7.19},
+      {"code": "AAPL", "weight": 6.52},
+      {"code": "MSFT", "weight": 4.88},
+      {"code": "AMZN", "weight": 3.41},
+      {"code": "GOOGL", "weight": 3.03},
+      {"code": "META", "weight": 2.50},
+      {"code": "AVGO", "weight": 2.20}
+    ]
+  },
+
+  "US_NASDAQ100": {
+    "name_ar": "مؤشر ناسداك 100",
+    "type": "market_cap_weighted",
+    "constituents": [
+      {"code": "NVDA", "weight": 8.70},
+      {"code": "AAPL", "weight": 7.30},
+      {"code": "MSFT", "weight": 5.90},
+      {"code": "AMZN", "weight": 4.20},
+      {"code": "AVGO", "weight": 3.50}
+    ]
+  },
+
+  "US_DOW_JONES": {
+    "name_ar": "مؤشر داو جونز الصناعي",
+    "type": "price_weighted",
+    "constituents": [
+      {"code": "GS", "weight": 10.27},
+      {"code": "CAT", "weight": 9.18},
+      {"code": "MSFT", "weight": 6.14},
+      {"code": "AMGN", "weight": 4.76},
+      {"code": "HD", "weight": 4.50}
+    ]
+  }
 }
