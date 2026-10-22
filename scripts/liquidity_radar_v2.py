@@ -1159,11 +1159,28 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     if de_conn is not None:
         de_conn.close()
 
+    # 1b. DEEPSEEK-AUDIT (2026-10-22): CMF + OBV + POC flow quality assessment
+    # الحوت وحده مش كفاية — لازم CMF إيجابي + OBV صاعد + POC position
+    flow_quality = None
+    try:
+        import sys as _flow_sys
+        _vps = str(Path(__file__).resolve().parents[1] / 'vps-service')
+        if _vps not in _flow_sys.path:
+            _flow_sys.path.insert(0, _vps)
+        from analyzers.indicators.flow_indicators import assess_flow_quality
+        flow_quality = assess_flow_quality(candles)
+    except Exception as _fq_err:
+        flow_quality = None
+
     # Task BRAVO-CASH-LINKAGE: قاعدة القرار — تجميع مؤسسي مدعوم بتدفق نقدي حقيقي vs مضاربة خطرة.
     _net_flow = whale.get('net_flow_egp', 0)
     _free_cf = fundamentals.get('free_cash_flow')
     _debt_ratio = fundamentals.get('debt_ratio')
     accumulation_class = None
+
+    # DEEPSEEK-AUDIT: لو flow_quality قالت distribution → ارفض "تجميع" label
+    _flow_verdict = flow_quality.get('verdict', 'neutral') if flow_quality else 'neutral'
+    _flow_dist_score = flow_quality.get('distribution_score', 0) if flow_quality else 0
 
     # ─── SEALED-DISPATCH Step 2 (2026-10-17): prevent fake "تجميع" when
     # there's no active BUY-side prediction in predictions.db.
@@ -1183,8 +1200,19 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         # accumulation_class stays None — no fake "تجميع مؤسسي" label
     else:
         # Active prediction exists → safe to evaluate "تجميع مؤسسي" label
-        if _net_flow > 0 and _free_cf is not None and _free_cf > 0:
-            accumulation_class = 'تجميع مؤسسي مدعوم بتدفق نقدي حقيقي'
+        # DEEPSEEK-AUDIT: لو flow_quality قالت "distribute" → ممنوع "تجميع مؤسسي"
+        if _flow_verdict == 'distribute' or _flow_dist_score >= 2:
+            # Distribution confirmed → no accumulation label
+            if _free_cf is not None and _free_cf < 0 and _debt_ratio is not None and _debt_ratio > 0.5:
+                accumulation_class = 'مضاربة خطرة سريعة'
+            else:
+                accumulation_class = 'تصريف محتمل'
+        elif _net_flow > 0 and _free_cf is not None and _free_cf > 0:
+            # DEEPSEEK-AUDIT: "تجميع مؤسسي" بس لو flow_quality أكدت accumulation
+            if _flow_verdict == 'accumulate' or flow_quality and flow_quality.get('accumulation_score', 0) >= 2:
+                accumulation_class = 'تجميع مؤسسي مدعوم بتدفق نقدي حقيقي'
+            else:
+                accumulation_class = 'تجميع هادئ'
         elif _free_cf is not None and _free_cf < 0 and _debt_ratio is not None and _debt_ratio > 0.5:
             accumulation_class = 'مضاربة خطرة سريعة'
 
@@ -1267,6 +1295,8 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         # Task BRAVO-CASH-LINKAGE: fundamentals + accumulation_class
         'fundamentals': fundamentals,
         'accumulation_class': accumulation_class,
+        # DEEPSEEK-AUDIT (2026-10-22): expose flow_quality (CMF + OBV + POC)
+        'flow_quality': flow_quality,
         # SEALED-DISPATCH Step 1+2 (2026-10-17): expose the active prediction
         # reference (READ-ONLY from predictions.db). This is the source-of-truth
         # link between V40.2's prediction and the radar's contextual signal.
