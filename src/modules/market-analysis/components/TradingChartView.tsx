@@ -797,7 +797,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  {/* Body — chart (toggle between InteractiveChart and TradingViewChart) */}
  {/* ALPHA-CHART-TOGGLE-1: user can switch between InteractiveChart and TradingViewChart */}
  <div className="flex justify-end mb-1">
- <ChartToggle />
+ {/* ChartToggle removed — only one chart (TradingViewChart) now */}
  </div>
  <div className={cn('flex-1 min-h-0', isMaximized ? 'h-[600px]' : 'h-[500px]')}>
  {loading && !data ? (
