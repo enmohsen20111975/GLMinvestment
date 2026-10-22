@@ -215,7 +215,6 @@ def render_and_extract(url, timeout_ms=45000):
                             if len(nums) >= 2 and nums[1] > 100000:
                                 result[f"{key}_sells"] = nums[1]
                             log.info(f"  table {table_idx} row: {typ}/{nat} buy={nums[0]:,.0f} sell={nums[1]:,.0f}")
-                                     table_idx, typ, nat, nums[0], nums[1] if len(nums) > 1 else 0)
             except:
                 pass
 
