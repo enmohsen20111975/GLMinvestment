@@ -6224,3 +6224,55 @@ Task: اللاب توب شغّل Phase 6 verification — 8/8 PASS.
 
 ملاحظة من المالك: "التنبيه الأخير (التوكن) — سيبه. مش مشكلة. الكوارث اللي أنا فيها أكبر بكتير جداً."
 → محتاج أسأل المالك إيه الكوارث دي عشان نساعده.
+
+---
+Task ID: ARCHITECTURE-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن سأل: "موضوع وضع طبقة هي اللي تتعامل مع قواعد البيانات بس وباقي المشروع يقرأ ويكتب من خلالها — ده صح؟ وفية كم رهيب من البهدلة في الشاشات."
+
+الإجابة على السؤال الأول: أيوه، صح. ده اسمه "Data Access Layer" (DAL) أو "Repository Pattern". المفروض مفيش أي route أو component يفتح DB مباشرة — كل حاجة تمر عبر layer واحدة.
+
+الواقع اللي لقيته:
+
+🔴 **الكارثة المعمارية في الـ frontend (src/):**
+- إجمالي API routes: 462
+- API routes بتفتح DB مباشرة (sqlite3/better-sqlite3): 104 (22.5%)
+- `new Database(` calls: 221 مكان
+- .db files مختلفة بتُفتح من src/: 48 reference
+- توزيع الـ DB access في الـ frontend:
+  - stocks.db: 103 route
+  - predictions.db: 65 route
+  - data_engine.db: 53 route
+  - price_history.db: 17 route
+  - auth.db: 14 route
+  - news.db: 11 route
+  - intraday.db: 9 route
+
+🟡 **فيه محاولة layer موجودة بس مش مكتملة:**
+- `vps-service/core/db_manager.py` موجود (Phase 8 — Central Data Access Layer) — مكتوب صح و بيستخدم WAL + busy_timeout + thread-safe.
+- بس الـ Python engines لسه بتستخدم raw `sqlite3.connect` في 239 ملف، vs 38 ملف بس بتستخدم db_manager.
+- في الـ frontend (src/): مفيش layer خالص — كل route بتكتب الـ SQL بتاعها.
+
+🔴 **المشاكل اللي بتسببها البهدلة دي:**
+1. مفيش مكان واحد للـ schema validation.
+2. لو الـ schema اتغير، هتكسر 104+ route.
+3. مفيش caching مركزي.
+4. Database locks متكررة (كل route بيفتح connection بإيده).
+5. الـ SQL queries مكررة في كل مكان (DRY violation).
+6. صعب نضيف logging / monitoring موحّد.
+7. صعب نعمل migrations (محدش بيعرف كم route بيستخدم table معينة).
+
+🟢 **الـ Python backend فيه أساس:**
+- `db_manager.py` موجود و بيشتغل صح.
+- بس محتاج migration: نقل الـ 239 ملف اللي لسه بتستخدم raw sqlite3.
+
+🔴 **الـ frontend محتاج layer جديدة:**
+- مفيش `src/lib/db-manager.ts` موحّد.
+- فيه بس `db-auth.ts` + `db-predictions.ts` (للـ Prisma فقط).
+- لازم نعمل `src/lib/db.ts` يبقى الـ single entry point لكل .db access.
+
+التوصيات قبل الإنتاج:
+1. مفيش داعي نوقف الإنتاج عشان الـ architecture دي — الـ unification عمل شغله (Phase 0-6).
+2. بس لازم نعرف إن الـ "بهتلة" دي موجودة و هتسبب bugs صامتة.
+3. لو حصل أي مشكلة في الإنتاج، أول حاجة نشك فيها: route بيكتب في DB و route تاني بيقرا من نفس الـ DB في نفس الوقت → lock.
+4. المرحلة اللي بعد الإنتاج: refactoring تدريجي لـ 104 route لاستخدام layer موحّدة.
