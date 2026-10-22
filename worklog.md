@@ -6679,3 +6679,23 @@ Stage Summary:
 - كل widgets في PinnableWidget registry (Rule 52) + قابلة للـ pin/unpin.
 - Rule 75 compliance: كل commit = push فوري.
 - Rule 76 compliance: git pull --rebase قبل كل push.
+
+---
+Task ID: 5 (Premium Polish Pass)
+Agent: Alpha
+Task: P1-P5 Premium Polish — تحويل المنصة من "شغّالة" لـ "Premium"
+
+Work Log:
+- P2 (Premium Font): استبدلت system fonts بـ IBM Plex Sans Arabic (body) + Tajawal (headings) عبر next/font/google (self-hosted + optimized). tailwind config + globals.css متظبطين. tabular-nums موجود بالفعل للأرقام. commit af07140.
+- P1 (Skeleton loaders): UnifiedTable عندها loading + loadingRows props بالفعل. LiveMonitor عنده LiveMonitorSkeleton + DashboardView عنده DashboardSkeleton + LiquidityFlowPanel عنده skeleton. أضفت skeleton لـ TopMovers (كان بيرجع null). commit 618191a.
+- P3 (Sparklines): MiniSparkline component موجود بالفعل (pure SVG + auto color + caching 60s). أضفت عمود "الاتجاه" في جدول المحفظة (LiveMonitor) بـ MiniSparkline (آخر 20 يوم). /api/stocks/sparkline endpoint موجود. commit cab8c15.
+- P4 (Empty states): UnifiedEmptyState موجود + 12 file بتستخدمه. أظبط StockSelector يستخدم UnifiedEmptyState بدل النص الفاضي. portfolio empty state موجود من Task 4 (UnifiedEmptyState + اقتراح 3 أسهم + CTA). commit 37d3841.
+- P5 (Dark mode): مفاجأة — شغال بالكامل بالفعل! next-themes v0.4.6 مثبت + ThemeProvider مظبوط (attribute="class", defaultTheme="light", enableSystem, disableTransitionOnChange) + TopBar فيه ThemeToggle (Sun/Moon button) + .dark CSS variables كاملة في globals.css. مفيش حاجة محتاجة تعديل.
+
+Stage Summary:
+- كل P1-P5 اتعملت واترفعت على GitHub.
+- 5 commits: af07140 (P2), 618191a (P1), cab8c15 (P3), 37d3841 (P4), + P5 (مش محتاج commit — موجود بالفعل).
+- اكتشفت إن المشروع فيه infrastructure موحد قوي (UnifiedTable, UnifiedEmptyState, MiniSparkline, next-themes) — بس مش متـستخدم بكثرة. التكليف ده كان "activation" مش "بناء".
+- Rule 75 compliance: كل مهمة = commit + push فوري.
+- Rule 76 compliance: git pull --rebase قبل كل push.
+- مفيش regression — كل التعديلات compile-verified (HTTP 200).
