@@ -16,192 +16,161 @@
     "constituents": [
       {
         "code": "COMI",
-        "weight": 31.92,
-        "sector": "Banks",
-        "name_ar": "البنك التجاري الدولي"
+        "weight": 29.74,
+        "sector": "Banks"
       },
       {
         "code": "TMGH",
-        "weight": 11.38,
-        "sector": "Real Estate",
-        "name_ar": "مجموعة طلعت مصطفى القابضة"
-      },
-      {
-        "code": "EAST",
-        "weight": 6.85,
-        "sector": "Food, Beverages & Tobacco",
-        "name_ar": "الشرقية - إيسترن كومباني"
-      },
-      {
-        "code": "FWRY",
-        "weight": 6.15,
-        "sector": "Technology",
-        "name_ar": "فوري للمدفوعات الإلكترونية"
+        "weight": 10.09,
+        "sector": "Real Estate"
       },
       {
         "code": "ETEL",
-        "weight": 5.9,
-        "sector": "Telecommunications",
-        "name_ar": "المصرية للاتصالات"
+        "weight": 8.32,
+        "sector": "Telecommunications"
+      },
+      {
+        "code": "FWRY",
+        "weight": 5.52,
+        "sector": "Technology"
+      },
+      {
+        "code": "EAST",
+        "weight": 5.09,
+        "sector": "Food, Beverages & Tobacco"
       },
       {
         "code": "EFIH",
-        "weight": 4.71,
-        "sector": "Technology",
-        "name_ar": "إي فاينانس للاستثمارات الرقمية"
+        "weight": 4.9,
+        "sector": "Technology"
       },
       {
         "code": "ABUK",
-        "weight": 3.29,
-        "sector": "Chemicals",
-        "name_ar": "أبو قير للأسمدة"
+        "weight": 3.58,
+        "sector": "Chemicals"
       },
       {
         "code": "HRHO",
-        "weight": 3.23,
-        "sector": "Financial Services",
-        "name_ar": "مجموعة إي إف جي القابضة"
+        "weight": 2.88,
+        "sector": "Financial Services"
       },
       {
         "code": "ADIB",
-        "weight": 2.91,
-        "sector": "Banks",
-        "name_ar": "مصرف أبو ظبي الإسلامي - مصر"
+        "weight": 2.7,
+        "sector": "Banks"
       },
       {
         "code": "ORAS",
-        "weight": 2.14,
-        "sector": "Construction",
-        "name_ar": "أوراسكوم كونستراكشون"
+        "weight": 2.67,
+        "sector": "Construction"
       },
       {
-        "code": "EFID",
-        "weight": 2.03,
-        "sector": "Food, Beverages & Tobacco",
-        "name_ar": "إيديتا للصناعات الغذائية"
+        "code": "MFPC",
+        "weight": 2.23,
+        "sector": "Chemicals"
       },
       {
         "code": "CCAP",
-        "weight": 1.73,
-        "sector": "Financial Services",
-        "name_ar": "القلعة للاستشارات المالية"
+        "weight": 2.06,
+        "sector": "Financial Services"
       },
       {
-        "code": "PHDC",
-        "weight": 1.71,
-        "sector": "Real Estate",
-        "name_ar": "بالم هيلز للتعمير"
+        "code": "EFID",
+        "weight": 1.9,
+        "sector": "Food, Beverages & Tobacco"
       },
       {
         "code": "VLMR",
-        "weight": 1.67,
-        "sector": "Real Estate",
-        "name_ar": "فالمور القابضة (دولار)"
+        "weight": 1.61,
+        "sector": "Real Estate"
       },
       {
-        "code": "BTFH",
-        "weight": 1.53,
-        "sector": "Financial Services",
-        "name_ar": "بلتون المالية القابضة"
+        "code": "ALCN",
+        "weight": 1.49,
+        "sector": "Transportation"
       },
       {
-        "code": "EGAL",
-        "weight": 1.31,
-        "sector": "Basic Resources",
-        "name_ar": "مصر للألومنيوم"
-      },
-      {
-        "code": "GBCO",
-        "weight": 1.24,
-        "sector": "Automobiles",
-        "name_ar": "جي بي أوتو"
-      },
-      {
-        "code": "ORHD",
-        "weight": 1.24,
-        "sector": "Travel & Leisure",
-        "name_ar": "أوراسكوم للفنادق والتنمية"
-      },
-      {
-        "code": "MCQE",
-        "weight": 1.0,
-        "sector": "Construction Materials",
-        "name_ar": "مصر للأسمنت - قنا"
-      },
-      {
-        "code": "ISPH",
-        "weight": 0.98,
-        "sector": "Healthcare",
-        "name_ar": "ابن سينا فارما"
-      },
-      {
-        "code": "JUFO",
-        "weight": 0.87,
-        "sector": "Food, Beverages & Tobacco",
-        "name_ar": "جهينة للصناعات الغذائية"
-      },
-      {
-        "code": "HELI",
-        "weight": 0.86,
-        "sector": "Real Estate",
-        "name_ar": "مصر الجديدة للإسكان والتعمير"
-      },
-      {
-        "code": "RAYA",
-        "weight": 0.84,
-        "sector": "Technology",
-        "name_ar": "رايا القابضة للتكنولوجيا"
+        "code": "PHDC",
+        "weight": 1.42,
+        "sector": "Real Estate"
       },
       {
         "code": "AMOC",
-        "weight": 0.83,
-        "sector": "Energy",
-        "name_ar": "الإسكندرية للزيوت المعدنية"
+        "weight": 1.31,
+        "sector": "Energy"
       },
       {
-        "code": "RMDA",
-        "weight": 0.68,
-        "sector": "Healthcare",
-        "name_ar": "العاشر من رمضان للصناعات الدوائية"
+        "code": "BTFH",
+        "weight": 1.26,
+        "sector": "Financial Services"
+      },
+      {
+        "code": "GBCO",
+        "weight": 1.21,
+        "sector": "Automobiles"
+      },
+      {
+        "code": "EGAL",
+        "weight": 1.15,
+        "sector": "Basic Resources"
+      },
+      {
+        "code": "ORHD",
+        "weight": 1.08,
+        "sector": "Travel & Leisure"
+      },
+      {
+        "code": "SKPC",
+        "weight": 0.96,
+        "sector": "Chemicals"
+      },
+      {
+        "code": "HELI",
+        "weight": 0.9,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.87,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "ISPH",
+        "weight": 0.87,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.86,
+        "sector": "Food, Beverages & Tobacco"
+      },
+      {
+        "code": "MCQE",
+        "weight": 0.84,
+        "sector": "Construction Materials"
       },
       {
         "code": "EMFD",
-        "weight": 0.64,
-        "sector": "Real Estate",
-        "name_ar": "إعمار مصر للتنمية"
+        "weight": 0.71,
+        "sector": "Real Estate"
       },
       {
-        "code": "ORWE",
-        "weight": 0.61,
-        "sector": "Textiles",
-        "name_ar": "النساجون الشرقيون للسجاد"
+        "code": "RMDA",
+        "weight": 0.64,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "RAYA",
+        "weight": 0.62,
+        "sector": "Technology"
       },
       {
         "code": "VLMRA",
-        "weight": 0.6,
-        "sector": "Real Estate",
-        "name_ar": "فالمور القابضة (جنيه)"
-      },
-      {
-        "code": "OIH",
-        "weight": 0.44,
-        "sector": "Financial Services",
-        "name_ar": "أوراسكوم للاستثمار القابضة"
-      },
-      {
-        "code": "ARCC",
-        "weight": 0.38,
-        "sector": "Construction Materials",
-        "name_ar": "العربية للأسمنت"
-      },
-      {
-        "code": "EGCH",
-        "weight": 0.33,
-        "sector": "Chemicals",
-        "name_ar": "الصناعات الكيماوية المصرية (كيما)"
+        "weight": 0.53,
+        "sector": "Real Estate"
       }
     ],
-    "_source": "EGX official weights (owner research 2026-10-22)"
+    "_source": "EGX official (owner research 2026-10-22 — COMI=29.74% not 31.92%)"
   },
   "EGX33_SHARIAH": {
     "name_ar": "مؤشر إيجي إكس 33 الشرعي",
@@ -210,204 +179,162 @@
     "constituents": [
       {
         "code": "TMGH",
-        "weight": 15.0,
-        "sector": "Real Estate",
-        "name_ar": "طلعت مصطفى"
+        "weight": 15.0
       },
       {
         "code": "SWDY",
-        "weight": 10.27,
-        "sector": "Industrial",
-        "name_ar": "السويدي إليكتريك"
+        "weight": 10.27
       },
       {
         "code": "ABUK",
-        "weight": 9.08,
-        "sector": "Chemicals",
-        "name_ar": "أبو قير للأسمدة"
+        "weight": 9.08
       },
       {
         "code": "ETEL",
-        "weight": 8.46,
-        "sector": "Telecommunications",
-        "name_ar": "المصرية للاتصالات"
+        "weight": 8.46
       },
       {
         "code": "FWRY",
-        "weight": 7.02,
-        "sector": "Technology",
-        "name_ar": "فوري"
+        "weight": 7.02
       },
       {
         "code": "MFPC",
-        "weight": 6.45,
-        "sector": "Chemicals",
-        "name_ar": "موبكو"
+        "weight": 6.45
       },
       {
-        "code": "CCAP",
-        "weight": 4.86,
-        "sector": "Financial",
-        "name_ar": "سيدبك"
+        "code": "SKPC",
+        "weight": 4.86
       },
       {
-        "code": "BDIB",
-        "weight": 4.72,
-        "sector": "Banks",
-        "name_ar": "بنك فيصل الإسلامي"
+        "code": "FAIT",
+        "weight": 4.72
       },
       {
         "code": "EFID",
-        "weight": 3.48,
-        "sector": "Food",
-        "name_ar": "إيديتا"
+        "weight": 3.48
       },
       {
         "code": "ORAS",
-        "weight": 3.15,
-        "sector": "Construction",
-        "name_ar": "أوراسكوم كونستراكشون"
+        "weight": 3.15
       },
       {
         "code": "ADIB",
-        "weight": 2.76,
-        "sector": "Banks",
-        "name_ar": "مصرف أبوظبي الإسلامي"
+        "weight": 0.9486
       },
       {
         "code": "AMOC",
-        "weight": 2.75,
-        "sector": "Energy",
-        "name_ar": "الإسكندرية للزيوت المعدنية"
+        "weight": 0.9486
       },
       {
         "code": "GBCO",
-        "weight": 2.24,
-        "sector": "Automobiles",
-        "name_ar": "جي بي كوربوريشن"
+        "weight": 0.9486
       },
       {
         "code": "ORWE",
-        "weight": 1.99,
-        "sector": "Textiles",
-        "name_ar": "النساجون الشرقيون"
+        "weight": 0.9486
       },
       {
-        "code": "MFCA",
-        "weight": 1.93,
-        "sector": "Real Estate",
-        "name_ar": "مدينة مصر"
+        "code": "ICFC",
+        "weight": 0.9486
       },
       {
-        "code": "PHDC",
-        "weight": 1.69,
-        "sector": "Real Estate",
-        "name_ar": "بالم هيلز"
+        "code": "GOUR",
+        "weight": 0.9486
       },
       {
-        "code": "CLCP",
-        "weight": 1.66,
-        "sector": "Travel",
-        "name_ar": "كليوباترا"
+        "code": "MPCO",
+        "weight": 0.9486
       },
       {
-        "code": "TALL",
-        "weight": 1.61,
-        "sector": "Services",
-        "name_ar": "تعليم لخدمات الإدارة"
+        "code": "IFAP",
+        "weight": 0.9486
       },
       {
-        "code": "JUFO",
-        "weight": 1.47,
-        "sector": "Food",
-        "name_ar": "جهينة"
+        "code": "ATQA",
+        "weight": 0.9486
       },
       {
-        "code": "EGAL",
-        "weight": 1.38,
-        "sector": "Basic Resources",
-        "name_ar": "مصر للألومنيوم"
+        "code": "MCQE",
+        "weight": 0.9486
       },
       {
-        "code": "ORHD",
-        "weight": 1.38,
-        "sector": "Travel",
-        "name_ar": "أوراسكوم للتنمية"
+        "code": "OCDI",
+        "weight": 0.9486
       },
       {
-        "code": "EMFD",
-        "weight": 1.08,
-        "sector": "Real Estate",
-        "name_ar": "إعمار مصر"
+        "code": "RACC",
+        "weight": 0.9486
       },
       {
-        "code": "SUHK",
-        "weight": 1.02,
-        "sector": "Real Estate",
-        "name_ar": "سوديك"
+        "code": "SAUD",
+        "weight": 0.9486
       },
       {
-        "code": "ABND",
-        "weight": 0.83,
-        "sector": "Real Estate",
-        "name_ar": "عبور لاند"
+        "code": "ARCC",
+        "weight": 0.9486
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.9486
       },
       {
         "code": "ISPH",
-        "weight": 0.76,
-        "sector": "Healthcare",
-        "name_ar": "ابن سينا فارما"
+        "weight": 0.9486
       },
       {
-        "code": "RAYA",
-        "weight": 0.7,
-        "sector": "Technology",
-        "name_ar": "راية القابضة"
+        "code": "EFIH",
+        "weight": 0.9486
       },
       {
-        "code": "MMAT",
-        "weight": 0.6,
-        "sector": "Industrial",
-        "name_ar": "إم إم جروب"
+        "code": "ORHD",
+        "weight": 0.9486
       },
       {
-        "code": "AELC",
-        "weight": 0.43,
-        "sector": "Food",
-        "name_ar": "العربية لحليج الأقطان"
+        "code": "MASR",
+        "weight": 0.9486
       },
       {
-        "code": "BRQA",
-        "weight": 0.42,
-        "sector": "Banks",
-        "name_ar": "بنك البركة"
+        "code": "MTIE",
+        "weight": 0.9486
+      },
+      {
+        "code": "ETRS",
+        "weight": 0.9486
+      },
+      {
+        "code": "EGAL",
+        "weight": 0.9486
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.9486
+      },
+      {
+        "code": "RMDA",
+        "weight": 0.9486
+      },
+      {
+        "code": "LCSW",
+        "weight": 0.9486
+      },
+      {
+        "code": "FAITA",
+        "weight": 0.9486
+      },
+      {
+        "code": "PHDC",
+        "weight": 0.9486
+      },
+      {
+        "code": "ACGC",
+        "weight": 0.9486
       },
       {
         "code": "EGAS",
-        "weight": 0.27,
-        "sector": "Utilities",
-        "name_ar": "غاز مصر"
-      },
-      {
-        "code": "RTVC",
-        "weight": 0.19,
-        "sector": "Technology",
-        "name_ar": "راية لخدمات مراكز الاتصالات"
-      },
-      {
-        "code": "ECRU",
-        "weight": 0.18,
-        "sector": "Construction",
-        "name_ar": "العز للسيراميك (الجوهرة)"
-      },
-      {
-        "code": "EGTS",
-        "weight": 0.16,
-        "sector": "Transportation",
-        "name_ar": "إيجيترانس"
+        "weight": 0.9486
       }
     ],
-    "_source": "EGX official Shariah weights (owner research 2026-10-22)"
+    "_source": "EGX official Shariah list (owner 2026-10-22)"
   },
   "EGX70_EWI": {
     "name_ar": "مؤشر إيجي إكس 70 متساوي الأوزان",
@@ -610,13 +537,703 @@
       {
         "code": "WADI"
       }
-    ]
+    ],
+    "constituents_sample": [
+      {
+        "code": "PRDC",
+        "weight": 1.4286
+      },
+      {
+        "code": "GDWA",
+        "weight": 1.4286
+      },
+      {
+        "code": "MOED",
+        "weight": 1.4286
+      },
+      {
+        "code": "TAQA",
+        "weight": 1.4286
+      },
+      {
+        "code": "ACTF",
+        "weight": 1.4286
+      },
+      {
+        "code": "VALU",
+        "weight": 1.4286
+      },
+      {
+        "code": "BONY",
+        "weight": 1.4286
+      },
+      {
+        "code": "ICFC",
+        "weight": 1.4286
+      },
+      {
+        "code": "GOUR",
+        "weight": 1.4286
+      },
+      {
+        "code": "ISMA",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIHC",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPCO",
+        "weight": 1.4286
+      },
+      {
+        "code": "UEGC",
+        "weight": 1.4286
+      },
+      {
+        "code": "HDBK",
+        "weight": 1.4286
+      },
+      {
+        "code": "ATQA",
+        "weight": 1.4286
+      },
+      {
+        "code": "GPIM",
+        "weight": 1.4286
+      },
+      {
+        "code": "SWDY",
+        "weight": 1.4286
+      },
+      {
+        "code": "PHAR",
+        "weight": 1.4286
+      },
+      {
+        "code": "UNIP",
+        "weight": 1.4286
+      },
+      {
+        "code": "EGCH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPCI",
+        "weight": 1.4286
+      },
+      {
+        "code": "ASPI",
+        "weight": 1.4286
+      },
+      {
+        "code": "DSCW",
+        "weight": 1.4286
+      },
+      {
+        "code": "KABO",
+        "weight": 1.4286
+      },
+      {
+        "code": "ORWE",
+        "weight": 1.4286
+      },
+      {
+        "code": "PRCL",
+        "weight": 1.4286
+      },
+      {
+        "code": "SVCE",
+        "weight": 1.4286
+      },
+      {
+        "code": "EXPA",
+        "weight": 1.4286
+      },
+      {
+        "code": "DAPH",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELKA",
+        "weight": 1.4286
+      },
+      {
+        "code": "EGTS",
+        "weight": 1.4286
+      },
+      {
+        "code": "OBRI",
+        "weight": 1.4286
+      },
+      {
+        "code": "OCDI",
+        "weight": 1.4286
+      },
+      {
+        "code": "AMIA",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPRC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ENGC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELEC",
+        "weight": 1.4286
+      },
+      {
+        "code": "CSAG",
+        "weight": 1.4286
+      },
+      {
+        "code": "ATLC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ARAB",
+        "weight": 1.4286
+      },
+      {
+        "code": "MEPA",
+        "weight": 1.4286
+      },
+      {
+        "code": "OIH",
+        "weight": 1.4286
+      },
+      {
+        "code": "SIPC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ARCC",
+        "weight": 1.4286
+      },
+      {
+        "code": "OFH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MCRO",
+        "weight": 1.4286
+      },
+      {
+        "code": "ISMQ",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELSH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MASR",
+        "weight": 1.4286
+      },
+      {
+        "code": "MTIE",
+        "weight": 1.4286
+      },
+      {
+        "code": "CIEB",
+        "weight": 1.4286
+      },
+      {
+        "code": "ETRS",
+        "weight": 1.4286
+      },
+      {
+        "code": "IDRE",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIFI",
+        "weight": 1.4286
+      },
+      {
+        "code": "CNFN",
+        "weight": 1.4286
+      },
+      {
+        "code": "IEEC",
+        "weight": 1.4286
+      },
+      {
+        "code": "LCSW",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIDC",
+        "weight": 1.4286
+      },
+      {
+        "code": "SDTI",
+        "weight": 1.4286
+      },
+      {
+        "code": "POUL",
+        "weight": 1.4286
+      },
+      {
+        "code": "ZMID",
+        "weight": 1.4286
+      },
+      {
+        "code": "NCCW",
+        "weight": 1.4286
+      },
+      {
+        "code": "AMER",
+        "weight": 1.4286
+      },
+      {
+        "code": "ASCM",
+        "weight": 1.4286
+      },
+      {
+        "code": "ZEOT",
+        "weight": 1.4286
+      },
+      {
+        "code": "NIPH",
+        "weight": 1.4286
+      },
+      {
+        "code": "COSG",
+        "weight": 1.4286
+      },
+      {
+        "code": "EHDR",
+        "weight": 1.4286
+      },
+      {
+        "code": "SCEM",
+        "weight": 1.4286
+      },
+      {
+        "code": "MBSC",
+        "weight": 1.4286
+      }
+    ],
+    "_source": "EGX official 70 list (owner 2026-10-22)"
   },
   "EGX100_EWI": {
     "name_ar": "مؤشر إيجي إكس 100 الأوسع نطاقاً",
     "type": "equal_weighted",
     "rule": "EGX30 + EGX70 (deduplicated)",
-    "note": "Composite of EGX30 and EGX70_EWI. Computed at runtime by sync_market_indices_live.py."
+    "note": "Composite of EGX30 and EGX70_EWI. Computed at runtime by sync_market_indices_live.py.",
+    "constituents_sample": [
+      {
+        "code": "COMI",
+        "weight": 0.9901
+      },
+      {
+        "code": "TMGH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ETEL",
+        "weight": 0.9901
+      },
+      {
+        "code": "FWRY",
+        "weight": 0.9901
+      },
+      {
+        "code": "EAST",
+        "weight": 0.9901
+      },
+      {
+        "code": "EFIH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ABUK",
+        "weight": 0.9901
+      },
+      {
+        "code": "HRHO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ADIB",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORAS",
+        "weight": 0.9901
+      },
+      {
+        "code": "MFPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "CCAP",
+        "weight": 0.9901
+      },
+      {
+        "code": "EFID",
+        "weight": 0.9901
+      },
+      {
+        "code": "VLMR",
+        "weight": 0.9901
+      },
+      {
+        "code": "ALCN",
+        "weight": 0.9901
+      },
+      {
+        "code": "PHDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMOC",
+        "weight": 0.9901
+      },
+      {
+        "code": "BTFH",
+        "weight": 0.9901
+      },
+      {
+        "code": "GBCO",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGAL",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORHD",
+        "weight": 0.9901
+      },
+      {
+        "code": "SKPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "HELI",
+        "weight": 0.9901
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.9901
+      },
+      {
+        "code": "MCQE",
+        "weight": 0.9901
+      },
+      {
+        "code": "EMFD",
+        "weight": 0.9901
+      },
+      {
+        "code": "RMDA",
+        "weight": 0.9901
+      },
+      {
+        "code": "RAYA",
+        "weight": 0.9901
+      },
+      {
+        "code": "VLMRA",
+        "weight": 0.9901
+      },
+      {
+        "code": "PRDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "GDWA",
+        "weight": 0.9901
+      },
+      {
+        "code": "MOED",
+        "weight": 0.9901
+      },
+      {
+        "code": "TAQA",
+        "weight": 0.9901
+      },
+      {
+        "code": "ACTF",
+        "weight": 0.9901
+      },
+      {
+        "code": "VALU",
+        "weight": 0.9901
+      },
+      {
+        "code": "BONY",
+        "weight": 0.9901
+      },
+      {
+        "code": "ICFC",
+        "weight": 0.9901
+      },
+      {
+        "code": "GOUR",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISMA",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIHC",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPCO",
+        "weight": 0.9901
+      },
+      {
+        "code": "UEGC",
+        "weight": 0.9901
+      },
+      {
+        "code": "HDBK",
+        "weight": 0.9901
+      },
+      {
+        "code": "ATQA",
+        "weight": 0.9901
+      },
+      {
+        "code": "GPIM",
+        "weight": 0.9901
+      },
+      {
+        "code": "SWDY",
+        "weight": 0.9901
+      },
+      {
+        "code": "PHAR",
+        "weight": 0.9901
+      },
+      {
+        "code": "UNIP",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGCH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPCI",
+        "weight": 0.9901
+      },
+      {
+        "code": "ASPI",
+        "weight": 0.9901
+      },
+      {
+        "code": "DSCW",
+        "weight": 0.9901
+      },
+      {
+        "code": "KABO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORWE",
+        "weight": 0.9901
+      },
+      {
+        "code": "PRCL",
+        "weight": 0.9901
+      },
+      {
+        "code": "SVCE",
+        "weight": 0.9901
+      },
+      {
+        "code": "EXPA",
+        "weight": 0.9901
+      },
+      {
+        "code": "DAPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELKA",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGTS",
+        "weight": 0.9901
+      },
+      {
+        "code": "OBRI",
+        "weight": 0.9901
+      },
+      {
+        "code": "OCDI",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMIA",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPRC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ENGC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELEC",
+        "weight": 0.9901
+      },
+      {
+        "code": "CSAG",
+        "weight": 0.9901
+      },
+      {
+        "code": "ATLC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ARAB",
+        "weight": 0.9901
+      },
+      {
+        "code": "MEPA",
+        "weight": 0.9901
+      },
+      {
+        "code": "OIH",
+        "weight": 0.9901
+      },
+      {
+        "code": "SIPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ARCC",
+        "weight": 0.9901
+      },
+      {
+        "code": "OFH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MCRO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISMQ",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELSH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MASR",
+        "weight": 0.9901
+      },
+      {
+        "code": "MTIE",
+        "weight": 0.9901
+      },
+      {
+        "code": "CIEB",
+        "weight": 0.9901
+      },
+      {
+        "code": "ETRS",
+        "weight": 0.9901
+      },
+      {
+        "code": "IDRE",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIFI",
+        "weight": 0.9901
+      },
+      {
+        "code": "CNFN",
+        "weight": 0.9901
+      },
+      {
+        "code": "IEEC",
+        "weight": 0.9901
+      },
+      {
+        "code": "LCSW",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "SDTI",
+        "weight": 0.9901
+      },
+      {
+        "code": "POUL",
+        "weight": 0.9901
+      },
+      {
+        "code": "ZMID",
+        "weight": 0.9901
+      },
+      {
+        "code": "NCCW",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMER",
+        "weight": 0.9901
+      },
+      {
+        "code": "ASCM",
+        "weight": 0.9901
+      },
+      {
+        "code": "ZEOT",
+        "weight": 0.9901
+      },
+      {
+        "code": "NIPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "COSG",
+        "weight": 0.9901
+      },
+      {
+        "code": "EHDR",
+        "weight": 0.9901
+      },
+      {
+        "code": "SCEM",
+        "weight": 0.9901
+      },
+      {
+        "code": "MBSC",
+        "weight": 0.9901
+      }
+    ],
+    "_source": "EGX official 100 list = EGX30 ∪ EGX70 (owner 2026-10-22)"
   },
   "KSE_PREMIER": {
     "name_ar": "مؤشر السوق الأول - الكويت",
