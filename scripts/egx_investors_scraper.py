@@ -69,8 +69,11 @@ try:
     from utils.db_paths import DBPaths  # type: ignore
     DEFAULT_STOCKS_DB = DBPaths.STOCKS_DB
 except Exception:  # pragma: no cover - fallback if db_paths missing
+    # FIX (2026-10-22): was `os.pardir, os.pardir` (two levels up) which
+    # OVERSHOT to /home/meme/my_apps/ instead of /home/meme/my_apps/GLMinvestment.
+    # Script is at <project>/scripts/ — one level up is the project root.
     DEFAULT_STOCKS_DB = os.path.join(
-        os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir)),
+        os.path.abspath(os.path.join(_HERE, os.pardir)),
         "db",
         "stocks.db",
     )
@@ -453,13 +456,35 @@ def fetch_egx_real(session_date: Optional[str] = None) -> Optional[InvestorFlowR
 # Fallback — computed estimate from stock_daily_prices
 # ─────────────────────────────────────────────────────────────────────────────
 def _latest_dates(conn: sqlite3.Connection, days: int) -> List[str]:
-    cur = conn.execute(
-        "SELECT DISTINCT price_date FROM stock_daily_prices "
-        "WHERE price_date IS NOT NULL "
-        "ORDER BY price_date DESC LIMIT ?",
-        (days,),
-    )
-    return [r[0] for r in cur.fetchall() if r[0]]
+    """Return the last `days` trading dates.
+
+    Primary: read from `stock_daily_prices` table if it exists.
+    Fallback (FIX 2026-10-22): generate last N calendar dates, skipping
+    EGX weekend (Fri=4, Sat=5). This lets the scraper run even when
+    stock_daily_prices is missing — fetch_egx_real() fetches the latest
+    EGX session regardless.
+    """
+    try:
+        cur = conn.execute(
+            "SELECT DISTINCT price_date FROM stock_daily_prices "
+            "WHERE price_date IS NOT NULL "
+            "ORDER BY price_date DESC LIMIT ?",
+            (days,),
+        )
+        dates = [r[0] for r in cur.fetchall() if r[0]]
+        if dates:
+            return dates
+    except Exception:
+        pass  # table missing or query error — fall through to calendar
+
+    # Calendar fallback: last N days skipping EGX weekend (Fri/Sat)
+    out: List[str] = []
+    d = datetime.utcnow().date()
+    while len(out) < days:
+        if d.weekday() not in (4, 5):  # skip Friday(4), Saturday(5)
+            out.append(d.strftime("%Y-%m-%d"))
+        d -= timedelta(days=1)
+    return out
 
 
 def _safe_float(v: object) -> float:
@@ -662,14 +687,19 @@ def run_pipeline(
     conn = _connect(db_path)
     ensure_schema(conn)
 
-    # Check whether stock_daily_prices exists. If not, we cannot compute.
-    tbl = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='stock_daily_prices' LIMIT 1"
-    ).fetchone()
-    if not tbl:
-        log.error("stock_daily_prices table not found in %s — cannot compute estimate.", db_path)
-        conn.close()
-        return []
+    # === DISABLED per owner directive (2026-10-22): "مانمسحش حاجة نشيلها على جنب" ===
+    # The stock_daily_prices prerequisite + _compute_estimate_for_date fallback
+    # were FABRICATING investor-flow data using hardcoded ratios (egy_share=0.875
+    # etc). Now the scraper fetches ONLY from EGX official (egx.com.eg). If EGX
+    # is unavailable for a date → honest "skipped", no fabrication. Code kept
+    # below (commented) for reference.
+    # tbl = conn.execute(
+    #     "SELECT name FROM sqlite_master WHERE type='table' AND name='stock_daily_prices' LIMIT 1"
+    # ).fetchone()
+    # if not tbl:
+    #     log.error("stock_daily_prices table not found in %s — cannot compute estimate.", db_path)
+    #     conn.close()
+    #     return []
 
     if specific_date:
         target_dates = [specific_date]
@@ -693,13 +723,13 @@ def run_pipeline(
         except (ValueError, TypeError):
             pass  # If date parsing fails, proceed anyway (don't block on bad date format)
 
-        # 1) try real scrape first
+        # 1) try real scrape first (ONLY path now — estimate fallback disabled)
         row = fetch_egx_real(session_date=d)
-        # 2) fallback to computed estimate
+        # 2) === DISABLED per owner directive: estimate fallback was FABRICATING data ===
+        # if row is None:
+        #     row = _compute_estimate_for_date(conn, d)
         if row is None:
-            row = _compute_estimate_for_date(conn, d)
-        if row is None:
-            log.info("No data for date=%s — skipped.", d)
+            log.info("EGX unavailable for date=%s — skipped (no fabrication).", d)
             continue
         if not source_only:
             upsert_row(conn, row)
