@@ -552,7 +552,7 @@ function InvestorsTable({
  })}
  </div>
  <div className="text-xs text-muted-foreground pt-0.5" title={source}>
- المصدر: {source || 'stocks.db.investors_data'}
+ المصدر: {source || 'EGX official (egx.com.eg)'}
  </div>
  </div>
  );

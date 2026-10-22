@@ -435,30 +435,35 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+      // FILTER OUT fabricated rows (source='computed_estimate') — these are
+      // NOT real EGX investor-flow data. They were auto-seeded by the (now
+      // disabled) _seedInvestorsData function using hardcoded 70/10/20 ratios.
+      // Kept in DB per owner directive (don't delete — set aside), just not served.
       rawRows = db
-        .prepare('SELECT * FROM investors_data ORDER BY date DESC LIMIT ?')
+        .prepare("SELECT * FROM investors_data WHERE source IS NULL OR source != 'computed_estimate' ORDER BY date DESC LIMIT ?")
         .all(limit) as Record<string, unknown>[];
-      source = 'stocks.db.investors_data';
+      source = 'EGX official (egx.com.eg) — run scripts/egx_investors_scraper.py to populate';
     } catch (e) {
       console.warn('[egx/investors] stocks.db query failed:', e);
     }
 
-    // AUTO-SEED: if the table is empty (or query failed), compute estimates
-    // from stock_daily_prices so the panel shows real data immediately.
-    if (rawRows.length === 0) {
-      try {
-        const result = autoSeed(db, Math.max(days, 7));
-        if (result.seeded > 0) {
-          autoSeeded = true;
-          rawRows = db
-            .prepare('SELECT * FROM investors_data ORDER BY date DESC LIMIT ?')
-            .all(limit) as Record<string, unknown>[];
-          source = 'stocks.db.investors_data (auto-seeded from stock_daily_prices)';
-        }
-      } catch (e) {
-        console.warn('[egx/investors] auto-seed failed:', e);
-      }
-    }
+    // === DISABLED per owner directive (2026-10-22): "مانمسحش حاجة نشيلها على جنب" ===
+    // The AUTO-SEED below FABRICATED investor-flow data using hardcoded ratios
+    // (EGX_RATIO_EGYPTIANS=0.70, ARABS=0.10, FOREIGNERS=0.20) — violating Rule 27
+    // (NO-FAKE-DATA). Code kept but not called. Real data comes from
+    // scripts/egx_investors_scraper.py which fetches egx.com.eg/en/Market/ForeignInvestorsTrading.
+    // if (rawRows.length === 0) {
+    //   try {
+    //     const result = autoSeed(db, Math.max(days, 7));
+    //     if (result.seeded > 0) {
+    //       autoSeeded = true;
+    //       rawRows = db.prepare('SELECT * FROM investors_data ORDER BY date DESC LIMIT ?').all(limit) as Record<string, unknown>[];
+    //       source = 'stocks.db.investors_data (auto-seeded from stock_daily_prices)';
+    //     }
+    //   } catch (e) {
+    //     console.warn('[egx/investors] auto-seed failed:', e);
+    //   }
+    // }
 
     db.close();
 
@@ -477,8 +482,8 @@ export async function GET(req: NextRequest) {
           avg_foreign_net: 0,
           total_trades: 0,
         },
-        auto_seeded: autoSeeded,
-        note: 'investors_data empty and stock_daily_prices has no usable rows to compute estimate',
+        auto_seeded: false,
+        note: 'لا توجد بيانات مستثمرين حقيقية. شغّل: python3 scripts/egx_investors_scraper.py (بيجلب من egx.com.eg الرسمي).',
         generated_at: new Date().toISOString(),
       });
     }
