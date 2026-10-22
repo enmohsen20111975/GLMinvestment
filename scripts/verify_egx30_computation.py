@@ -65,38 +65,55 @@ def get_constituents():
 
 
 def get_stock_prices():
-    """Get close prices for all EGX30 constituents from price_history.db.
+    """Get close prices for all EGX30 constituents.
+    Tries price_history.db first, falls back to stocks.db.stock_daily_prices.
     Returns: {ticker: {date: close_price}}
     """
-    if not PRICE_HISTORY_DB.exists():
-        print(f"✗ price_history.db not found at {PRICE_HISTORY_DB}")
-        sys.exit(1)
+    # Try price_history.db first
+    if PRICE_HISTORY_DB.exists():
+        conn = sqlite3.connect(str(PRICE_HISTORY_DB))
+        tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()]
+        if 'price_history' in tables:
+            prices = {}
+            for row in conn.execute(
+                "SELECT ticker, date, close_price FROM price_history "
+                "WHERE close_price > 0 ORDER BY ticker, date"
+            ).fetchall():
+                ticker, date, close = row
+                if ticker not in prices:
+                    prices[ticker] = {}
+                prices[ticker][str(date)[:10]] = float(close)
+            conn.close()
+            if prices:
+                print(f"  ✓ Read {len(prices)} tickers from price_history.db")
+                return prices
 
-    conn = sqlite3.connect(str(PRICE_HISTORY_DB))
-    prices = {}
-
-    # Check what tables exist
-    tables = [r[0] for r in conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table'"
-    ).fetchall()]
-
-    # Try price_history table
-    if 'price_history' in tables:
-        for row in conn.execute(
-            "SELECT ticker, date, close_price FROM price_history "
-            "WHERE close_price > 0 ORDER BY ticker, date"
-        ).fetchall():
-            ticker, date, close = row
-            if ticker not in prices:
-                prices[ticker] = {}
-            prices[ticker][str(date)[:10]] = float(close)
-    else:
-        print(f"✗ price_history table not found. Tables: {tables}")
+    # Fallback: stocks.db.stock_daily_prices
+    if STOCKS_DB.exists():
+        conn = sqlite3.connect(str(STOCKS_DB))
+        tables = [r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()]
+        if 'stock_daily_prices' in tables:
+            prices = {}
+            for row in conn.execute(
+                "SELECT ticker, price_date, close_price FROM stock_daily_prices "
+                "WHERE close_price > 0 ORDER BY ticker, price_date"
+            ).fetchall():
+                ticker, date, close = row
+                if ticker not in prices:
+                    prices[ticker] = {}
+                prices[ticker][str(date)[:10]] = float(close)
+            conn.close()
+            if prices:
+                print(f"  ✓ Read {len(prices)} tickers from stocks.db.stock_daily_prices")
+                return prices
         conn.close()
-        return {}
 
-    conn.close()
-    return prices
+    print("✗ No price data found (neither price_history.db nor stocks.db.stock_daily_prices)")
+    return {}
 
 
 def verify():
