@@ -244,9 +244,7 @@ def render_and_extract(url, timeout_ms=45000):
             log.warning("values too small (max=%,.0f) — parser may have failed", max_val)
             return None
 
-        log.info(f"✓ parsed: egy_buys={result["individuals_egy_buys"]:,.0f} egy_sells={result["individuals_egy_sells"]:,.0f} foreign_buys={result["foreign_buys"]:,.0f} foreign_sells={result["foreign_sells"]:,.0f} trades={result["number_of_trades"]}")
-                 result['individuals_egy_buys'], result['individuals_egy_sells'],
-                 result['foreign_buys'], result['foreign_sells'], result['number_of_trades'])
+        log.info(f"✓ parsed: egy_buys={result['individuals_egy_buys']:,.0f} egy_sells={result['individuals_egy_sells']:,.0f} foreign_buys={result['foreign_buys']:,.0f} foreign_sells={result['foreign_sells']:,.0f} trades={result['number_of_trades']}")
 
         return result
 
