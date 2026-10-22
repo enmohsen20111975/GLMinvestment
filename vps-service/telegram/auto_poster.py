@@ -807,19 +807,41 @@ def get_top_recommendations(limit: int = 5, min_score: int = 70) -> List[Dict]:
             pass
         
         # استعلام جلب التوصيات BUY مع سحب التفاصيل + الشرح الفني
+        # PURGE-FIX (2026-10-22): filter out deactivated/corrupted tickers
+        # الـ auto_poster كان بيـ publish توصيات لأسهم مشوهة (UBEEU, TWSATA, إلخ)
+        # لأن stored_analyses مش بتربط بـ stocks.is_active.
+        # الحل: نـ fetch كل التوصيات + نـ filter في Python بـ active tickers من stocks.db.
         cur_pred.execute("""
-            SELECT ticker, recommendation, maestro_score, entry_price, target_price, 
+            SELECT ticker, recommendation, maestro_score, entry_price, target_price,
                    stop_loss, confidence, ai_reason, ai_narrative, analysis_json, created_at
             FROM stored_analyses
-            WHERE (recommendation = 'buy' OR recommendation = 'strong_buy') 
+            WHERE (recommendation = 'buy' OR recommendation = 'strong_buy')
               AND confidence >= ?
             ORDER BY confidence DESC, created_at DESC
             LIMIT ?
         """, (min_score, limit))
-        
+
         rows = cur_pred.fetchall()
         conn_pred.close()
-        
+
+        # PURGE-FIX: load active tickers from stocks.db + filter rows
+        try:
+            from pathlib import Path as _P
+            _stocks_db = str(_P(__file__).resolve().parents[2] / 'db' / 'stocks.db')
+            _conn_s = sqlite3.connect(_stocks_db)
+            _cur_s = _conn_s.cursor()
+            _cur_s.execute("SELECT ticker FROM stocks WHERE is_active = 1 OR is_active IS NULL")
+            _active_tickers = {r[0] for r in _cur_s.fetchall()}
+            _conn_s.close()
+        except Exception:
+            _active_tickers = None  # لو فشل، ما نفلترش (backward compat)
+
+        if _active_tickers is not None:
+            _before = len(rows)
+            rows = [r for r in rows if r[0] in _active_tickers]
+            _skipped = _before - len(rows)
+            if _skipped > 0:
+                print(f"[auto_poster] PURGE-FIX: skipped {_skipped} deactivated ticker(s)", flush=True)
         # الاتصال بـ stocks.db لجلب أسماء الأسهم والقطاع بالعربية
         from pathlib import Path
         project_root = Path(__file__).resolve().parents[2]
