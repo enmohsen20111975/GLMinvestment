@@ -120,6 +120,7 @@ import { SourceAuthorityTab } from './SourceAuthorityTab';
 import { ValidationMonitorTab } from './ValidationMonitorTab';
 // FRONTEND-1: Data Health dashboard — surfaces backend freshness to admin UI.
 import { DataHealthTab } from './DataHealthTab';
+import { InvestorsDataEntryTab } from './InvestorsDataEntryTab';
 // Task 28-B (Fix 4) — Fix Battalion: Cron Health dashboard.
 import { CronHealthTab } from './CronHealthTab';
 // Task 28-B (Fix 5) — Fix Battalion: Pricing + paywall gates status.
@@ -417,6 +418,7 @@ type AdminTab =
  | 'validation-monitor'
  // FRONTEND-1 — Data Health dashboard.
  | 'data-health'
+ | 'investors-entry'
  // Task 28-B (Fix 4) — Fix Battalion: Cron Health dashboard.
  | 'cron-health'
  // Task 28-B (Fix 5) — Fix Battalion: Pricing + paywall gates status.
@@ -1051,6 +1053,7 @@ export function AdminView() {
  tabs: [
  // FRONTEND-1: Data Health — top of data hub so admins see freshness first.
  { id: 'data-health', label: 'صحة البيانات', icon: <HeartPulse className="w-3.5 h-3.5" />, desc: 'طزاجة كل مصدر لكل سوق' },
+ { id: 'investors-entry', label: 'تدفق المستثمرين', icon: <Users className="w-3.5 h-3.5" />, desc: 'إدخال يدوي بيانات مصريين/عرب/أجانب' },
  { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" />, desc: 'إدارة DBs' },
  { id: 'db-backup', label: 'النسخ الاحتياطي', icon: <Upload className="w-3.5 h-3.5" />, desc: 'backup/restore' },
  { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" />, desc: 'scraper + sync + cron' },
@@ -1883,6 +1886,12 @@ export function AdminView() {
  {/* Surfaces backend freshness: per-market × per-source matrix, egksco_stocks status, overall health badge. */}
  {activeTab === 'data-health' && (
  <DataHealthTab />
+ )}
+
+ {/* ==================== INVESTORS DATA ENTRY TAB (manual entry) ==================== */}
+ {/* Admin can manually enter EGX investor-flow data (مصريين/عرب/أجانب buy/sell/net) when scraping fails. */}
+ {activeTab === 'investors-entry' && (
+ <InvestorsDataEntryTab />
  )}
 
  {/* ==================== VALIDATION MONITOR TAB (Task 28-B Fix 3) ==================== */}
