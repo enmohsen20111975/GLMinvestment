@@ -362,15 +362,48 @@ def main():
 
     print(f"  → computed {len(indices)} indices")
 
-    # 4. اكتب في market_indices
+    # 4. اكتب في market_indices + index_daily_prices (تاريخ يومي)
     if not args.dry_run:
         now_iso = datetime.now().isoformat()
+        today = datetime.now().strftime('%Y-%m-%d')
         conn = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
         try:
+            # 4a. تأكد إن index_daily_prices موجود
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS index_daily_prices (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    price_date TEXT NOT NULL,
+                    open REAL, high REAL, low REAL, close REAL,
+                    volume REAL, change_percent REAL,
+                    UNIQUE(symbol, price_date)
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_idx_dp_sym_date ON index_daily_prices(symbol, price_date)")
+
+            # 4b. upsert في market_indices (القيمة اللحظية)
             for idx in indices:
                 upsert_index(conn, idx, now_iso)
+
+                # 4c. upsert في index_daily_prices (التاريخ اليومي)
+                conn.execute("""
+                    INSERT INTO index_daily_prices (symbol, price_date, open, high, low, close, volume, change_percent)
+                    VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+                    ON CONFLICT(symbol, price_date) DO UPDATE SET
+                        close = excluded.close,
+                        high = MAX(excluded.high, index_daily_prices.high),
+                        low = CASE WHEN index_daily_prices.low = 0 OR excluded.low < index_daily_prices.low THEN excluded.low ELSE index_daily_prices.low END,
+                        change_percent = excluded.change_percent
+                """, (
+                    idx['symbol'], today,
+                    idx['current_value'],  # open = current (will be updated next day)
+                    idx['current_value'],  # high
+                    idx['current_value'],  # low
+                    idx['current_value'],  # close
+                    idx['change_percent'],
+                ))
             conn.commit()
-            print(f"  ✅ upserted {len(indices)} indices into market_indices")
+            print(f"  ✅ upserted {len(indices)} indices into market_indices + index_daily_prices")
         finally:
             conn.close()
     else:
