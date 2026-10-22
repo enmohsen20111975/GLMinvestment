@@ -101,11 +101,50 @@ def sync_scanner_to_stored_analyses(market='EGX'):
     c.execute("DELETE FROM stored_analyses WHERE market = ?", (market,))
 
     # 2. حقن الصفقات الحية الصادقة فقط
+    # SCAN-FILTER (2026-10-22): الـ UnifiedScanner بيرجع HOLD + ILLIQUID + DISTRIBUTION_VETO
+    # مع الـ BUY. لازم نفلتر — ما نـ inject إلا الـ BUY/STRONG_BUY بس.
+    # الـ tracks المسموحة للـ inject:
+    BUY_TRACKS = {
+        'ACCUMULATION_BUY',
+        'GOLDEN_DIP',
+        'CONFIRMED',
+    }
+    BUY_SIGNALS = {'BUY', 'STRONG_BUY'}
+    # الـ tracks المرفوضة صراحة (حتى لو signal = BUY):
+    REJECT_TRACKS = {
+        'ILLIQUID',
+        'FALLING_KNIFE_VETO',
+        'DISTRIBUTION_RISK',
+        'DISTRIBUTION_VETO',
+        'LOW_RR',
+        'DIRTY_DIST',
+        'NO_PROOF',
+        'PEAK_MINEFIELD_WAIT',
+        'WEAK_PROOF',
+    }
+
     inserted = 0
+    skipped = 0
     for r in results:
         t = r.get('ticker', '')
         if not t:
             continue
+
+        signal = r.get('signal', 'HOLD')
+        track = r.get('track', '')
+        # SCAN-FILTER: skip لو مش BUY/STRONG_BUY
+        if signal not in BUY_SIGNALS:
+            skipped += 1
+            continue
+        # SCAN-FILTER: skip لو track مرفوض صراحة
+        if track in REJECT_TRACKS:
+            skipped += 1
+            continue
+        # SCAN-FILTER: skip لو track مش في الـ BUY_TRACKS المسموحة (بس بنساه لو track فاضي)
+        if track and track not in BUY_TRACKS:
+            skipped += 1
+            continue
+
         name_ar = names.get(t, t)
         entry = r.get('entry_price', r.get('current_price', 0))
         target = r.get('target_price')
@@ -113,22 +152,24 @@ def sync_scanner_to_stored_analyses(market='EGX'):
         stop = r.get('stop_loss', 0)
         rr = round(r.get('risk_reward', 2.0), 2)
         score = r.get('score', 75)
-        signal = r.get('signal', 'BUY')
-        track = r.get('track', 'GOLDEN_DIP')
+        # SCAN-FILTER: استخدم signal من الـ scanner (مش hardcoded)
+        scanner_signal = signal
+        scanner_track = track or 'GOLDEN_DIP'
 
         # Safety: skip لو entry/target/stop ناقصة
         if not entry or not stop or entry <= 0:
+            skipped += 1
             continue
 
         reason_text = (
-            f"سهم ريّح عند الدعم ({track}) — دخول {entry:.2f}، "
+            f"سهم ريّح عند الدعم ({scanner_track}) — دخول {entry:.2f}، "
             f"بيع نصف الكمية عند {tp1:.2f} (+6.5%)، الوقف {stop:.2f}، "
             f"أقصى مدة 5 أيام كاش."
         )
 
         analysis_json = {
             "balanced": {
-                "verdict": f"شراء تكتيكي ({track})",
+                "verdict": f"شراء تكتيكي ({scanner_track})",
                 "score": score,
                 "reason": reason_text,
                 "entry": entry,
@@ -139,7 +180,7 @@ def sync_scanner_to_stored_analyses(market='EGX'):
                 "max_hold_days": 5,
             },
             "gambler": {
-                "verdict": f"قاع ارتداد سريع ({track})",
+                "verdict": f"قاع ارتداد سريع ({scanner_track})",
                 "score": score,
                 "reason": f"صيد قاع — دخول {entry:.2f}، بيع نص الكمية {tp1:.2f}، وقف {stop:.2f}",
                 "entry": entry,
@@ -177,10 +218,10 @@ def sync_scanner_to_stored_analyses(market='EGX'):
                     ?, ?, ?, ?
                 )
             """, (
-                row_id, t, market, score, signal, f"شراء ({track})",
+                row_id, t, market, score, scanner_signal, f"شراء ({scanner_track})",
                 score, entry, target, stop, rr,
                 r.get('vol_ratio', 1.0), json.dumps(analysis_json, ensure_ascii=False), 'unified_scanner', '3.0',
-                now_iso, now_iso, signal, 1,
+                now_iso, now_iso, scanner_signal, 1,
                 1, today_date, 'balanced', score
             ))
             inserted += 1
@@ -189,7 +230,7 @@ def sync_scanner_to_stored_analyses(market='EGX'):
 
     conn.commit()
     conn.close()
-    print(f"[sync_scanner] Injected {inserted} live opportunities into stored_analyses", flush=True)
+    print(f"[sync_scanner] Injected {inserted} live BUY opportunities into stored_analyses (skipped {skipped} HOLD/rejected)", flush=True)
     return inserted
 
 
