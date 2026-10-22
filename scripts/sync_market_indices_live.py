@@ -100,16 +100,18 @@ def get_latest_prices():
 
 
 def get_latest_index_close(db_path, symbol):
-    """Read the latest close from index_daily_prices for chaining.
-    Returns None if table doesn't exist or no rows (first run).
-    FIX (2026-10-22): base_value was hardcoded → flat line. Now chains
-    from yesterday's real close so the index follows the real trajectory.
+    """Read the latest PREVIOUS close from index_daily_prices for chaining.
+    FIX (2026-10-22): EXCLUDES today's date — if today's close is seeded,
+    the sync would use it as base and apply today's change AGAIN (double-drop).
+    Reads the latest close BEFORE today = yesterday's real close.
     """
     try:
+        from datetime import datetime as _dt
+        today = _dt.now().strftime('%Y-%m-%d')
         conn = sqlite3.connect(str(db_path))
         row = conn.execute(
             "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
-            "ORDER BY price_date DESC LIMIT 1", (symbol,)
+            "AND price_date < ? ORDER BY price_date DESC LIMIT 1", (symbol, today)
         ).fetchone()
         conn.close()
         return float(row[0]) if row else None
