@@ -5695,3 +5695,26 @@ The owner flagged that all the backend data-audit work (gap fills, cron fixes, f
 - The 3 Arabic-named intraday markets (السعودية/الكويت/مصر) should be normalized to TADAWUL/KSE/EGX at the Python scraper level — out of scope for this frontend task.
 - The dashboard does not yet show indicator trust scores (the `indicator_trust_scores` table exists in stocks.db) — could be a follow-up card.
 - The `?public=1` mode currently returns the FULL JSON (including admin-only details like per-DB error messages). If the owner wants stricter info-disclosure on the public badge, we could add a `?public=1&summary=1` mode that returns only the health level + frozen count. For now the same-JSON approach matches the spec.
+
+---
+Task ID: RESTORE-2
+Agent: Z.ai Code (الفاحص التقني + المنفّذ البديل)
+Task: محسن — الساند بوكس اترست كمان مرة. رجّع المشروع الحقيقى (GLMinvestment) من GitHub لمساره الكاثوليكي `/home/z/my-project` واستعد الشغل.
+
+Work Log:
+- الـ sandbox كان فيه template Next.js 16 نظيف (commit `21ef8dd`، اسم `ca3ba6b6-4296-47e6-962b-e6c8ed47e65c` UUID من الـ scaffold). مفيش remote خالص (`git remote -v` فاضي).
+- فيه dev server شغّال (PID 1138/1144/1159) على port 3000 — اتعمل kill قبل أي تعديل.
+- فيه mount point في `/home/z/my-project/upload` (ossfs + tmpfs) — تم الحفاظ عليه ولم يُمسح.
+- استخدمت git clone عبر token URL لـ `/tmp/gli-temp`، وبعدها نقلت كل المحتوى (شامل `.git` وكل الملفات المخفية) لـ `/home/z/my-project` ماعدا `upload` mount.
+- الفروع: `main`, `alpha-guest-preview`, `alpha-hairpin-fix`, `audit/codebase-cleanup-004`, `audit/unified-radar-pipeline`, `backup-before-rollback-2026-10-18`, `databases`, `docs/governance-reorganization-2026-10-16`, `luxury`, `mammoth-cougar`, `python-engine` — كلها متاحة.
+- عملت checkout لـ `main` (commit `52ccefb7 fix(admin): add Users icon to lucide-react imports`).
+- **التوكن اتـشال من `.git/config`:** عملت `git remote set-url origin https://github.com/enmohsen20111975/GLMinvestment.git` عشان الـ URL يبقى نظيف بدون توكن. (التوكن الأصلي اللي اتبعت في الشات لسه محتاج revoke من GitHub.)
+
+Stage Summary:
+- ✅ المشروع رجع بالكامل لـ `/home/z/my-project`: 3317 ملف، 4.1G، 11 فرع.
+- ✅ `main` branch نشط ومحدّث مع `origin/main` (commit `52ccefb7`).
+- ✅ `.git/config` نظيف — مفيش توكن مخزّن.
+- ✅ `upload` mount محفوظ.
+- ✅ الـ dev server مش شغّال دلوقتي (محتاج إعادة تشغيل بعد تثبيت deps).
+- 🔴 توكن GitHub (`ghp_...`) لسه معرّض — لازم revoke على `github.com/settings/tokens`.
+- 🎯 جاهز لاستئناف الشغل على Phase 5 (تعديل `liquidity_radar_v2.py`) و Phase 6 (cron واحد بيملا `price_history.db`).
