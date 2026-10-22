@@ -17,7 +17,10 @@ Usage:
 from __future__ import annotations
 
 import sqlite3
+import json
 import logging
+import os
+import sys
 from pathlib import Path
 from datetime import datetime
 
@@ -25,6 +28,169 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
+STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
+
+# SYNC-SCANNER-FIX (2026-10-22): إعادة function sync_scanner_to_stored_analyses
+# اللي اتـ remove-ت في commit 854d9b3f (BRAVO-URGENT).
+# السبب: daily_predictor.inject_whale_radar_picks() بيستوردها → import error → whale picks = 0.
+# الحل: رجّعنا الـ function + احتفظنا بـ purge_stale_predictions + verify_invariants.
+_vps_root = str(PROJECT_ROOT / "vps-service")
+if _vps_root not in sys.path:
+    sys.path.insert(0, _vps_root)
+
+
+def _get_stock_names(tickers):
+    """احصل على أسماء الأسهم (عربي/إنجليزي) من stocks.db."""
+    name_map = {}
+    if not STOCKS_DB.exists():
+        return name_map
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        c = conn.cursor()
+        placeholders = ",".join("?" for _ in tickers)
+        rows = c.execute(
+            f"SELECT ticker, name_ar, name FROM stocks WHERE ticker IN ({placeholders})",
+            tickers,
+        ).fetchall()
+        for r in rows:
+            name_map[r[0]] = (r[1] or r[2] or r[0])
+        conn.close()
+    except Exception as e:
+        logger.warning(f"[sync_scanner] Error fetching stock names: {e}")
+    return name_map
+
+
+def sync_scanner_to_stored_analyses(market='EGX'):
+    """شغّل Unified Scanner وحقن النتايج في stored_analyses.
+
+    ده الجسر بين محرك الفحص الموحد (Unified Scanner) و قاعدة البيانات المعروضة.
+    بيشغل run_market_scanner(market) وياخد الـ opportunities ويكتبها في stored_analyses.
+
+    Returns:
+        int: عدد الصفقات اللي اتـ inject-ت في stored_analyses.
+    """
+    # SYNC-SCANNER-FIX: import محلي عشان لو unified_scanner مش متاح، الـ function ما يقعش
+    try:
+        from core.unified_scanner import run_market_scanner
+    except Exception as import_err:
+        logger.error(f"[sync_scanner] Cannot import run_market_scanner: {import_err}")
+        return 0
+
+    print(f"[sync_scanner] Running Unified Scanner for {market}...", flush=True)
+    try:
+        results = run_market_scanner(market_name=market, timeframe='daily')
+    except Exception as scan_err:
+        logger.error(f"[sync_scanner] Scanner failed: {scan_err}")
+        return 0
+
+    print(f"[sync_scanner] Scanner returned {len(results)} opportunities.", flush=True)
+
+    if not results:
+        print(f"[sync_scanner] No opportunities from scanner — nothing to inject.", flush=True)
+        return 0
+
+    tickers = [r.get('ticker', '') for r in results if r.get('ticker')]
+    names = _get_stock_names(tickers)
+    now_iso = datetime.now().isoformat()
+    today_date = datetime.now().strftime("%Y-%m-%d")
+
+    conn = sqlite3.connect(str(PREDICTIONS_DB))
+    c = conn.cursor()
+
+    # 1. إفراغ البيانات القديمة المتجمدة لهذا السوق
+    c.execute("DELETE FROM stored_analyses WHERE market = ?", (market,))
+
+    # 2. حقن الصفقات الحية الصادقة فقط
+    inserted = 0
+    for r in results:
+        t = r.get('ticker', '')
+        if not t:
+            continue
+        name_ar = names.get(t, t)
+        entry = r.get('entry_price', r.get('current_price', 0))
+        target = r.get('target_price')
+        tp1 = r.get('tp1_price', round(entry * 1.065, 2) if entry else 0)
+        stop = r.get('stop_loss', 0)
+        rr = round(r.get('risk_reward', 2.0), 2)
+        score = r.get('score', 75)
+        signal = r.get('signal', 'BUY')
+        track = r.get('track', 'GOLDEN_DIP')
+
+        # Safety: skip لو entry/target/stop ناقصة
+        if not entry or not stop or entry <= 0:
+            continue
+
+        reason_text = (
+            f"سهم ريّح عند الدعم ({track}) — دخول {entry:.2f}، "
+            f"بيع نصف الكمية عند {tp1:.2f} (+6.5%)، الوقف {stop:.2f}، "
+            f"أقصى مدة 5 أيام كاش."
+        )
+
+        analysis_json = {
+            "balanced": {
+                "verdict": f"شراء تكتيكي ({track})",
+                "score": score,
+                "reason": reason_text,
+                "entry": entry,
+                "target": target,
+                "tp1": tp1,
+                "stop": stop,
+                "risk_reward": rr,
+                "max_hold_days": 5,
+            },
+            "gambler": {
+                "verdict": f"قاع ارتداد سريع ({track})",
+                "score": score,
+                "reason": f"صيد قاع — دخول {entry:.2f}، بيع نص الكمية {tp1:.2f}، وقف {stop:.2f}",
+                "entry": entry,
+                "target": target,
+                "tp1": tp1,
+                "stop": stop,
+                "risk_reward": rr,
+            },
+            "investor": {
+                "verdict": "شراء بقيمة عادلة",
+                "score": score,
+                "reason": f"سهم في ثلث القاع الرخيص (MLR < 0.50) — هدف {target or 0:.2f}، وقف {stop:.2f}",
+                "entry": entry,
+                "target": target,
+                "stop": stop,
+                "risk_reward": rr,
+            }
+        }
+
+        row_id = f"unified_{t}_{market}"
+
+        try:
+            c.execute("""
+                INSERT OR REPLACE INTO stored_analyses (
+                    id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                    confidence, entry_price, target_price, stop_loss, risk_reward,
+                    volume_ratio, analysis_json, analysis_type, analysis_version,
+                    created_at, updated_at, signal, is_gambler_opportunity,
+                    is_investor_opportunity, prediction_date, persona, master_score
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?
+                )
+            """, (
+                row_id, t, market, score, signal, f"شراء ({track})",
+                score, entry, target, stop, rr,
+                r.get('vol_ratio', 1.0), json.dumps(analysis_json, ensure_ascii=False), 'unified_scanner', '3.0',
+                now_iso, now_iso, signal, 1,
+                1, today_date, 'balanced', score
+            ))
+            inserted += 1
+        except Exception as row_err:
+            logger.warning(f"[sync_scanner] Failed to insert {t}: {row_err}")
+
+    conn.commit()
+    conn.close()
+    print(f"[sync_scanner] Injected {inserted} live opportunities into stored_analyses", flush=True)
+    return inserted
 
 
 def purge_stale_predictions(db_path: Path = None) -> dict:
