@@ -57,53 +57,91 @@ UA = (
 
 
 def render_egx_page(url: str, headed: bool = False, timeout_ms: int = 45000) -> Optional[str]:
-    """Launch Chromium, navigate to EGX, wait for F5 challenge + data, return rendered HTML."""
+    """Launch Chromium, navigate to EGX, wait for F5 challenge + data, return rendered HTML.
+
+    Strategy (fixes the two failures we saw):
+    1. Use launch_persistent_context — persists cookies/fingerprint across
+       runs. F5 Bot Defense trusts returning visitors more than first-time.
+    2. Wait for the DATA KEYWORDS (foreign/أجانب/مصريين/egyptians) to appear
+       in document.body.innerText — NOT networkidle (which fires wrong).
+       The F5 challenge page lacks these; the real page has them.
+    3. Handle page.content() crash during navigation with retry.
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         log.error("playwright not installed. Run: pip install playwright && playwright install chromium")
         return None
 
+    import tempfile
+    # Persistent profile — F5 cookies survive across runs (returning visitor).
+    user_data_dir = os.path.join(tempfile.gettempdir(), "egx_playwright_profile")
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(
+        context = p.chromium.launch_persistent_context(
+            user_data_dir,
             headless=not headed,
-            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"],
-        )
-        context = browser.new_context(
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-features=IsolateOrigins,site-per-process",
+            ],
             user_agent=UA,
             viewport={"width": 1366, "height": 768},
             locale="en-US",
             timezone_id="Africa/Cairo",
+            ignore_https_errors=True,
         )
-        # Mask the webdriver flag (F5 detects headless).
-        context.add_init_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
-        )
-        page = context.new_page()
+        # Mask the webdriver flag + fake plugins (F5 checks these).
+        context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en','ar']});
+            window.chrome = { runtime: {} };
+        """)
+        page = context.pages[0] if context.pages else context.new_page()
 
         log.info("Playwright: navigating to %s", url)
         try:
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
         except Exception as e:
             log.error("page.goto failed: %s", e)
-            browser.close()
+            context.close()
             return None
 
-        # Wait for the F5 challenge to resolve. The challenge page sets
-        # window.bobcmn / window.blobfp and then redirects. After redirect,
-        # the real content loads. We wait for networkidle (no requests for 2s).
-        log.info("Waiting for F5 challenge to resolve + page to settle...")
+        # Wait for the REAL data to appear. The F5 challenge page is 6KB of
+        # obfuscated JS with NO investor-flow keywords. The real page (after
+        # F5 resolves + redirects) HAS "foreign"/"أجانب"/"مصريين"/"egyptians".
+        # We poll document.body.innerText for these keywords.
+        log.info("Waiting for F5 challenge to resolve + data keywords to appear...")
+        keyword_js = """() => {
+            const t = (document.body && document.body.innerText) ? document.body.innerText.toLowerCase() : '';
+            return t.includes('foreign') || t.includes('أجانب') || t.includes('مصريين') || t.includes('egyptians') || t.includes('arab');
+        }"""
         try:
-            page.wait_for_load_state("networkidle", timeout=timeout_ms)
-        except Exception as e:
-            log.warning("networkidle wait failed (continuing): %s", e)
+            page.wait_for_function(keyword_js, timeout=timeout_ms)
+            log.info("✓ Data keywords detected — F5 challenge resolved, real page loaded")
+        except Exception:
+            log.warning("Data keywords NOT detected within %ds — F5 may have blocked us", timeout_ms // 1000)
 
-        # Extra wait — F5 sometimes needs a few more seconds after networkidle.
-        page.wait_for_timeout(3000)
+        # Small extra wait for any AJAX data tables to finish rendering.
+        page.wait_for_timeout(2500)
 
-        # Try to detect the real content. The real page should contain
-        # investor-flow keywords that the challenge page lacks.
-        html = page.content()
+        # Get content — handle the "page is navigating" crash with retry.
+        html = None
+        for attempt in range(3):
+            try:
+                html = page.content()
+                break
+            except Exception as e:
+                log.warning("page.content() attempt %d failed (navigating?): %s", attempt + 1, str(e)[:80])
+                page.wait_for_timeout(2000)
+        if not html:
+            log.error("page.content() failed after 3 retries")
+            context.close()
+            return None
+
         log.info("Rendered HTML: %d chars", len(html))
         lower = html.lower()
         has_data = (
@@ -111,17 +149,16 @@ def render_egx_page(url: str, headed: bool = False, timeout_ms: int = 45000) -> 
             or "أجانب" in lower
             or "مصريين" in lower
             or "egyptians" in lower
+            or "arab" in lower
         )
         if not has_data:
-            log.warning("Rendered page still lacks investor-flow keywords — F5 may have blocked us.")
-            # Dump a snippet for debugging.
-            log.info("body[0:300]: %s", html[:300].replace("\n", " "))
-            # Try the Arabic URL as fallback (sometimes one works, the other doesn't).
-            browser.close()
+            log.warning("Rendered page still lacks investor-flow keywords — F5 blocked us.")
+            log.info("body[0:400]: %s", html[:400].replace("\n", " "))
+            context.close()
             return None
 
         log.info("✓ EGX page rendered with real content")
-        browser.close()
+        context.close()
         return html
 
 
