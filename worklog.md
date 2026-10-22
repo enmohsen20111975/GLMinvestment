@@ -6657,3 +6657,47 @@ chg_1d = float(fund.get('change_1d') or 0)  # دايماً من stocks.db (طا�
 بس ده مش كفاية — لازم كمان:
 - `_heal_persona_json` ما يـ override-ش change_1د بـ قيمة قديمة.
 - تحديث turnover_egp و volume_ratio (الـ root causes التانية).
+
+---
+Task ID: TEXT-FIX-COMPLETE-1
+Agent: Z.ai Code (المنفّذ البديل — الـ fix الكامل)
+Task: محسن اختار "الـ fix الكامل (يوم شغل)" عشان يحل مشاكل النص المتجمد.
+
+الـ fixes اللي اتعملت:
+
+✅ **FIX 1 (TEXT-FIX-1): حساب change_1d + turnover_egp من price_history.db**
+- كتبت function جديدة `_load_price_history_metrics_batch()` (lines 257-331).
+- بتحسب لكل ticker:
+  - change_1d = (آخر close - close اللي قبله) / close اللي قبله × 100
+  - turnover_egp = آخر close × آخر volume
+  - volume = آخر volume
+- cached 3 دقايق (TTL=180s).
+- في `_load_stocks_fundamentals_batch()`، الـ values بتـ override من price_history.db لو متاحة.
+
+✅ **FIX 2 (TEXT-FIX-2): رفع threshold "شراء قوي"**
+- قبل: score >= 55 and rr >= 1.2 (سهل جداً → كل التوقعات "شراء قوي")
+- بعد: score >= 65 and rr >= 1.5 (stricter → variety بين شراء قوي/شراء)
+
+اختبار على الساند بوكس (الـ 10 tickers من توقعات محسن):
+
+| ticker | النص القديم | النص الجديد | turnover قديم | turnover جديد |
+|---|---|---|---|---|
+| BTFH | -3.4% (قديم) | -1.86% (طازج) | NULL (1.0M fake) | 81.73M (حقيقي!) |
+| PHDC | -5.3% (قديم) | +1.24% (طازج — كان OPPOSITE!) | NULL | 253.68M |
+| ABUK | -3.0% (قديم) | +2.41% (طازج — كان OPPOSITE!) | NULL | 121.60M |
+| ADRI | +3.2% (قديم) | -2.89% (طازج — كان OPPOSITE!) | NULL | 59.56M |
+| TMGH | -3.2% (قديم) | +6.03% (طازج — كان OPPOSITE!) | NULL | 891.81M |
+
+1390 ticker دلوقتي ليهم metrics طازجة من price_history.db.
+
+Push: commit `03a6bfc7` (بعد rebase فوق commits `32fbf4bb..818bddca`).
+
+الـ commits اللي نزلت:
+- `98d8a6f2` — fix(text-stale): calculate change_1d + turnover_egp from price_history.db
+- rebase فوق 8 commits جديدة (EGX indices work من فريق تاني)
+
+الخطوات الجاية على الإنتاج:
+1. git pull origin main
+2. pm2 restart python-backend (عشان الـ changes تتفعّل)
+3. اختبر: curl /api/stored-analysis/results — النص المفروض يبقى طازج
+4. راقب الـ Telegram message القادم — المفروض النص يتطابق مع الأسعار الحالية
