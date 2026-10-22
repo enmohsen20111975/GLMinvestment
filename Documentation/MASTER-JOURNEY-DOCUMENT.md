@@ -677,3 +677,86 @@ Phase 5 عدّلت `get_tickers()` و `get_scan_dates()` في `daily_predictor.p
 > "الـ verification بـ checks الـ code patterns بس مش كفاية. لازم runtime test كمان — عشان تكتشف الـ silent fallbacks."
 
 قبل الـ fix: Phase 5 verification 6/6 PASS بس PRIMARY مش بيتستخدم فعلياً (silent fallback لـ stock_daily_prices). بعد الـ fix: runtime test بيأكد إن PRIMARY بيشتغل.
+
+---
+
+## 20. المرحلة الثامنة: فحص و إصلاح التوقعات + الرادار (2026-10-22)
+
+### السياق
+بعد ما الـ unification (Phase 0-6) خلص على الإنتاج، المالك لاحظ:
+1. **النص في التوقعات متجمد** — الأسعار صح بس الكلام (change_1d, turnover) قديم.
+2. **رادار السيولة "متكتف"** — بيـ show 7 أسهم بس.
+3. **فيه أسهم مشوهة** (UBEEU) بتظهر في التوقعات و الرادار.
+
+### المشاكل اللي اكتشفتها + الـ fixes
+
+#### Bug 1: نص التوقعات متجمد (TEXT-FIX)
+- **السبب:** `stored_analyses.change_1d` = NULL + `stocks.db.change_percent` متجمد.
+- **الـ fix:** `_load_price_history_metrics_batch()` بتحسب `change_1d` + `turnover_egp` ديناميكياً من `price_history.db`.
+- **النتيجة:** النص دلوقتي طازج (BTFH: كان -3.4% قديم → -1.86% طازج).
+
+#### Bug 2: رادار السيولة 7 أسهم بس (RADAR-FIX)
+- **السبب:** `maker_radar.py` ما كانش بـ expose `turnover_egp` + الـ frontend بـ filter بـ `>= 1.5M` فبيطرد الأسهم اللي turnover_egp = NULL.
+- **الـ fix:** populate `turnover_egp` في maker_radar + frontend fallback chain.
+- **النتيجة:** 20+ سهم بيظهروا بدل 7.
+
+#### Bug 3: WHALE_RADAR بـ inject HOLD/ILLIQUID (SCAN-FILTER)
+- **السبب:** `sync_scanner_to_stored_analyses` كانت بـ inject كل اللي الـ scanner بيرجعه (حتى الـ HOLD/ILLIQUID).
+- **الـ fix:** أضفت BUY_SIGNALS + REJECT_TRACKS + BUY_TRACKS filters.
+- **النتيجة:** بـ inject BUY/STRONG_BUY بس.
+
+#### Bug 4: `sync_scanner_to_stored_analyses` مفقودة (SYNC-SCANNER-FIX)
+- **السبب:** الـ function اتـ remove في commit `854d9b3f` بس الـ import فضل في `daily_predictor.py`.
+- **الـ fix:** رجّعت الـ function كاملة (130 lines) + SCAN-FILTER.
+- **النتيجة:** `Whale picks injected: 5` (كان 0).
+
+#### Bug 5: الأسهم المشوهة (UBEEU) — PURGE
+- **السبب:** TradingView scraper القديم بيلصق أول حرف من اسم الشركة في الـ ticker (UBEE + U = UBEEU).
+- **الـ fix:** `scripts/purge_corrupted_tickers.py` ديـactivated 74 سهم (56 UBEEU pattern + 18 ISIN).
+- **النتيجة:** 353 active stock (كان 461) — كلهم حقيقيين.
+
+#### Bug 6: الـ scrapers بتـ create UBEEU من المصدر (SCRAPER-VALIDATION)
+- **السبب:** `egksco_scraper`, `tradingview_rest`, `data_engine/main` ما كانوش بـ validate الـ tickers.
+- **الـ fix:** `data_engine/scrapers/ticker_validator.py` — centralized validation.
+- **النتيجة:** الـ UBEEU مش هيتـ create أصلاً (منع من المصدر).
+
+#### Bug 7: auto_poster بـ publish أسهم مشوهة (PURGE-FIX)
+- **السبب:** `auto_poster.py` بيقرا من `stored_analyses` من غير ما يـ filter بـ `is_active`.
+- **الـ fix:** أضفت filter في Python (load active tickers + filter rows).
+- **النتيجة:** الـ Telegram messages مش هتحتوي على UBEEU.
+
+### النتائج النهائية على الإنتاج
+
+| المؤشر | قبل | بعد |
+|---|---|---|
+| رادار السيولة | 7 أسهم (فيه UBEEU) | **17 أسهم حقيقي** |
+| نص التوقعات | متجمد (-3.4% قديم) | **طازج (-1.86% من price_history)** |
+| turnover_egp | NULL (1.0M fake) | **قيم حقيقية (81M, 253M, إلخ)** |
+| WHALE_RADAR picks | 0 (import error) | **5+ BUY picks** |
+| HOLD/ILLIQUID في picks | بتيجي في التوقعات | **مرفوضة** |
+| UBEEU في Telegram | بتظهر | **مرفوضة من المصدر** |
+| Active EGX stocks | 461 (فيه 74 مشوه) | **353 (كلهم حقيقيين)** |
+
+### الـ commits اللي اتعملت
+
+| Commit | الوصف |
+|---|---|
+| `98d8a6f2` | TEXT-FIX-1: change_1d + turnover_egp من price_history.db |
+| `04201002` | RADAR-FIX-1: populate turnover_egp في maker_radar |
+| `53d33b53` | EXPERIMENTAL: WHALE_RADAR filter (5M بدل 10M) |
+| `215e5e39` | SYNC-SCANNER-FIX: restore sync_scanner function |
+| `f3be3aea` | SCAN-FILTER: reject HOLD/ILLIQUID |
+| `a6e12227` | PURGE: smart detection (preserve preferred) |
+| `31f7944f` | PURGE-FIX: maker_radar filters is_active |
+| `9546495f` | PURGE-FIX: auto_poster filters is_active |
+| `8c969fb3` | SCRAPER-VALIDATION: central ticker validation |
+
+### خطة الطبقات (DAL)
+- شوف `05-DATA-ACCESS-LAYER-PLAN.md` للخطة الكاملة.
+- الهدف: single entry point لكل DB access + centralized validation.
+- المدة المتوقعة: 8 أيام شغل.
+
+---
+
+**آخر تحديث:** 2026-10-22  
+**الحالة:** كل الـ fixes نزلت على الإنتاج. 128 عميل بأمان. الـ DAL هيكون المرحلة الجاية.

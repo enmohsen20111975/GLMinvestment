@@ -286,3 +286,75 @@
 ---
 
 *هذا الملف مكتوب من الكود الحقيقي. لأي تعديل أو إضافة، ارجع للكود الفعلي أولاً.*
+
+---
+
+## 📊 الوضع الحالي (محدّث 2026-10-22)
+
+> **بعد:** Phase 0-6 (unification) + TEXT-FIX + RADAR-FIX + SCAN-FILTER + PURGE + SCRAPER-VALIDATION.
+
+### الـ DBs الأساسية و حالتها
+
+| DB | الحجم | أحدث تاريخ | الحالة |
+|---|---|---|---|
+| `price_history.db` | 335 MB | 2026-10-22 | ✅ **PRIMARY** (1,401,759 rows، موحّد) |
+| `stocks.db` | 24 MB | 2026-10-22 | ✅ نشط (353 active stock بعد الـ purge) |
+| `predictions.db` | 277 MB | 2026-10-22 | ✅ نشط |
+| `intraday.db` | 181 MB | 2026-10-22 | ✅ نشط |
+| `data_engine.db` | 489 MB | 2026-10-22 | ✅ نشط |
+| `news.db` | 7 MB | 2026-10-22 | ✅ نشط |
+| `metrics.db` | 6 MB | 2026-10-22 | ✅ نشط |
+| `auth.db` | 0.25 MB | 2026-10-22 | ✅ نشط |
+| `crypto.db` | 0.03 MB | 2026-10-22 | ✅ نشط |
+
+### الـ unification اللي اتعمل
+
+#### price_history.db — المصدر الكاثوليكي
+- **قبل:** 1,314,698 rows (قبل الـ unify)
+- **بعد:** 1,401,759 rows (+87,061 unified من egksco + historical_data + stock_daily_prices)
+- **Schema:** فيه `market` column (اتضاف في Phase 2 fix)
+- **الـ cron filler:** `price_history_safetynet.py` بيملاه من Yahoo Finance يومياً 6 الصبح
+
+#### stocks.db — بعد الـ purge
+- **قبل:** ~461 active stock (فيه 74 مشوه)
+- **بعد:** 353 active stock (74 اتـ deactivate)
+- **الـ corrupted اللي اتـ deactivate:**
+  - 56 UBEEU pattern (UBEEU = UBEE + U من United)
+  - 18 ISIN codes (EGS3I0S1C019)
+- **الـ preserved (preferred حقيقية):** FAITA, CCAPP, EGSA, إلخ
+
+### الـ data access patterns (بعد الـ fixes)
+
+#### الـ engines اللي بتقرا من price_history.db (PRIMARY):
+- `daily_predictor.get_scan_dates` — Phase 4
+- `daily_predictor.get_tickers` — Phase 5
+- `maker_radar.py` — Phase 3
+- `liquidity_radar_v2.scan_ticker` — Phase 5b
+- `price_history_safetynet.py` — Phase 6 (writes)
+
+#### الـ engines اللي بتقرا من sources تانية (FALLBACK):
+- `daily_predictor` — fallback لـ data_engine.db (FALLBACK 1) + stocks.db (FALLBACK 2)
+- `liquidity_radar_v2` — fallback لـ stocks.db.stock_daily_prices
+- `auto_poster.py` — بـ filter بـ is_active=1 من stocks.db
+
+### الـ validation اللي اتضاف
+
+#### Ticker Validation (منع الـ UBEEU من المصدر)
+- **File:** `data_engine/scrapers/ticker_validator.py`
+- **Function:** `validate_ticker(symbol, name) → (is_valid, reason)`
+- **تطبّق على:** egksco_scraper, tradingview_rest, data_engine/main
+- **Detects:** ISIN codes, pollution merge, name_starts_lowercase, invalid format
+- **Whitelist:** FAITA, CCAPP, EGSA (preferred shares حقيقية)
+
+#### WHALE_RADAR SCAN-FILTER
+- **File:** `vps-service/core/sync_scanner_to_db.py`
+- **Function:** `sync_scanner_to_stored_analyses()`
+- **Rejects:** HOLD, ILLIQUID, FALLING_KNIFE_VETO, DISTRIBUTION_VETO, LOW_RR, إلخ
+- **Accepts:** BUY, STRONG_BUY + tracks: ACCUMULATION_BUY, GOLDEN_DIP, CONFIRMED
+
+### الـ issues المتبقية (مش critical)
+
+1. **`data_engine.db` متجمد جزئياً** — max_date لـ historical_data = 2026-06-07 في بعض الأسواق.
+2. **`stocks.db.turnover_egp` = NULL** لكل الأسهم — الـ fix بـ calculate ديناميكياً من price_history.
+3. **104 routes في الـ frontend بتفتح DB مباشرة** — محتاجة DAL (شوف `05-DATA-ACCESS-LAYER-PLAN.md`).
+4. **`us_stock_scraper.py` + `multi_market_scraper.py`** — لسه محتاجين ticker validation.

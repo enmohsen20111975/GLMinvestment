@@ -1,10 +1,54 @@
 # 📖 الموسوعة الشاملة للمحركات — مرآة الكود الحالي
 
-> **الإصدار:** 4.0 (مدمج من ENGINES-AND-TOOLS-MAP + ENGINES-ENCYCLOPEDIA + 03-ENGINES-AND-LOGIC)
-> **التاريخ:** 2026-10-21
+> **الإصدار:** 5.0 (مدمج من ENGINES-AND-TOOLS-MAP + ENGINES-ENCYCLOPEDIA + 03-ENGINES-AND-LOGIC + master_architectural_blueprint)
+> **التاريخ:** 2026-10-22 (محدّث بعد Phase 5b/6 + scraper validation)
 > **227 ملف Python | 175,167 سطر | 5 أسواق | 14 مؤشر**
 
 ## الإحصائيات: 227 ملف | 175K LOC | engines(15) + analyzers(116) + core(14) + jobs(15) + api(37) + utils(19) | 13 canonical indicators | 406+ endpoints
+
+> **ملاحظة:** هذا الملف هو **المصدر الموحد** لكل توثيق المحركات. الملفات التالية تم دمجها هنا وأصبحت في `archive/`:
+> - `03-ENGINES-AND-LOGIC.md` (421 سطر)
+> - `ENGINES-AND-TOOLS-MAP.md` (439 سطر)
+> - `ENGINES-ENCYCLOPEDIA.md` (770 سطر)
+> - `master_architectural_blueprint.md` (352 سطر)
+
+---
+
+## آخر التحديثات (2026-10-22)
+
+### Phase 5b: liquidity_radar_v2 يقرا من price_history.db
+- أضيف `PRICE_HISTORY_DB` constant في `scripts/liquidity_radar_v2.py`.
+- `scan_ticker()` بيقرا candles من price_history.db كـ PRIMARY + stock_daily_prices كـ FALLBACK.
+- 8/8 verification checks PASS.
+
+### Phase 6: cron بيملا price_history.db يومياً
+- `price_history_safetynet.py` موجود ومتوصّل بـ cron (`0 6 * * 0-4`).
+- بيملا price_history.db من Yahoo Finance (yfinance).
+- 8/8 verification checks PASS.
+
+### TEXT-FIX: نص التوقعات طازج من price_history.db
+- `_load_price_history_metrics_batch()` بتحسب `change_1d` + `turnover_egp` ديناميكياً.
+- الـ text دلوقتي بيتـ generate من بيانات طازجة (مش متجمدة).
+
+### SCAN-FILTER: رفض HOLD/ILLIQUID في WHALE_RADAR
+- `sync_scanner_to_stored_analyses()` بتـ reject أي stock مش BUY/STRONG_BUY.
+- بتـ reject الـ tracks: ILLIQUID, FALLING_KNIFE_VETO, DISTRIBUTION_VETO, LOW_RR, إلخ.
+
+### SCRAPER-VALIDATION: منع creation الـ UBEEU من المصدر
+- `data_engine/scrapers/ticker_validator.py` — centralized validation.
+- تطبّق على: `egksco_scraper.py`, `tradingview_rest.py`, `data_engine/main.py`.
+- ترفض: ISIN codes, pollution merge (UBEEU), name_starts_lowercase.
+
+### PURGE: 74 corrupted ticker تم deactivatation
+- `scripts/purge_corrupted_tickers.py` ديـactivated 74 سهم مشوه.
+- `maker_radar.py` بيـ filter بـ `is_active=1`.
+- `auto_poster.py` بيـ filter بـ `is_active=1` قبل الـ publish.
+
+### DAL Plan: خطة طبقة الوصول للبيانات
+- شوف `05-DATA-ACCESS-LAYER-PLAN.md` للخطة الكاملة.
+- الهدف: single entry point لكل DB access + centralized validation.
+
+---
 
 ## الطبقة 1: المحركات الأساسية (Core Engines)
 
@@ -84,7 +128,7 @@ Classes: TechnicalScorer + VolumeScorer + CandlestickScorer + FundamentalScorer 
 | core/unified_scanner.py | 525 | محرك فحص موحد — quad-score (30/30/20/20) |
 | core/real_liquidity_radar.py | 231 | سيولة واقعي: Wick + Dryness + Effort + Trajectory |
 | core/stock_rescue_engine.py | 160 | إنقاذ محبوس: KILL / GOLDEN_DIP_RECOVERY / HOLD |
-| core/sync_scanner_to_db.py | 218 | تطهير ميت + R/R≥2.0 + stop invariant |
+| core/sync_scanner_to_db.py | 218 | تطهير ميت + R/R≥2.0 + stop invariant + SCAN-FILTER (reject HOLD/ILLIQUID) |
 | core/database.py | 1,223 | general DB |
 | core/db_manager.py | 487 | connection pooling |
 | core/opportunity_quality.py | 2,114 | quality gates + ATR stop [5%,9%] |
@@ -95,14 +139,32 @@ Classes: TechnicalScorer + VolumeScorer + CandlestickScorer + FundamentalScorer 
 
 | Job | LOC | الوظيفة | Cron |
 |-----|----:|---------|------|
-| daily_predictor.py | 4,960 | V40.2 predictions + TP1 + user_advice_ar | 30 14 * * 0-4 |
+| daily_predictor.py | 4,960 | V40.2 predictions + TP1 + user_advice_ar + WHALE_RADAR integrator | 30 14 * * 0-4 |
 | daily_closer.py | 3,501 | TP1 exit + Time Stop 5D + trailing 2.5% | بعد الإغلاق |
 | market_scheduler.py | 2,780 | جدولة السوق | مستمر |
 | intraday_scanner.py | 652 | scan + promote incubator | كل 5 دقايق |
 | learning_engine.py | 1,413 | تعلم iterative | يومي |
 | intraday_aggregator.py | 390 | تجميع intraday | كل 2 دقيقة |
+| price_history_safetynet.py | ~400 | ملء price_history.db من Yahoo | 0 6 * * 0-4 |
 
-## الطبقة 7: Dead/Archived
+## الطبقة 7: Scrapers + Validation (NEW)
+
+| Scraper | الوظيفة | Validation |
+|---------|---------|------------|
+| tradingview_scraper.py | TradingView DOM scraper | ✅ `_is_polluted_scrape_record()` |
+| tradingview_rest.py | TradingView REST API | ✅ `validate_ticker()` (SCRAPER-VALIDATION-FIX) |
+| egksco_scraper.py | EGX official prices | ✅ `validate_ticker()` (SCRAPER-VALIDATION-FIX) |
+| data_engine/main.py | Main data engine sync | ✅ `validate_ticker()` (SCRAPER-VALIDATION-FIX) |
+| us_stock_scraper.py | US stocks | ❌ (needs validation) |
+| multi_market_scraper.py | Multi-market | ❌ (needs validation) |
+
+### Centralized Ticker Validation
+- **File:** `data_engine/scrapers/ticker_validator.py`
+- **Function:** `validate_ticker(symbol, name) → (is_valid, reason)`
+- **Detects:** ISIN codes (EGS3I0S1C019), pollution merge (UBEEU), name_starts_lowercase, invalid format
+- **Whitelist:** FAITA, CCAPP, EGSA (real preferred shares)
+
+## الطبقة 8: Dead/Archived
 
 ### DEAD (موجود بس مش مربوط):
 conviction_engine(498) + fusion_engine(745) + unified_maestro(607) + v82_analyzer(769) + quant_engine(316) + quant_overdrive(381) + fundamental_scorer(567) + technical(613) + technical_weighted(542) + scoring_fix(513)
@@ -122,6 +184,18 @@ daily_predictor → master_analyzer → CoreScoringEngine → canonical indicato
 
 daily_closer → TP1 hit? → partial 50% + breakeven + trailing
   → holding_days >= 5? → no new high? → EXIT (TIME_STOP_5D_EXPIRED)
+
+WHALE_RADAR integrator:
+  maker_radar.py → maker_radar_EGX_YYYYMMDD.json
+  daily_predictor._integrate_whale_radar_predictions() → reads JSON
+  → filters: path=B_quiet_accumulation_strong + signals>=5 + turnover>=5M + no_distribution
+  → INSERT into stored_analyses (signal='WHALE_RADAR_BUY')
+  → sync_scanner_to_stored_analyses() → injects BUY picks only (rejects HOLD/ILLIQUID)
+
+Telegram publish:
+  auto_poster.py → reads stored_analyses
+  → filters: is_active=1 (PURGE-FIX) + recommendation='buy' + confidence>=min_score
+  → publishes to Telegram
 ```
 
 ## قواعد المخاطر
@@ -138,6 +212,7 @@ daily_closer → TP1 hit? → partial 50% + breakeven + trailing
 | RVOL dryness | ≤0.60 large / ≤0.50 small |
 | RVOL explosion | ≥1.80 |
 | Turnover min | 1.5M EGP (3M large caps) |
+| WHALE_RADAR min turnover | 5M EGP (EXPERIMENTAL — was 10M) |
 
 ## الـ 5 Pillars (من الدستور)
 
@@ -154,5 +229,7 @@ daily_closer → TP1 hit? → partial 50% + breakeven + trailing
 - الدستور: `00-CONSTITUTION.md` (76 قاعدة)
 - التشريح: `01-ARCHITECTURE.md`
 - الـ DBs: `02-DATABASES-AND-DATA.md`
+- خطة الطبقات: `05-DATA-ACCESS-LAYER-PLAN.md`
 - المؤشرات: `vps-service/data/all_markets_indices.json` (5 أسواق + 14 مؤشر + 1876 constituent)
 - archive/INDEX.md: فهرس المؤرشف
+
