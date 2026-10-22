@@ -374,7 +374,7 @@ def get_scan_dates(start_date, end_date, scan_interval):
         # UNIFY-FIX (2026-10-08): لو egksco_price_history قديمة → fallback لـ price_history.db
         # كان الكود يرجّع آخر يوم متاح في egksco (2026-09-26) بدل البحث عن بيانات طازجة
         if dates:
-            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
+            print(f"[V40.2] Using price_history.db (PRIMARY) — {len(dates)} dates", flush=True)
             return dates[::scan_interval]
     except Exception:
         pass

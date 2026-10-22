@@ -65,12 +65,21 @@ def get_ticker_market_map():
 
 
 def ensure_price_history_schema():
-    """تأكد إن price_history عندها UNIQUE constraint على (ticker, date)"""
+    """تأكد إن price_history عندها UNIQUE constraint على (ticker, date) + market column"""
     conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30.0)
     try:
         # تحقق من الـ schema
         cols = [c[1] for c in conn.execute("PRAGMA table_info(price_history)").fetchall()]
         print(f"    price_history columns: {cols[:10]}")
+
+        # لو مفيش column اسمه market، نضيفه (Phase 2 fix)
+        if 'market' not in cols:
+            print(f"    ⚠️ no 'market' column — adding it (Phase 2 fix)")
+            conn.execute("ALTER TABLE price_history ADD COLUMN market TEXT DEFAULT 'UNKNOWN'")
+            conn.commit()
+            print(f"    ✓ 'market' column added")
+        else:
+            print(f"    ✓ 'market' column exists")
 
         # تحقق من indexes
         indexes = conn.execute(
