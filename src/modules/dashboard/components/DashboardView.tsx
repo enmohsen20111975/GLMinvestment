@@ -50,6 +50,10 @@ import { SafeWidget } from '@/modules/dashboard/components/SafeWidget';
 import { DevelopmentNotice } from '@/modules/dashboard/components/DevelopmentNotice';
 // ALPHA-UX-FIX-2: guest signup enticement banner (shows only for unauthenticated users)
 import { GuestSignupBanner } from '@/components/auth/GuestSignupBanner';
+// FIX (owner directive — "الجرعة التخفيذية" للعميل الجديد):
+// widgets جديدة للـ engagement + trust-building. كلها في PinnableWidget registry (Rule 52).
+import { OpportunityCalculatorWidget } from '@/modules/dashboard/components/OpportunityCalculatorWidget';
+import { TrackRecordWidget } from '@/modules/dashboard/components/TrackRecordWidget';
 // MultiMarketWidget اتشال من هنا — بقى في شاشة #market-depth المنفصلة (Owner directive).
 // Owner directive: "الأسواق المتعددة → عملات + ذهب فقط" بقت شاشة مستقلة مع حركة
 // السيولة + تدفّق المستثمرين + ضغط الجلسة (عمق السوق من قائمة الأعلى).
@@ -261,6 +265,21 @@ export function DashboardView() {
  title: 'محفظتي',
  visible: () => true,
  render: () => <LiveMonitor />,
+ },
+ // FIX (owner directive — "الجرعة التخفيذية" للعميل الجديد):
+ // Track record أسبوعي (🥇 الأولوية 1 — إثبات مصداقية)
+ {
+ id: 'track-record',
+ title: 'توقعاتنا الأسبوع ده',
+ visible: () => true,
+ render: () => <TrackRecordWidget />,
+ },
+ // "لو كنت مالك السهم" (🥈 الأولوية 2 — قيمة ملموسة حقيقية، بديل demo portfolio الوهمية)
+ {
+ id: 'opportunity-calculator',
+ title: 'لو كنت مالك السهم ده',
+ visible: () => true,
+ render: () => <OpportunityCalculatorWidget />,
  },
  // 9. إشارات الكريبتو → CRYPTO فقط (Owner directive)
  {
