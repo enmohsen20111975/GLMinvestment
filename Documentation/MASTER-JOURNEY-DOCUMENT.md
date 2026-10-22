@@ -415,3 +415,26 @@ data_engine.db       egksco_price_history           0 rows  EMPTY
 كل Phase يتعمل على اللاب توب الأول، يتختبر تمام، وبعدين نروح للإنتاج.
 
 ---
+
+---
+
+## 12. Phase 2 مكتملة على اللاب توب
+
+### النتائج على اللاب توب (`/home/meme/my_apps/GLMinvestment`)
+- **قبل:** 1,316,107 rows
+- **بعد:** 1,321,447 rows (+5,340 new)
+- date range: 2000-11-27 → 2026-10-22
+- tickers: 1,557
+- verification: 6 passed, 1 warning (historical_data missing — ok), 0 failed
+
+### الفروقات بين اللاب توب والإنتاج
+| المصدر | اللاب توب | الإنتاج |
+|---|---|---|
+| egksco_price_history | فاضي (0) | 59,910 صف |
+| historical_data | مش موجود | 174,616 صف |
+| stock_daily_prices | 73,283 | 86,831 |
+
+### الدرس
+السكربت بيتعامل مع أي بيئة بدون ما يقع (skips missing, warns on empty).
+
+---

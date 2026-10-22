@@ -93,6 +93,19 @@ def _find_radar_db(market: str = 'EGX'):
     # Per-market candidate lists — config tuples of
     # (db_rel, table, ticker_col, price_col, vol_col, turn_col,
     #  date_col, open_col, high_col, low_col)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Phase 3 (DATA-UNIFICATION): price_history.db as PRIMARY source
+    # All markets now read from price_history.db FIRST (canonical source).
+    # Legacy sources (stock_daily_prices, egksco, historical_data) kept
+    # as fallback only. See DATA-UNIFICATION-PLAN.md
+    # ═══════════════════════════════════════════════════════════════════
+    PRICE_HISTORY_TUPLE = (
+        'db/price_history.db', 'price_history',
+        'ticker', 'close_price', 'volume', None,
+        'date', 'open_price', 'high_price', 'low_price',
+    )
+
     HISTORICAL_DATA_TUPLE = (
         'db/data_engine.db', 'historical_data',
         'symbol', 'close', 'volume', None, 'date', 'open', 'high', 'low',
@@ -108,6 +121,7 @@ def _find_radar_db(market: str = 'EGX'):
 
     MARKET_CANDIDATES: dict = {
         'EGX': [
+            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
             # 1. stocks.db.stock_daily_prices — production source-of-truth المحدث يومياً
             (
                 'db/stocks.db', 'stock_daily_prices',
@@ -136,6 +150,7 @@ def _find_radar_db(market: str = 'EGX'):
         ],
         # الأسواق الخليجية — stocks.db.stock_daily_prices الأول ثم historical_data
         'TADAWUL': [
+            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
             (
                 'db/stocks.db', 'stock_daily_prices',
                 'ticker', 'close', 'volume', 'turnover',
@@ -144,6 +159,7 @@ def _find_radar_db(market: str = 'EGX'):
             HISTORICAL_DATA_TUPLE,
         ],
         'KSE': [
+            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
             (
                 'db/stocks.db', 'stock_daily_prices',
                 'ticker', 'close', 'volume', 'turnover',
@@ -152,6 +168,7 @@ def _find_radar_db(market: str = 'EGX'):
             HISTORICAL_DATA_TUPLE,
         ],
         'QSE': [
+            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
             (
                 'db/stocks.db', 'stock_daily_prices',
                 'ticker', 'close', 'volume', 'turnover',
@@ -159,7 +176,7 @@ def _find_radar_db(market: str = 'EGX'):
             ),
             HISTORICAL_DATA_TUPLE,
         ],
-        'US':      [HISTORICAL_DATA_TUPLE],
+        'US':      [PRICE_HISTORY_TUPLE, HISTORICAL_DATA_TUPLE],  # Phase 3: price_history PRIMARY
         # CRYPTO + GOLD — جداول منفصلة في data_engine.db
         'CRYPTO':  [CRYPTO_PRICES_TUPLE],
         'GOLD':    [GOLD_PRICES_TUPLE],
