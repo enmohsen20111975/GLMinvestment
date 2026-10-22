@@ -1172,6 +1172,17 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     except Exception as _fq_err:
         flow_quality = None
 
+    # 1c. DEEPSEEK-AUDIT: Ticker Cooldown — منع التكرار بعد الإشارات الكاذبة
+    ticker_cooldown = None
+    try:
+        from analyzers.ticker_cooldown import check_ticker_cooldown
+        ticker_cooldown = check_ticker_cooldown(ticker)
+    except Exception:
+        ticker_cooldown = None
+
+    # لو السهم في cooldown → رجّع تحذير (بدون ما ترفض — بس نبه المستخدم)
+    _in_cooldown = ticker_cooldown and ticker_cooldown.get('is_cooled_down', False)
+
     # Task BRAVO-CASH-LINKAGE: قاعدة القرار — تجميع مؤسسي مدعوم بتدفق نقدي حقيقي vs مضاربة خطرة.
     _net_flow = whale.get('net_flow_egp', 0)
     _free_cf = fundamentals.get('free_cash_flow')
@@ -1297,6 +1308,9 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         'accumulation_class': accumulation_class,
         # DEEPSEEK-AUDIT (2026-10-22): expose flow_quality (CMF + OBV + POC)
         'flow_quality': flow_quality,
+        # DEEPSEEK-AUDIT: ticker cooldown + signal phase separation
+        'ticker_cooldown': ticker_cooldown,
+        'signal_stage': 'WATCH' if (flow_quality and flow_quality.get('verdict') == 'accumulate' and not _active_pred) else ('BUY' if _active_pred else 'NEUTRAL'),
         # SEALED-DISPATCH Step 1+2 (2026-10-17): expose the active prediction
         # reference (READ-ONLY from predictions.db). This is the source-of-truth
         # link between V40.2's prediction and the radar's contextual signal.
