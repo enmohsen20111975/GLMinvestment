@@ -589,7 +589,7 @@ function InvestorsTable({
  })}
  </div>
  <div className="text-xs text-muted-foreground pt-0.5" title={source}>
- المصدر: {source || 'EGX official (egx.com.eg)'}
+ {/* Source hidden — client doesn't need to see internal data source */}
  </div>
  </div>
  );
