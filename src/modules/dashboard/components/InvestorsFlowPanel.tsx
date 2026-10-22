@@ -515,6 +515,24 @@ function InvestorsTable({
  const slice = rows.slice(0, 5);
  if (slice.length === 0) return null;
 
+ // SANITY CHECK (2026-10-22): if the latest row's values are suspiciously small
+ // (< 10,000), the scraper parsed wrong numbers from the EGX page. EGX investor
+ // flow values are in hundreds of millions to billions of EGP. If we see values
+ // like 2, -1, -72 → garbage. Hide the table, don't show garbage to the client.
+ const latest = slice[0];
+ const maxAbs = Math.max(
+ Math.abs(latest.individuals_buys_value ?? 0),
+ Math.abs(latest.individuals_sells_value ?? 0),
+ Math.abs(latest.arab_buys_value ?? 0),
+ Math.abs(latest.arab_sells_value ?? 0),
+ Math.abs(latest.foreign_buys_value ?? 0),
+ Math.abs(latest.foreign_sells_value ?? 0),
+ );
+ if (maxAbs < 10000) {
+ // Garbage data — hide the table entirely.
+ return null;
+ }
+
  const fmtM = (n: number | null): string => {
  if (n == null) return '—';
  return fmtNum(n);
