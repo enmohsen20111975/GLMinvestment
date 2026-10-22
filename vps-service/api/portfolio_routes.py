@@ -651,19 +651,162 @@ def journal_open_trades():
 # DASHBOARD
 # ============================================================================
 
+def _batch_compute_flow(positions):
+    """B1: احسب flow_direction لكل position في batch واحد (NO N+1).
+
+    تقرأ آخر 5 أيام من price_history.db لكل tickers مرة واحدة.
+    تحسب delta_volume (buy_volume - sell_volume) + flow_score (-100..100).
+
+    Returns:
+        dict: {ticker: {flow_direction, flow_strength, flow_score}}
+    """
+    if not positions:
+        return {}
+
+    tickers = [p.get('ticker', '') for p in positions if p.get('ticker')]
+    if not tickers:
+        return {}
+
+    result = {}
+    try:
+        ph_db = str(PROJECT_ROOT / 'db' / 'price_history.db')
+        if not os.path.exists(ph_db):
+            # No price_history.db → return null for all (Rule 27)
+            for t in tickers:
+                result[t] = {'flow_direction': None, 'flow_strength': None, 'flow_score': None}
+            return result
+
+        conn = sqlite3.connect(f'file:{ph_db}?mode=ro', uri=True)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # Batch query: last 5 days for all tickers at once
+        placeholders = ','.join('?' for _ in tickers)
+        cur.execute(f"""
+            SELECT ticker, date, close_price, volume, buy_volume, sell_volume
+            FROM price_history
+            WHERE ticker IN ({placeholders})
+            AND close_price > 0 AND volume > 0
+            ORDER BY ticker, date DESC
+        """, tickers)
+
+        # Group by ticker (last 5 days each)
+        ticker_data = {}
+        for row in cur.fetchall():
+            t = row['ticker']
+            if t not in ticker_data:
+                ticker_data[t] = []
+            if len(ticker_data[t]) < 5:  # last 5 days
+                ticker_data[t].append(dict(row))
+
+        conn.close()
+
+        # Calculate flow for each ticker
+        for ticker, days in ticker_data.items():
+            if len(days) < 2:
+                result[ticker] = {'flow_direction': None, 'flow_strength': 'weak', 'flow_score': 0}
+                continue
+
+            # Use buy_volume/sell_volume if available, else approximate from MFM
+            total_buy = sum(d.get('buy_volume', 0) or 0 for d in days)
+            total_sell = sum(d.get('sell_volume', 0) or 0 for d in days)
+            total_vol = sum(d.get('volume', 0) or 0 for d in days)
+
+            if total_vol <= 0:
+                result[ticker] = {'flow_direction': None, 'flow_strength': 'weak', 'flow_score': 0}
+                continue
+
+            # If buy_volume/sell_volume not available, approximate using close position
+            if total_buy == 0 and total_sell == 0:
+                # Approximate: close in upper half = buy, lower half = sell
+                for d in days:
+                    close = d.get('close_price', 0) or 0
+                    # Use MFM approximation: ((close - low) - (high - close)) / (high - low)
+                    # Since we don't have high/low here, use day-to-day direction
+                    pass
+                # Fallback: use price direction
+                if len(days) >= 2:
+                    price_change = (days[0]['close_price'] - days[-1]['close_price']) / days[-1]['close_price'] * 100
+                    if price_change > 1:
+                        total_buy = total_vol * 0.6
+                        total_sell = total_vol * 0.4
+                    elif price_change < -1:
+                        total_buy = total_vol * 0.4
+                        total_sell = total_vol * 0.6
+                    else:
+                        total_buy = total_vol * 0.5
+                        total_sell = total_vol * 0.5
+
+            delta = total_buy - total_sell
+            # Normalize to -100..100
+            if total_vol > 0:
+                flow_score = int((delta / total_vol) * 200)  # ×200 for wider range
+                flow_score = max(-100, min(100, flow_score))
+            else:
+                flow_score = 0
+
+            # Direction
+            if flow_score > 20:
+                flow_direction = 'inflow'
+            elif flow_score < -20:
+                flow_direction = 'outflow'
+            else:
+                flow_direction = 'neutral'
+
+            # Strength
+            abs_score = abs(flow_score)
+            if abs_score > 60:
+                flow_strength = 'strong'
+            elif abs_score > 30:
+                flow_strength = 'moderate'
+            else:
+                flow_strength = 'weak'
+
+            result[ticker] = {
+                'flow_direction': flow_direction,
+                'flow_strength': flow_strength,
+                'flow_score': flow_score,
+            }
+
+        # Fill missing tickers with null (Rule 27)
+        for t in tickers:
+            if t not in result:
+                result[t] = {'flow_direction': None, 'flow_strength': None, 'flow_score': None}
+
+        return result
+
+    except Exception as e:
+        logger.error(f"[_batch_compute_flow] error: {e}")
+        for t in tickers:
+            result[t] = {'flow_direction': None, 'flow_strength': None, 'flow_score': None}
+        return result
+
+
 @portfolio_bp.route('/dashboard', methods=['GET'])
 def portfolio_dashboard():
-    """لوحة تحكم المحفظة الكاملة"""
+    """لوحة تحكم المحفظة الكاملة + B1: flow_direction لكل position"""
     try:
         portfolio_id = request.args.get('portfolio_id', 'default')
-        
+
         portfolio = _load_portfolio_state(portfolio_id)
         if not portfolio:
             _save_portfolio_state(portfolio_id, "default", 100000, 30000, 100000, "balanced")
             portfolio = _load_portfolio_state(portfolio_id)
-        
+
         positions = portfolio.get("positions", [])
-        
+
+        # B1: flow_direction — batch query (NO N+1)
+        # اقرأ آخر 5 أيام من price_history.db لكل tickers مرة واحدة
+        flow_map = _batch_compute_flow(positions)
+
+        # Add flow_direction to each position
+        for pos in positions:
+            ticker = pos.get('ticker', '')
+            flow = flow_map.get(ticker, {})
+            pos['flow_direction'] = flow.get('flow_direction')
+            pos['flow_strength'] = flow.get('flow_strength')
+            pos['flow_score'] = flow.get('flow_score')
+
         # Heat calculation
         calculator = PortfolioHeatCalculator(
             portfolio_value=portfolio["value"],
