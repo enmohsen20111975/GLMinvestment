@@ -415,6 +415,46 @@ export function LiquidityRadarView({
  <LiquidityFlashCell value={row.whale?.net_flow_egp ?? null} />
  ),
  },
+ // FRONTEND-2 Phase 2: ضغط الشراء/البيع — شريط بصري
+ {
+ key: 'buy_sell_pressure',
+ header: 'ضغط الشراء/البيع',
+ sortable: true,
+ width: 'w-32',
+ align: 'center',
+ sortValue: (row) => row.whale?.buy_pct ?? 0,
+ filterValue: (row) => `${row.whale?.buy_pct ?? 0}/${row.whale?.sell_pct ?? 0}`,
+ render: (row) => {
+ const buy = row.whale?.buy_pct;
+ const sell = row.whale?.sell_pct;
+ if (buy == null && sell == null) {
+ return <span className="text-muted-foreground text-xs">—</span>;
+ }
+ const b = buy ?? 0;
+ const s = sell ?? 0;
+ const total = b + s;
+ if (total === 0) {
+ return <span className="text-muted-foreground text-xs">—</span>;
+ }
+ const buyPct = Math.round((b / total) * 100);
+ const sellPct = 100 - buyPct;
+ const isBuyDominant = buyPct >= 55;
+ const isSellDominant = buyPct <= 45;
+ const tone = isBuyDominant ? 'text-profit' : isSellDominant ? 'text-loss' : 'text-muted-foreground';
+ return (
+ <div className="flex flex-col items-center gap-1">
+ <div className="flex w-24 h-2 rounded-full overflow-hidden bg-muted">
+ <div className="bg-profit h-full" style={{ width: `${buyPct}%` }} />
+ <div className="bg-loss h-full" style={{ width: `${sellPct}%` }} />
+ </div>
+ <div className={cn('flex justify-between w-24 text-[10px] font-mono tabular-nums', tone)}>
+ <span className="text-profit">🟢{buyPct}%</span>
+ <span className="text-loss">🔴{sellPct}%</span>
+ </div>
+ </div>
+ );
+ },
+ },
  {
  key: 'phase',
  header: '📊 المرحلة',
@@ -429,6 +469,80 @@ export function LiquidityRadarView({
  <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
  <Layers className="w-3 h-3" />
  {info.label}
+ </span>
+ );
+ },
+ },
+ // FRONTEND-2 Phase 2: مرحلة التصحيح — 3 حالات (صاعد / قرب التصحيح / في تصحيح)
+ {
+ key: 'correction_phase',
+ header: '🔄 التصحيح',
+ sortable: true,
+ width: 'w-28',
+ align: 'center',
+ sortValue: (row) => row.correction_status ?? '',
+ filterValue: (row) => row.correction_status ?? '',
+ render: (row) => {
+ const status = row.correction_status;
+ const drop = row.drop_from_peak;
+ if (!status) {
+ return <span className="text-muted-foreground text-xs">—</span>;
+ }
+ let cls = 'bg-muted text-muted-foreground border-border';
+ let icon = '•';
+ if (status === 'صاعد' || status === 'خلص تصحيح') {
+ cls = 'bg-profit/10 text-profit border-profit/20';
+ icon = '🟢';
+ } else if (status === 'قرب التصحيح' || status === 'قرب التصح') {
+ cls = 'bg-warning/10 text-warning border-warning/20';
+ icon = '🟡';
+ } else if (status === 'في تصحيح' || status === 'في التصحيح') {
+ cls = 'bg-loss/10 text-loss border-loss/20';
+ icon = '🔴';
+ }
+ return (
+ <div className="flex flex-col items-center gap-0.5">
+ <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border', cls)}>
+ {icon} {status}
+ </span>
+ {drop != null && drop < 0 && (
+ <span className="text-[9px] text-muted-foreground font-mono tabular-nums">
+ {drop.toFixed(1)}% من القمة
+ </span>
+ )}
+ </div>
+ );
+ },
+ },
+ // FRONTEND-2 Phase 2: تصنيف السيولة canonical — 7 buckets
+ {
+ key: 'liquidity_bucket',
+ header: '🏷️ تصنيف السيولة',
+ sortable: true,
+ width: 'w-32',
+ align: 'center',
+ sortValue: (row) => row.liquidity_bucket_ar ?? row.liquidity_bucket ?? '',
+ filterValue: (row) => row.liquidity_bucket_ar ?? row.liquidity_bucket ?? '',
+ render: (row) => {
+ const bucketAr = row.liquidity_bucket_ar;
+ const bucket = row.liquidity_bucket;
+ if (!bucketAr && !bucket) {
+ return <span className="text-muted-foreground text-xs">—</span>;
+ }
+ // 7 canonical buckets with colors
+ const BUCKET_STYLE: Record<string, string> = {
+ strong_whale_inflow: 'bg-profit/10 text-profit border-profit/20',
+ moderate_inflow: 'bg-profit/5 text-profit border-profit/10',
+ whale_outflow: 'bg-loss/10 text-loss border-loss/20',
+ bottom_absorption: 'bg-whale/10 text-whale border-whale/20',
+ correction_exhaustion: 'bg-warning/10 text-warning border-warning/20',
+ avoid_falling_knife: 'bg-loss/15 text-loss border-loss/30',
+ neutral: 'bg-muted text-muted-foreground border-border',
+ };
+ const cls = BUCKET_STYLE[bucket || ''] || 'bg-muted text-muted-foreground border-border';
+ return (
+ <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border', cls)}>
+ {bucketAr || bucket}
  </span>
  );
  },
