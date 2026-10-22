@@ -6900,3 +6900,35 @@ Push: commit `53d33b53` (بعد rebase فوق commits `04201002..92d9dcdb`).
 # قبل: turnover = turnover_egp_today if turnover_egp_today > 0 else avg_turnover_20d
 # بعد (rollback): turnover = stock.get('avg_turnover_20d', 0) or 0
 ```
+
+---
+Task ID: SYNC-SCANNER-FIX-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن بعت output فيه: "WHALE_RADAR picks injected: 0" + import error. اكتشفت إن function sync_scanner_to_stored_analyses مش موجودة.
+
+التحقيق:
+- git log لـ sync_scanner_to_db.py:
+  - b1cb9982 (Oct 21): added sync_scanner_to_stored_analyses (151 lines)
+  - 854d9b3f (BRAVO-URGENT): removed it (بس kept الـ import في daily_predictor.py)
+- النتيجة: daily_predictor.inject_whale_radar_picks() (line 4550) بيحاول import function مش موجودة → error → whale picks = 0.
+
+الـ fix:
+- رجّعت sync_scanner_to_stored_analyses function (130 lines) في sync_scanner_to_db.py.
+- خليت purge_stale_predictions + verify_invariants زي ما هم (BRAVO-URGENT work preserved).
+- أضفت safety: import run_market_scanner محلياً (graceful failure لو مش متاح).
+- أضفت safety: skip rows ناقصة entry/stop (prevent DB errors).
+
+اختبار على الساند بوكس:
+- syntax valid ✅
+- import بنجاح: sync_scanner_to_stored_analyses + purge_stale_predictions + verify_invariants ✅
+
+Push: commit `215e5e39` (بعد rebase فوق commits `53d33b53..7ca5bec0`).
+
+الخطوات الجاية على اللاب توب:
+1. git pull origin main
+2. شغّل daily_predictor تاني:
+   cd vps-service
+   ~/my_apps/GLMinvestment/.venv/bin/python3 -m jobs.daily_predictor --start 2026-10-19 --end 2026-10-21 --scan-interval 1 --max-tickers 20
+   cd ~/my_apps/GLMinvestment
+3. شوف الـ WHALE_RADAR picks — المفروض يبقى > 0 دلوقتي
+4. لو فيه picks، شوف الأسهم الجديدة (KZPC, DGTZD, HBCOH, VALUU)
