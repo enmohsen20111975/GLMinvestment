@@ -168,7 +168,6 @@ def render_and_extract(url, timeout_ms=45000):
                         result[f"{key_prefix}_buys"] = buy
                         result[f"{key_prefix}_sells"] = sell
                         log.info(f"  {current_type}/{current_nationality}: buy={buy:,.0f} sell={sell:,.0f} net={net:,.0f}")
-                                 current_type, current_nationality, buy, sell, net)
 
             # Detect number of trades
             if 'صفقات' in line or 'trades' in line_lower:
