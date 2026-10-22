@@ -139,7 +139,7 @@ const CHANGE_FILTER_OPTIONS = [
  { key: 'unchanged', label: 'الثابتة فقط' },
 ];
 
-type StockTab = 'stocks' | 'bonds';
+type StockTab = 'stocks' | 'bonds' | 'filters';
 
 const PAGE_SIZE = 20;
 
