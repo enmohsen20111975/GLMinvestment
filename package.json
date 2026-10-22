@@ -120,6 +120,7 @@
     "sharp": "^0.34.3"
   },
   "devDependencies": {
+    "@prisma/engines": "5.22.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

@@ -1,556 +1,119 @@
-# Worklog — GLMinvestment Project
+# Z.ai Sandbox Worklog — GLMinvestment Migration & Frontend Work
 
-## Task: Restore + Audit (2026-10-20)
+> This worklog tracks the Z.ai sandbox multi-agent workflow for GLMinvestment.
+> The GLMinvestment team's original worklog (494KB, full history) is preserved
+> at `worklog-glm-history.md`.
 
-### Task ID: AUDIT-RESTORE-1
-Agent: Z.ai Code (الفاحص التقني)
-Task: محسن — الساند بوكس اترست. رجّع المشروع الحقيقى (GLMinvestment) من GitHub + أبدأ الأوديت.
+---
+Task ID: 1
+Agent: Alpha (main / Z.ai sandbox orchestrator)
+Task: Migrate GLMinvestment repo → /home/z/my-project, extract DBs, start all services, verify / route renders.
 
 Work Log:
-- النسخة السابقة: template Next.js نظيف (55 ملف بس، آخر commit `fe1394d Initial commit`).
-- عملت shallow clone (depth=1) لـ https://github.com/enmohsen20111975/GLMinvestment.git في `/tmp/glminvestment-clone`.
-- آخر commit في الـ repo: `0ac5b31 BRAVO-NEWS-CONSOLIDATE: دمج disclosures في news.db`.
-- نقلت كل الملفات من clone لـ `/home/z/my-project` (مش الـ hidden files في الـ cp الأول).
-- استبدلت `.git` بـ `.git` بتاع GLMinvestment (فيه الـ history الكامل + الـ remote مع token).
-- عملت `git restore` للملفات اللي كانت لسه template versions (.env, .gitignore, Caddyfile, eslint.config.mjs, tailwind.config.ts, tsconfig.json, examples/, mini-services/, public/).
-- working tree clean دلوقتي.
+- Cloned GLMinvestment to /tmp/glm-inspect for inspection (shallow clone).
+- Inspected: Next.js project (declared v16.1.3, README claims actual 14.2.28 — to verify after install), 3 prisma schemas (default starter + auth + predictions), DBs compressed in db/ and data/ folders.
+- Backed up sandbox `skills/` (61MB) + `.env` to /tmp before wipe.
+- Wiped /home/z/my-project starter content, copied GLMinvestment into place.
+- Restored `skills/` and `.env` (sandbox assets, not part of GLM repo).
+- Scrubbed GitHub token from `.git/config` remote URL (was embedded in clone URL, now plain https://github.com/...). User must still REVOKE the token — it leaked into chat.
+- Renamed GLM team worklog (494KB) → `worklog-glm-history.md` to preserve team history; started this fresh worklog for Z.ai sandbox workflow.
+- Started `bun install` in background (PID 1546 → /tmp/bun-install.log).
+- Next: read 00-CONSTITUTION.md + 01-ARCHITECTURE.md (mandatory before edits), then extract DBs, prisma db push, start Next.js on 3000, try Python services, verify with Agent Browser.
 
 Stage Summary:
-- ✅ المشروع رجع بالكامل: 3213 ملف، 924 ملف TypeScript.
-- ✅ node_modules موجود (من clone).
-- ✅ prisma + next متـثبتين.
-- ✅ git history من `0ac5b31` فاتح.
-- 🎯 جاهز للأوديت. بـ أطلق 4 فاحصين بالتوازي على أجزاء مختلفة.
+- Migration complete. `/home/z/my-project` now holds GLMinvestment v3.4.41 (commit 9546495) on branch main, clean working tree.
+- Token scrubbed from git config (but MUST be revoked by user at GitHub — it leaked in chat).
+- skills/ + .env preserved (sandbox infra, not GLM-owned).
+- worklog-glm-history.md preserves team log; this file is the Z.ai sandbox worklog.
+- Pending: verify Next.js actual version, DB extraction, service startup, browser verification.
 
 ---
+Task ID: 1 (continued — execution + verification)
+Agent: Alpha (main / Z.ai sandbox orchestrator)
 
----
-Task ID: AUDIT-1
-Agent: AUDIT-1 (Explore — Components Auditor)
-Task: Audit src/components/ for duplication anti-patterns.
+Work Log (continued):
+- Read 00-CONSTITUTION.md (76 rules). Key constraints applied: Rule 210 (no `bun run build` in sandbox), Rule 211 (no http://localhost:PORT in frontend — use XTransformPort), Rule 127 (no editing next.config.js), Rule 128 (no touching schema.prisma without owner approval).
+- Read 01-ARCHITECTURE.md: 4 services — nextjs:3000 (Alpha), vps-service:8010 (Bravo brain, Python FastAPI), data_engine:5000 (Bravo pull, Python Flask), ws-service:3005 (Bravo push, Bun Socket.io).
+- `bun install` completed but DID NOT install all transitive deps (node_modules/.bin/prisma symlink missing, @prisma/engines missing). Fixed via `bun add @prisma/engines@5.22.0` which pulled 424 additional packages. Prisma 5.22.0 confirmed working.
+- Next.js ACTUAL version = 16.1.3 (README's "14.2.28" claim is FALSE/obsolete). Matches sandbox requirement.
+- Extracted 5 DB zips: db/{stocks,intraday,price_history,data_engine}.db.zip + data/predictions.db.zip → all placed in db/. Total ~485MB uncompressed.
+- prisma generate succeeded for all 3 schemas (default starter schema + auth + predictions).
+- prisma db push --schema=auth-schema.prisma: SUCCESS, created db/auth.db (empty, 0 rows — correct, fresh auth).
+- prisma db push --schema=predictions-schema.prisma: BLOCKED — schema has 7 fewer columns than predictions.db (ai_reason, gambler_rank_score, investor_rank_score, is_gambler_opportunity, is_investor_opportunity, prediction_date, signal on stored_analyses table, 12 non-null rows). Refused `--accept-data-loss` without owner approval. DEFERRED to owner decision.
+- Next.js dev startup issues diagnosed:
+  * `bun run dev` uses `| tee dev.log` pipe → killed when shell exits. Switched to direct `node next dev`.
+  * Next 16 defaults to Turbopack; next.config.mjs has webpack config → error. Fixed with explicit `--webpack` flag (config not modified, per Rule 127).
+  * `better-sqlite3` prebuilt binary already present (no rebuild needed; node-gyp blocked by sandbox network anyway).
+  * Process kept dying silently during first compile. Root cause: Bash tool kills background processes on command exit. SOLVED by using pm2 (daemonized, survives shell exit).
+- Next.js stable under pm2. HTTP 200 on / (first compile ~34s, subsequent cached requests ~0.08s). HTML 91KB, title "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية", `<html lang="ar" dir="rtl">` — RTL Arabic correct.
+- /api/health verified: all 6 DBs connected (stocks 1039 rows, predictions 1488 rows, price_history 274574 rows, data_engine 2492 rows, intraday present, auth empty). news-agent auto-started (pid 3267).
+- ws-service (Bun, port 3005): installed + started via pm2. Stopped temporarily to free RAM for nextjs (sandbox only has 4GB, no swap).
+- vps-service (Python FastAPI, port 8010): created venv, installed requirements (fastapi 0.161.0, flask 3.1.3, uvicorn 0.54.0), started via pm2. Registered 30+ blueprints. Listening on 8010, HTTP 200. Loaded real data: Egypt inflation 28.27% from World Bank API.
+- Agent Browser verification: opened /, networkidle wait succeeded, screenshot captured. VLM analysis of screenshot confirmed REAL UI render:
+  * Header: "شركة البورصة المصرية" + menu (الرئيسية، مركز البيانات، القوائم والفهارس، الإصدارات الجديدة) + login button + search "ابحث عن سهم..."
+  * Modal: "ما نوع القائمة التي تريد؟" with 4 options (أسهمي، كسروني، كل الأصناف، أفضل بيت) + green "ابدأ" button
+  * Background dashboard: "سوق مغلقة" banner, market cards, "مؤشرات السوق والمنتجات" section with graph
+  * Full RTL Arabic layout confirmed
+- data_engine (port 5000): NOT started (Python Flask, would need venv; RAM already constrained).
 
-Work Log:
-- Read worklog.md first (context: GLMinvestment restored from GitHub, 3213 files, ready for parallel audits).
-- Listed src/components/ contents (excluded src/components/ui/ as instructed).
-- Ran rg searches for: inline `<table>`/`<thead>`/`<tbody>`, `<Card>` root, status ternary chains (`=== 'BUY'`, `=== 'SELL'`, `=== 'STRONG_BUY'`, etc.), `Record<string, string>` color maps, `bg-profit`/`bg-loss`/`bg-warning` patterns, `formatPrice`/`formatNumber`/`formatPct`/`formatCurrency`/`formatPercent`/`safeNum`/`fmtPrice`/`fmtPct` helper definitions, `<Skeleton>` usage, `.length === 0` inline empty states, `setPage`/`السابق`/`التالي` pagination, `MARKET_FLAGS`/`MARKET_CURRENCY`/`MARKET_OPTIONS` lookups.
-- Inspected heads of all flagged files (read eid-predictions-widget.tsx fully, shared/PredictionCard.tsx fully, shared/StockFeelCard.tsx fully, market/ImageCardExport.tsx fully, market/PersonaImageCard/TopTradesImageCard/ExpertPredictionsImageCard heads, market/PredictionsImageCard body, market/MarketStatusImageCard body, deal-advisor/DealAdvisorPanel.tsx body, v82/V82DecisionPanel.tsx body, shared/ExpertIntelligencePanel.tsx body, shared/LiquidityRadarView.tsx body + pagination section, alerts/SmartAlertsPanel.tsx body, alerts/AlertsCenterView.tsx body, journal/TradingJournalView.tsx table, subscription/SubscriptionView.tsx ComparisonTable, advanced-analysis/SpecialistAnalysisView.tsx predictions table + SkeletonCard + EmptyState, market/StockLeagueImageCard.tsx body, market/MarketStatusImageCard.tsx EmptyRow, zakat/ZakatView.tsx BreakdownRow colorMap, tithes/TithesView.tsx BreakdownRow colorMap, seasonality/SeasonalityDashboard.tsx getSignalColor/getSignalArabic, ai/AIAnalysisWidget.tsx SIGNAL_CONFIG, publishing/QuickPublishButton.tsx SIGNAL_OPTIONS, publishing/UserPublishingView.tsx empty states, daily-picks/DailyPicksPoster.tsx formatDateArabic + empty + helper.
-- Verified `src/lib/format.ts` exists as canonical formatters and confirmed ZERO files in src/components/ import it.
-- Verified `src/components/shared/ui/UnifiedEmptyState.tsx` exists as canonical empty-state component, only used by LiquidityRadarView.tsx.
-
-Findings:
-
-### 1. Duplicate Tables
-Inline `<table><thead><tbody>` (NOT using shared/UnifiedTable.tsx):
-
-| File | Line | Columns | Rows | Notes |
-|------|------|---------|------|-------|
-| journal/TradingJournalView.tsx | 407 | 7 (السهم/النوع/الكمية/الدخول/الخروج/النتيجة/%) | all trades (bounded by `trades.length`) | Inline `<table>` inside `<Card><CardContent>`. Empty state inline (`<tr><td colSpan=7>`). Should use `UnifiedTable`. |
-| subscription/SubscriptionView.tsx | 1312 | dynamic = plans + 1 (الميزة + كل خطة) | feature rows via `<ComparisonRow>` | Pricing comparison table — acceptable since shape is unique, but still inline. |
-| advanced-analysis/SpecialistAnalysisView.tsx | 1505 | 8 (التاريخ/الإشارة/الدخول/الهدف/الوقف/الحالة/العائد%/تحقق) | sliced `preds.slice(0, 10)` | Inline prediction history table. Could be a `UnifiedTable` with `columns` config. |
-| market/StockLeagueImageCard.tsx | 183 | rendered as flex grid (المركز/السهم/السعر/العائد%) | league/trades list | NOT a real `<table>` — uses flex divs — but conceptually the same LIST pattern as the others. Mentioned for awareness. |
-| market/PredictionsImageCard.tsx (PickRow) | — | rendered as flex rows | top 50 | Same flex-row list pattern. |
-
-### 2. Duplicate Cards
-Card-rooted or `*Card.tsx` components + what they display + layout:
-
-| File | Purpose | Layout | Notes |
-|------|---------|--------|-------|
-| shared/PredictionCard.tsx | Canonical single-stock prediction card | header(ticker+signal badge+rank) / price grid (entry/target/stop) / metrics row (confidence/score/R-R/evidence) / collapsible technical explanation | ✅ Already the canonical card — Rule 28. Header docstring lists 5 intended consumers. |
-| eid-predictions-widget.tsx (lines 108-153) | Local `PredictionCard` (NOT imported from shared/) — duplicate | header(symbol+signal+testing/closed badges) / price grid / confidence bar / potential gain / reasoning | 🔴 MAJOR DUPLICATION. ~45 LOC re-implementing PredictionCard with slightly different props (lifecycle_status, BTC/ETH symbol formatting). Should be deleted and replaced with `<PredictionCard>` from shared/. |
-| market/PredictionsImageCard.tsx | Canonical exportable PNG card for tracked predictions | styled 850px-wide gradient header + stats + table of picks + footer | ✅ Canonical after MERGE-PREDICTION-CARDS. Now serves Persona/Expert too via wrappers. |
-| market/PersonaImageCard.tsx | Wrapper | re-exports PersonaPick + delegates to PredictionsImageCard | ✅ Already consolidated (~145 LOC saved). |
-| market/ExpertPredictionsImageCard.tsx | Wrapper | re-exports ExpertPick + delegates to PredictionsImageCard | ✅ Already consolidated (~500 LOC saved). |
-| market/TopTradesImageCard.tsx | Wrapper | delegates to StockLeagueImageCard with mode='trades' | ✅ Already consolidated (~208 LOC saved). |
-| market/StockLeagueImageCard.tsx | Ranked league table + top trades | gradient header + ranked list with gold/silver/bronze | Single canonical impl — good. |
-| market/MarketStatusImageCard.tsx | Market movers card | flags header + avg stats + 2 columns (gainers/losers) | Has local `EmptyRow` (line 756) duplicating `UnifiedEmptyState`. |
-| market/MarketStatusExport.tsx | Export wrapper | Skeleton header + content area | Uses ImageCardExport underneath — fine. |
-| market/ImageCardExport.tsx | Generic export card | header(title+description+download/publish buttons) / children render-prop / dashed empty hint | ✅ Already a shared primitive. Good. |
-| shared/StockFeelCard.tsx | "Stock feel" analysis | title + feel paragraph + correction/risk badges + layers_simple grid + collapsible correction_detail | Local `statusColor`/`riskColor`/`riskLabelAr` helpers — duplicates signal-color pattern. |
-| shared/ExpertIntelligencePanel.tsx | 3-layer expert intel | gradient banner + missed-opportunity card + sector-intel card + consensus list | Has `verdictColor`/`verdictLabel` chained ifs (lines 128-142) and inline `{STRONG_BUY:'bg-success',…}` (608-613) — duplicates signal map. |
-| deal-advisor/DealAdvisorPanel.tsx | "Deal advisor" decision panel | identity card + market context + technical state + entry assessment + scenarios list + suggested levels | Has local `classificationBadge`, `actionColor`, `priorityBadge` switch helpers — partially duplicated color maps. |
-| v82/V82DecisionPanel.tsx | V82 institutional decision | action banner + 9-condition gate + entry/SL/TP grid + fuel gauge + kill switch | `ACTION_COLORS` + `ACTION_LABELS` records (lines 57-69) duplicate signal→color/label pattern. |
-| ai/AIAnalysisWidget.tsx | AI analysis widget | score circle + signal badge + risk profile grid + collapsible reasons | `SIGNAL_CONFIG` record (line 79) duplicates STRONG_BUY/…/STRONG_SELL → color map. |
-| publishing/QuickPublishButton.tsx | Dialog-trigger button + dialog | button trigger + dialog with form | `SIGNAL_OPTIONS` array (line 47) — yet another STRONG_BUY/…/STRONG_SELL list. |
-| auto-analysis-widget.tsx | Walk-forward test widget | header + 3 stat tiles + accuracy progress + monthly list + recommendation box | Ternary `auto_analysis_eligible ? 'bg-success/…' : 'bg-warning/…'` chains (lines 236-243). |
-| daily-picks/DailyPicksPoster.tsx | 1080px exportable poster (PNG) | styled poster with header, table, footer | Has `formatDateArabic` local helper. |
-| alerts/AlertsCenterView.tsx | 4 alert tabs | `PortfolioAlertCard` (line 188) + `MarketAlertCard` (line 250) + `ObligationAlertCard` (line 281) | 🔴 Each card defines its OWN local `severityColors` + `severityBadge` object — 3 copies of the same severity→color map. |
-| alerts/SmartAlertsPanel.tsx | Smart alerts list | severity stat cards grid + filtered alerts list | Has `severityColors` + `severityBadgeColors` + `typeLabels` (lines 77/89/96) — partially duplicated in AlertsCenterView. |
-| memory/ExpertMemoryPanel.tsx | Expert memory | header + 4 Skeleton loaders + content | Has local inline color ternaries; uses `Skeleton` directly. |
-| memory/TradingMemoryView.tsx | Trading memory stats | 3 stat cards + patterns list + top tickers + worst tickers | 3 inline empty states (lines 170/245/280). |
-| intelligence/WatchlistIntelligenceSection.tsx | Watchlist intelligence summary | header + opportunities + warnings + watchlist items list | Has local `formatCurrency`, `formatPercent`, `getSignalIcon` (lines 77-100) — duplicates all three patterns. |
-| watchlist/EnhancedWatchlistView.tsx | Enhanced watchlist | toolbar + stat cards + table | Local `formatCurrency`, `formatPercent` (lines 81, 90); uses `UnifiedTable` internally ✓; has inline 4-skeleton loader (1080-1084) and inline empty (1215). |
-| watchlist/ProfessionalWatchlistView.tsx | Professional watchlist | simpler list view | Local `formatCurrency` (line 92); inline 3-skeleton (356-358). |
-| zakat/ZakatView.tsx | Zakat calculator | form + results breakdown + progress | Local `formatNumber`/`formatCurrency` (lines 160, 168); local `colorMap` (986) with green/emerald/blue/yellow/orange/red keys; inline empty (703); inline skeletons (900-902, 1046-1051). |
-| tithes/TithesView.tsx | Tithes calculator | form + results + breakdown | Local `formatNumber`/`formatCurrency` (lines 105, 112); local `colorMap` (664) with DIFFERENT keys (blue/green/purple/red) — copy-pasted from ZakatView with tweaks; inline empty (388); inline skeletons (580-582). |
-| seasonality/SeasonalityDashboard.tsx | Seasonality signals table | header + stats + signals list | Local `getSignalColor` (line 48) and `getSignalArabic` (line 60) — STRONG_BUY/…/SELL chained switch + translations record; inline skeleton (135) + inline empty (221). |
-| smart-tips/SmartTip.tsx | Smart tips list | tip cards | Inline empty state (520). |
-| smart-assistant/SmartConfluenceView.tsx | Confluence predictions | tabs + predictions list + buy/sell picks | 3 inline empty states (164/224/249); inline 5-skeleton (113-119). |
-| publishing/UserPublishingView.tsx | User posts feed + leaderboard | 4-tab layout | 2 inline empty states (289, 702) — both with icon+title+description+CTA but different styling. |
-| notifications/NotificationCenter.tsx | Notifications list | alert cards | Inline empty state (276). |
-| settings/SettingsView.tsx | Settings list | ChevronLeft back button + cards list | Single use of `ChevronLeft` — not duplicated. |
-
-### 3. Duplicate Badge/Status Ternary Chains
-
-| File | Line | Pattern | Recommendation |
-|------|------|---------|----------------|
-| eid-predictions-widget.tsx | 129 | `pred.signal === 'BUY' ? 'شراء' : pred.signal === 'SELL' ? 'بيع' : 'انتظار'` | Replace with `SIGNAL_LABELS_AR[signal]` from a shared map (same key set as PredictionCard.SIGNAL_STYLES). |
-| eid-predictions-widget.tsx | 141 | `pred.confidence >= 0.7 ? 'bg-success' : pred.confidence >= 0.5 ? 'bg-warning' : 'bg-loss'` | Replace with shared `confidenceColor(pct)` helper. |
-| eid-predictions-widget.tsx | 145-147 | `potentialGain >= 0 ? 'text-success glow-profit' : 'text-loss glow-loss'` (+ TrendingUp/Down icon) | Replace with shared `pnlColor(v)` helper. |
-| deal-advisor/DealAdvisorPanel.tsx | 179-189 | `classificationBadge(c)` switch — clean/momentum/high_risk → variant+label+className | Extract to shared `classificationSignal()` helper. |
-| deal-advisor/DealAdvisorPanel.tsx | 192-209 | `actionColor(action)` switch — exit/reduce/take_profit/hold_conditional/add/wait → text classes | Extract to shared `dealActionColor()`. |
-| deal-advisor/DealAdvisorPanel.tsx | 211-222 | `priorityBadge(p)` switch returning `<Badge>` JSX | Replace with `<PriorityBadge priority={p} />` shared component. |
-| deal-advisor/DealAdvisorPanel.tsx | 445-449 | `? 'border-loss bg-loss' : ? 'border-profit bg-profit' : ? 'border-orange-300 bg-warning'` | Replace with shared `signalRingClass(signal)` map. |
-| shared/ExpertIntelligencePanel.tsx | 128-134 | `verdictColor(v)` chained ifs — STRONG_BUY/BUY→'bg-success'; SELL/STRONG_SELL→'bg-loss'; default 'bg-warning' | 🔴 Replace with canonical `SIGNAL_STYLES` from PredictionCard (already keyed identically). |
-| shared/ExpertIntelligencePanel.tsx | 136-142 | `verdictLabel(v)` chained ifs returning Arabic label | Same — use canonical `SIGNAL_LABELS_AR`. |
-| shared/ExpertIntelligencePanel.tsx | 462-464 | `market_mood?.includes('صاعد') ? 'bg-success/20' : includes('هابط') ? 'bg-loss/20' : 'bg-warning/20'` | Extract to shared `moodColor(mood)` helper. |
-| shared/ExpertIntelligencePanel.tsx | 502-503 | `i === 0 ? 'bg-success text-success' : i === length-1 ? 'bg-loss text-loss'` | Inline rank-color logic — leave (context-specific). |
-| shared/ExpertIntelligencePanel.tsx | 608-613 | Inline array `[{k:'STRONG_BUY',label:'قوي',color:'bg-success'},…5 items]` | Should reuse canonical SIGNAL_STYLES; just iterate keys. |
-| shared/PredictionCard.tsx | 352-356 | `confidence >= 70 ? 'text-profit' : confidence >= 50 ? 'text-warning' : 'text-loss'` | Extract to shared `confidenceColor(pct)`. |
-| shared/PredictionCard.tsx | 108-112 | `detectSignalKind()` chained ifs — STRONG_BUY/STRONG BUY/ACCUMULATE→strong_buy; BUY→buy; HOLD/WAIT→hold; default sell | ✅ Already canonical — keep. |
-| auto-analysis-widget.tsx | 138-148 | `auto_analysis_eligible ? <Badge className="bg-success/20 text-success border-success/20">…جاهز للتشغيل</Badge> : <Badge className="bg-warning/20 text-warning border-yellow-500/50">…يحتاج بيانات أكثر</Badge>` | Replace with `<StatusBadge ok={eligible}>`. |
-| auto-analysis-widget.tsx | 236-243 | `auto_analysis_eligible ? 'bg-success/10 border-success/20' : 'bg-warning/10 border-yellow-500/30'` (×2 — Sparkles icon + container) | Replace with shared `eligibleBadgeClass(bool)` helper. |
-| WatchlistIntelligenceSection.tsx | 92-100 | `getSignalIcon(signal)` chained ifs returning `<ChevronUp text-profit>` / `<ChevronDown text-loss>` / `<Minus text-warning>` | Replace with `<SignalIcon signal={signal} />` shared component. |
-| StockFeelCard.tsx | 28-34 | `statusColor(status)` — `status.includes('تصحيح حاد')→'bg-loss/15 text-loss border-loss/20'`, etc. | Extract to shared `feelStatusColor(status)`. |
-| StockFeelCard.tsx | 36-48 | `riskColor(risk)` + `riskLabelAr(risk)` — high→'text-loss', medium→'text-warning', low→'text-profit' | Extract to shared `riskLevelColor(risk)` + `riskLevelLabelAr(risk)`. |
-| market/PredictionsImageCard.tsx | 126-143 | `statusOutcome(p)` returning `{label, cls}` based on TARGET_HIT/CLOSED_PROFIT/hit_target vs STOPPED/CLOSED_LOSS/hit_stop_loss | Useful local helper but should be shared — extract to `outcomeStatus(p)` for reuse. |
-| market/PredictionsImageCard.tsx | 88-106 | `deriveSignalFromPick(p)` — chained ifs deriving BUY/SELL/HOLD from status strings | Should be shared `inferSignalFromOutcome()`. |
-| seasonality/SeasonalityDashboard.tsx | 48-58 | `getSignalColor(signal)` switch — STRONG_BUY/BUY/ACCUMULATE→'bg-success text-white'; REDUCE→'bg-warning text-white'; SELL→'bg-loss text-white' | 🔴 Replace with canonical SIGNAL_STYLES. |
-| seasonality/SeasonalityDashboard.tsx | 60-70 | `getSignalArabic(signal)` translations Record | 🔴 Replace with canonical SIGNAL_LABELS_AR. |
-| SmartAlertsPanel.tsx | 218-224 | `alert.alert_type === 'profit' ? <TrendingUp/> : alert.alert_type === 'loss' ? <TrendingDown/> : <AlertTriangle/>` | Minor — leave or extract `alertTypeIcon(type)`. |
-| AlertsCenterView.tsx | 122-132 | `alert.triggered && 'border-profit bg-profit/10 /20'` + severity bg ternary | Replace with shared `triggeredRingClass()`. |
-| DealAdvisorPanel.tsx | 445-449 | ternary `action === 'exit' ? 'border-loss bg-loss' : action === 'add' ? 'border-profit bg-profit' : 'border-orange-300 bg-warning'` | Replace with `ACTION_RING_COLORS[action]`. |
-| V82DecisionPanel.tsx | 57-69 | `ACTION_COLORS`/`ACTION_LABELS` records — BUY→'bg-profit/10 border-profit/20 text-profit'; SELL/AVOID→loss; WAIT→warning | 🔴 Replace with canonical SIGNAL_STYLES (note AVOID is the only V82-specific key — extend the canonical map). |
-
-### 4. Inline Empty States / Skeletons / Pagination
-
-Inline Empty States (`{items.length === 0 && <div>…</div>}` not using UnifiedEmptyState):
-
-| File | Line | Type | Notes |
-|------|------|------|-------|
-| alerts/AlertsCenterView.tsx | 616, 634, 652, 670 | Empty inline | 4 inline empty states (one per tab). Should use `<UnifiedEmptyState>`. |
-| deal-advisor/DealAdvisorPanel.tsx | 700 | Empty inline | "لا توجد سيناريوهات". |
-| shared/ExpertIntelligencePanel.tsx | 634 | Empty inline | "لا توجد بيانات consensus متاحة". |
-| shared/StockSearchSelector.tsx | 203 | Empty inline | Search dropdown empty. |
-| shared/LiquidityRadarView.tsx | 510 | Empty branch via ternary | Uses `UnifiedEmptyState` for loading, but the error/no-data branch is inline. |
-| zakat/ZakatView.tsx | 703 | Empty inline | "لا توجد نتائج". |
-| tithes/TithesView.tsx | 388 | Empty inline | "لا توجد نتائج". |
-| journal/TradingJournalView.tsx | 420-427 | Empty `<tr><td colSpan>` row | Different layout (table cell). |
-| smart-tips/SmartTip.tsx | 520 | Empty inline | Tips list empty. |
-| memory/TradingMemoryView.tsx | 170, 245, 280 | Empty inline | 3 inline empties. |
-| market/MarketStatusImageCard.tsx | 469, 513 | `EmptyRow` local component (line 756) | Inline-styled local helper duplicating UnifiedEmptyState. |
-| market/StockLeagueImageCard.tsx | 168, 315 | Empty inline | Different style (dark slate theme). |
-| market/PredictionsImageCard.tsx | 180, 408 | Empty inline | Returns null at line 180 — early bail; line 408 is inline empty. |
-| publishing/UserPublishingView.tsx | 289, 702 | Empty inline | 2 inline empties (feed + leaderboard) with different markup. |
-| smart-assistant/SmartConfluenceView.tsx | 164, 224, 249 | Empty inline | 3 inline empties (predictions, buyPicks, sellPicks). |
-| watchlist/EnhancedWatchlistView.tsx | 1215 | Empty inline | Watchlist empty. |
-| seasonality/SeasonalityDashboard.tsx | 221 | Empty inline | Signals empty. |
-| notifications/NotificationCenter.tsx | 276 | Empty inline | Notifications empty. |
-| advanced-analysis/SpecialistAnalysisView.tsx | 475 (EmptyState helper) + 1458, 2504 | Empty inline + local helper | Has local `EmptyState({msg})` component (dashed border). Should reuse UnifiedEmptyState. |
-| daily-picks/DailyPicksPoster.tsx | 118-127 | Empty inline | Poster empty state. |
-
-Inline Loading Skeletons (`{loading && <Skeleton …/>}` inline, no shared `<Loader>`):
-
-| File | Line | Type | Notes |
-|------|------|------|-------|
-| alerts/SmartAlertsPanel.tsx | 136-137 | 2x Skeleton | Simple pair. |
-| alerts/AlertsCenterView.tsx | 503, 506 | 2x Skeleton inside Card | Per-tab skeleton. |
-| eid-predictions-widget.tsx | 219, 224 | 1x + 5x Skeleton | Header skeleton + 5 row skeletons. |
-| auto-analysis-widget.tsx | 94, 98, 99 | 3x Skeleton | Header + 2 content blocks. |
-| shared/LiquidityRadarView.tsx | 507, 508 | 2x Skeleton | Inside card. |
-| shared/UnifiedTable.tsx | 1503 | Skeleton (acceptable) | Internal to the shared table — fine. |
-| zakat/ZakatView.tsx | 900-902, 1046-1051 | 3x + 4x Skeleton | Two loading views. |
-| tithes/TithesView.tsx | 580-582 | 3x Skeleton | Mirror of Zakat. |
-| advanced-analysis/SpecialistAnalysisView.tsx | 2741, 2744, 2747 | SkeletonCard local helper (line 461) ×3 | Has local `SkeletonCard()` component. |
-| memory/TradingMemoryView.tsx | 153 | 1x Skeleton | Single. |
-| memory/ExpertMemoryPanel.tsx | 109-114 | 4x Skeleton | Header + content blocks. |
-| ai/AIAnalysisWidget.tsx | 183-187 | 4x Skeleton | Header + badges. |
-| smart-assistant/SmartConfluenceView.tsx | 113-119 | 5x Skeleton | Header + 3 cards + big block. |
-| seasonality/SeasonalityDashboard.tsx | 135 | 1x Skeleton | Single. |
-| intelligence/WatchlistIntelligenceSection.tsx | 148-149 | 2x Skeleton | Header skeleton. |
-| watchlist/EnhancedWatchlistView.tsx | 1075-1084 | 4x + 2x Skeleton | Toolbar + stat cards + row. |
-| watchlist/ProfessionalWatchlistView.tsx | 356-358 | 3x Skeleton | Header + 2 content blocks. |
-| market/MarketStatusExport.tsx | 199-202 | 3x Skeleton | Header + toolbar + content. |
-
-Inline Pagination (prev/next buttons built inline, not via shared `<Pagination>`):
-
-| File | Line | Type | Notes |
-|------|------|------|-------|
-| shared/LiquidityRadarView.tsx | 587-605 | Full prev/next + page counter + count label | 🔴 Inline `setPage(safePage - 1)` / `setPage(safePage + 1)`. Should be `<UnifiedPagination page={} totalPages={} onPageChange={} totalItems={} pageSize={} />`. Uses `ChevronRight`/`ChevronLeft` for RTL. |
-| help/PlatformGuide.tsx | 404-434 | Prev/Next + finish button footer | Different shape (wizard-style with `handlePrev`/`handleNext`/`handleFinish`) — leave as-is, it's a Sheet footer wizard not a data pagination. |
-
-### 5. Duplicate Helpers
-
-🔴 **KEY FINDING**: `src/lib/format.ts` already exports canonical `formatPrice`, `formatNumber`, `formatPercent`, `formatVolume`, `formatDate`, `formatDateTime` — but **ZERO files in `src/components/` import from it**. Every component re-defines its own copy.
-
-| Helper | Files | Recommendation |
-|--------|-------|----------------|
-| `formatPrice` | eid-predictions-widget.tsx:65 (symbol-aware); deal-advisor/DealAdvisorPanel.tsx:168 (ar-EG locale); shared/PredictionCard.tsx:155 (digits param); shared/LiquidityRadarView.tsx:129 (as `fmtPrice`, .toFixed(2) only) | Replace all with `import { formatPrice } from '@/lib/format'`. Note: `format.ts` already supports market param. |
-| `formatPct` / `fmtPct` | deal-advisor/DealAdvisorPanel.tsx:173; shared/PredictionCard.tsx:163 (withSign+digits); shared/LiquidityRadarView.tsx:134; advanced-analysis/SpecialistAnalysisView.tsx:380 (digits=1) | Replace with `formatPercent` from lib/format. NOTE: lib version returns `{text, positive}` not a string — may need a `formatPercentStr()` shim OR refactor callers. |
-| `formatNumber` | zakat/ZakatView.tsx:160; tithes/TithesView.tsx:105; market/MarketStatusImageCard.tsx:62 (digits default 2) | Replace with `formatNumber` from lib/format. |
-| `formatCurrency` | alerts/AlertsCenterView.tsx:81; zakat/ZakatView.tsx:168; tithes/TithesView.tsx:112; intelligence/WatchlistIntelligenceSection.tsx:77; watchlist/EnhancedWatchlistView.tsx:81; watchlist/ProfessionalWatchlistView.tsx:92 | Replace all with `formatPrice(n, market)` (lib/format.ts handles currency suffix). |
-| `formatPercent` | alerts/AlertsCenterView.tsx:92; market/MarketStatusImageCard.tsx:70; intelligence/WatchlistIntelligenceSection.tsx:86; watchlist/EnhancedWatchlistView.tsx:90 | Replace with lib `formatPercent`. |
-| `formatTimeAgo` | alerts/AlertsCenterView.tsx:98 | Single use — leave but move to lib/format.ts for discoverability. |
-| `safeNum` | auto-analysis-widget.tsx:40; advanced-analysis/SpecialistAnalysisView.tsx:356 (returns `number \| null`) | Two slightly different contracts — unify into `lib/utils.ts` (or a new `lib/safe-cast.ts`). |
-| `safeStr` | advanced-analysis/SpecialistAnalysisView.tsx:367 | Single use — leave or move to lib. |
-| `fmtFlow` | shared/LiquidityRadarView.tsx:120 | Single use (K/M formatting). Same as `formatNumber` with abs/sign — could merge. |
-| `fmtNum` | advanced-analysis/SpecialistAnalysisView.tsx:374 | Single use. |
-| `formatDateArabic` | daily-picks/DailyPicksPoster.tsx:60 | Single use — leave or move to lib/format.ts. |
-| `MARKET_FLAGS: Record<MarketType, string>` | market/MarketStatusImageCard.tsx:35 AND market/PredictionsImageCard.tsx:75 | 🔴 IDENTICAL definitions. Move to `lib/market.ts` or `lib/store.ts` next to `MARKET_NAMES_AR`. |
-| `MARKET_CURRENCY: Record<MarketType, string>` | market/MarketStatusImageCard.tsx:44 | Single use; `lib/format.ts` already has the same map inline — extract to lib. |
-| `MARKET_OPTIONS` (code/label/currency array) | shared/LiquidityRadarView.tsx:204 AND layout/TopBar.tsx:73 | 🔴 Two slightly-different shapes (TopBar uses `value`/`label`, LiquidityRadar uses `code`/`label`/`currency`). Unify into a single `MARKET_OPTIONS` export in lib/store.ts. |
-| `MARKET_INDEX_LABEL: Record<MarketType, string>` | market/MarketStatusImageCard.tsx:53 | Single use; consider moving to lib. |
-| `verdictColor`/`verdictLabel` | shared/ExpertIntelligencePanel.tsx:128, 136 | Replace with canonical `SIGNAL_STYLES` lookup. |
-| `getSignalColor`/`getSignalArabic` | seasonality/SeasonalityDashboard.tsx:48, 60 | Replace with canonical SIGNAL map. |
-| `getSignalIcon` | intelligence/WatchlistIntelligenceSection.tsx:92 | Single use — extract to `<SignalIcon signal={s} />`. |
-| `riskColor`/`riskLabelAr` | shared/StockFeelCard.tsx:36, 43 | Extract to lib. |
-| `statusColor` (StockFeel) | shared/StockFeelCard.tsx:28 | Extract to lib (Arabic-string match → Tailwind class). |
-| `classificationBadge`/`actionColor`/`priorityBadge` | deal-advisor/DealAdvisorPanel.tsx:179, 192, 211 | Extract to a `deal-advisor/presets.ts` file. |
-| `PHASE_LABELS`/`PHASE_COLORS` | shared/LiquidityRadarView.tsx:140, 147 | Single use — leave. |
-| `colorMap` (BreakdownRow) | zakat/ZakatView.tsx:986 AND tithes/TithesView.tsx:664 | 🔴 Copy-paste with DIFFERENT keys (zakat: green/emerald/blue/yellow/orange/red; tithes: blue/green/purple/red). Should be a single `BREAKDOWN_COLORS` record keyed by full palette. |
-| `iconMap` (BTC/ETH/EGX 100/COMI/GOLD) | eid-predictions-widget.tsx:44 | Single use — leave. |
-| `signalIcons` (BUY/SELL/HOLD) | eid-predictions-widget.tsx:58 | Replace with shared `<SignalIcon>` that reads from canonical SIGNAL_STYLES. |
-| `riskMap` (Low/Medium/High/Very High → Arabic) | share/ShareButton.tsx:371 | Single use — leave but consider lib. |
-
-### 6. Duplicate Color Maps
-
-| Map | Files | Recommendation |
-|-----|-------|----------------|
-| Signal→color (STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL) | shared/PredictionCard.tsx:115 (`SIGNAL_STYLES` canonical); ai/AIAnalysisWidget.tsx:79 (`SIGNAL_CONFIG`); publishing/QuickPublishButton.tsx:47 (`SIGNAL_OPTIONS` array); seasonality/SeasonalityDashboard.tsx:48 (`getSignalColor` switch); shared/ExpertIntelligencePanel.tsx:128 (`verdictColor` chained) + inline 608-613; v82/V82DecisionPanel.tsx:57 (`ACTION_COLORS` — adds WAIT/AVOID); eid-predictions-widget.tsx:52 (`signalColors` — only BUY/SELL/HOLD) | 🔴 **6 separate copies**. Create `src/lib/signals.ts` exporting `SIGNAL_STYLES: Record<SignalKind, {bg, text, border, icon, labelAr}>` (already started in PredictionCard.tsx — just move it out and re-export). V82 + EID become extended maps with extra keys. |
-| Signal→Arabic label | shared/ExpertIntelligencePanel.tsx:136; seasonality/SeasonalityDashboard.tsx:60; ai/AIAnalysisWidget.tsx:79 (label field); publishing/QuickPublishButton.tsx:47 (label field); shared/PredictionCard.tsx:125 (defaultLabelAr field) | 🔴 **5 copies** of the same Arabic translation record. Should live in lib/signals.ts as `SIGNAL_LABELS_AR`. |
-| Signal→icon (lucide) | eid-predictions-widget.tsx:58 (`signalIcons`); intelligence/WatchlistIntelligenceSection.tsx:92 (`getSignalIcon` chained ifs) | 🔴 Should be a single `<SignalIcon signal={s} size />` shared component (read from canonical SIGNAL_STYLES). |
-| Severity→color (danger/warning/success/info) | alerts/SmartAlertsPanel.tsx:89 (`severityColors`) + 96 (`severityBadgeColors`); alerts/AlertsCenterView.tsx:189 (PortfolioAlertCard local), 251 (MarketAlertCard local), 282 (ObligationAlertCard local), 289 (severityBadge local) | 🔴 **5 copies** in 2 files. Extract `SEVERITY_STYLES: Record<Severity, {container, badge, icon}>` to `alerts/presets.ts`. |
-| Asset-type labels (`typeLabels: Record<string, string>`) | alerts/SmartAlertsPanel.tsx:77 AND alerts/AlertsCenterView.tsx:201 | 🔴 Two copies of the same `stock/crypto/gold/bank/certificate/fund` map. Move to `alerts/presets.ts`. |
-| Market flags/emoji | market/MarketStatusImageCard.tsx:35 + market/PredictionsImageCard.tsx:75 (identical) | 🔴 Move to lib/store.ts (next to MARKET_NAMES_AR). |
-| Market options array | shared/LiquidityRadarView.tsx:204 + layout/TopBar.tsx:73 (different shapes) | 🔴 Unify into lib/store.ts as `MARKET_OPTIONS` with all needed fields. |
-| Breakdown colors (colorMap for BreakdownRow) | zakat/ZakatView.tsx:986 + tithes/TithesView.tsx:664 | 🔴 Different keys, same pattern. Move to a shared `BREAKDOWN_COLORS` keyed by full color palette (red/orange/yellow/green/emerald/blue/purple). |
-| Risk-level color + label | shared/StockFeelCard.tsx:36 (`riskColor`) + 43 (`riskLabelAr`); deal-advisor/DealAdvisorPanel.tsx:211 (`priorityBadge` — high/medium/low → loss/warning/zinc) | 🔴 Two copies of high→loss/medium→warning/low→profit logic. Extract `RISK_LEVEL_STYLES: Record<low/medium/high, {text, bg, labelAr}>` to lib. |
-| Phase color (Arabic phase strings → tailwind) | shared/LiquidityRadarView.tsx:147 (`PHASE_COLORS`) + getPhaseInfo() at 154-185 (10+ inline returns of same classes) | Single file but duplicated internally — refactor `getPhaseInfo()` to look up `PHASE_COLORS` only. |
-| Mood color (صاعد/هابط/متعادل → bg) | shared/ExpertIntelligencePanel.tsx:462-464 (inline ternary) | Extract to `moodColor(mood)`. |
-| Outcome color (TARGET_HIT/STOPPED/PENDING → bg) | market/PredictionsImageCard.tsx:126-143 (`statusOutcome`) | Extract to shared `outcomeStatus(p)` helper for reuse in other tracking cards. |
-| Confidence color (>=0.7→success, >=0.5→warning, <→loss) | eid-predictions-widget.tsx:141; shared/PredictionCard.tsx:352-356; auto-analysis-widget.tsx:138 (eligible binary) | Extract `confidenceColor(pct, thresholds=[0.5,0.7])` helper. |
+KNOWN ISSUES (require owner decision):
+1. **Next.js unstable** (↺ 15 restarts): dev-mode memory leak causes next-server to hit ~2.5GB after compile; sandbox has only 4GB RAM + 0 swap. pm2 auto-restarts it, but cold compile (~34s) happens on every restart. Options: (a) accept instability for dev preview, (b) investigate instrumentation.ts metrics collector (every 15s) as leak source, (c) run in production mode (blocked by Rule 210).
+2. **predictions.db schema drift**: prisma db push would drop 7 columns / 12 rows. Needs owner approval for `--accept-data-loss` OR a migration plan from Bravo.
+3. **GitHub token LEAKED** in chat (ghp_...S4CGtfu). Scrubbed from local .git/config but MUST be revoked at GitHub Settings → Developer settings → Personal access tokens.
+4. **data_engine + ws-service stopped** to conserve RAM. data_engine needs venv setup. ws-service ready to restart.
 
 Stage Summary:
-- Total components audited in scope: **~55 component files** (excluding `src/components/ui/*` shadcn primitives).
-- **Inline `<table>` tables**: 3 (TradingJournalView, SubscriptionView, SpecialistAnalysisView) + 2 flex-row "list-tables" in market/*ImageCard. All could route through `shared/UnifiedTable` (which already supports `columns` config + `emptyText` + pagination).
-- **Cards**: 1 MAJOR duplication (`eid-predictions-widget.tsx` local `PredictionCard` re-implements `shared/PredictionCard.tsx`). Otherwise Cards are domain-specific. ✅ Previous merges (PersonaImageCard/TopTradesImageCard/ExpertPredictionsImageCard as thin re-exports) already consolidated ~900 LOC of prior duplication.
-- **Badge ternary chains**: ~22 instances across 13 files. The biggest win is unifying signal verdict/color (ExpertIntelligencePanel, V82DecisionPanel, SeasonalityDashboard, AIAnalysisWidget, QuickPublishButton, eid-predictions-widget, PredictionCard) into one canonical `lib/signals.ts`.
-- **Inline empty states**: 21 instances across 16 files. `shared/ui/UnifiedEmptyState.tsx` already exists but is only used by 1 file (LiquidityRadarView). Massive adoption opportunity.
-- **Inline skeletons**: 19 instances across 15 files. Could be replaced by a `shared/ui/SkeletonRow.tsx` (rows count + row height) helper.
-- **Inline pagination**: 1 real case (LiquidityRadarView). A `shared/ui/Pagination.tsx` wrapper is overdue — but note `ui/pagination.tsx` (shadcn primitive) already exists and is unused by components/ — adopt it.
-- **Duplicate helpers**: `src/lib/format.ts` already exists with canonical `formatPrice/formatNumber/formatPercent/formatDate/formatDateTime/formatVolume` — **0 components import it**. ~22 local copies across ~14 files. Pure migration work.
-- **Duplicate color maps**: ~6 distinct signal/severity/market/color map families duplicated across 15+ files. Most painful: signal→color/label (6 copies), severity→color (5 copies), market flags/options (2-3 copies), breakdown colorMap (2 copies with divergent keys).
-
-**Top 3 Consolidation Opportunities (by impact)**:
-
-1. **`src/lib/signals.ts` (NEW)** — Export `SIGNAL_STYLES`, `SIGNAL_LABELS_AR`, `SignalKind` type, and a `<SignalBadge signal=…>` + `<SignalIcon signal=…>` pair. Replaces 6 maps + ~10 ternary chains across 7 files (ExpertIntelligencePanel, V82DecisionPanel, SeasonalityDashboard, AIAnalysisWidget, QuickPublishButton, eid-predictions-widget, WatchlistIntelligenceSection). Estimated ~250 LOC removable.
-
-2. **Adopt `src/lib/format.ts` everywhere** — Replace all local `formatPrice`/`formatNumber`/`formatPct`/`formatCurrency`/`formatPercent`/`safeNum` helpers (22+ copies across 14 files) with imports from `@/lib/format`. May require extending lib/format.ts with a `formatPercentStr(n, digits)` shim that returns a string (current `formatPercent` returns `{text, positive}` tuple). Estimated ~120 LOC removable.
-
-3. **Adopt `shared/ui/UnifiedEmptyState.tsx` + add `shared/ui/SkeletonRow.tsx`** — Replace 21 inline empty states + 19 inline skeleton loaders with the canonical component. Add a `<SkeletonRow count={} height="h-24" />` primitive. Estimated ~150 LOC removable + consistent UX.
-
-**Suggested shared component names** (for the implementing agent):
-- `src/lib/signals.ts` — exports `SIGNAL_STYLES`, `SIGNAL_LABELS_AR`, `SignalKind`, `detectSignalKind()`.
-- `src/components/shared/ui/SignalBadge.tsx` — `<SignalBadge signal="BUY" label="شراء" size="sm" />` (replaces eid signalIcons + getSignalIcon + verdictColor).
-- `src/components/shared/ui/SeverityBadge.tsx` — `<SeverityBadge severity="danger" />` (replaces alerts/SmartAlertsPanel + AlertsCenterView copies).
-- `src/components/shared/ui/ConfidenceMeter.tsx` — `<ConfidenceMeter value={0.75} />` (replaces eid + PredictionCard ternaries).
-- `src/components/shared/ui/UnifiedPagination.tsx` — wraps shadcn `ui/pagination.tsx` with RTL `ChevronRight`/`ChevronLeft` + total/`page X of Y` label (replaces LiquidityRadarView inline pagination).
-- `src/components/shared/ui/SkeletonRow.tsx` — `<SkeletonRow count={5} height="h-24" />` (replaces 19 inline skeleton blocks).
-- `src/lib/market-presets.ts` — `MARKET_FLAGS`, `MARKET_CURRENCY`, `MARKET_OPTIONS`, `MARKET_INDEX_LABEL` (replaces 4 scattered copies).
-- `src/lib/risk-presets.ts` — `RISK_LEVEL_STYLES: Record<'low'|'medium'|'high', {text, bg, labelAr}>` (replaces StockFeelCard + DealAdvisorPanel priority).
-
-Read-only audit complete — no code modified.
+- `/home/z/my-project` = GLMinvestment v3.4.41, Next.js 16.1.3, branch main, clean tree.
+- DBs extracted + connected (6 DBs, 485MB).
+- Services running via pm2: nextjs (3000, unstable but functional), vps-service (8010, stable). Stopped: ws-service (3005, ready), data_engine (5000, needs venv).
+- Frontend VERIFIED rendering real Arabic RTL UI with backend data (screenshot + VLM analysis).
+- Token scrubbed locally, MUST be revoked by owner.
 
 ---
-Task ID: AUDIT-4
-Agent: AUDIT-4 (Explore — Design System + Utilities Auditor)
-Task: Audit design system, hooks, state, constants, and API client for duplication.
+Task ID: 2
+Agent: Alpha (main / Z.ai sandbox orchestrator)
+Task: إصلاح 3 مشاكل الـ owner: (1) تسرّب داتا مصرية لأسواق تانية، (2) مفيش auto-change للعملة، (3) مفيش language awareness. ممنوع ملفات جديدة — المكوّنات الموحدة بس.
 
 Work Log:
-- Read worklog.md first (only 1 prior entry: AUDIT-RESTORE-1 — project restored from GitHub).
-- Read `src/app/globals.css` (680 LOC) + `tailwind.config.ts` (107 LOC) + `src/lib/design-tokens.ts` (158 LOC).
-- Grepped `src/` for raw Tailwind color classes (text-*/bg-*/border-* across emerald/green/red/blue/indigo/slate/rose/amber/yellow/orange/cyan/lime/teal).
-- Listed `agent-ctx/` (10 files), `audit-reports/` (10 files + screenshots/), root MD files.
-- Read `STYLE-GUIDE.md` (769 LOC, partial — first 480 lines), `ENGINEERING-CLEANUP-PLAN.md` (51 LOC full), `SCREENS-INVENTORY-FULL.md` (first 120 LOC), `SCREENS-REORG-VISION.md` (first 100 LOC), `audit-reports/00-MASTER-REPORT.md` (80 LOC), `agent-ctx/FULL-AUDIT-REPORT.md` (80 LOC), `audit-reports/team-8-frontend.md` (60 LOC).
-- Grepped `useState` triple pattern: `[Ll]oading] = useState` (126 files / 149 occurrences) ∩ `[Ee]rror] = useState` (59 files) ∩ `[Dd]ata] = useState` (60 files).
-- Verified TanStack Query presence in `package.json` (line 70: `^5.82.0`) and absence of `QueryProvider`/`useQuery`/`useMutation` across `src/`.
-- Grepped `from 'zustand'` (5 stores) and `createContext` (1 app context + 5 shadcn internal).
-- Grepped `const X_MAP` patterns across `src/` — found 7 duplicate `MARKET_MAP` definitions in API routes + `TONE_SOFT`/`TONE_SOLID` defined twice + `MARKET_NAMES_AR` defined twice with conflicting values.
-- Grepped all fetch wrappers in `src/lib/` — found 8 separate fetch-wrapper modules + 420 direct `fetch('/api/...')` calls across 149 files (only 19 imports of the unified `@/lib/api-client`).
+- git pull آخر 4 commits من origin/main (merge commit 3a077b2). الـ commits دي كلها backend (cleanup stored_analyses + ticker validation + docs consolidation). مفيش تعارض مع تعديلاتي.
+- قرأت PLAN-COMPONENT-UNIFICATION.md: الهيكلية 4-tier (Pages → Feature → Shared → UI primitives). المبدأ: activation + migration مش بناء جديد. المكوّنات الموحدة موجودة (MarketSelector, UnifiedTable, UnifiedEmptyState) بس مش متـستخدمة بكثرة.
+- قرأت 00-CONSTITUTION.md: Rule 210 (no bun run build)، Rule 211 (XTransformPort)، Rule 127 (no next.config edit)، Rule 4 (NO-NEW-SCREENS).
+- قرأت src/lib/i18n-context.tsx: نظام i18n cookie-based موجود ومرتب (useTranslation + useLocale + messages/ar|en.json). الـ infrastructure شغالة بس 21 component بس بتستخدمه من ~900. دي migration كبيرة مش تنعمل في مهمة واحدة.
+- قرأت src/lib/store.ts (1573 LOC mega-store): currentMarket (line 659)، displayCurrency (line 776)، setCurrentMarket (line 810). لقيت إن setCurrentMarket بيعمل reload للـ data (loadStocks, loadDashboard, loadV2Recommendations) بس مش بـ sync displayCurrency.
+- تشخيص المشاكل الـ 3:
+  1. تسرّب داتا مصرية: 4 ملفات hardcoded `market=EGX`. بس MorningBellSection اتضح إنه EGX-only بالتصميم (بيـ return early لو marketCode !== 'EGX'). الباقي: DailyMarketReport.tsx + V82DecisionPanel.tsx تسرّب حقيقي.
+  2. مفيش auto-currency: setCurrentMarket مش بـ sync displayCurrency مع السوق الجديد.
+  3. مفيش language awareness: 21 component بس بتستخدم useTranslation من ~900 (infrastructure موجود، migration ناقصة).
+- الإصلاح 1 — src/lib/store.ts (setCurrentMarket): ضفت MARKET_DEFAULT_CURRENCY map (EGX→EGP، TADAWUL→SAR، US/CRYPTO→USD، KSE/QSE→USD fallback). لما السوق يتغير، displayCurrency بتـ sync أوتوماتيكًا + persist لـ localStorage. (+21 سطر)
+- الإصلاح 2 — DailyMarketReport.tsx: استبدلت `{ market: 'EGX' }` بـ `useAppStore.getState().currentMarket` + ضفت useEffect يعيد الـ fetch لما currentMarket يتغير. اتبعت نفس pattern بتاع ReportsView.tsx (line 243). (+11 سطر، import useAppStore)
+- الإصلاح 3 — V82DecisionPanel.tsx: استبدلت `&market=EGX` بـ `&market=${useAppStore.getState().currentMarket}` + ضفت useEffect يعيد التحليل لما currentMarket يتغير. (+11 سطر، import useAppStore)
+- verify: nextjs recompile بعد التعديلات = HTTP 200 في 6.2s (compile نجح بدون syntax errors). ESLint = 0 errors. TypeScript standalone check = errors موجودة قبل كده (module-resolution للـ @/ alias، مش من تعديلاتي).
+- browser verification مستحيل بثبات: nextjs memory leak (dev mode) بيقتل العملية كل ~30-60s. الـ sandbox 4GB RAM + 0 swap مش كافي. pm2 auto-restart شغال بس كل restart بيعمل compile جديد (~30s). الـ code changes verified via successful compile.
 
-Findings:
+Stage Summary:
+- 3 إصلاحات اتعملت في 3 ملفات موجودة (ممنوع ملفات جديدة — احترمت الهيكلية الموحدة).
+- git diff: 3 files، +39 سطر، -4 سطر.
+- الإصلاحات بتتبع نفس pattern الموجود في ReportsView.tsx (useAppStore.getState().currentMarket).
+- المشكلة الـ 3 (language awareness) محتاجة migration تدريجية لـ ~880 component — دي شغل مراحل مش مهمة واحدة. الـ infrastructure (i18n-context + messages) جاهز.
+- nextjs memory leak مش من تعديلاتي — دي مشكلة sandbox infra محتاجة حل منفصل.
 
-### A. Design System
+---
+Task ID: 3
+Agent: Alpha (main / Z.ai sandbox orchestrator)
+Task: تحسين الصفحة الرئيسية — محفظة العميل بجدول مطابق لرادار السيولة + hooks للعميل الجديد (تخفيذية). اتباع توجيهات برافو (لا demo وهمية، track record حقيقي، empty state، PinnableWidget registry).
 
-**A.1 CSS custom properties (from `src/app/globals.css`):**
-
-Light theme (`:root` lines 13-65):
-- Surface: `--radius`, `--background`, `--foreground`, `--card`, `--card-foreground`, `--popover`, `--popover-foreground`
-- Brand: `--primary` (217 91% 40% = blue per owner request), `--primary-foreground`, `--secondary` (178 60% 45%), `--secondary-foreground`, `--accent`, `--accent-foreground`, `--ring`
-- Surface utility: `--muted`, `--muted-foreground`, `--destructive`, `--destructive-foreground`, `--border`, `--input`
-- Chart palette: `--chart-1` through `--chart-5` (emerald/teal/amber/orange/lime)
-- Semantic financial: `--success`, `--success-foreground`, `--warning`, `--warning-foreground`, `--danger`, `--danger-foreground`
-- BLUEPRINT-UNIFIED-SCREENS semantic tokens: `--profit`, `--profit-foreground`, `--loss`, `--loss-foreground`, `--whale`, `--whale-foreground`, `--info`, `--info-foreground`
-- Sidebar: `--sidebar`, `--sidebar-foreground`, `--sidebar-primary`, `--sidebar-primary-foreground`, `--sidebar-accent`, `--sidebar-accent-foreground`, `--sidebar-border`, `--sidebar-ring`
-
-Dark theme (`.dark` lines 70-119): identical token set, dark-tuned values (emerald-tinted dark surfaces — Bloomberg-feel).
-
-**A.2 Tailwind theme extensions (from `tailwind.config.ts` lines 20-103):**
-- `colors`: background, foreground, card, popover, primary, secondary, muted, accent, destructive, success, warning, danger, profit, loss, whale, info, border, input, ring, chart-1..5 (all wired to CSS vars via `hsl(var(--token))`)
-- `borderRadius`: lg=var(--radius), md=calc(var(--radius)-2px), sm=calc(var(--radius)-4px)
-- `fontFamily`: cairo=[Cairo, Tajawal, sans-serif], mono=[JetBrains Mono, Outfit, monospace], sans=[Cairo, Tajawal, system-ui, sans-serif]
-- Plugins: `tailwindcss-animate`
-- `darkMode: 'class'`
-
-**A.3 Hardcoded color usages (count by raw Tailwind palette class):**
-
-| Color pattern | Files | Total Count | Should Be Token |
-|---------------|-------|-------------|------------------|
-| `text-emerald-*` / `text-green-*` / `text-red-*` / `text-blue-*` / `text-indigo-*` / `text-slate-*` | 58 | 606 | YES — `text-profit` / `text-success` / `text-loss` / `text-primary` / `text-muted-foreground` |
-| `bg-emerald-*` / `bg-green-*` / `bg-red-*` / `bg-blue-*` / `bg-slate-*` | 54 | 306 | YES — `bg-profit` / `bg-success` / `bg-loss` / `bg-primary` / `bg-muted` |
-| `border-emerald-*` / `border-green-*` / `border-red-*` / `border-blue-*` / `border-slate-*` / `border-indigo-*` | 41 | 257 | YES — `border-profit` / `border-success` / `border-loss` / `border-primary` / `border-border` |
-| `text-rose-*` / `text-amber-*` / `text-yellow-*` / `text-orange-*` / `text-cyan-*` / `text-lime-*` / `text-teal-*` | 38 | 178 | YES — `text-loss` / `text-warning` / `text-whale` (palette migration map already in `design-tokens.ts:124-157`) |
-
-**Top offender files (ranked by count):**
-1. `src/components/advanced-analysis/SpecialistAnalysisView.tsx` — 41+39+28 = 108 occurrences (largest violator)
-2. `src/modules/stock-analysis/components/StockDetail.tsx` — 72+39+36 = 147 occurrences
-3. `src/modules/dashboard/components/LiveMonitor.tsx` — 41+9+9 = 59 occurrences
-4. `src/app/admin/honest-predictions/page.tsx` — 61+20+8 = 89 occurrences
-5. `src/modules/admin/components/DataEngineTab.tsx` — 38+14+10 = 62 occurrences
-6. `src/components/market/StockLeagueImageCard.tsx` — 40+10+4 = 54 occurrences
-7. `src/modules/education/components/LearningVisuals.tsx` — 19+11+18 = 48 occurrences
-8. `src/modules/reports/components/StockAnalysisReport.tsx` — 45+3+23 = 71 occurrences
-9. `src/modules/radar/components/NetPicksTab.tsx` — 14+5+3 = 22 occurrences
-10. `src/lib/utils.ts` — 15+11+9 = 35 occurrences (the central lib itself violates its own rules)
-
-**Comparison with semantic-token usage:**
-- Raw palette (`text-emerald/green/red/...` + `bg-...` + `border-...`): 1,347 total occurrences across ~120 files
-- Semantic tokens (`text-profit`/`text-loss`/`text-warning`/`text-whale`/`text-info`/`text-success`/`text-danger` + `bg-*` equivalents): 6,221 occurrences across 223+205 = ~228 files
-
-So ~22% of color usages still bypass the design tokens. The migration codemap (`PALETTE_MIGRATION` in `src/lib/design-tokens.ts:124-157`) exists but is **never actually applied** (no codemod script in scripts/ folder uses it — verified by `rg -l PALETTE_MIGRATION`).
-
-**A.4 Design tokens verification (per spec):**
-
-| Token | CSS var defined? | Tailwind color wired? | Status |
-|-------|------------------|----------------------|--------|
-| `text-profit` | YES (`--profit` line 49) | YES (`profit` lines 65-68) | ✅ PASS |
-| `text-loss` | YES (`--loss` line 51) | YES (`loss` lines 69-72) | ✅ PASS |
-| `text-warning` | YES (`--warning` line 44) | YES (`warning` lines 57-60) | ✅ PASS |
-| `text-whale` | YES (`--whale` line 53) | YES (`whale` lines 73-76) | ✅ PASS |
-| `text-info` | YES (`--info` line 55) | YES (`info` lines 78-81) | ✅ PASS |
-| `bg-profit` | (same token) | (same wiring) | ✅ PASS |
-| `bg-loss` | (same token) | (same wiring) | ✅ PASS |
-| `bg-warning` | (same token) | (same wiring) | ✅ PASS |
-| `bg-whale` | (same token) | (same wiring) | ✅ PASS |
-| `bg-info` | (same token) | (same wiring) | ✅ PASS |
-
-All required tokens are properly defined in both `globals.css` and `tailwind.config.ts`. **The infrastructure is solid — the migration is incomplete.** The bottleneck is enforcement, not definition.
-
-### B. Existing Architecture Documentation
-
-**B.1 `agent-ctx/` files (10 total):**
-- `FRONTEND-CLEANUP-A-2-alpha.md` — frontend cleanup plan
-- `CLEANUP-PLAN-ALPHA-BRAVO.md` — alpha/bravo phase plan
-- `FRONTEND-DATA-INTEGRITY-A-1-alpha.md` + `.appendix` — frontend data integrity
-- `FULL-AUDIT-REPORT.md` — John's full audit (189 LOC, 8 duplication cases documented)
-- `STOCKS-DEDUP-A-1-bravo.md` — stocks dedup
-- `ALPHA-UX-FIX-1-scenario.md` — UX fix scenario
-- `DATA-ENGINE-UNIFY-1-john.md` — data engine unification
-- `ALPHA-CHART-MERGE-1.md` + `ALPHA-CHART-MERGE-1-alpha.md` — chart merge (duplicate file pair!)
-
-**B.2 `audit-reports/` files (10 reports + screenshots/):**
-- `00-MASTER-REPORT.md` (287 LOC) — unified audit from 9 teams dated 2026-10-09
-- `team-1-ux.md` (UX: Auth broken — NEXTAUTH_SECRET missing)
-- `team-2-db.md` (DB: 6 duplicate table pairs + 27 orphaned)
-- `team-3-engineering.md` (Eng: IDOR + 272 routes without auth)
-- `team-4-education.md` (Edu: 3 parallel systems)
-- `team-5-telegram.md` (Telegram: no retry logic)
-- `team-6-news.md` (News: 0 EGX news, dormant)
-- `team-7-multi-market.md` (Multi-market: SQL injection in /api/maker-radar)
-- `team-8-frontend.md` (Frontend: 19 god components >2000 LOC + 125 forbidden colors)
-- `team-9-integration.md` (Integration: prediction pipeline stalled 3+ months)
-- `screenshots/` (4 PNGs — login-default, mobile-375x812, dark-mode-login, 404)
-
-**B.3 `STYLE-GUIDE.md` summary:**
-Comprehensive 769-LOC bilingual (Arabic/English) style guide authored 2026-10-12 by سارة (UX designer, 28) + عم رشاد (retired bank VP, 62). Establishes 4-pair consensus: (1) single-source-of-truth from `globals.css` tokens — no hardcoded hex/direct palette allowed; (2) emerald+cyan Bloomberg-terminal palette in dark, Stripe-clean in light; (3) mandatory 4/8 spacing grid + 11px-24px typography scale + 3 radius values only (`rounded-md`/`rounded-lg`/`rounded-full`, `rounded-xl` forbidden); (4) forbidden colors explicitly listed (blue/indigo/sky/cyan/slate/gray/zinc/emerald/green/red/amber direct + purple/pink/rose/fuchsia). Documents 1,649 instances of redundant `dark:text-X dark:bg-X` no-op overrides (anti-pattern signaling distrust of token system). Lists 9 specific P0/P1 component fixes (DashboardView `{rr}` bug, `border-r-blue-500` on Buy signal, `text-slate-600` in TopBar, `<details>` native element, emoji-in-badges, etc.).
-
-**B.4 `ENGINEERING-CLEANUP-PLAN.md` summary:**
-51-LOC architecture remediation plan dated 2026-10-XX under task FRONTEND-CLEANUP-A-2. Documents three core problems: (1) **174+ files use direct palette** (`text-emerald-600` / `text-red-500` / `text-amber-500` instead of semantic tokens) — top offenders: admin (35), market-analysis (21), dashboard (21), stock-analysis (15); (2) **`lib/` overflow** — 94 flat files in `src/lib/` with no subfolders (admin-auth + ad-card-generator + api-client + canonical-signal all at same level); (3) **duplicate component locations** — `components/auth/` + `modules/auth/components/` and `components/subscription/` + `modules/subscription/components/`. Proposes 4-phase plan: Phase A (codemod direct palette → tokens), Phase B (reorganize lib/ into subfolders: lib/admin/, lib/data/, lib/format/, lib/auth/), Phase C (audit dead/orphaned code), Phase D (final verification — lint+tsc+browser+push). Closing rule: no new components outside `shared/ui/`; barrel exports from `shared/ui/index.ts`.
-
-**B.5 `SCREENS-INVENTORY-FULL.md` summary:**
-304-LOC full inventory of every screen/view in the platform — 55 `case` branches in `renderView()` switch (page.tsx lines 548-804) → 40 distinct rendered components → 28 canonical screens. Organized into 5 portals (Dashboard/Market/Recommendations/Portfolio/More) + 11 crypto route mirrors (UI-Mirror Protocol — most `#crypto-*` routes render the same component as their stock counterpart with `setCurrentMarket('CRYPTO')`). Includes detailed table of archived screens under `archive/*` (A1-A12+): LearningView, CryptoSimulationView, AIView, FloatingAssistant/AIAssistantChat, PicksManagementView, DevilsAdvocatePanel, CryptoScreenerView, CryptoTradingChartView, CryptoAdvancedAnalysisView, CryptoLearningView, CryptoAdditionalViews. Source of truth: `src/app/page.tsx` `renderView()` switch + `src/lib/valid-views.ts` + multiple `archive/*-2026-10-XX/` folders.
-
-**B.6 `SCREENS-REORG-VISION.md` summary:**
-497-LOC client-focused research-only vision document (no code changes) authored by سارة + عم رشاد 2026-10-XX. Diagnoses that the desktop TopBar exposes only 5 of 12 daily-use analysis screens (specialist-analysis, unified-analysis, smart-confluence, V82, dual-track, seasonality, reports, backtesting, trading-journal, trading-memory, bagholder-rescue, rescue-page) — users must memorize URLs to reach them. Identifies that InvestorsFlowPanel was removed from Dashboard and is now only reachable via `#market-depth` which is itself not in TopBar/MobileNav/MobileMoreSheet. Proposes: (1) 5-icon MobileNav swap: replace `liquidity-radar` with `market-depth` (institutional vs investor flow); (2) 6-portal desktop TopBar with new "التعليم (education)" portal separating academy+simulation per owner's explicit request; (3) consolidation of 5 stock-analysis screens (SpecialistAnalysis / UnifiedAnalysis / SmartConfluence / V82 / TradingChart) into a single canonical "stock analysis" experience with sub-tabs.
-
-### C. Shared Hook / State Duplication
-
-**C.1 Components with `loading + error + data` triple:**
-
-- Files with `[Ll]oading] = useState`: **126 files / 149 occurrences**
-- Files with `[Ee]rror] = useState`: **59 files / 68 occurrences**
-- Files with `[Dd]ata] = useState`: **60 files / 63 occurrences**
-- Files with all three (loading ∩ error ∩ data): **34 files**
-
-Full list of 34 files with the triple (these are ALL TanStack Query candidates):
-1. `src/components/deal-advisor/DealAdvisorPanel.tsx`
-2. `src/components/intelligence/WatchlistIntelligenceSection.tsx`
-3. `src/components/shared/LiquidityRadarView.tsx`
-4. `src/modules/admin/components/EnginesStatusTab.tsx`
-5. `src/modules/admin/components/ProcessResourceHistory.tsx`
-6. `src/modules/admin/components/ResourceAlerts.tsx`
-7. `src/modules/admin/components/ResourceHistoryChart.tsx`
-8. `src/modules/admin/components/platform-performance/PlatformPerformanceView.tsx`
-9. `src/modules/dashboard/components/IntradayPressurePanel.tsx`
-10. `src/modules/dashboard/components/InvestorsFlowPanel.tsx`
-11. `src/modules/dashboard/components/LiquidityFlowPanel.tsx`
-12. `src/modules/dashboard/components/LiveMonitor.tsx`
-13. `src/modules/dashboard/components/MarketPulseWidget.tsx`
-14. `src/modules/market-analysis/components/CryptoPredictionsTab.tsx`
-15. `src/modules/market-analysis/components/HistoricalTradesTable.tsx`
-16. `src/modules/market-analysis/components/LearnedLessonsDashboard.tsx`
-17. `src/modules/market-analysis/components/MarketDepthLiquidityWidget.tsx`
-18. `src/modules/market-analysis/components/SectorTrackingTab.tsx`
-19. `src/modules/market-analysis/components/SingleStockAnalysisView.tsx`
-20. `src/modules/market-analysis/components/TradingChartView.tsx`
-21. `src/modules/news/components/NewsFeedView.tsx`
-22. `src/modules/predictions/components/MakerRadarTab.tsx` (3 separate triples in one 3,819-LOC file)
-23. `src/modules/predictions/components/PredictionTrackingDashboard.tsx`
-24. `src/modules/publishing/components/TradeResultsGenerator.tsx`
-25. `src/modules/radar/components/AccuracyDashboard.tsx`
-26. `src/modules/radar/components/CompanyFundamentalsCard.tsx`
-27. `src/modules/radar/components/ExitRadarTab.tsx`
-28. `src/modules/radar/components/MultiMarketRadarTab.tsx`
-29. `src/modules/radar/components/PersonalizedRadarTab.tsx`
-30. `src/modules/radar/components/RadarStatsCards.tsx` (4 triples)
-31. `src/modules/radar/components/WeeklyReportTab.tsx`
-32. `src/modules/screener/components/StockScreenerAdvanced.tsx` (2 triples in one 2,517-LOC file)
-33. `src/modules/sharia/components/ShariaView.tsx` (4 triples in one 1,490-LOC file)
-34. `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx`
-
-Notable: `EnhancedPortfolioView.tsx` has 6 separate `[loading, setLoading]` declarations (one per sub-tab), `ShariaView.tsx` has 4, `TelegramTab.tsx` has 5, `MakerRadarTab.tsx` has 3, `RadarStatsCards.tsx` has 4. Each is a self-contained fetch+render cycle that should be a `useQuery({ queryKey, queryFn })` call.
-
-**C.2 TanStack Query installed?**
-YES — `@tanstack/react-query` version `^5.82.0` is in `package.json` line 70 (also `@tanstack/react-table` ^8.21.3 at line 71 for table state management).
-
-**C.3 QueryProvider in layout?**
-NO — **CRITICAL GAP**. Verified:
-- `src/app/layout.tsx` line 7 imports `Providers` from `@/components/Providers`
-- `src/components/Providers.tsx` (94 LOC) wraps children in `SessionProvider` → `I18nProvider` → `ThemeProvider` (next-themes) → `SessionExpiredModal`
-- **No `QueryClientProvider` is mounted anywhere in the tree**
-- `rg 'QueryProvider|QueryClient' src/` → **0 matches**
-- `rg "from ['\"]/z/my-project/src" '@tanstack/react-query''` → **0 imports of the package**
-- `rg 'useQuery|useMutation|QueryClient' src/` → **0 matches**
-
-So the package is paid-for in `package.json` but never wired in. ~126 components with hand-rolled loading/error/data state machines could be replaced by `useQuery` calls.
-
-### D. State Management Duplication
-
-**D.1 Zustand stores (5 total):**
-
-| Store | File | LOC | Purpose |
-|-------|------|-----|---------|
-| `useAppStore` | `src/lib/store.ts:794` | 1,573 (file) | Mega-store: navigation (currentView, selectedTicker, currentMarket, sidebarOpen, chartPreference), auth (user, apiKey, authChecked, isAuthenticated, showLoginPrompt, requireAuth()), data (marketOverview, stocks, watchlist, **notifications**, v2Data, persona, etc.), CRUD (addToWatchlist, addToPortfolio, removeFromPortfolio), UI (isLoading, activeMobileTab, displayCurrency, usdRate, sarRate), personalization (assetPreference, pinnedWidgets, riskToleranceScore, riskProfilerCompleted), dealAdvisorPrefill. |
-| `useAlertsStore` | `src/lib/alerts-store.ts:61` | 205 | Real-time price & score alerts (persisted to localStorage): 7 alert types (price_above/below, score_above/below, pine_golden/deadcat/divergence), soundEnabled, notificationsEnabled, recentlyFired. |
-| `usePortfolioStore` | `src/lib/portfolio-store.ts:89` | 196 | Unified portfolio store (Task P30-8): assets, goldPrices, totalInvested, totalCurrentValue, totalProfitLoss, masterSummary, subPortfolios, realReturnSummary, net-worth math (grossAssetsEgp, totalObligationsEgp, netWorthEgp). |
-| `useNotificationStore` | `src/lib/notification-store.ts:22` | 102 | Notifications array + unreadCount + isOpen + addNotification/markAsRead/clearNotifications. |
-| `useAnalysisStore` | `src/lib/analysis-store.ts:37` | 62 | Analysis cache (P14): stocks, predictions, closedPredictions, storedAnalysis, lastFetched, market, isFetching, **liveMode** (shared polling switch). |
-
-**D.2 React Contexts (6 total — only 1 app-level):**
-
-| Context | File | Purpose | Type |
-|---------|------|---------|------|
-| `I18nContext` | `src/lib/i18n-context.tsx:48` | Cookie-based i18n (NEXT_LOCALE), `useTranslation()` | App-level (mounted in Providers.tsx:81) |
-| `CarouselContext` | `src/components/ui/carousel.tsx:33` | shadcn carousel state | shadcn internal |
-| `ChartContext` | `src/components/ui/chart.tsx:25` | shadcn chart config | shadcn internal |
-| `ToggleGroupContext` | `src/components/ui/toggle-group.tsx:10` | shadcn toggle group | shadcn internal |
-| `FormFieldContext` | `src/components/ui/form.tsx:28` | shadcn form field | shadcn internal |
-| `FormItemContext` | `src/components/ui/form.tsx:72` | shadcn form item | shadcn internal |
-| `SidebarContext` | `src/components/ui/sidebar.tsx:45` | shadcn sidebar | shadcn internal |
-
-**D.3 Overlap — YES, multiple overlaps confirmed:**
-
-1. **`notifications` is stored in TWO places:**
-   - `useAppStore.notifications: Notification[]` (`src/lib/store.ts:722`) — written by `useAppStore.loadAiInsights()` and CRUD actions
-   - `useNotificationStore.notifications: Notification[]` (`src/lib/notification-store.ts:7`) — written by `addNotification`, `setNotifications`, `markAsRead`
-   The two arrays are not synchronized — risk of one being stale while the other is fresh.
-
-2. **`stocks` is stored in TWO places:**
-   - `useAppStore.stocks: Stock[]` + `useAppStore.loadStocks(query, page)` (`src/lib/store.ts:711, 736`)
-   - `useAnalysisStore.stocks: Record<string, unknown>[] | null` + `setStocks()` (`src/lib/analysis-store.ts:8, 28`)
-   Both fetch the same `/api/stocks` endpoint. Market-analysis tabs use `useAnalysisStore`, while dashboard/stock-analysis use `useAppStore`. Inconsistency in which screen reads from which store.
-
-3. **Portfolio state is split THREE ways:**
-   - `useAppStore.loadPortfolio()`, `useAppStore.addToPortfolio()`, `useAppStore.removeFromPortfolio()`, `useAppStore.updatePortfolioItem()` (`src/lib/store.ts:744-757`)
-   - `usePortfolioStore` (the supposed single source of truth per its own header comment lines 8-19)
-   - `useAppStore.portfolioImpact: PortfolioImpactResponse | null` (`src/lib/store.ts:719`) — separate cached portfolio impact data
-
-4. **`isLoading` is overloaded:**
-   - `useAppStore.isLoading` (UI state — line 761)
-   - `useAppStore.v2Loading` (recommendations — line 726)
-   - `useAppStore.stockNewsLoading` (line 724)
-   - `useAppStore.egxPilotNewsLoading` (line 731)
-   - `usePortfolioStore.isLoading` (line 79)
-   - `useAnalysisStore.isFetching` (line 17)
-   - Plus 126 component-local `[loading, setLoading]` useState declarations (see C.1)
-
-### E. Constants / Maps Duplication
-
-| Constant | Defined In (files) | Should Be In |
-|----------|-------------------|--------------|
-| `MARKET_MAP: Record<string, string>` (EGX/TADAWUL/KSA→TADAWUL/KSE/QSE/US) | `src/app/api/predictions/daily-picks/route.ts:26`, `src/app/api/predictions/active-management/route.ts:22`, `src/app/api/stocks/top-performers/route.ts:18`, `src/app/api/screener/advanced/route.ts:40`, `src/app/api/stored-analysis/results/route.ts:26` (5 identical copies) + `src/app/api/expert-recommendations/route.ts:52` (slightly different) + `src/app/api/stocks/search/route.ts:6` (Arabic names variant) | **`src/lib/market-constants.ts`** — single shared export. The 5 identical copies should be deleted and the file imports the canonical map. |
-| `MARKET_NAMES_AR` (Arabic market display names) | `src/lib/store.ts:589` (Record<MarketType, string>, TADAWUL='السوق السعودي') + `src/lib/market-data-access.ts:394` (Record<string, string>, TADAWUL='تداول السعودية') | **`src/lib/store.ts`** is canonical — `market-data-access.ts` should re-export from store.ts, NOT redefine. The TADAWUL translation is currently inconsistent across files (`السوق السعودي` vs `تداول السعودية`). |
-| `MARKET_CODES` (frontend → backend market code map, TADAWUL→KSA) | `src/lib/store.ts:599` (canonical Record<MarketType, string>) | Already single-source — but the 5-7 duplicate `MARKET_MAP` constants in API routes essentially reimplement the reverse mapping (KSA→TADAWUL). The API routes should import from store or a shared `MARKET_ALIASES` (which already exists in `src/lib/market-data-access.ts:403` with full alias coverage). |
-| `MARKET_ALIASES` (full alias map including SAUDI/KUWAIT/QATAR/NYSE/NASDAQ/etc.) | `src/lib/market-data-access.ts:403` (single definition) | Already canonical — the 7 `MARKET_MAP` constants could be replaced by `MARKET_ALIASES[m] || m`. |
-| `MARKET_CURRENCY_LABEL` (EGP/ريال/د.ك/ر.ق/$/$) | `src/lib/store.ts:609` (single) | Already canonical. |
-| `MarketType` (TS union type) | `src/lib/store.ts:586` (`'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'US' | 'CRYPTO'`) | Already canonical — imported by 14 files. |
-| `MARKETS` (array) | `src/modules/dashboard/components/MultiMarketWidget.tsx:15`, `src/modules/admin/components/DataScraperControl.tsx:43`, `src/components/about/AboutView.tsx:35`, `src/app/api/v2/unified/config/route.ts:103` (4 separate definitions) | Should be `src/lib/market-constants.ts` exporting `ALL_MARKETS: MarketType[]`. |
-| `SUPPORTED_MARKETS` (array/set) | `src/app/api/market/regime/route.ts:37`, `src/app/api/maker-radar/multi-market/route.ts:60` (2 different sets — one includes GOLD, the other includes more) | Same as above — should use the canonical `ALL_MARKETS` plus optional GOLD extension. |
-| `validMarkets` (inline literal array in route body) | `src/app/api/subscription/plans/route.ts:30` (lowercase variants `'egx','tadawul','kse','qse','us','crypto','gold','all'`) | Should reuse canonical `ALL_MARKETS` + lowercase-normalized helper. |
-| `TONE_SOFT` (semantic tone → soft badge classes) | `src/lib/design-tokens.ts:84` (canonical — 8 keys: success, warning, danger, profit, loss, whale, muted, primary) + `src/components/shared/ui/SignalBadge.tsx:50` (duplicate — 4 keys only: profit, loss, warning, muted) | **`src/lib/design-tokens.ts`** — SignalBadge should import `TONE_SOFT` from design-tokens. The SignalBadge version omits success/danger/whale/primary AND uses `bg-profit/10` while design-tokens uses `bg-success/10` for the `success` key (subtle inconsistency). |
-| `TONE_SOLID` (semantic tone → solid badge classes) | `src/lib/design-tokens.ts:96` (canonical — 8 keys) + `src/components/shared/ui/SignalBadge.tsx:57` (duplicate — 4 keys only) | Same as TONE_SOFT — SignalBadge should import from design-tokens. |
-| `SECTOR_ARABIC_MAP` (sector code → Arabic label) | `src/modules/market-analysis/components/SectorTrackingTab.tsx:108` (single definition, 2 uses in same file) | Local to one component — but should be in `src/lib/sector-constants.ts` since other sector-related screens (StocksView, StockDetail, screener) likely need the same map. |
-| `SECTOR_COLOR_MAP` (sector → tailwind color class) | `src/modules/stock-analysis/components/StocksView.tsx:247` (single definition) | **CRITICAL**: this map hardcodes raw palette classes (`bg-slate-100`, etc.) — should be migrated to use design tokens and centralized. |
-| `SECTOR_FALLBACK_COLOR` | `src/modules/stock-analysis/components/StocksView.tsx:272` (`'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'` — violates design system) | Should be `'bg-muted text-muted-foreground border-border'` and centralized. |
-| `INDEX_COLOR_MAP` (^DJI accent colors) | `src/modules/dashboard/components/IndexCards.tsx:21` (uses `bg-indigo-500`/`text-indigo-600` — violates Rule 30: no blue/indigo) | Should use `bg-primary`/`text-primary` and be centralized. |
-| `PERSONAS` (persona selector config) | `src/components/persona/PersonaSelector.tsx:26` (stub: `const PERSONAS = [{id:'balanced',name:'المتوازن',emoji:'⚖️'}]` — only one persona) + `src/app/api/v2/unified/config/route.ts:35` (different shape) + `src/app/api/unified/route.ts:177` (`personaMap` inline) | Should be `src/lib/persona-config.ts` exporting canonical `PERSONAS: Persona[]`. PersonaSelector stub looks broken (only balanced, hardcoded `getWarningMessage=()=>''`). |
-| `PERSONA_MAP` (string → backend code) | `src/app/api/unified/route.ts:177` (inline `personaMap: Record<string,string>`) | Should be in same persona-config.ts. |
-
-### F. API Client / Fetch Wrappers
-
-**F.1 Existing fetch wrappers (8 separate modules in `src/lib/` + 1 in `src/modules/reports/lib/`):**
-
-| Module | Purpose | Exported functions |
-|--------|---------|-------------------|
-| `src/lib/api-client.ts` (283 LOC) | **Client-side unified fetch layer** — wraps `/api/*` calls with timeout/auth/retry/paywall-event-dispatch. Canonical response `{success, source, data, meta}`. | `apiFetch<T>()`, `apiGet<T>()`, `apiPost<T>()`, `apiClient` object (11 methods: getMarketOverview, getAiInsights, getStocks, getStock, getStockHistory, getStockRecommendation, getStockNews, getEgxPilotNews, getProfessionalAnalysis) |
-| `src/lib/python-backend.ts` (161 LOC) | Server-side Python backend URL config + fetch helper. | `PYTHON_BACKEND_URL`, `pythonApiUrl()`, `pythonFetch<T>()`, `checkPythonBackendHealth()` |
-| `src/lib/vps-adapter.ts` (~700+ LOC) | Server-side VPS adapter (FastAPI on Hostinger) | `fetchStockQuote()`, `fetchStockHistory()`, `fetchBatchQuotes()`, `fetchMarketOverview()`, `fetchPremiumAnalysis()`, `fetchFundamentals()`, `fetchFinancials()`, `fetchTechnicalAnalysis()`, `fetchDataStats()`, `fetchAllStocks()` (10 functions) |
-| `src/lib/egxpy-bridge.ts` (~500+ LOC) | Server-side EGX Python bridge (egxpy service) | `fetchQuote()`, `fetchHistory()`, `fetchBatchQuotes()`, `fetchAllStocks()`, `fetchIndices()`, `fetchGoldPrices()`, `fetchDbStock()`, `fetchAllActiveTickers()` (8 functions) |
-| `src/lib/multi-source-adapter.ts` (~950+ LOC) | Multi-source data adapter (orchastrates vps + egxpy + DB) | `fetchStockQuote()`, `fetchAllStocks()`, `fetchHistoricalPrices()`, `fetchGoldPrices()`, `fetchCurrencyRates()` (5 functions) |
-| `src/lib/data-adapter.ts` (~850+ LOC) | Unified stock data adapter (normalizes from multiple sources) | `fetchStockData()`, `fetchHistoricalData()` (2 functions) — exports `UnifiedStockData` type |
-| `src/lib/market-data-access.ts` (780 LOC) | Market data access layer (Yahoo + general) | `fetchMarketIndices()` + cache helpers + `MARKET_NAMES_AR` + `MARKET_ALIASES` (duplicating store.ts) |
-| `src/modules/reports/lib/proxy-client.ts` (~290 LOC) | Reports proxy client | `fetchDailyReport()`, `fetchWeeklyReport()`, `fetchMonthlyReport()` (3 functions) |
-
-Plus 4 separate `StockQuote`-shaped types: `EgxpyQuote` (`egxpy-bridge.ts:188`), `StockQuote` (`multi-source-adapter.ts:75`), `VpsStockQuote` (`vps-adapter.ts:27`), `UnifiedStockData` (`data-adapter.ts:46`). The "Unified" type exists but each adapter still exports its own type — callers must convert.
-
-**F.2 Direct `fetch('/api/...')` calls (bypassing the unified layer):**
-- **420 total occurrences across 149 files** (`rg -c "fetch\(.\?/api/" src/` → sum=420)
-- For comparison, **only 19 imports of `@/lib/api-client`** across just 6 files (`rg -l "from ['\"]@/lib/api-client['\"]"`):
-  - `src/lib/store.ts`
-  - `src/components/auth/PaywallListener.tsx`
-  - `src/modules/reports/lib/proxy-client.ts`
-  - `src/modules/reports/components/DailyMarketReport.tsx`
-  - `src/modules/reports/components/ReportsView.tsx`
-  - `src/modules/reports/components/StockAnalysisReport.tsx`
-
-That means **only 4% of files doing API calls use the unified client**. The other 96% bypass it entirely and roll their own `fetch()` with manual `useState<loading>` + `useState<error>` + `useState<data>` triples (see C.1).
-
-**F.3 Recommendation — consolidate to 3 layers:**
-
-1. **Client-side unified fetch** — keep `src/lib/api-client.ts` as the single entry point. Wire `QueryClientProvider` in `src/components/Providers.tsx` (between `I18nProvider` and `ThemeProvider`). Replace the 34 component-level loading/error/data triples with `useQuery({ queryKey, queryFn: () => apiGet('/api/...') })`. This eliminates ~126 useState declarations and gives free caching, dedup, and background refetch.
-
-2. **Server-side Python proxy** — collapse `python-backend.ts` + `vps-adapter.ts` + `egxpy-bridge.ts` + `multi-source-adapter.ts` + `data-adapter.ts` + `market-data-access.ts` into a single `src/lib/server-data/index.ts` with subfolders (`/python`, `/vps`, `/egxpy`, `/multi-source`). Each adapter keeps its own low-level fetch but exposes a single `StockQuote`/`UnifiedStockData` type (delete EgxpyQuote, VpsStockQuote, StockQuote — keep only UnifiedStockData). Use the **adapter pattern** so callers see one interface regardless of source.
-
-3. **Reports proxy** — `src/modules/reports/lib/proxy-client.ts` can be folded into the server-data layer since it just calls a Python proxy.
+Work Log:
+- قرأت LiveMonitor.tsx (1357 LOC): موجود PortfolioMonitor بـ UnifiedTable فيها 8 أعمدة (النوع/الاسم/الكمية/سعر الشراء/السعر الحي/القيمة الحالية/الربح/%). ناقص القطاع + التغيّر اليومي.
+- قرأت LiquidityFlowPanel.tsx: أعمدة رادار السيولة = القطاع/السيولة/الحجم/أسهم/التغيّر %/التدفّق.
+- قرأت /api/live-monitor/route.ts: getPortfolioSummary() بـ query stocks.db لـ ticker + current_price بس — ناقص sector + previous_close.
+- البند 1 (جدول المحفظة): عدّلت /api/live-monitor/route.ts — أضفت sector + previous_close لـ SQL query + حساب change_percent (daily vs previous close) + إرجاع sector + change_percent في كل item. عدّلت LiveMonitor.tsx — أضفت عمود القطاع (بعد الاسم) + عمود التغيّر اليومي "اليوم %" (بعد السعر الحي) بـ color-coded (profit/loss). (+27 سطر في route، +30 سطر في component).
+- البند 4 (Empty state): عدّلت PortfolioMonitor في LiveMonitor.tsx — لما items_count=0، أعرض UnifiedEmptyState ("محفظتك فاضية — ابدأ المتابعة") + اقتراح 3 أسهم من data.gainers (بيانات حقيقية، صفر mock — Rule 27 SAFE) + CTA يـ route لـ #stock-detail. (+60 سطر).
+- البند 2 ("لو كنت مالك السهم"): أنشأت OpportunityCalculatorWidget.tsx — حاسبة فرصة ببيانات حقيقية من marketOverview.gainers. بيعرض top 3 gainers + "لو كنت مالك 100 سهم، كنت كسبت X ج.م" (quantity افتراضية واضحة، مش ادعاء ملكية). CTA "ابدأ محفظتك الحقيقية مجانًا" لـ #auth (guest فقط). Rule 27 SAFE — disclaimer واضح. (164 سطر، file جديد في modules/dashboard/components/ — المكان الصحيح للـ dashboard widgets).
+- البند 3 Hook 1 (Track record): أنشأت TrackRecordWidget.tsx — بيـ fetch من /api/predictions/honest-tracking/live-tracking?market=X&days=7. بيعرض summary tiles (ناجحة/خاسرة/معدّل مكسب) + top 3 predictions (wins AND losses — بناء الثقة) + CTA "شوف كل التوقعات بالأدلة". Skeleton loaders للـ FCP. Honest state لو مفيش data. (175 سطر).
+- سجّلت الـ widgets الجديدة في PinnableWidget registry في DashboardView.tsx (id: 'track-record' + id: 'opportunity-calculator') — Rule 52 compliance، قابلة للـ pin/unpin زي باقي الـ widgets.
+- verify: nextjs recompile بعد كل التعديلات = HTTP 200 في 35s (compile نجح بدون syntax errors). 
+- browser verification مستحيل بثبات: nextjs memory leak (dev mode) بـ recompile + client hydration بياخد وقت طويل تحت memory pressure. الـ VLM شاف loading screen بس (nextjs بيعيد compile بعد كل restart). الـ code compile-verified.
+- git diff stat: 5 files changed (route.ts + LiveMonitor.tsx + DashboardView.tsx + 2 widgets جديدة)، ~540 سطر إضافي.
 
 Stage Summary:
 
@@ -7092,4 +6655,4 @@ Task: محسن: "انت لازم تعمل جرد لكل مكان بيستخدم 
 الـ message المتأخرة:
 الرسالة اللي بعتها محسن متاريخة 25 أكتوبر (الأحد القادم).
 دي رسالة مستقبلية مجدولة من الـ auto_post_scheduler.py.
-حتى لو وقّفنا الـ telegram-poster دلوقتي, الرسالة دي هتبعت الأحد.
+حتى لو وقّفنا الـ telegram-poster دلوقتي, الرسالة دي هتبعت الأحد. (docs(worklog): تحديث worklog بـ Task 2 + Task 3 + حفظ GLM team history)
