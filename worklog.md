@@ -6786,3 +6786,73 @@ Push: commit `04201002` (بعد rebase فوق commits `03a6bfc7..50e9d8a9`).
 3. pm2 restart nextjs (عشان الـ frontend changes تتفعّل)
 4. انتظر cron يجدد الـ cache (أو شغّل يدوي: python3 scripts/maker_radar.py --market EGX --limit 0 --json-only)
 5. راقب https://invist.m2y.net/#liquidity-radar — المفروض يعرض 20+ سهم بدل 7
+
+---
+Task ID: RADAR-PREDICTIONS-CONNECTION-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن سأل: "هل الشغل اللي اتعمل في الرادار بيأثر في قرارات اختيار التوقعات؟"
+
+الإجابة: **آه، بيأثر بشكل مباشر وقوي.**
+
+الـ connection بين maker_radar و daily_predictor:
+
+🔴 **الـ Whale Radar Integrator (WHALE_RADAR)** في `daily_predictor.py` (lines 683-988):
+- daily_predictor بياخد الـ output من maker_radar.py.
+- بقرا `maker_radar_EGX_YYYYMMDD.json`.
+- بيعمل filter بـ 4 معايير صارمة:
+  1. path = 'B_quiet_accumulation_strong' (quiet accumulation)
+  2. signal_count >= 5/6
+  3. avg_turnover_20d >= 10M EGP
+  4. distribution_flag = false (no whale distribution)
+- الأسهم اللي بتمر → بيتولّد ليها توقع بـ signal='WHALE_RADAR_BUY'.
+
+🔴 **المشكلة اللي اكتشفتها:**
+- daily_predictor بيقرا `avg_turnover_20d` (line 755).
+- بس الـ tickers اللي شفتها في الـ output:
+  - HCFI: turnover=264,285 (0.26M) — **مش هيعدّي الـ 10M filter**
+  - ABUK: turnover=73,614,871 (73.6M) — هيعدّي ✅
+  - GPIM: turnover=24,350,866 (24.35M) — هيعدّي ✅
+  - ELNA: turnover=212,055 (0.21M) — **مش هيعدّي**
+  - CPME: turnover=4,034,792 (4.03M) — **مش هيعدّي**
+  - FCMD: turnover=26,569,585 (26.57M) — هيعدّي ✅
+  - ANFI: turnover=977,727 (0.98M) — **مش هيعدّي**
+  - EGS: turnover=2,838,938 (2.84M) — **مش هيعدّي**
+  - MKIT: turnover=396,025 (0.40M) — **مش هيعدّي**
+
+**بس انتظر** — الـ turnover اللي ظاهر ده `avg_turnover_20d` (متوسط 20 يوم)، مش `turnover_egp` (آخر يوم). ده مشكلة:
+
+🔴 **الـ bug القديم:**
+- daily_predictor بيستخدم `avg_turnover_20d` كـ filter (10M).
+- بس `avg_turnover_20d` ممكن يكون أقل من `turnover_egp` (آخر يوم).
+- فأسهم بتتـ reject رغم إن سيولتها الحالية عالية.
+
+🟡 **فيه bug تاني محتمل:**
+- لما `avg_turnover_20d` = 0 أو NULL، السهم بيتـ reject.
+- ده معناه إن الأسهم اللي dataها ناقصة بتتـ reject غلط.
+
+الـ connection النهائي:
+```
+maker_radar.py
+  ↓ يكتب maker_radar_EGX_YYYYMMDD.json
+  ↓ (turnover_egp, avg_turnover_20d, signals, path, distribution_flag)
+daily_predictor._integrate_whale_radar_predictions()
+  ↓ بيقرا الـ JSON
+  ↓ بيـ filter بـ avg_turnover_20d >= 10M
+  ↓ بيـ inject الأسهم في predictions.db (signal='WHALE_RADAR_BUY')
+stored_analyses
+  ↓ بيـ store الـ WHALE_RADAR_BUY
+Frontend
+  ↓ بيعرض التوقعات
+```
+
+الـ impact على قرارات التوقعات:
+- maker_radar بـ identify أسهم quiet accumulation.
+- daily_predictor بياخد دول + بيـ filter بـ turnover 10M.
+- الأسهم اللي بتمر → بتيجي في التوقعات بـ signal='WHALE_RADAR_BUY'.
+- الأسهم اللي بتـ reject → مبتظهرش في التوقعات.
+
+**الـ fix اللي عملناه في maker_radar (populate turnover_egp) بيأثر إيجابياً:**
+- قبل: turnover_egp = NULL → daily_predictor ما كانش بيـ identify الأسهم.
+- بعد: turnover_egp populated → daily_predictor ممكن يستخدمه.
+
+بس في فرصة للتحسين: daily_predictor لسه بيستخدم `avg_turnover_20d` (مش `turnover_egp`). لو غيّرناه لـ `turnover_egp`، هتظهر أسهم أكتر في التوقعات.
