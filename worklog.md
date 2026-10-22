@@ -5780,3 +5780,60 @@ Stage Summary:
 - ✅ الـ 10 DBs التانية كلها موجودة: auth, crypto, decision_log, historical, intraday, metrics, news, paper_trading, predictions, stocks.
 - ✅ `sandbox_auto_restore.py` أكد المشكلة.
 - 🎯 **لازم المالك يزوّد الملفين فعليًا** — مش موجودين في أي backup zip.
+
+---
+Task ID: DB-FOUND-1
+Agent: Z.ai Code (الفاحص التقني — اعترف بغلطتي)
+Task: محسن أصّر: "عندك 16 ملف مضغوط مش موجود في ولا واحد منهم ده مستحيل". طلع صح.
+
+الاعتراف:
+- في الرسالة السابقة قلت إن price_history.db و data_engine.db مش موجودين في أي zip. ده كان غلط.
+- أنا فحص بس الـ working tree في `main` branch (12-14 ملف). ما فحصتش باقي الـ branches.
+- محسن قال "16 ملف" — الفرق كان في فروع تانية.
+
+Work Log:
+- عملت `git ls-tree -r` على كل الـ 11 فرع موجودين.
+- لقيت في فرع `origin/mammoth-cougar` 4 ملفات جديدة مش في main:
+  - `db/price_history.db.zip` (12MB)
+  - `db/data_engine.db.zip` (10.7MB)
+  - `db/intraday.db.zip` (13.6MB)
+  - `db/stocks.db.zip` (946KB)
+- كمان في فروع تانية حاجات:
+  - `audit/codebase-cleanup-004` و `audit/unified-radar-pipeline`: db_backup_2026-10-17 + db_snapshot_2026-10-10
+  - `docs/governance-reorganization-2026-10-16`: GARAGE/loose_archives/*.zip (UI design)
+- استخدمت `git checkout origin/mammoth-cougar -- db/*.zip` لاستخراج الـ 4 ملفات.
+- فكيت الضغط في `db/`.
+- مشكلة: الـ DBs دي قديمة (يونيو-يوليو 2026). فا عملت mix:
+  - استرجعت `stocks.db` و `intraday.db` من backup 2026-10-21 (الأحدث)
+  - سيبت `price_history.db` و `data_engine.db` من mammoth-cougar (المتاح الوحيد)
+
+النتيجة النهائية لـ db/:
+| DB | المصدر | التاريخ | الصفوف (main table) |
+|---|---|---|---|
+| stocks.db | backup 2026-10-21 | 2026-10-21 | 85,626 daily_prices |
+| intraday.db | backup 2026-10-21 | 2026-10-21 | 81,830 stock_intraday |
+| predictions.db | backup 2026-10-21 | 2026-10-21 | 1,499 predictions |
+| news.db | backup 2026-10-21 | 2026-10-21 | fresh |
+| price_history.db | mammoth-cougar | 2026-06-10 | **274,574 price_history** |
+| data_engine.db | mammoth-cougar | 2026-07-10 | 99,076 historical_data |
+
+اختبار Phase 5 runtime على الكود الحقيقي:
+```
+[V40.2] price_history.db (ticker) — 750 raw → 235 EGX-canonical (rejected 509 non-EGX, removed 6 dups)
+returned 235 tickers
+```
+يعني PRIMARY بيتستخدم فعليًا دلوقتي، مش silent fallback.
+
+verification: 6/6 PASS.
+
+الـ gaps المتبقية:
+- 🟡 `price_history.db` قديم (max date = 2026-06-10، 4 شهور قديم). على اللاب توب عند المالك فيه 1,316,107 صف حتى 2026-10-22. اللي عندي 274K (20% بس). لازم يتعمل backfill.
+- 🔴 `data_engine.db` (mammoth-cougar) **مفيهوش جدول `egksco_price_history`** — الكود في Phase 5 FALLBACK 1 بيدور على `SELECT DISTINCT symbol FROM egksco_price_history`. الـ table دي مش موجودة في نسخة mammoth-cougar. يعني FALLBACK 1 مش هيشتغل. بس PRIMARY شغّال فمش مشكلة حرجة.
+- 🟡 `stocks.db` فيه `egksco_price_history` table بس فاضي (0 صفوف). ده من الـ schema بتاع الإنتاج بس الـ sync scripts مش شغّالة هنا.
+
+Stage Summary:
+- ✅ محسن كان صح. أنا غلطت لما قولت "مش موجودين في أي zip". كان المفروض أفحص كل الـ branches.
+- ✅ price_history.db + data_engine.db موجودين في فرع `mammoth-cougar`.
+- ✅ Phase 5 دلوقتي بيشتغل فعليًا على PRIMARY الحقيقي.
+- 🟡 البيانات قديمة (يونيو-يوليو). لازم backfill من اللاب توب لو محتاجين دقة أكتوبر.
+- 🎯 جاهز للمتابعة على Phase 5b (liquidity_radar_v2.py) أو Phase 6 (cron بيملا price_history.db).
