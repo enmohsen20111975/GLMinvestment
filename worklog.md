@@ -5751,3 +5751,32 @@ Stage Summary:
 - 🔴 **`data_engine.db` مش موجود** — الـ FALLBACK 1. كمان محتاج من اللاب توب لو عاوزين الـ fallback chain كامل.
 - 🟡 ملاحظة: فيه `egksco_price_history` table جوه `stocks.db` نفسه (مش في data_engine.db منفصل) — بس فاضي (0 rows). يعني الـ schema موجودة بس مفيش بيانات.
 - 🎯 **المرحلة اللي بعد كده:** لازم المالك يزوّد `price_history.db` (و `data_engine.db` لو متاح) قبل ما نقدر نأكد إن Phase 5 فعلاً بيستخدم الـ PRIMARY المطلوب. من غيرهم، "Phase 5 complete" تبقى مجرد كلام.
+
+---
+Task ID: DB-MISSING-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن أصّر إن price_history.db + data_engine.db "موجودين في الملفات المضغوطة اللي عندك، لازم تفك كل الملفات لازم تجدهم". فحص شامل + تشغيل sandbox_auto_restore.py.
+
+Work Log:
+- فحصت كل الـ 12 zip files في `data/` بدقة (unzip -l لكل واحد):
+  - 2026-10-08: auth.db, stocks.db
+  - 2026-10-18: auth.db, crypto.db, decision_log.db, historical.db, metrics.db, news.db, paper_trading.db, stocks.db
+  - 2026-10-21: auth.db, crypto.db, intraday.db, metrics.db, news.db, predictions.db, stocks.db
+  - predictions.db.zip: predictions.db (standalone)
+- **النتيجة:** price_history.db + data_engine.db مش في أي zip.
+- لاحظت إن `db/price_history.db` و `db/data_engine.db` ظهروا بعد ما شغّلت اختبار `get_tickers()` — بس دول ملفات فاضية (0 bytes، 0 tables) عملتهم `sqlite3.connect()` لما حاول يفتح ملف مش موجود. مسحتهم.
+- فحص `.gitignore`: فيه `*.db` + `db/*.db` + `db/**/*.db` — يعني كل الـ DBs مستثناة من git. مش هتلاقيهم في المستودع خالص.
+- شغّلت `scripts/sandbox_auto_restore.py` (سكربت مكتوب بالظبط للمشكلة دي):
+  - فحص `CRITICAL_DBS = ['stocks.db', 'predictions.db', 'price_history.db', 'data_engine.db', 'auth.db']`
+  - النتيجة: `price_history.db: missing` + `data_engine.db: missing`
+  - حاول يسترجع من أحدث zip محلي (part7) — طلع فيه stocks.db بس.
+- **دليل إن الـ DBs موجودة عند المالك:** `db/v40_generation_status.json` (آخر تشغيل على اللاب توب) بيقول:
+  `[V40.2] price_history.db (ticker) — 1393 raw → 289 EGX-canonical`
+  يعني price_history.db على اللاب توب فيه 1393+ ticker. بس مرفوعش في أي zip.
+
+Stage Summary:
+- 🔴 **price_history.db مش موجود في أي zip من الـ 12.** مش في git. مش في الساند بوكس.
+- 🔴 **data_engine.db مش موجود كمان.**
+- ✅ الـ 10 DBs التانية كلها موجودة: auth, crypto, decision_log, historical, intraday, metrics, news, paper_trading, predictions, stocks.
+- ✅ `sandbox_auto_restore.py` أكد المشكلة.
+- 🎯 **لازم المالك يزوّد الملفين فعليًا** — مش موجودين في أي backup zip.
