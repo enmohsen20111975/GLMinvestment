@@ -458,3 +458,65 @@ data_engine.db       egksco_price_history           0 rows  EMPTY
   - هتتعالج في phase لاحقة (data quality checks)
 
 ---
+
+---
+
+## 14. Phase 4 مكتملة على اللاب توب
+
+### النتائج على اللاب توب
+- ✅ all 5 verification checks passed
+- ✅ daily_predictor.py syntax valid
+- ✅ backup created (daily_predictor.py.backup_20261022_133030)
+- ✅ get_scan_dates reads price_history.db as PRIMARY
+- ✅ legacy fallbacks still present (egksco + stock_daily_prices)
+
+### ملاحظات
+- "pattern not found" warnings = الكود كان متعدّل بالفعل من git pull (صح)
+- get_tickers() function NOT modified yet — لسه بيقرا من egksco كـ PRIMARY
+  - ده مقصود: get_tickers بيستخدم EGX-MARKET-ISOLATION filter
+  - محتاج شغل أدق → Phase 5
+
+---
+
+## 15. حالة التوحيد الكاملة (محدّثة)
+
+| Phase | الحالة | الوصف | Commit |
+|---|---|---|---|
+| Phase 0 | ✅ خلصت | بناء فهرس المصادر | `40ce586` |
+| Phase 1 | ✅ خلصت | أرشفة المصادر القديمة | `8203785` |
+| Phase 2 | ✅ خلصت | توحيد price_history.db (+89,554 rows) | `3bf123a` |
+| Phase 3 | ✅ خلصت | تعديل maker_radar.py (PRIMARY=price_history) | `02ae828` |
+| Phase 4 | ✅ خلصت | تعديل daily_predictor.py get_scan_dates | `8300253` |
+| Phase 5 | ⏳ لسه | تعديل get_tickers + باقي المحركات | — |
+| Phase 6 | ⏳ لسه | cron واحد بيملا price_history.db | — |
+
+### التغيير الجذري المُحقق
+- **قبل:** 5 مصادر أسعار مختلفة، كل محرك بيقرا من مصدر مختلف
+- **بعد Phase 4:** `price_history.db` هو PRIMARY لكل المحركات المعدّلة
+  - maker_radar.py: ✅ price_history PRIMARY
+  - daily_predictor.py (get_scan_dates): ✅ price_history PRIMARY
+  - legacy sources (egksco, historical_data, stock_daily_prices): fallback فقط
+
+### الـ Commits الكاملة للتوحيد
+1. `40ce586` — Phase 0: build source index
+2. `5ffd131` — Phase 0 fix: handle scan errors
+3. `19ec790` — docs: master journey document
+4. `8203785` — Phase 1: archive legacy sources
+5. `3bf123a` — Phase 2: unify to price_history.db
+6. `02ae828` — Phase 3: modify maker_radar.py
+7. `8300253` — Phase 4: modify daily_predictor.py
+
+### القواعد الصارمة المُتبعة
+1. ✅ **مافيش مسح** — أرشفة فقط (7 archived DBs في db/archive/)
+2. ✅ **كل مرحلة ب اختبار** — verification checks قبل الانتقال
+3. ✅ **مراحل واحدة واحدة** — كل phase خلصت قبل اللي بعدها
+4. ✅ **كل تعديل في commit منفصل** — 7 commits للتوحيد
+5. ✅ **backup قبل كل مرحلة** — maker_radar.py + daily_predictor.py backups
+6. ✅ **rollback plan جاهز** — `cp backup → original`
+
+### المرحلة القادمة: Phase 5
+- تعديل `get_tickers()` في daily_predictor.py (محتاج EGX gate adapter)
+- تعديل `liquidity_radar_v2.py` (بيقرا من stock_daily_prices)
+- تعديل باقي المحركات اللي بتقرا من legacy sources
+
+---
