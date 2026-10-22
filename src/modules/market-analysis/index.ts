@@ -5,7 +5,7 @@ export { MarketAnalysisView } from './components/MarketAnalysisView';
 export { default as UnifiedAnalysisView } from './components/UnifiedAnalysisView';
 export { TradingChartView } from './components/TradingChartView';
 export { SingleStockAnalysisView } from './components/SingleStockAnalysisView';
-export { InteractiveChart } from './components/InteractiveChart';
+// InteractiveChart removed — moved to archive. TradingViewChart is the sole chart.
 export { default as ChartControls } from './components/ChartControls';
 export { InstitutionalDecisionPanel } from './components/InstitutionalDecisionPanel';
 export { LiveDashboardWidget, HeartbeatStatusBar, WhaleAlertListener } from './components/LiveDashboard';
