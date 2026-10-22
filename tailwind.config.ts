@@ -96,9 +96,12 @@ const config: Config = {
                         sm: 'calc(var(--radius) - 4px)'
                 },
                 fontFamily: {
+                        // P2 (Premium Polish Pass): IBM Plex Sans Arabic للـ body + Tajawal للعناوين.
+                        // next/font بيـ self-host + optimize (layout.tsx بيـ expose CSS variables).
+                        sans: ['var(--font-ibm-plex-arabic)', 'Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
+                        display: ['var(--font-tajawal)', 'Cairo', 'system-ui', 'sans-serif'],
                         cairo: ['Cairo', 'Tajawal', 'sans-serif'],
                         mono: ['JetBrains Mono', 'Outfit', 'monospace'],
-                        sans: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
                 }
         }
   },

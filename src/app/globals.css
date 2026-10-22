@@ -129,9 +129,10 @@
 
   body {
     @apply bg-background text-foreground;
-    /* Cairo = primary Arabic/Latin font (already @import'd above).
+    /* P2 (Premium Polish Pass): IBM Plex Sans Arabic = primary body font.
+       next/font بيـ expose --font-ibm-plex-arabic (layout.tsx). Cairo = fallback.
        Tabular numbers enable proper column alignment for prices/P&L tables. */
-    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-ibm-plex-arabic), 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: 'tnum' 1, 'cv01' 1, 'cv03' 1;
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
@@ -143,13 +144,14 @@
     /* Dark mode: خلفية سوداء هادئة بدون gradient */
   }
 
-  /* Headings: tighter tracking reads as more professional / editorial */
+  /* Headings: Tajawal (display font) + tighter tracking reads as more professional / editorial */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
+    font-family: var(--font-tajawal), 'Cairo', system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
 

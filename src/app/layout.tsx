@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-// Using system fonts instead of Google Fonts to avoid network issues
-// import { Inter, JetBrains_Mono } from "next/font/google";
+// P2 (Premium Polish Pass): استبدال system fonts بـ premium Arabic fonts.
+// IBM Plex Sans Arabic للـ body (احترافي + بيشتغل مع عربي/إنجليزي) + Tajawal للعناوين.
+// next/font بـ self-host + optimize (مفيش FOUT، مفيش طلب لـ Google في runtime).
+import { IBM_Plex_Sans_Arabic, Tajawal } from "next/font/google";
 import "./globals.css";
 // FIX (Aug 2026): شيلنا Toaster القديم — Sonner هو النظام الموحد
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -26,16 +28,22 @@ export const revalidate = 0;
 // Without it, Next.js emits relative canonical URLs which Google ignores.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://invist.m2y.net';
 
-// Using system fonts as fallback
-// const inter = Inter({
-//   variable: "--font-inter",
-//   subsets: ["latin"],
-// });
-//
-// const jetbrainsMono = JetBrains_Mono({
-//   variable: "--font-jetbrains-mono",
-//   subsets: ["latin"],
-// });
+// P2: Premium Arabic fonts via next/font/google (self-hosted + optimized).
+// IBM Plex Sans Arabic = body (professional, Arabic + Latin support, tabular figures).
+// Tajawal = display/headings (elegant, Arabic-optimized).
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ['arabic', 'latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-ibm-plex-arabic',
+  display: 'swap',
+});
+
+const tajawal = Tajawal({
+  subsets: ['arabic'],
+  weight: ['400', '500', '700', '800'],
+  variable: '--font-tajawal',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -136,7 +144,7 @@ export default async function RootLayout({
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`${ibmPlexArabic.variable} ${tajawal.variable}`} suppressHydrationWarning>
       <head>
         {/* FOCUS-5-TASKS — SEO Phase 1 + 3 (2026-10-01):
             JSON-LD structured data for Google Knowledge Graph +
