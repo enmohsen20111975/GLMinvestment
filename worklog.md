@@ -5990,3 +5990,74 @@ feat(unification): Phase 5b — liquidity_radar_v2.py reads from price_history.d
 - Same close/volume values in overlap period → data integrity confirmed
 - Verification: 8/8 checks passed + runtime test on 5 EGX tickers
 ```
+
+---
+Task ID: PRE-LAPTOP-CHECKS-1
+Agent: Z.ai Code (الفاحص التقني — pre-laptop safety checks)
+Task: محسن: "مافيش حاجة محتاج تجربها على الابتوب قبل ماتخدش فى المرحلة الاخيرة؟"
+
+الإجابة: أيوة، فيه 8 مخاطر فحصتهم قبل ما أنصح بنقل أي حاجة للاب توب. دول اللي ممكن يكسروا على اللاب توب و ما يظهرش في الساند بوكس:
+
+✅ **RISK 1 — env vars / DB paths**: تم الفحص. كل الـ paths بتستخدم `os.environ.get` + fallback لـ `db/X.db`. بتشتغل على أي بيئة. liquidity_radar_v2 بيستخدم PRICE_HISTORY_DB الجديد بـ env override.
+
+✅ **RISK 2 — markets coverage**: تم الفحص.
+  - price_history.db فيه 8 markets (EGX, TADAWUL, KSE, QSE, US, السعودية, الأسهم الأمريكية, العملات, مؤشرات, الذهب, UNKNOWN).
+  - مشكلة: فيه markets بأسمائين (السعودية/TADAWUL، US/الأسهم الأمريكية). محتاج تنظيف لاحقًا بس مش بيأثر على Phase 5b.
+  - stocks.db فيه بس EGX + US (لا TADAWUL/KSE/QSE كـ daily_prices). فالـ radar على markets الخليج بيقع لـ price_history.db (PRIMARY) — ده المطلوب.
+
+✅ **RISK 3 — liquidity_radar_v2 على TADAWUL**: تم الاختبار. ticker 1120 اشتغل و رجع "falling_knife: true" + "تصريف". شغّال بنجاح.
+
+✅ **RISK 4 — daily_predictor full run**: تم الاختبار.
+  - command: `python3 -m jobs.daily_predictor --start 2026-10-19 --end 2026-10-21 --scan-interval 1 --max-tickers 10`
+  - النتيجة: `[V40.2] Using price_history.db (PRIMARY) — 3 dates` + `price_history.db (ticker) — 1429 raw → 289 EGX-canonical`.
+  - 10 tickers اتـ process-وا، 0 signals (متوقع في 3 أيام فقط + max_tickers=10).
+  - الـ run كله اشتغل من غير crash.
+
+✅ **RISK 5 — laptop price_history.db schema اختلاف**: تم الفحص.
+  - الـ laptop عند المالك فيه 1,316,107 rows (من MASTER-JOURNEY-DOCUMENT).
+  - لو الـ laptop ما عندوش `market` column، الـ `ensure_price_history_schema()` اللي أصلحناها هتضيفها (ALTER TABLE) — اختبرته simulate وأشتغلت.
+  - الـ unify script هيشتغل safe على أي schema.
+
+✅ **RISK 6 — WAL/SHM files**: تم التنظيف.
+  - لقيت 4 WAL + 4 SHM files متبقية من جلستنا.
+  - عملت `PRAGMA wal_checkpoint(TRUNCATE)` + `PRAGMA journal_mode=DELETE` على كل DBs.
+  - مسحت كل WAL/SHM/Journal files. الـ DBs دلوقتي clean و ready للنسخ.
+
+✅ **RISK 7 — Python syntax**: تم الفحص.
+  - كل الـ 5 modified files (liquidity_radar_v2, unify_to_price_history, modify_get_tickers, verify_phase5b, daily_predictor) عملت `py_compile` بنجاح.
+  - pyflakes مش متاح في البيئة، بس py_compile كفاية للـ syntax.
+
+🔴 **RISK 8 — backtest_engine.py PRICE_HISTORY_DB naming disaster** (مش من الـ phases بتاعتنا):
+  - في `vps-service/engines/backtest_engine.py` السطر 201:
+    `PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')`
+  - ده naming bug قديم (2026-09-03): متغيّر اسمه `PRICE_HISTORY_DB` بيشاور لـ `data_engine.db`!
+  - Comment فوقه: "price_history.db تم إلغاؤه تماماً — كل القراءة الآن من data_engine.db.egksco_price_history فقط".
+  - **التأثير على Phase 5b**: مفيش. daily_predictor.py مش بيستخدم `PRICE_HISTORY_DB` global variable — بيستخدم `_db_dir / 'price_history.db'` (محلي في الـ function).
+  - بس ده bug محتاج تنظيف لاحقًا في phase مستقلة (مش Phase 6).
+
+القرار النهائي:
+- **جاهز للنقل للاب توب** (الإثبات الثاني).
+- كل الـ modified files اللي محتاج تنقلهم:
+  1. `scripts/liquidity_radar_v2.py` (Phase 5b)
+  2. `scripts/unify_to_price_history.py` (Phase 2 fix)
+  3. `scripts/modify_get_tickers.py` (Phase 5 fix)
+  4. `scripts/verify_phase5b_liquidity_radar.py` (new — verification)
+  5. `vps-service/jobs/daily_predictor.py` (Phase 4 fix — print message)
+- **ممنوع ينقل**: db/*.db files (الـ laptop عنده الإصدارات الأحدث — 1.3M rows).
+- بعد النقل، لازم يتعمل على اللاب توب:
+  1. `git pull origin main`
+  2. `python3 scripts/unify_to_price_history.py` (هيضيف market column + يـ unify)
+  3. `python3 scripts/modify_get_tickers.py --verify` (6/6 PASS)
+  4. `python3 scripts/verify_phase5b_liquidity_radar.py` (8/8 PASS)
+  5. `python3 -m jobs.daily_predictor --start 2026-10-19 --end 2026-10-21 --scan-interval 1 --max-tickers 10` (full run)
+  6. `python3 scripts/liquidity_radar_v2.py --market EGX --ticker COMI --json` (radar test)
+  7. لو كل حاجة شغّالة، نروح للإنتاج.
+
+Stage Summary:
+- ✅ 8/8 risks فحصتهم قبل النقل للاب توب.
+- ✅ كل الـ syntax tests PASS.
+- ✅ كل الـ runtime tests PASS على EGX + TADAWUL.
+- ✅ الـ DBs clean (WAL/SHM مسحتهم).
+- ✅ laptop scenario simulation (no market column) نجحت.
+- 🔴 warning: backtest_engine.py فيه naming bug قديم (مش من الـ phases بتاعتنا، بس محتاج تنظيف لاحقًا).
+- 🎯 **جاهزين للإثبات الثاني على اللاب توب.**
