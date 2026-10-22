@@ -41,6 +41,12 @@ interface RadarStock {
   liquidity_bucket_ar?: string | null;
   net_flow_5d?: number | null;
   volume?: number | null;
+  // FRONTEND-2 Phase 1: expose hidden cache fields for the correction phase column
+  correction_status?: string | null;
+  drop_from_peak?: number | null;
+  accumulation?: string | null;
+  expected?: string | null;
+  roc_10d?: number | null;
 }
 
 interface RadarResponse {
@@ -176,6 +182,12 @@ export async function GET(req: NextRequest) {
         liquidity_bucket_ar: s.liquidity_bucket_ar ?? null,
         net_flow_5d: netFlow,
         volume: s.volume ?? s.avg_volume_20d ?? s.avg_volume_10d ?? null,
+        // FRONTEND-2 Phase 1: surface hidden cache fields for the correction phase column
+        correction_status: s.correction_status ?? null,
+        drop_from_peak: s.drop_from_peak ?? null,
+        accumulation: s.accumulation ?? null,
+        expected: s.expected ?? null,
+        roc_10d: s.roc_10d ?? null,
       };
     });
 

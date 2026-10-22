@@ -85,6 +85,12 @@ interface RadarStock {
  liquidity_bucket_ar?: string | null;
  net_flow_5d?: number | null;
  volume?: number | null;
+ // FRONTEND-2 Phase 1: fields surfaced from maker_radar cache for Phase 2 columns
+ correction_status?: string | null;
+ drop_from_peak?: number | null;
+ accumulation?: string | null;
+ expected?: string | null;
+ roc_10d?: number | null;
 }
 
 
@@ -275,9 +281,10 @@ export function LiquidityRadarView({
  setLoading(true);
  setError(null);
  try {
- // ALPHA-PHASE3: تحويل مصدر البيانات لـ /api/market/liquidity-radar
+ // FRONTEND-2 Phase 1: switch to /api/v2/liquidity-radar (cache reader, 20+ fields, all markets)
+ // was: /api/market/liquidity-radar (Python proxy, 9 fields, 10 LARGE_CAPS only — left 4 columns blank)
  const res = await fetch(
- `/api/market/liquidity-radar?market=${encodeURIComponent(market)}`,
+ `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
  { cache: 'no-store' },
  );
  if (!res.ok) { setError('تعذّر الاتصال بالخادم'); setData(null); return; }
