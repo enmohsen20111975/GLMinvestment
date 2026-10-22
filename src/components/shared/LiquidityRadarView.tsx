@@ -324,7 +324,22 @@ export function LiquidityRadarView({
  if (hideInactive) {
  out = out.filter((s) => {
  // ALPHA-RESTORE: فحص السيولة الحقيقية — Python بيبعت turnover_egp (مش volume/net_flow_egp)
- const turnover = Number(s.turnover_egp ?? s.volume ?? s.whale?.net_flow_egp ?? 0);
+ // RADAR-FIX-1 (2026-10-22): fallback chain — turnover_egp → volume × current_price → net_flow_egp
+ // المشكلة: لو turnover_egp = NULL (الـ cache قديم)، السهم بيتطرد غلط.
+ // الحل: نحاول نحسب من volume × price لو turnover_egp مش متاح.
+ let turnover = Number(s.turnover_egp ?? 0);
+ if (turnover === 0) {
+ // fallback 1: volume × current_price (آخر يوم)
+ const vol = Number(s.volume ?? 0);
+ const price = Number(s.current_price ?? 0);
+ if (vol > 0 && price > 0) {
+ turnover = vol * price;
+ }
+ }
+ // fallback 2: net_flow_egp (لو لسه 0)
+ if (turnover === 0) {
+ turnover = Number(s.whale?.net_flow_egp ?? 0);
+ }
  return turnover >= 1500000; // 1.5M EGP minimum liquidity
  });
  }

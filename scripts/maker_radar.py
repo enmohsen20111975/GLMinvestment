@@ -642,6 +642,11 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'avg_volume_20d': round(avg_volume_20d, 0),
         'avg_volume_10d': round(avg_volume_10d, 0),
         'volume_ratio_10d_vs_20d': round(volume_ratio_10d_vs_20d, 2),
+        # RADAR-FIX-1 (2026-10-22): expose turnover_egp + volume (آخر يوم)
+        # المشكلة: الـ frontend بـ filter بـ turnover_egp >= 1.5M بس الـ dict ما كانش بـ expose الـ value ده.
+        # الحل: نحسب turnover_egp = آخر close × آخر volume (نفس logic price_history).
+        'turnover_egp': round(closes[-1] * volumes[-1], 2) if closes and volumes and closes[-1] > 0 and volumes[-1] > 0 else 0,
+        'volume': int(volumes[-1]) if volumes and volumes[-1] > 0 else 0,
         'price_stability': round(price_stability, 3),
         'range_10d_pct': round(range_10d_pct, 2),
         'roc_10d': roc_10d,
