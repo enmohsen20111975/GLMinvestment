@@ -6149,3 +6149,61 @@ Stage Summary:
 - ✅ كل الـ verification fixes دلوقتي على GitHub.
 - ✅ اللاب توب يعمل `git pull origin main` وياخد الـ fixes.
 - 🔴 التوكن لسه محتاج revoke (أستخدمته مؤقتًا و مسحته).
+
+---
+Task ID: LAPTOP-VERIFICATION-SUCCESS-1
+Agent: Z.ai Code (الفاحص التقني — تأكيد الإثبات الثاني)
+Task: اللاب توب شغّل كل الـ verification scripts بعد الـ git pull. كلهم PASS.
+
+النتائج على اللاب توب (`/home/meme/my_apps/GLMinvestment`):
+- ✅ git pull: Fast-forward `f23348811..d62e532d9`
+- ✅ Phase 2 unify: `market column exists` + 5/7 PASS + 2 warnings (historical_data missing + no new rows — متوقع)
+- ✅ Phase 5 verify: 6/6 PASS (auto-creates backup: `daily_predictor.py.backup_phase5_20261022_162440`)
+- ✅ Phase 5b verify: 8/8 PASS (auto-creates backup + sys.executable شغّال)
+  - Check 7: price_history (5328) ≥ stock_daily_prices (46) for COMI → اللاب توب عنده 5328 candle vs 424 على الساند بوكس
+- ✅ daily_predictor full run: `[V40.2] Using price_history.db (PRIMARY) — 3 dates` + `1439 raw → 289 EGX-canonical`
+- ✅ radar test: COMI → phase=تصريف + falling_knife=true + market_regime=Risk-Off
+
+ملاحظات:
+- WHALE-RADAR warning: `cannot import name 'sync_scanner_to_stored_analyses'` — مش من الـ phases بتاعتنا (موجود قبل كده).
+- canonical_flow warning: السكريبت في archive/garage/ — مش مرتبط بـ Phase 5b.
+
+Stage Summary:
+- 🎯 **الإثبات الثاني (اللاب توب) نجح بالكامل.**
+- ✅ كل الـ fixes شغّالة على اللاب توب زي الساند بوكس بالظبط.
+- 🎯 **جاهزين للإثبات الثالث (الإنتاج) أو بدء Phase 6.**
+
+---
+Task ID: PHASE-6-1
+Agent: Z.ai Code (المنفّذ البديل — Phase 6 verification)
+Task: محسن: "كمل المرحلة الأخيرة" — Phase 6 (cron واحد بيملا price_history.db).
+
+الاكتشاف المهم:
+**Phase 6 مش محتاج script جديد.** لقيت إن `price_history_safetynet.py` موجود بالفعل ومتوصّل بـ:
+1. `crontab.txt` line: `0 6 * * 0-4 ... price_history_safetynet.py` (يجري يومياً 6 الصبح).
+2. `market_scheduler.py`: 15 references — فيه method مخصص `run_price_history_safetynet()` + بيتنادى في 3 أماكن (post-market + during market if stale + evening).
+
+الـ safetynet script بيملا price_history.db من Yahoo Finance (yfinance) بشكل:
+- idempotent: `INSERT OR REPLACE` على UNIQUE(ticker, date, source)
+- مش مقيّد بساعات السوق ولا EODHD.
+- بيتتبع gap قبل/بعد + بيكتب JSON report في db/backups/.
+
+الـ gap الوحيد: yfinance مش كان متثبّت على الساند بوكس. ثبّته عبر `uv pip install yfinance`.
+
+الـ verification script الجديد `scripts/verify_phase6_safetynet.py` (8 checks):
+  ✅ Check 1: price_history_safetynet.py exists
+  ✅ Check 2: yfinance installed (v1.7.0)
+  ✅ Check 3: crontab has safetynet entry
+  ✅ Check 4: market_scheduler.py references safetynet (15 times)
+  ✅ Check 5: price_history.db recent (max=2026-10-21, age=1d)
+  ✅ Check 6: price_history.db has 428,357 rows (≥10K)
+  ✅ Check 7: safetynet script runs (dry-run)
+  ✅ Check 8: yfinance can fetch COMI.CA (rows=4)
+
+Push: commit `7bc7d44d` اترفع لـ origin/main.
+
+Stage Summary:
+- ✅ Phase 6 مكتمل: price_history.db بيتمل تلقائياً يومياً 6 الصبح عبر cron.
+- ✅ الـ safetynet script شغّال على الساند بوكس (8/8 PASS).
+- 🟡 على اللاب توب والإنتاج: لازم نتأكد إن `yfinance` متثبّت في الـ venv بتاعهم.
+- 🎯 **خطة التوحيد كلها (Phase 0 → 6) مكتملة على الساند بوكس.**
