@@ -124,41 +124,43 @@ def render_page(url, timeout_ms=45000):
 def parse_index_values(text):
     """Extract EGX30/70/100/33 values from rendered page text.
 
-    The EGX page shows each index with: value, change, change%.
-    We search for the index keyword, then grab the nearest number.
+    FIX (2026-10-22): was using a 1500-char window that OVERLAPPED between
+    indices → grabbed EGX30's value (51,052) for ALL indices.
+    Now splits text by index keywords and parses each section separately.
     """
     results = {}
     text_lower = text.lower()
 
+    # Find ALL keyword positions to delimit sections
+    all_positions = []  # (position, symbol)
     for symbol, keywords in INDEX_KEYWORDS.items():
         for kw in keywords:
-            # Find the keyword in the text
-            idx = text_lower.find(kw.lower())
-            if idx == -1:
-                continue
+            pos = text_lower.find(kw.lower())
+            if pos != -1:
+                all_positions.append((pos, symbol, kw))
+                break  # first match for this symbol
 
-            # Look in the next 1500 chars for numbers
-            window = text[idx:idx + 1500]
+    # Sort by position
+    all_positions.sort()
 
-            # Find all number-like patterns (including Arabic-Indic digits, commas)
-            # Match: 51,052.26 or 51052.26 or ٥١٬٠٥٢٫٢٦
-            nums = re.findall(r'[\d,]+\.?\d*', window.replace('٬', '').replace('٫', '.'))
+    for i, (pos, symbol, kw) in enumerate(all_positions):
+        # Section end = start of next index keyword (or end of text)
+        section_end = all_positions[i + 1][0] if i + 1 < len(all_positions) else pos + 800
+        window = text[pos:section_end]
 
-            if len(nums) >= 1:
-                # The first large number (> 100) is likely the index value
-                for n in nums:
-                    val = float(n.replace(',', ''))
-                    if val > 100:  # indices are > 100
-                        # Look for change% nearby
-                        pct_match = re.search(r'(-?\d+\.?\d*)\s*%', window)
-                        change_pct = float(pct_match.group(1)) if pct_match else 0.0
+        # Find numbers in this section only
+        nums = re.findall(r'[\d,]+\.?\d*', window.replace('٬', '').replace('٫', '.'))
+        if len(nums) < 1:
+            continue
 
-                        results[symbol] = {
-                            "current_value": val,
-                            "change_percent": change_pct,
-                        }
-                        log.info("  %s = %,.2f (%+.2f%%)", symbol, val, change_pct)
-                        break
+        # The first large number (> 100) is the index value
+        for n in nums:
+            val = float(n.replace(',', ''))
+            if val > 100:
+                pct_match = re.search(r'(-?\d+\.?\d*)\s*%', window)
+                change_pct = float(pct_match.group(1)) if pct_match else 0.0
+                results[symbol] = {"current_value": val, "change_percent": change_pct}
+                log.info(f"  {symbol} = {val:,.2f} ({change_pct:+.2f}%)")
                 break
 
     return results
@@ -230,7 +232,7 @@ def upsert_to_db(values, today):
             """, (symbol, today, current, change_pct))
 
         upserted += 1
-        log.info("  ✓ upserted %s = %,.2f to market_indices + index_daily_prices", symbol, current)
+        log.info(f"  ✓ upserted {symbol} = {current:,.2f} to market_indices + index_daily_prices")
 
     conn.commit()
     conn.close()
