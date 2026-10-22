@@ -322,9 +322,28 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
     ''')
 
     saved = 0
+    skipped_invalid = 0
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # SCRAPER-VALIDATION-FIX (2026-10-22): validate tickers before INSERT
+    try:
+        from scrapers.ticker_validator import validate_ticker
+    except ImportError:
+        try:
+            from data_engine.scrapers.ticker_validator import validate_ticker
+        except ImportError:
+            validate_ticker = None
+
     for s in stocks:
         try:
+            symbol = s.get('symbol', '')
+            name = s.get('name', '')
+            # SCRAPER-VALIDATION-FIX: skip invalid tickers
+            if validate_ticker:
+                is_valid, reason = validate_ticker(symbol, name)
+                if not is_valid:
+                    skipped_invalid += 1
+                    continue
+
             cursor.execute('''
                 INSERT INTO stocks
                 (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
@@ -339,7 +358,7 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
                     tabs_data = excluded.tabs_data,
                     last_update = excluded.last_update
             ''', (
-                s.get('symbol', ''), s.get('name', ''),
+                symbol, name,
                 float(s.get('price', 0) or 0),
                 float(s.get('change_percent', 0) or 0),
                 s.get('volume', ''), s.get('market_cap', ''),

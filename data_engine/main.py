@@ -898,10 +898,28 @@ def sync_databases():
                 else:
                     # Quarantine Guard: Never insert deformed scraper symbols (e.g. ending in D, len > 8, ISIN, or concatenated)
                     sym = stock['symbol']
-                    if len(sym) > 8 or sym.endswith('D') or 'EGS' in sym or not sym.isalnum():
-                        if len(result['details']) < 10:
-                            result['details'].append(f"Quarantined suspect symbol: {sym}")
-                        continue
+                    # SCRAPER-VALIDATION-FIX (2026-10-22): use centralized validator
+                    # بدل الـ quarantine المبسط، نستخدم validate_ticker() المركزي.
+                    try:
+                        from scrapers.ticker_validator import validate_ticker
+                    except ImportError:
+                        try:
+                            from data_engine.scrapers.ticker_validator import validate_ticker
+                        except ImportError:
+                            validate_ticker = None
+
+                    if validate_ticker:
+                        is_valid, reason = validate_ticker(sym, stock.get('name', ''))
+                        if not is_valid:
+                            if len(result['details']) < 10:
+                                result['details'].append(f"Quarantined invalid ticker: {sym} — {reason}")
+                            continue
+                    else:
+                        # Fallback: legacy quarantine logic
+                        if len(sym) > 8 or sym.endswith('D') or 'EGS' in sym or not sym.isalnum():
+                            if len(result['details']) < 10:
+                                result['details'].append(f"Quarantined suspect symbol: {sym}")
+                            continue
 
                     # Insert new stock
                     dst_cursor.execute('''
