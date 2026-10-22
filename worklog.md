@@ -6985,3 +6985,28 @@ Push: commit `31f7944f`.
 1. git pull origin main
 2. regenerate cache: .venv/bin/python3 scripts/maker_radar.py --market EGX --limit 0 --json-only
 3. تأكد إن CPMEC, HBCOH, TORAT, VALUU, DCRCD اختفوا من الرادار
+
+---
+Task ID: TELEGRAM-AUTOPOSTER-FIX-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن بعت Telegram message فيه أسهم مشوهة (UBEEU, TWSATA, TAQATA, TANMT, TALMT) رغم الـ purge.
+
+السبب:
+- auto_poster.py بيقرا من stored_analyses من غير ما يـ filter بـ is_active.
+- الـ corrupted tickers ما كانوش في stored_analyses وقت الـ purge (deleted 0).
+- بس الـ daily_predictor/sync_scanner حقنهم تاني.
+- فظهرت في الـ Telegram message.
+
+الـ fix (PURGE-FIX في auto_poster.py):
+- بعد ما نـ fetch الـ BUY recommendations من stored_analyses
+- نـ load active tickers من stocks.db (is_active=1)
+- نـ filter في Python: نشيك ticker in active_set
+- print عدد الـ skipped
+- graceful fallback لو stocks.db مش متاح
+
+Push: commit `9546495f`.
+
+الخطوات الجاية على الإنتاج:
+1. git pull origin main
+2. pm2 restart python-backend (عشان auto_poster.py يتعاد تحميله)
+3. الرسالة الجديدة المفروض ما فيهاش UBEEU, TWSATA, إلخ.
