@@ -7056,3 +7056,40 @@ Push: commit `e1429749`.
 4. pm2 restart telegram-poster (عشان الـ scheduler يبطل الرسائل القديمة)
 
 🎯 **المالك قال: "لا مفر يا صديقي"** — ده تأكيد إن الـ DAL هيكون المرحلة الجاية.
+
+---
+Task ID: FULL-INVENTORY-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن: "انت لازم تعمل جرد لكل مكان بيستخدم التعامل المباشر مع قواعد البيانات". "لا مفر يا صديقي".
+
+الجرد الكامل:
+- Python backend: 62 ملف بيـ read من stocks.db بدون is_active filter.
+- Frontend routes: 47 route بيـ read من stocks.db بدون is_active filter.
+- الإجمالي: 109 ملف محتاج is_active filter.
+
+الـ files اللي بعدلها (فيها is_active):
+- vps-service/telegram/auto_poster.py ✅
+- scripts/maker_radar.py ✅
+- scripts/purge_corrupted_tickers.py ✅
+- data_engine/scrapers/ticker_validator.py ✅
+- data_engine/scrapers/egksco_scraper.py ✅
+- data_engine/scrapers/tradingview_rest.py ✅
+- data_engine/main.py ✅
+
+الـ files اللي محتاجة is_active filter (109 ملف):
+- analyzers/*.py (20+ file)
+- api/*.py (10+ file)
+- jobs/*.py (5+ file)
+- src/app/api/*/route.ts (47 route)
+- vps-service/telegram/*.py (3+ file)
+
+الخلاصة:
+**لا مفر من الـ DAL.** تعديل 109 ملف واحد واحد مستحيل + هياخد أيام + مش هيمنع المشكلة من الرجوع.
+الحل الوحيد: بناء طبقة وصول موحدة (DAL) — كل الـ 109 ملف تـ read منها.
+الـ DAL تـ validate الـ tickers + تـ filter بـ is_active + تـ cache.
+شوف Documentation/05-DATA-ACCESS-LAYER-PLAN.md للخطة الكاملة.
+
+الـ message المتأخرة:
+الرسالة اللي بعتها محسن متاريخة 25 أكتوبر (الأحد القادم).
+دي رسالة مستقبلية مجدولة من الـ auto_post_scheduler.py.
+حتى لو وقّفنا الـ telegram-poster دلوقتي, الرسالة دي هتبعت الأحد.
