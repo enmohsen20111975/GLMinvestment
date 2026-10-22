@@ -6701,3 +6701,48 @@ Push: commit `03a6bfc7` (بعد rebase فوق commits `32fbf4bb..818bddca`).
 2. pm2 restart python-backend (عشان الـ changes تتفعّل)
 3. اختبر: curl /api/stored-analysis/results — النص المفروض يبقى طازج
 4. راقب الـ Telegram message القادم — المفروض النص يتطابق مع الأسعار الحالية
+
+---
+Task ID: RADAR-FRONTEND-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن: "رادار السيولة زي ما هو بدون تغير" + "شوف رادار التربص وقيد التسخين — المفروض فعليا تحس بالبيحصل في السوق".
+
+اللي اكتشفته:
+
+🔴 **المشكلة: الـ frontend بيـ filter الأسهم بـ `turnover_egp >= 1.5M EGP`**
+- في `LiquidityRadarView.tsx` line 324-329:
+  ```tsx
+  if (hideInactive) {
+    out = out.filter((s) => {
+      const turnover = Number(s.turnover_egp ?? s.volume ?? s.whale?.net_flow_egp ?? 0);
+      return turnover >= 1500000; // 1.5M EGP minimum liquidity
+    });
+  }
+  ```
+- **المشكلة**: الـ radar API بيرجع `turnover_egp` من الـ cache اللي بيتولّد من `maker_radar.py` — وده مش بـ populate `turnover_egp` بشكل صحيح (NULL لمعظم الأسهم).
+- فالـ filter بيرفض كل الأسهم اللي turnover_egp = NULL.
+- النتيجة: 7 أسهم بس بتظهر رغم إن الـ cache فيه 27 under_microscope + 63 incubator candidates.
+
+✅ **الـ incubator (رادار التربص + قيد التسخين) بيشتغل صح**
+- `/api/radar/incubator` بياخد من `maker_radar_EGX_*.json` → `incubator_candidates`.
+- فيه **63 candidate** في الـ cache (أنا فحصته).
+- كلهم عندهم:
+  - readiness_pct (نسبة الجاهزية)
+  - stage = HEATING_UP (قيد التسخين)
+  - signals_passed = 5/6
+- فالبيانات موجودة — المشكلة بس في الـ liquidity_radar (مو الـ incubator).
+
+🔴 **المشكلة التانية: الـ cache متجمد من Oct 22 15:43**
+- `scripts/output/maker_radar_EGX_20261022.json` generated at 15:43:19.
+- محسن بيقول "الرادار زي ما هو" — لإن الـ cache ما اتـ refresh-ش من Oct 22.
+- الـ cache المفروض يتـ refresh كل 15 دقيقة بس ما حصلش.
+
+الـ root causes:
+1. `turnover_egp` مش بيتـ populate في `maker_radar.py` للأسهم تحت الميكروسكوب.
+2. الـ frontend بـ filter بـ `>= 1.5M` فبيطرد الأسهم اللي turnover_egp = NULL.
+3. الـ cache ما اتـ refresh-ش من Oct 22.
+
+الـ fixes المطلوبة:
+1. populate `turnover_egp` في `maker_radar.py` (آخر close × آخر volume من price_history).
+2. الـ frontend filter لازم يكون أكثر مرونة (لو turnover_egp = NULL، نحاول نحسب من volume × price).
+3. refresh الـ cache على الإنتاج (pm2 restart python-backend + انتظار cron).
