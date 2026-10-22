@@ -6746,3 +6746,43 @@ Task: محسن: "رادار السيولة زي ما هو بدون تغير" + "
 1. populate `turnover_egp` في `maker_radar.py` (آخر close × آخر volume من price_history).
 2. الـ frontend filter لازم يكون أكثر مرونة (لو turnover_egp = NULL، نحاول نحسب من volume × price).
 3. refresh الـ cache على الإنتاج (pm2 restart python-backend + انتظار cron).
+
+---
+Task ID: RADAR-FIX-COMPLETE-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن وافق على fix شامل لرادار السيولة (backend + frontend).
+
+الـ fixes:
+
+✅ **FIX 1 (RADAR-FIX-1): maker_radar.py — populate turnover_egp**
+- أضفت `turnover_egp` field في الـ stock dict: `closes[-1] * volumes[-1]`
+- أضفت `volume` field: `int(volumes[-1])`
+- النتيجة: 26/27 under_microscope عندهم turnover_egp populated
+
+✅ **FIX 2 (RADAR-FIX-1): LiquidityRadarView.tsx — fallback chain**
+- قبل: `turnover = s.turnover_egp ?? s.volume ?? s.net_flow_egp` (volume = shares، مش EGP)
+- بعد: fallback chain:
+  1. turnover_egp (لو متاح)
+  2. volume × current_price (آخر يوم)
+  3. net_flow_egp (آخر fallback)
+- ده بيـ handle الـ cache files القديمة اللي مش عندها turnover_egp field
+
+اختبار على الساند بوكس:
+- قبل: 7 أسهم بتمر filter الـ 1.5M EGP
+- بعد: **20 سهم بتمر filter** (3x improvement!)
+
+أمثلة على الـ stocks الجديدة اللي هتظهر:
+- PHDC: turnover = 253.68M EGP
+- COMI: turnover = 441.18M EGP
+- MFPC: turnover = 99.96M EGP
+- VALU: turnover = 53.63M EGP
+- CANA: turnover = 27.56M EGP
+
+Push: commit `04201002` (بعد rebase فوق commits `03a6bfc7..50e9d8a9`).
+
+الخطوات الجاية على الإنتاج:
+1. git pull origin main
+2. pm2 restart python-backend (عشان الـ frontend changes تتفعّل في Next.js)
+3. pm2 restart nextjs (عشان الـ frontend changes تتفعّل)
+4. انتظر cron يجدد الـ cache (أو شغّل يدوي: python3 scripts/maker_radar.py --market EGX --limit 0 --json-only)
+5. راقب https://invist.m2y.net/#liquidity-radar — المفروض يعرض 20+ سهم بدل 7
