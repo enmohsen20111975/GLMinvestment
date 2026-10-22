@@ -85,6 +85,10 @@ const IndexCards = withErrorBoundary(
   dynamicImport(() => import('@/modules/dashboard/components/IndexCards').then(m => ({ default: m.IndexCards })), { ssr: false, loading: () => <LazyTabLoader label="المؤشرات" /> }),
   'المؤشرات',
 );
+const IndexDetailView = withErrorBoundary(
+  dynamicImport(() => import('@/modules/index-detail/components/IndexDetailView').then(m => ({ default: m.IndexDetailView })), { ssr: false, loading: () => <LazyTabLoader label="تفاصيل المؤشر" /> }),
+  'تفاصيل المؤشر',
+);
 const IncubatorStandaloneView = withErrorBoundary(
   dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="حاضنة الأسهم" /> }),
   'حاضنة الأسهم',
@@ -611,6 +615,8 @@ function AppShell() {
             <main className="flex-1 p-3 md:p-4 space-y-4 page-transition" dir="rtl">
               {/* Index cards — all EGX indices */}
               {currentMarket === 'EGX' && <IndexCards />}
+              {/* Index detail view — chart + stock effect breakdown */}
+              {currentMarket === 'EGX' && <IndexDetailView />}
               {/* Market regime banner */}
               <MarketRegimeBannerComp market={currentMarket} />
               {/* Intraday pressure */}
