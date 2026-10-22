@@ -48,8 +48,12 @@ SOURCES = [
 def scan_source(db_file, table, ticker_col, date_col, price_col, market_col, desc):
     """يفحص مصدر واحد ويرجّع dict بالبيانات"""
     db_path = DB_DIR / db_file
+    scanned_at = datetime.now().isoformat()
     if not db_path.exists():
-        return {'error': f'{db_file} not found', 'db_file': db_file, 'table': table}
+        return {'error': f'{db_file} not found', 'db_file': db_file, 'table': table,
+                'scanned_at': scanned_at, 'row_count': 0, 'status': 'missing',
+                'canonical_priority': 3, 'description': desc,
+                'date_min': None, 'date_max': None, 'tickers_count': 0, 'markets': []}
 
     try:
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
@@ -61,7 +65,10 @@ def scan_source(db_file, table, ticker_col, date_col, price_col, market_col, des
         ).fetchone()
         if not exists:
             conn.close()
-            return {'error': f'{table} not found in {db_file}', 'db_file': db_file, 'table': table}
+            return {'error': f'{table} not found in {db_file}', 'db_file': db_file, 'table': table,
+                    'scanned_at': scanned_at, 'row_count': 0, 'status': 'missing',
+                    'canonical_priority': 3, 'description': desc,
+                    'date_min': None, 'date_max': None, 'tickers_count': 0, 'markets': []}
 
         # row count
         row_count = cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
@@ -72,7 +79,7 @@ def scan_source(db_file, table, ticker_col, date_col, price_col, market_col, des
                 'db_file': db_file, 'table': table, 'row_count': 0,
                 'date_min': None, 'date_max': None,
                 'tickers_count': 0, 'markets': [], 'description': desc,
-                'status': 'empty', 'canonical_priority': 3
+                'status': 'empty', 'canonical_priority': 3, 'scanned_at': scanned_at
             }
 
         # date range
@@ -147,7 +154,10 @@ def scan_source(db_file, table, ticker_col, date_col, price_col, market_col, des
         }
 
     except Exception as e:
-        return {'error': str(e), 'db_file': db_file, 'table': table}
+        return {'error': str(e), 'db_file': db_file, 'table': table,
+                'scanned_at': scanned_at, 'row_count': 0, 'status': 'error',
+                'canonical_priority': 3, 'description': desc,
+                'date_min': None, 'date_max': None, 'tickers_count': 0, 'markets': []}
 
 
 def build_index():
@@ -200,14 +210,17 @@ def build_index():
         print(f"\n  scanning {db_file}.{table}...")
         info = scan_source(db_file, table, tcol, dcol, pcol, mcol, desc)
 
+        # سجل في verification_log حتى لو فيه error
         if 'error' in info:
-            print(f"    ❌ {info['error']}")
+            print(f"    ⚠️ {info['error']} — still indexing with error status")
             cur.execute("""
                 INSERT INTO verification_log (check_name, check_result, details, timestamp)
                 VALUES (?, ?, ?, ?)
-            """, (f"scan_{db_file}_{table}", 'ERROR', info['error'], datetime.now().isoformat()))
-            continue
+            """, (f"scan_{db_file}_{table}", 'WARN', info['error'], datetime.now().isoformat()))
+        else:
+            print(f"    ✓ rows={info['row_count']:,} | {info['date_min']} → {info['date_max']} | status={info['status']}")
 
+        # سجل في source_inventory حتى لو فيه error (عشان نعرف إن المصدر موجود بس فيه مشكلة)
         markets_json = json.dumps(info.get('markets', []), ensure_ascii=False)
         cur.execute("""
             INSERT OR REPLACE INTO source_inventory
@@ -216,16 +229,13 @@ def build_index():
              description, status, canonical_priority, scanned_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            info['db_file'], info['table'], info.get('ticker_col'),
-            info.get('date_col'), info.get('price_col'), info.get('market_col'),
-            info['row_count'], info['date_min'], info['date_max'],
-            info['tickers_count'], markets_json,
-            info['description'], info['status'], info['canonical_priority'],
-            info['scanned_at'],
+            db_file, table, tcol, dcol, pcol, mcol,
+            info.get('row_count', 0), info.get('date_min'),
+            info.get('date_max'), info.get('tickers_count', 0), markets_json,
+            desc, info.get('status', 'error'),
+            info.get('canonical_priority', 3), info.get('scanned_at'),
         ))
         total_sources += 1
-
-        print(f"    ✓ rows={info['row_count']:,} | {info['date_min']} → {info['date_max']} | status={info['status']}")
 
     conn.commit()
 
