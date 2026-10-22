@@ -45,6 +45,7 @@ import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { getEGXMarketStatus } from '@/lib/market-hours';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedEmptyState } from '@/components/shared/ui';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { useAppStore } from '@/lib/store';
 
 // ============================================================
@@ -752,6 +753,23 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  {positive ? '+' : ''}
  {pct.toFixed(2)}%
  </span>
+ );
+ },
+ },
+ // P3 (Premium Polish Pass): عمود sparkline — آخر 20 يوم سعرياً (pure SVG من MiniSparkline)
+ // بياخد data من /api/stocks/sparkline (موجود) + caching تلقائي. صفر mock (Rule 27).
+ {
+ key: 'sparkline',
+ header: 'الاتجاه',
+ align: 'center',
+ sortable: false,
+ width: 'min-w-[90px]',
+ render: (item) => {
+ if (!item.stock_ticker) return <span className="text-muted-foreground text-xs">—</span>;
+ return (
+ <div className="flex justify-center" dir="ltr">
+ <MiniSparkline ticker={item.stock_ticker} days={20} height={24} width={80} showArea={false} />
+ </div>
  );
  },
  },
