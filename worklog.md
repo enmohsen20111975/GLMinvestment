@@ -6856,3 +6856,47 @@ Frontend
 - بعد: turnover_egp populated → daily_predictor ممكن يستخدمه.
 
 بس في فرصة للتحسين: daily_predictor لسه بيستخدم `avg_turnover_20d` (مش `turnover_egp`). لو غيّرناه لـ `turnover_egp`، هتظهر أسهم أكتر في التوقعات.
+
+---
+Task ID: WHALE-RADAR-EXPERIMENTAL-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن اختار الخيار أ (turnover_egp بدل avg_turnover_20d) — تحت التجربة على اللاب توب.
+
+الـ changes:
+
+✅ **EXPERIMENTAL-FIX: WHALE_RADAR filter في daily_predictor.py**
+- قبل: `turnover = stock.get('avg_turnover_20d', 0)` + threshold = 10M
+- بعد: `turnover = turnover_egp (today) → fallback avg_turnover_20d` + threshold = 5M
+- الـ constant `WHALE_RADAR_MIN_TURNOVER` اتغيّر من 10M لـ 5M.
+- أضفت EXPERIMENTAL comment واضح يشرح التغيير + rollback plan.
+
+اختبار على الساند بوكس (filter simulation على الـ cache):
+- قبل الـ fix: 14 سهم بتمر WHALE_RADAR filter.
+- بعد الـ fix: 18 سهم بتمر (+4 أسهم جديدة).
+
+الـ 4 أسهم الجديدة اللي هتدخل التوقعات:
+1. KZPC (today=11.05M, avg_20d=8.53M) — كان بيتـ reject لأن avg < 10M
+2. DGTZD (today=6.11M, avg_20d=6.11M) — كان بيتـ reject لأن avg < 10M
+3. HBCOH (today=5.61M, avg_20d=5.61M) — كان بيتـ reject لأن avg < 10M
+4. VALUU (today=6.56M, avg_20d=6.56M) — كان بيتـ reject لأن avg < 10M
+
+كلهم عندهم:
+- 5/6 أو 6/6 quiet accumulation signals
+- سيولة حالية 5M-11M
+- مفيهمش distribution_flag
+
+Push: commit `53d33b53` (بعد rebase فوق commits `04201002..92d9dcdb`).
+
+الخطوات الجاية على اللاب توب:
+1. git pull origin main
+2. شغّل daily_predictor و شوف الأسهم الجديدة هتدخل WHALE_RADAR
+3. لو النتايج كويسة → ننزل للإنتاج
+4. لو سيئة → rollback (WHALE_RADAR_MIN_TURNOVER = 10M + avg_turnover_20d)
+
+الـ rollback plan (مكتوب في الكود):
+```python
+# قبل: WHALE_RADAR_MIN_TURNOVER = 5_000_000
+# بعد (rollback): WHALE_RADAR_MIN_TURNOVER = 10_000_000
+# قبل: turnover = turnover_egp_today if turnover_egp_today > 0 else avg_turnover_20d
+# بعد (rollback): turnover = stock.get('avg_turnover_20d', 0) or 0
+```
