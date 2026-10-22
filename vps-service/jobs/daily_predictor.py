@@ -450,19 +450,65 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
     except Exception:
         _egx_gate_available = False
 
-    # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
+    # Phase 5 (DATA-UNIFICATION): price_history.db is now PRIMARY (canonical, 1.4M rows)
+    # Legacy: egksco_price_history was PRIMARY — now fallback (was frozen/stale)
+    # 1. PRIMARY: price_history.db.price_history (canonical — 1.4M rows, 1557 tickers)
     try:
         # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
         _v402_gt_ctx = None
         try:
             if _V402_DBM_AVAILABLE:
-                _v402_gt_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
+                _v402_gt_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
                 conn = _v402_gt_ctx.__enter__()
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
             _v402_gt_ctx = None
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(price_history)")
+        _ph_cols = [r[1] for r in cur.fetchall()]
+        _ph_ticker_col = 'ticker' if 'ticker' in _ph_cols else ('symbol' if 'symbol' in _ph_cols else None)
+        if _ph_ticker_col:
+            cur.execute(
+                f"SELECT DISTINCT {_ph_ticker_col} FROM price_history GROUP BY {_ph_ticker_col} HAVING COUNT(*) >= ? ORDER BY {_ph_ticker_col}",
+                (min_days,),
+            )
+            raw_tickers = [row[0] for row in cur.fetchall()]
+        else:
+            raw_tickers = []
+        conn.close()
+        if raw_tickers:
+            # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
+            if _egx_gate_available:
+                result = filter_egx_tickers_detailed(raw_tickers)
+                tickers = result['accepted']
+                stats = result['stats']
+                print(f"[V40.2] price_history.db ({_ph_ticker_col}) — {len(raw_tickers)} raw → "
+                      f"{len(tickers)} EGX-canonical "
+                      f"(rejected {stats['rejected_count']} non-EGX, "
+                      f"removed {stats['duplicates_removed']} dups)", flush=True)
+            else:
+                tickers = raw_tickers
+                print(f"[V40.2] Using price_history.db ({_ph_ticker_col}) — {len(tickers)} tickers "
+                      f"(⚠️ EGX gate not available — no filtering)", flush=True)
+            return tickers
+    except Exception:
+        pass
+
+    # Phase 5 FALLBACK 1: data_engine.db (egksco_price_history — legacy, was PRIMARY)
+    try:
+        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
+        _v402_gt2_ctx = None
+        try:
+            if _V402_DBM_AVAILABLE:
+                _v402_gt2_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
+                conn = _v402_gt2_ctx.__enter__()
+            else:
+                raise RuntimeError("db_manager unavailable")
+        except Exception:
+            conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+            _v402_gt2_ctx = None
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
@@ -476,49 +522,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
                 result = filter_egx_tickers_detailed(raw_tickers)
                 tickers = result['accepted']
                 stats = result['stats']
-                print(f"[V40.2] data_engine.db (egksco) — {len(raw_tickers)} raw → "
-                      f"{len(tickers)} EGX-canonical "
-                      f"(rejected {stats['rejected_count']} non-EGX, "
-                      f"removed {stats['duplicates_removed']} dups)", flush=True)
-            else:
-                tickers = raw_tickers
-                print(f"[V40.2] Using data_engine.db (egksco) — {len(tickers)} tickers "
-                      f"(⚠️ EGX gate not available — no filtering)", flush=True)
-            return tickers
-    except Exception:
-        pass
-
-    # 2. FALLBACK: price_history.db (LEGACY — متجمد)
-    try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gt2_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _v402_gt2_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gt2_ctx.__enter__()
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
-            _v402_gt2_ctx = None
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(price_history)")
-        cols = [r[1] for r in cur.fetchall()]
-        ticker_col = 'ticker' if 'ticker' in cols else 'symbol' if 'symbol' in cols else None
-        if ticker_col:
-            cur.execute(
-                f"SELECT DISTINCT {ticker_col} FROM price_history GROUP BY {ticker_col} HAVING COUNT(*) >= ? ORDER BY {ticker_col}",
-                (min_days,),
-            )
-            raw_tickers = [row[0] for row in cur.fetchall()]
-            conn.close()
-            if raw_tickers:
-                # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
-                if _egx_gate_available:
-                    result = filter_egx_tickers_detailed(raw_tickers)
-                    tickers = result['accepted']
-                    stats = result['stats']
-                    print(f"[V40.2] price_history.db ({ticker_col}) — {len(raw_tickers)} raw → "
+                print(f"[V40.2] FALLBACK: data_engine.db (egksco) — {len(raw_tickers)} raw → "
                       f"{len(tickers)} EGX-canonical "
                       f"(rejected {stats['rejected_count']} non-EGX, "
                       f"removed {stats['duplicates_removed']} dups)", flush=True)

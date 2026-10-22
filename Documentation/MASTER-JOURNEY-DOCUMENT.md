@@ -520,3 +520,38 @@ data_engine.db       egksco_price_history           0 rows  EMPTY
 - تعديل باقي المحركات اللي بتقرا من legacy sources
 
 ---
+
+---
+
+## 16. Phase 5 مكتملة — تعديل get_tickers()
+
+### اللي اتعمل
+1. ✅ كتبت `scripts/modify_get_tickers.py` (سكربت تعديل آمن)
+2. ✅ اعمل backup لـ daily_predictor.py (phase5 backup)
+3. ✅ عدّلت `get_tickers()` بحيث `price_history.db` يبقى PRIMARY
+4. ✅ نقل `egksco_price_history` لـ FALLBACK 1
+5. ✅ احتفظت بـ EGX-MARKET-ISOLATION gate (filter_egx_tickers_detailed)
+6. ✅ كل الـ 6 checks passed
+
+### الاختبارات الصارمة (6 checks)
+1. ✅ Python syntax valid
+2. ✅ Phase 5 marker present
+3. ✅ get_tickers reads price_history.db as PRIMARY
+4. ✅ legacy fallbacks still present (egksco + stock_daily_prices)
+5. ✅ EGX gate filter still present (filter_egx_tickers_detailed)
+6. ✅ backup exists (daily_predictor.py.backup_phase5_*)
+
+### التغيير الجذري
+- **قبل:** `get_tickers()` بيقرا من `egksco_price_history` كـ PRIMARY
+- **بعد:** `get_tickers()` بيقرا من `price_history.db` كـ PRIMARY
+- الـ EGX gate لسه بيشتغل على أي list of tickers (مش محتاج تعديل)
+
+### الحالة الكاملة للتوحيد بعد Phase 5
+| Function | PRIMARY source | Status |
+|---|---|---|
+| maker_radar.py | price_history.db | ✅ Phase 3 |
+| daily_predictor.get_scan_dates | price_history.db | ✅ Phase 4 |
+| daily_predictor.get_tickers | price_history.db | ✅ Phase 5 |
+| liquidity_radar_v2.py | stock_daily_prices | ⏳ (مخطط لـ Phase 5b) |
+
+---
