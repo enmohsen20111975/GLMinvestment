@@ -702,7 +702,7 @@ def get_ticker_sector(ticker):
 # ============================================================================
 
 WHALE_RADAR_OUTPUT_DIR = Path(PROJECT_ROOT) / 'scripts' / 'output'
-WHALE_RADAR_MIN_TURNOVER = 10_000_000  # 10M EGP minimum liquidity
+WHALE_RADAR_MIN_TURNOVER = 5_000_000   # 5M EGP minimum liquidity (EXPERIMENTAL — was 10M)
 WHALE_RADAR_MIN_SIGNALS = 5            # 5/6 or 6/6 signals verified
 WHALE_RADAR_POSITION_SIZE = 0.02       # 2% of portfolio (strict risk management)
 WHALE_RADAR_MIN_RR = 1.8               # R:R >= 1.8 (per owner directive)
@@ -752,7 +752,27 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
         for stock in quiet_list:
             ticker = stock.get('ticker', '')
             path = stock.get('path', '')
-            turnover = stock.get('avg_turnover_20d', 0) or 0
+            # ═══════════════════════════════════════════════════════════════════
+            # EXPERIMENTAL-FIX (2026-10-22) — تحت التجربة
+            # ═══════════════════════════════════════════════════════════════════
+            # قبل: turnover = stock.get('avg_turnover_20d', 0)
+            #   → بيستخدم متوسط 20 يوم (ممكن يكون أقل من السيولة الحالية)
+            #   → أسهم سيولتها الحالية كويسة بقت reject (زي ELNA, CPME, EGS)
+            #
+            # بعد: turnover = turnover_egp (آخر يوم) + fallback لـ avg_turnover_20d
+            #   → لو turnover_egp متاح (من RADAR-FIX-1)، استخدمه (سيولة اليوم الحالية)
+            #   → ده أكتر دقة في تقييم سيولة السهم "دلوقتي"
+            #
+            # كمان الـ threshold اترفع: WHALE_RADAR_MIN_TURNOVER = 10M → 5M
+            #   → عشان نسمح بأسهم سيولتها متوسطة (5M-10M) بس فيها تجميع هادئ
+            #
+            # الوضع: تحت التجربة على اللاب توب. لو النتايج كويسة → ننزل للإنتاج.
+            # لو النتايج سيئة → نرجّع WHALE_RADAR_MIN_TURNOVER = 10M + avg_turnover_20d.
+            # ═══════════════════════════════════════════════════════════════════
+            turnover_egp_today = stock.get('turnover_egp', 0) or 0
+            avg_turnover_20d = stock.get('avg_turnover_20d', 0) or 0
+            # الأولوية: turnover_egp (آخر يوم) → avg_turnover_20d (متوسط 20 يوم)
+            turnover = turnover_egp_today if turnover_egp_today > 0 else avg_turnover_20d
             quiet_details = stock.get('quiet_details') or {}
             signal_count = quiet_details.get('signal_count', 0) if quiet_details else 0
             distribution_flag = stock.get('distribution_flag', False)
@@ -763,7 +783,8 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
             # Criterion 2: at least 5/6 signals verified
             if signal_count < WHALE_RADAR_MIN_SIGNALS:
                 continue
-            # Criterion 3: minimum liquidity 10M EGP
+            # Criterion 3: minimum liquidity 5M EGP (EXPERIMENTAL — was 10M)
+            #             عشان نسمح بأسهم سيولتها متوسطة (5M-10M) بس فيها تجميع هادئ
             if turnover < WHALE_RADAR_MIN_TURNOVER:
                 continue
             # Criterion 4: no whale distribution
