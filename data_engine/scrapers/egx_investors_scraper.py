@@ -100,8 +100,11 @@ INSTITUTIONAL_TRADE_VALUE = 1_000_000.0
 MAX_DAILY_TURNOVER_EGP = 8_000_000_000.0   # 8 billion EGP — hard cap
 MIN_DAILY_TURNOVER_EGP = 2_000_000_000.0   # 2 billion EGP — floor (for sanity check)
 
-EGX_FOREIGN_TRADING_URL_EN = "https://www.egx.com.eg/en/Market/ForeignInvestorsTrading"
-EGX_FOREIGN_TRADING_URL_AR = "https://www.egx.com.eg/ar/Market/ForeignInvestorsTrading"
+# Owner found (2026-10-22): beta.egx.com.eg is NOT F5-protected and has all the
+# investor-flow data (مصريين/عرب/أجانب buy/sell/net). Try beta FIRST, fall back
+# to the www.egx.com.eg (F5-protected, will likely fail) as last resort.
+EGX_FOREIGN_TRADING_URL_EN = "https://beta.egx.com.eg/en/market/investors"
+EGX_FOREIGN_TRADING_URL_AR = "https://beta.egx.com.eg/ar/market/investors"
 HTTP_TIMEOUT_SECONDS = 10.0
 
 USER_AGENT = (

@@ -120,6 +120,41 @@ function fetchSingleSparkline(t: string, days: number) {
     // ALPHA-FAB-FIX-SPARKLINE-001: removed market_indices fabrication block.
     // كان بيخترع 15 نقطة سعر من current_value واحد + Math.sin() noise (Rule 27 violation).
     // لو مفيش OHLCV حقيقي → empty (سياسة الفراغ Rule 27 NO-FAKE-DATA).
+
+    // 3. stocks.db.index_daily_prices — for INDEX symbols (EGX30/EGX70/EGX100/EGX33/TASI).
+    // These have 21,616 historical rows (built by scripts/backfill_indices_history.py +
+    // scripts/sync_market_indices_live.py). Without this source, index sparklines were empty.
+    try {
+      for (const cand of candidates) {
+        const rows = stocksDb.prepare(`
+          SELECT price_date, close
+          FROM index_daily_prices
+          WHERE symbol = ? AND close > 0
+          ORDER BY price_date DESC
+          LIMIT ?
+        `).all(cand, days) as { price_date: string; close: number }[];
+        if (rows.length > 0) {
+          stocksDb.close();
+          const prices = rows.reverse().map(r => Number(r.close));
+          const first = prices[0];
+          const last = prices[prices.length - 1];
+          const result = {
+            ticker: t,
+            prices,
+            min: Math.min(...prices),
+            max: Math.max(...prices),
+            first,
+            last,
+            change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
+            days: prices.length,
+            source: 'stocks.db.index_daily_prices',
+          };
+          setCache(key, result);
+          return result;
+        }
+      }
+    } catch {}
+
     stocksDb.close();
   } catch {}
 
