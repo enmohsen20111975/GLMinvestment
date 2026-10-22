@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-r
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn, safeNum } from '@/lib/utils';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import type { StockMini } from '@/types';
@@ -116,7 +117,22 @@ function MoverList({ stocks, type }: { stocks: StockMini[]; type: 'gainer' | 'lo
 export function TopMovers() {
  const { marketOverview } = useAppStore();
 
- if (!marketOverview) return null;
+ // P1 (Premium Polish Pass): skeleton بدل null لما البيانات لسه بتحمّل.
+ // ممنوع spinner — skeleton بـ pulse ناعم (Rule 30 + 31).
+ if (!marketOverview) {
+ return (
+ <Card className="border-0 shadow-sm">
+ <CardHeader className="pb-1 px-3 pt-2.5">
+ <Skeleton className="h-4 w-28" />
+ </CardHeader>
+ <CardContent className="px-2 pb-2.5 space-y-2">
+ <Skeleton className="h-9 w-full" />
+ <Skeleton className="h-9 w-full" />
+ <Skeleton className="h-9 w-full" />
+ </CardContent>
+ </Card>
+ );
+ }
 
  const { top_gainers, top_losers } = marketOverview;
 
