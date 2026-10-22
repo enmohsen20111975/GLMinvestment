@@ -57,16 +57,27 @@ async function getPortfolioSummary() {
       return { items_count: 0, total_invested: 0, total_current_value: 0, total_gain_loss: 0, total_gain_loss_pct: 0, items: [] };
     }
 
-    // جلب الأسعار الحالية من stocks.db
-    let priceMap: Record<string, number> = {};
+    // جلب الأسعار الحالية + القطاع من stocks.db
+    let stockInfoMap: Record<string, { current_price: number; previous_close: number | null; sector: string | null }> = {};
     if (fs.existsSync(stocksDbPath)) {
       const Database = require('better-sqlite3');
       const stocksDb = new Database(stocksDbPath, { readonly: true });
       const tickers = items.filter(i => i.asset_type === 'stock' || !i.asset_type).map(i => i.symbol?.toUpperCase()).filter(Boolean);
       if (tickers.length > 0) {
         const placeholders = tickers.map(() => '?').join(',');
-        const rows = stocksDb.prepare(`SELECT ticker, current_price FROM stocks WHERE UPPER(ticker) IN (${placeholders})`).all(...tickers);
-        rows.forEach((r: any) => { priceMap[r.ticker.toUpperCase()] = Number(r.current_price) || 0; });
+        // FIX (owner directive): add sector + previous_close so the portfolio table
+        // can show sector (concentration risk) + daily change % — matching the
+        // LiquidityFlowPanel radar table structure.
+        const rows = stocksDb.prepare(
+          `SELECT ticker, current_price, previous_close, sector FROM stocks WHERE UPPER(ticker) IN (${placeholders})`
+        ).all(...tickers);
+        rows.forEach((r: any) => {
+          stockInfoMap[r.ticker.toUpperCase()] = {
+            current_price: Number(r.current_price) || 0,
+            previous_close: r.previous_close != null ? Number(r.previous_close) : null,
+            sector: r.sector != null ? String(r.sector) : null,
+          };
+        });
       }
       stocksDb.close();
     }
@@ -78,25 +89,40 @@ async function getPortfolioSummary() {
       const ticker = item.symbol?.toUpperCase() || '';
       const shares = Number(item.shares) || 0;
       const buyPrice = Number(item.purchase_price) || 0;
-      const currentPrice = priceMap[ticker] || buyPrice;
+      const stockInfo = stockInfoMap[ticker];
+      const currentPrice = stockInfo?.current_price ?? buyPrice;
+      const previousClose = stockInfo?.previous_close ?? null;
+      const sector = stockInfo?.sector ?? null;
       const invested = shares * buyPrice;
       const currentValue = shares * currentPrice;
       const gainLoss = currentValue - invested;
       const gainLossPct = invested > 0 ? (gainLoss / invested) * 100 : 0;
+      // daily change % vs previous close (how the stock moved today)
+      const changePercent = previousClose && previousClose > 0
+        ? ((currentPrice - previousClose) / previousClose) * 100
+        : null;
       totalInvested += invested;
       totalCurrent += currentValue;
       return {
         ticker,
         name: item.name || ticker,
+        stock_ticker: ticker,
         shares,
+        quantity: shares,
         buy_price: buyPrice,
+        avg_buy_price: buyPrice,
         current_price: currentPrice,
+        live_price: currentPrice,
         invested,
         current_value: currentValue,
         gain_loss: gainLoss,
         gain_loss_pct: gainLossPct,
         asset_type: item.asset_type || 'stock',
+        type: item.asset_type || 'stock',
         currency: item.currency || 'EGP',
+        // FIX (owner directive): sector + daily change for portfolio radar table
+        sector,
+        change_percent: changePercent,
       };
     });
 

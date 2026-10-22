@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { getEGXMarketStatus } from '@/lib/market-hours';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 import { useAppStore } from '@/lib/store';
 
 // ============================================================
@@ -74,6 +75,8 @@ interface PortfolioItem {
  change_percent: number | null;
  price_updated: string | null;
  pa_updated: string | null;
+ // FIX (owner directive): sector + daily change % to match LiquidityFlowPanel radar table
+ sector?: string | null;
 }
 
 interface LiveMonitorData {
@@ -631,6 +634,16 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  const totalBorder = isPositive
  ? 'border-profit bg-profit/10'
  : 'border-loss bg-loss/10';
+ const setCurrentView = useAppStore((s) => s.setCurrentView);
+ const setSelectedTicker = useAppStore((s) => s.setSelectedTicker);
+
+ // FIX (owner directive — Empty state for newly-registered user with empty portfolio):
+ // بدل ما نظهر جدول فاضي، نعرض onboarding flow حقيقي:
+ // 1) رسالة واضحة "محفظتك فاضية"
+ // 2) اقتراح 3 أسهم من أعلى الرابحين اليوم (بيانات حقيقية، صفر mock — Rule 27 SAFE)
+ // 3) CTA لـ إضافة سهم → #stock-detail (المستخدم يضيف من هناك)
+ const isEmpty = !portfolio.items_count || portfolio.items_count === 0;
+ const suggestions = (data.gainers || []).slice(0, 3);
 
  // ── UnifiedTable columns for portfolio items ──
  const portfolioColumns: Column<PortfolioItem>[] = [
@@ -656,6 +669,19 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  </span>
  )}
  </div>
+ ),
+ },
+ // FIX (owner directive): عمود القطاع — مطابقة لجدول رادار السيولة (concentration risk visibility)
+ {
+ key: 'sector',
+ header: 'القطاع',
+ align: 'right',
+ sortable: true,
+ width: 'min-w-[110px]',
+ render: (item) => (
+ <span className="truncate block max-w-[140px] text-xs" title={item.sector ?? ''}>
+ {item.sector ? item.sector : <span className="text-muted-foreground">—</span>}
+ </span>
  ),
  },
  {
@@ -704,6 +730,27 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  ) : (
  '—'
  )}
+ </span>
+ );
+ },
+ },
+ // FIX (owner directive): عمود التغيّر اليومي — مطابقة لجدول رادار السيولة
+ {
+ key: 'change_percent',
+ header: 'اليوم %',
+ align: 'center',
+ sortable: true,
+ render: (item) => {
+ const pct = item.change_percent;
+ if (pct == null || isNaN(pct)) {
+ return <span className="text-center text-xs text-muted-foreground inline-block w-full">—</span>;
+ }
+ const positive = pct >= 0;
+ const cls = positive ? 'text-profit ' : 'text-loss ';
+ return (
+ <span className={cn('text-center text-xs font-semibold tabular-nums inline-block w-full', cls)} dir="ltr">
+ {positive ? '+' : ''}
+ {pct.toFixed(2)}%
  </span>
  );
  },
@@ -779,7 +826,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  <div>
  <CardTitle className="text-base">مراقبة المحفظة المباشرة</CardTitle>
  <CardDescription className="text-xs">
- {portfolio.items_count} عنصر
+ {isEmpty ? 'ابدأ محفظتك' : `${portfolio.items_count} عنصر`}
  </CardDescription>
  </div>
  </div>
@@ -793,6 +840,50 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  </div>
  </CardHeader>
  <CardContent>
+ {/* FIX (owner directive): Empty-state onboarding for newly-registered users with no holdings yet.
+     Rule 27 SAFE — كل الاقتراحات بيانات حقيقية من data.gainers (مفيش mock). */}
+ {isEmpty ? (
+ <div className="space-y-4">
+ <UnifiedEmptyState
+ variant="empty"
+ title="محفظتك فاضية — ابدأ المتابعة دلوقتي"
+ description="أضف أول سهم لمحفظتك عشان تتابع أداءه لحظيًا، احسب أرباحك، وشوف القطاعات اللي بتتحرك النهاردة."
+ />
+ {suggestions.length > 0 && (
+ <div className="rounded-lg border border-border bg-slate-50 p-3 dark:bg-slate-950/40">
+ <p className="mb-2 text-xs font-semibold text-muted-foreground">
+ 🔥 أعلى الرابحين النهاردة — اضغط عشان تتابعهم:
+ </p>
+ <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+ {suggestions.map((s) => {
+ const up = s.change_percent >= 0;
+ return (
+ <button
+ key={s.ticker}
+ onClick={() => {
+ setSelectedTicker(s.ticker);
+ setCurrentView('stock-detail');
+ if (typeof window !== 'undefined') window.location.hash = 'stock-detail';
+ }}
+ className="flex items-center justify-between rounded-md border border-border bg-white px-3 py-2 text-right transition-colors hover:border-profit/40 hover:bg-profit/5 dark:bg-slate-900"
+ >
+ <div className="min-w-0">
+ <p className="truncate text-xs font-semibold">{s.name}</p>
+ <p className="font-mono text-[10px] text-muted-foreground">{s.ticker}</p>
+ </div>
+ <span className={cn('text-xs font-bold tabular-nums', up ? 'text-profit ' : 'text-loss ')}>
+ {up ? '+' : ''}
+ {s.change_percent.toFixed(2)}%
+ </span>
+ </button>
+ );
+ })}
+ </div>
+ </div>
+ )}
+ </div>
+ ) : (
+ <>
  {/* Summary row */}
  <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
  <div className="rounded-lg border border-border bg-slate-50 p-3 dark:bg-slate-950/50">
@@ -853,6 +944,8 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
  }}
  />
  </div>
+ </>
+ )}
  </CardContent>
  </Card>
  );
