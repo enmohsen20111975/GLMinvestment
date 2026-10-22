@@ -14,14 +14,19 @@
  * Rule 27 SAFE — كل الأرقام بيانات حقيقية، الـ "100 سهم" هي quantity افتراضية
  * لعرض القيمة الحسابية (مش ادعاء ملكية). واضح إنه "لو كنت مالك" مش "أنت مالك".
  *
- * البيانات: من useAppStore.marketOverview.gainers (نفس مصدر LiveMonitor).
- * مش بـ fetch تاني — Rule 20 (Python=Brain) + صفر overhead على الـ backend.
+ * Data source (priority order):
+ *   1. /api/market/top-movers (برافو B2 — هيجهزه) — الـ canonical endpoint
+ *   2. Fallback: useAppStore.marketOverview.gainers — لو الـ endpoint لسه مش متاح
+ *      (بيـ re-use نفس الـ data بتاعة LiveMonitor — صفر overhead إضافي)
+ *
+ * أول ما برافو يخلص B2، الـ widget هيتظبط أوتوماتيك (مش محتاج تعديل code).
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, Sparkles, ArrowLeft, Wallet } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -32,10 +37,22 @@ const HYPOTHETICAL_QTY = 100;
 interface GainerStock {
   ticker: string;
   name: string;
+  name_ar?: string;
+  sector?: string | null;
   current_price: number;
   change_percent: number;
-  volume: number;
-  updated_at: string;
+  volume?: number;
+  turnover_egp?: number;
+  updated_at?: string;
+}
+
+interface TopMoversResponse {
+  success: boolean;
+  data?: {
+    movers: GainerStock[];
+    as_of?: string;
+  };
+  error?: string;
 }
 
 export function OpportunityCalculatorWidget() {
@@ -45,9 +62,85 @@ export function OpportunityCalculatorWidget() {
   const setSelectedTicker = useAppStore((s) => s.setSelectedTicker);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
 
-  // gainers from marketOverview (same data LiveMonitor uses — no extra fetch)
-  const gainers: GainerStock[] = (marketOverview as any)?.gainers || [];
-  const top3 = gainers.slice(0, 3);
+  const [movers, setMovers] = useState<GainerStock[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Try the canonical endpoint first (B2 from برافو). Falls back to store data if not ready.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/market/top-movers?market=${encodeURIComponent(currentMarket)}&limit=5`,
+          { cache: 'no-store' }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json: TopMoversResponse = await res.json();
+        if (cancelled) return;
+        if (json.success && json.data?.movers && json.data.movers.length > 0) {
+          setMovers(json.data.movers);
+        } else {
+          setMovers(null); // will trigger fallback below
+        }
+      } catch {
+        // Endpoint not ready yet (برافو still working on B2) — fall back to store data.
+        if (cancelled) return;
+        setMovers(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentMarket]);
+
+  // Fallback: use store marketOverview.gainers (same data LiveMonitor uses — no extra fetch)
+  const fallbackGainers: GainerStock[] = (marketOverview as any)?.gainers || [];
+  const activeMovers: GainerStock[] = (movers && movers.length > 0) ? movers : fallbackGainers;
+  const top3 = activeMovers.slice(0, 3);
+
+  // Calculate hypothetical gains (real prices, hypothetical quantity — clearly labeled)
+  const calcGain = (g: GainerStock) => {
+    if (!g.change_percent || !g.current_price) return 0;
+    const yesterdayPrice = g.current_price / (1 + g.change_percent / 100);
+    const gainPerShare = g.current_price - yesterdayPrice;
+    return gainPerShare * HYPOTHETICAL_QTY;
+  };
+
+  const goToStock = (ticker: string) => {
+    setSelectedTicker(ticker);
+    setCurrentView('stock-detail');
+    if (typeof window !== 'undefined') window.location.hash = 'stock-detail';
+  };
+
+  const goToAuth = () => {
+    setCurrentView('auth');
+    if (typeof window !== 'undefined') window.location.hash = 'auth';
+  };
+
+  // Loading skeleton (FCP ≤ 1.5s)
+  if (loading) {
+    return (
+      <Card className="border-border bg-white shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-profit/10">
+              <Sparkles className="h-4 w-4 text-profit" />
+            </div>
+            <div>
+              <CardTitle className="text-base">لو كنت مالك السهم ده</CardTitle>
+              <CardDescription className="text-xs">فرص النهاردة</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (top3.length === 0) {
     // No data yet (market closed / weekend / loading) — render nothing, don't fake it.
@@ -73,26 +166,6 @@ export function OpportunityCalculatorWidget() {
       </Card>
     );
   }
-
-  // Calculate hypothetical gains (real prices, hypothetical quantity — clearly labeled)
-  const calcGain = (g: GainerStock) => {
-    if (!g.change_percent || !g.current_price) return 0;
-    // gain per share today = current_price - (current_price / (1 + change/100))
-    const yesterdayPrice = g.current_price / (1 + g.change_percent / 100);
-    const gainPerShare = g.current_price - yesterdayPrice;
-    return gainPerShare * HYPOTHETICAL_QTY;
-  };
-
-  const goToStock = (ticker: string) => {
-    setSelectedTicker(ticker);
-    setCurrentView('stock-detail');
-    if (typeof window !== 'undefined') window.location.hash = 'stock-detail';
-  };
-
-  const goToAuth = () => {
-    setCurrentView('auth');
-    if (typeof window !== 'undefined') window.location.hash = 'auth';
-  };
 
   return (
     <Card className="border-border bg-white shadow-sm">
@@ -125,6 +198,7 @@ export function OpportunityCalculatorWidget() {
           {top3.map((g) => {
             const gain = calcGain(g);
             const up = g.change_percent >= 0;
+            const displayName = g.name_ar || g.name;
             return (
               <button
                 key={g.ticker}
@@ -134,9 +208,12 @@ export function OpportunityCalculatorWidget() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{g.name}</span>
+                      <span className="text-sm font-semibold">{displayName}</span>
                       <span className="font-mono text-[10px] text-muted-foreground">{g.ticker}</span>
                     </div>
+                    {g.sector && (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">قطاع: {g.sector}</p>
+                    )}
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       السعر الحالي: <span dir="ltr" className="tabular-nums font-medium">{g.current_price.toFixed(2)}</span> ج.م
                     </p>

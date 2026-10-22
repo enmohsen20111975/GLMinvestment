@@ -54,6 +54,7 @@ import { GuestSignupBanner } from '@/components/auth/GuestSignupBanner';
 // widgets جديدة للـ engagement + trust-building. كلها في PinnableWidget registry (Rule 52).
 import { OpportunityCalculatorWidget } from '@/modules/dashboard/components/OpportunityCalculatorWidget';
 import { TrackRecordWidget } from '@/modules/dashboard/components/TrackRecordWidget';
+import { PriorityNotificationsWidget } from '@/modules/dashboard/components/PriorityNotificationsWidget';
 // MultiMarketWidget اتشال من هنا — بقى في شاشة #market-depth المنفصلة (Owner directive).
 // Owner directive: "الأسواق المتعددة → عملات + ذهب فقط" بقت شاشة مستقلة مع حركة
 // السيولة + تدفّق المستثمرين + ضغط الجلسة (عمق السوق من قائمة الأعلى).
@@ -280,6 +281,13 @@ export function DashboardView() {
  title: 'لو كنت مالك السهم ده',
  visible: () => true,
  render: () => <OpportunityCalculatorWidget />,
+ },
+ // التنبيهات الذكية (A3 — top 3 priority notifications for authenticated users)
+ {
+ id: 'priority-notifications',
+ title: 'تنبيهاتك المهمة',
+ visible: () => true,
+ render: () => <PriorityNotificationsWidget />,
  },
  // 9. إشارات الكريبتو → CRYPTO فقط (Owner directive)
  {
