@@ -60,8 +60,9 @@ except ImportError:  # pragma: no cover - scraper runs on production VPS
     requests = None  # type: ignore
 
 # Make `vps-service/utils/db_paths.py` importable when run from project root.
+# Scraper is now at <project>/data_engine/scrapers/ — two levels up = project root.
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_VPS_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir))
+_VPS_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir))
 if _VPS_ROOT not in sys.path:
     sys.path.insert(0, _VPS_ROOT)
 
@@ -69,14 +70,9 @@ try:
     from utils.db_paths import DBPaths  # type: ignore
     DEFAULT_STOCKS_DB = DBPaths.STOCKS_DB
 except Exception:  # pragma: no cover - fallback if db_paths missing
-    # FIX (2026-10-22): was `os.pardir, os.pardir` (two levels up) which
-    # OVERSHOT to /home/meme/my_apps/ instead of /home/meme/my_apps/GLMinvestment.
-    # Script is at <project>/scripts/ — one level up is the project root.
-    DEFAULT_STOCKS_DB = os.path.join(
-        os.path.abspath(os.path.join(_HERE, os.pardir)),
-        "db",
-        "stocks.db",
-    )
+    # data_engine/scrapers/ → 2 levels up = project root → db/stocks.db
+    _PROJECT_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir))
+    DEFAULT_STOCKS_DB = os.path.join(_PROJECT_ROOT, "db", "stocks.db")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging

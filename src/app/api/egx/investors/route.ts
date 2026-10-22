@@ -442,7 +442,7 @@ export async function GET(req: NextRequest) {
       rawRows = db
         .prepare("SELECT * FROM investors_data WHERE source IS NULL OR source != 'computed_estimate' ORDER BY date DESC LIMIT ?")
         .all(limit) as Record<string, unknown>[];
-      source = 'EGX official (egx.com.eg) — run scripts/egx_investors_scraper.py to populate';
+      source = 'EGX official (egx.com.eg) — run data_engine/scrapers/egx_investors_scraper.py to populate';
     } catch (e) {
       console.warn('[egx/investors] stocks.db query failed:', e);
     }
@@ -451,7 +451,7 @@ export async function GET(req: NextRequest) {
     // The AUTO-SEED below FABRICATED investor-flow data using hardcoded ratios
     // (EGX_RATIO_EGYPTIANS=0.70, ARABS=0.10, FOREIGNERS=0.20) — violating Rule 27
     // (NO-FAKE-DATA). Code kept but not called. Real data comes from
-    // scripts/egx_investors_scraper.py which fetches egx.com.eg/en/Market/ForeignInvestorsTrading.
+    // data_engine/scrapers/egx_investors_scraper.py which fetches egx.com.eg/en/Market/ForeignInvestorsTrading.
     // if (rawRows.length === 0) {
     //   try {
     //     const result = autoSeed(db, Math.max(days, 7));
@@ -483,7 +483,7 @@ export async function GET(req: NextRequest) {
           total_trades: 0,
         },
         auto_seeded: false,
-        note: 'لا توجد بيانات مستثمرين حقيقية. شغّل: python3 scripts/egx_investors_scraper.py (بيجلب من egx.com.eg الرسمي).',
+        note: 'لا توجد بيانات مستثمرين حقيقية. شغّل: python3 data_engine/scrapers/egx_investors_scraper.py (بيجلب من egx.com.eg الرسمي).',
         generated_at: new Date().toISOString(),
       });
     }
