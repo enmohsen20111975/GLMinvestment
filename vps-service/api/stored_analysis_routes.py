@@ -247,6 +247,89 @@ def _get_current_price(ticker: str) -> float:
 _STOCKS_FUNDAMENTALS_CACHE: dict = {'data': {}, 'ts': 0.0}
 _STOCKS_FUNDAMENTALS_TTL = 300  # 5 دقايق
 
+# TEXT-FIX-1 (2026-10-22): cache لـ change_1d و turnover_egp محسوبة من price_history.db
+# المشكلة: stocks.db.change_percent ممكن يكون قديم (متجمد من يوم الـ last_update).
+# الحل: نحسب change_1d و turnover_egp ديناميكياً من price_history.db (المصدر الكاثوليكي الموحّد).
+_PRICE_HISTORY_METRICS_CACHE: dict = {'data': {}, 'ts': 0.0}
+_PRICE_HISTORY_METRICS_TTL = 180  # 3 دقايق
+
+
+def _load_price_history_metrics_batch() -> dict:
+    """احسب change_1d و turnover_egp لكل ticker من price_history.db (المصدر الموحّد).
+
+    بيرجع dict: ticker → {change_1d, turnover_egp, volume, last_date}
+    دايماً طازج — مش معتمد على stocks.db.change_percent (اللي ممكن يكون قديم).
+    """
+    import time as _time
+    now = _time.time()
+    if _PRICE_HISTORY_METRICS_CACHE['data'] and (now - _PRICE_HISTORY_METRICS_CACHE['ts']) < _PRICE_HISTORY_METRICS_TTL:
+        return _PRICE_HISTORY_METRICS_CACHE['data']
+
+    result: dict = {}
+    try:
+        # price_history.db path
+        _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+        if not os.path.exists(_ph_db):
+            # لا price_history.db → رجّع فاضي (الـ fallback هيستخدم stocks.db)
+            return result
+
+        conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # احسب change_1d + turnover_egp لكل ticker:
+        # - change_1d = (آخر close - close اللي قبله) / close اللي قبله × 100
+        # - turnover_egp = آخر close × آخر volume
+        # - volume = آخر volume
+        # احنا عايزين آخر يومين بس لكل ticker — نعملها بـ window function.
+        cur.execute('''
+            WITH ranked AS (
+                SELECT ticker, date, close_price, volume,
+                       ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY date DESC) AS rn
+                FROM price_history
+                WHERE close_price > 0 AND volume > 0
+            )
+            SELECT ticker,
+                   MAX(CASE WHEN rn = 1 THEN close_price END) AS last_close,
+                   MAX(CASE WHEN rn = 1 THEN volume END) AS last_volume,
+                   MAX(CASE WHEN rn = 1 THEN date END) AS last_date,
+                   MAX(CASE WHEN rn = 2 THEN close_price END) AS prev_close
+            FROM ranked
+            WHERE rn <= 2
+            GROUP BY ticker
+        ''')
+
+        for r in cur.fetchall():
+            ticker = (r['ticker'] or '').upper()
+            if not ticker:
+                continue
+            last_close = r['last_close'] or 0
+            prev_close = r['prev_close'] or 0
+            last_volume = r['last_volume'] or 0
+
+            # change_1d = (last - prev) / prev × 100
+            change_1d = 0.0
+            if prev_close > 0:
+                change_1d = round((last_close - prev_close) / prev_close * 100, 2)
+
+            # turnover_egp = close × volume (آخر يوم)
+            turnover_egp = round(last_close * last_volume, 2) if last_close > 0 and last_volume > 0 else 0
+
+            result[ticker] = {
+                'change_1d': change_1d,
+                'turnover_egp': turnover_egp,
+                'volume': last_volume,
+                'last_date': r['last_date'],
+            }
+
+        conn.close()
+    except Exception as e:
+        print(f"[stored_analysis_routes] price_history metrics load failed: {e}")
+
+    _PRICE_HISTORY_METRICS_CACHE['data'] = result
+    _PRICE_HISTORY_METRICS_CACHE['ts'] = now
+    return result
+
 
 def _load_stocks_fundamentals_batch() -> dict:
     """تحميل بيانات الأسهم الأساسية والفنية دفعة واحدة من stocks.db.
@@ -254,12 +337,18 @@ def _load_stocks_fundamentals_batch() -> dict:
     بيرجع dict: ticker → {pe_ratio, roe, change_1d, change_1m, volume,
     volume_ratio, volatility, current_price, sector, name_ar, fair_value_upside}
 
+    TEXT-FIX-1 (2026-10-22): change_1d و turnover_egp بيتـ override بـ price_history.db
+    لو متاح — ده بيضمن إن النص دايماً طازج (مش معتمد على stocks.db.change_percent).
+
     النتيجة متكاشة لمدة 5 دقايق عشان نتجنب ضرب الـ DB في كل request.
     """
     import time as _time
     now = _time.time()
     if _STOCKS_FUNDAMENTALS_CACHE['data'] and (now - _STOCKS_FUNDAMENTALS_CACHE['ts']) < _STOCKS_FUNDAMENTALS_TTL:
         return _STOCKS_FUNDAMENTALS_CACHE['data']
+
+    # TEXT-FIX-1: حمّل change_1d + turnover_egp من price_history.db (المصدر الكاثوليكي)
+    _ph_metrics = _load_price_history_metrics_batch()
 
     result: dict = {}
     try:
@@ -424,6 +513,18 @@ def _load_stocks_fundamentals_batch() -> dict:
                 # C2-SECTOR-HEAT: needed to filter heat map by market
                 'market': (d.get('market') or '').upper(),
             }
+
+            # TEXT-FIX-1 (2026-10-22): override change_1d + turnover_egp من price_history.db
+            # عشان النص دايماً طازج (stocks.db.change_percent ممكن يكون قديم).
+            _ph = _ph_metrics.get(ticker, {})
+            if _ph:
+                # override لو price_history عنده بيانات أحدث
+                if _ph.get('change_1d') is not None:
+                    result[ticker]['change_1d'] = _ph['change_1d']
+                if _ph.get('turnover_egp') and _ph['turnover_egp'] > 0:
+                    result[ticker]['turnover_egp'] = _ph['turnover_egp']
+                if _ph.get('volume') and _ph['volume'] > 0:
+                    result[ticker]['volume'] = _ph['volume']
 
         conn.close()
     except Exception as e:
@@ -942,7 +1043,10 @@ def _derive_persona_action(persona: str, row: dict, fund: dict = None) -> dict:
             }
 
         if rec in ('strong_buy', 'buy', 'swing_buy', 't1_buy') or score >= 50:
-            if score >= 55 and rr >= 1.2:
+            # TEXT-FIX-2 (2026-10-22): raise threshold for "شراء قوي"
+            # قبل: score >= 55 and rr >= 1.2 (سهل جداً → كل التوقعات "شراء قوي")
+            # بعد: score >= 65 and rr >= 1.5 (stricter → variety between شراء قوي/شراء)
+            if score >= 65 and rr >= 1.5:
                 return {
                     'verdict': 'شراء قوي', 'signal': 'BUY', 'score': score,
                     'entry': e if e > 0 else None, 'target': tp1 if tp1 > 0 else None, 'stop': s if s > 0 else None,
