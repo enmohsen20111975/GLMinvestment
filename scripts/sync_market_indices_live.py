@@ -328,7 +328,7 @@ def main():
     egx33_data = canonical.get('EGX33_SHARIAH', {})
     egx33 = compute_weighted_index(
         prices, egx33_data.get('constituents', []),
-        base_value=3300, symbol='EGX33',
+        base_value=get_latest_index_close(STOCKS_DB, 'EGX33') or 3300, symbol='EGX33',
         name='EGX 33 Shariah Index', name_ar='مؤشر إيجي إكس 33 الشرعي',
         is_shariah=1
     )
