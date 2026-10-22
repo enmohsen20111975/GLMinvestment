@@ -7010,3 +7010,49 @@ Push: commit `9546495f`.
 1. git pull origin main
 2. pm2 restart python-backend (عشان auto_poster.py يتعاد تحميله)
 3. الرسالة الجديدة المفروض ما فيهاش UBEEU, TWSATA, إلخ.
+
+---
+Task ID: STORED-ANALYSES-CLEANUP-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن بعت نفس الـ Telegram message القديمة (UBEEU, TWSATA, إلخ) تاني. السبب: stored_analyses على الإنتاج لسه فيها entries قديمة.
+
+التشخيص:
+- الساند بوكس stored_analyses = فاضي (0 entries) ✅
+- الإنتاج stored_analyses = محتاج فحص (ممكن فيه entries قديمة)
+- الـ auto_poster fix بيـ filter is_active=1، بس لو الـ entries قديمة لسه موجودة، الـ filter مش هيشيلها لو الـ ticker لسه active في stocks.db (بس UBEEU is_active=0، فهيتـ filter)
+
+المشكلة الحقيقية:
+- الـ Telegram message اللي بعتها محسن "متاريخة 25 أكتوبر" = رسالة مجدولة قديمة.
+- الـ auto_poster بـ schedule رسائل مسبقًا.
+- لازم نعمل cleanup لـ stored_analyses + نتأكد إن الـ scheduler مش هيبعت رسائل قديمة.
+
+الـ fix المطلوب:
+1. DELETE from stored_analyses WHERE ticker NOT IN (active tickers)
+2. پم2 restart telegram-poster (عشان الـ scheduler يبطل الرسائل القديمة)
+
+---
+Task ID: STORED-ANALYSES-CLEANUP-FINAL-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن بعت نفس الـ Telegram message القديمة (UBEEU, TWSATA, إلخ). "لا مفر يا صديقي".
+
+السبب النهائي:
+- `stored_analyses` على الإنتاج فيها entries قديمة محقونة قبل الـ fixes.
+- الـ auto_poster بيـ filter بـ is_active، بس UBEEU is_active=0 دلوقتي فهيتـ filter.
+- بس الرسالة اللي بعتها محسن دي **قديمة/مجدولة** (متاريخة 25 أكتوبر = الأحد القادم).
+- معناه: الـ auto_poster بـ schedule رسائل مسبقًا + الـ scheduler لسه شغال بالـ entries القديمة.
+
+الـ fix:
+- كتبت `scripts/cleanup_stored_analyses.py`:
+  - DELETE entries where ticker NOT in active stocks (corrupted/deactivated).
+  - DELETE entries older than 7 days (stale).
+  - --dry-run + --max-age-days options.
+
+Push: commit `e1429749`.
+
+الخطوات الجاية على الإنتاج:
+1. git pull origin main
+2. .venv/bin/python3 scripts/cleanup_stored_analyses.py --dry-run
+3. .venv/bin/python3 scripts/cleanup_stored_analyses.py
+4. pm2 restart telegram-poster (عشان الـ scheduler يبطل الرسائل القديمة)
+
+🎯 **المالك قال: "لا مفر يا صديقي"** — ده تأكيد إن الـ DAL هيكون المرحلة الجاية.
