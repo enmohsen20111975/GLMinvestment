@@ -6932,3 +6932,34 @@ Push: commit `215e5e39` (بعد rebase فوق commits `53d33b53..7ca5bec0`).
    cd ~/my_apps/GLMinvestment
 3. شوف الـ WHALE_RADAR picks — المفروض يبقى > 0 دلوقتي
 4. لو فيه picks، شوف الأسهم الجديدة (KZPC, DGTZD, HBCOH, VALUU)
+
+---
+Task ID: SCAN-FILTER-FIX-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن بعت output فيه 5 picks كلهم HOLD + ILLIQUID (FAITA, APRI, KAHA, PORT, NAHO). الـ sync_scanner بيـ inject أسهم مرفوضة.
+
+الـ bug:
+- UnifiedScanner بيرجع HOLD + track='ILLIQUID' للأسهم غير السائلة.
+- بس sync_scanner_to_stored_analyses كانت بـ inject كل اللي الـ scanner بيرجعه.
+- النتيجة: أسهم HOLD بتظهر كـ WHALE_RADAR_BUY في stored_analyses.
+
+الـ fix (SCAN-FILTER):
+- أضفت BUY_SIGNALS = {'BUY', 'STRONG_BUY'}.
+- أضفت REJECT_TRACKS = {'ILLIQUID', 'FALLING_KNIFE_VETO', 'DISTRIBUTION_RISK', 'DISTRIBUTION_VETO', 'LOW_RR', 'DIRTY_DIST', 'NO_PROOF', 'PEAK_MINEFIELD_WAIT', 'WEAK_PROOF'}.
+- أضفت BUY_TRACKS = {'ACCUMULATION_BUY', 'GOLDEN_DIP', 'CONFIRMED'}.
+- الـ function بتـ skip أي سهم ما بيمرش الـ 3 filters.
+- بستخدم scanner_signal + scanner_track (مش hardcoded 'BUY'/'GOLDEN_DIP').
+
+اختبار على الساند بوكس:
+- syntax valid ✅
+- filter logic: kept=[ABUK, COMI] (BUY+GOLDEN_DIP, BUY+CONFIRMED) ✅
+- skipped=3 (HOLD+ILLIQUID×2, HOLD+LOW_RR×1) ✅
+
+Push: commit `f3be3aea`.
+
+الخطوات الجاية على اللاب توب:
+1. git pull origin main
+2. شغّل daily_predictor تاني
+3. المفروض الـ picks اللي تظهر هي الـ BUY/STRONG_BUY بس (مش HOLD/ILLIQUID)
+
+ملاحظة: لو الـ UnifiedScanner ما رجّعش أي BUY/STRONG_BUY، هتبقى 0 picks. ده صح — معناه إن مفيش أسهم كويسة دلوقتي.
