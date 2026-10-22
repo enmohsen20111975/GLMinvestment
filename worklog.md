@@ -6355,3 +6355,33 @@ Task: بعد الـ audit الأول على الإنتاج، اكتشفت إن p
 Push: commit `01945dc0` (بعد rebase فوق commits الإنتاج `f0cc5334..7e79f625`).
 
 الخطوة الجاية: محسن يشغل `deep_schema_audit.py` على الإنتاج عشان نكتشف الـ triggers/views اللي ممكن تتأثر بـ ALTER TABLE.
+
+---
+Task ID: PROD-AUDIT-ANALYSIS-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن بعتلي الـ audit JSON الكامل من الإنتاج. حللته.
+
+النتائج الرئيسية:
+1. ✅ **مفيش triggers + مفيش views** على أي DB — الـ ALTER TABLE آمن تماماً.
+2. ✅ **`market` column موجود بالفعل** في price_history table على الإنتاج. Phase 2 unify هيلاقيه وما هيعملش ALTER.
+3. ✅ **price_history row count: 1,314,698** — قريب من اللاب توب (1,321,447).
+4. 🟡 **الإنتاج عنده 6 columns إضافية** مش عندنا: `adjusted`, `buy_volume`, `sell_volume`, `delta_volume`, `delta_pct`, `pressure`. الـ unify بـ INSERT على columns أساسية بس — الـ columns الإضافية هتفضل NULL للصفوف الجديدة.
+5. ✅ `screener_daily` table في price_history.db (416 rows) — مش هيتأثر.
+6. ✅ data_engine.db فيه 29 tables (sharia + fundamentals + tabs) — الـ unify بيتعامل مع historical_data + egksco_price_history بس.
+
+القرار: **آمن للـ deployment.**
+
+Push: commit `32fbf4bb` (deploy_production.sh script).
+
+الـ deploy script بيشغل:
+  Step 0: Backup كل الـ DBs (mandatory)
+  Step 1: git pull
+  Step 2: yfinance install
+  Step 3: audit (final check)
+  Step 4: Phase 2 unify
+  Step 5: Phase 5 verify (6/6)
+  Step 6: Phase 5b verify (8/8)
+  Step 7: Phase 6 verify (8/8)
+  Step 8: Runtime test (daily_predictor + radar)
+
+الـ script بيقف على أي error (set -e) و بي hỗف backup location للـ rollback.
