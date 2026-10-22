@@ -383,3 +383,35 @@ data_engine.db       egksco_price_history           0 rows  EMPTY
 
 **آخر تحديث:** 2026-10-22  
 **الحالة:** Phase 0 خلصت، Phase 1 لسه محتاجة schema الإنتاج
+
+---
+
+## 11. تحديث: التنفيذ على اللاب توب أولاً
+
+### القرار
+> "أعتقد الوضع ارحم بكتير التنفيذ هايكون على الاب توب الاول وبعد النجاح التام نرو للأنتاجى"
+
+### المراحل المكتملة على الإنتاج (`/root/GLMinvestment`) — 2026-10-22
+
+| Phase | الحالة | النتائج |
+|---|---|---|
+| Phase 0 (Source Index) | ✅ اتعملت | 5 sources indexed, 6/6 checks passed |
+| Phase 1 (Archive) | ✅ اتعملت | egksco (59,910 rows) + historical (174,616 rows) — 8/8 checks passed |
+| sync_historical_data | ✅ اتعملت | 25,589 rows upserted — كل الأسواق بقت 2026-10-22 |
+| maker_radar | ✅ اشتغل | 18 سهم تحت الميكروسكوب، cache متولّد |
+| pm2 restart nextjs | ✅ اتعملت | nextjs restarted |
+
+### المراحل المتبقية (على اللاب توب الأول)
+
+| Phase | الوصف | الحالة |
+|---|---|---|
+| Phase 2 | توحيد price_history.db (دمج المصادر القديمة) | ⏳ جاري |
+| Phase 3 | تعديل maker_radar.py (يقرا من price_history بس) | ⏳ |
+| Phase 4 | تعديل daily_predictor.py | ⏳ |
+| Phase 5 | تعديل باقي المحركات | ⏳ |
+| Phase 6 | cron واحد بيملا price_history.db | ⏳ |
+
+### القاعدة
+كل Phase يتعمل على اللاب توب الأول، يتختبر تمام، وبعدين نروح للإنتاج.
+
+---
