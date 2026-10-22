@@ -6309,3 +6309,26 @@ Task: محسن سأل: "النقطة الان اشغل على النتاجى ا�
 - Rollback plan جاهز لـ 3 scenarios.
 
 القاعدة الذهبية: لو أي خطوة فشلت → STOP فورًا + ابعتلي الـ output.
+
+---
+Task ID: PROD-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن سأل: "هل اتأكدت من تطابق DBs الإنتاج مع الأكواد؟ المفروض تاخد صورة طبق الأصل من اللي على السيرفر وتقارن."
+
+الاعتراف: محسن صح 100%. أنا ما عملتش الـ audit ده قبل كده. عملته دلوقتي.
+
+كتبت `scripts/audit_production_db.py` (286 lines) بيعمل:
+1. فحص كل الـ 9 DBs المطلوبة (stocks, predictions, price_history, data_engine, intraday, auth, news, metrics, crypto).
+2. لكل DB: tables, schemas, row counts, missing/expected tables.
+3. Phase 5b compatibility check (price_history columns + stock_daily_prices fallback).
+4. Phase 6 compatibility check (price_history.db exists for safetynet).
+5. JSON report كامل في `db/db_audit_TIMESTAMP.json`.
+
+اختبار على الساند بوكس: 9/9 DBs found, 0 critical issues.
+
+Push: commit `f0cc5334` (بعد rebase فوق commits الإنتاج EGX indices الجديدة).
+
+⚠️ ملاحظة مهمة من الـ audit:
+- auth.db على الساند بوكس ناقص `Session` table — بس ده مش مشكلة للـ Phase 5b/6 (auth مش متورط).
+
+الخطوة اللي بعد كده: محسن يشغل `audit_production_db.py` على الإنتاج الأول، يبعتلي الـ output، وبعدها نقرر نكمل deploy ولا لأ.
