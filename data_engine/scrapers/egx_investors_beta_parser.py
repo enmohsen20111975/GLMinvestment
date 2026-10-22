@@ -167,7 +167,7 @@ def render_and_extract(url, timeout_ms=45000):
                         key_prefix = f"{current_type}_{current_nationality}"
                         result[f"{key_prefix}_buys"] = buy
                         result[f"{key_prefix}_sells"] = sell
-                        log.info("  %s/%s: buy=%,.0f sell=%,.0f net=%,.0f",
+                        log.info(f"  {current_type}/{current_nationality}: buy={buy:,.0f} sell={sell:,.0f} net={net:,.0f}")
                                  current_type, current_nationality, buy, sell, net)
 
             # Detect number of trades
@@ -215,7 +215,7 @@ def render_and_extract(url, timeout_ms=45000):
                                 result[f"{key}_buys"] = nums[0]
                             if len(nums) >= 2 and nums[1] > 100000:
                                 result[f"{key}_sells"] = nums[1]
-                            log.info("  table %d row: %s/%s buy=%,.0f sell=%,.0f",
+                            log.info(f"  table {table_idx} row: {typ}/{nat} buy={nums[0]:,.0f} sell={nums[1]:,.0f}")
                                      table_idx, typ, nat, nums[0], nums[1] if len(nums) > 1 else 0)
             except:
                 pass
@@ -246,7 +246,7 @@ def render_and_extract(url, timeout_ms=45000):
             log.warning("values too small (max=%,.0f) — parser may have failed", max_val)
             return None
 
-        log.info("✓ parsed: egy_buys=%,.0f egy_sells=%,.0f foreign_buys=%,.0f foreign_sells=%,.0f trades=%d",
+        log.info(f"✓ parsed: egy_buys={result["individuals_egy_buys"]:,.0f} egy_sells={result["individuals_egy_sells"]:,.0f} foreign_buys={result["foreign_buys"]:,.0f} foreign_sells={result["foreign_sells"]:,.0f} trades={result["number_of_trades"]}")
                  result['individuals_egy_buys'], result['individuals_egy_sells'],
                  result['foreign_buys'], result['foreign_sells'], result['number_of_trades'])
 
