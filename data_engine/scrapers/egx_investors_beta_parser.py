@@ -53,7 +53,7 @@ def parse_number(s):
         return 0
 
 
-def render_and_extract(url, timeout_ms=45000):
+def render_and_extract(url, timeout_ms=90000):
     """Render beta page with Playwright, extract investor flow tables."""
     try:
         from playwright.sync_api import sync_playwright
@@ -81,12 +81,17 @@ def render_and_extract(url, timeout_ms=45000):
         page = context.pages[0] if context.pages else context.new_page()
 
         log.info("navigating to %s", url)
-        try:
-            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-        except Exception as e:
-            log.error("goto failed: %s", e)
-            context.close()
-            return None
+        for attempt in range(3):
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+                break
+            except Exception as e:
+                log.warning("goto attempt %d failed: %s", attempt+1, e)
+                if attempt == 2:
+                    log.error("goto failed: %s", e)
+                    context.close()
+                    return None
+                page.wait_for_timeout(5000)
 
         # Wait for investor keywords to appear
         log.info("waiting for investor data...")
