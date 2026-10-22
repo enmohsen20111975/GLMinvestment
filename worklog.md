@@ -6530,3 +6530,70 @@ Task: محسن اشتكا: "رادار السيولة متكتف، 7 أسهم ب
 2. فحص الـ maker_radar.py output structure (ليه stocks=[]).
 3. فحص الـ scraper اللي بيجيب ISIN.
 4. اقتراح fixes.
+
+---
+Task ID: PREDICTIONS-AUDIT-1
+Agent: Z.ai Code (الفاحص التقني — تحليل هندسي)
+Task: محسن بعت توقعات اليوم (10 أسهم). الأسعار صح بس الكلام (التحليل) متأخر يومين. فيه "سيولة ممتازة (1.0M ج.م)" لكل الأسهم. كلهم "شراء قوي".
+
+التحليل الهندسي:
+
+🔴 **ROOT CAUSE 1: turnover_egp = NULL لكل 427 سهم EGX**
+- `stocks.db.stocks.turnover_egp` = NULL for 100% of EGX active stocks.
+- `stored_analysis_routes.py` line 837:
+  `turnover_m = turnover_egp / 1_000_000.0 if turnover_egp > 0 else vol_ratio_val`
+- `vol_ratio_val` defaults to 1.0 (line 829: `float(row.get('volume_ratio') or 1.0)`)
+- النتيجة: كل التوقعات بتعمل template fallback لـ "سيولة ممتازة (1.0M ج.م)".
+- ده fake data — مفيش سهم في مصر سيولته 1.0M بالظبط.
+
+🔴 **ROOT CAUSE 2: stored_analyses.change_1d = NULL لكل التوقعات**
+- `predictions.db.stored_analyses` table عندها:
+  - change_1d = None لكل الـ 10 tickers.
+  - volume_ratio = None.
+  - turnover_egp = None.
+- الـ created_at بتوعهم من Oct 17, Oct 20, Oct 21 — متجمدين.
+- الـ code بيـ fall back لـ `fund.get('change_1d')` (stocks.db).
+- بس stocks.db.change_percent من Oct 21 برضه.
+
+🔴 **ROOT CAUSE 3: change_percent في النص مش بيتطابق مع stocks.db**
+- PHDC: النص بيقول "هابط -5.3%"، stocks.db بيقول +1.24% (POSITIVE!).
+- ABUK: النص بيقول "هابط -3.0%"، stocks.db بيقول +2.41% (POSITIVE!).
+- ADRI: النص بيقول "صاعد +3.2%"، stocks.db بيقول -2.89% (OPPOSITE!).
+- معناه: change_1d في النص جاي من مصدر تالت مش stocks.db ولا stored_analyses.
+- محتاج فحص أعمق لـ: هل بيتحسب من price_history.db؟ من data_engine.db؟ من cache قديم؟
+
+🔴 **ROOT CAUSE 4: كل التوقعات "شراء قوي" (no signal variety)**
+- 10 أسهم كلهم "شراء قوي" — ده suspicious.
+- الكود (line 944-951): `if score >= 55 and rr >= 1.2: return verdict='شراء قوي'`
+- يعني أي سهم score ≥ 55 + R/R ≥ 1.2 بيبقى "شراء قوي".
+- مفيش variety لإن الـ threshold منخفض و الـ kill-filters مش بتشتغل.
+
+🔴 **ROOT CAUSE 5: كل R/R = 1.80 (templated)**
+- 8 من 10 عندهم R/R = 1.80:1 بالظبط.
+- الكود (line 822): `rr = 1.5 if persona == 'gambler' else 2.0` (fallback).
+- بس 1.80 مش 1.50 — يعني الـ rr بيتحسب من مكان تاني.
+- محتاج فحص الـ risk_reward calculation.
+
+🟡 **ARCHITECTURE ISSUE: انفصال بين الأسعار والتحليل**
+- `daily_predictor.py` بيولّد entry/target/stop → writes لـ predictions.db (FRESH).
+- `stored_analysis_routes.py` بيولّد النص (reason) → reads من stored_analyses + stocks.db (STALE).
+- النتيجة: الأسعار طازجة بس النص متجمد.
+- ده الـ disconnect اللي محسن حس بيه: "الأسعار صح بس الكلام متأخر يومين".
+
+الـ pipeline الحقيقي:
+```
+daily_predictor.py (V40.2) → predictions.db (entry/target/stop — FRESH)
+         ↓
+stored_analyses table (change_1d=NULL, turnover_egp=NULL — STALE)
+         ↓
+stored_analysis_routes.py (builds reason text — uses STALE data)
+         ↓
+Telegram message (prices fresh + text stale = confusing)
+```
+
+الـ fixes المطلوبة (بأسلوب هندسي):
+1. populate turnover_egp في stocks.db.stocks (من price_history أو intraday).
+2. regenerate stored_analyses لما daily_predictor يشتغل (تحديث change_1d, volume_ratio, turnover_egp).
+3. تحقق من مصدر change_1d في النص (ليه مش بيتطابق مع stocks.db؟).
+4. رفع threshold لـ "شراء قوي" (score ≥ 65 + R/R ≥ 1.5 بدل 55 + 1.2).
+5. إصلاح الـ R/R fallback (1.80 مش 1.50 — فين المجرم؟).
