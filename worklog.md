@@ -6276,3 +6276,36 @@ Task: محسن سأل: "موضوع وضع طبقة هي اللي تتعامل م
 2. بس لازم نعرف إن الـ "بهتلة" دي موجودة و هتسبب bugs صامتة.
 3. لو حصل أي مشكلة في الإنتاج، أول حاجة نشك فيها: route بيكتب في DB و route تاني بيقرا من نفس الـ DB في نفس الوقت → lock.
 4. المرحلة اللي بعد الإنتاج: refactoring تدريجي لـ 104 route لاستخدام layer موحّدة.
+
+---
+Task ID: DEPLOYMENT-DECISION-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن سأل: "النقطة الان اشغل على النتاجى الى اتعمل ولا نعمل الطبقة بتاعت قواعد البيانات؟"
+
+القرار: **نشغل الـ unification دلوقتي. الـ layer بعدها.**
+
+الأسباب:
+1. الـ unification عمل شغله (Phase 0-6 متختبر 8/8 PASS على الساند بوكس + اللاب توب).
+2. الـ layer refactor أسابيع شغل (104 routes × refactor).
+3. الـ unification بيعالج الـ root cause (5 مصادر مختلفة).
+4. الـ changes اللي رفعتها مش هتأثر على الـ 128 عميل (الـ frontend routes مش هتتلمس).
+
+التأكيدات على الإنتاج:
+- `/root/GLMinvestment` هو الإنتاج.
+- فيه 128 عميل شغالين.
+- محسن بيشتغل من الـ terminal + الـ scripts بتعمل deployment.
+- الكوارث اللي بيخاف منها: تضييع البيانات + السيرفر يقع.
+
+خطة الـ deployment كتبتها في `upload/PRODUCTION_DEPLOYMENT_PLAN.md`:
+- Stage 0: Backup كامل لكل الـ DBs (إلزامي).
+- Stage 1: git pull.
+- Stage 2: install yfinance.
+- Stage 3: Phase 2 unify (schema fix).
+- Stage 4: Phase 5 verify (6/6).
+- Stage 5: Phase 5b verify (8/8).
+- Stage 6: Phase 6 verify (8/8).
+- Stage 7: runtime test.
+- Stage 8: monitoring 30 دقيقة.
+- Rollback plan جاهز لـ 3 scenarios.
+
+القاعدة الذهبية: لو أي خطوة فشلت → STOP فورًا + ابعتلي الـ output.
