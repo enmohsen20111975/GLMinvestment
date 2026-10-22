@@ -348,22 +348,24 @@ def get_scan_dates(start_date, end_date, scan_interval):
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     
-    # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
+    # Phase 4 (DATA-UNIFICATION): price_history.db is now PRIMARY (canonical, 1.4M rows)
+    # Legacy: egksco_price_history was PRIMARY — now fallback (was frozen/stale)
+    # 1. PRIMARY: price_history.db.price_history (canonical — 1.4M rows, 2000-2026)
     try:
         # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
         _v402_gsd_ctx = None
         try:
             if _V402_DBM_AVAILABLE:
-                _v402_gsd_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
+                _v402_gsd_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
                 conn = _v402_gsd_ctx.__enter__()
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
             _v402_gsd_ctx = None
         cur = conn.cursor()
         cur.execute(
-            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            "SELECT DISTINCT date AS price_date FROM price_history WHERE date >= ? AND date <= ? ORDER BY date ASC",
             (start_date, end_date),
         )
         dates = [row[0] for row in cur.fetchall()]
@@ -377,19 +379,18 @@ def get_scan_dates(start_date, end_date, scan_interval):
     except Exception:
         pass
     
-    # UNIFY-FIX: FALLBACK 1 — price_history.db.price_history (1.24M rows، canonical EGX)
-    # كان مُلغى (2026-09-03) لكن نعيد تفعيله كـ fallback لأن egksco_price_history قديمة
+    # Phase 4 FALLBACK 1: data_engine.db.egksco_price_history (legacy — was PRIMARY)
     try:
-        conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
         cur = conn.cursor()
         cur.execute(
-            "SELECT DISTINCT price_date FROM price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
             (start_date, end_date),
         )
         dates = [row[0] for row in cur.fetchall()]
         conn.close()
         if dates:
-            print(f"[V40.2] FALLBACK: price_history.db.price_history — {len(dates)} dates (egksco stale)", flush=True)
+            print(f"[V40.2] FALLBACK: egksco_price_history — {len(dates)} dates (price_history.db unavailable)", flush=True)
             return dates[::scan_interval]
     except Exception:
         pass
