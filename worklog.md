@@ -6420,3 +6420,40 @@ Task: محسن شغّل deploy_production.sh على الإنتاج. حللت ا�
 3. يراقب pm2 logs لـ 30 دقيقة
 
 الـ deploy ناجح 95%. باقي runtime test + yfinance upgrade.
+
+---
+Task ID: PROD-DEPLOY-SUCCESS-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: الـ deploy على الإنتاج خلص. كل الـ tests PASS.
+
+النتائج النهائية على الإنتاج (`/root/GLMinvestment`):
+
+✅ **Phase 6 verification: 8/8 PASS** (بعد yfinance upgrade لـ v1.7.0)
+✅ **daily_predictor runtime test:**
+   - `[V40.2] Using price_history.db (PRIMARY) — 1 dates`
+   - `price_history.db (ticker) — 1443 raw → 289 EGX-canonical`
+   - `BRAVO-SPEED-FIX: pre-cached 10 tickers × 6033 rows in 0.26s`
+   - `GENERATION COMPLETE` (0 predictions — متوقع في DEFENSIVE regime)
+   - market_regime: DEFENSIVE (EGX30 -2.48%, breadth 11.1%, drawdown 15.2%)
+
+✅ **liquidity_radar_v2 runtime test:**
+   - COMI: current_price=125.15, phase=تصريف, market_regime=Risk-Off
+   - whale.net_flow_egp=-1,855,555,934 (بيانات حقيقية)
+   - fundamentals.free_cash_flow=73.09B (من data_engine.db tabs_data)
+   - tv_whale_spotted=true, tv_rank=4 (TV integration شغّال)
+
+✅ **pm2 logs healthy:**
+   - health check كل 2 دقيقة: status=ok, dbs_ok=6/6, disk_used_pct=47%
+   - Next.js restarted at 09:36 (git pull), Ready in 548ms
+   - [egx-db] Writable Stocks DB created [robust]
+
+🟡 **مشكلة pre-existing (مش من الـ deploy):**
+   - [sniper:scan] DOMException [TimeoutError] — آخر ظهور 13:01:53 (قبل deploy بساعتين)
+   - في /api/sniper/scan/route.js — route بيعمل fetch خارجي و بيقع
+   - مش مرتبط بـ Phase 5b/6
+
+🎯 **خطة التوحيد الكاملة (Phase 0-6) اشتغلت على الإنتاج بنجاح.**
+- 128 عميل مش هيتأثروا (الـ frontend routes ما اتلمستش).
+- price_history.db دلوقتي المصدر الكاثوليكي للكل (1,401,759 rows).
+- الـ backup موجود في db/pre_deploy_backup_20261022_143547 لو حصل rollback.
+
