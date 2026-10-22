@@ -247,29 +247,47 @@ def main():
 
     print(f"  ⏳ computing indices for {len(egx_dates)} EGX dates...")
 
+    # FIX (2026-10-22): base_value was HARDCODED (30000/8000/11000) for EVERY
+    # day → values didn't chain → flat line around the seed, NOT the real
+    # trajectory. Now we CHAIN: each day uses the previous day's computed
+    # close as the base. The seed (first day only) uses the hardcoded value
+    # as a starting point — user should manually set the correct initial
+    # value in index_daily_prices for the first date, then re-run to chain.
+    prev_egx30 = None
+    prev_egx70 = None
+    prev_egx100 = None
+    prev_egx33 = None
+
     for i, date in enumerate(egx_dates):
         if i % 100 == 0:
             print(f"    [{i+1}/{len(egx_dates)}] {date}...", end='\r')
 
-        # EGX30 (weighted)
+        # EGX30 (weighted) — chains from previous day's close
         egx30 = compute_weighted_index_for_date(
             prices_by_ticker, date,
             canonical.get('EGX30', {}).get('constituents', []),
-            base_value=30000
+            base_value=prev_egx30 or 30000  # seed only for first day
         )
         if egx30:
+            if prev_egx30 is not None:
+                # CHAIN: use previous close * (1 + change%) instead of seed
+                egx30['close'] = round(prev_egx30 * (1 + egx30['change_percent'] / 100), 2)
+            prev_egx30 = egx30['close']
             indices_history['EGX30'].append({'date': date, **egx30})
 
-        # EGX70 (EWI)
+        # EGX70 (EWI) — chains
         egx70 = compute_ewi_index_for_date(
             prices_by_ticker, date,
             canonical.get('EGX70_EWI', {}).get('constituents', []),
-            base_value=8000, min_matched=20
+            base_value=prev_egx70 or 8000, min_matched=20
         )
         if egx70:
+            if prev_egx70 is not None:
+                egx70['close'] = round(prev_egx70 * (1 + egx70['change_percent'] / 100), 2)
+            prev_egx70 = egx70['close']
             indices_history['EGX70'].append({'date': date, **egx70})
 
-        # EGX100 (EWI composite)
+        # EGX100 (EWI composite) — chains
         egx30_const = canonical.get('EGX30', {}).get('constituents', [])
         egx70_const = canonical.get('EGX70_EWI', {}).get('constituents', [])
         seen = set()
@@ -280,18 +298,24 @@ def main():
                 egx100_const.append(c)
         egx100 = compute_ewi_index_for_date(
             prices_by_ticker, date, egx100_const,
-            base_value=11000, min_matched=30
+            base_value=prev_egx100 or 11000, min_matched=30
         )
         if egx100:
+            if prev_egx100 is not None:
+                egx100['close'] = round(prev_egx100 * (1 + egx100['change_percent'] / 100), 2)
+            prev_egx100 = egx100['close']
             indices_history['EGX100'].append({'date': date, **egx100})
 
-        # EGX33 (shariah weighted)
+        # EGX33 (shariah weighted) — chains
         egx33 = compute_weighted_index_for_date(
             prices_by_ticker, date,
             canonical.get('EGX33_SHARIAH', {}).get('constituents', []),
-            base_value=3300
+            base_value=prev_egx33 or 3300
         )
         if egx33:
+            if prev_egx33 is not None:
+                egx33['close'] = round(prev_egx33 * (1 + egx33['change_percent'] / 100), 2)
+            prev_egx33 = egx33['close']
             indices_history['EGX33'].append({'date': date, **egx33})
 
     print()

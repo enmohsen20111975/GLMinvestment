@@ -99,6 +99,24 @@ def get_latest_prices():
     return prices
 
 
+def get_latest_index_close(db_path, symbol):
+    """Read the latest close from index_daily_prices for chaining.
+    Returns None if table doesn't exist or no rows (first run).
+    FIX (2026-10-22): base_value was hardcoded → flat line. Now chains
+    from yesterday's real close so the index follows the real trajectory.
+    """
+    try:
+        conn = sqlite3.connect(str(db_path))
+        row = conn.execute(
+            "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
+            "ORDER BY price_date DESC LIMIT 1", (symbol,)
+        ).fetchone()
+        conn.close()
+        return float(row[0]) if row else None
+    except Exception:
+        return None
+
+
 def compute_weighted_index(prices, constituents, base_value, symbol, name, name_ar, is_shariah=0):
     """
     حساب مؤشر موزون بالأوزان الرسمية (للـ EGX30 و EGX33).
@@ -257,10 +275,14 @@ def main():
     indices = []
 
     # === EGX30 (Capped Market-Cap Weighted — with official weights) ===
+    # FIX (2026-10-22): base_value was HARDCODED to 30000 → every day computed
+    # as 30000*(1+change%) → flat line around 30000, NOT the real trajectory.
+    # Now reads the REAL previous close from index_daily_prices (chains correctly).
     egx30_data = canonical.get('EGX30', {})
+    egx30_base = get_latest_index_close(STOCKS_DB, 'EGX30') or 30000  # fallback only
     egx30 = compute_weighted_index(
         prices, egx30_data.get('constituents', []),
-        base_value=30000, symbol='EGX30',
+        base_value=egx30_base, symbol='EGX30',
         name='EGX 30 Index', name_ar='مؤشر إيجي إكس 30 الرئيسي'
     )
     if egx30:
@@ -269,9 +291,10 @@ def main():
 
     # === EGX70 EWI (Equal-Weighted) ===
     egx70_data = canonical.get('EGX70_EWI', {})
+    egx70_base = get_latest_index_close(STOCKS_DB, 'EGX70') or 8000  # fallback only
     egx70 = compute_ewi_index(
         prices, egx70_data.get('constituents', []),
-        base_value=8000, symbol='EGX70',
+        base_value=egx70_base, symbol='EGX70',
         name='EGX 70 EWI Index', name_ar='مؤشر إيجي إكس 70 متساوي الأوزان',
         min_matched=20
     )
@@ -291,7 +314,7 @@ def main():
             egx100_constituents.append(c)
     egx100 = compute_ewi_index(
         prices, egx100_constituents,
-        base_value=11000, symbol='EGX100',
+        base_value=get_latest_index_close(STOCKS_DB, 'EGX100') or 11000, symbol='EGX100',
         name='EGX 100 EWI Index', name_ar='مؤشر إيجي إكس 100 الأوسع نطاقاً',
         min_matched=30
     )
