@@ -6963,3 +6963,25 @@ Push: commit `f3be3aea`.
 3. المفروض الـ picks اللي تظهر هي الـ BUY/STRONG_BUY بس (مش HOLD/ILLIQUID)
 
 ملاحظة: لو الـ UnifiedScanner ما رجّعش أي BUY/STRONG_BUY، هتبقى 0 picks. ده صح — معناه إن مفيش أسهم كويسة دلوقتي.
+
+---
+Task ID: PURGE-FIX-RADAR-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: بعد ما purge_corrupted_tickers اشتغل على الإنتاج (74 سهم deactivated)، الرادار لسه بيـ show أسهم corrupted (CPMEC, HBCOH, TORAT, VALUU, DCRCD).
+
+السبب:
+- maker_radar.py queries ما بـ filter-ش بـ is_active=1.
+- فكل الأسهم (حتى الـ deactivated) بتـ scan.
+
+الـ fix:
+- أضفت `AND (is_active = 1 OR is_active IS NULL)` لـ:
+  1. cross-DB ticker lookup (line 1200)
+  2. live prices query (line 1342)
+- is_active IS NULL fallback للـ backward compat.
+
+Push: commit `31f7944f`.
+
+الخطوات الجاية على الإنتاج:
+1. git pull origin main
+2. regenerate cache: .venv/bin/python3 scripts/maker_radar.py --market EGX --limit 0 --json-only
+3. تأكد إن CPMEC, HBCOH, TORAT, VALUU, DCRCD اختفوا من الرادار
