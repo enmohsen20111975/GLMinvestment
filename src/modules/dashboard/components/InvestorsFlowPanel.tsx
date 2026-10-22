@@ -54,6 +54,35 @@ function isWeekendDateStr(dateStr: string | null): boolean {
  return isEGXWeekend(date);
 }
 
+/**
+ * FRESHNESS GATE (owner directive 2026-10-22: "لو البيانات مش حديثة أخفى المكون
+ * بلاش فضايح"): Returns true if `latestDate` is older than `maxStaleTradingDays`
+ * EGX trading days. Counts ONLY trading days (skips Fri/Sat EGX weekend).
+ * If stale → the caller hides the component (no embarrassment from old data).
+ */
+function isInvestorDataStale(latestDate: Date | null, maxStaleTradingDays: number = 3): boolean {
+ if (!latestDate) return true; // no date = stale
+ const now = new Date();
+ // Walk back from today, counting trading days (skip Fri/Sat).
+ let tradingDaysBack = 0;
+ const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+ // If today is a weekend, the "latest trading day" is the last non-weekend day.
+ while (isEGXWeekend(cursor) && tradingDaysBack < 10) {
+ cursor.setDate(cursor.getDate() - 1);
+ }
+ for (let i = 0; i < maxStaleTradingDays + 15; i++) { // +15 buffer to be safe
+ if (!isEGXWeekend(cursor)) {
+ tradingDaysBack++;
+ if (tradingDaysBack > maxStaleTradingDays) {
+ // The latest data is older than maxStaleTradingDays trading days ago.
+ return latestDate < cursor;
+ }
+ }
+ cursor.setDate(cursor.getDate() - 1);
+ }
+ return true; // fallback: treat as stale if we couldn't compute
+}
+
 
 interface InvestorsDataRow {
  date: string | null;
@@ -439,6 +468,14 @@ export function InvestorsFlowPanel() {
  // ALPHA-FIX: filter out Friday/Saturday rows (EGX weekend — no trading)
  const filteredRows = invData.filter((r) => !isWeekendDateStr(r.date));
  if (filteredRows.length === 0) return null;
+ // FRESHNESS GATE (owner directive 2026-10-22): hide the table entirely if the
+ // latest data is older than 3 EGX trading days. No embarrassment from stale
+ // data (e.g. showing 2026-09-24 when today is 2026-10-22). Better to show
+ // nothing than to show old data and mislead users.
+ const latestDate = parseLocalDate(filteredRows[0].date);
+ if (isInvestorDataStale(latestDate, 3)) {
+ return null; // hide — data is stale
+ }
  return (
  <InvestorsTable rows={filteredRows} source={invSource} autoSeeded={invAutoSeeded} />
  );
