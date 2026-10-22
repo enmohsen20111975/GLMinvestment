@@ -5718,3 +5718,36 @@ Stage Summary:
 - ✅ الـ dev server مش شغّال دلوقتي (محتاج إعادة تشغيل بعد تثبيت deps).
 - 🔴 توكن GitHub (`ghp_...`) لسه معرّض — لازم revoke على `github.com/settings/tokens`.
 - 🎯 جاهز لاستئناف الشغل على Phase 5 (تعديل `liquidity_radar_v2.py`) و Phase 6 (cron واحد بيملا `price_history.db`).
+
+---
+Task ID: PHASE5-VERIFY-1
+Agent: Z.ai Code (الفاحص التقني + المنفّذ البديل)
+Task: محسن — "فك الضغط بتاع كل الملفات عشان تشوف ما تكونش أعمى. لازم تجرب عندك. عالقة في المرحلة 5 راجع كويس. دي آخر حاجة عملناها على اللاب توب."
+
+السياق اللي استلمته:
+- المالك شغّل `modify_get_tickers.py` على اللاب توب. النتيجة: 5/6 PASS + Check 6 FAIL (no backup) → الـ script قال "Phase 5 FAILED — rollback" لكن الـ rollback نفسه فشل (الكود متعدّل بالفعل من git pull، مفيش حاجة نرجعها).
+- الـ marker موجود في السطر 453: `Phase 5 (DATA-UNIFICATION): price_history.db is now PRIMARY`.
+
+Work Log:
+- **خطأ التشخيص في الـ script الأصلي:** في `modify_get_tickers()` السطر 58، لما الـ code يكون "already modified"، كان بيرجع 0 (success) من غير ما يعمل backup. بعدها `main()` بيستدعي `verify_modification()` وبتفشل Check 6 لأن مفيش backup file. النتيجة: "Phase 5 FAILED — rollback from backup" — رغم إن الكود سليم.
+- **الـ fix:** عدّلت `scripts/modify_get_tickers.py` السطر 58-62 عشان لما الـ code يكون "already modified"، يعمل backup للـ current state (rollback baseline) قبل ما يرجع 0. ده يرضي Check 6.
+- **فك الضغط:** فكّ كل أجزاء backup 2026-10-21 (الأحدث) في `db/`: auth.db, crypto.db, intraday.db (178MB), metrics.db, news.db, predictions.db (290MB), stocks.db (23MB). إجمالي 483MB.
+- **اختبار فعلي:** شغّلت `get_tickers(min_days=5)` على الـ code المعدّل. النتيجة: 289 EGX-canonical tickers — الكود بيشتغل.
+
+🔴 **الـ gap الحقيقي اللي اكتشفته (مش واضح في verification):**
+- الـ verification بيقول 6/6 PASS لأنه بيفحص الـ code بس (marker + patterns).
+- بس في الواقع، لما `get_tickers()` بيشتغل، الـ PRIMARY (`price_history.db`) **مش موجود** في الساند بوكس (ولا في أي مكان على الجهاز — `find / -name "price_history.db"` رجع فاضي).
+- الـ FALLBACK 1 (`data_engine.db.egksco_price_history`) كمان مش موجود.
+- الكود بيقع بصمت لـ FALLBACK 2 (`stocks.db.stock_daily_prices` — 85,626 صف بس، مش 1.4M) من غير ما يقول صراحةً إن PRIMARY وقع.
+- الـ print message بيقول: `[V40.2] stocks.db (stock_daily_prices) — 1212 raw → 289 EGX-canonical` — يعني عمليًا بنستخدم stocks.db، مش price_history.db اللي هو الهدف الأساسي للـ Phase 5.
+
+ده بالظبط الـ "silent fallback" اللي الدستور بيحذّر منه: الكود بيشتغل بس مش بيستخدم المصدر المطلوب.
+
+Stage Summary:
+- ✅ Phase 5 verification: 6/6 PASS (الـ script fix شغّال).
+- ✅ DBs الأساسية موجودة: stocks.db (1,240 سهم، 85,626 daily prices، آخر تاريخ 2026-10-21 طازج)، intraday.db (81,830 ticks)، predictions.db, news.db, metrics.db, auth.db, crypto.db.
+- ✅ backup file موجود: `db/backups/daily_predictor.py.backup_phase5_20261022_113815`.
+- 🔴 **`price_history.db` مش موجود** — الـ PRIMARY في get_tickers الجديد (وفي get_scan_dates كمان). الكود بيقع لـ FALLBACK 2 بصمت. لازم المالك يزوّده من اللاب توب (عنده 1,316,107 rows حسب MASTER-JOURNEY-DOCUMENT).
+- 🔴 **`data_engine.db` مش موجود** — الـ FALLBACK 1. كمان محتاج من اللاب توب لو عاوزين الـ fallback chain كامل.
+- 🟡 ملاحظة: فيه `egksco_price_history` table جوه `stocks.db` نفسه (مش في data_engine.db منفصل) — بس فاضي (0 rows). يعني الـ schema موجودة بس مفيش بيانات.
+- 🎯 **المرحلة اللي بعد كده:** لازم المالك يزوّد `price_history.db` (و `data_engine.db` لو متاح) قبل ما نقدر نأكد إن Phase 5 فعلاً بيستخدم الـ PRIMARY المطلوب. من غيرهم، "Phase 5 complete" تبقى مجرد كلام.

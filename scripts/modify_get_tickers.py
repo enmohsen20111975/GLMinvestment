@@ -56,11 +56,13 @@ def modify_get_tickers():
 
     # تحقق إن مفيش تعديل سابق
     if 'Phase 5 (DATA-UNIFICATION)' in original_code:
-        print(f"  ⚠️ daily_predictor.py already modified for Phase 5 — skipping")
+        print(f"  ⚠️ daily_predictor.py already modified for Phase 5 — skipping swap")
+        # بس اعمل backup للـ current state عشان Check 6 يعدّي (rollback baseline)
+        backup_daily_predictor()
         return 0
 
     # backup
-    backup_path = backup_daily_predictor()
+    backup_daily_predictor()
 
     new_code = original_code
 
