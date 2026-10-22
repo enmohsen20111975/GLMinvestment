@@ -36,7 +36,10 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir))
 STOCKS_DB = os.path.join(_PROJECT_ROOT, "db", "stocks.db")
 
-BETA_URL = "https://beta.egx.com.eg/ar/market/investors"
+BETA_URLS = [
+    "https://beta.egx.com.eg/ar/market/investors",
+    "https://beta.egx.com.eg/en/market/investors",
+]
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 
@@ -53,7 +56,7 @@ def parse_number(s):
         return 0
 
 
-def render_and_extract(url, timeout_ms=45000):
+def render_and_extract(urls, timeout_ms=90000):
     """Render beta page with Playwright, extract investor flow tables."""
     try:
         from playwright.sync_api import sync_playwright
@@ -80,11 +83,16 @@ def render_and_extract(url, timeout_ms=45000):
         """)
         page = context.pages[0] if context.pages else context.new_page()
 
-        log.info("navigating to %s", url)
-        try:
-            page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
-        except Exception as e:
-            log.error("goto failed: %s", e)
+        for url in (urls if isinstance(urls, list) else [urls]):
+            log.info("navigating to %s", url)
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+                break
+            except Exception as e:
+                log.error("goto failed for %s: %s", url, e)
+                continue
+        else:
+            log.error("all URLs failed")
             context.close()
             return None
 
@@ -354,7 +362,7 @@ def main():
     parser.add_argument("--headed", action="store_true", help="Show browser (debug)")
     args = parser.parse_args()
 
-    data = render_and_extract(BETA_URL)
+    data = render_and_extract(BETA_URLS)
     if data:
         upsert_to_db(data, args.date)
         print(f"✅ Done. egx_beta_parsed for {args.date or datetime.now().strftime('%Y-%m-%d')}")
