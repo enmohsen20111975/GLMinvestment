@@ -6597,3 +6597,63 @@ Telegram message (prices fresh + text stale = confusing)
 3. تحقق من مصدر change_1d في النص (ليه مش بيتطابق مع stocks.db؟).
 4. رفع threshold لـ "شراء قوي" (score ≥ 65 + R/R ≥ 1.5 بدل 55 + 1.2).
 5. إصلاح الـ R/R fallback (1.80 مش 1.50 — فين المجرم؟).
+
+---
+Task ID: PREDICTIONS-CRIMINAL-FOUND-1
+Agent: Z.ai Code (الفاحص التقني — هندسي)
+Task: لقّاص مصدر change_1d الغلط في نص التوقعات.
+
+النتيجة: **لقيت المجرم بالظبط.**
+
+🔴 **المجرم: `stored_analyses.updated_at` بيتحدث بس الـ `analysis_json` اللي جواه `change_1d` بيفضل ثابت.**
+
+الـ pipeline الكامل:
+```
+1. daily_predictor.py (Oct 17) → INSERT stored_analyses (entry=3.16, analysis_json={change_1d: -3.4%})
+   ↓ (السهم يومها كان -3.4% — صحيح وقتها)
+2. Python backend /api/stored-analysis/results → بيرجع stored_analyses
+   ↓ analysis_json لسه جواه change_1d = -3.4% (متخزن من Oct 17)
+3. _build_persona_reason بيقرا fund.change_1d من stocks.db (طازج = -1.86%)
+   ↓ بس الـ text template بـ analysis_json لو موجود
+4. النتيجة: النص بيقول -3.4% (قديم) + الأسعار طازجة
+```
+
+الـ disconnect الحقيقي:
+- `entry_price` = 3.16 (طازج من stocks.db via current_price * 0.995)
+- `change_1d` في النص = -3.4% (قديم من analysis_json المخزن Oct 17)
+- `stocks.db.change_percent` = -1.86% (طازج من Oct 21)
+
+لما الـ endpoint بيجري:
+1. بياخد `current_price` من stocks.db (طازج).
+2. بيـ recalculate entry/target/stop بنسب persona.
+3. بس الـ reason text بيـ read من `fund.get('change_1d')` اللي هو من `stocks.db.change_percent`.
+4. **بس لو فيه `analysis_json` في stored_analyses، الـ _heal_persona_json بياخد change_1d منه (قديم).**
+
+الأدلة:
+- BTFH prediction created Oct 17 00:36:17.
+- analysis_json فيه change_1d = -3.4% (وقتها السهم كان -3.4%).
+- دلوقتي stocks.db.change_percent = -1.86% (Oct 21).
+- النص لسه بيقول -3.4%.
+
+نفس المبدأ لكل الـ 10 tickers:
+- PHDC: created Oct 17, text says -5.3%, actual Oct 21 = +1.24%.
+- ABUK: created Oct 20, text says -3.0%, actual Oct 21 = +2.41%.
+- ADRI: created Oct 17, text says +3.2%, actual Oct 21 = -2.89%.
+
+الـ fixes المطلوبة:
+1. **_heal_persona_json** لازم يـ override change_1d بـ fund.change_1d (طازج) لو القديم أقدم من 1 يوم.
+2. **stored_analyses** لازم regenerate لما daily_predictor يشتغل (تحديث analysis_json).
+3. **أو الأبسط**: _build_persona_reason يقرا change_1d من fund (stocks.db) دايماً، و يتجاهل analysis_json.change_1d.
+
+الـ fix الهندسي المقترح (Option 3 — الأبسط):
+في `_build_persona_reason` (line 791):
+```python
+# قبل: chg_1d = float(fund.get('change_1d') or 0)
+# بعد:
+chg_1d = float(fund.get('change_1d') or 0)  # دايماً من stocks.db (طازج)
+# و لو fund فاضي → fallback لـ row.change_1d (stored_analyses)
+```
+
+بس ده مش كفاية — لازم كمان:
+- `_heal_persona_json` ما يـ override-ش change_1د بـ قيمة قديمة.
+- تحديث turnover_egp و volume_ratio (الـ root causes التانية).
