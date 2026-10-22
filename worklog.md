@@ -6061,3 +6061,39 @@ Stage Summary:
 - ✅ laptop scenario simulation (no market column) نجحت.
 - 🔴 warning: backtest_engine.py فيه naming bug قديم (مش من الـ phases بتاعتنا، بس محتاج تنظيف لاحقًا).
 - 🎯 **جاهزين للإثبات الثاني على اللاب توب.**
+
+---
+Task ID: LAPTOP-TRANSFER-PREP-1
+Agent: Z.ai Code (الفاحص التقني)
+Task: محسن جرب الـ changes على اللاب توب. لقيت إن اللاب توب ما وصلوش الـ changes. جهّزت حزمة نقل.
+
+Work Log:
+- اللاب توب output بيوضّح إن الـ changes مش وصلت:
+  1. Phase 5 Check 6 فشل (no backup) → نسخة modify_get_tickers.py القديمة لسه على اللاب توب.
+  2. verify_phase5b_liquidity_radar.py مش موجود على اللاب توب.
+  3. daily_predictor ModuleNotFoundError → مشكلة working directory (مش مشكلة كود).
+- لقيت إن السبب: الـ changes بتاعتنا متـcommit-ة محليًا في الساند بوكس بس (7 commits ahead of origin/main)، بس ما اتـpush-وش لـ GitHub.
+- اللاب توب عمل git pull origin main، فبالتالي ما وصلوش.
+
+الحل: جهّزت 3 طرق للنقل في `upload/`:
+1. **نسخ الـ files مباشرة** (الأسرع): `upload/phase5b_files/`
+2. **git apply patch**: `upload/phase5b_code_changes.diff` أو `upload/phase5b_patches/`
+3. **git push** (محتاج credentials)
+
+الـ files المعدّلة (5 files):
+- scripts/liquidity_radar_v2.py (Phase 5b)
+- scripts/unify_to_price_history.py (Phase 2 fix)
+- scripts/modify_get_tickers.py (Phase 5 fix)
+- scripts/verify_phase5b_liquidity_radar.py (جديد)
+- vps-service/jobs/daily_predictor.py (Phase 4 fix)
+
+ملاحظة كمان: daily_predictor لازم يتشغّل من جوه vps-service/ directory، مش من root:
+```bash
+cd vps-service
+.venv/bin/python3 -m jobs.daily_predictor --start ... --end ... --scan-interval 1
+```
+
+Stage Summary:
+- ✅ حزمة النقل جاهزة في `upload/phase5b_files/` + `upload/phase5b_code_changes.diff` + `upload/phase5b_patches/`.
+- ✅ ملف تعليمات شامل في `upload/PHASE5B_TRANSFER_INSTRUCTIONS.md`.
+- 🎯 محسن يقدر يختار أي طريقة من التلاتة و ينقل الـ changes للاب توب.
