@@ -409,38 +409,51 @@ def fetch_egx_real(session_date: Optional[str] = None) -> Optional[InvestorFlowR
             if resp.status_code != 200:
                 log.info("EGX %s → HTTP %d", url, resp.status_code)
                 continue
+            log.info("EGX %s → HTTP 200, body=%d chars", url, len(resp.text))
+            # DIAGNOSTIC (2026-10-22): log what the parser sees so we know if
+            # the page is JS-rendered (shell only) or has real data.
+            _html = resp.text.lower()
+            log.info(
+                "  contains 'foreign trading': %s | 'أجانب': %s | 'مصريين': %s",
+                "foreign trading" in _html,
+                "أجانب" in resp.text.lower(),
+                "مصريين" in resp.text.lower(),
+            )
+            log.info("  body[0:200]: %s", resp.text[:200].replace("\n", " "))
             parsed = _parse_egx_html(resp.text)
-            if parsed:
-                date_str = session_date or datetime.utcnow().strftime("%Y-%m-%d")
-                total_buys = (
-                    parsed["individuals_buys_value"]
-                    + parsed["arab_buys_value"]
-                    + parsed["foreign_buys_value"]
-                )
-                total_sells = (
-                    parsed["individuals_sells_value"]
-                    + parsed["arab_sells_value"]
-                    + parsed["foreign_sells_value"]
-                )
-                row = InvestorFlowRow(
-                    date=date_str,
-                    session_type="day",
-                    individuals_buys_value=parsed["individuals_buys_value"],
-                    individuals_sells_value=parsed["individuals_sells_value"],
-                    individuals_net_value=parsed["individuals_net_value"],
-                    arab_buys_value=parsed["arab_buys_value"],
-                    arab_sells_value=parsed["arab_sells_value"],
-                    arab_net_value=parsed["arab_net_value"],
-                    foreign_buys_value=parsed["foreign_buys_value"],
-                    foreign_sells_value=parsed["foreign_sells_value"],
-                    foreign_net_value=parsed["foreign_net_value"],
-                    total_buys_value=total_buys,
-                    total_sells_value=total_sells,
-                    number_of_trades=0,
-                    source="egx_official_scrape",
-                )
-                log.info("EGX real scrape OK for date=%s", row.date)
-                return row
+            if not parsed:
+                log.warning("EGX parse returned None — page may be JS-rendered (no data in HTML). Need headless browser (Playwright) or find the JSON API behind the page.")
+                continue
+            date_str = session_date or datetime.utcnow().strftime("%Y-%m-%d")
+            total_buys = (
+                parsed["individuals_buys_value"]
+                + parsed["arab_buys_value"]
+                + parsed["foreign_buys_value"]
+            )
+            total_sells = (
+                parsed["individuals_sells_value"]
+                + parsed["arab_sells_value"]
+                + parsed["foreign_sells_value"]
+            )
+            row = InvestorFlowRow(
+                date=date_str,
+                session_type="day",
+                individuals_buys_value=parsed["individuals_buys_value"],
+                individuals_sells_value=parsed["individuals_sells_value"],
+                individuals_net_value=parsed["individuals_net_value"],
+                arab_buys_value=parsed["arab_buys_value"],
+                arab_sells_value=parsed["arab_sells_value"],
+                arab_net_value=parsed["arab_net_value"],
+                foreign_buys_value=parsed["foreign_buys_value"],
+                foreign_sells_value=parsed["foreign_sells_value"],
+                foreign_net_value=parsed["foreign_net_value"],
+                total_buys_value=total_buys,
+                total_sells_value=total_sells,
+                number_of_trades=0,
+                source="egx_official_scrape",
+            )
+            log.info("EGX real scrape OK for date=%s", row.date)
+            return row
         except requests.exceptions.Timeout:
             log.info("EGX %s timed out after %.0fs", url, HTTP_TIMEOUT_SECONDS)
             continue
