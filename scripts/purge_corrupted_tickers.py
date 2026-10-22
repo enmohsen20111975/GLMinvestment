@@ -35,26 +35,78 @@ PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
 
 
 def find_corrupted_tickers(conn):
-    """Find tickers where removing last char gives another ticker (UBEEU → UBEE)."""
+    """Find tickers where removing last char gives another ticker (UBEEU → UBEE).
+
+    CORRUPTION-PATTERN (2026-10-22 update):
+    - NOT all suffix-tickers are fake. Some are real preferred shares.
+    - Detection logic:
+      1. ticker = base + extra_char AND base exists in stocks.db
+      2. extra_char matches FIRST letter of company's English name
+      3. CORRUPTED if: price_history rows < 100 (recent scraper artifact, ~55 rows)
+         OR name starts with lowercase letter (scraper stripped first char)
+      4. REAL (preferred) if: price_history rows >= 100 (established stock)
+         AND name is properly capitalized
+    """
+    import sqlite3 as _sqlite3
     cur = conn.cursor()
     cur.execute("SELECT ticker, name, name_ar FROM stocks WHERE market='EGX' AND is_active=1")
     all_stocks = cur.fetchall()
-    tickers = {r[0] for r in all_stocks}
+    tickers = {r[0]: r for r in all_stocks}
+
+    # Load price_history row counts to distinguish real vs fake
+    ph_db = PROJECT_ROOT / 'db' / 'price_history.db'
+    ph_counts = {}
+    if ph_db.exists():
+        ph_conn = _sqlite3.connect(str(ph_db))
+        ph_cur = ph_conn.cursor()
+        ph_cur.execute("SELECT ticker, COUNT(*) FROM price_history GROUP BY ticker")
+        ph_counts = dict(ph_cur.fetchall())
+        ph_conn.close()
 
     corrupted = []
     for t, name, ar in all_stocks:
         if len(t) < 4:
             continue
         base = t[:-1]
-        if base in tickers and base != t:
-            base_stock = next((s for s in all_stocks if s[0] == base), None)
-            if base_stock:
-                corrupted.append({
-                    'corrupted_ticker': t,
-                    'corrupted_name': name,
-                    'real_ticker': base,
-                    'real_name': base_stock[1],
-                })
+        if base not in tickers or base == t:
+            continue
+
+        base_stock = tickers[base]
+        base_name = base_stock[1] or ''
+
+        # Check 1: extra char = first letter of base name?
+        extra = t[-1]
+        first_char = base_name[0].upper() if base_name else '?'
+        matches_first_char = (extra.upper() == first_char)
+
+        # Check 2: price_history row count
+        ph_rows = ph_counts.get(t, 0)
+        base_ph_rows = ph_counts.get(base, 0)
+
+        # Check 3: name corruption (starts with lowercase = scraper stripped first char)
+        name_starts_lowercase = bool(name) and name[0].islower()
+
+        # DECISION:
+        # CORRUPTED if:
+        #   - matches_first_char AND (ph_rows < 100 OR name_starts_lowercase)
+        # REAL (preferred) if:
+        #   - ph_rows >= 100 AND not name_starts_lowercase
+        is_corrupted = matches_first_char and (ph_rows < 100 or name_starts_lowercase)
+
+        if is_corrupted:
+            corrupted.append({
+                'corrupted_ticker': t,
+                'corrupted_name': name,
+                'real_ticker': base,
+                'real_name': base_name,
+                'ph_rows': ph_rows,
+                'base_ph_rows': base_ph_rows,
+                'name_starts_lowercase': name_starts_lowercase,
+                'reason': (
+                    'name_starts_lowercase' if name_starts_lowercase
+                    else f'low_ph_rows ({ph_rows} < 100, base has {base_ph_rows})'
+                ),
+            })
     return corrupted
 
 
@@ -91,17 +143,19 @@ def purge(dry_run=True, reactivate=False):
 
     if dry_run:
         print("=== DRY RUN — no changes will be made ===\n")
-        print("Corrupted tickers (sample 10):")
-        for c in corrupted[:10]:
-            print(f"  {c['corrupted_ticker']:12s} → {c['real_ticker']:8s} | name: '{c['corrupted_name']}' → '{c['real_name']}'")
-        if len(corrupted) > 10:
-            print(f"  ... and {len(corrupted) - 10} more")
+        print("Corrupted tickers (fake, will be deactivated):")
+        for c in corrupted:
+            print(f"  {c['corrupted_ticker']:12s} → {c['real_ticker']:8s} | ph_rows={c['ph_rows']:>4d} | reason={c['reason']} | name='{c['corrupted_name'][:40]}'")
         print()
-        print("ISIN-style tickers:")
+        print(f"Total corrupted: {len(corrupted)}")
+        print()
+        print("ISIN-style tickers (will be deactivated):")
         for i in isins:
-            print(f"  {i['ticker']:20s} | name: {i['name']} | ar: {i['name_ar']}")
+            print(f"  {i['ticker']:20s} | name: {i['name']}")
         print()
-        print(f"Total: {len(corrupted) + len(isins)} stocks would be {'reactivated' if reactivate else 'deactivated'}")
+        print(f"Total to deactivate: {len(corrupted) + len(isins)}")
+        print()
+        print("NOTE: Preferred shares (FAITA, CCAPP) are PRESERVED (ph_rows >= 100 + proper name).")
         conn.close()
         return 0
 
