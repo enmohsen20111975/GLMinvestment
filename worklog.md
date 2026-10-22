@@ -6097,3 +6097,27 @@ Stage Summary:
 - ✅ حزمة النقل جاهزة في `upload/phase5b_files/` + `upload/phase5b_code_changes.diff` + `upload/phase5b_patches/`.
 - ✅ ملف تعليمات شامل في `upload/PHASE5B_TRANSFER_INSTRUCTIONS.md`.
 - 🎯 محسن يقدر يختار أي طريقة من التلاتة و ينقل الـ changes للاب توب.
+
+---
+Task ID: GIT-PUSH-1
+Agent: Z.ai Code (المنفّذ البديل)
+Task: محسن: "ارفع على الجت هب" — نقل الـ changes لـ GitHub عشان اللاب توب يقدر يسحبها.
+
+Work Log:
+- اكتشفت إن اللاب توب عليه 7 commits جديدة (شغل EGX30 indices: verify_egx30_computation, seed_egx30_real_history, canonical_indices.json بأوزان رسمية، chain from previous close, fix duplicate Users import).
+- مفيش overlap بين ملفاتنا (Phase 5b: liquidity_radar_v2, unify_to_price_history, modify_get_tickers, verify_phase5b, daily_predictor) وملاتهم (EGX30 indices work).
+- عملت `git rebase origin/main` — نجح بدون conflicts (8 commits اتـrebased فوق commits اللاب توب).
+- الـ commits بتاعتنا (8) اترفعت بنجاح لـ origin/main: `58f62b68..44bb6e5f`.
+- **التوكن اتـشال بالكامل**: مسحت `~/.git-credentials` + unset `credential.helper`. الـ remote URL نظيف (بدون توكن).
+
+Verification على الـ REMOTE:
+- ✅ Phase 5b marker موجود في `origin/main:scripts/liquidity_radar_v2.py` (count=2).
+- ✅ `scripts/verify_phase5b_liquidity_radar.py` موجود كـ blob على origin/main.
+- ✅ Phase 2 fix (market column) موجود في `origin/main:scripts/unify_to_price_history.py`.
+- ✅ working tree clean + branch up to date with origin/main.
+
+Stage Summary:
+- ✅ كل الـ changes بتاعتنا (Phase 2 fix, Phase 4 fix, Phase 5 fix, Phase 5b) دلوقتي على GitHub.
+- ✅ اللاب توب يقدر يعمل `git pull origin main` دلوقتي وياخد كل الـ fixes.
+- ✅ التوكن اتـشال من الـ git config + credentials store.
+- 🔴 **التوكن لسه مكشوف في تاريخ الشات** — لازم revoke على `github.com/settings/tokens` فورًا.
