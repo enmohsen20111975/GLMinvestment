@@ -5,6 +5,7 @@ import { Search, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { UnifiedEmptyState } from '@/components/shared/ui';
 import type { Stock } from '@/types';
 
 // ─── Props ─────────────────────────────────────────────────────────────────
@@ -317,12 +318,13 @@ export function StockSelector({
  {/* Results */}
  <div className="overflow-y-auto max-h-72" ref={listRef}>
  {filteredStocks.length === 0 ? (
- <div className="flex flex-col items-center justify-center py-8 px-4 text-muted-foreground">
- <Search className="w-8 h-8 mb-2 opacity-30" />
- <p className="text-sm font-medium">
- {isSearching ? 'جاري البحث...' : 'لا توجد نتائج'}
- </p>
- {!isSearching && <p className="text-xs mt-0.5">جرب البحث بكلمة مختلفة</p>}
+ <div className="py-6 px-4">
+ <UnifiedEmptyState
+ variant={isSearching ? 'loading' : 'empty'}
+ title={isSearching ? 'جاري البحث...' : 'مفيش نتائج'}
+ description={isSearching ? undefined : 'جرب البحث بكلمة مختلفة أو برمز سهم تاني'}
+ className="py-4"
+ />
  </div>
  ) : (
  <div role="listbox" className="py-1">
