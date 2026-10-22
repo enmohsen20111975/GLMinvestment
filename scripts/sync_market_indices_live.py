@@ -276,65 +276,12 @@ def main():
 
     indices = []
 
-    # === EGX30 (Capped Market-Cap Weighted — with official weights) ===
-    # FIX (2026-10-22): base_value was HARDCODED to 30000 → every day computed
-    # as 30000*(1+change%) → flat line around 30000, NOT the real trajectory.
-    # Now reads the REAL previous close from index_daily_prices (chains correctly).
-    egx30_data = canonical.get('EGX30', {})
-    egx30_base = get_latest_index_close(STOCKS_DB, 'EGX30') or 30000  # fallback only
-    egx30 = compute_weighted_index(
-        prices, egx30_data.get('constituents', []),
-        base_value=egx30_base, symbol='EGX30',
-        name='EGX 30 Index', name_ar='مؤشر إيجي إكس 30 الرئيسي'
-    )
-    if egx30:
-        indices.append(egx30)
-        print(f"  ✓ EGX30: {egx30['current_value']:,.2f} ({egx30['change_percent']:+.2f}%) [{egx30['coverage']}]")
-
-    # === EGX70 EWI (Equal-Weighted) ===
-    egx70_data = canonical.get('EGX70_EWI', {})
-    egx70_base = get_latest_index_close(STOCKS_DB, 'EGX70') or 8000  # fallback only
-    egx70 = compute_ewi_index(
-        prices, egx70_data.get('constituents', []),
-        base_value=egx70_base, symbol='EGX70',
-        name='EGX 70 EWI Index', name_ar='مؤشر إيجي إكس 70 متساوي الأوزان',
-        min_matched=20
-    )
-    if egx70:
-        indices.append(egx70)
-        print(f"  ✓ EGX70: {egx70['current_value']:,.2f} ({egx70['change_percent']:+.2f}%) [{egx70['coverage']}]")
-
-    # === EGX100 EWI (Composite = EGX30 ∪ EGX70, deduplicated) ===
-    egx30_constituents = egx30_data.get('constituents', [])
-    egx70_constituents = egx70_data.get('constituents', [])
-    # merge + dedupe
-    seen = set()
-    egx100_constituents = []
-    for c in egx30_constituents + egx70_constituents:
-        if c['code'] not in seen:
-            seen.add(c['code'])
-            egx100_constituents.append(c)
-    egx100 = compute_ewi_index(
-        prices, egx100_constituents,
-        base_value=get_latest_index_close(STOCKS_DB, 'EGX100') or 11000, symbol='EGX100',
-        name='EGX 100 EWI Index', name_ar='مؤشر إيجي إكس 100 الأوسع نطاقاً',
-        min_matched=30
-    )
-    if egx100:
-        indices.append(egx100)
-        print(f"  ✓ EGX100: {egx100['current_value']:,.2f} ({egx100['change_percent']:+.2f}%) [{egx100['coverage']}]")
-
-    # === EGX33 Shariah (Capped — with official weights) ===
-    egx33_data = canonical.get('EGX33_SHARIAH', {})
-    egx33 = compute_weighted_index(
-        prices, egx33_data.get('constituents', []),
-        base_value=get_latest_index_close(STOCKS_DB, 'EGX33') or 3300, symbol='EGX33',
-        name='EGX 33 Shariah Index', name_ar='مؤشر إيجي إكس 33 الشرعي',
-        is_shariah=1
-    )
-    if egx33:
-        indices.append(egx33)
-        print(f"  ✓ EGX33: {egx33['current_value']:,.2f} ({egx33['change_percent']:+.2f}%) [{egx33['coverage']}]")
+    # === EGX INDICES: DISABLED — scraper (egx_indices_live.py) fetches REAL
+    # values from beta.egx.com.eg. No computation, no manual seeding.
+    # Owner directive (2026-10-22): "الغى الحشر خالص ياما نشتغل صح ياما نلغى الشغلانة"
+    # The scraper runs via cron and writes to market_indices + index_daily_prices.
+    # This sync only handles NON-EGX indices (KSE/QSE/TADAWUL/US).
+    # --- EGX30/70/100/33 computation removed ---
 
     # === KSE Premier (market-cap weighted with top constituents) ===
     kse_data = canonical.get('KSE_PREMIER', {})
