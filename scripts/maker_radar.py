@@ -1196,8 +1196,9 @@ def main():
                 sconn.close()
                 return []
             placeholders = ','.join(['?' for _ in market_values])
+            # PURGE-FIX (2026-10-22): filter is_active=1 — skip corrupted/deactivated tickers
             rows = sconn.execute(
-                f"SELECT {ticker_col_name} FROM stocks WHERE market IN ({placeholders})",
+                f"SELECT {ticker_col_name} FROM stocks WHERE market IN ({placeholders}) AND (is_active = 1 OR is_active IS NULL)",
                 market_values,
             ).fetchall()
             sconn.close()
@@ -1337,10 +1338,12 @@ def main():
     try:
         live_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
         live_conn.row_factory = sqlite3.Row
+        # PURGE-FIX (2026-10-22): filter is_active=1 — skip corrupted/deactivated tickers
         live_rows = live_conn.execute("""
             SELECT ticker, current_price, change_percent, last_update
             FROM stocks
             WHERE current_price IS NOT NULL AND current_price > 0
+            AND (is_active = 1 OR is_active IS NULL)
         """).fetchall()
         for r in live_rows:
             live_prices[r['ticker']] = {
