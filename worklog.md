@@ -5917,3 +5917,76 @@ Stage Summary:
 - 🟡 data quality: market tags مش موحّدة (محتاجة تنظيف بعدين).
 - 🟡 data_engine.db مفيهوش egksco_price_history table (FALLBACK 1 مش هيشتغل لو PRIMARY وقع، بس PRIMARY شغّال).
 - 🎯 جاهز للمتابعة على Phase 5b (liquidity_radar_v2) أو Phase 6 (cron بيملا price_history.db).
+
+---
+Task ID: PHASE-5B-1
+Agent: Z.ai Code (المنفّذ البديل — Phase 5b: liquidity_radar_v2 unification)
+Task: محسن: "اعمل عادى وكمل والتجربة عندك هى الاثبات الاول والتجربة على الاب توب هى الاثبات الثانى وبعدين هانروح فى الاخر على السرفر الانتاجى". يعني الساند بوكس = الإثبات الأول. أكمل Phase 5b.
+
+Work Log:
+- قرأت `scripts/liquidity_radar_v2.py` (1408 سطر، 65KB) بالكامل قبل أي تعديل.
+- لقيت إن السكريبت ما كانش بيعرف `price_history.db` خالص — بيقرا candles من `stocks.db.stock_daily_prices` بس.
+- الـ scan_ticker function بتجيب candles من query واحد على stock_daily_prices (line 1095).
+- عملت baseline test على COMI قبل التعديل: `'MA src: dynamic EMA20/SMA50 from stock_daily_prices'`.
+
+التعديلات (commit pending):
+1. **أضفت constant** `PRICE_HISTORY_DB` في line 50 (مش كان موجود).
+2. **عدّلت scan_ticker** (lines 1094-1125):
+   - PRIMARY: `SELECT date AS price_date, open_price AS open, ... FROM price_history WHERE ticker=?`
+   - FALLBACK: لو price_history.db رجع 0 صفوف → `SELECT ... FROM stock_daily_prices`
+   - متغيّر `candle_source` بيتتبّع للـ debugging.
+3. **كتبت سكريبت verify** مستقل `scripts/verify_phase5b_liquidity_radar.py` (8 checks).
+
+Baseline test قبل التعديل (COMI على stock_daily_prices):
+- 40 candle فقط (2026-07-28 → 2026-10-21).
+
+بعد التعديل (COMI على price_history.db):
+- 424 candle (2025-01-09 → 2026-10-21).
+- نفس الـ close/volume values في فترة الـ overlap → الـ data صحيح ومتسق.
+- يعني MA/RSI/whale calculations دلوقتي بتعتمد على 10 أضعاف البيانات.
+
+الاختبارات الصارمة (8/8 PASS):
+  ✅ Check 1: Python syntax valid
+  ✅ Check 2: PRICE_HISTORY_DB constant defined
+  ✅ Check 3: Phase 5b marker present
+  ✅ Check 4: PRIMARY query reads from price_history.db
+  ✅ Check 5: FALLBACK to stock_daily_prices still present
+  ✅ Check 6: backup exists (liquidity_radar_v2.py.backup_phase5b_20261022_121721)
+  ✅ Check 7: price_history (424) ≥ stock_daily_prices (40) for COMI
+  ✅ Check 8: runtime scan_ticker works (COMI)
+
+اختبار تكاملي على 5 أسهم EGX:
+  AALR   | price=229.12 | phase=تصريف
+  ABUK   | price=95.75  | phase=تراكم مع اتجاه
+  ACAMD  | price=2.03   | phase=تصريف
+  ACAP   | price=7.58   | phase=تصريف
+  ACAPA  | price=9.21   | phase=تصريف
+  market_regime: عرضي — مؤشر EGX30 عرضي -0.83%
+
+الـ fallback chain النهائي لـ liquidity_radar_v2:
+- candles: price_history.db (PRIMARY) → stock_daily_prices (FALLBACK)
+- stock info: stocks.db.stocks (unchanged — معلومات لحظية مش تاريخ)
+- fundamentals: data_engine.db.historical_data (unchanged)
+- predictions: predictions.db (unchanged — sealed dispatch)
+
+Stage Summary:
+- ✅ Phase 5b مكتمل: liquidity_radar_v2.py بيقرا candles من price_history.db كـ PRIMARY.
+- ✅ 8/8 verification checks passed.
+- ✅ runtime test ناجح على 5 tickers (مش ticker واحد).
+- ✅ data consistency مثبتة (نفس values في overlap period).
+- ✅ backup موجود + rollback plan جاهز (`cp db/backups/liquidity_radar_v2.py.backup_phase5b_* scripts/liquidity_radar_v2.py`).
+- 🟡 canonical_flow import warning لسه موجود (مش مرتبط بـ Phase 5b — السكريبت في archive/garage/).
+- 🎯 **جاهز للإثبات الثاني على اللاب توب.**
+
+الـ commit message المقترح:
+```
+feat(unification): Phase 5b — liquidity_radar_v2.py reads from price_history.db PRIMARY
+
+- Add PRICE_HISTORY_DB constant (was missing — script didn't know about price_history.db)
+- Modify scan_ticker: candles now read from price_history.db (PRIMARY)
+  with fallback to stock_daily_prices (was reading from stock_daily_prices only)
+- Baseline: COMI had 40 candles (2026-07-28 → 2026-10-21)
+- After:    COMI has 424 candles (2025-01-09 → 2026-10-21)
+- Same close/volume values in overlap period → data integrity confirmed
+- Verification: 8/8 checks passed + runtime test on 5 EGX tickers
+```

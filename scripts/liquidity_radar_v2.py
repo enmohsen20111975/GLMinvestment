@@ -45,6 +45,9 @@ from typing import Any, Dict, List, Optional, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STOCKS_DB = Path(os.environ.get('STOCKS_DB', str(PROJECT_ROOT / "db" / "stocks.db")))
 DATA_ENGINE_DB = Path(os.environ.get('DATA_ENGINE_DB', str(PROJECT_ROOT / "db" / "data_engine.db")))
+# Phase 5b (DATA-UNIFICATION): price_history.db is now PRIMARY for daily candles.
+# Legacy: stock_daily_prices (in stocks.db) was PRIMARY — now fallback.
+PRICE_HISTORY_DB = Path(os.environ.get('PRICE_HISTORY_DB', str(PROJECT_ROOT / "db" / "price_history.db")))
 
 # SEALED-DISPATCH-BRAVO-UNIFIED-RADAR (2026-10-17):
 # Step 1: الرادار يقرأ من predictions.db (قراءة فقط، ما يكتبش) — مصدر واحد
@@ -1088,14 +1091,38 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
                  'support', 'resistance', 'ma_50', 'ma_200', 'rsi', 'change_percent']
     stock_info = dict(zip(col_names, stock_row))
 
-    # جلب الشموع
-    candle_rows = conn.execute("""
-        SELECT price_date, open, high, low, close, volume
-        FROM stock_daily_prices
-        WHERE ticker = ? AND COALESCE(close, 0) > 0 AND COALESCE(volume, 0) > 0
-        ORDER BY price_date ASC
-    """, (ticker,)).fetchall()
-    candles = [dict(zip(['price_date', 'open', 'high', 'low', 'close', 'volume'], r)) for r in candle_rows]
+    # جلب الشموع — Phase 5b (DATA-UNIFICATION): price_history.db is PRIMARY
+    # 1. PRIMARY: price_history.db.price_history (canonical — 428K rows)
+    # 2. FALLBACK: stocks.db.stock_daily_prices (legacy — was PRIMARY before Phase 5b)
+    candles: List[Dict[str, Any]] = []
+    candle_source = 'none'
+    try:
+        if PRICE_HISTORY_DB.exists():
+            _ph_conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+            _ph_rows = _ph_conn.execute("""
+                SELECT date AS price_date, open_price AS open, high_price AS high,
+                       low_price AS low, close_price AS close, volume
+                FROM price_history
+                WHERE ticker = ? AND COALESCE(close_price, 0) > 0 AND COALESCE(volume, 0) > 0
+                ORDER BY date ASC
+            """, (ticker,)).fetchall()
+            _ph_conn.close()
+            if _ph_rows:
+                candles = [dict(zip(['price_date', 'open', 'high', 'low', 'close', 'volume'], r)) for r in _ph_rows]
+                candle_source = 'price_history.db (PRIMARY)'
+    except Exception as _ph_err:
+        print(f"[liquidity_radar_v2] WARN: price_history.db read failed for {ticker}: {_ph_err}", flush=True)
+
+    # FALLBACK: لو price_history.db رجع 0 صفوف (مثلاً سهم جديد)، نقرا من stock_daily_prices
+    if not candles:
+        candle_rows = conn.execute("""
+            SELECT price_date, open, high, low, close, volume
+            FROM stock_daily_prices
+            WHERE ticker = ? AND COALESCE(close, 0) > 0 AND COALESCE(volume, 0) > 0
+            ORDER BY price_date ASC
+        """, (ticker,)).fetchall()
+        candles = [dict(zip(['price_date', 'open', 'high', 'low', 'close', 'volume'], r)) for r in candle_rows]
+        candle_source = 'stock_daily_prices (FALLBACK)' if candles else 'none'
 
     # 0. فحص السيولة أولًا
     liquidity = check_liquidity(candles)
