@@ -85,8 +85,7 @@ def _open_db(db_alias: str, db_path: str, writable: bool = False):
     conn = None
     try:
         if _ADMIN_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_alias, writable=writable)
-            conn = 
+            conn = _dbm.get_connection(db_alias, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
