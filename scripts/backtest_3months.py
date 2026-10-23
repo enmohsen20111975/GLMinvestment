@@ -109,7 +109,8 @@ def run_predictor(start_date, end_date, dry_run=False):
         '--start', start_date,
         '--end', end_date,
         '--scan-interval', '1',
-        '--max-tickers', '50',
+        '--max-tickers', '200',
+        '--keep-old',  # Don't delete old predictions — we want to keep existing ones
     ]
     if dry_run:
         cmd.append('--dry-run')
@@ -163,7 +164,14 @@ def run_closer(start_date, end_date, dry_run=False):
     print(f"  Command: {' '.join(cmd)}")
     print()
 
-    result = run(cmd, cwd=str(VPS_SERVICE), capture_output=True, text=True, timeout=3600)
+    # Set PYTHONPATH for daily_closer imports
+    closer_env = os.environ.copy()
+    closer_env['PYTHONPATH'] = ':'.join([
+        str(VPS_SERVICE),
+        str(VPS_SERVICE / 'jobs'),
+        closer_env.get('PYTHONPATH', ''),
+    ])
+    result = run(cmd, cwd=str(VPS_SERVICE), capture_output=True, text=True, timeout=3600, env=closer_env)
 
     output_lines = result.stdout.strip().split('\n')
     print("  Output (last 30 lines):")
