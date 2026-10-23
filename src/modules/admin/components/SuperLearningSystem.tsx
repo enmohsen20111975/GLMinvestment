@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
  Play, Pause, RotateCcw, TrendingUp, TrendingDown, Target,
  BarChart3, Settings, Zap, AlertTriangle, CheckCircle2, XCircle,
@@ -36,131 +36,23 @@ import {
  LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
  BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Pie, Cell
 } from 'recharts';
+// F-Strangler-SuperLearning: data-fetching logic extracted to hook
+import {
+ useSuperLearningData,
+ PERSONA_DEFAULTS,
+ type BacktestParameters,
+ type BacktestResult,
+ type BacktestIteration,
+ type BacktestTrade,
+ type PersonaKey,
+} from '@/hooks/useSuperLearningData';
 
-// ==================== TYPES ====================
+// ==================== TYPES (local to view layer only) ====================
+// Note: BacktestParameters / BacktestResult / BacktestIteration / BacktestTrade /
+// PersonaKey moved to @/hooks/useSuperLearningData.ts (F-Strangler-SuperLearning).
 
-interface BacktestParameters {
- // Technical Indicators
- rsi_oversold: number;
- rsi_overbought: number;
- rsi_weight: number;
- macd_weight: number;
- ma_weight: number;
- bollinger_std: number;
- bollinger_weight: number;
- // Risk Management
- stop_loss_min: number;
- stop_loss_max: number;
- target_multiplier: number;
- // Decision Logic
- confidence_threshold: number;
- min_indicators_agree: number;
- volume_threshold: number;
- volume_weight: number;
-}
-
-interface BacktestResult {
- total_trades: number;
- winning_trades: number;
- losing_trades: number;
- win_rate: number;
- avg_return: number;
- avg_winner: number;
- avg_loser: number;
- total_return: number;
- max_drawdown: number;
- profit_factor: number;
- sharpe_ratio: number;
- expectancy: number;
-}
-
-interface BacktestIteration {
- iteration: number;
- parameters: BacktestParameters;
- result: BacktestResult;
- persona: string;
- asset_type: string;
- timestamp: string;
- analysis?: {
- errors_detected: string[];
- improvements_made: string[];
- };
-}
-
-interface BacktestTrade {
- id: number;
- ticker: string;
- entry_date: string;
- entry_price: number;
- action: 'BUY' | 'SELL';
- actual_return: number;
- analysis_correct: boolean;
- reasoning: string;
- exit_date: string;
- exit_price: number;
-}
-
-// ==================== CONSTANTS ====================
-
-// 7 شخصيات استثمارية
-const PERSONA_DEFAULTS: Record<string, BacktestParameters> = {
- // 1. المحافظ - حماية رأس المال
- conservative: {
- rsi_oversold: 35, rsi_overbought: 65, rsi_weight: 12,
- macd_weight: 8, ma_weight: 15, bollinger_std: 2.5, bollinger_weight: 10,
- stop_loss_min: 4, stop_loss_max: 6, target_multiplier: 1.5,
- confidence_threshold: 70, min_indicators_agree: 3,
- volume_threshold: 1.3, volume_weight: 8
- },
- // 2. المتوازن - توازن العائد والمخاطر
- balanced: {
- rsi_oversold: 30, rsi_overbought: 70, rsi_weight: 15,
- macd_weight: 10, ma_weight: 12, bollinger_std: 2, bollinger_weight: 8,
- stop_loss_min: 3, stop_loss_max: 8, target_multiplier: 2,
- confidence_threshold: 55, min_indicators_agree: 2,
- volume_threshold: 1.5, volume_weight: 5
- },
- // 3. المقامر - مخاطر عالية لعوائد عالية
- gambler: {
- rsi_oversold: 20, rsi_overbought: 80, rsi_weight: 18,
- macd_weight: 12, ma_weight: 8, bollinger_std: 1.5, bollinger_weight: 5,
- stop_loss_min: 2, stop_loss_max: 15, target_multiplier: 3,
- confidence_threshold: 40, min_indicators_agree: 1,
- volume_threshold: 1.2, volume_weight: 3
- },
- // 4. الذكي - يعتمد على AI والتحليل المتقدم
- smart: {
- rsi_oversold: 28, rsi_overbought: 72, rsi_weight: 14,
- macd_weight: 11, ma_weight: 13, bollinger_std: 2, bollinger_weight: 9,
- stop_loss_min: 3, stop_loss_max: 7, target_multiplier: 2.2,
- confidence_threshold: 60, min_indicators_agree: 2,
- volume_threshold: 1.4, volume_weight: 7
- },
- // 5. السريع - صفقات سريعة (Scalper)
- scalper: {
- rsi_oversold: 25, rsi_overbought: 75, rsi_weight: 20,
- macd_weight: 15, ma_weight: 5, bollinger_std: 1.5, bollinger_weight: 12,
- stop_loss_min: 1, stop_loss_max: 3, target_multiplier: 1.2,
- confidence_threshold: 50, min_indicators_agree: 2,
- volume_threshold: 2, volume_weight: 10
- },
- // 6. المتتبع - يتبع الاتجاه (Trend Follower)
- trend_follower: {
- rsi_oversold: 30, rsi_overbought: 70, rsi_weight: 10,
- macd_weight: 18, ma_weight: 20, bollinger_std: 2, bollinger_weight: 6,
- stop_loss_min: 5, stop_loss_max: 10, target_multiplier: 2.5,
- confidence_threshold: 50, min_indicators_agree: 2,
- volume_threshold: 1.3, volume_weight: 8
- },
- // 7. العكسي - يعكس الاتجاه (Contrarian)
- contrarian: {
- rsi_oversold: 38, rsi_overbought: 62, rsi_weight: 22,
- macd_weight: 5, ma_weight: 6, bollinger_std: 2.5, bollinger_weight: 15,
- stop_loss_min: 4, stop_loss_max: 8, target_multiplier: 1.8,
- confidence_threshold: 65, min_indicators_agree: 2,
- volume_threshold: 1.6, volume_weight: 6
- }
-};
+interface SectorBreakdownRow { sector: string; trades: number; winRate: number; returnPct: number; }
+interface EngineBreakdownRow { model: string; trades: number; winRate: number; }
 
 // معلومات الشخصيات
 const PERSONA_INFO: Record<string, {
@@ -267,7 +159,7 @@ const COLORS = {
 
 // P39-PHASE-5: Persona Benchmarking — side-by-side comparison of the 3 personas
 // Static display estimates derived from persona-dynamic.ts factors + historical EGX/Crypto behavior.
-type PersonaKey = 'conservative' | 'balanced' | 'gambler';
+// NOTE: PersonaKey moved to @/hooks/useSuperLearningData.ts (F-Strangler-SuperLearning).
 
 interface PersonaBenchmarkStatic {
  riskScore: number; // 1..100 — display only
@@ -338,50 +230,66 @@ const PERSONA_BENCHMARK_META: Record<PersonaKey, { icon: typeof Shield; emoji: s
 // ==================== MAIN COMPONENT ====================
 
 export function SuperLearningSystem() {
- // State
- const [activePersona, setActivePersona] = useState<string>('balanced');
- const [assetType, setAssetType] = useState<string>('egx');
- const [parameters, setParameters] = useState<BacktestParameters>(PERSONA_DEFAULTS.balanced);
- const [customMode, setCustomMode] = useState(false);
- const [isRunning, setIsRunning] = useState(false);
- const [loading, setLoading] = useState<string | null>(null);
- const [results, setResults] = useState<BacktestResult | null>(null);
- const [iterations, setIterations] = useState<BacktestIteration[]>([]);
- const [trades, setTrades] = useState<BacktestTrade[]>([]);
+ // ────────────────────────────────────────────────────────────────
+ // F-Strangler-SuperLearning: all data-fetching + state delegated to
+ // useSuperLearningData hook. The component is now render-only.
+ //   • 1 GET  /api/self-learning?action=stats  → useApiQuery (cached)
+ //   • 8 POST mutations (backtest / iterative-learning / generate /
+ //     purge / apply / learn-from-errors / side-by-side) → hook actions
+ // ────────────────────────────────────────────────────────────────
+ const {
+  // State
+  activePersona,
+  assetType, setAssetType,
+  parameters,
+  customMode,
+  isRunning,
+  loading,
+  results, setResults,
+  iterations, setIterations,
+  trades, setTrades,
+  fromDate, setFromDate,
+  toDate, setToDate,
+  isDryRun, setIsDryRun,
+  engineWeights, setEngineWeights,
+  weightMode, setWeightMode,
+  customPresetName, setCustomPresetName,
+  presets,
+  generatingPredictions,
+  purgingPredictions,
+  predictionMetrics,
+  personaBenchmarkLoading,
+  personaBenchmarkResults,
+  personaBenchmarkRan,
+  config, setConfig,
+  aiEnhanced, setAiEnhanced,
+  learningMode,
+  targetWinRate, setTargetWinRate,
+  maxIterations, setMaxIterations,
+  lessons,
+  adjustments,
+  // Derived
+  bestPersona,
+  anyPersonaBenchmarkLoading,
+  // Actions
+  handleGeneratePredictions,
+  handlePurgeOldPredictions,
+  runSideBySideBacktest,
+  handlePersonaChange,
+  updateParameter,
+  resetToDefaults,
+  runSingleBacktest,
+  runIterativeLearningSystem,
+  applyParameters,
+  learnFromActualFailures,
+  handleSavePreset,
+  handleLoadPreset,
+  handleDeletePreset,
+ } = useSuperLearningData();
+
+ // ── View-only state (stays in component — pure UI, no fetch backing) ──
  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
  const [activeTab, setActiveTab] = useState('predictions-engine');
-
- // ==================== 5-PILLAR PREDICTIONS ENGINE STATE ====================
- const [fromDate, setFromDate] = useState<string>('2026-01-01');
- const [toDate, setToDate] = useState<string>(new Date().toISOString().split('T')[0]);
- const [isDryRun, setIsDryRun] = useState<boolean>(false);
- const [engineWeights, setEngineWeights] = useState({
- smc: 35,
- quant: 30,
- risk: 15,
- egx: 20,
- });
- const [weightMode, setWeightMode] = useState<'dynamic' | 'static'>('dynamic');
- const [customPresetName, setCustomPresetName] = useState<string>('');
- const [presets, setPresets] = useState<Array<{ name: string; weights: { smc: number; quant: number; risk: number; egx: number }; mode: 'dynamic' | 'static' }>>([
- { name: '🏆 المتوازن القياسي (Standard Core)', weights: { smc: 30, quant: 30, risk: 20, egx: 20 }, mode: 'dynamic' },
- { name: '⚡ المضاربة السريعة (High Momentum SMC)', weights: { smc: 60, quant: 20, risk: 10, egx: 10 }, mode: 'static' },
- { name: '🛡️ المحافظ التحفظي (Conservative Quant)', weights: { smc: 15, quant: 50, risk: 25, egx: 10 }, mode: 'static' },
- { name: '🇪🇬 مخصص السوق المصري (EGX Tuned Volatility)', weights: { smc: 20, quant: 20, risk: 20, egx: 40 }, mode: 'dynamic' },
- ]);
- const [generatingPredictions, setGeneratingPredictions] = useState<boolean>(false);
- const [purgingPredictions, setPurgingPredictions] = useState<boolean>(false);
- const [predictionMetrics, setPredictionMetrics] = useState({
- total: 200,
- winning: 144,
- losing: 56,
- winRate: 72.0,
- profitFactor: 2.15,
- maxDrawdown: 4.8,
- totalReturn: 18.5,
- avgWinner: 3.4,
- avgLoser: 1.6,
- });
  const [sectorBreakdown] = useState([
  { sector: 'البنوك والخدمات المالية', trades: 45, winRate: 78, returnPct: 22.4 },
  { sector: 'العقارات والإنشاءات', trades: 50, winRate: 70, returnPct: 16.8 },
@@ -395,547 +303,6 @@ export function SuperLearningSystem() {
  { model: 'Dynamic Risk Kaufman ATR', trades: 40, winRate: 68.2 },
  { model: 'EGX Tuned Soft Penalty', trades: 40, winRate: 70.0 },
  ]);
-
- // ==================== P39-PHASE-5: Persona Benchmarking State ====================
- type PersonaLiveResult = {
- winRate: number | null;
- profitFactor: number | null;
- totalReturn: number | null;
- };
- const [personaBenchmarkLoading, setPersonaBenchmarkLoading] = useState<Record<PersonaKey, boolean>>({
- conservative: false,
- balanced: false,
- gambler: false,
- });
- const [personaBenchmarkResults, setPersonaBenchmarkResults] = useState<Record<PersonaKey, PersonaLiveResult | null>>({
- conservative: null,
- balanced: null,
- gambler: null,
- });
- const [personaBenchmarkRan, setPersonaBenchmarkRan] = useState<boolean>(false);
-
- // Load saved custom presets from localStorage on mount
- useEffect(() => {
- try {
- const saved = localStorage.getItem('PRESETS_STORE_KEY');
- if (saved) {
- const parsed = JSON.parse(saved);
- if (Array.isArray(parsed) && parsed.length > 0) {
- setPresets(parsed);
- }
- }
- } catch {
- // ignore
- }
- }, []);
-
- // Save new preset
- const handleSavePreset = () => {
- if (!customPresetName.trim()) {
- toast.error('يرجى إدخال اسم للقائمة المسبقة');
- return;
- }
- const newPreset = {
- name: customPresetName.trim(),
- weights: { ...engineWeights },
- mode: weightMode,
- };
- const updated = [...presets, newPreset];
- setPresets(updated);
- try {
- localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
- } catch {
- // ignore
- }
- setCustomPresetName('');
- toast.success(`تم حفظ القائمة المسبقة: "${newPreset.name}"`);
- };
-
- // Load preset
- const handleLoadPreset = (preset: typeof presets[0]) => {
- setEngineWeights(preset.weights);
- setWeightMode(preset.mode);
- toast.success(`تم تطبيق القائمة: "${preset.name}"`);
- };
-
- // Delete preset
- const handleDeletePreset = (index: number) => {
- const updated = presets.filter((_, idx) => idx !== index);
- setPresets(updated);
- try {
- localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
- } catch {
- // ignore
- }
- toast.success('تم حذف القائمة المسبقة');
- };
-
- // Trigger historical predictions generator
- const handleGeneratePredictions = async () => {
- setGeneratingPredictions(true);
- try {
- const res = await fetch('/api/admin/ai-predictions/generate', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- from_date: fromDate,
- to_date: toDate,
- dry_run: isDryRun,
- weights: engineWeights,
- weight_mode: weightMode,
- asset_type: assetType,
- }),
- });
- const data = await res.json();
- if (data.success !== false) {
- toast.success(
- isDryRun
- ? `⚡ تم توليد التوقعات اللحظية الجافة من ${fromDate} (الوضع التجريبي - لم يتم الحفظ بالداتابيز)`
- : `✅ تم توليد وتخزين التوقعات بنجاح من تاريخ ${fromDate}`
- );
- if (data.performance) {
- setPredictionMetrics(prev => ({
- ...prev,
- winRate: data.performance.success_rate || prev.winRate,
- total: data.performance.total_predictions || prev.total,
- }));
- }
- } else {
- toast.error(data.error || 'حدث خطأ أثناء التوليد');
- }
- } catch {
- toast.success(
- isDryRun
- ? `⚡ تم محاكاة التوقعات اللحظية الجافة من ${fromDate} بالذاكرة`
- : `✅ تم توليد وتخزين التوقعات من تاريخ ${fromDate}`
- );
- } finally {
- setGeneratingPredictions(false);
- }
- };
-
- // Purge old predictions log
- const handlePurgeOldPredictions = async () => {
- if (!window.confirm('هل أنت تأكد من مسح جميع سجلات التوقعات القديمة؟')) return;
- setPurgingPredictions(true);
- try {
- const res = await fetch('/api/admin/clean-predictions', { method: 'POST' });
- const data = await res.json();
- if (data.success !== false) {
- toast.success('تم مسح وإعادة تعيين سجل التوقعات بنجاح');
- } else {
- toast.error(data.error || 'حدث خطأ أثناء المسح');
- }
- } catch {
- toast.success('تم تنفيذ طلب مسح التوقعات بنجاح');
- } finally {
- setPurgingPredictions(false);
- }
- };
-
- // P39-PHASE-5: Run side-by-side backtest for all 3 personas in parallel.
- // Calls /api/self-learning?action=backtest for each persona with the same date range
- // and per-persona engineWeights defaults from PERSONA_DEFAULTS.
- const runSideBySideBacktest = useCallback(async () => {
- const personas: PersonaKey[] = ['conservative', 'balanced', 'gambler'];
- setPersonaBenchmarkRan(true);
- setPersonaBenchmarkLoading({ conservative: true, balanced: true, gambler: true });
- setPersonaBenchmarkResults({ conservative: null, balanced: null, gambler: null });
-
- await Promise.all(personas.map(async (persona) => {
- try {
- const personaParams = PERSONA_DEFAULTS[persona];
- const res = await fetch(`/api/self-learning?action=backtest`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- market: assetType.toUpperCase(),
- persona,
- parameters: personaParams,
- weights: engineWeights,
- weightMode,
- startDate: fromDate,
- endDate: toDate,
- }),
- });
- if (!res.ok) {
- throw new Error(`HTTP ${res.status}`);
- }
- const data = await res.json();
- const result = data?.result || data?.data || data || {};
- const liveResult: PersonaLiveResult = {
- winRate: (typeof result?.win_rate === 'number') ? result.win_rate
- : (typeof result?.outcomes?.win_rate === 'number') ? result.outcomes.win_rate
- : null,
- profitFactor: (typeof result?.profit_factor === 'number') ? result.profit_factor
- : (typeof result?.outcomes?.profit_factor === 'number') ? result.outcomes.profit_factor
- : null,
- totalReturn: (typeof result?.total_return === 'number') ? result.total_return
- : (typeof result?.outcomes?.total_return === 'number') ? result.outcomes.total_return
- : null,
- };
- setPersonaBenchmarkResults(prev => ({ ...prev, [persona]: liveResult }));
- } catch {
- setPersonaBenchmarkResults(prev => ({
- ...prev,
- [persona]: { winRate: null, profitFactor: null, totalReturn: null },
- }));
- } finally {
- setPersonaBenchmarkLoading(prev => ({ ...prev, [persona]: false }));
- }
- }));
-
- toast.success('اكتملت المقارنة الفعلية للشخصيات الثلاث');
- }, [assetType, engineWeights, weightMode, fromDate, toDate]);
-
- // Determine best persona by highest totalReturn once all loading finishes.
- const bestPersona: PersonaKey | null = useMemo(() => {
- const personas: PersonaKey[] = ['conservative', 'balanced', 'gambler'];
- if (personas.some(p => personaBenchmarkLoading[p])) return null;
- const candidates = personas.filter(p => personaBenchmarkResults[p]?.totalReturn !== null && personaBenchmarkResults[p]?.totalReturn !== undefined);
- if (candidates.length === 0) return null;
- let best: PersonaKey = candidates[0];
- let bestReturn = personaBenchmarkResults[candidates[0]]?.totalReturn ?? -Infinity;
- for (const p of candidates) {
- const r = personaBenchmarkResults[p]?.totalReturn ?? -Infinity;
- if (r > bestReturn) {
- bestReturn = r;
- best = p;
- }
- }
- return best;
- }, [personaBenchmarkResults, personaBenchmarkLoading]);
-
- const anyPersonaBenchmarkLoading = personaBenchmarkLoading.conservative || personaBenchmarkLoading.balanced || personaBenchmarkLoading.gambler;
-
- // Config
- const [config, setConfig] = useState({
- start_date: '2025-01-01',
- end_date: '2025-03-31',
- capital: 100000,
- max_positions: 5,
- holding_days: 30
- });
-
- // AI Enhancement state
- const [aiEnhanced, setAiEnhanced] = useState(false);
- const [learningMode, setLearningMode] = useState<'single' | 'iterative'>('single');
- const [targetWinRate, setTargetWinRate] = useState(70);
- const [maxIterations, setMaxIterations] = useState(20);
- const [lessons, setLessons] = useState<string[]>([]);
- const [adjustments, setAdjustments] = useState<Record<string, number>>({});
-
- // Fetch learning stats from Python - RE-FETCH when persona or assetType changes
- useEffect(() => {
- const fetchStats = async () => {
- console.log(`[SuperLearning] Fetching stats for persona: ${activePersona}, asset: ${assetType}`);
- try {
- // Pass persona and assetType to Python
- const res = await fetch(`/api/self-learning?action=stats&persona=${activePersona}&assetType=${assetType}`);
- const data = await res.json();
- console.log('[SuperLearning] Stats response:', data);
-
- if (data.success && data.data) {
- // Map Python stats to BacktestResult format
- const newResults: BacktestResult = {
- total_trades: data.data.trades?.total || data.data.signals?.total || 0,
- winning_trades: data.data.outcomes?.wins || 0,
- losing_trades: data.data.outcomes?.losses || 0,
- win_rate: data.data.outcomes?.win_rate || 0,
- avg_return: data.data.outcomes?.avg_profit || 0,
- avg_winner: data.data.outcomes?.avg_profit || 0,
- avg_loser: data.data.outcomes?.avg_loss || 0,
- total_return: data.data.outcomes?.win_rate ? (data.data.outcomes.win_rate - 50) * 2 : 0,
- max_drawdown: 5,
- profit_factor: data.data.outcomes?.win_rate ? data.data.outcomes.win_rate / (100 - data.data.outcomes.win_rate || 1) : 1,
- sharpe_ratio: 1.2,
- expectancy: 0.5
- };
- setResults(newResults);
- console.log('[SuperLearning] Set results for persona:', activePersona, newResults);
- }
- } catch (error) {
- console.error('[SuperLearning] Failed to fetch stats:', error);
- }
- };
-
- fetchStats();
- }, [activePersona, assetType]);
-
- // Handle persona change
- const handlePersonaChange = useCallback((persona: string) => {
- setActivePersona(persona);
- if (!customMode) {
- setParameters(PERSONA_DEFAULTS[persona]);
- }
- }, [customMode]);
-
- // Update single parameter
- const updateParameter = useCallback((key: keyof BacktestParameters, value: number) => {
- setParameters(prev => ({ ...prev, [key]: value }));
- setCustomMode(true);
- }, []);
-
- // Reset to defaults
- const resetToDefaults = useCallback(() => {
- setParameters(PERSONA_DEFAULTS[activePersona]);
- setCustomMode(false);
- toast.success('تم إعادة الضبط للقيم القياسية');
- }, [activePersona]);
-
- // Run backtest (single) - supports both EGX and Crypto
- const runSingleBacktest = useCallback(async () => {
- setLoading('backtest');
- setIsRunning(true);
- 
- try {
- console.log(`[SuperLearning] Running backtest for ${assetType} with persona: ${activePersona}`);
- console.log(`[SuperLearning] Parameters:`, parameters);
- 
- let data;
- 
- if (assetType === 'crypto') {
- // Crypto: POST with full parameters
- const res = await fetch('/api/crypto-backtesting', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- start_date: config.start_date,
- end_date: config.end_date,
- capital: config.capital,
- max_positions: config.max_positions,
- holding_days: config.holding_days,
- confidence_threshold: parameters.confidence_threshold,
- parameters: {
- rsi_oversold: parameters.rsi_oversold,
- rsi_overbought: parameters.rsi_overbought,
- rsi_weight: parameters.rsi_weight,
- macd_weight: parameters.macd_weight,
- ma_weight: parameters.ma_weight,
- bollinger_weight: parameters.bollinger_weight,
- stop_loss_min: parameters.stop_loss_min,
- stop_loss_max: parameters.stop_loss_max,
- target_multiplier: parameters.target_multiplier,
- min_indicators_agree: parameters.min_indicators_agree,
- volume_threshold: parameters.volume_threshold
- }
- })
- });
- data = await res.json();
- } else {
- // EGX: Use existing API
- const apiUrl = `/api/backtesting?action=full-backtest&startDate=${config.start_date}&endDate=${config.end_date}`;
- const res = await fetch(apiUrl, { method: 'GET' });
- data = await res.json();
- }
- 
- if (data.success) {
- const result = data.result;
- setResults(result);
- setTrades(result.trades || []);
- setIterations(prev => [...prev, {
- iteration: prev.length + 1,
- parameters: { ...parameters },
- result: result,
- persona: activePersona,
- asset_type: assetType,
- timestamp: new Date().toISOString()
- }]);
- toast.success(`تم الاختبار! نسبة النجاح: ${safeToFixed(result?.win_rate)}%`);
- } else {
- toast.error(data.error || 'فشل في الاختبار');
- }
- } catch (error) {
- toast.error('خطأ في الاتصال');
- console.error(error);
- } finally {
- setLoading(null);
- setIsRunning(false);
- }
- }, [config, parameters, activePersona, assetType]);
-
- // Run Iterative Learning - النظام الجديد الذكي
- const runIterativeLearningSystem = useCallback(async () => {
- setLoading('iterative');
- setIsRunning(true);
- setIterations([]);
- 
- try {
- console.log(`[SuperLearning] Starting iterative learning for ${assetType}...`);
- console.log(`[SuperLearning] Persona: ${activePersona}, Target: ${targetWinRate}%`);
- console.log(`[SuperLearning] Parameters:`, parameters);
- 
- // Use iterative learning API
- const res = await fetch('/api/iterative-learning', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- persona: activePersona,
- targetWinRate: targetWinRate,
- maxIterations: maxIterations,
- startDate: config.start_date,
- endDate: config.end_date,
- assetType: assetType,
- initialParameters: parameters
- })
- });
- 
- const data = await res.json();
- 
- if (data.success && data.result) {
- const learningResult = data.result;
- 
- // Check if iterations exist and is an array
- if (!learningResult.iterations || !Array.isArray(learningResult.iterations)) {
- console.error('[SuperLearning] No iterations in response:', learningResult);
- toast.error('لا توجد نتائج تعلم');
- return;
- }
- 
- // Convert learning iterations to display format
- const displayIterations: BacktestIteration[] = learningResult.iterations.map((iter: any, idx: number) => ({
- iteration: iter.iteration || idx + 1,
- parameters: iter.parameters || {},
- result: {
- total_trades: iter.total_trades || 0,
- winning_trades: Math.round((iter.total_trades || 0) * (iter.win_rate || 50) / 100),
- losing_trades: Math.round((iter.total_trades || 0) * (100 - (iter.win_rate || 50)) / 100),
- win_rate: iter.win_rate || 50,
- avg_return: 0,
- avg_winner: 0,
- avg_loser: 0,
- total_return: iter.total_return || 0,
- max_drawdown: 0,
- profit_factor: 0,
- sharpe_ratio: 0,
- expectancy: 0
- },
- persona: activePersona,
- asset_type: assetType,
- timestamp: iter.timestamp || new Date().toISOString(),
- // Add analysis data
- analysis: {
- errors_detected: iter.lessons || [],
- improvements_made: iter.changes || []
- }
- }));
- 
- setIterations(displayIterations);
- 
- // Set final results
- const lastIter = learningResult.iterations[learningResult.iterations.length - 1];
- const finalResult: BacktestResult = {
- total_trades: lastIter?.total_trades || 0,
- winning_trades: Math.round((lastIter?.total_trades || 0) * (learningResult.final_win_rate || 50) / 100),
- losing_trades: Math.round((lastIter?.total_trades || 0) * (100 - (learningResult.final_win_rate || 50)) / 100),
- win_rate: learningResult.final_win_rate || 50,
- avg_return: 0,
- avg_winner: 0,
- avg_loser: 0,
- total_return: lastIter?.total_return || 0,
- max_drawdown: 0,
- profit_factor: 0,
- sharpe_ratio: 0,
- expectancy: 0
- };
- 
- setResults(finalResult);
- 
- // Update parameters to best found
- if (learningResult.best_parameters) {
- setParameters({
- ...parameters,
- ...learningResult.best_parameters
- });
- }
- 
- // Show lessons
- if (learningResult.lesson_summary) {
- console.log('[SuperLearning] Lessons:', learningResult.lesson_summary);
- }
- 
- if (learningResult.target_achieved) {
- toast.success(`تم الوصول للهدف نسبة النجاح: ${safeToFixed(learningResult?.final_win_rate)}%`);
- } else {
- toast.info(`أفضل نتيجة: ${safeToFixed(learningResult?.final_win_rate)}% بعد ${learningResult?.total_iterations || 0} دورة`);
- }
- } else {
- toast.error(data.error || 'فشل في التعلم التكراري');
- }
- } catch (error) {
- toast.error('خطأ في الاتصال');
- console.error(error);
- } finally {
- setLoading(null);
- setIsRunning(false);
- }
- }, [config, activePersona, assetType, targetWinRate, maxIterations, parameters]);
-
- // Apply parameters
- const applyParameters = useCallback(async () => {
- setLoading('apply');
- try {
- const res = await fetch('/api/self-learning', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- action: 'apply',
- market: assetType.toUpperCase(),
- persona: activePersona,
- parameters: parameters
- })
- });
- const data = await res.json();
- if (data.success) {
- toast.success(`تم تطبيق وحفظ الإعدادات بنجاح للماركت ${assetType.toUpperCase()}!`);
- } else {
- toast.error(data.error || 'فشل في تطبيق وحفظ الإعدادات');
- }
- } catch (err) {
- toast.error('حدث خطأ أثناء الاتصال بالخادم');
- console.error(err);
- } finally {
- setLoading(null);
- }
- }, [assetType, activePersona, parameters]);
-
- // Learn from actual failures
- const learnFromActualFailures = useCallback(async () => {
- setLoading('errors');
- setLessons([]);
- setAdjustments({});
- try {
- const res = await fetch('/api/self-learning', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- action: 'learn-from-errors',
- market: assetType.toUpperCase(),
- persona: activePersona
- })
- });
- const data = await res.json();
- if (data.success) {
- setLessons(data.lessons || []);
- setAdjustments(data.adjustments || {});
- toast.success('اكتمل تحليل الأخطاء وتعدين الدروس وتحديث البارامترات!');
- if (data.adjustments && Object.keys(data.adjustments).length > 0) {
- setParameters(prev => ({
- ...prev,
- ...data.adjustments
- }));
- setCustomMode(true);
- }
- } else {
- toast.error(data.error || 'فشل في التعلم من الأخطاء');
- }
- } catch (err) {
- toast.error('حدث خطأ أثناء الاتصال بالخادم');
- console.error(err);
- } finally {
- setLoading(null);
- }
- }, [assetType, activePersona]);
 
  // Get win rate color
  const getWinRateColor = (rate: number) => {
