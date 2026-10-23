@@ -86,6 +86,12 @@ import { PortfolioSimulator } from './PortfolioSimulator';
 import { EntryTimingSimulator } from './EntryTimingSimulator';
 import { useAppStore } from '@/lib/store';
 import { getTrialStatus } from '@/lib/subscription-gate';
+import {
+  useAcademyLessonsData,
+  useAcademyStocksData,
+  type AdvancedLesson,
+  type FloorStock,
+} from '@/hooks/useAcademyData';
 
 export function AcademyView() {
  return (
@@ -177,24 +183,6 @@ export function AcademyView() {
  blockquotes / bold inline).
  ============================================================ */
 
-interface AdvancedLessonSection {
- heading: string;
- content: string;
-}
-
-interface AdvancedLesson {
- id: string;
- filename: string;
- title: string;
- emoji: string;
- level: string;
- duration: string;
- tagline: string;
- sections: AdvancedLessonSection[];
- keyPoints: string[];
- fullContent?: string;
-}
-
 const LEVEL_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
  'مبتدئ': 'secondary',
  'متوسط': 'default',
@@ -202,12 +190,21 @@ const LEVEL_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'o
 };
 
 function AdvancedLessonsTab() {
- const [lessons, setLessons] = React.useState<AdvancedLesson[]>([]);
- const [loading, setLoading] = React.useState(true);
- const [error, setError] = React.useState<string | null>(null);
+ // ─── Data layer (Strangler F-Strangler-AcademyView) ───────────────────────
+ // All fetch logic, caching, and loadFull state are owned by useAcademyLessonsData.
+ // Component retains only UI state: activeId (selected lesson), showFull (toggle).
+ const {
+ lessons,
+ loading,
+ error,
+ refetch,
+ loadingFull,
+ loadFull,
+ getFull,
+ } = useAcademyLessonsData();
+
+ // UI state (component-local — not data state)
  const [activeId, setActiveId] = React.useState<string | null>(null);
- const [fullCache, setFullCache] = React.useState<Record<string, string>>({});
- const [loadingFull, setLoadingFull] = React.useState<string | null>(null);
  const [showFull, setShowFull] = React.useState(false);
 
  // PAYWALL Gate 4: first 3 lessons free, lessons 4-12 locked (blurred) for free users post-trial.
@@ -217,29 +214,28 @@ function AdvancedLessonsTab() {
  const lessonsLocked = lessonsSubStatus.isFreeUser && lessonsSubStatus.isTrialExpired;
  const FREE_LESSON_COUNT = 3;
 
+ // On first lessons arrival, auto-select the first lesson (matches original
+ // `setActiveId(data.lessons[0].id)` inside fetch success handler).
  React.useEffect(() => {
- let cancelled = false;
- fetch('/api/ads/educational-lessons')
- .then((r) => r.json())
- .then((data) => {
- if (cancelled) return;
- if (data.success && Array.isArray(data.lessons) && data.lessons.length > 0) {
- setLessons(data.lessons);
- setActiveId(data.lessons[0].id);
- } else {
- setError(data.error || 'فشل تحميل الدروس المتقدمة');
+ if (lessons.length > 0 && activeId === null) {
+ setActiveId(lessons[0].id);
  }
- })
- .catch((err) => {
- if (!cancelled) setError(err?.message || 'خطأ في الشبكة');
- })
- .finally(() => {
- if (!cancelled) setLoading(false);
- });
- return () => {
- cancelled = true;
- };
- }, []);
+ }, [lessons, activeId]);
+
+ // Wrap imperative loadFull so the component toggles showFull on non-null return
+ // (preserves original `setShowFull(true)` inside loadFull success branch).
+ const handleLoadFull = React.useCallback(
+ async (id: string) => {
+ const full = await loadFull(id);
+ if (full) setShowFull(true);
+ },
+ [loadFull],
+ );
+
+ // Reset "show full" toggle when user switches lesson (matches original).
+ React.useEffect(() => {
+ setShowFull(false);
+ }, [activeId]);
 
  const active = React.useMemo(
  () => lessons.find((l) => l.id === activeId) ?? null,
@@ -252,36 +248,6 @@ function AdvancedLessonsTab() {
  [lessons, active],
  );
  const isLessonLocked = lessonsLocked && activeIndex >= FREE_LESSON_COUNT;
-
- const loadFull = React.useCallback(
- async (id: string) => {
- if (fullCache[id]) {
- setShowFull(true);
- return;
- }
- setLoadingFull(id);
- try {
- const res = await fetch(
- `/api/ads/educational-lessons?id=${encodeURIComponent(id)}`,
- );
- const data = await res.json();
- if (data.success && data.lessons?.[0]?.fullContent) {
- setFullCache((prev) => ({ ...prev, [id]: data.lessons[0].fullContent }));
- setShowFull(true);
- }
- } catch {
- /* swallow — preview sections already visible */
- } finally {
- setLoadingFull(null);
- }
- },
- [fullCache],
- );
-
- React.useEffect(() => {
- // Reset "show full" toggle when user switches lesson
- setShowFull(false);
- }, [activeId]);
 
  if (loading) {
  return (
@@ -297,27 +263,7 @@ function AdvancedLessonsTab() {
  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
  <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-destructive" />
  <p className="text-sm font-semibold text-destructive">{error}</p>
- <Button
- variant="outline"
- size="sm"
- className="mt-3"
- onClick={() => {
- setLoading(true);
- setError(null);
- fetch('/api/ads/educational-lessons')
- .then((r) => r.json())
- .then((d) => {
- if (d.success && d.lessons?.length) {
- setLessons(d.lessons);
- setActiveId(d.lessons[0].id);
- } else {
- setError(d.error || 'فشل تحميل الدروس');
- }
- })
- .catch((e) => setError(e?.message || 'خطأ في الشبكة'))
- .finally(() => setLoading(false));
- }}
- >
+ <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
  <RefreshCw className="ml-2 h-4 w-4" />
  إعادة المحاولة
  </Button>
@@ -333,7 +279,7 @@ function AdvancedLessonsTab() {
  );
  }
 
- const fullContent = fullCache[active.id];
+ const fullContent = getFull(active.id);
 
  return (
  <div dir="rtl" className="flex min-h-[600px] flex-col gap-4">
@@ -455,7 +401,7 @@ function AdvancedLessonsTab() {
  variant={showFull ? 'secondary' : 'default'}
  size="sm"
  disabled={loadingFull === active.id || isLessonLocked}
- onClick={() => loadFull(active.id)}
+ onClick={() => handleLoadFull(active.id)}
  >
  {loadingFull === active.id ? (
  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -982,53 +928,9 @@ function renderInline(text: string): React.ReactNode {
  + slate (neutral). NO indigo/blue (Rule 30).
  ============================================================ */
 
-interface FloorStock {
- ticker: string;
- name?: string;
- name_ar?: string;
- current_price: number;
- change_percent: number;
- volume: number;
- sector?: string;
-}
-
 interface AnalysisState {
  open: boolean;
  stock: FloorStock | null;
-}
-
-// Static demo list — shown only if /api/stocks is unreachable (graceful degrade)
-const FALLBACK_STOCKS: FloorStock[] = [
- { ticker: 'COMI', name_ar: 'المصرية للاتصالات', current_price: 28.45, change_percent: 2.14, volume: 4_820_000 },
- { ticker: 'HRHO', name_ar: 'أوراسكوم للمقاولات', current_price: 412.6, change_percent: -1.2, volume: 1_240_000 },
- { ticker: 'EFGR', name_ar: 'البنك الأهلي المصري', current_price: 68.3, change_percent: 0.85, volume: 3_410_000 },
- { ticker: 'SWDY', name_ar: 'سويدى إلكتريك', current_price: 22.9, change_percent: -0.45, volume: 2_180_000 },
- { ticker: 'EKHO', name_ar: 'القاهرة للدواجن', current_price: 19.75, change_percent: 4.32, volume: 1_980_000 },
- { ticker: 'AUTO', name_ar: 'غبور أوتو', current_price: 7.42, change_percent: 0.0, volume: 5_120_000 },
- { ticker: 'TMGH', name_ar: 'طلعت مصطفى', current_price: 11.6, change_percent: 1.92, volume: 2_870_000 },
- { ticker: 'ORAS', name_ar: 'أوراسكوم للتنمية', current_price: 245.8, change_percent: -2.71, volume: 980_000 },
- { ticker: 'EAST', name_ar: 'الشرقية للدخان', current_price: 18.04, change_percent: 0.62, volume: 1_540_000 },
- { ticker: 'ABUK', name_ar: 'أبو قريم للأسمدة', current_price: 32.18, change_percent: 1.33, volume: 2_290_000 },
- { ticker: 'FWRY', name_ar: 'فوري', current_price: 4.71, change_percent: -0.85, volume: 3_960_000 },
- { ticker: 'MTIE', name_ar: 'موبكو', current_price: 211.4, change_percent: 3.45, volume: 1_120_000 },
- { ticker: 'EGCH', name_ar: 'مصر للأسمنت', current_price: 14.82, change_percent: 0.27, volume: 1_760_000 },
- { ticker: 'PHDC', name_ar: 'بريماء للصناعات الدوائية', current_price: 13.95, change_percent: -1.6, volume: 1_430_000 },
- { ticker: 'DCRC', name_ar: 'دلتا للسكر', current_price: 36.55, change_percent: 2.08, volume: 1_260_000 },
- { ticker: 'CNEG', name_ar: 'القاهرة للإسكان والتعمير', current_price: 9.18, change_percent: -0.32, volume: 2_040_000 },
- { ticker: 'ISPH', name_ar: 'المصرية للأدوية', current_price: 8.95, change_percent: 1.21, volume: 1_690_000 },
- { ticker: 'CCPA', name_ar: 'القاهرة للخدمات', current_price: 11.42, change_percent: 0.0, volume: 1_380_000 },
-];
-
-function normalizeStock(raw: Record<string, unknown>): FloorStock {
- return {
- ticker: String(raw.ticker ?? raw.symbol ?? ''),
- name: raw.name ? String(raw.name) : undefined,
- name_ar: raw.name_ar ? String(raw.name_ar) : undefined,
- current_price: Number(raw.current_price ?? raw.close ?? raw.last_price ?? 0) || 0,
- change_percent: Number(raw.change_percent ?? raw.price_change ?? 0) || 0,
- volume: Number(raw.volume_int ?? raw.volume ?? 0) || 0,
- sector: raw.sector ? String(raw.sector) : undefined,
- };
 }
 
 function changeTone(pct: number): 'up' | 'down' | 'flat' {
@@ -1072,50 +974,22 @@ function analysisHint(pct: number): { tone: 'up' | 'down' | 'flat'; hint: string
 
 /* ---------- Section 1: Live Market Scanner ---------- */
 function LiveMarketScanner() {
- const [stocks, setStocks] = React.useState<FloorStock[]>([]);
- const [loading, setLoading] = React.useState(true);
- const [refreshing, setRefreshing] = React.useState(false);
- const [error, setError] = React.useState<string | null>(null);
+ // ─── Data layer (Strangler F-Strangler-AcademyView) ───────────────────────
+ // All fetch logic, normalization, FALLBACK_STOCKS, polling, and lastUpdated
+ // are owned by useAcademyStocksData. Component retains only UI state:
+ // search (filter input), showAll (toggle), analysis (modal open).
+ const {
+ stocks,
+ loading,
+ refreshing,
+ error,
+ lastUpdated,
+ refetch,
+ } = useAcademyStocksData();
+
  const [search, setSearch] = React.useState('');
  const [showAll, setShowAll] = React.useState(false);
  const [analysis, setAnalysis] = React.useState<AnalysisState>({ open: false, stock: null });
- const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
-
- const fetchStocks = React.useCallback(async (silent = false) => {
- if (!silent) setLoading(true);
- setRefreshing(true);
- try {
- const res = await fetch('/api/stocks?page_size=500', { cache: 'no-store' });
- if (!res.ok) throw new Error('HTTP ' + res.status);
- const data = await res.json();
- const list: unknown[] = Array.isArray(data?.stocks) ? data.stocks : [];
- const normalized = list
- .map((r) => normalizeStock(r as Record<string, unknown>))
- .filter((s) => s.ticker && s.volume > 0)
- .sort((a, b) => b.volume - a.volume);
- if (normalized.length === 0) {
- setStocks(FALLBACK_STOCKS);
- setError(null);
- } else {
- setStocks(normalized);
- setError(null);
- }
- setLastUpdated(new Date());
- } catch {
- setStocks(FALLBACK_STOCKS);
- setError('تعذّر الاتصال بـ /api/stocks — يتم عرض بيانات تجريبية للعرض التوضيحي.');
- setLastUpdated(new Date());
- } finally {
- setLoading(false);
- setRefreshing(false);
- }
- }, []);
-
- React.useEffect(() => {
- fetchStocks();
- const id = window.setInterval(() => fetchStocks(true), 60_000);
- return () => window.clearInterval(id);
- }, [fetchStocks]);
 
  const filtered = React.useMemo(() => {
  if (!search.trim()) return stocks;
@@ -1162,7 +1036,7 @@ function LiveMarketScanner() {
  <Button
  variant="outline"
  size="sm"
- onClick={() => fetchStocks()}
+ onClick={() => refetch()}
  disabled={refreshing}
  className="border-profit/20 text-profit hover:bg-profit/10 "
  >
