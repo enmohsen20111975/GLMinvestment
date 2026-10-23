@@ -11,10 +11,18 @@
 import { NextResponse } from 'next/server';
 import { resetAccount, getPaperTradingUserId } from '@/lib/paper-trading-v2-db';
 
+import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const userId = await getPaperTradingUserId();
     const account = resetAccount(userId);
     return NextResponse.json({

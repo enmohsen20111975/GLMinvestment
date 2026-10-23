@@ -6,6 +6,13 @@ import { db } from '@/lib/db';
 // GET - لوحة المتصدرين
 export async function GET(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const type = searchParams.get('type') || 'total'; // total, posts, accuracy
