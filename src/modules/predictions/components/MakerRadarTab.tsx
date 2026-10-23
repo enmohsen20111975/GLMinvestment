@@ -44,6 +44,7 @@ import {
  CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+import { useMakerRadarData } from '@/hooks/useMakerRadarData';
 import { useRealtimeUpdates } from '@/lib/ws-client';
 import { useAppStore } from '@/lib/store';
 import { getMarketStatus } from '@/lib/market-hours';
@@ -179,7 +180,7 @@ interface RadarStock {
  data_date?: string | null; // التاريخ الفعلي للسعر المعروض
 }
 
-interface MakerRadarResponse {
+export interface MakerRadarResponse {
  success: boolean;
  market?: string;
  market_regime?: {
@@ -296,7 +297,7 @@ interface StockDetail {
  } | null;
 }
 
-interface StockListItem {
+export interface StockListItem {
  ticker: string;
  name?: string;
  name_ar?: string;
@@ -316,7 +317,7 @@ interface StockListItem {
  logo_url?: string | null;
 }
 
-interface StocksListResponse {
+export interface StocksListResponse {
  success: boolean;
  stocks?: StockListItem[];
  total?: number;
@@ -551,7 +552,7 @@ interface MakerRadarTabProps {
 type FilterKey = 'all' | 'pre_surge' | 'quiet' | 'explosive' | 'early_break' | 'tracked';
 
 /** Lightweight prediction entry stitched from predictions.db active rows */
-interface PredictionEntry {
+export interface PredictionEntry {
  signal: string; // e.g. 'BUY', 'SELL', 'NEUTRAL'
  signal_ar: string; // e.g. 'شراء', 'بيع', 'محايد'
  direction: string | null; // 'up' | 'down' | null
@@ -564,13 +565,28 @@ interface PredictionEntry {
 
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  const t = useTranslation();
- const [data, setData] = useState<MakerRadarResponse | null>(null);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
- const [warmingRadar, setWarmingRadar] = useState(false);
- const [warmingV40, setWarmingV40] = useState(false);
- const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
- const [error, setError] = useState<string | null>(null);
+ // ─── F-Strangler-MakerRadar: data fetching extracted to a dedicated hook ──
+ // All 3 API calls (radar / stocks / predictions) + warming state + warmup
+ // handlers live in @/hooks/useMakerRadarData. The widget stays render-only
+ // — it controls polling cadence (useVisibilityAwarePolling + WS push below)
+ // and calls `refetch(true)` / `fetchStockMap()` from the hook when needed.
+ const {
+ data,
+ loading,
+ refreshing,
+ error,
+ predMap,
+ stockMap,
+ warmingRadar,
+ warmingV40,
+ warmupMsg,
+ lastUpdated,
+ refetch,
+ fetchStockMap,
+ warmupRadar,
+ refreshV40,
+ } = useMakerRadarData(market);
+
  const [filter, setFilter] = useState<FilterKey>('all');
  const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d'>('7d');
  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -585,7 +601,6 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  // selected ticker so the drawer + Smart Entry Card can render path /
  // position_size / signal_count without re-fetching.
  const [selectedStock, setSelectedStock] = useState<RadarStock | null>(null);
- const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
  // PAYWALL Gate 7: wire getRadarAccess() — free users (post-trial) see
  // 60-min delayed preview. Paid + trial users get the live radar.
@@ -605,138 +620,17 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  return new Date(lastUpdated.getTime() - radarAccess.delayMinutes * 60_000);
  }, [lastUpdated, radarDelayed, radarAccess.delayMinutes]);
 
- // Predictions map: ticker.toUpperCase() → latest active prediction
- const [predMap, setPredMap] = useState<Map<string, PredictionEntry>>(new Map());
  // Sort by upward prediction confidence (desc)
  const [sortByPrediction, setSortByPrediction] = useState(false);
-
- // Stock universe (ticker → sector / fundamentals) — fetched once per market
- const [stockMap, setStockMap] = useState<Map<string, StockListItem> | null>(null);
-
- // --------------------------------------------------------------------
- // Fetchers
- // --------------------------------------------------------------------
- const fetchData = useCallback(async (silent = false) => {
- // UI-FIX: always silent when data exists (prevents screen wipe)
- if (data) silent = true;
- if (silent) setRefreshing(true); else setLoading(true);
- if (!silent) setError(null);
- try {
- const params = new URLSearchParams({
- market,
- minQuietSignals: '5',
- minPrice: '1.0',
- });
- const res = await fetch(`/api/maker-radar?${params}`, { cache: 'no-store' });
- const json: MakerRadarResponse = await res.json();
- // The API cache layer sometimes omits the `success` flag — treat presence of
- // any radar list as success.
- const hasData = json.success || Array.isArray(json.quiet_list) || Array.isArray(json.explosive_list);
- if (hasData) {
- setData({ ...json, success: true });
- setLastUpdated(new Date());
- } else if (!json.warming_up) {
- setError(json.error || 'فشل في تحميل بيانات الرادار');
- }
- // if warming_up, keep existing data silently
- } catch (e) {
- setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
- } finally {
- if (silent) setRefreshing(false); else setLoading(false);
- }
- }, [market]);
-
- const fetchStockMap = useCallback(async () => {
- try {
- const res = await fetch(`/api/stocks?market=${market}&page_size=1000`, { cache: 'no-store' });
- const json: StocksListResponse = await res.json();
- if (json.success && Array.isArray(json.stocks)) {
- const map = new Map<string, StockListItem>();
- for (const s of json.stocks) {
- if (s && s.ticker) map.set(s.ticker.toUpperCase(), s);
- }
- setStockMap(map);
- }
- } catch {
- // silent — sector strip will just hide
- }
- }, [market]);
-
- // ─── Fetch predictions from predictions.db ─────────────────────────
- const fetchPredictions = useCallback(async () => {
- try {
- // No status filter in URL — DB has mixed case ('active' / 'ACTIVE')
- // We collect all rows then filter client-side
- const res = await fetch(`/api/unified/predictions?market=${market}&limit=1000`, { cache: 'no-store' });
- if (!res.ok) return;
- const json = await res.json();
- // Collect from all possible keys
- const allRows: Record<string, unknown>[] = [
- ...(Array.isArray(json.predictions) ? json.predictions : []),
- ...(Array.isArray(json.active_predictions) ? json.active_predictions : []),
- ];
- // Filter active statuses case-insensitively (including pending and open positions)
- const rows = allRows.filter((r) => {
- const st = String(r.status || '').toLowerCase();
- return st === 'active' || st === 'pending' || st === 'open' || st === 'triggered';
- });
- const map = new Map<string, PredictionEntry>();
- for (const row of rows) {
- const ticker = String(row.ticker || '').toUpperCase();
- if (!ticker) continue;
- const sig = String(row.signal || '').toUpperCase();
- const isBuy = sig.includes('BUY');
- const isSell = sig.includes('SELL');
- // BUY/STRONG_BUY → direction='up' regardless of null direction field in DB
- const resolvedDirection =
- isBuy ? 'up'
- : isSell ? 'down'
- : row.direction ? String(row.direction) : null;
- // confidence first, master_score as fallback
- const conf = row.confidence != null ? Number(row.confidence)
- : row.master_score != null ? Number(row.master_score)
- : null;
- // Keep highest-scoring entry per ticker
- const existing = map.get(ticker);
- if (!existing || (conf != null && conf > (existing.confidence ?? -1))) {
- const signal_ar =
- sig === 'STRONG_BUY' ? 'شراء قوي'
- : sig === 'BUY' ? 'شراء'
- : sig === 'STRONG_SELL' ? 'بيع قوي'
- : sig === 'SELL' ? 'بيع'
- : sig === 'HOLD' ? 'انتظار' // P0-3: canonical-signal.ts يستخدم 'انتظار' لـ HOLD
- : sig === 'WAIT' ? 'انتظار'
- : '— بيانات غير متاحة'; // P0-3: لا 'محايد' الوهمي (Rule 27)
- map.set(ticker, {
- signal: sig,
- signal_ar: String(row.signal_ar || signal_ar),
- direction: resolvedDirection,
- confidence: conf,
- master_score: row.master_score != null ? Number(row.master_score) : null,
- entry_price: row.entry_price != null ? Number(row.entry_price) : null, // ← FIX: store entry_price
- target_price: row.target_price != null ? Number(row.target_price) : null,
- stop_loss: row.stop_loss != null ? Number(row.stop_loss) : null,
- });
- }
- }
- setPredMap(map);
- } catch {
- // silent — prediction column stays empty
- }
- }, [market]);
-
- useEffect(() => { fetchData(); }, [fetchData]);
- useEffect(() => { fetchStockMap(); }, [fetchStockMap]);
- useEffect(() => { fetchPredictions(); }, [fetchPredictions]);
 
  // Live real-time polling: refresh both stock quotes (for live prices & flashes) and radar data
  useVisibilityAwarePolling(
  () => {
  fetchStockMap();
- fetchData(true);
+ refetch(true);
  },
  15_000, // 15s interval keeps prices live during active trading
- [fetchStockMap, fetchData],
+ [fetchStockMap, refetch],
  { market, allowOffMarket: true },
  );
 
@@ -748,8 +642,8 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  const now = Date.now();
  if (now - lastWsRefetchRef.current < 3_000) return;
  lastWsRefetchRef.current = now;
- fetchData(true);
- }, [stockPrices, wsConnected, fetchData]);
+ refetch(true);
+ }, [stockPrices, wsConnected, refetch]);
 
  // Track toggle — add/remove a stock from tracking
  const handleTrackToggle = useCallback(async (ticker: string, currentPrice: number, isTracked: boolean) => {
@@ -766,12 +660,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  });
  const json = await res.json();
  if (json.success) {
- fetchData(true);
+ refetch(true);
  }
  } catch (e) {
  console.error('track toggle error:', e);
  }
- }, [fetchData]);
+ }, [refetch]);
 
  // AUTO-TRACK (2026-09-30): auto-track stocks from unified-watch (portfolio + watchlist + radar)
  const autoTrackUserStocks = useCallback(async () => {
@@ -817,11 +711,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  }).catch(() => undefined);
  })
  );
- fetchData(true);
+ refetch(true);
  } catch (e) {
  console.error('auto-track error:', e);
  }
- }, [fetchData]);
+ }, [refetch]);
 
  // Run auto-track on mount
  useEffect(() => { autoTrackUserStocks(); }, [autoTrackUserStocks]);
@@ -833,60 +727,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  if (stock) setSelectedStock(stock);
  }, []);
 
- // ─── Synchronous radar warmup (calls /api/maker-radar/warmup) ─────────
- // Forces a fresh Python run. Blocks until done (typically <2s on indexed DB).
- const handleWarmupRadar = useCallback(async () => {
- setWarmingRadar(true);
- setWarmupMsg('بيتشغل الرادار...');
- try {
- const res = await fetch(`/api/maker-radar/warmup?market=${encodeURIComponent(market)}&timeout=120000`, {
- method: 'POST',
- });
- const json = await res.json();
- if (json.success) {
- const dur = json.status?.last_warmup_duration_ms ?? 0;
- const scanned = json.cache_total_scanned ?? 0;
- setWarmupMsg(`✅ اتحدّث في ${(dur / 1000).toFixed(1)}ث — ${scanned} سهم مفسوح`);
- await fetchData(true);
- } else if (!json.warming_up) {
- setWarmupMsg(`❌ فشل: ${json.status?.last_error || 'خطأ غير معروف'}`);
- }
- // if warming_up, keep existing data silently
- } catch (e) {
- setWarmupMsg(`❌ خطأ: ${e instanceof Error ? e.message : 'اتصال'}`);
- } finally {
- setWarmingRadar(false);
- setTimeout(() => setWarmupMsg(null), 6000);
- }
- }, [fetchData]);
-
- // ─── V40.2 predictions refresh (calls /api/predictions/refresh-v40) ───
- // Runs the V40.2 daily generator directly via subprocess.
- const handleRefreshV40 = useCallback(async () => {
- setWarmingV40(true);
- setWarmupMsg('جاري توليد التوقعات...');
- try {
- const res = await fetch('/api/predictions/refresh-v40?mode=today&timeout=240000', {
- method: 'POST',
- });
- const json = await res.json();
- if (json.success) {
- const preds = json.total_predictions ?? 0;
- const dates = (json.scan_dates || []).join(', ');
- const dur = ((json.elapsed_ms ?? 0) / 1000).toFixed(1);
- setWarmupMsg(`✅ تم في ${dur}ث — ${preds} توقعات على ${dates}`);
- } else if (!json.warming_up) {
- const tail = json.stderr_tail || json.status?.last_error || 'خطأ غير معروف';
- setWarmupMsg(`❌ فشل توليد التوقعات: ${tail.slice(0, 120)}`);
- }
- // if warming_up, keep existing data silently
- } catch (e) {
- setWarmupMsg(`❌ خطأ: ${e instanceof Error ? e.message : 'اتصال'}`);
- } finally {
- setWarmingV40(false);
- setTimeout(() => setWarmupMsg(null), 8000);
- }
- }, []);
+ // ─── Warmup handlers moved to useMakerRadarData hook ──────────────────
+ // handleWarmupRadar / handleRefreshV40 used to live here as inline
+ // useCallback blocks (each ~30 LOC of POST + state plumbing). They're now
+ // `warmupRadar()` / `refreshV40()` exposed by the hook — the JSX binds
+ // directly to them (see buttons below).
 
  // --------------------------------------------------------------------
  // Derived data — sector heat strip (client-side aggregation)
@@ -1120,7 +965,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <Card className="p-6 text-center" dir="rtl">
  <AlertTriangle className="h-10 w-10 text-loss mx-auto mb-3" />
  <p className="text-sm text-muted-foreground mb-3">{error}</p>
- <Button size="sm" onClick={() => fetchData()}>
+ <Button size="sm" onClick={() => refetch(false)}>
  <RefreshCw className="h-4 w-4 ml-1" /> إعادة المحاولة
  </Button>
  </Card>
@@ -1224,7 +1069,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <Button
  size="sm"
  variant="outline"
- onClick={() => fetchData(true)}
+ onClick={() => refetch(true)}
  disabled={refreshing || loading || warmingRadar}
  className="h-8"
  title="إعادة قراءة الكاش"
@@ -1234,7 +1079,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <Button
  size="sm"
  variant="default"
- onClick={handleWarmupRadar}
+ onClick={warmupRadar}
  disabled={warmingRadar || warmingV40}
  className="h-8 gap-1"
  title="شغّل الرادار من جديد (Python script)"
@@ -1245,7 +1090,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  <Button
  size="sm"
  variant="secondary"
- onClick={handleRefreshV40}
+ onClick={refreshV40}
  disabled={warmingRadar || warmingV40}
  className="h-8 gap-1"
  title="ولّد توقعات اليوم"
