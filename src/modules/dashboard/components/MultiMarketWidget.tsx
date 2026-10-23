@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -87,69 +88,45 @@ export function MultiMarketWidget() {
  const { loadStockDetail } = useAppStore();
  const [activeTab, setActiveTab] = useState('stocks');
  const [selectedMarket, setSelectedMarket] = useState<MarketCode>('EGX');
- const [stocks, setStocks] = useState<Stock[]>([]);
- const [goldData, setGoldData] = useState<Record<string, GoldCountryData> | null>(null);
- const [cryptoData, setCryptoData] = useState<Crypto[]>([]);
- const [forexRates, setForexRates] = useState<Record<string, ForexRate>>({});
- const [loadingStocks, setLoadingStocks] = useState(true);
- const [loadingGeneral, setLoadingGeneral] = useState(true);
 
  const marketInfo = useMemo(() => {
  return MARKETS.find(m => m.code === selectedMarket) || MARKETS[0];
  }, [selectedMarket]);
 
- // Load stocks when market changes
- useEffect(() => {
- let isMounted = true;
- setLoadingStocks(true);
- fetch(`/api/data-engine/stocks?market=${selectedMarket}&limit=20`)
- .then(res => res.ok ? res.json() : null)
- .then(json => {
- if (isMounted) {
- setStocks(json?.stocks || []);
- setLoadingStocks(false);
- }
- })
- .catch(() => {
- if (isMounted) {
- setStocks([]);
- setLoadingStocks(false);
- }
+ // F2.2: 4 useApiQuery hooks replace manual fetch + useState + useEffect.
+ // Each query is cached + retried independently. queryKey auto-includes params.
+
+ // 1) Stocks (depends on selectedMarket)
+ const { data: stocksRaw, isLoading: loadingStocks } = useApiQuery<{ stocks?: Stock[] }>('/api/data-engine/stocks', {
+   params: { market: selectedMarket, limit: 20 },
+   queryOptions: { refetchOnWindowFocus: false },
  });
+ const stocks = useMemo(() => stocksRaw?.stocks || [], [stocksRaw]);
 
- return () => { isMounted = false; };
- }, [selectedMarket]);
-
- // Load common data once (Gold, Crypto, Forex)
- useEffect(() => {
- let isMounted = true;
- setLoadingGeneral(true);
-
- Promise.allSettled([
- fetch('/api/data-engine/gold').then(r => r.ok ? r.json() : null),
- fetch('/api/data-engine/crypto?limit=10').then(r => r.ok ? r.json() : null),
- fetch('/api/data-engine/forex').then(r => r.ok ? r.json() : null),
- ]).then(([goldRes, cryptoRes, forexRes]) => {
- if (!isMounted) return;
-
- if (goldRes.status === 'fulfilled' && goldRes.value?.gold) {
- setGoldData(goldRes.value.gold);
- }
-
- if (cryptoRes.status === 'fulfilled' && cryptoRes.value) {
- const cryptos = cryptoRes.value.data || cryptoRes.value.cryptos || [];
- setCryptoData(cryptos);
- }
-
- if (forexRes.status === 'fulfilled' && forexRes.value?.data?.rates) {
- setForexRates(forexRes.value.data.rates);
- }
-
- setLoadingGeneral(false);
+ // 2) Gold
+ const { data: goldRaw, isLoading: loadingGold } = useApiQuery<{ gold?: Record<string, GoldCountryData> }>('/api/data-engine/gold', {
+   queryOptions: { refetchOnWindowFocus: false },
  });
+ const goldData = useMemo(() => goldRaw?.gold ?? null, [goldRaw]);
 
- return () => { isMounted = false; };
- }, []);
+ // 3) Crypto
+ const { data: cryptoRaw, isLoading: loadingCrypto } = useApiQuery<Crypto[] | { data?: Crypto[]; cryptos?: Crypto[] }>('/api/data-engine/crypto', {
+   params: { limit: 10 },
+   queryOptions: { refetchOnWindowFocus: false },
+ });
+ const cryptoData = useMemo<Crypto[]>(() => {
+   if (!cryptoRaw) return [];
+   if (Array.isArray(cryptoRaw)) return cryptoRaw;
+   return cryptoRaw.data || cryptoRaw.cryptos || [];
+ }, [cryptoRaw]);
+
+ // 4) Forex
+ const { data: forexRaw, isLoading: loadingForex } = useApiQuery<{ data?: { rates?: Record<string, ForexRate> } }>('/api/data-engine/forex', {
+   queryOptions: { refetchOnWindowFocus: false },
+ });
+ const forexRates = useMemo(() => forexRaw?.data?.rates ?? {}, [forexRaw]);
+
+ const loadingGeneral = loadingGold || loadingCrypto || loadingForex;
 
  const handleStockClick = (ticker: string) => {
  if (ticker && ticker !== 'N/A') {
