@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  RefreshCw,
  TrendingUp,
  TrendingDown,
@@ -78,7 +77,9 @@ interface PortfolioSummary {
 /* Helpers */
 /* ------------------------------------------------------------------ */
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(price: number | null | undefined): string {
+ if (price == null || Number.isNaN(price)) return '$0.00';
+ if (price >= 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
  if (price >= 0.01) return '$' + (price ?? 0).toFixed(4);
  return '$' + (price ?? 0).toFixed(8);
 }

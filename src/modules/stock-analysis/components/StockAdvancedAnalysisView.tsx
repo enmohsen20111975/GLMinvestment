@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  TrendingUp,
  TrendingDown,
  AlertCircle,
@@ -129,7 +128,8 @@ const SIGNAL_CONFIG = {
 /* Helper Functions */
 /* ------------------------------------------------------------------ */
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */`;
+function formatPrice(price: number | null | undefined, currency: string = 'ج.م'): string {
+ if (price == null) return `-- ${currency}`;
  return `${(price ?? 0).toFixed(2)} ${currency}`;
 }
 

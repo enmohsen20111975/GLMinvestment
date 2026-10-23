@@ -3,7 +3,6 @@
 import React, { forwardRef, useMemo } from 'react';
 import { MARKET_NAMES_AR, MarketType } from '@/lib/store';
 
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
@@ -60,7 +59,12 @@ const MARKET_INDEX_LABEL: Record<MarketType, string> = {
  CRYPTO: 'العملات الرقمية',
 };
 
-/* formatNumber moved to @/lib/format (Phase 1 DRY) */);
+function formatNumber(n: number | undefined | null, digits = 2): string {
+ if (n === undefined || n === null || Number.isNaN(n)) return '—';
+ return n.toLocaleString('en-US', {
+ minimumFractionDigits: digits,
+ maximumFractionDigits: digits,
+ });
 }
 
 function formatPercent(n: number | undefined | null): string {

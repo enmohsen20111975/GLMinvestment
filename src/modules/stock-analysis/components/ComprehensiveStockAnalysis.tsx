@@ -19,7 +19,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
  Shield, Target, Newspaper, Brain, Zap, Award, AlertTriangle,
  RefreshCw, Clock, ChevronRight, Gauge, PieChart, LineChart as LineChartIcon,
@@ -70,7 +69,9 @@ interface ComprehensiveData {
 // Helpers
 // ============================================================================
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(v: number | null | undefined, digits = 2): string {
+ if (v === null || v === undefined || isNaN(Number(v))) return '—';
+ return Number(v).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 function formatPct(v: number | null | undefined, digits = 2): string {

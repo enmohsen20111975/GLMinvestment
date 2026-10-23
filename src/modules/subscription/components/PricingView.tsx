@@ -20,7 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
 interface Plan {
  tier: string;
  name_ar: string;
@@ -145,7 +144,8 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
  // فلترة الباقات حسب billing cycle
  const filteredPlans = plans.filter((p) => p.billing_cycle === billingCycle);
 
- /* formatPrice moved to @/lib/format (Phase 1 DRY) */
+ const formatPrice = (price: number, currency: string) => {
+ if (currency === 'EGP') return `${price} ج.م`;
  if (currency === 'SAR') return `${price} ريال`;
  if (currency === 'KWD') return `${price} د.ك`;
  if (currency === 'QAR') return `${price} ر.ق`;

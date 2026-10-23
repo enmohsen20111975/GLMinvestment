@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Select,
  SelectContent,
  SelectItem,
@@ -84,7 +83,9 @@ interface ApiResponse {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(n: number | null): string {
+ if (n === null || n === undefined) return '—';
+ if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
  if (n >= 1) return '$' + (n ?? 0).toFixed(2);
  if (n >= 0.01) return '$' + (n ?? 0).toFixed(4);
  return '$' + (n ?? 0).toFixed(6);

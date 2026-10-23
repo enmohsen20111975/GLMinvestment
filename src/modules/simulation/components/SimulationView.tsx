@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Gamepad2,
  TrendingUp,
  TrendingDown,
@@ -299,7 +298,8 @@ function adaptApiStock(raw: Record<string, unknown>, market: MarketType): EGXSto
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-/* formatNumber moved to @/lib/format (Phase 1 DRY) */);
+function formatNumber(n: number, decimals = 2): string {
+ return n.toLocaleString('ar-EG', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 function formatCurrency(n: number, currencyLabel = 'ج.م'): string {
