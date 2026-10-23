@@ -549,7 +549,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  useEffect(() => {
  async function fetchPortfoliosMap() {
  try {
- const res = await fetch('/api/portfolio/accounts?user_id=default');
+ // F1.3 — cleanup 'default' legacy: use authenticated session, not user_id=default
+ // (the /api/portfolio/accounts route now requires auth — F1.2 fix)
+ const sessionRes = await fetch('/api/auth/session');
+ const session = await sessionRes.json();
+ if (!session?.user?.id) return; // not authenticated — skip fetch
+ const res = await fetch(`/api/portfolio/accounts?user_id=${session.user.id}`);
  const data = await res.json();
  if (data.success && Array.isArray(data.portfolios)) {
  const pmap: Record<string, { name: string; color: string }> = {};
@@ -3203,7 +3208,8 @@ export function EnhancedPortfolioView() {
  // MULTI-PORTFOLIO-032: selected portfolio state
  const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | 'master'>('master');
  const user = useAppStore((s) => s.user);
- const userId = user?.id || 'default';
+ // F1.3 — cleanup 'default' legacy: null if not authenticated (was 'default' fallback)
+ const userId = user?.id || null;
 
  // TASK 40-B (2026-10-04 — Nav Reorganization + Portfolio Merge):
  // Owner directive: merge `wealth` + `bagholder-rescue` INTO the portfolio
