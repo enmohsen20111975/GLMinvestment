@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApiQuery } from '@/hooks/use-api-query';
+import { formatPrice as formatPriceFromLib } from '@/lib/format';
 import {
  TrendingUp,
  TrendingDown,
@@ -37,8 +38,8 @@ interface FearGreedData {
 }
 
 function formatPrice(price: number): string {
- if (price >= 1000) return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 0 });
- return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+ // F1.4 — delegate to lib/format.ts (DRY). Was re-declared here.
+ return formatPriceFromLib(price, 'CRYPTO');
 }
 
 function fearGreedColor(value: number): string {
