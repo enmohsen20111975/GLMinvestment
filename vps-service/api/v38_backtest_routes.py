@@ -14,6 +14,7 @@ Author: GLMinvestment V38 — Institutional Decision Engine
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import threading
@@ -226,6 +227,7 @@ def get_trades():
 # ---------------------------------------------------------------------------
 # POST /api/v38-backtest/run
 # ---------------------------------------------------------------------------
+@require_admin
 @v38_backtest_bp.route('/api/v38-backtest/run', methods=['POST'])
 def run_backtest():
     """Start a new V38 backtest (async)."""

@@ -26,6 +26,7 @@ Endpoints:
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 from typing import Dict, Optional
 import sys
@@ -229,6 +230,7 @@ def _save_portfolio_positions(portfolio_id: str, positions: list):
         logger.error("فشل حفظ portfolio_positions: %s", e)
 
 
+@require_admin
 @portfolio_bp.route('/create', methods=['POST'])
 def create_portfolio():
     """إنشاء محفظة جديدة"""
@@ -298,6 +300,7 @@ def get_portfolio_state():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/strategy/plan', methods=['POST'])
 def plan_strategy():
     """تخطيط استراتيجية دخول"""
@@ -335,6 +338,7 @@ def plan_strategy():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/strategy/recommend', methods=['POST'])
 def recommend_strategy():
     """توقعة بأفضل استراتيجية"""
@@ -361,6 +365,7 @@ def recommend_strategy():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/heat/calculate', methods=['POST'])
 def calculate_heat():
     """حساب حرارة المحفظة"""
@@ -397,6 +402,7 @@ def calculate_heat():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/heat/check-position', methods=['POST'])
 def check_new_position():
     """التحقق من إمكانية فتح مركز جديد"""
@@ -432,6 +438,7 @@ def check_new_position():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/rebalance/suggest', methods=['POST'])
 def suggest_rebalance():
     """اقتراح إعادة التوازن"""
@@ -470,6 +477,7 @@ def suggest_rebalance():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/position/evaluate', methods=['POST'])
 def evaluate_position():
     """تقييم مركز واحد"""
@@ -533,6 +541,7 @@ def evaluate_position():
 # JOURNAL ENDPOINTS
 # ============================================================================
 
+@require_admin
 @portfolio_bp.route('/journal/open', methods=['POST'])
 def journal_open_trade():
     """فتح صفقة في السجل"""
@@ -562,6 +571,7 @@ def journal_open_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/journal/close', methods=['POST'])
 def journal_close_trade():
     """إغلاق صفقة في السجل"""
@@ -580,6 +590,7 @@ def journal_close_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/journal/reflect', methods=['POST'])
 def journal_add_reflection():
     """إضافة تأمل لصفقة"""
@@ -1134,6 +1145,7 @@ def _fallback_last_close(ticker: str) -> Optional[float]:
     return None
 
 
+@require_admin
 @portfolio_bp.route('/holdings', methods=['GET'])
 def portfolio_holdings():
     """محفظة العميل grouped + قرارات ذكية لكل سهم."""
@@ -1535,6 +1547,7 @@ def _get_trade_recorder():
     return _trade_recorder
 
 
+@require_admin
 @portfolio_bp.route('/trades/record-buy', methods=['POST'])
 def record_buy_trade():
     """تسجيل صفقة شراء فعلية"""
@@ -1557,6 +1570,7 @@ def record_buy_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/trades/record-sell', methods=['POST'])
 def record_sell_trade():
     """تسجيل صفقة بيع فعلية + حساب الـ outcome تلقائياً"""
@@ -1626,6 +1640,7 @@ def get_trade_performance():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/trades/learn', methods=['POST'])
 def trigger_learning():
     """تشغيل حلقة التعلم على الصفقات غير المحلّلة"""
@@ -1723,6 +1738,7 @@ def _ensure_equity_schema():
 # Equity Curve Endpoints
 # ============================================================
 
+@require_admin
 @portfolio_bp.route('/equity/snapshot', methods=['POST'])
 def record_equity_snapshot():
     """تسجيل لقطة يومية لقيمة المحفظة"""
@@ -1793,6 +1809,7 @@ def get_equity_curve():
 # Cash Transactions Endpoints
 # ============================================================
 
+@require_admin
 @portfolio_bp.route('/cash/record', methods=['POST'])
 def record_cash_transaction():
     """تسجيل إيداع أو سحب"""
@@ -1859,6 +1876,7 @@ def list_cash_transactions():
 # P&L History Endpoints
 # ============================================================
 
+@require_admin
 @portfolio_bp.route('/pnl/record', methods=['POST'])
 def record_pnl():
     """تسجيل ربح/خسارة"""
@@ -1932,6 +1950,7 @@ def get_pnl_history():
 from portfolio.hard_protection import HardProtectionEngine, hard_protection_engine
 
 
+@require_admin
 @portfolio_bp.route('/protection/check', methods=['POST'])
 def check_protections():
     """فحص كل الحمايات قبل تنفيذ صفقة"""
@@ -1969,6 +1988,7 @@ def get_protection_state():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/protection/record-trade', methods=['POST'])
 def record_protection_trade():
     """تسجيل نتيجة صفقة في محرك الحماية"""
@@ -1990,6 +2010,7 @@ def record_protection_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/protection/reset-daily', methods=['POST'])
 def reset_daily_protection():
     """إعادة تعيين الخسارة اليومية"""
@@ -2284,6 +2305,7 @@ def get_available_cash():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/record-settlement', methods=['POST'])
 def record_settlement():
     """POST /api/portfolio/record-settlement
@@ -2473,6 +2495,7 @@ def _ensure_default_master_portfolio(user_id: str) -> int:
         return -1
 
 
+@require_admin
 @portfolio_bp.route('/accounts/create', methods=['POST'])
 def create_sub_portfolio():
     """POST /api/portfolio/accounts/create
@@ -2524,6 +2547,7 @@ def create_sub_portfolio():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/accounts/update', methods=['POST'])
 def update_sub_portfolio():
     """POST /api/portfolio/accounts/update
@@ -2564,6 +2588,7 @@ def update_sub_portfolio():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/accounts', methods=['GET'])
 def list_portfolios():
     """GET /api/portfolio/accounts?user_id=U
@@ -2597,6 +2622,7 @@ def list_portfolios():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/accounts/delete', methods=['POST'])
 def delete_sub_portfolio():
     """POST /api/portfolio/accounts/delete
@@ -2788,6 +2814,7 @@ def get_master_portfolio():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/accounts/<int:portfolio_id>/state', methods=['GET'])
 def get_sub_portfolio_state(portfolio_id: int):
     """GET /api/portfolio/accounts/<id>/state?user_id=U
@@ -2836,6 +2863,7 @@ def get_sub_portfolio_state(portfolio_id: int):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/accounts/<int:portfolio_id>/equity-curve', methods=['GET'])
 def get_sub_portfolio_equity_curve(portfolio_id: int):
     """GET /api/portfolio/accounts/<id>/equity-curve?user_id=U&days=90
@@ -2930,6 +2958,7 @@ def _ensure_watchlist_schema():
         logger.error("Watchlist schema error: %s", e)
 
 
+@require_admin
 @portfolio_bp.route('/watchlists', methods=['GET'])
 def list_watchlists():
     """GET /api/portfolio/watchlists?user_id=U"""
@@ -2959,6 +2988,7 @@ def list_watchlists():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/watchlists/create', methods=['POST'])
 def create_watchlist():
     """POST /api/portfolio/watchlists/create — Body: {user_id, name, tickers?}"""
@@ -2989,6 +3019,7 @@ def create_watchlist():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/watchlists/<int:wl_id>/add', methods=['POST'])
 def add_to_watchlist(wl_id: int):
     """POST /api/portfolio/watchlists/<id>/add — Body: {ticker}"""
@@ -3022,6 +3053,7 @@ def add_to_watchlist(wl_id: int):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/watchlists/<int:wl_id>/remove', methods=['POST'])
 def remove_from_watchlist(wl_id: int):
     """POST /api/portfolio/watchlists/<id>/remove — Body: {ticker}"""
@@ -3052,6 +3084,7 @@ def remove_from_watchlist(wl_id: int):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @portfolio_bp.route('/watchlists/<int:wl_id>', methods=['DELETE'])
 def delete_watchlist(wl_id: int):
     """DELETE /api/portfolio/watchlists/<id>?user_id=U"""

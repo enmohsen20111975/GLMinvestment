@@ -6,6 +6,7 @@ API endpoints for the Sniper Engine, Daily Closer, and Learning Engine.
 """
 
 import os
+from core.auth_middleware import require_admin
 import sqlite3
 import logging
 from datetime import datetime
@@ -680,6 +681,7 @@ def scan_market():
 # TRACK (SAVE PREDICTION) ROUTE
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/track', methods=['POST'])
 def track_ticker():
     """Track a ticker — run SniperEngine analysis and save as PENDING prediction."""
@@ -856,6 +858,7 @@ def track_ticker():
 # DAILY CLOSER ROUTES
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/closer/run', methods=['POST'])
 def run_daily_closer():
     """Manually trigger the daily closer"""
@@ -899,6 +902,7 @@ def get_pending_predictions():
 # LEARNING ENGINE ROUTES
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/learning/run', methods=['POST'])
 def run_learning_engine():
     """Manually trigger the learning engine"""

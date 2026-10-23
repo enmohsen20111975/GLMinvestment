@@ -10,6 +10,7 @@ Version: 1.0.0
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 import time
 import sys
@@ -522,6 +523,7 @@ def seasonality_signals():
 # ADMIN DAILY ANALYSIS ENDPOINT
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/admin/run-daily-analysis', methods=['POST'])
 def run_daily_analysis():
     """
@@ -1011,6 +1013,7 @@ def get_trading_time():
 # ده بيسبب 502/503/405 errors. أضفناها هنا عشان الـ proxy يشتغل.
 # ============================================================
 
+@require_admin
 @misc_bp.route('/api/fundamentals/fetch', methods=['POST'])
 def fetch_egx_fundamentals():
     """يجيب fundamentals لأسهم EGX من EGXPilot (مجاني) ويخزنها في data_engine.db.
@@ -1237,6 +1240,7 @@ def fundamentals_stats():
         }), 200
 
 
+@require_admin
 @misc_bp.route('/api/admin/trigger-analysis', methods=['POST'])
 def trigger_analysis_manual():
     """تحليل فوري لـ N أسهم — بغضّ النظر عن حالة السوق.
@@ -1439,6 +1443,7 @@ def trigger_analysis_manual():
         }), 200
 
 
+@require_admin
 @misc_bp.route('/api/admin/refresh-persona-flags', methods=['POST'])
 def refresh_persona_flags():
     """أعد حساب persona flags لكل صف في stored_analyses — بدون إعادة Maestro كاملة.
@@ -1654,6 +1659,7 @@ def refresh_persona_flags():
 
 
 @misc_bp.route('/api/daily/rebuild-predictions', methods=['GET', 'POST'])
+@require_admin
 @misc_bp.route('/api/predictions/generate-all', methods=['GET', 'POST'])
 def rebuild_predictions():
     """Rebuild predictions — للـ /api/prediction-performance في الـ frontend.
@@ -2546,6 +2552,7 @@ _CASCADE_TIER_LABELS_AR = {
 }
 
 
+@require_admin
 @misc_bp.route('/api/unified/predictions', methods=['GET', 'POST'])
 def unified_predictions():
     """Unified predictions — للـ MaestroDashboard.
@@ -3708,6 +3715,7 @@ def unified_predictions():
 #   3. التوصية الديناميكية: تقرير مفصل بأسلوب بشري
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/portfolio/bag-holder-rescue', methods=['GET'])
 def bag_holder_rescue():
     """محرك إنقاذ الأسهم المزنوقة.
@@ -3906,6 +3914,7 @@ def bag_holder_rescue():
 
 _refresh_running = False
 
+@require_admin
 @misc_bp.route('/api/daily/live-refresh-analyses', methods=['POST'])
 def live_refresh_analyses():
     """
@@ -4178,6 +4187,7 @@ def admin_health_check():
         }), 500
 
 
+@require_admin
 @misc_bp.route('/api/admin/alerts/test', methods=['POST'])
 def test_alert():
     """اختبار نظام الإنذارات — بيably إرسال إنذار للتليجرام."""

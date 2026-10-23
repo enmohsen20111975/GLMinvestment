@@ -15,6 +15,7 @@ Endpoints:
 """
 
 import os
+from core.auth_middleware import require_admin
 import json
 import uuid
 import threading
@@ -625,6 +626,7 @@ def generate_predictions_internal(
     # === PRESERVED BLOCK END ===
 
 
+@require_admin
 @ai_pred_bp.route('/generate', methods=['POST'])
 def generate_predictions():
     """
@@ -696,6 +698,7 @@ def generate_predictions():
         }), 500
 
 
+@require_admin
 @ai_pred_bp.route('/evaluate', methods=['POST'])
 def evaluate_predictions():
     """
@@ -1097,6 +1100,7 @@ def list_predictions():
         }), 500
 
 
+@require_admin
 @ai_pred_bp.route('/clear', methods=['POST'])
 def clear_predictions():
     """

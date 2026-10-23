@@ -1,4 +1,5 @@
 import os
+from core.auth_middleware import require_admin
 import json
 import sqlite3
 from flask import Blueprint, jsonify, request
@@ -2960,6 +2961,7 @@ def morning_bell_stats():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @stored_analysis_bp.route('/trigger', methods=['POST'])
 def trigger_analysis():
     try:

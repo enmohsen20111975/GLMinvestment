@@ -22,6 +22,7 @@ Author: GLMinvestment v3.4.42
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import sqlite3
@@ -638,6 +639,7 @@ def get_explosive_stocks():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/preview', methods=['POST'])
 def preview_generation():
     """
@@ -672,6 +674,7 @@ def preview_generation():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/generate', methods=['POST'])
 def generate_historical_predictions_v2():
     """

@@ -12,6 +12,7 @@ Endpoints:
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 import sqlite3
 import json
@@ -64,6 +65,7 @@ def get_learning_status():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/run-backfill', methods=['POST'])
 def run_historical_backfill():
     """

@@ -10,6 +10,7 @@ Endpoints:
 """
 
 import json
+from core.auth_middleware import require_admin
 import time
 from datetime import datetime
 from flask import Blueprint, request, jsonify
@@ -181,6 +182,7 @@ def scan_preset():
         conn.close()
 
 
+@require_admin
 @screener_bp.route('/api/screener/run-all', methods=['POST'])
 def run_all_presets():
     """

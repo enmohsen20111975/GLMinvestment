@@ -14,6 +14,7 @@ Includes:
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import asyncio
@@ -156,6 +157,7 @@ def morning_bell_preview():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/morning-bell/test', methods=['POST'])
 def morning_bell_test():
     """🔔 اختبار جرس الصباح — إرسال فوري لرسالة جرس الصباح للتيليجرام.
@@ -184,6 +186,7 @@ def morning_bell_test():
 
 # ==================== Authentication ====================
 
+@require_admin
 @telegram_bp.route('/auth/connect-user', methods=['POST'])
 def auth_connect_user():
     """الاتصال كمستخدم (لقراءة الرسائل)"""
@@ -204,6 +207,7 @@ def auth_connect_user():
         return jsonify({"error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/auth/send-code', methods=['POST'])
 def auth_send_code():
     """إرسال رمز التحقق"""
@@ -224,6 +228,7 @@ def auth_send_code():
         return jsonify({"error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/auth/verify-code', methods=['POST'])
 def auth_verify_code():
     """التحقق من الرمز"""
@@ -245,6 +250,7 @@ def auth_verify_code():
         return jsonify({"error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/auth/verify-password', methods=['POST'])
 def auth_verify_password():
     """التحقق من كلمة المرور 2FA"""
@@ -368,6 +374,7 @@ def get_my_channels():
         })
 
 
+@require_admin
 @telegram_bp.route('/channels/track', methods=['POST'])
 def track_channel():
     """إضافة قناة للمتابعة"""
@@ -378,6 +385,7 @@ def track_channel():
     return jsonify({"error": "Failed to add channel"}), 400
 
 
+@require_admin
 @telegram_bp.route('/channels/untrack/<channel_id>', methods=['POST'])
 def untrack_channel(channel_id):
     """إزالة قناة من المتابعة"""
@@ -419,6 +427,7 @@ def get_news():
 
 # ==================== AI Processing ====================
 
+@require_admin
 @telegram_bp.route('/ai/classify', methods=['POST'])
 def classify_message():
     """تصنيف رسالة"""
@@ -432,6 +441,7 @@ def classify_message():
     })
 
 
+@require_admin
 @telegram_bp.route('/ai/extract-symbols', methods=['POST'])
 def extract_symbols():
     """استخراج الرموز من نص"""
@@ -444,6 +454,7 @@ def extract_symbols():
     })
 
 
+@require_admin
 @telegram_bp.route('/ai/process', methods=['POST'])
 def process_message():
     """معالجة رسالة كاملة"""
@@ -457,6 +468,7 @@ def process_message():
 
 # ==================== Channel Messages ====================
 
+@require_admin
 @telegram_bp.route('/messages', methods=['POST'])
 def get_channel_messages():
     """سحب رسائل من قناة معينة"""
@@ -479,6 +491,7 @@ def get_channel_messages():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/scrape/all', methods=['POST'])
 def scrape_all_tracked_channels():
     """سحب رسائل من كل القنوات المتابعة"""
@@ -776,6 +789,7 @@ def _smart_classify(text: str) -> dict:
     return {"type": "general", "action": None}
 
 
+@require_admin
 @telegram_bp.route('/ai/clean', methods=['POST'])
 def clean_message():
     """تنظيف وإعادة صياغة بوست بالـ AI المحلي"""
@@ -791,6 +805,7 @@ def clean_message():
 
 # ==================== Save to Database ====================
 
+@require_admin
 @telegram_bp.route('/save', methods=['POST'])
 def save_message():
     """حفظ بوست كتوقعة أو خبر"""
@@ -1051,6 +1066,7 @@ def get_auto_poster():
     return _auto_poster
 
 
+@require_admin
 @telegram_bp.route('/post/connect', methods=['POST'])
 def post_connect():
     """الاتصال بالقناة للنشر"""
@@ -1068,6 +1084,7 @@ def post_connect():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/message', methods=['POST'])
 def post_message():
     """
@@ -1097,6 +1114,7 @@ def post_message():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/recommendation', methods=['POST'])
 def post_recommendation():
     """
@@ -1134,6 +1152,7 @@ def post_recommendation():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/daily-summary', methods=['POST'])
 def post_daily_summary():
     """
@@ -1172,6 +1191,7 @@ def post_daily_summary():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/top-recommendations', methods=['POST'])
 def post_top_recommendations():
     """
@@ -1222,6 +1242,7 @@ def post_top_recommendations():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/alert', methods=['POST'])
 def post_alert():
     """
@@ -1255,6 +1276,7 @@ def post_alert():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/market-open', methods=['POST'])
 def post_market_open():
     """نشر رسالة افتتاح السوق"""
@@ -1272,6 +1294,7 @@ def post_market_open():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/market-close', methods=['POST'])
 def post_market_close():
     """نشر رسالة إغلاق السوق"""
@@ -1297,6 +1320,7 @@ def post_market_close():
         return jsonify({"success": False, "error": str(e)})
 
 
+@require_admin
 @telegram_bp.route('/post/custom', methods=['POST'])
 def post_custom():
     """
@@ -1369,6 +1393,7 @@ def get_chat_history(chat_id):
 
 # ==================== Messaging (NEW) ====================
 
+@require_admin
 @telegram_bp.route('/messages/send', methods=['POST'])
 def send_message():
     """إرسال رسالة نصية"""
@@ -1390,6 +1415,7 @@ def send_message():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/messages/edit', methods=['POST'])
 def edit_message():
     """تعديل رسالة"""
@@ -1410,6 +1436,7 @@ def edit_message():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/messages/delete', methods=['POST'])
 def delete_messages():
     """حذف رسائل (revoke=True = حذف للجميع)"""
@@ -1430,6 +1457,7 @@ def delete_messages():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/media/upload', methods=['POST'])
 def upload_media():
     """رفع وإرسال ملف وسائط (file + peer_id + optional caption)"""
@@ -1484,6 +1512,7 @@ def get_members(group_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/groups/<int:group_id>/add', methods=['POST'])
 def add_member(group_id):
     """إضافة عضو لمجموعة"""
@@ -1504,6 +1533,7 @@ def add_member(group_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/groups/<int:group_id>/remove', methods=['POST'])
 def remove_member(group_id):
     """إزالة/طرد عضو من مجموعة"""
@@ -1631,6 +1661,7 @@ def ai_status():
 # DAILY REPORT ENDPOINT — إرسال تقرير التوقعات اليومي لتليجرام
 # ============================================================================
 
+@require_admin
 @telegram_bp.route('/send-daily-report', methods=['POST'])
 def send_daily_report():
     """إرسال تقرير التوقعات اليومي لتليجرام.
@@ -1670,6 +1701,7 @@ def send_daily_report():
 # NOTIFICATIONS — اختبار الإشعارات + تشغيل الـ live monitor
 # ============================================================================
 
+@require_admin
 @telegram_bp.route('/notifications/test/target-hit', methods=['POST'])
 def test_target_hit_notification():
     """اختبر رسالة احتفال الهدف.
@@ -1697,6 +1729,7 @@ def test_target_hit_notification():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/notifications/test/approaching-target', methods=['POST'])
 def test_approaching_target_notification():
     """اختبر رسالة قرب الهدف."""
@@ -1722,6 +1755,7 @@ def test_approaching_target_notification():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/notifications/test/stop-warning', methods=['POST'])
 def test_stop_warning_notification():
     """اختبر رسالة تحذير قرب الستوب."""
@@ -1743,6 +1777,7 @@ def test_stop_warning_notification():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/notifications/test/trailing-profit', methods=['POST'])
 def test_trailing_profit_notification():
     """اختبر رسالة الخروج بربح قبل الهدف."""
@@ -1765,6 +1800,7 @@ def test_trailing_profit_notification():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/notifications/test/stop-loss', methods=['POST'])
 def test_stop_loss_notification():
     """اختبر رسالة ضرب الستوب."""
@@ -1786,6 +1822,7 @@ def test_stop_loss_notification():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @telegram_bp.route('/notifications/live-monitor', methods=['POST'])
 def run_live_monitor():
     """شغّل live monitor لفحص التوقعات النشطة + إرسال notifications.

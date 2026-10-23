@@ -10,6 +10,7 @@ Version: 2.0.0
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 import sys
 import os
@@ -68,6 +69,7 @@ except ImportError as e:
 # POSITION SIZING
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/position-size', methods=['POST'])
 def api_position_size():
     """Calculate position size based on confidence score."""
@@ -98,6 +100,7 @@ def api_position_size():
 # STOP LOSS
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/stop-loss', methods=['POST'])
 def api_stop_loss():
     """Calculate stop loss price."""
@@ -142,6 +145,7 @@ def api_stop_loss():
 # TARGETS
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/targets', methods=['POST'])
 def api_targets():
     """Calculate profit targets."""
@@ -175,6 +179,7 @@ def api_targets():
 # FULL TRADE PLAN
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/trade-plan', methods=['POST'])
 def api_trade_plan():
     """Generate complete trade plan."""
@@ -241,6 +246,7 @@ def api_trade_plan():
 # TRAILING STOP
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/trailing-stop', methods=['POST'])
 def api_trailing_stop():
     """Calculate trailing stop."""
@@ -275,6 +281,7 @@ def api_trailing_stop():
 # 2% RULE VALIDATION
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/validate', methods=['POST'])
 def api_validate_2_percent():
     """Validate trade against 2% rule."""
@@ -334,6 +341,7 @@ def api_trading_time():
 # PORTFOLIO ANALYSIS
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/portfolio', methods=['POST'])
 def api_portfolio():
     """Analyze portfolio."""
@@ -364,6 +372,7 @@ def api_portfolio():
 # EGYPTIAN MODEL
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/egyptian-model', methods=['POST'])
 def api_egyptian_model():
     """Calculate Egyptian confidence score."""
@@ -397,6 +406,7 @@ def api_egyptian_model():
 # PSYCHOLOGY CHECK
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/psychology', methods=['POST'])
 def api_psychology():
     """Check psychology rules before trading."""
@@ -430,6 +440,7 @@ def api_psychology():
 # LEVERAGE VALIDATION (Crypto)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/leverage', methods=['POST'])
 def api_leverage():
     """Validate leverage for crypto trading."""
@@ -517,6 +528,7 @@ def api_stock_types():
 # TRADE PLAN CALCULATOR (Position Size Calculator)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/position-plan', methods=['POST'])
 def api_position_plan():
     """حاسبة الصفقة الكاملة: عدد الأسهم، قيمة الصفقة، أقصى خسارة، R:R، القرار."""
@@ -556,6 +568,7 @@ def api_position_plan():
 # ANTI-FALLING-KNIFE (Buy Safety)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/buy-safety', methods=['POST'])
 def api_buy_safety():
     """تقييم أمان الشراء - قواعد 'لا تشتري نازل' الصريحة."""
@@ -586,6 +599,7 @@ def api_buy_safety():
 # FORCED EXIT ENFORCEMENT
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/enforce-stop', methods=['POST'])
 def api_enforce_stop():
     """إنفاذ وقف الخسارة - منع تغيير الوقف لتحت + إشارات إجبارية."""
@@ -619,6 +633,7 @@ def api_enforce_stop():
 # TRAILING STOP EXPLAINER
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/trailing-explain', methods=['POST'])
 def api_trailing_explain():
     """توضيح حركة الـ Trailing Stop للمستخدم."""
@@ -646,6 +661,7 @@ def api_trailing_explain():
 # DYNAMIC STOP LOSS (ATR-Based)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/dynamic-stop', methods=['POST'])
 def api_dynamic_stop():
     """حساب وقف خسارة ديناميكي بناءً على ATR بدل نسبة ثابتة."""
@@ -708,6 +724,7 @@ def api_dynamic_stop():
 # DYNAMIC TARGETS (ATR-Based)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/dynamic-targets', methods=['POST'])
 def api_dynamic_targets():
     """حساب أهداف ربح ديناميكية بناءً على ATR والتقلب."""
@@ -765,6 +782,7 @@ def api_dynamic_targets():
 # DYNAMIC TRAILING STOP (Price-Following)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/dynamic-trailing', methods=['POST'])
 def api_dynamic_trailing():
     """حساب وقف خسارة متحرك ديناميكي يتبع حركة السعر."""
@@ -824,6 +842,7 @@ def api_dynamic_trailing():
 # DYNAMIC R:R CALCULATOR
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/dynamic-rr', methods=['POST'])
 def api_dynamic_rr():
     """حساب R:R ديناميكي بناءً على الأسعار الحالية."""
@@ -857,6 +876,7 @@ def api_dynamic_rr():
 # LEGACY ENDPOINTS (Backward Compatibility)
 # ============================================================================
 
+@require_admin
 @risk_bp.route('/evaluate', methods=['POST'])
 def evaluate_risk():
     """Legacy: Evaluate trade risk."""

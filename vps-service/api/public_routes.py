@@ -19,6 +19,7 @@ Endpoints:
 """
 
 from datetime import datetime
+from core.auth_middleware import require_admin
 from flask import Blueprint, jsonify, request
 
 from core.database import DatabaseManager
@@ -559,6 +560,7 @@ def market_overview():
 # DATA SYNC
 # ============================================================================
 
+@require_admin
 @public_bp.route('/api/sync', methods=['GET', 'POST'])
 def sync_data():
     """Sync data status or receive data."""

@@ -1,4 +1,5 @@
 import json
+from core.auth_middleware import require_admin
 import logging
 import sqlite3
 from flask import Blueprint, jsonify, request, current_app
@@ -184,6 +185,7 @@ def get_ai_decision(ticker):
         return jsonify({"detail": result["error"]}), result.get("status", 500)
     return jsonify(result)
 
+@require_admin
 @ai_bp.route('/compare', methods=['POST'])
 def compare_stocks():
     data = request.get_json() or {}
@@ -202,6 +204,7 @@ def compare_stocks():
     result = agent.compare_stocks(tickers, indicators_list)
     return jsonify({"comparison": result, "tickers": tickers})
 
+@require_admin
 @ai_bp.route('/ask', methods=['POST'])
 def ask_question():
     data = request.get_json() or {}
@@ -328,6 +331,7 @@ def _get_trade_recorder():
     return _trade_recorder
 
 
+@require_admin
 @ai_bp.route('/trades/record', methods=['POST'])
 def record_trade():
     """تسجيل صفقة مستخدم (شراء/بيع).
@@ -374,6 +378,7 @@ def record_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/<user_id>', methods=['GET'])
 def get_user_trades(user_id):
     """جلب كل صفقات المستخدم."""
@@ -389,6 +394,7 @@ def get_user_trades(user_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/<user_id>/performance', methods=['GET'])
 def get_performance(user_id):
     """إحصائيات أداء المستخدم (win rate, avg pnl, etc)."""
@@ -403,6 +409,7 @@ def get_performance(user_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/learn', methods=['POST'])
 def learn_from_trades():
     """تشغيل الـ learning loop يدوياً (بدون انتظار 15:30).
@@ -489,6 +496,7 @@ def historical_generate():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/historical/feed-ai', methods=['POST'])
 def historical_feed_ai():
     """تغذية الـ AI بالصفقات التاريخية (تخزين في stock_stories)."""
@@ -538,6 +546,7 @@ def _get_tg_importer():
     return _tg_importer
 
 
+@require_admin
 @ai_bp.route('/telegram/import', methods=['POST'])
 def telegram_import():
     """استيراد توصيات من جروب Telegram.
@@ -565,6 +574,7 @@ def telegram_import():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/telegram/evaluate', methods=['POST'])
 def telegram_evaluate():
     """تقييم التوصيات المستوردة (بعد N أيام)."""

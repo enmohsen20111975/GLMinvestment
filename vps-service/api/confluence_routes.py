@@ -15,6 +15,7 @@ NOT just RSI anymore!
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import sqlite3
@@ -387,6 +388,7 @@ def analyze_ticker(ticker: str):
     return jsonify(result)
 
 
+@require_admin
 @confluence_bp.route('/analyze-batch', methods=['POST'])
 def analyze_batch():
     """
@@ -482,6 +484,7 @@ def get_clean_signals():
         }), 500
 
 
+@require_admin
 @confluence_bp.route('/generate-predictions', methods=['POST'])
 def generate_predictions():
     """

@@ -15,6 +15,7 @@ Endpoints:
 """
 
 from flask import Blueprint, request, jsonify
+from core.auth_middleware import require_admin
 import sys
 import os
 import sqlite3
@@ -266,6 +267,7 @@ def get_config():
         return jsonify({"error": str(e)}), 400
 
 
+@require_admin
 @unified_v2_bp.route("/analyze", methods=["POST"])
 def analyze_single():
     """
@@ -336,6 +338,7 @@ def analyze_single():
     })
 
 
+@require_admin
 @unified_v2_bp.route("/scan", methods=["POST"])
 def scan_market():
     """
@@ -401,6 +404,7 @@ def scan_market():
     })
 
 
+@require_admin
 @unified_v2_bp.route("/compare-personas", methods=["POST"])
 def compare_personas():
     """

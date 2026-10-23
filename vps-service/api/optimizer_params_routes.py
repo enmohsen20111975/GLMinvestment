@@ -15,6 +15,7 @@ POST /api/prediction-optimizer/backtest      → باك-تست سريع
 """
 
 from __future__ import annotations
+from core.auth_middleware import require_admin
 
 import os
 import json
@@ -188,6 +189,7 @@ def get_params():
     })
 
 
+@require_admin
 @optimizer_params_bp.route('/params', methods=['POST'])
 def update_params():
     """تحديث المعاملات."""
@@ -246,6 +248,7 @@ def update_params():
         }), 500
 
 
+@require_admin
 @optimizer_params_bp.route('/params/reset', methods=['POST'])
 def reset_params():
     """إعادة المعاملات للقيم الافتراضية."""
@@ -259,6 +262,7 @@ def reset_params():
     })
 
 
+@require_admin
 @optimizer_params_bp.route('/backtest', methods=['POST'])
 def run_quick_backtest():
     """تشغيل backtest سريع بالمعاملات الحالية."""

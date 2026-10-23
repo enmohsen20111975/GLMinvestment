@@ -18,6 +18,7 @@ Date: 2026-09-01
 """
 
 from flask import Blueprint, request, jsonify
+from core.auth_middleware import require_admin
 import sys
 import os
 
@@ -65,6 +66,7 @@ def get_notebook(symbol):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @notebook_bp.route('/api/notebooks/<symbol>/refresh', methods=['POST'])
 def refresh_notebook(symbol):
     """إعادة بناء نوتبوك سهم من البيانات."""
@@ -78,6 +80,7 @@ def refresh_notebook(symbol):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @notebook_bp.route('/api/notebooks/build-all', methods=['POST'])
 def build_all():
     """بناء جماعي لكل النوتبوكس."""
@@ -91,6 +94,7 @@ def build_all():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @notebook_bp.route('/api/notebooks/<symbol>/lesson', methods=['POST'])
 def add_lesson_route(symbol):
     """إضافة درس جديد للنوتبوك."""
@@ -110,6 +114,7 @@ def add_lesson_route(symbol):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @notebook_bp.route('/api/notebooks/<symbol>/summary', methods=['PUT'])
 def update_summary(symbol):
     """تعديل machine_summary لسهم."""

@@ -16,6 +16,7 @@ Author: GLMinvestment Platform — Feature 3: Prediction Tracking System
 """
 
 import os
+from core.auth_middleware import require_admin
 import json
 import sqlite3
 from datetime import datetime, timedelta
@@ -392,6 +393,7 @@ def _verify_pending(conn: sqlite3.Connection, market: Optional[str] = None) -> D
 # ENDPOINTS: prediction_tracking_bp (Feature 3)
 # ============================================================
 
+@require_admin
 @prediction_tracking_bp.route('/save', methods=['POST'])
 def save_pick_endpoint():
     """POST /api/predictions/tracking/save — حفظ توصية صياد.
@@ -810,6 +812,7 @@ def stats_endpoint():
         }), 500
 
 
+@require_admin
 @prediction_tracking_bp.route('/verify', methods=['POST'])
 def verify_endpoint():
     """POST /api/predictions/tracking/verify — التحقق من التوصيات المعلقة.
@@ -927,6 +930,7 @@ def legacy_pending():
         return jsonify({'success': False, 'error': str(e), 'data': []}), 500
 
 
+@require_admin
 @tracking_bp.route('/evaluate', methods=['POST'])
 def legacy_evaluate():
     """تقييم التوقعات (legacy)."""

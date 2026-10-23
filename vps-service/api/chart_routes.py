@@ -19,6 +19,7 @@ Features:
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import math
 import sqlite3
@@ -835,6 +836,7 @@ def get_intraday_stats_route():
         }), 500
 
 
+@require_admin
 @chart_bp.route('/collect/now', methods=['POST'])
 def trigger_collection():
     """تشغيل جمع البيانات يدوياً (للاختبار/Admin)"""

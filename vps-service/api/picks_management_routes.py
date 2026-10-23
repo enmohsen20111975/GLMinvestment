@@ -14,6 +14,7 @@ Author: GLMinvestment v3.4.43 — Confidence + Position Management
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import sqlite3
 from datetime import datetime, timedelta
@@ -488,6 +489,7 @@ def get_single_management(pred_id: int):
 # ----------------------------------------------------------------------------
 # POST /api/predictions/management/refresh
 # ----------------------------------------------------------------------------
+@require_admin
 @picks_mgmt_bp.route('/api/predictions/management/refresh', methods=['POST'])
 def refresh_management():
     """إعادة حساب الإدارة لكل المراكز المفتوحة (يقبل optional persona)."""

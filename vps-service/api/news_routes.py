@@ -13,6 +13,7 @@ Routes:
 """
 
 import sqlite3
+from core.auth_middleware import require_admin
 import json
 import os
 from datetime import datetime
@@ -401,6 +402,7 @@ def add_news():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @news_bp.route('/<int:news_id>', methods=['DELETE'])
 def delete_news(news_id):
     """
@@ -500,6 +502,7 @@ def get_news_by_ticker(ticker):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @news_bp.route('/bulk', methods=['POST'])
 def add_news_bulk():
     """
@@ -678,6 +681,7 @@ def get_egx_news():
 # ============================================================================
 
 
+@require_admin
 @news_bp.route('/agent', methods=['POST'])
 def receive_from_news_agent():
     """استقبال خبر من News Agent المحلي وتخزينه في news.db.

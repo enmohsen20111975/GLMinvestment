@@ -12,6 +12,7 @@ Analytics Tracking API
 """
 
 import os
+from core.auth_middleware import require_admin
 import json
 import hashlib
 from datetime import datetime, timedelta
@@ -248,6 +249,7 @@ except Exception as _init_err:
 
 # ==================== API Routes ====================
 
+@require_admin
 @analytics_bp.route('/track', methods=['POST'])
 def track_event():
     """
@@ -353,6 +355,7 @@ def track_event():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/session/start', methods=['POST'])
 def start_session():
     """Start a new user session."""
@@ -397,6 +400,7 @@ def start_session():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/session/end', methods=['POST'])
 def end_session():
     """End a user session."""
@@ -612,6 +616,7 @@ def get_feature_usage():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/generate-daily-summary', methods=['POST'])
 def generate_daily_summary():
     """Generate daily analytics summary."""
