@@ -29,6 +29,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionUserId } from '@/lib/auth-helper';
+
 export const dynamic = "force-dynamic";
 
 import { getWritableStocksDb } from '@/lib/egx-db';
@@ -92,11 +94,18 @@ interface QuickAddBody {
 
 export async function POST(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session. No more accepting body.user_id directly.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+
     const body: QuickAddBody = await request.json().catch(() => ({}));
     const ticker = (body.ticker || '').toString().trim().toUpperCase();
     const currentPrice = Number(body.current_price);
     const dropPct = Number(body.drop_pct ?? -3); // default: -3%
-    const userId = body.user_id ? String(body.user_id) : null;
+    // F1.2: ignore body.user_id — use session userId only (IDOR fix)
+    const userId = sessionUserId;
     const label = body.label ? String(body.label) : null;
     const notes = body.notes ? String(body.notes) : null;
 
