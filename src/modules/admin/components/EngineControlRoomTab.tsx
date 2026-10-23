@@ -59,177 +59,21 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-
-// ============================================================================
-// Types — API response shapes
-// ============================================================================
-
-interface SystemService {
- id: string;
- name_ar: string;
- type: 'http' | 'tcp' | 'process' | 'file';
- status: 'online' | 'offline' | 'degraded' | 'unknown';
- latency_ms?: number;
- message: string;
- details?: Record<string, unknown>;
-}
-interface SystemHealthResponse {
- success: boolean;
- timestamp?: string;
- summary?: { total: number; online: number; offline: number; degraded: number; health_score: number };
- services?: SystemService[];
- error?: string;
-}
-
-interface EngineLogResult {
- path: string;
- exists: boolean;
- mtime: string | null;
- size: number;
- lines: string[];
- error?: string;
-}
-interface EngineLogsResponse {
- success: boolean;
- timestamp: string;
- engine?: string;
- engines: Record<string, { label: string; files: EngineLogResult[] }>;
- errors_only?: Array<{ engine: string; path: string; line: string; mtime: string | null }>;
- error?: string;
-}
-
-// ============================================================================
-// Task 33 — single-engine logs response (Live Log Console consumes this).
-// Shape mirrors what /api/admin/engines/logs?engine=X returns.
-// ============================================================================
-interface SingleEngineLogsResponse {
- success: boolean;
- engine: string;
- label?: string;
- lines: string[];
- total_lines: number;
- fetched_at: string;
- file_exists: boolean;
- latest_mtime?: string | null;
- files?: Array<{ path: string; exists: boolean; mtime: string | null; size: number; line_count: number; error?: string }>;
- error?: string;
-}
-
-// Task 33 — per-engine live status response from /api/admin/engines/logs/control?engine=X
-interface LiveEngineStatusResponse {
- success: boolean;
- engine: string;
- label?: string;
- type: 'daemon' | 'cron';
- pattern: string;
- running: boolean;
- pids: number[];
- state: 'running' | 'scheduled' | 'stopped';
- timestamp: string;
- error?: string;
-}
-
-interface EngineControlResponse {
- success: boolean;
- action?: string;
- engine?: string;
- label?: string;
- message?: string;
- pids?: number[];
- pids_before?: number[];
- pids_after?: number[];
- log_file?: string;
- stdout?: string;
- stderr?: string;
- timestamp?: string;
- error?: string;
-}
-
-interface EngineListEntry {
- key: string;
- label: string;
- kill_pattern: string;
- log_file: string;
- running: boolean;
- pids: number[];
-}
-interface EngineControlListResponse {
- success: boolean;
- timestamp?: string;
- engines?: EngineListEntry[];
- error?: string;
-}
-
-interface CronJob {
- id: number;
- schedule: string;
- schedule_human: string;
- days_ar: string;
- command: string;
- full_command: string;
- log_file: string | null;
- last_run: string | null;
- last_run_human: string | null;
- exists_log: boolean;
- description: string;
- category: string;
-}
-interface CronHealthResponse {
- success: boolean;
- error?: string;
- timestamp?: string;
- source?: string;
- summary?: {
- total_jobs: number;
- jobs_ran: number;
- jobs_never_run: number;
- jobs_run_today: number;
- jobs_stale_7d: number;
- };
- jobs?: CronJob[];
-}
-
-interface NewsSourceHealth {
- source: string;
- source_type: 'rss' | 'telegram' | 'web' | 'broken';
- article_count: number;
- last_fetch: string | null;
- last_fetch_human: string | null;
- is_broken: boolean;
- broken_reason?: string;
- success_rate: number;
- success_rate_label: 'healthy' | 'degraded' | 'broken';
-}
-interface NewsHealthResponse {
- success: boolean;
- error?: string;
- detail?: string;
- timestamp?: string;
- total_sources?: number;
- total_articles?: number;
- broken_sources_count?: number;
- sources?: NewsSourceHealth[];
- known_broken_sources?: Array<{ source: string; reason: string }>;
-}
-
-interface ShariaApiResponse {
- success: boolean;
- error?: string;
- stats?: {
- total?: number;
- consensus_count?: number;
- with_sp_rate?: number;
- latest_source_update?: string | null;
- };
- sources?: Array<{ source_key: string; name_ar: string; methodology?: string | null; is_active?: number | boolean }>;
- alias_map?: {
- totals: Array<{ match_method: string; confidence: string; needs_review: number; n: number }>;
- review_queue: Array<{ source_symbol: string; resolved_ticker: string; match_method: string | null; confidence: string | null; needs_review: number | boolean; source_name_ar: string | null; matched_in: string | null; resolved_at: string | null }>;
- };
- primary_method?: string;
- consensus_min?: number;
- generated_at?: string;
-}
+import {
+ useEngineControlRoomData,
+ type EngineKey,
+ type EngineAction,
+ type SystemService,
+ type EngineLogResult,
+ type EngineLogsResponse,
+ type SingleEngineLogsResponse,
+ type LiveEngineStatusResponse,
+ type EngineListEntry,
+ type CronJob,
+ type CronHealthResponse,
+ type NewsHealthResponse,
+ type ShariaApiResponse,
+} from '@/hooks/useEngineControlRoomData';
 
 // ============================================================================
 // Engine Catalog — the 8 cards we render in the grid
@@ -243,8 +87,6 @@ interface ShariaApiResponse {
 // trigger), view logs. last_run + next_run countdown come from cron-health.
 //
 // ============================================================================
-
-type EngineKey = 'data_engine' | 'python_backend' | 'websocket' | 'telegram' | 'news_agent' | 'predictions' | 'learning' | 'sharia';
 
 interface EngineCatalogEntry {
  key: EngineKey;
@@ -1845,220 +1687,82 @@ const DEEP_VIEWS: Array<{ id: DeepView; label: string; icon: React.ReactNode }> 
  { id: 'console', label: 'الكونسول', icon: <Terminal className="w-3.5 h-3.5" /> },
 ];
 
-const STATUS_REFRESH_MS = 30_000;
-const LOGS_REFRESH_MS = 15_000;
+// NOTE: STATUS_REFRESH_MS (30s) + LOGS_REFRESH_MS (15s) polling constants
+// moved to src/hooks/useEngineControlRoomData.ts (F-Strangler-EngineControlRoom).
+// They are now consumed via TanStack Query's `refetchInterval` option.
 
 export function EngineControlRoomTab() {
- // ----- Top grid data -----
- const [systemHealth, setSystemHealth] = useState<SystemHealthResponse | null>(null);
- const [controlList, setControlList] = useState<EngineControlListResponse | null>(null);
- const [logs, setLogs] = useState<EngineLogsResponse | null>(null);
- const [cronHealth, setCronHealth] = useState<CronHealthResponse | null>(null);
- const [newsHealth, setNewsHealth] = useState<NewsHealthResponse | null>(null);
- const [sharia, setSharia] = useState<ShariaApiResponse | null>(null);
-
- const [loadingStatus, setLoadingStatus] = useState(true);
- const [loadingLogs, setLoadingLogs] = useState(true);
- const [actionLoading, setActionLoading] = useState<string | null>(null);
- const [actionEngine, setActionEngine] = useState<string | null>(null);
-
- // ----- Selected engine for detail sheet -----
+ // ----- UI state (kept in component — not data-fetching) -----
  const [selectedEngine, setSelectedEngine] = useState<EngineKey | null>(null);
-
- // ----- Task 33 Phase 5: Live Log Console state -----
- // When non-null, the Live Log Console Sheet is open for this engine.
  const [liveConsoleEngine, setLiveConsoleEngine] = useState<EngineKey | null>(null);
-
- // ----- Deep view selection -----
  const [deepView, setDeepView] = useState<DeepView>('data-engine');
  const [consoleEngineFilter, setConsoleEngineFilter] = useState('all');
  const [consoleSearch, setConsoleSearch] = useState('');
-
- // ----- Batch action loading -----
  const [batchLoading, setBatchLoading] = useState<'start' | 'stop' | 'check' | null>(null);
 
- // ----- Fetchers -----
- const fetchStatus = useCallback(async () => {
- setLoadingStatus(true);
- try {
- const [shRes, ctrlRes] = await Promise.all([
- fetch('/api/admin/system-health', { credentials: 'same-origin', cache: 'no-store' }),
- fetch('/api/admin/engines/control', { credentials: 'same-origin', cache: 'no-store' }),
- ]);
- const [shJson, ctrlJson] = await Promise.all([shRes.json(), ctrlRes.json()]);
- setSystemHealth(shJson);
- setControlList(ctrlJson);
- } catch (err) {
- console.error('[EngineControlRoomTab] fetchStatus', err);
- } finally {
- setLoadingStatus(false);
- }
- }, []);
+ // ----- Data layer (F-Strangler-EngineControlRoom): hook owns all fetch/polling -----
+ const {
+ systemHealth,
+ controlList,
+ logs,
+ cronHealth,
+ newsHealth,
+ sharia,
+ loadingStatus,
+ loadingLogs,
+ actionLoading,
+ actionEngine,
+ refetchStatus,
+ refetchLogs,
+ refetchCron,
+ refetchNews,
+ refetchSharia,
+ controlEngine,
+ startAll: startAllMut,
+ stopAll: stopAllMut,
+ fullCheck: fullCheckMut,
+ } = useEngineControlRoomData({
+ onActionStart: (engineKey) => setLiveConsoleEngine(engineKey),
+ });
 
- const fetchLogs = useCallback(async () => {
- setLoadingLogs(true);
- try {
- const res = await fetch('/api/admin/engines/logs?limit=50', { credentials: 'same-origin', cache: 'no-store' });
- const json = await res.json();
- setLogs(json);
- } catch (err) {
- console.error('[EngineControlRoomTab] fetchLogs', err);
- } finally {
- setLoadingLogs(false);
- }
- }, []);
-
- const fetchCron = useCallback(async () => {
- try {
- const res = await fetch('/api/admin/cron-health', { credentials: 'same-origin', cache: 'no-store' });
- const json = await res.json();
- setCronHealth(json);
- } catch (err) {
- console.error('[EngineControlRoomTab] fetchCron', err);
- }
- }, []);
-
- const fetchNews = useCallback(async () => {
- try {
- const res = await fetch('/api/admin/news-health', { credentials: 'same-origin', cache: 'no-store' });
- const json = await res.json();
- setNewsHealth(json);
- } catch (err) {
- console.error('[EngineControlRoomTab] fetchNews', err);
- }
- }, []);
-
- const fetchSharia = useCallback(async () => {
- try {
- const res = await fetch('/api/sharia?limit=1', { cache: 'no-store' });
- const json = await res.json();
- setSharia(json);
- } catch (err) {
- console.error('[EngineControlRoomTab] fetchSharia', err);
- }
- }, []);
-
- useEffect(() => {
- fetchStatus();
- fetchLogs();
- fetchCron();
- fetchNews();
- fetchSharia();
- const statusInterval = setInterval(fetchStatus, STATUS_REFRESH_MS);
- const logsInterval = setInterval(fetchLogs, LOGS_REFRESH_MS);
- return () => {
- clearInterval(statusInterval);
- clearInterval(logsInterval);
- };
- }, [fetchStatus, fetchLogs, fetchCron, fetchNews, fetchSharia]);
-
- // ----- Engine control action -----
- // Task 33 Phase 5: when action === 'start' (daemon) or 'start' (cron manual
- // run), open the Live Log Console immediately after the POST returns.
- const handleAction = useCallback(async (engineKey: EngineKey, action: 'start' | 'stop' | 'restart') => {
+ // ----- Engine control action (wraps hook mutation: looks up entry in catalog,
+ // validates controlKey support, then calls controlEngine) -----
+ const handleAction = useCallback(async (engineKey: EngineKey, action: EngineAction) => {
  const entry = ENGINE_CATALOG.find(e => e.key === engineKey);
  if (!entry?.controlKey) {
  toast.error('هذا المحرك لا يدعم التحكم المباشر من اللوحة');
  return;
  }
- setActionLoading(action);
- setActionEngine(engineKey);
- try {
- const res = await fetch('/api/admin/engines/control', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- credentials: 'same-origin',
- body: JSON.stringify({ engine: entry.controlKey, action }),
- });
- const json: EngineControlResponse = await res.json();
- if (json.success) {
- toast.success(json.message || `${action} OK`);
- // Task 33 Phase 5: open Live Log Console on 'start' (daemon) or
- // 'start' (cron manual trigger) so the user sees live progress.
- if (action === 'start') {
- setLiveConsoleEngine(engineKey);
- }
- // Refresh status after action
- setTimeout(() => {
- fetchStatus();
- fetchLogs();
- }, 1000);
- } else {
- toast.error(json.error || json.message || `فشل: ${action}`);
- // Even on failure, open the Live Log Console so the user can see
- // what went wrong (e.g. venv_missing shows up in the response body).
- if (action === 'start') {
- setLiveConsoleEngine(engineKey);
- }
- }
- } catch (err) {
- toast.error(err instanceof Error ? err.message : 'خطأ في الاتصال');
- } finally {
- setActionLoading(null);
- setActionEngine(null);
- }
- }, [fetchStatus, fetchLogs]);
+ await controlEngine(entry.controlKey, action, engineKey);
+ }, [controlEngine]);
 
- // ----- Batch actions -----
+ // ----- Batch actions (wrap hook mutations + batchLoading UI state) -----
  const handleStartAll = useCallback(async () => {
  setBatchLoading('start');
  try {
- const res = await fetch('/api/admin/engines/start-all', {
- method: 'POST',
- credentials: 'same-origin',
- });
- const json = await res.json();
- if (json.success) {
- toast.success(`تم تشغيل ${json.summary?.success}/${json.summary?.total} محرك`);
- } else {
- toast.error(`نجح ${json.summary?.success}/${json.summary?.total} — راجع السجلات`);
- }
- setTimeout(() => {
- fetchStatus();
- fetchLogs();
- }, 1500);
- } catch (err) {
- toast.error(err instanceof Error ? err.message : 'خطأ في الاتصال');
+ await startAllMut();
  } finally {
  setBatchLoading(null);
  }
- }, [fetchStatus, fetchLogs]);
+ }, [startAllMut]);
 
  const handleStopAll = useCallback(async () => {
  setBatchLoading('stop');
  try {
- const res = await fetch('/api/admin/engines/stop-all', {
- method: 'POST',
- credentials: 'same-origin',
- });
- const json = await res.json();
- if (json.success) {
- toast.success(`تم إيقاف ${json.summary?.success}/${json.summary?.total} محرك`);
- } else {
- toast.error(`نجح ${json.summary?.success}/${json.summary?.total} — راجع السجلات`);
- }
- setTimeout(() => {
- fetchStatus();
- fetchLogs();
- }, 1500);
- } catch (err) {
- toast.error(err instanceof Error ? err.message : 'خطأ في الاتصال');
+ await stopAllMut();
  } finally {
  setBatchLoading(null);
  }
- }, [fetchStatus, fetchLogs]);
+ }, [stopAllMut]);
 
  const handleFullCheck = useCallback(async () => {
  setBatchLoading('check');
  try {
- await Promise.all([fetchStatus(), fetchLogs(), fetchCron(), fetchNews(), fetchSharia()]);
- toast.success('اكتمل الفحص الشامل');
- } catch (err) {
- toast.error(err instanceof Error ? err.message : 'خطأ في الفحص');
+ await fullCheckMut();
  } finally {
  setBatchLoading(null);
  }
- }, [fetchStatus, fetchLogs, fetchCron, fetchNews, fetchSharia]);
+ }, [fullCheckMut]);
 
  const handleExport = useCallback(() => {
  const payload = {
@@ -2074,7 +1778,7 @@ export function EngineControlRoomTab() {
  toast.success('تم تصدير التقرير');
  }, [systemHealth, controlList, logs, cronHealth, newsHealth, sharia]);
 
- // ----- Lookup helpers -----
+ // ----- Lookup helpers (render-logic concerns — kept in component) -----
  const serviceFor = useCallback((key: EngineKey): SystemService | undefined => {
  const entry = ENGINE_CATALOG.find(e => e.key === key);
  if (!entry?.serviceId) return undefined;
@@ -2247,7 +1951,7 @@ export function EngineControlRoomTab() {
  size="sm"
  variant="ghost"
  className="gap-1"
- onClick={() => { fetchStatus(); fetchLogs(); }}
+ onClick={() => { void refetchStatus(); void refetchLogs(); }}
  disabled={loadingStatus || loadingLogs}
  >
  <RefreshCw className={cn('w-3 h-3', (loadingStatus || loadingLogs) && 'animate-spin')} />

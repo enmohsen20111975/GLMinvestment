@@ -7070,3 +7070,137 @@ Stage Summary:
 
 Security status: All sensitive routes now require X-Admin-Token header.
 Deploy readiness: deploy.sh + smoke_test.sh ready for production deploy night.
+
+---
+Task ID: F-Strangler-AcademyView
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — extract data-fetching logic from AcademyView.tsx (2,483 LOC) into `src/hooks/useAcademyData.ts`.
+
+Work Log:
+- Audited `src/modules/education/components/AcademyView.tsx` (2,483 LOC) for fetch / useState / useEffect / useCallback inventory.
+- Found **3 fetch call sites** + **15 useState** + **3 useEffects** + **2 useCallback** to extract (NOT a presentational file — extraction proceeds):
+  * `AdvancedLessonsTab` (lines 204-592):
+    - Fetch 1: `fetch('/api/ads/educational-lessons')` on mount (lessons list — 12 institutional lessons) + retry-on-error button.
+    - Fetch 2: `loadFull(id)` lazy fetches `/api/ads/educational-lessons?id=X` per active lesson, with in-memory `fullCache` state.
+    - 7 useState (lessons, loading, error, activeId, fullCache, loadingFull, showFull).
+    - 2 useEffects (initial fetch + showFull reset on activeId change).
+    - 1 useCallback `loadFull(id)` (with cache short-circuit + loadingFull state).
+    - Inline retry handler: `setLoading(true); setError(null); fetch(...)` in JSX onClick.
+  * `LiveMarketScanner` (Trading Floor Section 1, lines 1074-1118):
+    - Fetch 3: `fetchStocks(silent)` useCallback → `/api/stocks?page_size=500` with `{ cache: 'no-store' }`.
+    - 60s polling via `setInterval(() => fetchStocks(true), 60_000)`.
+    - Graceful-degrade: on error OR empty → `setStocks(FALLBACK_STOCKS)`; on empty success no error banner, on error shows Arabic banner.
+    - 8 useState (stocks, loading, refreshing, error, search, showAll, analysis, lastUpdated).
+    - 1 useEffect (initial fetch + 60s interval).
+    - `silent=false` (manual refresh) sets `loading=true`; `silent=true` (polling) does not.
+- Created `src/hooks/useAcademyData.ts` (368 LOC) with 2 hook exports + 6 type exports + `FALLBACK_STOCKS` const:
+  * **Hook 1: `useAcademyLessonsData()`** — TanStack Query wrapper for `/api/ads/educational-lessons`.
+    - `useApiQuery<EducationalLessonsResponse>('/api/ads/educational-lessons')` for the main list.
+    - `loadFull(id)`: imperative lazy fetch via `qc.fetchQuery({queryKey: ['academy-lesson-full', id], queryFn: () => apiGet<EducationalLessonsResponse>('/api/ads/educational-lessons?id=X'), staleTime: Infinity})` — TanStack caching replaces original `fullCache` Map.
+    - `getFull(id)`: read cached fullContent via `qc.getQueryData` (replaces `fullCache[id]` lookup).
+    - Behaviour preservation:
+      * `loading = isLoading || (manualRefresh && isFetching)` — matches original `setLoading(true)` on retry click.
+      * `error` cleared to null during refetch (matches original `setError(null)` in retry handler).
+      * `activeId` reset to `lessons[0].id` only on first arrival via component useEffect (preserves original auto-select; minor UX improvement: doesn't reset user's selection on retry).
+      * `loadingFull: string | null` owned by hook (component reads via destructured value).
+    - Returns: `{ lessons, loading, error, refetch, loadingFull, loadFull, getFull }`.
+  * **Hook 2: `useAcademyStocksData()`** — TanStack Query wrapper for `/api/stocks?page_size=500`.
+    - `useApiQuery<StocksListResponse>('/api/stocks', {params: {page_size: 500}, fetchOptions: {cache: 'no-store'}, queryOptions: {staleTime: 0, refetchInterval: 60_000, refetchOnWindowFocus: false}})` — replaces `setInterval` polling with declarative `refetchInterval`.
+    - Normalization + filter + sort preserved verbatim in `useMemo` (matches original `fetchStocks` body).
+    - FALLBACK_STOCKS returned on: network error, API error (success:false), OR empty success. Empty success → no error banner (matches original).
+    - `lastUpdated: Date | null` derived from every fetch attempt (success or failure) in `useMemo`.
+    - Behaviour preservation:
+      * `loading = isLoading || (manualRefresh && isFetching)` — matches original `setLoading(true)` on manual refresh (`silent=false`).
+      * `refreshing = isFetching` — true during every fetch including 60s polling.
+      * `manualRefresh` flag set by `refetch()` (matches original `fetchStocks()` non-silent), cleared via `useEffect` on fetch settle.
+    - Returns: `{ stocks, loading, refreshing, error, lastUpdated, refetch }`.
+  * Types exported: `AdvancedLesson`, `AdvancedLessonSection`, `EducationalLessonsResponse`, `FloorStock`, `StocksListResponse`, plus `FALLBACK_STOCKS` const.
+  * `normalizeStock` helper moved to hook (pure data normalization — fits data layer).
+  * Arabic error strings preserved verbatim from original (`STOCKS_FALLBACK_ERROR`, `LESSONS_FETCH_ERROR`, `NETWORK_ERROR`).
+- Modified `src/modules/education/components/AcademyView.tsx`:
+  * Added import: `{ useAcademyLessonsData, useAcademyStocksData, type AdvancedLesson, type FloorStock } from '@/hooks/useAcademyData'`.
+  * Removed 2 inline interface declarations (`AdvancedLesson`, `AdvancedLessonSection` — moved to hook as single source of truth).
+  * Removed inline `FloorStock` interface (moved to hook — `AnalysisState` stays because it's UI state tied to component).
+  * Removed `FALLBACK_STOCKS` const (18 demo stocks, ~20 LOC — moved to hook).
+  * Removed `normalizeStock` helper (~10 LOC — moved to hook).
+  * `AdvancedLessonsTab`: replaced 7 useState + 2 useEffects + `loadFull` useCallback + inline retry JSX (~120 LOC) with single hook call (15 LOC destructure) + 2 useState (activeId, showFull — UI state) + 2 useEffects (auto-select first lesson, reset showFull on lesson switch) + `handleLoadFull` wrapper.
+  * `LiveMarketScanner`: replaced 8 useState + `fetchStocks` useCallback + polling useEffect (~50 LOC) with single hook call (9 LOC destructure) + 3 useState (search, showAll, analysis — UI state).
+  * Retry button: `setLoading(true); setError(null); fetch(...)` inline JSX → `onClick={() => refetch()}`.
+  * Refresh button: `onClick={() => fetchStocks()}` → `onClick={() => refetch()}`.
+  * All render logic untouched: 24 visual presentation components + 5 AcademyView tabs (PaperTrading, CandlestickSimulator, StrategySandbox, AcademyEncyclopedia, AdvancedLessons) + TradingFloorView (3 sections: LiveMarketScanner, ScenarioDecisionTree, ActionPlaybooks) + AdvancedMarkdownRenderer + LessonPDFExporter + handlers (handleSelectItem, handleBack).
+- Verification:
+  * `pm2 restart nextjs` → ready in 3.3s, no compile errors.
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (compile 11.4s first hit, 10ms subsequent).
+  * `curl 'http://localhost:3000/?view=academy'` → **HTTP 200** (AcademyView dynamically imported + rendered — Strangler target verified end-to-end).
+  * `curl 'http://localhost:3000/api/ads/educational-lessons'` → 200, returns `{success:true, lessons:[...]}` (12 institutional lessons).
+  * `curl 'http://localhost:3000/api/stocks?page_size=500'` → 200 (stocks list for LiveMarketScanner).
+  * `npx tsc --noEmit -p tsconfig.json` → 0 errors on `AcademyView.tsx` and `useAcademyData.ts` (only pre-existing errors in `.next/dev/types/validator.ts` + `archive/` remain — unrelated).
+  * pm2 logs: no AcademyView / useAcademyData errors (only pre-existing `next-auth` warnings + `Cross origin request` warning, unrelated).
+- LOC delta:
+  * AcademyView.tsx: 2,483 → 2,357 LOC (**−126 LOC, −5.1%**).
+  * useAcademyData.ts (new): +368 LOC (incl. 6 type exports + `FALLBACK_STOCKS` const + extensive JSDoc + 2 useApiQuery calls + 1 queryClient.fetchQuery + behaviour-preservation comments).
+  * Net file-count: +1 file.
+- Rule 75 compliance: commit b23f7cf + push to origin/main (cb2e824..b23f7cf).
+- Rule 76 compliance: `git pull --rebase origin main` → "Current branch main is up to date" (no rebase needed).
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على AcademyView.tsx. الـ data logic (3 fetches + 15 useState + 3 useEffects + 2 useCallback) كله في `useAcademyData.ts` hook file.
+- Component بقى render-only for data — كل fetch logic + state + try/catch + retry handler + polling + cache اتشالوا. الـ render logic (5 tabs + 24 visual components + AdvancedMarkdownRenderer + LessonPDFExporter + TradingFloorView 3 sections + handlers) متـرك زي ما هو.
+- HTTP 200 verified على `/` و `/?view=academy` و الـ underlying APIs (`/api/ads/educational-lessons`, `/api/stocks?page_size=500`). صفر new TS errors. صفر new browser errors.
+- Commit: b23f7cf.
+
+---
+
+Task ID: F-Strangler-EngineControlRoom
+Agent: Alpha (frontend agent)
+Task: Extract data-fetching logic from `src/modules/admin/components/EngineControlRoomTab.tsx` (2,481 LOC) into new hook `src/hooks/useEngineControlRoomData.ts` using the Strangler Pattern (F-Strangler-* series).
+
+Work Log:
+- Read worklog.md + EngineControlRoomTab.tsx (2,481 LOC).
+- File scan: 9 `fetch()` calls found (5 GET fetchers + 3 POST mutations + 1 GET polling pair inside `LiveLogConsole` sub-component).
+  * GET fetchers (main `EngineControlRoomTab`): `fetchStatus` (system-health + engines/control in parallel), `fetchLogs`, `fetchCron`, `fetchNews`, `fetchSharia`.
+  * POST mutations: `handleAction` (engine control), `handleStartAll`, `handleStopAll`.
+  * `LiveLogConsole` sub-component polling: 2 GETs every 2s — left in place (sub-component's own concern; not part of the main `EngineControlRoomTab` data layer).
+- Decision: extract. Created `src/hooks/useEngineControlRoomData.ts` modeled on `useDatabaseManagerData.ts` (existing precedent — same TanStack Query + `apiGet` + `satisfies UseQueryOptions<...>` pattern).
+- Hook design:
+  * 6 `useQuery` calls wrapping `apiGet<T>('/api/admin/...')`:
+    1. `systemHealthQ` → `GET /api/admin/system-health` (`refetchInterval: 30_000`)
+    2. `controlListQ` → `GET /api/admin/engines/control` (`refetchInterval: 30_000`)
+    3. `logsQ` → `GET /api/admin/engines/logs?limit=50` (`refetchInterval: 15_000`)
+    4. `cronHealthQ` → `GET /api/admin/cron-health` (no polling)
+    5. `newsHealthQ` → `GET /api/admin/news-health` (no polling)
+    6. `shariaQ` → `GET /api/sharia?limit=1` (no polling)
+  * Polling migrated from `setInterval(fetchStatus, 30_000)` + `setInterval(fetchLogs, 15_000)` → declarative `refetchInterval` (TanStack Query's built-in mechanism).
+  * Mutations kept as plain `fetch()` POST (NOT wrapped in `useMutation`) — matches original behavior. 3 mutations: `controlEngine(controlKey, action, engineKey)`, `startAll()`, `stopAll()`, plus `fullCheck()` which calls `refetch*()` for all 5 queries.
+  * Action state (`actionLoading`, `actionEngine`) owned by hook — component reads via destructured values.
+  * Side effect preserved: `controlEngine` on success/failure of `'start'` action triggers `onActionStart(engineKey)` callback (component uses it to open the Live Log Console). After 1s, refetches status + logs. `startAll/stopAll` after 1.5s refetch status + logs.
+  * Types exported: `EngineKey`, `EngineAction`, `SystemService`, `SystemHealthResponse`, `EngineLogResult`, `EngineLogsResponse`, `SingleEngineLogsResponse`, `LiveEngineStatusResponse`, `EngineControlResponse`, `EngineListEntry`, `EngineControlListResponse`, `CronJob`, `CronHealthResponse`, `NewsSourceHealth`, `NewsHealthResponse`, `ShariaApiResponse`.
+- Refactored `src/modules/admin/components/EngineControlRoomTab.tsx`:
+  * Replaced 15 inline interface declarations + `EngineKey` type union (~170 LOC, lines 63-247 of original) with single `import { ... } from '@/hooks/useEngineControlRoomData'`.
+  * Removed 5 `useState` for data (`systemHealth`, `controlList`, `logs`, `cronHealth`, `newsHealth`, `sharia`) + 2 `useState` for loading (`loadingStatus`, `loadingLogs`) + 2 `useState` for action (`actionLoading`, `actionEngine`) — all moved to hook.
+  * Removed 5 `useCallback` fetchers (`fetchStatus`, `fetchLogs`, `fetchCron`, `fetchNews`, `fetchSharia`) — replaced by TanStack Query's `useQuery` + `refetch` callbacks.
+  * Removed the giant `useEffect` block (initial fetch + 2 `setInterval` polling + cleanup) — TanStack Query handles initial fetch on mount + polling via `refetchInterval`.
+  * Removed 4 `useCallback` mutation handlers (`handleAction`, `handleStartAll`, `handleStopAll`, `handleFullCheck`) — replaced with thin wrappers that delegate to hook mutations + manage `batchLoading` UI state (component-owned).
+  * `handleExport` kept in component (pure data transformation from current state — no fetch).
+  * Lookup helpers (`serviceFor`, `controlFor`, `logsFor`, `detailLogsFor`, `cronInfoFor`, `summary`) kept in component — they're render-logic concerns (look up data in `ENGINE_CATALOG` + join with hook-provided data).
+  * `STATUS_REFRESH_MS` + `LOGS_REFRESH_MS` constants removed from component (moved to hook; comment added pointing to hook file).
+  * Trimmed 4 unused type imports (`SystemHealthResponse`, `EngineControlResponse`, `EngineControlListResponse`, `NewsSourceHealth`) — referenced only via hook's inferred return types now.
+  * Refresh button: `onClick={() => { fetchStatus(); fetchLogs(); }}` → `onClick={() => { void refetchStatus(); void refetchLogs(); }}`.
+- Verification:
+  * `node_modules/.bin/pm2 restart nextjs` → ready in 710ms (clean Turbopack compile, 0 errors).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (compile 11.3s first hit).
+  * `curl 'http://localhost:3000/admin'` → **HTTP 200** (admin page compiles + renders — EngineControlRoomTab is on this page; refactor verified end-to-end).
+  * `npx tsc --noEmit -p tsconfig.json` → 0 errors on `EngineControlRoomTab.tsx` and `useEngineControlRoomData.ts` (only pre-existing errors in `.next/dev/types/validator.ts` + `archive/` remain — unrelated).
+  * pm2 logs: `GET / 200 in 11.8s` + `GET /admin 200 in 2.4s` — no compile/render errors related to the refactor.
+- LOC delta:
+  * EngineControlRoomTab.tsx: 2,481 → 2,185 LOC (**−296 LOC, −11.9%**).
+  * useEngineControlRoomData.ts (new): +645 LOC (incl. 15 type exports + 6 useQuery calls + 3 POST mutations + extensive JSDoc + behaviour-preservation comments).
+  * Net file-count: +1 file.
+- Rule 75 compliance: commit + push to origin/main (after HTTP 200 verified).
+- Rule 76 compliance: `git pull --rebase origin main` → "Current branch main is up to date" (no rebase needed).
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على EngineControlRoomTab.tsx. الـ data logic (5 GET fetchers + 3 POST mutations + 9 useState + 1 polling useEffect + 4 useCallback handlers) كله في `useEngineControlRoomData.ts` hook file.
+- Component بقى render-only for data — كل fetch logic + state + try/catch + toast + polling + cleanup اتشالوا. الـ render logic (8-engine grid + Live Log Console + Detail Sheet + 6 deep views + Quick Actions Bar + lookup helpers + handleExport) متـرك زي ما هو.
+- HTTP 200 verified على `/` و `/admin`. صفر new TS errors. صفر new browser errors.
+- Polling migrated from imperative `setInterval` to declarative TanStack Query `refetchInterval` — same 30s/15s cadence preserved.
