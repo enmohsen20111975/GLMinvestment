@@ -58,6 +58,8 @@ import { StockPublisher, type StockPublishData } from '@/modules/publishing/comp
 // at runtime → RootErrorBoundary → page dead → users couldn't log in.
 import { useTranslation } from '@/lib/i18n-context';
 import { StockScreenerAdvanced } from '@/modules/screener/components/StockScreenerAdvanced';
+// F-Strangler-StocksView: preset fetch + state extracted to hook (TanStack Query).
+import { useStocksViewData } from '@/hooks/useStocksViewData';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -906,10 +908,10 @@ export function StocksView() {
  const [showFilters, setShowFilters] = useState(false);
  const [page, setPage] = useState(1);
  const [selectedPreset, setSelectedPreset] = useState('all');
- const [presetData, setPresetData] = useState<Array<Record<string, unknown>>>([]);
- const [presetLoading, setPresetLoading] = useState(false);
+ // F-Strangler-StocksView: presetData / presetLoading / presetScanDate moved
+ // to useStocksViewData hook (TanStack Query). presetPeriod + selectedPreset
+ // stay here as UI state (controlled by Select onChange + quick-filter buttons).
  const [presetPeriod, setPresetPeriod] = useState('1d');
- const [presetScanDate, setPresetScanDate] = useState<string | null>(null);
 
  // ── Advanced filter state (STOCKS-SCREEN-020) ──
  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
@@ -917,6 +919,14 @@ export function StocksView() {
  const [priceMax, setPriceMax] = useState('');
  const [changeMin, setChangeMin] = useState('');
  const [changeMax, setChangeMax] = useState('');
+
+ // F-Strangler-StocksView: declarative preset fetch via TanStack Query.
+ // (replaces inline useEffect + fetch + 3 useState — see useStocksViewData.ts)
+ const { presetData, presetLoading, presetScanDate } = useStocksViewData({
+ selectedPreset,
+ presetPeriod,
+ currentMarket,
+ });
 
  // ── Load stocks on mount + reload when market changes ──
  useEffect(() => {
@@ -965,45 +975,6 @@ export function StocksView() {
  }, 300);
  return () => clearTimeout(timer);
  }, [localSearch]);
-
- // ── Fetch preset data ──
- // Pattern: hits /api/stocks/presets?preset=X&market={currentMarket}&period=Y&limit=50
- // Backend tries persisted `screener_presets` table first, then falls back to on-the-fly.
- useEffect(() => {
- if (selectedPreset === 'all') {
- setPresetData([]);
- setPresetScanDate(null);
- return;
- }
- let cancelled = false;
- setPresetLoading(true);
- const qs = new URLSearchParams({
- preset: selectedPreset,
- period: presetPeriod,
- limit: '50',
- });
- if (currentMarket) qs.set('market', currentMarket);
- fetch(`/api/stocks/presets?${qs.toString()}`)
- .then(r => r.json())
- .then(data => {
- if (cancelled) return;
- if (data.success) {
- setPresetData(data.results || []);
- setPresetScanDate(data.scan_date || null);
- } else {
- setPresetData([]);
- setPresetScanDate(null);
- }
- setPresetLoading(false);
- })
- .catch(() => {
- if (cancelled) return;
- setPresetData([]);
- setPresetScanDate(null);
- setPresetLoading(false);
- });
- return () => { cancelled = true; };
- }, [selectedPreset, presetPeriod, currentMarket]);
 
  // ── Filtered stocks ──
  const filteredStocks = useMemo(() => {
