@@ -94,123 +94,18 @@ import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPub
 // StockPublisher اتشال من عمود الـ ticker (Owner directive: "أسلوب إن انت
 // حاط زرار للنشر جنب كل سهم ده وحش جدا"). الجدول دلوقتي نضيف زي الـ radar table.
 import { useTranslation } from '@/lib/i18n-context';
+import {
+ useScreenerData,
+ useTopPerformersData,
+ type ScreenerStock,
+ type TopPerformerStock,
+ type TopPerformersResponse,
+} from '@/hooks/useScreenerData';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-
-interface ScreenerStock {
- ticker: string;
- name: string;
- name_ar: string;
- market: string;
- sector: string;
- industry: string;
- current_price: number;
- change_percent: number;
- volume: number;
- market_cap: number;
- pe_ratio: number | null;
- pb_ratio: number | null;
- eps: number | null;
- roe: number | null;
- roa: number | null;
- debt_to_equity: number | null;
- dividend_yield: number | null;
- profit_margin: number | null;
- ma_50: number | null;
- ma_200: number | null;
- rsi: number | null;
- trend: string | null;
- signal: number | null;
- beta: number | null;
- high_52w: number | null;
- low_52w: number | null;
- avg_volume: number;
- turnover_egp: number;
- value_traded: number;
- is_egx30: boolean;
- is_egx70: boolean;
- is_egx100: boolean;
- free_float_percentage: number | null;
- dps_ttm: number | null;
- book_value_per_share: number | null;
- support: number | null;
- resistance: number | null;
- volume_surge: boolean;
- above_ma_50: boolean;
- above_ma_200: boolean;
- distance_from_52w_high: number | null;
- distance_from_52w_low: number | null;
- stock_state: string;
- stock_state_ar: string;
- stock_state_reason: string;
- momentum_score: number;
- // ── Liquidity radar fields (linked from /api/maker-radar) ──
- maker_activity?: string | null;
- buy_pct?: number | null;
- net_flow_egp?: number | null;
- accumulation?: string | null;
- life_cycle?: string | null;
- expected?: string | null;
- path?: string | null;
- position_size?: number | null;
- volume_ratio_10d_vs_20d?: number | null;
-}
-
-interface ScreenerResponse {
- success: boolean;
- stocks: ScreenerStock[];
- total: number;
- sectors: string[];
- summary?: {
- total: number;
- advancers: number;
- decliners: number;
- unchanged: number;
- avg_change: number;
- total_turnover: number;
- volume_surge_count: number;
- };
- filters?: Record<string, unknown>;
- error?: string;
-}
-
-// ─── Top Performers types ────────────────────────────────────────────────────
-
-interface TopPerformerStock {
- ticker: string;
- name: string;
- name_ar: string | null;
- sector: string | null;
- market: string;
- start_price: number;
- end_price: number;
- change_pct: number;
- period_days: number;
- start_date: string;
- end_date: string;
- start_volume: number;
- end_volume: number;
-}
-
-interface TopPerformersResponse {
- success: boolean;
- period: string;
- direction: string;
- market: string;
- start_date: string;
- end_date: string;
- results: TopPerformerStock[];
- summary: {
- total_stocks: number;
- gainers: number;
- losers: number;
- avg_change: number;
- best_performer: TopPerformerStock | null;
- worst_performer: TopPerformerStock | null;
- };
- error?: string;
- hint?: string;
-}
+// F-Strangler-Screener: الـ 4 types (ScreenerStock / ScreenerResponse /
+// TopPerformerStock / TopPerformersResponse) اتنقلوا لـ `@/hooks/useScreenerData`
+// عشان الـ hook والـ component يـشاركوا نفس الـ shapes (مفيش duplication).
 
 // ─── State Colors (mirrors vps-service/utils/stock_state.py STATE_COLORS) ────
 
@@ -645,12 +540,30 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  // Column visibility state (show/hide any column)
  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
 
- // Data state
- const [stocks, setStocks] = useState<ScreenerStock[]>([]);
- const [sectors, setSectors] = useState<string[]>([]);
- const [summary, setSummary] = useState<ScreenerResponse['summary'] | null>(null);
- const [loading, setLoading] = useState(false);
- const [error, setError] = useState<string | null>(null);
+ // Data state — F-Strangler-Screener: data logic moved to useScreenerData hook
+ // 3 fetches (screener/advanced + maker-radar + stocks/top-performers) now
+ // live in @/hooks/useScreenerData. The hook returns `results` already
+ // merged with radar liquidity fields (radar merge logic preserved verbatim).
+ const {
+ results: stocks,
+ sectors,
+ summary,
+ loading,
+ error,
+ refetch: refetchScreener,
+ } = useScreenerData({
+ market, sector, sort, order, limit,
+ minPrice, maxPrice, minVolume, minTurnover,
+ trend, aboveMa, rsi, volumeSurge, near52wHigh, near52wLow,
+ minPe, maxPe, minRoe, minDividendYield, minMarketCap, maxMarketCap,
+ stockState,
+ });
+
+ // F-Strangler-Screener: preserve original toast.error on fetch failure
+ // (was inside `fetchScreener` catch block before extraction).
+ useEffect(() => {
+ if (error) toast.error(error);
+ }, [error]);
 
  // Sort state (client-side header click sorting on top of server-side default sort)
  const [clientSortField, setClientSortField] = useState<SortField | null>(null);
@@ -690,103 +603,6 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  },
  ], []);
 
- const fetchScreener = useCallback(async () => {
- setLoading(true);
- setError(null);
- try {
- const params = new URLSearchParams({
- market,
- sort,
- order,
- limit: String(limit),
- });
- if (sector !== 'ALL') params.set('sector', sector);
- if (minPrice) params.set('min_price', minPrice);
- if (maxPrice) params.set('max_price', maxPrice);
- if (minVolume) params.set('min_volume', minVolume);
- if (minTurnover) params.set('min_turnover', minTurnover);
- if (trend !== 'all') params.set('trend', trend);
- if (aboveMa !== 'all') params.set('above_ma', aboveMa);
- if (rsi === 'oversold') params.set('rsi_oversold', '1');
- if (rsi === 'overbought') params.set('rsi_overbought', '1');
- if (volumeSurge) params.set('volume_surge', '1');
- if (near52wHigh) params.set('near_52w_high', '1');
- if (near52wLow) params.set('near_52w_low', '1');
- if (minPe) params.set('min_pe', minPe);
- if (maxPe) params.set('max_pe', maxPe);
- if (minRoe) params.set('min_roe', minRoe);
- if (minDividendYield) params.set('min_dividend_yield', minDividendYield);
- if (minMarketCap) params.set('min_market_cap', minMarketCap);
- if (maxMarketCap) params.set('max_market_cap', maxMarketCap);
- if (stockState !== 'ALL') params.set('stock_state', stockState);
-
- // Parallel fetch: screener + liquidity radar (linking only — no new code)
- const [screenerRes, radarRes] = await Promise.all([
- fetch(`/api/screener/advanced?${params}`, { cache: 'no-store' }),
- fetch(`/api/maker-radar?market=${encodeURIComponent(market)}&minQuietSignals=5&minPrice=1.0`, { cache: 'no-store' }).catch(() => null),
- ]);
- const json: ScreenerResponse = await screenerRes.json();
-
- // Build ticker → radar lookup map (linking data, not new code)
- const radarMap = new Map<string, Record<string, unknown>>();
- if (radarRes && radarRes.ok) {
- try {
- const radarJson = await radarRes.json();
- const lists = [
- ...(radarJson.quiet_list || []),
- ...(radarJson.pre_surge_list || []),
- ...(radarJson.explosive_list || []),
- ...(radarJson.early_break_list || []),
- ];
- for (const item of lists) {
- if (item?.ticker) radarMap.set(String(item.ticker).toUpperCase(), item);
- }
- } catch { /* radar optional — fail silently */ }
- }
-
- if (json.success) {
- // Merge radar fields into each stock (linking)
- const mergedStocks = (json.stocks || []).map((s) => {
- const r = radarMap.get(s.ticker.toUpperCase());
- if (!r) return s;
- return {
- ...s,
- maker_activity: (r.maker_activity as string) ?? null,
- buy_pct: (r.buy_pct as number) ?? null,
- net_flow_egp: (r.net_flow_egp as number) ?? null,
- accumulation: (r.accumulation as string) ?? null,
- life_cycle: (r.life_cycle as string) ?? null,
- expected: (r.expected as string) ?? null,
- path: (r.path as string) ?? null,
- position_size: (r.position_size as number) ?? null,
- volume_ratio_10d_vs_20d: (r.volume_ratio_10d_vs_20d as number) ?? null,
- };
- });
- setStocks(mergedStocks);
- setSectors(json.sectors || []);
- setSummary(json.summary || null);
- } else {
- setError(json.error || t('screener.advanced.toast.loadFailed'));
- toast.error(json.error || t('screener.advanced.toast.loadFailed'));
- }
- } catch (e) {
- const msg = e instanceof Error ? e.message : t('screener.advanced.toast.connectionError');
- setError(msg);
- toast.error(msg);
- } finally {
- setLoading(false);
- }
- }, [
- market, sector, sort, order, limit,
- minPrice, maxPrice, minVolume, minTurnover,
- trend, aboveMa, rsi, volumeSurge, near52wHigh, near52wLow,
- minPe, maxPe, minRoe, minDividendYield, minMarketCap, maxMarketCap,
- stockState,
- ]);
-
- useEffect(() => {
- fetchScreener();
- }, [fetchScreener]);
 
  // Reset filters
  const resetFilters = () => {
@@ -1624,7 +1440,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  hashtags={t('screener.advanced.share.hashtags').split(',').concat([market])}
  triggerLabel={t('screener.advanced.buttons.publish')}
  />
- <Button variant="default" size="sm" onClick={fetchScreener} disabled={loading} className="gap-1.5">
+ <Button variant="default" size="sm" onClick={refetchScreener} disabled={loading} className="gap-1.5">
  <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
  {t('screener.advanced.buttons.refresh')}
  </Button>
@@ -2099,7 +1915,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
  <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
  {error}
  <div className="mt-3">
- <Button variant="outline" size="sm" onClick={fetchScreener} className="gap-1.5">
+ <Button variant="outline" size="sm" onClick={refetchScreener} className="gap-1.5">
  <RefreshCw className="w-3.5 h-3.5" />
  {t('screener.advanced.buttons.retry')}
  </Button>
@@ -2198,41 +2014,19 @@ function TopPerformersTab() {
  if (_storeMarket) setMarket(_storeMarket);
  }, [_storeMarket]);
  const [limit, setLimit] = useState(20);
- const [data, setData] = useState<TopPerformersResponse | null>(null);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
+ // F-Strangler-Screener: data logic moved to useTopPerformersData hook
+ // (fetches /api/stocks/top-performers via useApiQuery — TanStack Query).
+ const {
+ topPerformers: data,
+ topLoading: loading,
+ topError: error,
+ refetch: refetchTopPerformers,
+ } = useTopPerformersData({ period, direction, market, limit });
 
  // client-side sort
  const [sortField, setSortField] = useState<'ticker' | 'start_price' | 'end_price' | 'change_pct' | 'period_days' | null>(null);
  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
- const fetchData = useCallback(async () => {
- setLoading(true);
- setError(null);
- try {
- const params = new URLSearchParams({
- period,
- direction,
- market,
- limit: String(limit),
- });
- const res = await fetch(`/api/stocks/top-performers?${params}`, { cache: 'no-store' });
- const json: TopPerformersResponse = await res.json();
- if (json.success) {
- setData(json);
- } else {
- setError(json.error || json.hint || t('screener.advanced.toast.loadFailed'));
- }
- } catch (e) {
- setError(e instanceof Error ? e.message : t('screener.advanced.toast.connectionError'));
- } finally {
- setLoading(false);
- }
- }, [period, direction, market, limit]);
-
- useEffect(() => {
- fetchData();
- }, [fetchData]);
 
  const results = data?.results || [];
  const summary = data?.summary;
@@ -2414,7 +2208,7 @@ function TopPerformersTab() {
  </>
  )}
  </div>
- <Button variant="default" size="sm" onClick={fetchData} disabled={loading} className="gap-1.5">
+ <Button variant="default" size="sm" onClick={refetchTopPerformers} disabled={loading} className="gap-1.5">
  <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
  {t('screener.advanced.buttons.refresh')}
  </Button>
@@ -2527,7 +2321,7 @@ function TopPerformersTab() {
  <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
  {error}
  <div className="mt-3">
- <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
+ <Button variant="outline" size="sm" onClick={refetchTopPerformers} className="gap-1.5">
  <RefreshCw className="w-3.5 h-3.5" />
  {t('screener.advanced.buttons.retry')}
  </Button>
