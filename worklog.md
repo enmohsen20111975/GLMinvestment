@@ -6718,3 +6718,30 @@ Stage Summary:
 - الـ `module is not defined` مش من شغلي. موجود قبل ما أبدأ.
 - الـ app بيـ render (HTTP 200) بس الـ ErrorBoundary بيـ catch الخطأ وبيـ show fallback.
 - محتاج investigation أعمق للـ next.config.mjs + serverComponentsExternalPackages (الـ config القديم ده السبب).
+
+---
+Task ID: Phase0-BaselineAudit
+Agent: Alpha
+Task: Phase 0 — Baseline Audit: تصنيف كل ملفات الـ src/ حسب الـ LOC + تحديد الأولويات
+
+Work Log:
+- Generated /tmp/audit_baseline.txt: 976 ملف TS/TSX.
+- Classification:
+  * 🔴 Mega (> 1000 LOC): 20 ملف
+  * 🟡 Large (500-1000 LOC): 117 ملف
+  * 🟢 Medium (300-500 LOC): 134 ملف
+  * ✅ Small (< 300 LOC): 670 ملف
+- Top 5 Mega files (الأولوية القصوى):
+  1. MakerRadarTab.tsx (3,763 LOC) — predictions module
+  2. DatabaseManagerFull.tsx (3,291 LOC) — admin module
+  3. EnhancedPortfolioView.tsx (3,281 LOC) — portfolio module (تم Strangler جزئياً)
+  4. UnifiedTable.tsx (2,942 LOC) — shared component
+  5. SpecialistAnalysisView.tsx (2,916 LOC) — advanced-analysis
+- باقي Mega files (6-20): StockScreenerAdvanced (2,723), PersonaTab (2,676), LearningVisuals (2,621), SuperLearningSystem (2,489), AcademyView (2,483), EngineControlRoomTab (2,481), StocksView (2,316), TelegramTab (2,200), StrategySandbox (2,188), SimulationView (2,130), AdminView (2,105), PredictionTrackingDashboard (2,098), ExecutiveReportView (2,087), AcademyEncyclopedia (2,054), honest-predictions page (1,930).
+
+Stage Summary:
+- 20 ملف Mega محتاجة Strangler Pattern (Phase 2 → Phase 3).
+- 117 ملف Large محتاجة مراجعة (ممكن بعضها يتقسم في Phase 3).
+- 670 ملف Small (تحت 300 LOC) — جاهزة كده.
+- النسبة: 670/976 = 68.6% من الملفات جاهزة. الهدف: 90%+.
+- محتاج: تقليص الـ 20 Mega + 117 Large لـ < 300 LOC.
