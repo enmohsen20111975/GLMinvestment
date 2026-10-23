@@ -10,6 +10,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import {
  Activity,
  AlertCircle,
@@ -1170,89 +1171,50 @@ function ErrorState({
 // ============================================================
 
 export function LiveMonitor() {
- const [data, setData] = useState<MarketData | null>(null);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
- const [error, setError] = useState<string | null>(null);
  const [triggering, setTriggering] = useState(false);
  const [secondsUntilRefresh, setSecondsUntilRefresh] =
  useState<number>(REFRESH_INTERVAL);
  const [clockStr, setClockStr] = useState<string>(() => getCairoClockString());
  const [dateStr, setDateStr] = useState<string>(() => getCairoDateString());
 
- const refreshingRef = useRef(false);
- // P37-PHASE-2B-4A: countdown persists across ticks via a ref so the
- // visibility-aware polling callback (recreated each render) doesn't reset it.
  const countdownRef = useRef(REFRESH_INTERVAL);
 
- const fetchData = useCallback(async (isInitial = false) => {
- // Prevent overlapping background refreshes (initial load always proceeds)
- if (!isInitial && refreshingRef.current) return;
- refreshingRef.current = true;
- if (isInitial) setLoading(true);
- else setRefreshing(true);
-
- try {
- const controller = new AbortController();
- const timeout = setTimeout(() => controller.abort(), 15_000);
+ // F2.2: useApiQuery replaces manual fetch + useState + useVisibilityAwarePolling.
+ // 10s polling via refetchInterval. TanStack handles retry + caching + dedup.
  const _market = useAppStore.getState().currentMarket;
- const res = await fetch(`/api/live-monitor?market=${encodeURIComponent(_market)}`, {
- signal: controller.signal,
- cache: 'no-store',
+ const { data, isLoading: loading, isFetching: refreshing, error: queryError, refetch } = useApiQuery<LiveMonitorData['data']>('/api/live-monitor', {
+   params: { market: _market },
+   queryOptions: {
+     refetchInterval: REFRESH_INTERVAL * 1000, // 10s polling (was countdown)
+     refetchOnWindowFocus: false,
+   },
  });
- clearTimeout(timeout);
 
- const json = (await res.json()) as Partial<LiveMonitorData> & {
- error?: string;
- };
-
- if (!res.ok) {
- throw new Error(json.error ?? `HTTP ${res.status}`);
- }
- if (!json.success || !json.data) {
- throw new Error(json.error ?? 'استجابة غير صالحة من الخادم');
- }
- setData(json.data);
- setError(null);
- } catch (err) {
- const msg = err instanceof Error ? err.message : 'Unknown error';
- setError(msg);
- if (isInitial) {
- toast.error('فشل تحميل بيانات المراقبة');
- }
- } finally {
- if (isInitial) setLoading(false);
- else setRefreshing(false);
- refreshingRef.current = false;
- setSecondsUntilRefresh(REFRESH_INTERVAL);
- }
- }, []);
-
- // Initial fetch on mount
- useEffect(() => {
- fetchData(true);
- }, [fetchData]);
+ const error = queryError ? (queryError instanceof Error ? queryError.message : 'Unknown error') : null;
 
  // 1-second ticker: live clock + countdown to next refresh
- // P37-PHASE-2B-4A: visibility-aware polling — the entire 1-second ticker
- // (clock + date + countdown + data refresh trigger) stops when the tab is
- // hidden, and fires immediately when the tab becomes visible again. The
- // countdown is kept in a ref so it survives the callback recreation that
- // happens on each render.
- useVisibilityAwarePolling(() => {
- setClockStr(getCairoClockString());
- // Refresh date string once per minute (cheap check)
- const newDate = getCairoDateString();
- setDateStr((prev) => (prev !== newDate ? newDate : prev));
+ useEffect(() => {
+   const id = setInterval(() => {
+     setClockStr(getCairoClockString());
+     const newDate = getCairoDateString();
+     setDateStr((prev) => (prev !== newDate ? newDate : prev));
 
- countdownRef.current -= 1;
- setSecondsUntilRefresh(countdownRef.current);
- if (countdownRef.current <= 0) {
- countdownRef.current = REFRESH_INTERVAL;
- // Fire-and-forget background refresh
- void fetchData(false);
- }
- }, 1000, [fetchData]);
+     countdownRef.current -= 1;
+     setSecondsUntilRefresh(countdownRef.current);
+     if (countdownRef.current <= 0) {
+       countdownRef.current = REFRESH_INTERVAL;
+       void refetch();
+     }
+   }, 1000);
+   return () => clearInterval(id);
+ }, [refetch]);
+
+ // Show error toast on initial load failure
+ useEffect(() => {
+   if (queryError && loading) {
+     toast.error('فشل تحميل بيانات المراقبة');
+   }
+ }, [queryError, loading]);
 
  // Manual trigger handler
  const handleTrigger = useCallback(async () => {
@@ -1283,14 +1245,14 @@ export function LiveMonitor() {
 
  toast.success('تم تحديث الأسعار بنجاح', { id: toastId });
  // Immediately refetch fresh data
- void fetchData(false);
+ void refetch();
  } catch (err) {
  const msg = err instanceof Error ? err.message : 'Unknown error';
  toast.error(`فشل التحديث: ${msg}`, { id: toastId });
  } finally {
  setTriggering(false);
  }
- }, [triggering, fetchData]);
+ }, [triggering, refetch]);
 
  // ---- Render ----
 
@@ -1305,7 +1267,7 @@ export function LiveMonitor() {
  if (error && !data) {
  return (
  <div dir="rtl" className="space-y-4">
- <ErrorState error={error} onRetry={() => fetchData(true)} />
+ <ErrorState error={error} onRetry={() => refetch()} />
  </div>
  );
  }
