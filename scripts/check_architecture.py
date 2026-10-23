@@ -20,6 +20,7 @@ WHITELIST: Set[str] = {
     'vps-service/lightweight_server.py',
     'vps-service/core/migrator.py',
     'vps-service/jobs/wal_checkpoint.py',
+    'scripts/check_db_schema.py',  # schema checker (needs raw sqlite3 for PRAGMA)
 }
 
 SKIP_DIRS: Set[str] = {
