@@ -9,14 +9,17 @@
  * NO stocks, NO crypto — gold + currencies only.
  *
  * NO calculations in React — all values from API.
+ *
+ * F2.2 (2026-10-23): Migrated from manual fetch + useState + setInterval
+ * to useApiQuery (TanStack Query). Benefits: caching (60s), retry (2x),
+ * background refetch, no manual loading state.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Gem, DollarSign, Loader2, RefreshCw } from 'lucide-react';
+import React from 'react';
+import { Gem } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { useApiQuery } from '@/hooks/use-api-query';
 
 interface MetalsForexData {
   success: boolean;
@@ -64,32 +67,17 @@ function FxCard({ label, value, suffix }: { label: string; value: number | null 
 }
 
 export function SovereignMetalsDesk() {
-  const [data, setData] = useState<MetalsForexData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // F2.2: useApiQuery replaces manual fetch + useState + setInterval.
+  // 2 min polling preserved via refetchInterval. Retry + caching handled by TanStack.
+  const { data, isLoading } = useApiQuery<MetalsForexData>('/api/market/metals-forex/summary', {
+    queryOptions: {
+      refetchInterval: 120_000, // 2 min (was setInterval)
+      refetchOnWindowFocus: false,
+    },
+    fetchOptions: { signal: AbortSignal.timeout(10000) } as RequestInit,
+  });
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch('/api/market/metals-forex/summary', {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) return;
-      const json: MetalsForexData = await res.json();
-      setData(json);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 120_000); // 2 min
-    return () => clearInterval(interval);
-  }, [fetchData]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="border-border">
         <CardHeader className="pb-2">
