@@ -215,6 +215,8 @@ _SCREENER_SCRIPT = str(Path(__file__).resolve().parent.parent.parent / 'data_eng
 from analyzer_modules.screener_helpers import _check_screener_stale, _trigger_screener_fetch_background, get_screener_tags
 from analyzer_modules.fibonacci import _calc_fibonacci_levels
 from analyzer_modules.candlestick import _detect_candlestick_patterns
+from analyzer_modules.helpers import _parse_volume_float, _safe_div
+from analyzer_modules.indicators import _ema_seeded, _calc_macd
 
 # ════════════════════════════════════════════════════════════════════════════
 # محرك الترجيح الذكي للقوائم — كل قائمة لها معادلتها الخاصة (يوليو 2026)

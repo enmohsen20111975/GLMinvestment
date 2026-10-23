@@ -98,6 +98,10 @@ sqlite3.connect = _patched_connect
 
 logger = logging.getLogger(__name__)
 
+# ─── Phase 9.1 (Strangler Pattern V2): extracted to closer_modules/ ───
+from closer_modules.atr_helpers import compute_atr_at_entry as _compute_atr_at_entry_extracted
+from closer_modules.pending_helpers import get_pending_predictions as _get_pending_predictions_extracted
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(_PROJECT_ROOT / 'db' / 'predictions.db'))
 PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
