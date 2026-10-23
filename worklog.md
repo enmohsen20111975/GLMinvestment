@@ -7017,3 +7017,56 @@ Stage Summary:
 - Recommended next action for orchestrator: re-route this Strangler target to a container component in `/modules/education/` that actually fetches from `/api/*` and renders `LearningVisuals` children. A grep for `from '@/modules/education/components/LearningVisuals'` will identify the consumer(s); the consumer file is the real Strangler candidate, not this presentational visuals file.
 - HTTP 200 preserved. No new TS errors introduced. No browser errors.
 - Commit: TBD (will be filled by Rule 75 push).
+
+---
+Task ID: WAR-ROOM-SECURITY-DEPLOYMENT
+Agent: Z.ai Code (فريق برافو)
+Task: War Room: Security & Deployment Prep. تأمين 158 routes + DB repair + deploy scripts.
+
+Work Log:
+
+Task 1: Secure 161 sensitive routes with @require_admin (commit ac619d1)
+- Created automated script that:
+  - Scans all 29 API files with AST
+  - Finds 161 sensitive routes (POST/PUT/DELETE + portfolio/user keywords)
+  - Adds @require_admin decorator before each @bp.route
+  - Adds `from core.auth_middleware import require_admin` import
+- Results:
+  - 161 routes secured across 27 files
+  - 0 syntax errors (40 files verified)
+  - Audit: SENSITIVE_NO_AUTH dropped from 158 → 0
+  - Architecture: 0 violations
+- Route breakdown:
+  - portfolio_routes.py: 32 routes (holdings, trades, watchlists)
+  - telegram_routes.py: 36 routes (post, messages, notifications)
+  - risk_routes.py: 19 routes (position sizing, stops, targets)
+  - Other 24 files: 74 routes
+
+Task 2: DB Repair (commit c550ae7)
+- Created scripts/repair_dbs.py (179 LOC):
+  - VACUUM + REINDEX for B-tree corruption
+  - Creates missing tables if not exists
+  - Integrity check before + after
+- Results:
+  - ✅ 4 DBs healthy (data_engine, intraday, predictions, price_history)
+  - ✅ 2 missing tables created in data_engine.db (egksco_price_history + screener_lists)
+  - ⚠️ stocks.db: B-tree corruption persists (non-fatal — queries work, VACUUM completed but issue remains in different page)
+
+Task 3: Deploy Scripts (commit c550ae7)
+- Created scripts/deploy.sh (92 LOC):
+  7-step deployment: Backup → Git Pull → Architecture Check → Install → Build → PM2 Restart → Smoke Test
+  --no-backup flag for quick redeploys
+- Created scripts/smoke_test.sh (63 LOC):
+  Tests 10 critical endpoints (5 public → 200, 5 protected → 401)
+  Measures response time
+  Exit(1) on any failure
+
+Stage Summary:
+- 161 routes secured with @require_admin
+- DB repair: 2 missing tables created, stocks.db corruption documented (non-fatal)
+- Deploy scripts ready: deploy.sh (7-step) + smoke_test.sh (10 endpoints)
+- 3 commits pushed to GitHub (ac619d1, c550ae7)
+- All: syntax OK, 0 architecture violations, sandbox only
+
+Security status: All sensitive routes now require X-Admin-Token header.
+Deploy readiness: deploy.sh + smoke_test.sh ready for production deploy night.
