@@ -50,42 +50,39 @@ def detect_hot_candidates(target_date=None):
         print("[HOT-DETECT] ⚠️ intraday.db غير موجود")
         return []
 
-    conn = sqlite3.connect(INTRADAY_DB)
-    conn.row_factory = sqlite3.Row
+    # B2.2: migrated from raw sqlite3.connect → db_manager
+    from core.db_manager import db_manager
 
     # لو مفيش date محدد → آخر يوم
     if not target_date:
-        row = conn.execute("""
-            SELECT MAX(DATE(timestamp)) as last_date FROM stock_intraday
-            WHERE market IN ('مصر', 'EGX')
-        """).fetchone()
+        row = db_manager.query_one('intraday',
+            "SELECT MAX(DATE(timestamp)) as last_date FROM stock_intraday WHERE market IN ('مصر', 'EGX')"
+        )
         target_date = row['last_date'] if row else None
 
     if not target_date:
         print("[HOT-DETECT] ⚠️ مفيش بيانات في intraday.db")
-        conn.close()
         return []
 
     print(f"[HOT-DETECT] الفحص على تاريخ: {target_date}")
 
     # جيب كل قراءات اليوم لكل الأسهم
-    rows = conn.execute("""
+    rows = db_manager.query('intraday', """
         SELECT ticker, timestamp, price, change_percent, volume, open, high, low
         FROM stock_intraday
         WHERE (market = 'مصر' OR market = 'EGX')
         AND DATE(timestamp) = ?
         ORDER BY ticker, timestamp
-    """, (target_date,)).fetchall()
+    """, (target_date,))
 
     if not rows:
         print(f"[HOT-DETECT] ⚠️ مفيش بيانات ليوم {target_date}")
-        conn.close()
         return []
 
     # تجميع البيانات لكل سهم
     stocks_data = defaultdict(list)
     for r in rows:
-        stocks_data[r['ticker']].append(dict(r))
+        stocks_data[r['ticker']].append(r)
 
     print(f"[HOT-DETECT] عدد الأسهم: {len(stocks_data)}")
 
@@ -183,8 +180,6 @@ def detect_hot_candidates(target_date=None):
                 'hot_reason': ' | '.join(hot_reason),
                 'readings_count': len(readings),
             })
-
-    conn.close()
 
     # ترتيب حسب hot_score
     hot_candidates.sort(key=lambda x: -x['hot_score'])

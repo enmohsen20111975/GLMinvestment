@@ -110,20 +110,19 @@ def check_price_history_stale(
         return result
 
     try:
-        conn = sqlite3.connect(ph_db, timeout=10)
-        conn.execute('PRAGMA busy_timeout = 5000')
-        row = conn.execute(
-            "SELECT MAX(date), COUNT(*) FROM price_history"
-        ).fetchone()
-        conn.close()
+        # B2.2: migrated from raw sqlite3.connect → db_manager
+        from core.db_manager import db_manager
+        row = db_manager.query_one('price_history',
+            "SELECT MAX(date) as max_date, COUNT(*) as total_rows FROM price_history"
+        )
 
-        if not row or not row[0]:
+        if not row or not row.get('max_date'):
             result['message'] = 'price_history table empty or missing'
             logger.critical(f"[PRICE_HISTORY_STALE] {result['message']}")
             return result
 
-        max_date_str = str(row[0])[:10]
-        total_rows = row[1]
+        max_date_str = str(row['max_date'])[:10]
+        total_rows = row['total_rows']
         result['max_date'] = max_date_str
         result['total_rows'] = total_rows
 

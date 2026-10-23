@@ -157,98 +157,97 @@ def compute_asset_yield(asset: dict, now: datetime) -> float:
 
 def run():
     """Main entry point — computes and records daily wealth snapshots."""
+    # B2.2: migrated from raw sqlite3.connect → db_manager
+    from core.db_manager import db_manager
+
     if not STOCKS_DB.exists():
         log.error(f"stocks.db not found at {STOCKS_DB}")
         return False
 
-    conn = sqlite3.connect(str(STOCKS_DB), timeout=30)
-    conn.row_factory = sqlite3.Row
     today = date.today().isoformat()
     now = datetime.now()
 
     try:
-        ensure_tables(conn)
+        with db_manager.connection('stocks', writable=True) as conn:
+            ensure_tables(conn)
 
-        # Fetch all portfolio assets grouped by user_id
-        cur = conn.cursor()
-        cur.execute("SELECT DISTINCT user_id FROM portfolio_assets WHERE user_id != ''")
-        user_ids = [r[0] for r in cur.fetchall()]
+            # Fetch all portfolio assets grouped by user_id
+            cur = conn.cursor()
+            cur.execute("SELECT DISTINCT user_id FROM portfolio_assets WHERE user_id != ''")
+            user_ids = [r[0] for r in cur.fetchall()]
 
-        if not user_ids:
-            log.info("No portfolio assets found — recording empty snapshot for 'default' user")
-            user_ids = ['default']
+            if not user_ids:
+                log.info("No portfolio assets found — recording empty snapshot for 'default' user")
+                user_ids = ['default']
 
-        total_recorded = 0
-        for uid in user_ids:
-            cur.execute(
-                "SELECT * FROM portfolio_assets WHERE user_id = ?",
-                (uid,)
-            )
-            assets = [dict(r) for r in cur.fetchall()]
+            total_recorded = 0
+            for uid in user_ids:
+                cur.execute(
+                    "SELECT * FROM portfolio_assets WHERE user_id = ?",
+                    (uid,)
+                )
+                assets = [dict(r) for r in cur.fetchall()]
 
-            total_invested = 0.0
-            total_current = 0.0
-            by_type = {
-                'stocks': 0.0, 'gold': 0.0, 'crypto': 0.0,
-                'bank': 0.0, 'cash': 0.0, 'other': 0.0,
-            }
+                total_invested = 0.0
+                total_current = 0.0
+                by_type = {
+                    'stocks': 0.0, 'gold': 0.0, 'crypto': 0.0,
+                    'bank': 0.0, 'cash': 0.0, 'other': 0.0,
+                }
 
-            for a in assets:
-                inv = float(a.get('total_invested') or 0)
-                cur_val = compute_asset_yield(a, now)
-                total_invested += inv
-                total_current += cur_val
+                for a in assets:
+                    inv = float(a.get('total_invested') or 0)
+                    cur_val = compute_asset_yield(a, now)
+                    total_invested += inv
+                    total_current += cur_val
 
-                t = (a.get('type') or 'other').lower()
-                if t == 'stock':
-                    by_type['stocks'] += cur_val
-                elif t in ('gold', 'silver'):
-                    by_type['gold'] += cur_val
-                elif t == 'crypto':
-                    by_type['crypto'] += cur_val
-                elif t in ('bank', 'certificate', 'fund', 'deposit'):
-                    by_type['bank'] += cur_val
-                elif t in ('currency', 'forex'):
-                    by_type['cash'] += cur_val
-                else:
-                    by_type['other'] += cur_val
+                    t = (a.get('type') or 'other').lower()
+                    if t == 'stock':
+                        by_type['stocks'] += cur_val
+                    elif t in ('gold', 'silver'):
+                        by_type['gold'] += cur_val
+                    elif t == 'crypto':
+                        by_type['crypto'] += cur_val
+                    elif t in ('bank', 'certificate', 'fund', 'deposit'):
+                        by_type['bank'] += cur_val
+                    elif t in ('currency', 'forex'):
+                        by_type['cash'] += cur_val
+                    else:
+                        by_type['other'] += cur_val
 
-            total_pnl = total_current - total_invested
-            total_pnl_pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
+                total_pnl = total_current - total_invested
+                total_pnl_pct = (total_pnl / total_invested * 100) if total_invested > 0 else 0
 
-            # Insert or replace today's snapshot
-            cur.execute("""
-                INSERT OR REPLACE INTO wealth_tracking
-                    (user_id, snapshot_date, total_invested, total_current_value,
-                     total_pnl, total_pnl_pct, stocks_value, gold_value,
-                     crypto_value, bank_value, cash_value, other_value)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                uid, today,
-                round(total_invested, 2), round(total_current, 2),
-                round(total_pnl, 2), round(total_pnl_pct, 2),
-                round(by_type['stocks'], 2), round(by_type['gold'], 2),
-                round(by_type['crypto'], 2), round(by_type['bank'], 2),
-                round(by_type['cash'], 2), round(by_type['other'], 2),
-            ))
-            total_recorded += 1
-            log.info(
-                f"User {uid}: invested={total_invested:.2f} current={total_current:.2f} "
-                f"pnl={total_pnl:.2f} ({total_pnl_pct:.2f}%) | "
-                f"stocks={by_type['stocks']:.0f} gold={by_type['gold']:.0f} "
-                f"crypto={by_type['crypto']:.0f} bank={by_type['bank']:.0f}"
-            )
+                # Insert or replace today's snapshot
+                cur.execute("""
+                    INSERT OR REPLACE INTO wealth_tracking
+                        (user_id, snapshot_date, total_invested, total_current_value,
+                         total_pnl, total_pnl_pct, stocks_value, gold_value,
+                         crypto_value, bank_value, cash_value, other_value)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    uid, today,
+                    round(total_invested, 2), round(total_current, 2),
+                    round(total_pnl, 2), round(total_pnl_pct, 2),
+                    round(by_type['stocks'], 2), round(by_type['gold'], 2),
+                    round(by_type['crypto'], 2), round(by_type['bank'], 2),
+                    round(by_type['cash'], 2), round(by_type['other'], 2),
+                ))
+                total_recorded += 1
+                log.info(
+                    f"User {uid}: invested={total_invested:.2f} current={total_current:.2f} "
+                    f"pnl={total_pnl:.2f} ({total_pnl_pct:.2f}%) | "
+                    f"stocks={by_type['stocks']:.0f} gold={by_type['gold']:.0f} "
+                    f"crypto={by_type['crypto']:.0f} bank={by_type['bank']:.0f}"
+                )
 
-        conn.commit()
-        log.info(f"✓ Recorded {total_recorded} wealth snapshot(s) for {today}")
-        return True
+            conn.commit()
+            log.info(f"✓ Recorded {total_recorded} wealth snapshot(s) for {today}")
+            return True
 
     except Exception as e:
         log.error(f"Failed to record wealth snapshots: {e}", exc_info=True)
-        conn.rollback()
         return False
-    finally:
-        conn.close()
 
 
 if __name__ == '__main__':
