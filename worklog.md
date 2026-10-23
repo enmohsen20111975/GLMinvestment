@@ -6964,3 +6964,56 @@ Stage Summary:
 - HTTP 200 verified. صفر new TS errors. صفر new browser errors.
 - Rule 75 compliance: commit + push فوري بعد verification.
 - Rule 76 compliance: branch already up-to-date with origin/main, no rebase needed.
+
+---
+Task ID: F-Strangler-LearningVisuals
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — extract data-fetching logic from LearningVisuals.tsx (2,621 LOC) into `src/hooks/useLearningVisualsData.ts`.
+
+Work Log:
+- Audited `src/modules/education/components/LearningVisuals.tsx` (2,621 LOC) for data-fetching logic per Strangler mandate.
+- Inventory of React hooks + fetch API in the file:
+  * `fetch()` calls: **0**
+  * `useEffect` calls: **0**
+  * `/api/*` invocations: **0**
+  * `useApiQuery` imports/usage: **0**
+  * `useState` calls: **5** — ALL UI-interaction state, none data state:
+    - Lines 2123-2126 (`RiskRewardVisual`): `entry`/`stop`/`target` prices + `dragging` handle — interactive SVG price-chart drag state for an educational R/R calculator.
+    - Line 2423 (`PortfolioAllocationVisual`): `active` Asset slice — donut wheel click/hover selection state.
+  * `useCallback` calls: **2** — `priceToY` + `yToPrice` (lines 2111, 2115), pure math helpers for SVG coordinate ↔ price conversion inside `RiskRewardVisual`.
+  * `useMemo` calls: **1** — deterministic candle generation via `mulberry32(42)` (Rule 67 reproducible RNG).
+- File content verified by `rg -n "useState|useEffect|useCallback|fetch\(|useApiQuery|api/"` → 8 matches, all listed above, zero are data-fetch calls.
+- File structure: 24 exported visual presentation components (CandlestickDiagram, PERatioVisual, MarketHoursTimeline, PortfolioDiversification, RiskPyramid, CalloutBox, ExampleCard, RSIGauge, MACDVisual, SupportResistanceVisual, MovingAveragesVisual, BollingerBandsVisual, DCFFlowVisual, ROEDuPontVisual, EmotionalCycleVisual, DCAStrategyVisual, DiagramRenderer, LossAversionCurve, SopPipelineFlow, TradingSystemPipeline, MarketStagesVisual, OrderFlowVisual, CandlestickPatternsVisual, RiskRewardVisual, PortfolioAllocationVisual) + 1 `mulberry32` RNG helper.
+- All "data" in the file (P/E examples for Egyptian stocks, market sessions 9:00-14:30, asset allocations across EGX/TADAWUL/US/Crypto/Gold/Cash, candlestick variants) are **hardcoded educational constants**, NOT API responses.
+- Strangler Pattern cannot be applied:
+  * The mandate is to migrate imperative `useEffect + fetch + setState` patterns to declarative TanStack Query hooks via `useApiQuery`.
+  * There is no imperative fetch+state pattern here to migrate.
+  * Creating `useLearningVisualsData.ts` would either (a) leave the hook with zero `useApiQuery` calls (violating the Strangler mandate) or (b) invent fake `/api/*` endpoints that don't exist (anti-pattern, would mislead future maintainers).
+  * The 5 `useState` + 2 `useCallback` are **component-local UI state** (drag handles, slice selection, math helpers) — these belong inside the visual component, not a separate data hook.
+- Action taken: SKIPPED per task constraint "If errors: try 3 times, then skip with TODO".
+  * Inspected file thoroughly (3 passes: line-by-line grep, top/bottom Read, function-by-function export list).
+  * No 3rd retry possible — there's genuinely nothing to extract.
+  * Added a 22-line `TODO(F-Strangler-LearningVisuals)` banner at the top of `LearningVisuals.tsx` (lines 3-24) documenting:
+    - Audit findings (0 fetch / 0 useEffect / 0 api calls)
+    - The 5 useState locations with their UI-interaction semantics
+    - Why extraction would violate the Strangler mandate
+    - Suggested re-routing: target a container component that loads data from `/api/*` and renders these visuals (e.g. `LearningDashboard.tsx` or similar) rather than the presentational visuals file itself.
+- Verification:
+  * Baseline HTTP 200 confirmed before any change.
+  * `pm2 restart nextjs` → ready, `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → HTTP 200 (preserved).
+  * Only file touched: `src/modules/education/components/LearningVisuals.tsx` (+23 LOC TODO banner, no functional change).
+  * `src/hooks/useLearningVisualsData.ts` NOT created — would be an empty shell with no `useApiQuery` calls.
+  * vps-service/ untouched (constraint respected).
+- LOC delta:
+  * LearningVisuals.tsx: 2,621 → 2,644 LOC (+23 LOC TODO banner).
+  * New hook file: 0 (skipped — no fetch logic to encapsulate).
+  * Net file-count: +0.
+- Rule 75 compliance: commit + push after HTTP 200 verification.
+- Rule 76 compliance: git pull --rebase قبل push.
+
+Stage Summary:
+- Strangler extraction SKIPPED with TODO — `LearningVisuals.tsx` is a pure presentational file (24 visual components + 1 RNG helper) with ZERO data-fetching logic (0 `fetch()`, 0 `useEffect`, 0 `/api/*`, 0 `useApiQuery`). The 5 `useState` + 2 `useCallback` present are UI-interaction state (drag handles, donut slice selection, SVG math helpers), not data state — they belong inside the components, not a separate data hook.
+- This is a task-description ↔ file-content mismatch: the Strangler mandate targets imperative fetch+state patterns to migrate to TanStack Query, but `LearningVisuals.tsx` has none. Creating `useLearningVisualsData.ts` would produce an empty shell with no `useApiQuery` calls (Strangler violation) or invent fake API endpoints (anti-pattern).
+- Recommended next action for orchestrator: re-route this Strangler target to a container component in `/modules/education/` that actually fetches from `/api/*` and renders `LearningVisuals` children. A grep for `from '@/modules/education/components/LearningVisuals'` will identify the consumer(s); the consumer file is the real Strangler candidate, not this presentational visuals file.
+- HTTP 200 preserved. No new TS errors introduced. No browser errors.
+- Commit: TBD (will be filled by Rule 75 push).

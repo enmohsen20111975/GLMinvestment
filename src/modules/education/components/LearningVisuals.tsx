@@ -1,5 +1,28 @@
 'use client';
 
+// TODO(F-Strangler-LearningVisuals): Strangler Pattern extraction skipped.
+// Audit performed 2025-01-XX: this file (2,621 LOC, 24 visual components +
+// 1 mulberry32 RNG helper) contains NO data-fetching logic — zero `fetch()`
+// calls, zero `useEffect`, zero `/api/*` invocations, zero `useApiQuery`.
+// The only React state/hooks present are UI-interaction state, not data state:
+//   - Lines 2123-2126 (RiskRewardVisual): entry/stop/target drag + dragging
+//     handle — interactive SVG price-chart drag state.
+//   - Line 2423 (PortfolioAllocationVisual): `active` Asset slice — donut
+//     wheel click/hover selection state.
+//   - Lines 2111, 2115 (RiskRewardVisual): `priceToY`/`yToPrice` — pure math
+//     helpers for SVG coordinate ↔ price conversion.
+// All other "data" (P/E examples, market sessions, asset allocations, candle
+// variants) are hardcoded educational constants, NOT API responses — moving
+// them to a `useLearningVisualsData` hook would either (a) leave the hook
+// with zero `useApiQuery` calls (violating the Strangler migration mandate
+// that requires TanStack Query for fetches) or (b) invent fake API endpoints
+// that don't exist. Neither is acceptable. File is already render-only and
+// has no imperative fetch+state to migrate. Strangler target should be
+// re-routed to a file with actual fetch logic (e.g. /modules/education/
+// components/LearningDashboard.tsx or similar container that loads data
+// from /api/* and renders these visuals).
+// Status: SKIPPED — no code change. HTTP 200 baseline preserved.
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Lightbulb, AlertTriangle, Key, BookOpen, CheckCircle2, XCircle, TrendingUp, TrendingDown, ClipboardCheck, Zap, NotebookPen, ShieldCheck, Database, Signal, Lock, Send, FileText, RefreshCw, Layers, ArrowUp, ArrowDown, Scale, PieChart, Crosshair } from 'lucide-react';
