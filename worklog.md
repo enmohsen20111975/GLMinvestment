@@ -6825,3 +6825,57 @@ Stage Summary:
 - 4 commits pushed to GitHub (48f9f1a → 475bdad)
 
 Backend 100% Modularized — Ready for Production Merge ✅
+
+---
+Task ID: F-Strangler-DBManager
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — استخراج data-fetching logic من DatabaseManagerFull.tsx (3,291 LOC) إلى useDatabaseManagerData hook.
+
+Work Log:
+- قرأت DatabaseManagerFull.tsx lines 100-1600 لـ فهم structure: 4 fetch functions (fetchDatabases / fetchTables / fetchTableRows / fetchSchema) + 11 data-state useState (databases, dbsLoading, dbsError, tables, tablesLoading, tablesError, tableRows, rowsLoading, rowsError, schema, schemaOpen) + 2 useEffects for auto-fetching + many handler callers.
+- درست useApiQuery + useSpecialistAnalysisData patterns (existing Strangler precedent).
+- أنشأت `src/hooks/useDatabaseManagerData.ts` (405 LOC):
+  * 3 useQuery calls (TanStack Query v5.104.5) + 1 manual apiGet:
+    1. GET /api/admin/db-manager (databases overview) — auto-fetches on mount, default staleTime
+    2. GET /api/admin/db-manager?db=X (tables for db X) — enabled: !!selectedDb && tablesEnabled, staleTime: Infinity (no auto-refetch on tab re-entry — matches original `tables === null` guard)
+    3. GET /api/admin/db-manager?db=X&table=Y&page=N&limit=50[&sortBy&sortDir] (paginated rows) — enabled: !!selectedDb && !!selectedTable, staleTime: Infinity (no auto-refetch)
+    4. Schema: manual apiGet (button-triggered, لا cache needed)
+  * Side effects محفوظة:
+    - auto-select first db على first load (useEffect + onAutoSelectDb callback)
+    - tablesQ.data.overview syncs back to dbsQ cache (queryClient.setQueryData — mirrors original `if (json.overview) setDatabases((prev) => prev.map(...))`)
+    - schema/schemaOpen reset on selectedDb OR selectedTable change (mirrors original handleSelectDb + fetchTables side effects)
+  * All 5 types exported (DatabaseOverview, TableSummary, TableColumn, TableRowsResult, SchemaResult) — component imports them via `type` keyword.
+  * Exposes: databases, dbsLoading, dbsError, refetchDatabases, tables, tablesLoading, tablesError, refetchTables, tableRows, rowsLoading, rowsError, refetchRows, schema, schemaOpen, setSchemaOpen, fetchSchema.
+- عدّلت DatabaseManagerFull.tsx:
+  * شيلت 11 data-state useState + 4 fetch useCallback (fetchDatabases/fetchTables/fetchTableRows/fetchSchema) + 2 useEffects (fetchDatabases auto-mount + fetchTables on tab/selectedDb).
+  * أضفت `const { databases, dbsLoading, ..., fetchSchema } = useDatabaseManagerData({ selectedDb, selectedTable, page, sortBy, sortDir, tablesEnabled: activeTab === 'tables', onAutoSelectDb: setSelectedDb });`
+  * handleSelectDb: شيلت setTables/setTableRows/setSchema/setSchemaOpen (auto-handled by hook: queryKey change resets tables/tableRows, useEffect resets schema/schemaOpen)
+  * handleSort / handleSelectTable: استبدلت `fetchTableRows(...)` بـ `setPage(1)` — triggers queryKey change → useQuery auto-refetches
+  * onPageChange: `fetchTableRows(...)` → `setPage(p)` (queryKey change auto-refetch)
+  * handleDropTable: `fetchTables(selectedDb)` → `setSelectedTable(null); refetchTables()` (resets selectedTable because dropped table is gone)
+  * handleTruncateTable: `fetchTableRows(...)` → `setPage(1); refetchRows()` (force fresh fetch after delete), `fetchTables(...)` → `refetchTables()`
+  * handleRefreshDbs / handleRestore / handleMaintenance / handleRecoverDb / handleRecoverAll / handleCheckpointAll / handleImportAll / handleRestoreDaily / handleAdvancedOperation: `fetchDatabases()` → `refetchDatabases()` (10 call sites)
+  * handleRestore: `if (tables) fetchTables(selectedDb)` → `if (tables) refetchTables()`
+  * onRetry (TablesPanel): `fetchTables(selectedDb)` → `refetchTables()`
+  * onViewSchema / onSchemaClose: unchanged (hook exposes fetchSchema + setSchemaOpen)
+  * كل render logic (tabs, panels, sub-components, AlertDialog confirmations) متـرك زي ما هو — بيـمرّر hook state زي ما هو
+- Verification:
+  * `pm2 restart nextjs` → HTTP 200 في 13.3s (compile 12.6s, 17.2s total).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:3000/` → HTTP 200.
+  * `curl http://localhost:3000/admin?tab=db-manager` → HTTP 200 (component dynamically imported, compiled + rendered in 90ms).
+  * `npx tsc --noEmit --skipLibCheck` على useDatabaseManagerData.ts → 0 new errors (3 pre-existing errors in api-client.ts unrelated).
+  * على DatabaseManagerFull.tsx: 3 pre-existing errors (jsx global, props.tableRows possibly null, format argument) — same count + nature before and after refactor (only line numbers shifted due to code removal).
+  * Pre-existing `headersList.get` error in /admin/layout.tsx (Task F2.2-debug pattern) — unrelated, present before refactor.
+- LOC reduction:
+  * DatabaseManagerFull.tsx: 3,291 → 3,160 LOC (−131 LOC, −4.0%).
+  * New hook: 405 LOC (with extensive JSDoc + 5 type exports).
+  * Net file-count: +1 file (hook).
+  * DatabaseManagerFull dropped from rank #2 (3,291 LOC) to still #2 (3,160 LOC) في الـ Mega files list — لكن أقرب لـ #3 (EnhancedPortfolioView 3,281 LOC).
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على DatabaseManagerFull.tsx (#2 Mega file). الـ data logic (4 fetches + 11 useState + 2 useEffects) كله في `useDatabaseManagerData` hook دلوقتي.
+- الـ component بقا render-only — كل الـ 11 data-state useState + 4 fetch useCallback + 2 auto-fetch useEffects اتشالوا. الـ render logic (6 tabs + 7 sub-components + AlertDialog confirmations + bulk operations) متـرك زي ما هو.
+- HTTP 200 verified. صفر new TS errors. صفر new browser errors.
+- Rule 75 compliance: commit + push فوري بعد verification.
+- Rule 76 compliance: git pull --rebase قبل push (5 commits rebased cleanly).
+- Commit: 611869c.
