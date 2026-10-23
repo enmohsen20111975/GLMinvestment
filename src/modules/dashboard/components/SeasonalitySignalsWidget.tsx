@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
  Calendar,
  TrendingUp,
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { useApiQuery } from '@/hooks/use-api-query';
 
 interface SeasonalitySignal {
  ticker: string;
@@ -29,6 +30,10 @@ interface SeasonalitySummary {
  avg_win_rate: number;
 }
 
+interface SeasonalityResponse {
+ signals?: Array<Record<string, unknown>>;
+}
+
 // Safe number helper
 const safeNum = (val: unknown, fallback: number = 0): number => {
  const n = Number(val);
@@ -36,66 +41,44 @@ const safeNum = (val: unknown, fallback: number = 0): number => {
 };
 
 export function SeasonalitySignalsWidget() {
- const [signals, setSignals] = useState<SeasonalitySignal[]>([]);
- const [summary, setSummary] = useState<SeasonalitySummary | null>(null);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
-
- const fetchData = async (showRefresh = false) => {
- if (showRefresh) setRefreshing(true);
- else setLoading(true);
-
- try {
- // Use local seasonality-signals API which uses the recommendation engine
- const res = await fetch('/api/seasonality-signals');
- if (res.ok) {
- const data = await res.json();
-
- if (data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
- // Transform to widget format - filter out items without ticker.
- // ممنوع توليد عدد صفقات عشوائي — نستخدم فقط ما يأتي من الـ API الحقيقي.
- const widgetSignals: SeasonalitySignal[] = data.signals
- .filter((item: any): item is Record<string, unknown> => item != null && item.ticker)
- .slice(0, 6)
- .map((item: any) => ({
- ticker: item.ticker || '',
- name_ar: item.name_ar || '',
- signal: item.signal === 'STRONG_BUY' ? 'STRONG_BUY' :
- item.signal === 'BUY' ? 'BUY' :
- item.signal === 'SELL' || item.signal === 'REDUCE' ? 'SELL' : 'HOLD',
- win_rate: safeNum(item.confidence, 0),
- avg_return: safeNum(item.position_pct, 0),
- historical_trades: Number.isFinite(Number(item.historical_trades)) ? Number(item.historical_trades) : 0,
- }));
-
- const buySignals = widgetSignals.filter(s => s.signal === 'BUY' || s.signal === 'STRONG_BUY').length;
- const sellSignals = widgetSignals.filter(s => s.signal === 'SELL').length;
- const avgWinRate = widgetSignals.length > 0
- ? widgetSignals.reduce((acc, s) => acc + s.win_rate, 0) / widgetSignals.length
- : 0;
-
- setSignals(widgetSignals);
- setSummary({
- buy_signals: buySignals,
- sell_signals: sellSignals,
- avg_win_rate: avgWinRate,
+ // F2.2: useApiQuery replaces manual fetch + useState.
+ const { data: rawData, isLoading: loading, isFetching: refreshing, refetch } = useApiQuery<SeasonalityResponse>('/api/seasonality-signals', {
+   queryOptions: { refetchOnWindowFocus: false },
  });
- } else {
- setSignals([]);
- setSummary(null);
- }
- }
- } catch (e) {
- console.error('Error fetching seasonality:', e);
- } finally {
- setLoading(false);
- setRefreshing(false);
- }
- };
 
- useEffect(() => {
- fetchData();
- }, []);
+ // Derive signals + summary from cached query data (memoized — no recomputation on re-render).
+ const { signals, summary } = useMemo(() => {
+   const rawSignals = rawData?.signals;
+   if (!rawSignals || !Array.isArray(rawSignals) || rawSignals.length === 0) {
+     return { signals: [] as SeasonalitySignal[], summary: null };
+   }
+   const widgetSignals: SeasonalitySignal[] = rawSignals
+     .filter((item): item is Record<string, unknown> => item != null && !!item.ticker)
+     .slice(0, 6)
+     .map((item) => ({
+       ticker: String(item.ticker || ''),
+       name_ar: String(item.name_ar || ''),
+       signal: item.signal === 'STRONG_BUY' ? 'STRONG_BUY' :
+         item.signal === 'BUY' ? 'BUY' :
+         item.signal === 'SELL' || item.signal === 'REDUCE' ? 'SELL' : 'HOLD',
+       win_rate: safeNum(item.confidence, 0),
+       avg_return: safeNum(item.position_pct, 0),
+       historical_trades: Number.isFinite(Number(item.historical_trades)) ? Number(item.historical_trades) : 0,
+     }));
+
+   const buySignals = widgetSignals.filter(s => s.signal === 'BUY' || s.signal === 'STRONG_BUY').length;
+   const sellSignals = widgetSignals.filter(s => s.signal === 'SELL').length;
+   const avgWinRate = widgetSignals.length > 0
+     ? widgetSignals.reduce((acc, s) => acc + s.win_rate, 0) / widgetSignals.length
+     : 0;
+
+   return {
+     signals: widgetSignals,
+     summary: { buy_signals: buySignals, sell_signals: sellSignals, avg_win_rate: avgWinRate },
+   };
+ }, [rawData]);
+
+ const handleRefresh = () => { void refetch(); };
 
  const currentMonth = new Date().toLocaleDateString('ar-EG', { month: 'long' });
 
@@ -113,7 +96,7 @@ export function SeasonalitySignalsWidget() {
  variant="ghost"
  size="icon"
  className="h-7 w-7"
- onClick={() => fetchData(true)}
+ onClick={handleRefresh}
  disabled={refreshing}
  >
  <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
