@@ -211,6 +211,11 @@ _SCREENER_LAST_FETCH_AT = 0.0       # timestamp آخر مرة اشتغل فيه�
 _SCREENER_FETCH_COOLDOWN = 300.0    # 5 دقائق بين كل محاولة وأخرى (حماية)
 _SCREENER_SCRIPT = str(Path(__file__).resolve().parent.parent.parent / 'data_engine' / 'scrapers' / 'tradingview_screener_lists.py')
 
+# ─── Phase 9.1 (Strangler Pattern V2): extracted to analyzer_modules/ ───
+from analyzer_modules.screener_helpers import _check_screener_stale, _trigger_screener_fetch_background, get_screener_tags
+from analyzer_modules.fibonacci import _calc_fibonacci_levels
+from analyzer_modules.candlestick import _detect_candlestick_patterns
+
 # ════════════════════════════════════════════════════════════════════════════
 # محرك الترجيح الذكي للقوائم — كل قائمة لها معادلتها الخاصة (يوليو 2026)
 # ════════════════════════════════════════════════════════════════════════════
