@@ -169,6 +169,7 @@ def run_closer(start_date, end_date, dry_run=False):
     closer_env['PYTHONPATH'] = ':'.join([
         str(VPS_SERVICE),
         str(VPS_SERVICE / 'jobs'),
+        str(VPS_SERVICE / 'analyzers'),
         closer_env.get('PYTHONPATH', ''),
     ])
     result = run(cmd, cwd=str(VPS_SERVICE), capture_output=True, text=True, timeout=3600, env=closer_env)
