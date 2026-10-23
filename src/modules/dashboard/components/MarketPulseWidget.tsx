@@ -17,7 +17,8 @@
  * يعمل بالكامل في RTL، ألوان emerald/rose/amber فقط (لا أزرق/إنديغو).
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import {
  Activity,
  AlertTriangle,
@@ -590,76 +591,54 @@ function PulseSkeleton() {
 const REFRESH_INTERVAL_MS = 10_000;
 
 export function MarketPulseWidget() {
- const [data, setData] = useState<MarketPulseData | null>(null);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [isFresh, setIsFresh] = useState(false);
  const [lastUpdateStr, setLastUpdateStr] = useState<string>('—');
- const [isRefreshing, setIsRefreshing] = useState(false);
  const freshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
- const fetchData = useCallback(async () => {
- setIsRefreshing(true);
- try {
- const controller = new AbortController();
- const timeout = setTimeout(() => controller.abort(), 12_000);
- const res = await fetch(`/api/market-pulse?market=${encodeURIComponent(useAppStore.getState().currentMarket)}`, {
- signal: controller.signal,
- headers: { Accept: 'application/json' },
- cache: 'no-store',
+ // F2.2: useApiQuery replaces manual fetch + useState + useVisibilityAwarePolling.
+ // 10s polling (was useVisibilityAwarePolling). TanStack handles retry + caching.
+ const { data: rawJson, isLoading: loading, isFetching: isRefreshing, error: queryError, refetch } = useApiQuery<ApiResponse>('/api/market-pulse', {
+   params: { market: currentMarket },
+   queryOptions: {
+     refetchInterval: REFRESH_INTERVAL_MS, // 10s polling
+     refetchOnWindowFocus: false,
+   },
  });
- clearTimeout(timeout);
 
- if (!res.ok) {
- throw new Error(`HTTP ${res.status}`);
- }
+ // Derive payload + data from cached query (handle both {data} wrapper + raw payload)
+ const data = useMemo<MarketPulseData | null>(() => {
+   if (!rawJson) return null;
+   const payload = (rawJson && (rawJson.data as MarketPulseData | undefined)) ||
+     (rawJson as unknown as MarketPulseData);
+   if (!payload || (rawJson.success === false && !rawJson.data)) return null;
+   return normalizePulseData(payload);
+ }, [rawJson]);
 
- const json: ApiResponse = await res.json();
- // الـ API قد يرجع البيانات مباشرة أو داخل `data`
- const payload: MarketPulseData | undefined =
- (json && (json.data as MarketPulseData | undefined)) ||
- (json as unknown as MarketPulseData);
+ const error = queryError ? (queryError instanceof Error ? queryError.message : 'خطأ غير معروف') : null;
 
- if (!payload || (json.success === false && !json.data)) {
- throw new Error(json.error ?? 'استجابة غير صالحة');
- }
-
- setData(normalizePulseData(payload));
- setError(null);
- setIsFresh(true);
- if (freshTimerRef.current) clearTimeout(freshTimerRef.current);
- freshTimerRef.current = setTimeout(() => setIsFresh(false), 1200);
- } catch (err) {
- const msg = err instanceof Error ? err.message : 'خطأ غير معروف';
- setError(msg);
- } finally {
- setIsRefreshing(false);
- }
- }, []);
-
- // الجلب الأولي + التحديث الدوري — P37-PHASE-2B-4A: visibility-aware polling
- // (clears the interval when the tab is hidden, fires immediately on resume).
- // The 1-second"آخر تحديث" clock ticker below stays on its own cadence.
+ // Freshness indicator: set true on data change, clear after 1.2s
  useEffect(() => {
- void fetchData();
- return () => {
- if (freshTimerRef.current) clearTimeout(freshTimerRef.current);
- };
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, []);
-
- useVisibilityAwarePolling(() => { void fetchData(); }, REFRESH_INTERVAL_MS, [fetchData]);
+   if (data) {
+     setIsFresh(true);
+     if (freshTimerRef.current) clearTimeout(freshTimerRef.current);
+     freshTimerRef.current = setTimeout(() => setIsFresh(false), 1200);
+   }
+   return () => {
+     if (freshTimerRef.current) clearTimeout(freshTimerRef.current);
+   };
+ }, [data]);
 
  // تحديث نص"آخر تحديث: منذ X" كل ثانية
  useEffect(() => {
- if (!data?.latest_update) {
- setLastUpdateStr('—');
- return;
- }
- setLastUpdateStr(relTime(data.latest_update));
- const id = setInterval(() => {
- setLastUpdateStr(relTime(data?.latest_update));
- }, 1000);
+   if (!data?.latest_update) {
+     setLastUpdateStr('—');
+     return;
+   }
+   setLastUpdateStr(relTime(data.latest_update));
+   const id = setInterval(() => {
+     setLastUpdateStr(relTime(data?.latest_update));
+   }, 1000);
  return () => clearInterval(id);
  }, [data?.latest_update]);
 
@@ -690,7 +669,7 @@ export function MarketPulseWidget() {
  </p>
  </div>
  <button
- onClick={() => void fetchData()}
+ onClick={() => refetch()}
  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:hover:bg-muted"
  >
  <RefreshCw className="h-3.5 w-3.5" />
@@ -776,7 +755,7 @@ export function MarketPulseWidget() {
 
  {/* زر التحديث اليدوي */}
  <button
- onClick={() => void fetchData()}
+ onClick={() => refetch()}
  disabled={isRefreshing}
  title="تحديث"
  className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted dark:hover:text-muted-foreground"
