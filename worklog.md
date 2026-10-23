@@ -6699,3 +6699,22 @@ Stage Summary:
 - Rule 75 compliance: كل مهمة = commit + push فوري.
 - Rule 76 compliance: git pull --rebase قبل كل push.
 - مفيش regression — كل التعديلات compile-verified (HTTP 200).
+
+---
+Task ID: F2.2-debug
+Agent: Alpha
+Task: تشخيص خطأ 'module is not defined' في المتصفح
+
+Work Log:
+- المالك بلّغ عن خطأ `ReferenceError: module is not defined` في الـ browser console (ClientPageRoot).
+- استخرجت الـ error stack: `react-server-dom-turbopack_9212ccad._.js:1722:24` — Turbopack server-side rendering.
+- اختبار 1: عملت git revert للـ 4 widgets (F2.2) — الـ error لسه موجود.
+- اختبار 2: عملت git checkout لـ commit `ff62c10` (قبل F0.1، قبل ما ألمس أي حاجة) — الـ error **لسه موجود**.
+- النتيجة: الـ error **pre-existing** (موجود قبل شغلي بكتير). مش من الـ 4 widgets ولا من أي تعديل عملته.
+- السبب المرجّح: Turbopack بيـ try to bundle native module (`better-sqlite3` / `sql.js`) للـ browser بسبب transit import في client component. ده مشكلة Turbopack config + next.config.mjs.
+- التزامي: استرجعت آخر نسخة (main) — الـ 4 widgets + F0.1 fix كلهم موجودين.
+
+Stage Summary:
+- الـ `module is not defined` مش من شغلي. موجود قبل ما أبدأ.
+- الـ app بيـ render (HTTP 200) بس الـ ErrorBoundary بيـ catch الخطأ وبيـ show fallback.
+- محتاج investigation أعمق للـ next.config.mjs + serverComponentsExternalPackages (الـ config القديم ده السبب).
