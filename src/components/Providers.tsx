@@ -3,37 +3,20 @@
 import React, { useEffect, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { SessionExpiredModal } from '@/components/auth/SessionExpiredModal';
 // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): cookie-based i18n context.
 // I18nProvider reads the NEXT_LOCALE cookie, loads messages/{locale}.json,
 // and exposes useTranslation() to all client components via React Context.
 import { I18nProvider } from '@/lib/i18n-context';
+// F2.1 — centralized QueryClient config (was inline with 30s staleTime).
+// الآن 60s stale + 5min gc + retry 2. انظر src/lib/query-client.ts للتفاصيل.
+import { queryClient as sharedQueryClient } from '@/lib/query-client';
 
 export function Providers({ children }: { children: React.ReactNode }) {
- // P0-COMPONENT-UNIFICATION (Phase 0.8): QueryClient for TanStack Query.
- // الـ instance بـ يتم إنشاؤه مرة واحدة لكل browser session (مش per-render)
- // عشان ما يـفقدش الـ cache عند الـ re-renders. الـ useState بـ يـضمن إنه
- // stable للـ lifecycle بتاع الـ component.
- //
- // Default options:
- // - staleTime: 30s — الـ data بـ تـفضل "fresh" لـ 30 ثانية قبل ما
- //   الـ query يحتاج refetch. كده الـ tab switches ما بـ تـعملش refetch
- //   فوراً لو الـ data لسه fresh.
- // - refetchOnWindowFocus: false — ما نـعملش refetch لما المستخدم يرجع
- //   للـ tab. الـ manual refresh بـ يـكفي.
- // - retry: 1 — نـحاول مرة واحدة بس لو الـ fetch فشل (مش 3 مرات الافتراضية).
- const [queryClient] = useState(() =>
- new QueryClient({
- defaultOptions: {
- queries: {
- staleTime: 30_000, // 30 ثانية
- refetchOnWindowFocus: false,
- retry: 1,
- },
- },
- })
- );
+ // F2.1: استخدم الـ centralized queryClient بدل إنشاء واحد جديد في كل render.
+ // الـ sharedQueryClient بـ يـفضل stable طوال الـ browser session.
+ const [queryClient] = useState(() => sharedQueryClient);
 
  useEffect(() => {
  // Keepalive ping to prevent server auto-shutdown on Hostinger
