@@ -6745,3 +6745,49 @@ Stage Summary:
 - 670 ملف Small (تحت 300 LOC) — جاهزة كده.
 - النسبة: 670/976 = 68.6% من الملفات جاهزة. الهدف: 90%+.
 - محتاج: تقليص الـ 20 Mega + 117 Large لـ < 300 LOC.
+
+---
+Task ID: F-Strangler-Specialist
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — استخراج data-fetching logic من SpecialistAnalysisView.tsx (2,916 LOC) إلى useSpecialistAnalysisData hook.
+
+Work Log:
+- قرأت SpecialistAnalysisView.tsx lines 2480-2700 + رجّعت الـ fetchAnalysis callback (121 LOC) + 12 useState + Promise.allSettled لـ 5 fetches inline في الـ component.
+- درست useApiQuery + usePortfolioData + useMakerRadarData patterns (existing hooks في المشروع).
+- أنشأت `src/hooks/useSpecialistAnalysisData.ts` (565 LOC):
+  * 5 useApiQuery calls parallel — كل واحد `enabled: !!ticker` (TanStack Query refetch تلقائي على ticker change).
+    1. GET /api/maker-radar/stock?ticker=X&market=Y (PRIMARY — must succeed)
+    2. GET /api/flow/X (footprint remap: buy_pressure → buy_volume, sell_pressure → sell_volume, net_flow → delta_volume; poc/vah/val/levels → null/[]; no fabrication, Rule 27)
+    3. GET /api/predictions?ticker=X&limit=10&market=Y
+    4. GET /api/sharia?symbol=X
+    5. GET /api/stocks/X/unified?market=Y (canonical accumulation + money_flow)
+  * Derived state بـ useMemo (no useState mirror — direct from query cache; avoids synchronization issues + state-clearing flicker).
+  * Error from PRIMARY: `radarQ.isError` (network) OR `!json.success || !json.stock_info` (API failure) — mirrors original throw branches.
+  * Loading = ANY of 5 queries isFetching — mirrors original setLoading(true) until Promise.allSettled completes.
+  * refetch = Promise.allSettled(refetch × 5) — preserves original semantics.
+  * Orphan states (flow / explosive / comprehensive / stockMeta) — exposed as null constants (PHASE-0 شال نداءاتهم؛ الـ sub-components بـ تـ show empty state).
+  * Exported all 13 types (StockInfo, PriceRow, RadarStats, MakerRadarStock, FootprintLevel, FootprintData, PredictionRow, PredictionsResponse, FlowData, ExplosiveData, ComprehensiveData, ShariaResponse, SingleStockData, UnifiedResponse) — component imports them via `type` keyword.
+- عدّلت SpecialistAnalysisView.tsx:
+  * شيلت 12 useState + fetchAnalysis useCallback (121 LOC) + duplicate type declarations (~263 LOC).
+  * أضفت `const { radarData, footprint, predictions, sharia, unified, flow, explosive, comprehensive, stockMeta, loading, error, refetch } = useSpecialistAnalysisData(ticker, currentMarket);`.
+  * handleSearch دلوقتي بـ يقول `void refetch()` (قبل كده كان `fetchAnalysis(ticker.trim().toUpperCase())`).
+  * select onChange بقى `setTicker(val)` بس (الـ hook auto-fires 5 queries لما ticker يـتغير — enabled: !!ticker).
+  * كل render logic (16-section report + sub-components + iconUrl fallback) متـرك زي ما هو.
+- Verification:
+  * `pm2 restart nextjs` → HTTP 200 في 12.2s (compile 11.7s).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:3000/` → HTTP 200.
+  * `curl http://localhost:3000/?tab=specialist-analysis` → HTTP 200 (component dynamically imported with `ssr: false`).
+  * `tsc --noEmit` على useSpecialistAnalysisData.ts → 0 errors. على المشروع كله → 1349 errors (pre-existing, 1349 before + 1349 after — صفر new errors من الـ refactor).
+  * Browser test (agent-browser): pre-existing `ReferenceError: module is not defined` (Turbopack bundling issue, Task F2.2-debug) لسه موجود زي ما هو على الـ original code. NO new errors من الـ refactor.
+- LOC reduction:
+  * SpecialistAnalysisView.tsx: 2,916 → 2,550 LOC (−366 LOC, −12.5%).
+  * New hook: 565 LOC (مع extensive JSDoc + 13 type exports).
+  * Net file-count: +1 file (hook).
+  * SpecialistAnalysisView dropped from rank #5 (2,916 LOC) to out-of-top-5 في الـ Mega files list.
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على SpecialistAnalysisView.tsx (#5 Mega file). الـ data logic (5 fetches + remap + error/loading) كله في `useSpecialistAnalysisData` hook دلوقتي.
+- الـ component بقا render-only — كل الـ 12 useState + 121-LOC useCallback اتشالوا. الـ render logic (16 sections) متـرك زي ما هو.
+- HTTP 200 verified. صفر new TS errors. صفر new browser errors.
+- Rule 75 compliance: commit + push فوري بعد verification.
+- Rule 76 compliance: git pull --rebase قبل push.

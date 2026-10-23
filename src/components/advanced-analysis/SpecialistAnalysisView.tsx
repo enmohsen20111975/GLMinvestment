@@ -80,274 +80,27 @@ import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 // الحل: استيراد classifyAccumulation من canonical-signal.ts
 import { classifyAccumulation } from '@/lib/canonical-signal';
 import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
-
-// ============================================================================
-// TYPES — Rule 67: every field optional because engines may fail independently.
-// ============================================================================
-
-interface StockInfo {
- ticker?: string;
- name?: string;
- name_ar?: string;
- sector?: string;
- industry?: string;
- market?: string;
- exchange?: string;
- currency?: string;
- current_price?: number;
- change?: number;
- change_percent?: number;
- change_value?: number;
- close?: number;
- open_price?: number;
- high_price?: number;
- low_price?: number;
- previous_close?: number;
- volume?: number;
- turnover_egp?: number;
- value_traded?: number;
- avg_volume?: number;
- market_cap?: number;
- pe_ratio?: number;
- pb_ratio?: number;
- ps_ratio?: number;
- eps?: number;
- roe?: number;
- roa?: number;
- debt_to_equity?: number;
- current_ratio?: number;
- book_value_per_share?: number;
- dividend_yield?: number;
- dps_ttm?: number;
- profit_margin?: number;
- free_float_percentage?: number;
- free_float_shares?: number;
- beta?: number;
- high_52w?: number;
- low_52w?: number;
- ma_50?: number;
- ma_200?: number;
- rsi?: number;
- support?: number;
- resistance?: number;
- signal?: number | string;
- smc_signal?: number | string;
- trend?: string;
- fundamental_score?: number;
- smc_score?: number;
- is_egx30?: number | boolean;
- is_egx70?: number | boolean;
- is_egx100?: number | boolean;
- is_egx?: number | boolean;
- is_suspended?: number | boolean;
- is_active?: number | boolean;
- [k: string]: unknown;
-}
-
-interface PriceRow {
- date?: string;
- open: number;
- high: number;
- low: number;
- close: number;
- volume?: number;
- turnover?: number;
-}
-
-interface RadarStats {
- lastClose?: number;
- changePct?: number;
- roc10d?: number;
- avgVolume20?: number;
- avgTurnover20?: number;
- max20?: number;
- min20?: number;
- range20Pct?: number;
- dataPoints?: number;
- [k: string]: unknown;
-}
-
-interface MakerRadarStock {
- success: boolean;
- ticker?: string;
- stock_info?: StockInfo | null;
- prices?: PriceRow[];
- stats?: RadarStats;
- tracking?: Record<string, unknown> | null;
- prediction?: Record<string, unknown> | null;
- db_source?: string;
- error?: string;
-}
-
-interface FootprintLevel {
- price_low: number;
- price_high: number;
- price_mid: number;
- volume: number;
- buy_volume: number;
- sell_volume: number;
- delta: number;
- volume_pct: number;
- is_poc: boolean;
- is_value_area: boolean;
-}
-
-interface FootprintData {
- success: boolean;
- ticker?: string;
- days?: number;
- bin_count?: number;
- price_min?: number;
- price_max?: number;
- poc_price?: number;
- poc_volume?: number;
- vah_price?: number;
- val_price?: number;
- value_area_volume_pct?: number;
- total_volume?: number;
- buy_volume?: number;
- sell_volume?: number;
- delta_volume?: number;
- buy_sell_ratio?: number;
- levels?: FootprintLevel[];
- computed_at?: string;
- error?: string;
-}
-
-interface PredictionRow {
- id?: number;
- ticker?: string;
- signal?: string;
- signal_type?: string;
- prediction_date?: string;
- entry_price?: number;
- target_price?: number;
- stop_loss?: number;
- master_score?: number;
- technical_score?: number;
- fundamental_score?: number;
- confidence?: number;
- persona?: string;
- market?: string;
- outcome_date?: string | null;
- exit_price?: number | null;
- actual_return?: number | null;
- hit_target?: number | boolean;
- hit_stop?: number | boolean;
- is_correct?: number | boolean | null;
- holding_days?: number;
- status?: string;
- risk_reward?: number;
- risk_reward_ratio?: number;
- created_at?: string;
- analysis_json?: string;
-}
-
-interface PredictionsResponse {
- success: boolean;
- authenticated?: boolean;
- limited?: boolean;
- ticker?: string;
- data?: PredictionRow[];
- stats?: {
- total: number;
- closedCount?: number;
- hits?: number;
- accuracy?: number | null;
- avgScore?: number;
- };
- source?: string;
- error?: string;
-}
-
-interface FlowData {
- success: boolean;
- ticker?: string;
- flow?: {
- flow_score?: number;
- label?: string;
- color?: string;
- macro_flow?: string;
- sector_flow?: string;
- stock_flow?: string;
- cross_validation?: string;
- buy_pressure?: number;
- sell_pressure?: number;
- net_flow?: number;
- [k: string]: unknown;
- } | null;
- data?: Record<string, unknown> | null;
- source?: string;
- message?: string;
- error?: string;
-}
-
-interface ExplosiveData {
- success: boolean;
- ticker?: string;
- explosive?: {
- explosive_score?: number;
- label?: string;
- pattern?: string;
- color?: string;
- action?: string;
- stop_loss?: number;
- target?: number;
- volume_ratio?: number;
- range_10d_pct?: number;
- excluded?: boolean;
- [k: string]: unknown;
- } | null;
- data?: Record<string, unknown> | null;
- source?: string;
- message?: string;
- error?: string;
-}
-
-interface ComprehensiveData {
- success: boolean;
- ticker: string;
- market: string;
- timestamp: string;
- basic?: Record<string, unknown>;
- price?: Record<string, unknown>;
- keyMetrics?: Record<string, unknown>;
- technical?: Record<string, unknown>;
- priceHistory?: Array<Record<string, unknown>>;
- maestro?: Record<string, unknown>;
- hunter?: Record<string, unknown>;
- board?: Record<string, unknown>;
- news?: Array<Record<string, unknown>>;
- predictions?: Array<Record<string, unknown>>;
- professional?: Record<string, unknown>;
- errors: string[];
- elapsed_ms: number;
-}
-
-interface ShariaResponse {
- success: boolean;
- symbol?: string;
- metric?: Record<string, unknown>;
- sources?: Array<Record<string, unknown>>;
- purification_rates?: Array<Record<string, unknown>>;
- price?: Record<string, unknown> | null;
- generated_at?: string;
- error?: string;
-}
-
-interface SingleStockData {
- success?: boolean;
- ticker?: string;
- name?: string;
- name_ar?: string;
- icon_url?: string;
- logo_url?: string;
- image?: string;
- sector?: string;
- industry?: string;
- market?: string;
- [k: string]: unknown;
-}
+// ─── F-Strangler-Specialist (Task F-Strangler-Specialist) ────────────────
+// Data-fetching logic extracted to useSpecialistAnalysisData hook (5 useApiQuery
+// calls + flow→footprint remap + error/loading derivation). Component imports
+// all data types from the hook so the sub-components below stay unchanged.
+import {
+  useSpecialistAnalysisData,
+  type StockInfo,
+  type PriceRow,
+  type RadarStats,
+  type MakerRadarStock,
+  type FootprintLevel,
+  type FootprintData,
+  type PredictionRow,
+  type PredictionsResponse,
+  type FlowData,
+  type ExplosiveData,
+  type ComprehensiveData,
+  type ShariaResponse,
+  type SingleStockData,
+  type UnifiedResponse,
+} from '@/hooks/useSpecialistAnalysisData';
 
 // ============================================================================
 // Safe accessors — Rule 67: never fabricate. Missing → null → "—".
@@ -2480,25 +2233,29 @@ function HeaderCard({
 export function SpecialistAnalysisView() {
  const { stocks, currentMarket, loadStocks } = useAppStore();
  const [ticker, setTicker] = useState('');
- const [loading, setLoading] = useState(false);
 
- // PRIMARY: maker-radar/stock (always works — reads from stocks.db)
- const [radarData, setRadarData] = useState<MakerRadarStock | null>(null);
- // SECONDARY: maker-radar/footprint (always works — reads from stocks.db)
- const [footprint, setFootprint] = useState<FootprintData | null>(null);
- // TERTIARY: predictions.db via /api/predictions?ticker=X
- const [predictions, setPredictions] = useState<PredictionsResponse | null>(null);
- // ENRICHMENT (graceful degrade):
- const [flow, setFlow] = useState<FlowData | null>(null);
- const [explosive, setExplosive] = useState<ExplosiveData | null>(null);
- const [comprehensive, setComprehensive] = useState<ComprehensiveData | null>(null);
- const [sharia, setSharia] = useState<ShariaResponse | null>(null);
- const [stockMeta, setStockMeta] = useState<SingleStockData | null>(null);
- // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
- // Canonical source of truth for accumulation + money_flow labels.
- const [unified, setUnified] = useState<any>(null);
-
- const [error, setError] = useState<string | null>(null);
+ // ─── F-Strangler-Specialist (Task F-Strangler-Specialist) ────────────────
+ // قبل كده: 12 useState + 1 useCallback (fetchAnalysis, 121 LOC) + Promise.allSettled
+ // لـ 5 fetches inline في الـ component. الـ render logic اختلط بـ data-fetching logic.
+ // دلوقتي: الـ data logic كله في useSpecialistAnalysisData hook. الـ hook بـ يـ fire
+ // 5 useApiQuery calls parallel + يـ remap /api/flow → FootprintData + يـ derive
+ // loading/error من TanStack Query state. الـ component بقا render-only.
+ // Orphan states (flow / explosive / comprehensive / stockMeta) — بترجع null
+ // من الـ hook (PHASE-0 شال نداءاتهم؛ الـ sub-components بـ تـ show empty state).
+ const {
+ radarData,
+ footprint,
+ predictions,
+ sharia,
+ unified,
+ flow,
+ explosive,
+ comprehensive,
+ stockMeta,
+ loading,
+ error,
+ refetch,
+ } = useSpecialistAnalysisData(ticker, currentMarket);
 
  useEffect(() => {
  if (stocks.length === 0) {
@@ -2506,138 +2263,14 @@ export function SpecialistAnalysisView() {
  }
  }, [stocks.length, loadStocks]);
 
- // ─── fetchAnalysis — 8 parallel fetches (Rule 67 — Promise.allSettled) ───
- // PRIMARY = maker-radar/stock (must succeed; otherwise we have nothing)
- // OTHERS = independent (each settles individually)
- // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — added /api/stocks/X/unified
- // as 9th parallel fetch (best-effort; falls back to local accumulation logic).
- const fetchAnalysis = useCallback(async (symbol: string) => {
- if (!symbol) return;
- setLoading(true);
- setError(null);
- setRadarData(null);
- setFootprint(null);
- setPredictions(null);
- setFlow(null);
- setExplosive(null);
- setComprehensive(null);
- setSharia(null);
- setStockMeta(null);
- setUnified(null);
-
- try {
- const enc = encodeURIComponent(symbol);
- // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
- // قبل كده: كل الـ fetches دي كانت بدون `?market=` → الـ API بـ يرجع أي سهم
- // بالـ ticker ده بغض النظر عن السوق المختار. لو فيه ticker متكرر بين EGX و US
- // بيرجع الأول → بيانات خاطئة. الحل: نمرر currentMarket لكل fetch.
- const mkt = encodeURIComponent(currentMarket);
-
- // Fire ALL fetches in parallel — each settles independently.
- const results = await Promise.allSettled([
- // PRIMARY — must succeed
- fetch(`/api/maker-radar/stock?ticker=${enc}&market=${mkt}`),
- // PHASE4-APIS (Task PHASE4-APIS, Rule 27): /api/maker-radar/footprint
- // (410 Gone — naive 70/30 split) → /api/flow/[ticker] (canonical Python
- // compute_money_flow: CLV-5d + CMF-20d + vol_confirmation).
- // The downstream LiquidityFootprintSection consumes a FootprintData-shaped
- // object; we remap /api/flow fields → footprint fields below.
- fetch(`/api/flow/${enc}`),
- // TERTIARY — predictions.db direct
- fetch(`/api/predictions?ticker=${enc}&limit=10&market=${mkt}`),
- // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
- // شيلنا نداءات الـ sub-engine APIs الميتة:
- // - /api/flow (compute_flow engine)
- // - /api/explosive (explosive engine)
- // - /api/stocks/${enc}/comprehensive (multiple sub-engines)
- // - /api/stocks/${enc} (Python raw)
- // كل دي كانت بـ تعرض signals مختلفة. الـ unified API هو المصدر الوحيد.
- // Sharia: EGX-only — no market param needed (per task description).
- fetch(`/api/sharia?symbol=${enc}`),
- // UNIFIED-API — canonical signal_ar / accumulation / money_flow / technical / prediction
- fetch(`/api/stocks/${enc}/unified?market=${mkt}`),
- ]);
-
- const [radarRes, footprintRes, predRes, shariaRes, unifiedRes] = results;
-
- // PRIMARY: maker-radar/stock — must succeed; otherwise we have nothing to render.
- if (radarRes.status !== 'fulfilled') {
- throw new Error('فشل الاتصال بـ maker-radar/stock API (PRIMARY source)');
- }
- const radarJson = (await radarRes.value.json()) as MakerRadarStock;
- if (!radarJson.success || !radarJson.stock_info) {
- throw new Error(
- radarJson.error
- ? `فشل تحميل بيانات السهم: ${radarJson.error}`
- : 'لا توجد بيانات لهذا السهم في stocks.db'
- );
- }
- setRadarData(radarJson);
-
- // SECONDARY: footprint (now from /api/flow — PHASE4-APIS)
- if (footprintRes.status === 'fulfilled') {
- try {
- const flowJson = await footprintRes.value.json();
- // Map /api/flow/[ticker] response → FootprintData shape.
- // flow.buy_pressure → buy_volume, flow.sell_pressure → sell_volume,
- // flow.net_flow → delta_volume; volume-profile fields (poc/vah/val/levels)
- // not available from money-flow API → null/[] (no fabrication, Rule 27).
- if (flowJson?.success && flowJson?.flow) {
- const f = flowJson.flow;
- const buyVol = Number(f.buy_pressure ?? 0);
- const sellVol = Number(f.sell_pressure ?? 0);
- setFootprint({
- success: true,
- ticker: f.ticker ?? flowJson.ticker ?? symbol,
- poc_price: undefined,
- vah_price: undefined,
- val_price: undefined,
- buy_volume: buyVol,
- sell_volume: sellVol,
- delta_volume: Number(f.net_flow ?? (buyVol - sellVol)),
- buy_sell_ratio: sellVol > 0 ? buyVol / sellVol : 0,
- total_volume: Number(f.volume ?? 0),
- value_area_volume_pct: undefined,
- levels: [],
- computed_at: new Date().toISOString(),
- } as FootprintData);
- }
- } catch { /* ignore */ }
- }
-
- // TERTIARY: predictions
- if (predRes.status === 'fulfilled') {
- try { setPredictions(await predRes.value.json()); } catch { /* ignore */ }
- }
-
- // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
- // شيلنا الـ state handlers لـ flow / explosive / comprehensive / stockMeta.
- // الـ unified API بيوفر كل القيم المطلوبة في مكان واحد.
-
- if (shariaRes.status === 'fulfilled') {
- try { setSharia(await shariaRes.value.json()); } catch { /* ignore */ }
- }
- // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
- if (unifiedRes.status === 'fulfilled') {
- try {
- const u = await unifiedRes.value.json();
- if (u?.success) setUnified(u);
- } catch { /* ignore */ }
- }
- } catch (err) {
- setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال بالخادم');
- setRadarData(null);
- console.error('[SpecialistAnalysisView] fetch error:', err);
- } finally {
- setLoading(false);
- }
- }, [currentMarket]);
-
+ // "تحليل" button — re-fetches all 5 queries (TanStack Query refetch under the hood).
+ // قبل كده: handleSearch كان بـ يقول fetchAnalysis(ticker.trim().toUpperCase()).
+ // دلوقتي: ticker in state is the source of truth; refetch() re-runs the 5 queries.
  const handleSearch = useCallback(() => {
  if (ticker.trim()) {
- fetchAnalysis(ticker.trim().toUpperCase());
+ void refetch();
  }
- }, [ticker, fetchAnalysis]);
+ }, [ticker, refetch]);
 
  // ════ Derived values ════
  const info: StockInfo | null = radarData?.stock_info ?? null;
@@ -2702,7 +2335,8 @@ export function SpecialistAnalysisView() {
  onChange={(e) => {
  const val = e.target.value;
  setTicker(val);
- if (val) fetchAnalysis(val);
+ // F-Strangler-Specialist: hook auto-fires 5 queries when ticker changes
+ // (enabled: !!ticker). No manual fetchAnalysis call needed.
  }}
  disabled={loading}
  className="flex-1 px-3 sm:px-4 py-2 border border-border rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
