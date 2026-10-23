@@ -13,7 +13,8 @@
  * - مفيش أي mock data — كل الأرقام من SQLite.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -247,62 +248,29 @@ const PERIOD_OPTIONS = [
 
 export function InvestorsFlowPanel() {
  const currentMarket = useAppStore((s) => s.currentMarket) as MarketType;
- const [loading, setLoading] = useState(true);
- const [data, setData] = useState<LiquidityFlowData | null>(null);
- const [error, setError] = useState(false);
  const [days, setDays] = useState('30');
- // Investor-flow data (Egyptians / Arabs / Foreigners buy/sell/net)
- const [invData, setInvData] = useState<InvestorsDataRow[] | null>(null);
- const [invSource, setInvSource] = useState<string>('');
- const [invAutoSeeded, setInvAutoSeeded] = useState(false);
 
- const loadData = useCallback(async () => {
- setLoading(true);
- setError(false);
- try {
- const [flowRes, invRes] = await Promise.all([
- fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${days}`),
- fetch(`/api/egx/investors?latest=false&days=${days}`).catch(() => null),
- ]);
- if (!flowRes.ok) {
- setError(true);
- setData(null);
- } else {
- const flowJson = (await flowRes.json()) as LiquidityFlowData;
- if (flowJson.success) {
- setData(flowJson);
- } else {
- setError(true);
- setData(null);
- }
- }
- // Investor flow data (only meaningful for EGX). Don't fail the panel if absent.
- if (invRes && invRes.ok) {
- const invJson = (await invRes.json()) as InvestorsApiResponse;
- if (invJson.success && invJson.rows && invJson.rows.length > 0) {
- setInvData(invJson.rows);
- setInvSource(invJson.source || '');
- setInvAutoSeeded(!!invJson.auto_seeded);
- } else {
- setInvData(null);
- setInvSource(invJson.source || '');
- setInvAutoSeeded(!!invJson.auto_seeded);
- }
- } else {
- setInvData(null);
- }
- } catch {
- setError(true);
- setData(null);
- setInvData(null);
- } finally {
- setLoading(false);
- }
- }, [currentMarket, days]);
+ // F2.2: 2 useApiQuery hooks replace Promise.all + manual fetch + useState.
+ // Each query cached + retried independently.
 
- useEffect(() => {
- loadData();
- }, [loadData]);
+ // 1) Liquidity flow data
+ const { data: flowRaw, isLoading: loadingFlow, error: flowError } = useApiQuery<LiquidityFlowData>('/api/market/liquidity-flow', {
+   params: { market: currentMarket, days },
+   queryOptions: { refetchOnWindowFocus: false },
+ });
+ const data = useMemo(() => (flowRaw && flowRaw.success) ? flowRaw : null, [flowRaw]);
+ const error = !!flowError || (flowRaw && !flowRaw.success);
+
+ // 2) Investor flow data (Egyptians/Arabs/Foreigners — EGX only). Don't fail if absent.
+ const { data: invRaw } = useApiQuery<InvestorsApiResponse>('/api/egx/investors', {
+   params: { latest: 'false', days },
+   queryOptions: { refetchOnWindowFocus: false },
+ });
+ const invData = useMemo(() => (invRaw?.success && invRaw.rows?.length) ? invRaw.rows : null, [invRaw]);
+ const invSource = invRaw?.source ?? '';
+ const invAutoSeeded = !!invRaw?.auto_seeded;
+
+ const loading = loadingFlow;
 
  const marketNameAr = MARKET_NAMES_AR[currentMarket];
 
