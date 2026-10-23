@@ -7204,3 +7204,56 @@ Stage Summary:
 - Component بقى render-only for data — كل fetch logic + state + try/catch + toast + polling + cleanup اتشالوا. الـ render logic (8-engine grid + Live Log Console + Detail Sheet + 6 deep views + Quick Actions Bar + lookup helpers + handleExport) متـرك زي ما هو.
 - HTTP 200 verified على `/` و `/admin`. صفر new TS errors. صفر new browser errors.
 - Polling migrated from imperative `setInterval` to declarative TanStack Query `refetchInterval` — same 30s/15s cadence preserved.
+
+---
+
+Task ID: F-Strangler-StocksView
+Agent: Alpha (frontend agent)
+Task: Extract data-fetching logic from `src/modules/stock-analysis/components/StocksView.tsx` (2,316 LOC) into new hook `src/hooks/useStocksViewData.ts` using the Strangler Pattern (F-Strangler-* series).
+
+Work Log:
+- Read worklog.md + StocksView.tsx (2,316 LOC).
+- File scan (grep `fetch\(|useState|useEffect|useCallback|useMemo|axios`):
+  * **1 inline `fetch()` call found** — line 986: `fetch('/api/stocks/presets?...')` inside a `useEffect` block (preset data fetcher for top_gainers / top_losers / most_active).
+  * 3 `useState` directly tied to that fetch: `presetData`, `presetLoading`, `presetScanDate` (lines 909-912).
+  * 1 `useEffect` (lines 972-1006) orchestrating the fetch with cancelled-flag + early-return on `selectedPreset === 'all'`.
+  * The rest of the file's `useEffect` blocks (lines 922-967) trigger **Zustand store actions** (`loadStocks`, `loadCryptoList`, `refreshLivePrices` from `useAppStore`) — they're store-trigger side effects, NOT inline fetches. Stay in component (orchestrate store state, not component-owned data fetching).
+  * Remaining `useState` (15 of them) are pure UI state (search / filters / page / sectors / preset selection / period) — not data-fetching, stay in component.
+- Decision: extract (fetch found). Created `src/hooks/useStocksViewData.ts` modeled on `useAcademyData.ts` (existing precedent — same `useApiQuery` + `ApiResponse<T>` unwrap pattern).
+- Hook design:
+  * 1 `useApiQuery<PresetsResponse>('/api/stocks/presets', {...})` call wrapping the Python-proxied presets endpoint.
+  * Params: `{ preset: selectedPreset, period: presetPeriod, limit: 50, market: currentMarket || undefined }` — `market` skipped when empty (matches original `if (currentMarket) qs.set('market', currentMarket)`).
+  * `fetchOptions: { cache: 'no-store' }` — matches original `signal: AbortSignal.timeout(30000), cache: 'no-store'` on the route layer (route.ts line 16).
+  * `queryOptions: { enabled: selectedPreset !== 'all', staleTime: 0, refetchOnWindowFocus: false }` — `enabled: false` matches original early-return on preset='all' (sets empty data + null scan_date, no fetch fires). No `refetchInterval` (original was one-shot per param change, no polling).
+  * Returns `{ presetData, presetLoading, presetScanDate, refetchPresets }`.
+- Behaviour preservation (verbatim from original):
+  * `presetData = []` + `presetScanDate = null` when: `!enabled` (preset='all'), OR `query.error` (network/HTTP failure), OR `!r.success` (API-level error). Matches original early-return + `.catch()` + `else` branch.
+  * `presetData = r.results || []` + `presetScanDate = r.scan_date || null` on success. Matches original `setPresetData(data.results || [])` + `setPresetScanDate(data.scan_date || null)`.
+  * `presetLoading = enabled && query.isFetching` — matches original `setPresetLoading(true)` BEFORE every fetch (covers initial + every refetch from preset/period/market change). Using `isFetching` (not `isLoading`) preserves the "loading=true during fetch" semantics on subsequent fetches (after first success, `isLoading` is false but `isFetching` is true).
+  * No `cancelled` flag needed — TanStack Query handles stale-response discard automatically (last query wins).
+- Types exported: `PresetsResponse` (success/results/scan_date/error), `UseStocksViewDataOptions`, `UseStocksViewDataResult`.
+- Refactored `src/modules/stock-analysis/components/StocksView.tsx`:
+  * Added import: `import { useStocksViewData } from '@/hooks/useStocksViewData';`.
+  * Removed 3 `useState` (`presetData`, `presetLoading`, `presetScanDate`) — moved to hook.
+  * Removed the 35-line `useEffect` block (lines 969-1006 of original — early-return + setPresetLoading(true) + URLSearchParams + fetch + .then + .catch + cancelled flag) — replaced by single hook call (5 LOC destructure).
+  * `selectedPreset` + `presetPeriod` stayed in component (UI state — controlled by `<Select onValueChange={setSelectedPreset}>` + quick-filter buttons + `setPresetPeriod('1d')` calls).
+  * All render logic untouched (preset Select + period buttons + presetData.length badge + presetScanDate timestamp + presetLoading skeleton + 7 useEffects for store-action orchestration + 15 useState for UI state + filteredStocks/summaryStats/stocksColumns useMemos + 12 useCallback handlers + AdvancedFiltersSheet + UnifiedTable + StockDetail + StockPublisher).
+- Verification:
+  * `node_modules/.bin/pm2 restart nextjs` → ready in 1132ms (clean Turbopack compile, 0 errors).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (compile 11.4s first hit).
+  * `curl 'http://localhost:3000/?view=stocks'` → **HTTP 200** (StocksView compiles + renders — refactor verified end-to-end, 68ms render).
+  * `npx tsc --noEmit -p tsconfig.json` → **0 new TS errors** on `StocksView.tsx` or `useStocksViewData.ts`. Verified via `git stash` comparison: 18 pre-existing errors (lines 1011-1589 of original) appear at lines 982-1560 of refactored file (each shifted by exactly -29 LOC = the lines removed). Same error set, no new ones introduced by the hook.
+  * pm2 logs: `GET / 200 in 11.4s` + `GET /?view=stocks 200 in 68ms` — no compile/render errors related to the refactor. (Pre-existing `[stocks:presets] TypeError: fetch failed ECONNREFUSED` on `/api/stocks/presets` 503 — Python EGXPY service not running in sandbox; hook's `.catch()`-equivalent fallback handles this gracefully: `presetData=[]`, `presetScanDate=null`.)
+- LOC delta:
+  * StocksView.tsx: 2,316 → 2,287 LOC (**−29 LOC, −1.3%**).
+  * useStocksViewData.ts (new): +202 LOC (incl. `PresetsResponse` type + `UseStocksViewDataOptions`/`UseStocksViewDataResult` interfaces + extensive JSDoc + behaviour-preservation comments + 1 `useApiQuery` call + 2 `useMemo` derivations).
+  * Net file-count: +1 file.
+- Rule 75 compliance: commit `4702cb9` (pre-rebase) → final `ee95f57` after `git pull --rebase origin main` (Rule 76 compliance — remote had advanced to `a9472df` from concurrent agent's backtest commit; rebase applied cleanly).
+- Rule 76 compliance: `git pull --rebase origin main` → "Successfully rebased and updated refs/heads/main" (1 commit applied on top of `a9472df`).
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على StocksView.tsx. الـ inline fetch logic الوحيد في الـ file (preset data — 1 fetch + 3 useState + 1 useEffect = ~42 LOC) كله في `useStocksViewData.ts` hook file.
+- Component بقى render-only for preset data — كل fetch logic + state + try/catch + cancelled-flag + URLSearchParams building اتشالوا. الـ render logic (UnifiedTable + AdvancedFiltersSheet + 15 UI useState + 7 store-action useEffects + 12 useCallback handlers + 5 useMemo derivations) متـرك زي ما هو.
+- HTTP 200 verified على `/` و `/?view=stocks`. صفر new TS errors. صفر new browser errors.
+- Commit: `ee95f57` (pushed to origin/main).
+
