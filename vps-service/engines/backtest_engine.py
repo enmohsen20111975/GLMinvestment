@@ -1488,8 +1488,8 @@ class V38BacktestEngine:
         
         # Bollinger Bands
         bb_mid, bb_up, bb_low = calc_bollinger_bands(sl_closes, 20, 2.0)
-        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if bb_mid[-1] > 0 else 0
-        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if bb_mid[i] > 0 else 0 for i in range(len(bb_mid))], 50)
+        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if (bb_mid[-1] and bb_mid[-1] > 0) else 0
+        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if (bb_mid[i] is not None and bb_mid[i] > 0) else 0 for i in range(len(bb_mid))], 50)
         bb_width_sma = bb_width_sma_vals[-1]
         is_squeeze = bb_width < bb_width_sma * get_setting('bb_squeeze_threshold', default=0.8)
         is_expanding = bb_width > bb_width_sma * get_setting('bb_expansion_threshold', default=1.2)
@@ -1638,8 +1638,8 @@ class V38BacktestEngine:
         }
         
         bb_mid, bb_up, bb_low = calc_bollinger_bands(sl_closes, 20, 2.0)
-        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if bb_mid[-1] > 0 else 0
-        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if bb_mid[i] > 0 else 0 for i in range(len(bb_mid))], 50)
+        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if (bb_mid[-1] and bb_mid[-1] > 0) else 0
+        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if (bb_mid[i] is not None and bb_mid[i] > 0) else 0 for i in range(len(bb_mid))], 50)
         bb_width_sma = bb_width_sma_vals[-1]
         is_squeeze = bb_width < bb_width_sma * 0.8
         is_expanding = bb_width > bb_width_sma * 1.2
