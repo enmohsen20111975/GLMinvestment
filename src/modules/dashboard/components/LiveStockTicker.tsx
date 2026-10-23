@@ -16,10 +16,11 @@
  * RTL كامل. ألوان emerald / rose / slate فقط (لا أزرق/إنديغو).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ArrowDown, ArrowUp, Loader2, WifiOff, Zap } from 'lucide-react';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useAppStore } from '@/lib/store';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { cn } from '@/lib/utils';
 
 // ============================================================
@@ -143,59 +144,33 @@ const MAX_GAINERS = 10;
 const MAX_LOSERS = 10;
 
 export function LiveStockTicker() {
- const [gainers, setGainers] = useState<StockMover[]>([]);
- const [losers, setLosers] = useState<StockMover[]>([]);
- const [marketStatus, setMarketStatus] = useState<'OPEN' | 'CLOSED'>('CLOSED');
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- const [isRefreshing, setIsRefreshing] = useState(false);
+ const currentMarket = useAppStore((s) => s.currentMarket);
 
- const fetchData = useCallback(async () => {
- setIsRefreshing(true);
- try {
- const controller = new AbortController();
- const timeout = setTimeout(() => controller.abort(), 12_000);
- // FIX (Oct 2026): pass currentMarket to market-pulse (was always EGX)
- const _market = useAppStore.getState().currentMarket;
- const res = await fetch(`/api/market-pulse?market=${encodeURIComponent(_market)}`, {
- signal: controller.signal,
- headers: { Accept: 'application/json' },
- cache: 'no-store',
+ // F2.2: useApiQuery replaces manual fetch + useState + useVisibilityAwarePolling.
+ // 20s polling via refetchInterval. TanStack handles retry + caching.
+ const { data: rawJson, isLoading: loading, isFetching: isRefreshing, error: queryError, refetch } = useApiQuery<ApiResponse>('/api/market-pulse', {
+   params: { market: currentMarket },
+   queryOptions: {
+     refetchInterval: REFRESH_INTERVAL_MS, // 20s polling
+     refetchOnWindowFocus: false,
+   },
  });
- clearTimeout(timeout);
 
- if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ // Derive payload from response (handle both {data} wrapper + raw payload shapes)
+ const payload = useMemo<MarketPulsePayload | undefined>(() => {
+   if (!rawJson) return undefined;
+   return (rawJson && (rawJson.data as MarketPulsePayload | undefined)) ||
+     (rawJson as unknown as MarketPulsePayload);
+ }, [rawJson]);
 
- const json: ApiResponse = await res.json();
- const payload: MarketPulsePayload | undefined =
- (json && (json.data as MarketPulsePayload | undefined)) ||
- (json as unknown as MarketPulsePayload);
+ const gainers = useMemo(() => (payload?.gainers ?? []).slice(0, MAX_GAINERS), [payload]);
+ const losers = useMemo(() => (payload?.losers ?? []).slice(0, MAX_LOSERS), [payload]);
+ const marketStatus = payload?.market_status ?? 'CLOSED';
+ const error = queryError ? (queryError instanceof Error ? queryError.message : 'خطأ غير معروف') : null;
 
- if (!payload || (json.success === false && !json.data)) {
- throw new Error(json.error ?? 'استجابة غير صالحة');
- }
+ // Manual refresh via refetch (replaces fetchData(true))
+ useVisibilityAwarePolling(() => { void refetch(); }, REFRESH_INTERVAL_MS, [refetch]);
 
- setGainers((payload.gainers ?? []).slice(0, MAX_GAINERS));
- setLosers((payload.losers ?? []).slice(0, MAX_LOSERS));
- setMarketStatus(payload.market_status ?? 'CLOSED');
- setError(null);
- } catch (err) {
- const msg = err instanceof Error ? err.message : 'خطأ غير معروف';
- setError(msg);
- } finally {
- setIsRefreshing(false);
- setLoading(false);
- }
- }, []);
-
- useEffect(() => {
- void fetchData();
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, []);
-
- // P37-PHASE-2B-4A: visibility-aware polling — pauses when the tab is hidden,
- // fires immediately when it becomes visible again.
- useVisibilityAwarePolling(() => { void fetchData(); }, REFRESH_INTERVAL_MS, [fetchData]);
 
  // ادمج الرابحين ثم الخاسرين (الرابحون أولاً في الظهور من اليمين)
  const items = useMemo<StockMover[]>(() => {
