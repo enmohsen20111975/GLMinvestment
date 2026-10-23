@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 // GET - جلب نقاط المستخدم وإحصائياته
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const user_id = searchParams.get('user_id');
-
-    if (!user_id) {
+    // F1.2 — auth guard (IDOR fix): require session, ignore query user_id.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
       return NextResponse.json({ error: 'مطلوب تسجيل الدخول' }, { status: 401 });
     }
+    // IDOR guard: use session userId only (ignore any user_id from query)
+    const user_id = sessionUserId;
 
     // جلب نقاط المستخدم
     let userPoints = await db.userPoints.findUnique({

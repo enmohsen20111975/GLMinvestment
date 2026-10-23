@@ -30,6 +30,7 @@ import { authDb } from '@/lib/db-auth';
 import { getActiveTelegramLink } from '@/lib/bot-link-db';
 import { PAID_TIERS } from '@/lib/subscription-gate';
 
+import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = 'force-dynamic';
 
 // PAID_TIERS is imported from @/lib/subscription-gate (canonical source —
@@ -52,6 +53,13 @@ function isAuthorized(req: NextRequest): boolean {
 
 export async function GET(req: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     if (!isAuthorized(req)) {
       return NextResponse.json(
         { success: false, error: 'unauthorized' },

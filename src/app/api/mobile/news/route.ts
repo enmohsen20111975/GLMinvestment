@@ -23,6 +23,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -47,6 +48,13 @@ function safeStripHtml(raw: unknown): string {
 
 export async function GET(req: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { searchParams } = new URL(req.url);
     const market = searchParams.get('market');
     const reqLimit = parseInt(searchParams.get('limit') || '50', 10);

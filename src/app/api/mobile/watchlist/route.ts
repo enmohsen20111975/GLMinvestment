@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = "force-dynamic";
 
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
@@ -16,6 +17,13 @@ export const revalidate = 30; // Cache for 30s
 
 export async function GET(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { userIds, primaryUserId } = await getUserIdsWithLegacy();
 
     if (userIds.length === 0) {
@@ -161,6 +169,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { userIds, primaryUserId } = await getUserIdsWithLegacy();
 
     if (!primaryUserId) {
