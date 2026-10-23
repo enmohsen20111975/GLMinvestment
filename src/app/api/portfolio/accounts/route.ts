@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFinanceDb } from '@/lib/finance-db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +37,18 @@ function ensureMasterPortfolio(db: any, userId: string) {
 
 export async function GET(req: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session. No more hardcoded fallback user_id.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
     const url = new URL(req.url);
-    const userId = url.searchParams.get('user_id') || '48457b7f-40f2-4a7e-8955-d4d2cd1d79bd';
+    const requestedUserId = url.searchParams.get('user_id');
+    // If a user_id is requested, it must match the session (or admin override handled upstream).
+    const userId = requestedUserId && requestedUserId !== 'default' ? requestedUserId : sessionUserId;
+    if (userId !== sessionUserId) {
+      return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
+    }
     const db = await getFinanceDb();
     ensurePortfoliosTable(db);
     const masterId = ensureMasterPortfolio(db, userId);
@@ -63,11 +74,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session. No more hardcoded fallback user_id.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
     const db = await getFinanceDb();
     ensurePortfoliosTable(db);
 
     const body = await req.json();
-    const userId = body.user_id || '48457b7f-40f2-4a7e-8955-d4d2cd1d79bd';
+    const userId = body.user_id && body.user_id !== 'default' ? body.user_id : sessionUserId;
+    if (userId !== sessionUserId) {
+      return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
+    }
     const action = body.action || 'create';
 
     ensureMasterPortfolio(db, userId);
