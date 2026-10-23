@@ -98,50 +98,21 @@ import {
  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import {
+  useDatabaseManagerData,
+  type DatabaseOverview,
+  type TableSummary,
+  type TableColumn,
+  type TableRowsResult,
+  type SchemaResult,
+} from '@/hooks/useDatabaseManagerData';
 
 // ---------------------------------------------------------------------------
-// Types (mirror the API responses)
+// Types (mirror the API responses) — data-related types imported from
+// useDatabaseManagerData hook (Strangler Pattern F-Strangler-DBManager).
+// Component-local types below are for query results / backups / maintenance
+// (still owned by component).
 // ---------------------------------------------------------------------------
-
-interface DatabaseOverview {
- name: string;
- path: string;
- sizeBytes: number;
- sizeHuman: string;
- lastModified: string;
- tableCount: number;
- totalRows: number;
- walPresent: boolean;
- walSizeBytes: number;
- shmPresent: boolean;
- integrity: 'ok' | 'corrupt' | 'unknown';
- integrityMessage?: string;
-}
-
-interface TableSummary {
- name: string;
- rowCount: number;
- columnCount: number;
- sizeEstimateBytes: number;
- sizeHuman: string;
-}
-
-interface TableColumn {
- name: string;
- type: string;
- notNull: boolean;
- pk: boolean;
- dfltValue: string | null;
-}
-
-interface TableRowsResult {
- columns: TableColumn[];
- rows: Record<string, unknown>[];
- totalRows: number;
- page: number;
- limit: number;
- totalPages: number;
-}
 
 interface QueryResult {
  columns: string[];
@@ -167,13 +138,6 @@ interface BackupFile {
  sizeHuman: string;
  createdAt: string;
  db?: string;
-}
-
-interface SchemaResult {
- table: string;
- createStatement: string;
- columns: TableColumn[];
- indexes: { name: string; sql: string }[];
 }
 
 interface HistoricalBackup {
@@ -325,27 +289,42 @@ interface ConfirmState {
 }
 
 export function DatabaseManagerFull() {
- // Sidebar / overview state
- const [databases, setDatabases] = useState<DatabaseOverview[]>([]);
- const [dbsLoading, setDbsLoading] = useState(true);
- const [dbsError, setDbsError] = useState<string | null>(null);
+ // UI state (owned by component — Strangler Pattern F-Strangler-DBManager).
  const [search, setSearch] = useState('');
  const [selectedDb, setSelectedDb] = useState<string | null>(null);
  const [activeTab, setActiveTab] = useState<TabKey>('overview');
-
- // Tables tab state
- const [tables, setTables] = useState<TableSummary[] | null>(null);
- const [tablesLoading, setTablesLoading] = useState(false);
- const [tablesError, setTablesError] = useState<string | null>(null);
  const [selectedTable, setSelectedTable] = useState<string | null>(null);
- const [tableRows, setTableRows] = useState<TableRowsResult | null>(null);
- const [rowsLoading, setRowsLoading] = useState(false);
- const [rowsError, setRowsError] = useState<string | null>(null);
  const [page, setPage] = useState(1);
  const [sortBy, setSortBy] = useState<string | undefined>(undefined);
  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
- const [schema, setSchema] = useState<SchemaResult | null>(null);
- const [schemaOpen, setSchemaOpen] = useState(false);
+
+ // Data state (owned by useDatabaseManagerData hook).
+ const {
+  databases,
+  dbsLoading,
+  dbsError,
+  refetchDatabases,
+  tables,
+  tablesLoading,
+  tablesError,
+  refetchTables,
+  tableRows,
+  rowsLoading,
+  rowsError,
+  refetchRows,
+  schema,
+  schemaOpen,
+  setSchemaOpen,
+  fetchSchema,
+ } = useDatabaseManagerData({
+  selectedDb,
+  selectedTable,
+  page,
+  sortBy,
+  sortDir,
+  tablesEnabled: activeTab === 'tables',
+  onAutoSelectDb: setSelectedDb,
+ });
 
  // SQL tab state
  const [sql, setSql] = useState('');
@@ -396,9 +375,9 @@ export function DatabaseManagerFull() {
  setAdvancedOutput(`Error: ${msg}`);
  } finally {
  setAdvancedLoading(null);
- fetchDatabases(); // Refresh sizes
+ refetchDatabases(); // Refresh sizes
  }
- };
+};
 
  // Bulk operations state
  const [bulkLoading, setBulkLoading] = useState<string | null>(null);
@@ -416,112 +395,10 @@ export function DatabaseManagerFull() {
  const [confirmBusy, setConfirmBusy] = useState(false);
 
  // -------------------------------------------------------------------------
- // Data fetching
+ // Data fetching — fetchBackups + fetchDailyBackups only. fetchDatabases /
+ // fetchTables / fetchTableRows / fetchSchema moved to useDatabaseManagerData
+ // hook (Strangler Pattern F-Strangler-DBManager).
  // -------------------------------------------------------------------------
-
- const fetchDatabases = useCallback(async () => {
- setDbsLoading(true);
- setDbsError(null);
- try {
- const res = await fetch('/api/admin/db-manager');
- const json = await res.json();
- if (json.success) {
- setDatabases(json.databases as DatabaseOverview[]);
- // Auto-select first DB if none selected
- if (!selectedDb && json.databases.length > 0) {
- setSelectedDb(json.databases[0].name);
- }
- } else {
- setDbsError(json.error || 'فشل تحميل قواعد البيانات');
- }
- } catch (e) {
- setDbsError(String((e as Error)?.message || e));
- } finally {
- setDbsLoading(false);
- }
- }, [selectedDb]);
-
- const fetchTables = useCallback(async (dbName: string) => {
- setTablesLoading(true);
- setTablesError(null);
- setSelectedTable(null);
- setTableRows(null);
- setSchema(null);
- setSchemaOpen(false);
- try {
- const res = await fetch(`/api/admin/db-manager?db=${encodeURIComponent(dbName)}`);
- const json = await res.json();
- if (json.success) {
- setTables(json.tables as TableSummary[]);
- // Update the overview snapshot for the sidebar (integrity/WAL may change)
- if (json.overview) {
- setDatabases((prev) =>
- prev.map((d) => (d.name === dbName ? (json.overview as DatabaseOverview) : d))
- );
- }
- } else {
- setTablesError(json.error || 'فشل تحميل الجداول');
- }
- } catch (e) {
- setTablesError(String((e as Error)?.message || e));
- } finally {
- setTablesLoading(false);
- }
- }, []);
-
- const fetchTableRows = useCallback(
- async (dbName: string, table: string, pageNum: number, sb?: string, sd?: 'asc' | 'desc') => {
- setRowsLoading(true);
- setRowsError(null);
- try {
- const params = new URLSearchParams({
- db: dbName,
- table,
- page: String(pageNum),
- limit: String(PAGE_SIZE),
- });
- if (sb) {
- params.set('sortBy', sb);
- params.set('sortDir', sd || 'asc');
- }
- const res = await fetch(`/api/admin/db-manager?${params.toString()}`);
- const json = await res.json();
- if (json.success) {
- setTableRows(json.table as TableRowsResult);
- setPage(pageNum);
- } else {
- setRowsError(json.error || 'فشل تحميل الصفوف');
- }
- } catch (e) {
- setRowsError(String((e as Error)?.message || e));
- } finally {
- setRowsLoading(false);
- }
- },
- []
- );
-
- const fetchSchema = useCallback(async (dbName: string, table: string) => {
- try {
- const res = await fetch(
- `/api/admin/db-manager/schema?db=${encodeURIComponent(dbName)}&table=${encodeURIComponent(table)}`
- );
- const json = await res.json();
- if (json.success) {
- setSchema({
- table: json.table,
- createStatement: json.createStatement,
- columns: json.columns,
- indexes: json.indexes,
- });
- setSchemaOpen(true);
- } else {
- toast.error(json.error || 'فشل تحميل الـ schema');
- }
- } catch (e) {
- toast.error(String((e as Error)?.message || e));
- }
- }, []);
 
  const fetchBackups = useCallback(async () => {
  setBackupsLoading(true);
@@ -560,23 +437,14 @@ export function DatabaseManagerFull() {
  }, []);
 
  // -------------------------------------------------------------------------
- // Effects
+ // Effects — only backups / daily / SQL history remain. fetchDatabases +
+ // fetchTables are now auto-handled by useDatabaseManagerData (TanStack
+ // Query enabled flag + onAutoSelectDb callback).
  // -------------------------------------------------------------------------
-
- useEffect(() => {
- fetchDatabases();
- }, [fetchDatabases]);
 
  useEffect(() => {
  setHistory(loadHistory());
  }, []);
-
- // When the active tab changes to "tables", load tables for the selected DB.
- useEffect(() => {
- if (activeTab === 'tables' && selectedDb && tables === null) {
- fetchTables(selectedDb);
- }
- }, [activeTab, selectedDb, tables, fetchTables]);
 
  // When the active tab changes to "backups", refresh the backup list.
  useEffect(() => {
@@ -630,12 +498,9 @@ export function DatabaseManagerFull() {
 
  const handleSelectDb = (dbName: string) => {
  setSelectedDb(dbName);
- // Reset tab-specific state
- setTables(null);
+ // Reset tab-specific state — tables / tableRows / schema / schemaOpen auto-
+ // reset by useDatabaseManagerData (queryKey change + schema useEffect).
  setSelectedTable(null);
- setTableRows(null);
- setSchema(null);
- setSchemaOpen(false);
  setQueryResult(null);
  setQueryError(null);
  setMaintenanceResult(null);
@@ -643,7 +508,7 @@ export function DatabaseManagerFull() {
  };
 
  const handleRefreshDbs = () => {
- fetchDatabases();
+ refetchDatabases();
  };
 
  const handleSort = (colName: string) => {
@@ -651,7 +516,7 @@ export function DatabaseManagerFull() {
  const newDir: 'asc' | 'desc' = sortBy === colName && sortDir === 'asc' ? 'desc' : 'asc';
  setSortBy(colName);
  setSortDir(newDir);
- fetchTableRows(selectedDb, selectedTable, 1, colName, newDir);
+ setPage(1); // triggers queryKey change → useQuery auto-refetches rows
  };
 
  const handleSelectTable = (table: string) => {
@@ -659,7 +524,7 @@ export function DatabaseManagerFull() {
  setSelectedTable(table);
  setSortBy(undefined);
  setSortDir('asc');
- fetchTableRows(selectedDb, table, 1);
+ setPage(1); // triggers queryKey change → useQuery auto-refetches rows
  };
 
  const handleRunSql = async () => {
@@ -806,8 +671,8 @@ export function DatabaseManagerFull() {
  if (json.success) {
  toast.success('تمت الاستعادة بنجاح — تم حفظ نسخة تلقائية قبلها');
  fetchBackups();
- fetchDatabases();
- if (tables) fetchTables(selectedDb);
+ refetchDatabases();
+ if (tables) refetchTables();
  } else {
  toast.error(json.error || 'فشل الاستعادة');
  }
@@ -888,7 +753,10 @@ export function DatabaseManagerFull() {
  const json = await res.json();
  if (json.success) {
  toast.success(`تم حذف الجدول ${table}`);
- if (selectedDb) fetchTables(selectedDb);
+ if (selectedDb) {
+  setSelectedTable(null);
+  refetchTables();
+ }
  } else {
  toast.error(json.error || 'فشل الحذف');
  }
@@ -928,10 +796,11 @@ export function DatabaseManagerFull() {
  const json = await res.json();
  if (json.success) {
  toast.success(`تم تفريغ الجدول — ${json.deletedRows} صف محذوف`);
+ if (selectedDb) refetchTables();
  if (selectedDb && selectedTable) {
- fetchTableRows(selectedDb, selectedTable, 1);
+ setPage(1);
+ refetchRows();
  }
- if (selectedDb) fetchTables(selectedDb);
  } else {
  toast.error(json.error || 'فشل التفريغ');
  }
@@ -975,7 +844,7 @@ export function DatabaseManagerFull() {
  setMaintenanceResult(result);
  toast.success(`${label} — ${result.message}`);
  // Refresh DB overview (size/integrity may change)
- fetchDatabases();
+ refetchDatabases();
  } else {
  setMaintenanceResult({
  success: false,
@@ -1014,7 +883,7 @@ export function DatabaseManagerFull() {
  setRecoverResult({ db: dbName, result: { error: json.error } });
  toast.error(json.error || 'فشلت الاستعادة');
  }
- fetchDatabases();
+ refetchDatabases();
  } catch (e) {
  const msg = String((e as Error)?.message || e);
  toast.error(msg);
@@ -1042,7 +911,7 @@ export function DatabaseManagerFull() {
  setRecoverResult({ db: 'all', result: { error: json.error } });
  toast.error(json.error || 'فشلت الاستعادة');
  }
- fetchDatabases();
+ refetchDatabases();
  } catch (e) {
  const msg = String((e as Error)?.message || e);
  toast.error(msg);
@@ -1074,7 +943,7 @@ export function DatabaseManagerFull() {
  const json = await res.json();
  if (json.success) {
  toast.success(`تم Checkpoint على ${json.results.length} قاعدة بيانات`);
- fetchDatabases();
+ refetchDatabases();
  } else {
  toast.error(json.error || 'فشل checkpoint');
  }
@@ -1131,7 +1000,7 @@ export function DatabaseManagerFull() {
  });
  toast.success(json.message || 'تم الاستيراد بنجاح');
  setImportFile(null);
- fetchDatabases();
+ refetchDatabases();
  fetchBackups();
  } else {
  toast.error(json.error || 'فشل الاستيراد');
@@ -1182,7 +1051,7 @@ export function DatabaseManagerFull() {
  };
  setDailyRestoreResult(result);
  toast.success(json.message || 'تمت الاستعادة بنجاح');
- fetchDatabases();
+ refetchDatabases();
  fetchDailyBackups();
  } else {
  toast.error(json.error || 'فشل الاستعادة');
@@ -1507,9 +1376,9 @@ export function DatabaseManagerFull() {
  sortBy={sortBy}
  sortDir={sortDir}
  onSort={handleSort}
- onPageChange={(p) =>
- selectedDb && selectedTable && fetchTableRows(selectedDb, selectedTable, p, sortBy, sortDir)
- }
+ onPageChange={(p) => {
+ if (selectedDb && selectedTable) setPage(p);
+ }}
  onExport={handleExportTable}
  onDropTable={handleDropTable}
  onTruncateTable={handleTruncateTable}
@@ -1517,7 +1386,7 @@ export function DatabaseManagerFull() {
  schema={schema}
  schemaOpen={schemaOpen}
  onSchemaClose={() => setSchemaOpen(false)}
- onRetry={() => selectedDb && fetchTables(selectedDb)}
+ onRetry={() => selectedDb && refetchTables()}
  />
  ) : (
  <EmptyState icon={TableIcon} text="اختر قاعدة بيانات أولاً" />
