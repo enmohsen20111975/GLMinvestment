@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 // GET - جلب منشور محدد
 export async function GET(
@@ -9,6 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { id } = await params;
     
     const post = await db.userPost.findUnique({
@@ -57,6 +65,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const user_id = searchParams.get('user_id');

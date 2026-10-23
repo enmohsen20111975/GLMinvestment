@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 // GET - جلب المنشورات
 export async function GET(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get('ticker');
     const user_id = searchParams.get('user_id');
@@ -80,6 +88,13 @@ export async function GET(request: NextRequest) {
 // POST - إنشاء منشور جديد
 export async function POST(request: NextRequest) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const body = await request.json();
     const { user_id, ticker, direction, entry_price, target_price, stop_loss, timeframe, reasoning, confidence } = body;
 

@@ -13,6 +13,7 @@ import { getPaywallUser, applyPaywallToChartAnalysis } from '@/lib/paywall';
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 const PYTHON_PORT = process.env.PYTHON_PORT || '8010';
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,13 @@ export async function GET(request: NextRequest) {
 
   // 1. Try Python
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     let res = await fetch(pythonUrl, {

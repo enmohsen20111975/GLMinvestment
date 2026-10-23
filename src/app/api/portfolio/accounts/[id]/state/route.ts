@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 /**
  * MULTI-PORTFOLIO-032: Proxy to Python backend for a single sub-portfolio state.
@@ -15,6 +16,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // F1.2 — auth guard (IDOR fix): require session.
+    const { userId: sessionUserId } = await getSessionUserId();
+    if (!sessionUserId) {
+      return NextResponse.json({ success: false, error: 'unauthorized' }, { status: 401 });
+    }
+    const user_id = sessionUserId;
+
     const { id } = await params;
     const url = new URL(req.url);
     const qs = url.searchParams.toString();
