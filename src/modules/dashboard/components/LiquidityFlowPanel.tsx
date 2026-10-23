@@ -13,7 +13,8 @@
  * NO mock data — كل البيانات من /api/market/liquidity-flow (اللي بدوره من stocks.db).
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { Waves, TrendingUp, TrendingDown, Activity, Building2, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -209,40 +210,21 @@ function StockFlowRow({ stock }: { stock: StockFlowItem }) {
 export function LiquidityFlowPanel() {
  const currentMarket = useAppStore((s) => s.currentMarket);
  const [period, setPeriod] = useState<PeriodKey>('30');
- const [loading, setLoading] = useState(true);
- const [data, setData] = useState<LiquidityData | null>(null);
- const [error, setError] = useState<string | null>(null);
 
- const loadData = useCallback(async () => {
- setLoading(true);
- setError(null);
- try {
- const res = await fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${period}`, {
- cache: 'no-store',
+ // F2.2: useApiQuery replaces manual fetch + useState + useEffect.
+ // queryKey includes currentMarket + period so refetch happens when they change.
+ const { data: raw, isLoading: loading, error: queryError } = useApiQuery<LiquidityData>('/api/market/liquidity-flow', {
+   params: { market: currentMarket, days: period },
+   queryOptions: {
+     refetchOnWindowFocus: false,
+   },
  });
- if (!res.ok) {
- setError('تعذّر جلب البيانات. يرجى المحاولة مرة أخرى.');
- setData(null);
- return;
- }
- const json = (await res.json()) as LiquidityData;
- if (!json.success) {
- setError(json.note || 'تعذّر جلب البيانات');
- setData(null);
- return;
- }
- setData(json);
- } catch (e) {
- setError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
- setData(null);
- } finally {
- setLoading(false);
- }
- }, [currentMarket, period]);
 
- useEffect(() => {
- loadData();
- }, [loadData]);
+ // Derive data + error from query result (handle both success=false + network error)
+ const data = raw && raw.success ? raw : null;
+ const error = queryError
+   ? 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.'
+   : (raw && !raw.success ? (raw.note || 'تعذّر جلب البيانات') : null);
 
  const marketNameAr = MARKET_NAMES_AR[currentMarket];
  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket];
