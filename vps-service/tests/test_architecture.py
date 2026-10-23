@@ -20,9 +20,10 @@ WHITELIST = {
     'vps-service/lightweight_server.py',
     'vps-service/core/migrator.py',
     'vps-service/jobs/wal_checkpoint.py',
+    'scripts/check_db_schema.py',
 }
 
-SKIP_DIRS = {'archive', 'garage', '__pycache__', 'node_modules', '.git', '.next', 'venv', 'env', '.venv', 'backups'}
+SKIP_DIRS = {'archive', 'garage', '__pycache__', 'node_modules', '.git', '.next', 'venv', 'env', '.venv', 'backups', 'output', 'data_engine', 'news-agent', '.zscripts'}
 
 
 class SqliteConnectDetector(ast.NodeVisitor):

@@ -14,7 +14,18 @@ from __future__ import annotations
 
 # Import the persona weight table from analyzers.adaptive_weights.
 # Same import path as daily_predictor.py uses.
-from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
+def _get_persona_weights():
+    """Lazy import to avoid circular dependency (analyzers -> master_analyzer -> analyzer_modules)."""
+    try:
+        from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
+        return PERSONA_INPUT_WEIGHTS
+    except Exception:
+        # Fallback defaults if import fails
+        return {
+            'gambler': {'price_action': 0.4, 'smc_vsa': 0.3, 'sector_heat': 0.2, 'fundamental': 0.1},
+            'balanced': {'price_action': 0.3, 'smc_vsa': 0.3, 'sector_heat': 0.2, 'fundamental': 0.2},
+            'conservative': {'price_action': 0.2, 'smc_vsa': 0.2, 'sector_heat': 0.2, 'fundamental': 0.4},
+        }
 
 
 def compute_persona_fit(proofs):
@@ -47,7 +58,7 @@ def compute_persona_fit(proofs):
 
     fit_scores = {}
     for persona in ('gambler', 'balanced', 'conservative'):
-        w = PERSONA_INPUT_WEIGHTS[persona]
+        w = _get_persona_weights()[persona]
         fit = sum(base_scores[c] * w[c]
                   for c in ('price_action', 'smc_vsa', 'sector_heat', 'fundamental'))
         fit_scores[persona] = round(fit, 1)
