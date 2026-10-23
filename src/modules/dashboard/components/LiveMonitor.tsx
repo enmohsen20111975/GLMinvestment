@@ -9,8 +9,8 @@
  * - ساعة القاهرة حية (تتحدّث كل ثانية)
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useApiQuery } from '@/hooks/use-api-query';
+import React from 'react';
+import { useLiveMonitorData } from '@/hooks/useLiveMonitorData';
 import {
  Activity,
  AlertCircle,
@@ -1171,88 +1171,9 @@ function ErrorState({
 // ============================================================
 
 export function LiveMonitor() {
- const [triggering, setTriggering] = useState(false);
- const [secondsUntilRefresh, setSecondsUntilRefresh] =
- useState<number>(REFRESH_INTERVAL);
- const [clockStr, setClockStr] = useState<string>(() => getCairoClockString());
- const [dateStr, setDateStr] = useState<string>(() => getCairoDateString());
-
- const countdownRef = useRef(REFRESH_INTERVAL);
-
- // F2.2: useApiQuery replaces manual fetch + useState + useVisibilityAwarePolling.
- // 10s polling via refetchInterval. TanStack handles retry + caching + dedup.
- const _market = useAppStore.getState().currentMarket;
- const { data, isLoading: loading, isFetching: refreshing, error: queryError, refetch } = useApiQuery<LiveMonitorData['data']>('/api/live-monitor', {
-   params: { market: _market },
-   queryOptions: {
-     refetchInterval: REFRESH_INTERVAL * 1000, // 10s polling (was countdown)
-     refetchOnWindowFocus: false,
-   },
- });
-
- const error = queryError ? (queryError instanceof Error ? queryError.message : 'Unknown error') : null;
-
- // 1-second ticker: live clock + countdown to next refresh
- useEffect(() => {
-   const id = setInterval(() => {
-     setClockStr(getCairoClockString());
-     const newDate = getCairoDateString();
-     setDateStr((prev) => (prev !== newDate ? newDate : prev));
-
-     countdownRef.current -= 1;
-     setSecondsUntilRefresh(countdownRef.current);
-     if (countdownRef.current <= 0) {
-       countdownRef.current = REFRESH_INTERVAL;
-       void refetch();
-     }
-   }, 1000);
-   return () => clearInterval(id);
- }, [refetch]);
-
- // Show error toast on initial load failure
- useEffect(() => {
-   if (queryError && loading) {
-     toast.error('فشل تحميل بيانات المراقبة');
-   }
- }, [queryError, loading]);
-
- // Manual trigger handler
- const handleTrigger = useCallback(async () => {
- if (triggering) return;
- setTriggering(true);
- const toastId = toast.loading('جاري تحديث الأسعار...');
- try {
- const controller = new AbortController();
- const timeout = setTimeout(() => controller.abort(), 60_000);
- const _trigMarket = useAppStore.getState().currentMarket;
- const res = await fetch(`/api/live-monitor/trigger?market=${encodeURIComponent(_trigMarket)}`, {
- method: 'POST',
- signal: controller.signal,
- });
- clearTimeout(timeout);
- const json = (await res.json().catch(() => ({}))) as {
- success?: boolean;
- error?: string;
- message?: string;
- };
-
- if (!res.ok) {
- throw new Error(json.error ?? `HTTP ${res.status}`);
- }
- if (json.success === false) {
- throw new Error(json.error ?? 'فشل التحديث');
- }
-
- toast.success('تم تحديث الأسعار بنجاح', { id: toastId });
- // Immediately refetch fresh data
- void refetch();
- } catch (err) {
- const msg = err instanceof Error ? err.message : 'Unknown error';
- toast.error(`فشل التحديث: ${msg}`, { id: toastId });
- } finally {
- setTriggering(false);
- }
- }, [triggering, refetch]);
+ // Strangler Pattern: all data logic (fetch + countdown + clock + trigger)
+ // extracted to useLiveMonitorData hook. Widget is now render-only.
+ const { data, loading, refreshing, error, secondsUntilRefresh, clockStr, dateStr, triggering, handleTrigger, refetch } = useLiveMonitorData();
 
  // ---- Render ----
 
