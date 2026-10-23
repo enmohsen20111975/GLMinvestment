@@ -36,7 +36,7 @@ def get_egyptian_stocks_from_data_engine():
     """جلب الأسهم المصرية من data_engine.db"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+    conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
     cursor = conn.cursor()
     
     # Get Egyptian stocks with valuation and profitability data
@@ -111,7 +111,7 @@ def update_stocks_db(stocks_data):
     """تحديث stocks.db بالبيانات الأساسية"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     cursor = conn.cursor()
     
     updated_count = 0
@@ -197,7 +197,7 @@ def main():
     print("\n📊 Verification:")
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     cursor = conn.cursor()
     
     cursor.execute("SELECT COUNT(*) FROM stocks WHERE pe_ratio > 0")

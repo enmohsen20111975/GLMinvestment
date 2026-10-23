@@ -40,7 +40,7 @@ def _inv_load_price_history(ticker: str) -> list:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute('''
@@ -132,7 +132,7 @@ def _get_sector_avg_pe(sector: str) -> Optional[float]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cur = conn.cursor()
         cur.execute('''
             SELECT AVG(pe_ratio) FROM stocks
@@ -152,7 +152,7 @@ def _get_sector_avg_pb(sector: str) -> Optional[float]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cur = conn.cursor()
         cur.execute('''
             SELECT AVG(pb_ratio) FROM stocks
@@ -227,7 +227,7 @@ def _get_fair_value_from_data_engine(ticker: str) -> Optional[float]:
             return None
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         # DATA-ENGINE-UNIFY-1 Stage 2b: fair_value column not in tab_valuation schema.
@@ -289,7 +289,7 @@ def _detect_story_change_proxy(ticker: str, sector: str) -> dict:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             cur = conn.cursor()
             cur.execute('''
                 SELECT AVG(

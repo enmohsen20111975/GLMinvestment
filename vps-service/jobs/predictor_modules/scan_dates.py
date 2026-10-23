@@ -46,7 +46,7 @@ def get_scan_dates(start_date, end_date, scan_interval):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gsd_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gsd_ctx.__enter__()
+                conn = _v402_gsd_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -72,7 +72,7 @@ def get_scan_dates(start_date, end_date, scan_interval):
     try:
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_db_dir / 'data_engine.db'), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_db_dir / 'data_engine.db'), writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
@@ -93,7 +93,7 @@ def get_scan_dates(start_date, end_date, scan_interval):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gsd2_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gsd2_ctx.__enter__()
+                conn = _v402_gsd2_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:

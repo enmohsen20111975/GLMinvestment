@@ -272,7 +272,7 @@ class DailyCloser:
     def _conn(self, db_path: str) -> sqlite3.Connection:
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=True).__enter__()
+            conn = db_manager.get_connection(db_path, writable=True)
         except Exception:
             conn = sqlite3.connect(db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
@@ -657,7 +657,7 @@ class DailyCloser:
             if os.path.exists(_intraday_db):
                 try:
                     from core.db_manager import db_manager
-                    _idb_conn = db_manager.connection('intraday', writable=False).__enter__()
+                    _idb_conn = db_manager.get_connection('intraday', writable=False)
                 except Exception:
                     _idb_conn = sqlite3.connect(_intraday_db, timeout=10.0)
                 _idb_conn.row_factory = sqlite3.Row
@@ -770,7 +770,7 @@ class DailyCloser:
                 if os.path.exists(_div_db):
                     try:
                         from core.db_manager import db_manager
-                        _div_conn = db_manager.connection('data_engine', writable=False).__enter__()
+                        _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
                         _div_conn = sqlite3.connect(_div_db, timeout=5.0)
                     _div_row = _div_conn.execute('''
@@ -1914,7 +1914,7 @@ class DailyCloser:
                 if os.path.exists(_div_db):
                     try:
                         from core.db_manager import db_manager
-                        _div_conn = db_manager.connection('data_engine', writable=False).__enter__()
+                        _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
                         _div_conn = sqlite3.connect(_div_db, timeout=5.0)
                     _div_row = _div_conn.execute('''

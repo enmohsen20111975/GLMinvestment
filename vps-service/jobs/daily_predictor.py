@@ -315,7 +315,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gt_ctx.__enter__()
+                conn = _v402_gt_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -359,7 +359,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt2_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
-                conn = _v402_gt2_ctx.__enter__()
+                conn = _v402_gt2_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -395,7 +395,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt3_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gt3_ctx.__enter__()
+                conn = _v402_gt3_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -452,7 +452,7 @@ def load_sector_heat(market_code='EGX'):
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_db_dir / 'stocks.db'), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_db_dir / 'stocks.db'), writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT sector, AVG(change_percent) as avg_change, COUNT(*) as cnt
@@ -479,7 +479,7 @@ def get_ticker_sector(ticker):
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_db_dir / 'stocks.db'), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_db_dir / 'stocks.db'), writable=False)
         cur = conn.cursor()
         cur.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = ? LIMIT 1", (ticker, market_code))
         row = cur.fetchone()
@@ -652,7 +652,7 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
         try:
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn_sa = db_manager.connection(sa_db_path, writable=True).__enter__()
+            conn_sa = db_manager.get_connection(sa_db_path, writable=True)
             cur_sa = conn_sa.cursor()
             # Ensure stored_analyses table exists (safe — won't fail if it does)
             cur_sa.execute('''CREATE TABLE IF NOT EXISTS stored_analyses (
@@ -4105,7 +4105,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         try:
                             # Phase 7.1: migrated to db_manager (writable=False)
                             from core.db_manager import db_manager
-                            conn_sa = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=False)
                             cur_sa = conn_sa.cursor()
                             # ── TASK-A (2026-10-04): تأكّد إن أعمدة AI موجودة ──
                             # الأعمدة دي declared في ai/nightly_analysis.py بس ممكن تكون
@@ -4388,7 +4388,7 @@ def main():
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                _inc_conn = db_manager.connection(_pred_db_path, writable=False).__enter__()
+                _inc_conn = db_manager.get_connection(_pred_db_path, writable=False)
                 _inc_row = _inc_conn.execute("""
                     SELECT MAX(max_d) FROM (
                         SELECT MAX(prediction_date) AS max_d FROM predictions WHERE prediction_date IS NOT NULL
@@ -4473,7 +4473,7 @@ def get_crypto_tickers(min_days=30):
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_db_dir / 'data_engine.db'), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_db_dir / 'data_engine.db'), writable=False)
         cur = conn.cursor()
         # شوف عدد snapshots المختلفة لكل symbol
         cur.execute("""

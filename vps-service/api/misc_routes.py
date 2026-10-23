@@ -104,7 +104,7 @@ def _open_db(db_alias: str, db_path: str, writable: bool = False):
     try:
         if _DBM_AVAILABLE:
             ctx = _dbm.connection(db_alias, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -290,7 +290,7 @@ def _get_testing_candidates() -> list:
             return []
         # Phase 7.1: migrated to db_manager
         from core.db_manager import db_manager
-        _con = db_manager.connection(_db_path, writable=False).__enter__()
+        _con = db_manager.get_connection(_db_path, writable=False)
         _con.row_factory = _sqlite3.Row
         # check columns exist
         _cols = {r[1] for r in _con.execute("PRAGMA table_info(predictions)").fetchall()}
@@ -698,7 +698,7 @@ def radar_incubator():
         if data_engine_db.exists():
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            logo_conn = db_manager.connection(str(data_engine_db), writable=False).__enter__()
+            logo_conn = db_manager.get_connection(str(data_engine_db), writable=False)
             for cand in candidates:
                 ticker = (cand.get('ticker') or '').upper()
                 if ticker and not cand.get('logo_url'):
@@ -2585,8 +2585,7 @@ def unified_predictions():
         _unified_ctx = None
         try:
             if _DBM_AVAILABLE:
-                _unified_ctx = _dbm.connection('predictions')
-                conn = _unified_ctx.__enter__()
+                conn = _dbm.get_connection('predictions')
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:

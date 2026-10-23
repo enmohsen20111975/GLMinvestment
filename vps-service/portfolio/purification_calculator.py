@@ -102,10 +102,10 @@ class PurificationCalculator:
         self.stocks_db = stocks_db or STOCKS_DB
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        self._de = db_manager.connection(%s, writable=False).__enter__()
+        self._de = db_manager.get_connection(%s, writable=False)
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        self._st = db_manager.connection(%s, writable=False).__enter__()
+        self._st = db_manager.get_connection(%s, writable=False)
         self._de.row_factory = sqlite3.Row
         self._st.row_factory = sqlite3.Row
 

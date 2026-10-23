@@ -165,14 +165,14 @@ def _check_egx30_regime(symbol: str, df) -> dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DBPaths.DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DBPaths.DATA_ENGINE_DB, writable=False)
         row = conn.execute("SELECT market FROM stocks WHERE symbol=?", (symbol,)).fetchone()
         if row:
             market = row[0]
         else:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn2 = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
+            conn2 = db_manager.get_connection(DBPaths.STOCKS_DB, writable=False)
             row2 = conn2.execute("SELECT market FROM stocks WHERE ticker=?", (symbol,)).fetchone()
             if row2:
                 market = row2[0]

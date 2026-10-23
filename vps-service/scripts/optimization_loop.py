@@ -38,7 +38,7 @@ def clear_predictions():
     db_path = str(_PROJECT_ROOT / 'db' / 'predictions.db')
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    db = db_manager.connection(db_path, writable=True).__enter__()
+    db = db_manager.get_connection(db_path, writable=True)
     db.execute('DELETE FROM predictions')
     db.commit()
     db.close()

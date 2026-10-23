@@ -63,7 +63,7 @@ def get_stock_prices(ticker: str, days: int = 100) -> tuple:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -101,7 +101,7 @@ def get_stock_fundamentals(ticker: str) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -442,7 +442,7 @@ def get_clean_signals():
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         # Get clean stocks with valid RSI
@@ -500,7 +500,7 @@ def generate_predictions():
         # Get clean stocks
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -564,7 +564,7 @@ def generate_predictions():
             try:
                 # Phase 7.1: migrated to db_manager (writable=True)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
+                conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
                 cursor = conn.cursor()
                 
                 cursor.execute('''

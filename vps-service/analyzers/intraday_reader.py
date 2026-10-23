@@ -41,7 +41,7 @@ def get_intraday_data(ticker: str, hours: int = 2) -> Dict[str, List]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(INTRADAY_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(INTRADAY_DB), writable=False)
         # Get latest timestamp for this ticker, then look back N hours from there
         latest_row = conn.execute('''
             SELECT MAX(timestamp) FROM stock_intraday WHERE ticker = ?
@@ -218,7 +218,7 @@ def get_sector_performance(sector: str, days: int = 5) -> Dict[str, Any]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
+        conn = db_manager.get_connection(str(stocks_db), writable=False)
         rows = conn.execute('''
             SELECT ticker, change_percent, current_price, volume
             FROM stocks

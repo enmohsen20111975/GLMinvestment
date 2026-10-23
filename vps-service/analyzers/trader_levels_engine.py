@@ -213,7 +213,7 @@ def get_unified_trader_levels(
                 from datetime import datetime
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(str(pred_db_path), writable=False).__enter__()
+                conn = db_manager.get_connection(str(pred_db_path), writable=False)
                 cur = conn.cursor()
                 # التحقق من وجود توقع نشط لتحديثه بنفس القيم الموحدة
                 row = cur.execute(

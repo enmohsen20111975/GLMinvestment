@@ -117,7 +117,7 @@ def _get_all_stocks(stocks_db: str, market: str = None, ticker: str = None) -> L
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(stocks_db, writable=False).__enter__()
+        conn = db_manager.get_connection(stocks_db, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -387,7 +387,7 @@ def build_profiles(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(stocks_db, writable=False).__enter__()
+        conn = db_manager.get_connection(stocks_db, writable=False)
         conn.executescript(SCHEMA_SQL)
         conn.commit()
         print("  ✅ Table stock_adaptive_profiles ready")
@@ -430,7 +430,7 @@ def build_profiles(
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(stocks_db, writable=False).__enter__()
+    conn = db_manager.get_connection(stocks_db, writable=False)
     conn.executescript(SCHEMA_SQL)
 
     for i, stock in enumerate(stocks):

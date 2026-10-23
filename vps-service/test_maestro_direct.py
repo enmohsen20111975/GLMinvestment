@@ -12,7 +12,7 @@ engine = UnifiedMaestroEngine(db_path)
 
 # Phase 7.1: migrated to db_manager (writable=False)
 from core.db_manager import db_manager
-conn = db_manager.connection(db_path, writable=False).__enter__()
+conn = db_manager.get_connection(db_path, writable=False)
 c = conn.cursor()
 c.execute("SELECT ticker FROM stocks WHERE current_price > 0 AND (market = 'EGX' OR market IS NULL) ORDER BY volume DESC LIMIT 10")
 tickers = [r[0] for r in c.fetchall()]

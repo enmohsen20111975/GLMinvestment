@@ -27,7 +27,7 @@ def get_all_active_stocks() -> List[Dict]:
     """Get all active stocks with sectors"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -58,7 +58,7 @@ def get_available_dates() -> List[str]:
     """Get available test dates in May 2026"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -86,7 +86,7 @@ def get_price_history(stock_id: int, end_date: str, limit: int = 100) -> List[Di
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DB_PATH, writable=False)
         cursor = conn.cursor()
         cursor.execute("SELECT ticker FROM stocks WHERE id = ?", (stock_id,))
         row = cursor.fetchone()
@@ -109,7 +109,7 @@ def get_next_price(stock_id: int, after_date: str, days: int = 10) -> Tuple[floa
     """Get price after X days"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     target = datetime.fromisoformat(after_date) + timedelta(days=days)

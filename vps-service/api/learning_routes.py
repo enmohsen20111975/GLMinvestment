@@ -146,7 +146,7 @@ def get_learned_lessons():
         
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -202,7 +202,7 @@ def get_regime_weights():
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -251,7 +251,7 @@ def get_prediction_stats():
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         

@@ -112,7 +112,7 @@ def check_price_history_db_state() -> dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.execute('PRAGMA busy_timeout = 5000')
         # total rows
         row = conn.execute('SELECT COUNT(*), MAX(date), COUNT(DISTINCT ticker) FROM price_history').fetchone()
@@ -185,10 +185,10 @@ def check_safetynet_runs_manually(ticker: str) -> dict:
         if os.path.exists(PRICE_HISTORY_DB):
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            src = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+            src = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            dst = db_manager.connection(tmp_ph, writable=True).__enter__()
+            dst = db_manager.get_connection(tmp_ph, writable=True)
             src.backup(dst)
             src.close()
             # امسح كل الـ rows لـ COMI بس علشان نـ test من غير data سابقة
@@ -223,7 +223,7 @@ def check_safetynet_runs_manually(ticker: str) -> dict:
         if os.path.exists(tmp_ph):
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(tmp_ph, writable=False).__enter__()
+            conn = db_manager.get_connection(tmp_ph, writable=False)
             rows = conn.execute(
                 "SELECT date, close_price, source FROM price_history "
                 "WHERE ticker = ? AND source = 'yahoo_safetynet' ORDER BY date DESC LIMIT 5",

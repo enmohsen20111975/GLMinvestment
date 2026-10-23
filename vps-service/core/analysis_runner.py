@@ -226,7 +226,7 @@ def run_analysis_batch(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        pred_conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        pred_conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         pred_conn.row_factory = sqlite3.Row
         # Set trace callback BEFORE any execute() so we capture PRAGMA too
         pred_conn.set_trace_callback(lambda stmt: _sql_log.append(stmt))

@@ -284,7 +284,7 @@ def fetch_active_expert_recs(ticker: str, days: int = 30) -> List[ExpertRec]:
         # mode=ro لتفادي lock contention مع الـ Node.js side
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         cur = conn.cursor()
 
         # تحقق إن الجدول موجود

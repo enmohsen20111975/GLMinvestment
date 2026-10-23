@@ -87,7 +87,7 @@ def wal_checkpoint(db_path: str) -> Tuple[bool, str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=True).__enter__()
+        conn = db_manager.get_connection(db_path, writable=True)
         conn.execute('PRAGMA journal_mode=WAL')
         result = conn.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()
         conn.close()
@@ -104,7 +104,7 @@ def integrity_check(db_path: str) -> Tuple[bool, str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         result = conn.execute('PRAGMA integrity_check').fetchone()
         conn.close()
         if result[0] == 'ok':

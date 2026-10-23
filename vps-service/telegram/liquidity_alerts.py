@@ -280,7 +280,7 @@ def _fetch_stock_meta(ticker: str) -> Dict[str, Any]:
             return out
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
+        conn = db_manager.get_connection(str(stocks_db), writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT name_ar, sector FROM stocks WHERE ticker = ? LIMIT 1",

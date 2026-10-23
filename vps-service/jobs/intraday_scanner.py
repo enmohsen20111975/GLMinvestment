@@ -58,10 +58,10 @@ def get_active_intraday_tickers(min_volume: int = 10000) -> List[Dict[str, Any]]
         return []
     try:
         # BRAVO-FIX: استخدم direct sqlite3.connect + try/finally بدل __enter__ بدون __exit__
-        # الـ bug القديم: db_manager.connection().__enter__() بدون __exit__ بـ يـسبب "closed database"
+        # الـ bug القديم: db_manager.get_connection() بدون __exit__ بـ يـسبب "closed database"
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(INTRADAY_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(INTRADAY_DB), writable=False)
         conn.row_factory = sqlite3.Row
         try:
             today_str = datetime.now().strftime('%Y-%m-%d')
@@ -142,7 +142,7 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
         # BRAVO-FIX: direct sqlite3.connect + try/finally (بدل __enter__ بدون __exit__)
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
         try:
             s_row = conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
         finally:
@@ -321,7 +321,7 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                         # BRAVO-FIX: direct sqlite3.connect + try/finally
                         # Phase 7.1: migrated to db_manager (writable=True)
                         from core.db_manager import db_manager
-                        conn_p = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
+                        conn_p = db_manager.get_connection(str(PREDICTIONS_DB), writable=True)
                         try:
                             conn_p.execute("""
                                 UPDATE predictions 
@@ -349,7 +349,7 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                 # BRAVO-FIX: direct sqlite3.connect + try/finally
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_sa = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+                conn_sa = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
                 cur_sa = conn_sa.cursor()
                 # ضمان وجود جميع الأعمدة اللازمة في سيرفر الإنتاج بدون أخطاء schema
                 for col_name, col_type in [
@@ -373,7 +373,7 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                         # BRAVO-FIX: direct sqlite3.connect + try/finally
                         # Phase 7.1: migrated to db_manager (writable=False)
                         from core.db_manager import db_manager
-                        conn_s = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+                        conn_s = db_manager.get_connection(str(STOCKS_DB), writable=False)
                         try:
                             s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
                         finally:
@@ -456,7 +456,7 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                     # BRAVO-FIX: direct sqlite3.connect + try/finally
                     # Phase 7.1: migrated to db_manager (writable=True)
                     from core.db_manager import db_manager
-                    conn_ca = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
+                    conn_ca = db_manager.get_connection(str(STOCKS_DB), writable=True)
                     cur_ca = conn_ca.cursor()
                     for p in top_picks:
                         cur_ca.execute('''
@@ -568,7 +568,7 @@ def promote_incubator_candidates(market: str = 'EGX') -> list:
         import sqlite3
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        intra_conn = db_manager.connection(str(intraday_db), writable=False).__enter__()
+        intra_conn = db_manager.get_connection(str(intraday_db), writable=False)
         intra_conn.row_factory = sqlite3.Row
     except Exception:
         return []
@@ -621,7 +621,7 @@ def promote_incubator_candidates(market: str = 'EGX') -> list:
             try:
                 # Phase 7.1: migrated to db_manager (writable=True)
                 from core.db_manager import db_manager
-                pred_conn = db_manager.connection(str(predictions_db), writable=True).__enter__()
+                pred_conn = db_manager.get_connection(str(predictions_db), writable=True)
                 pred_conn.execute("""
                     INSERT OR IGNORE INTO predictions (
                         ticker, signal, signal_type, entry_price, stop_loss, target_price,

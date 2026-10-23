@@ -272,7 +272,7 @@ class FundamentalAnalyzer:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -722,7 +722,7 @@ class ConfluenceEngineV3:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
@@ -747,7 +747,7 @@ class ConfluenceEngineV3:
             
             try:
                 from core.db_manager import db_manager
-                de_conn = db_manager.connection('data_engine', writable=False).__enter__()
+                de_conn = db_manager.get_connection('data_engine', writable=False)
             except Exception:
                 de_conn = sqlite3.connect(data_engine_path)
             de_cur = de_conn.cursor()
@@ -782,7 +782,7 @@ class ConfluenceEngineV3:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
@@ -1016,7 +1016,7 @@ class PaperTradingEngine:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=True).__enter__()
+                conn = db_manager.get_connection('stocks', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -1055,7 +1055,7 @@ class PaperTradingEngine:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=True).__enter__()
+                conn = db_manager.get_connection('stocks', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -1092,7 +1092,7 @@ class PaperTradingEngine:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=True).__enter__()
+                conn = db_manager.get_connection('stocks', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -1146,7 +1146,7 @@ class PaperTradingEngine:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()

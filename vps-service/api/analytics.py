@@ -45,7 +45,7 @@ def get_db_connection():
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=True).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=True)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")

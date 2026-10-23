@@ -449,7 +449,7 @@ def _get_news_from_market_news_db(ticker: str, max_results: int = 5, days: int =
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=False)
         conn.row_factory = sqlite3.Row
 
         # الأعمدة دي لازم تكون موجودة فعلاً في market_news

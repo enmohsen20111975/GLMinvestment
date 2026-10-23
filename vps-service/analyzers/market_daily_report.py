@@ -111,13 +111,13 @@ class MarketDailyReport:
         """Get database connection"""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        return db_manager.connection(self.db_path, writable=False).__enter__()
+        return db_manager.get_connection(self.db_path, writable=False)
     
     def _get_predictions_connection(self):
         """Get predictions database connection"""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        return db_manager.connection(self.predictions_db, writable=False).__enter__()
+        return db_manager.get_connection(self.predictions_db, writable=False)
     
     def get_market_status(self, market: str = 'EGX') -> Dict:
         """
@@ -672,7 +672,7 @@ class MarketDailyReport:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             conn.row_factory = sqlite3.Row
 
             # جلب أداء كل سهم خلال الشهر
@@ -771,7 +771,7 @@ class MarketDailyReport:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             cursor = conn.cursor()
 
             start_str = month_start.strftime('%Y-%m-%d')

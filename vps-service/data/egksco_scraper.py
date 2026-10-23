@@ -169,7 +169,7 @@ class EGKSCODatabase:
     def _get_connection(self):
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=True).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=True)
         conn.row_factory = sqlite3.Row
         # Enable WAL mode for better concurrency
         try:
@@ -662,7 +662,7 @@ class EGKSCOScraper:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db.db_path, writable=False)
             cursor = conn.cursor()
             
             for stock in stocks:
@@ -728,7 +728,7 @@ class EGKSCOScraper:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_hist = db_manager.connection(PRICE_HISTORY_DB_PATH, writable=False).__enter__()
+                conn_hist = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
                 cursor_hist = conn_hist.cursor()
                 today = datetime.now().strftime('%Y-%m-%d')
                 
@@ -811,7 +811,7 @@ class EGKSCOScraper:
                 )
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_de = db_manager.connection(data_engine_db_path, writable=False).__enter__()
+                conn_de = db_manager.get_connection(data_engine_db_path, writable=False)
                 cursor_de = conn_de.cursor()
 
                 # Ensure delta columns exist in data_engine.db.egksco_price_history

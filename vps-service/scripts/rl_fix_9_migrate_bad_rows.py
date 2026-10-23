@@ -50,7 +50,7 @@ def open_db_with_retry():
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(DB, writable=False).__enter__()
+            conn = db_manager.get_connection(DB, writable=False)
             # busy_timeout: لو الـ DB مقفول، استنى لحد DB_TIMEOUT ثانية قبل ما تـ fail.
             conn.execute(f'PRAGMA busy_timeout = {int(DB_TIMEOUT * 1000)}')
             # WAL mode: بـ يسمح بـ concurrent reads + single writer بدون lock.

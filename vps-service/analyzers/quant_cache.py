@@ -186,7 +186,7 @@ def get_quant_cache(ticker: str) -> Optional[Dict[str, Any]]:
         # mode=ro لتفادي lock contention مع الـ Node.js side
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         cur = conn.cursor()
 
         # تحقق إن الجدول موجود بسرعة
@@ -301,7 +301,7 @@ def save_quant_cache(
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=True).__enter__()
+        conn = db_manager.get_connection(db_path, writable=True)
         # WAL busy_timeout عشان يقلل lock contentions مع الكتابة المتزامنة
         try:
             conn.execute('PRAGMA journal_mode=WAL')

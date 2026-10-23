@@ -77,10 +77,10 @@ class RealBacktester:
         """Identify stocks with broken price data (ratio > 5x or < 0.2x)."""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn_stocks = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn_stocks = db_manager.get_connection(self.db_path, writable=False)
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn_history = db_manager.connection(self.history_db_path, writable=False).__enter__()
+        conn_history = db_manager.get_connection(self.history_db_path, writable=False)
         
         cursor_stocks = conn_stocks.cursor()
         cursor_history = conn_history.cursor()
@@ -130,7 +130,7 @@ class RealBacktester:
         """
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.history_db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.history_db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -165,7 +165,7 @@ class RealBacktester:
         """Get price N days after a date."""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.history_db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.history_db_path, writable=False)
         cursor = conn.cursor()
         
         # Calculate target date
@@ -211,7 +211,7 @@ class RealBacktester:
         # Get tradeable stocks at that date
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''

@@ -65,7 +65,7 @@ def main():
 
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    db = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
+    db = db_manager.get_connection(str(STOCKS_DB), writable=True)
     db.execute("PRAGMA journal_mode=WAL")
 
     # جيب كل الأسهم النشطة

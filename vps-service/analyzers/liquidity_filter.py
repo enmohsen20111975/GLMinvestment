@@ -887,7 +887,7 @@ class LiquidityFilter:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             # PRAGMA عشان نتأكد إن الأعمدة موجودة قبل الـ SELECT
             cursor.execute("PRAGMA table_info(stocks)")
@@ -958,7 +958,7 @@ class LiquidityFilter:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('SELECT current_price FROM stocks WHERE ticker = ?', (ticker,))
             result = cursor.fetchone()
@@ -975,7 +975,7 @@ class LiquidityFilter:
             if Path(price_history_db).exists():
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(price_history_db, writable=False).__enter__()
+                conn = db_manager.get_connection(price_history_db, writable=False)
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT AVG(volume), AVG(volume * close_price)
@@ -994,7 +994,7 @@ class LiquidityFilter:
                         try:
                             # Phase 7.1: migrated to db_manager (writable=False)
                             from core.db_manager import db_manager
-                            conn = db_manager.connection(price_history_db, writable=False).__enter__()
+                            conn = db_manager.get_connection(price_history_db, writable=False)
                             cursor = conn.cursor()
                             cursor.execute('SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1', (ticker,))
                             res_price = cursor.fetchone()
@@ -1020,7 +1020,7 @@ class LiquidityFilter:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('SELECT volume, current_price FROM stocks WHERE ticker = ?', (ticker,))
             result = cursor.fetchone()

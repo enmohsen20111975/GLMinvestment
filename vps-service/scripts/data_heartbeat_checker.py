@@ -58,7 +58,7 @@ def check_price_history() -> dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         # جرّب price_history table
         try:
@@ -90,7 +90,7 @@ def check_stocks_db() -> dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=True).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=True)
         cur = conn.cursor()
         cur.execute("SELECT MAX(last_update) FROM stocks WHERE last_update IS NOT NULL")
         row = cur.fetchone()

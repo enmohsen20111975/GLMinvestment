@@ -86,7 +86,7 @@ def _open_db(db_alias: str, db_path: str, writable: bool = False):
     try:
         if _ADMIN_DBM_AVAILABLE:
             ctx = _dbm.connection(db_alias, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -4741,7 +4741,7 @@ def admin_recover_database():
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(db_path), writable=False).__enter__()
+            conn = db_manager.get_connection(str(db_path), writable=False)
             result = conn.execute('PRAGMA integrity_check').fetchone()[0]
             conn.close()
             
@@ -4777,7 +4777,7 @@ def admin_recover_database():
                 # Validate backup integrity
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(str(backup), writable=False).__enter__()
+                conn = db_manager.get_connection(str(backup), writable=False)
                 backup_result = conn.execute('PRAGMA integrity_check').fetchone()[0]
                 conn.close()
                 
@@ -4817,7 +4817,7 @@ def admin_recover_database():
         try:
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(db_path), writable=True).__enter__()
+            conn = db_manager.get_connection(str(db_path), writable=True)
             conn.execute('PRAGMA journal_mode=WAL')
             conn.execute('PRAGMA busy_timeout=30000')
             conn.execute('PRAGMA wal_checkpoint(TRUNCATE)')
@@ -4827,7 +4827,7 @@ def admin_recover_database():
             # Re-check integrity
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(db_path), writable=False).__enter__()
+            conn = db_manager.get_connection(str(db_path), writable=False)
             result = conn.execute('PRAGMA integrity_check').fetchone()[0]
             conn.close()
             
@@ -4886,7 +4886,7 @@ def admin_recover_all_databases():
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(str(db_file), writable=False).__enter__()
+                conn = db_manager.get_connection(str(db_file), writable=False)
                 result = conn.execute('PRAGMA integrity_check').fetchone()[0]
                 conn.close()
                 
@@ -4898,7 +4898,7 @@ def admin_recover_all_databases():
                     try:
                         # Phase 7.1: migrated to db_manager (writable=True)
                         from core.db_manager import db_manager
-                        conn = db_manager.connection(str(db_file), writable=True).__enter__()
+                        conn = db_manager.get_connection(str(db_file), writable=True)
                         conn.execute('PRAGMA journal_mode=WAL')
                         conn.execute('PRAGMA busy_timeout=30000')
                         conn.execute('PRAGMA wal_checkpoint(TRUNCATE)')
@@ -4908,7 +4908,7 @@ def admin_recover_all_databases():
                         # Re-check
                         # Phase 7.1: migrated to db_manager (writable=False)
                         from core.db_manager import db_manager
-                        conn = db_manager.connection(str(db_file), writable=False).__enter__()
+                        conn = db_manager.get_connection(str(db_file), writable=False)
                         result2 = conn.execute('PRAGMA integrity_check').fetchone()[0]
                         conn.close()
                         
@@ -5050,7 +5050,7 @@ def admin_reset_user_trial(user_id):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_auth_db), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_auth_db), writable=False)
         try:
             # Check user exists
             row = conn.execute("SELECT id, subscription_tier, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
@@ -5110,7 +5110,7 @@ def admin_extend_user_trial(user_id):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_auth_db), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_auth_db), writable=False)
         try:
             row = conn.execute("SELECT id, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
             if not row:

@@ -47,7 +47,7 @@ def _get_stock_names(tickers):
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
         c = conn.cursor()
         placeholders = ",".join("?" for _ in tickers)
         rows = c.execute(
@@ -98,7 +98,7 @@ def sync_scanner_to_stored_analyses(market='EGX'):
 
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
+    conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=True)
     c = conn.cursor()
 
     # 1. إفراغ البيانات القديمة المتجمدة لهذا السوق
@@ -253,7 +253,7 @@ def purge_stale_predictions(db_path: Path = None) -> dict:
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(db_path), writable=False).__enter__()
+    conn = db_manager.get_connection(str(db_path), writable=False)
     cur = conn.cursor()
     stats = {}
 
@@ -371,7 +371,7 @@ def verify_invariants(db_path: Path = None) -> dict:
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     cur = conn.cursor()
 
     # The mandatory proof query

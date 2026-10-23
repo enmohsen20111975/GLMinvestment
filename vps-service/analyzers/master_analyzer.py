@@ -399,7 +399,7 @@ def get_screener_tags(ticker: str, market: str = '') -> Dict[str, Any]:
             pass
         # Phase 7.1: migrated to db_manager
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         # هل الجدول متاح؟
         try:
@@ -1291,7 +1291,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(price_history_db, writable=False).__enter__()
+            conn = db_manager.get_connection(price_history_db, writable=False)
             cursor = conn.cursor()
 
             # 2أ. تحقق من توفر بيانات egksco لهذا السهم
@@ -1540,7 +1540,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                egksco_conn = db_manager.connection(egksco_db_path, writable=False).__enter__()
+                egksco_conn = db_manager.get_connection(egksco_db_path, writable=False)
                 egksco_cur = egksco_conn.cursor()
                 # Detect column name (canonical schema: price_date; legacy scraper: date)
                 egksco_cur.execute("PRAGMA table_info(egksco_price_history)")
@@ -1605,7 +1605,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(intraday_db, writable=False).__enter__()
+            conn = db_manager.get_connection(intraday_db, writable=False)
             c = conn.cursor()
             
             # فحص جداول الأسهم أولاً
@@ -1647,7 +1647,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(intraday_db, writable=False).__enter__()
+            conn = db_manager.get_connection(intraday_db, writable=False)
             c = conn.cursor()
             
             rows = []
@@ -1715,7 +1715,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(stocks_db, writable=False)
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(stocks)")
             cols = [col[1] for col in cursor.fetchall()]
@@ -1861,7 +1861,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(stocks_db, writable=False)
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(stocks)")
             cols = [col[1] for col in cursor.fetchall()]
@@ -2530,7 +2530,7 @@ class MasterAnalyzer:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn2 = db_manager.connection(self.db_path, writable=False).__enter__()
+                conn2 = db_manager.get_connection(self.db_path, writable=False)
                 cursor2 = conn2.cursor()
                 cursor2.execute('SELECT current_price FROM stocks WHERE ticker = ?', (ticker,))
                 row = cursor2.fetchone()
@@ -5260,7 +5260,7 @@ class MasterAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('SELECT market, name FROM stocks WHERE ticker = ?', (ticker,))
             row = cursor.fetchone()
@@ -5280,7 +5280,7 @@ class MasterAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             
             # Check which columns exist first
@@ -5598,7 +5598,7 @@ class MasterAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             if market:
                 cursor.execute(

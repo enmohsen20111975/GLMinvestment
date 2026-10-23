@@ -279,7 +279,7 @@ def run_quick_backtest():
         PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         
         stocks = conn.execute("""
             SELECT ticker, COUNT(*) as cnt FROM price_history

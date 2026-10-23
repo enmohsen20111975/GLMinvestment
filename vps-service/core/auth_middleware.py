@@ -321,7 +321,7 @@ def _check_trial_active(user_id, fail_closed=False):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(_auth_db), writable=False).__enter__()
+        conn = db_manager.get_connection(str(_auth_db), writable=False)
         try:
             row = conn.execute(
                 "SELECT subscription_tier, trial_ends_at FROM User WHERE id = ?",

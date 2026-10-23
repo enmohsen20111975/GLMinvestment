@@ -113,7 +113,7 @@ def _get_market_tickers(market: str) -> List[str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(full_path, writable=False).__enter__()
+        conn = db_manager.get_connection(full_path, writable=False)
         rows = conn.execute(query).fetchall()
         conn.close()
         tickers = [r[0] for r in rows if r[0]]
@@ -137,7 +137,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(ph_db, writable=False).__enter__()
+            conn = db_manager.get_connection(ph_db, writable=False)
             rows = conn.execute("""
                 SELECT date, open_price, high_price, low_price, close_price, volume
                 FROM price_history WHERE ticker = ?
@@ -154,7 +154,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(stocks_db, writable=False).__enter__()
+                conn = db_manager.get_connection(stocks_db, writable=False)
                 rows = conn.execute("""
                     SELECT price_date, open, high, low, close, volume
                     FROM stock_daily_prices WHERE ticker = ?
@@ -273,7 +273,7 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         if stocks_db.exists():
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            sconn = db_manager.connection(stocks_db, writable=False).__enter__()
+            sconn = db_manager.get_connection(stocks_db, writable=False)
             srow = sconn.execute(
                 "SELECT high_52w, low_52w FROM stocks WHERE ticker = ?", (ticker,)
             ).fetchone()

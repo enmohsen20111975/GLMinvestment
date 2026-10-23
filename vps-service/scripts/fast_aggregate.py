@@ -42,7 +42,7 @@ def main():
     # قبل
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    ph = db_manager.connection(PRICE_HISTORY_DB, writable=True).__enter__()
+    ph = db_manager.get_connection(PRICE_HISTORY_DB, writable=True)
     ph.execute('PRAGMA busy_timeout = 30000')
     ph.execute("""
         CREATE TABLE IF NOT EXISTS price_history (
@@ -60,7 +60,7 @@ def main():
     # اتصل بـ intraday.db READ-ONLY (مفيش lock conflict مع data-engine)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    in_db = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
+    in_db = db_manager.get_connection(INTRADAY_DB, writable=False)
     in_db.execute('PRAGMA busy_timeout = 30000')
 
     # شوف اللي متاح

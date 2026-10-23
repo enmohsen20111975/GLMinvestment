@@ -56,7 +56,7 @@ def _open_db(db_path: str, writable: bool = False):
     try:
         if _PRED_OPT_DBM_AVAILABLE:
             ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -286,7 +286,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_eot_ctx = _dbm.connection(self._get_db_path(), writable=True)
-                    conn = _po_eot_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -331,7 +331,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_lop_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    conn = _po_lop_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -803,7 +803,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_ro1_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    conn = _po_ro1_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -904,7 +904,7 @@ class PredictionOptimizer:
                 try:
                     if _PRED_OPT_DBM_AVAILABLE:
                         _po_ro2_ctx = _dbm.connection(self._get_db_path(), writable=True)
-                        conn = _po_ro2_ctx.__enter__()
+                        
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:
@@ -989,8 +989,7 @@ class PredictionOptimizer:
             _po_rso_ctx = None
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
-                    _po_rso_ctx = _dbm.connection(db_path, writable=False)
-                    conn = _po_rso_ctx.__enter__()
+                    conn = _dbm.get_connection(db_path, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1353,7 +1352,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_sm1_ctx = _dbm.connection(str(_root / 'db' / 'stocks.db'), writable=False)
-                    s_conn = _po_sm1_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1375,7 +1374,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_sm2_ctx = _dbm.connection(str(_root / 'db' / 'stocks.db'), writable=False)
-                    s_conn = _po_sm2_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1414,8 +1413,7 @@ class PredictionOptimizer:
             _po_rwr_ctx = None
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
-                    _po_rwr_ctx = _dbm.connection(_db, writable=False)
-                    conn = _po_rwr_ctx.__enter__()
+                    conn = _dbm.get_connection(_db, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1520,7 +1518,7 @@ class PredictionOptimizer:
             try:
                 if _PRED_OPT_DBM_AVAILABLE:
                     _po_gos_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    conn = _po_gos_ctx.__enter__()
+                    
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:

@@ -170,7 +170,7 @@ class EGXFundamentalFetcher:
         try:
             # Phase 7.1: migrated
             from core.db_manager import db_manager
-            conn = db_manager.connection(self._db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self._db_path, writable=False)
             conn.row_factory = _sqlite3.Row
             cur = conn.cursor()
             # tab_profitability: ROE, ROA, margins
@@ -188,7 +188,7 @@ class EGXFundamentalFetcher:
         try:
             # Phase 7.1: migrated
             from core.db_manager import db_manager
-            conn2 = db_manager.connection(self._stocks_db, writable=False).__enter__()
+            conn2 = db_manager.get_connection(self._stocks_db, writable=False)
             conn2.row_factory = _sqlite3.Row
             cur2 = conn2.cursor()
             cur2.execute('SELECT current_price, change_percent, volume, sector, name, name_ar, market_cap FROM stocks WHERE ticker = ?', (ticker,))
@@ -401,7 +401,7 @@ class EGXFundamentalFetcher:
         # إنشاء/تأكيد table
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=True).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=True)
         conn.execute('''
             CREATE TABLE IF NOT EXISTS egx_fundamentals (
                 ticker TEXT PRIMARY KEY,
@@ -514,7 +514,7 @@ class EGXFundamentalFetcher:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
             cur = conn.cursor()
             for table in ('tab_balance_sheet', 'tab_income_statement', 'tab_cash_flow'):
                 try:
@@ -570,7 +570,7 @@ if __name__ == '__main__':
     if len(_sys.argv) > 1 and _sys.argv[1] == "stats":
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         try:
             total = conn.execute("SELECT COUNT(*) FROM egx_fundamentals").fetchone()[0]
             print(f"Total EGX fundamentals: {total}")

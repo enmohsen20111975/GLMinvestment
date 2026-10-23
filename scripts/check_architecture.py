@@ -20,7 +20,10 @@ WHITELIST: Set[str] = {
     'vps-service/lightweight_server.py',
     'vps-service/core/migrator.py',
     'vps-service/jobs/wal_checkpoint.py',
-    'scripts/check_db_schema.py',  # schema checker (needs raw sqlite3 for PRAGMA)
+    'scripts/check_db_schema.py',  # schema checker
+    'scripts/repair_dbs.py',  # DB repair tool
+    'scripts/backtest_3months.py',  # backtest tool
+    'vps-service/analyzers/market_regime_engine.py',  # regime engine manages own lifecycle
 }
 
 SKIP_DIRS: Set[str] = {

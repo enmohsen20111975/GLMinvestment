@@ -107,11 +107,11 @@ def main():
     
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    src_conn = db_manager.connection(zip_db_path, writable=False).__enter__()
+    src_conn = db_manager.get_connection(zip_db_path, writable=False)
     src_conn.row_factory = sqlite3.Row
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    dst_conn = db_manager.connection(vps_db_path, writable=False).__enter__()
+    dst_conn = db_manager.get_connection(vps_db_path, writable=False)
     dst_conn.execute('PRAGMA busy_timeout=30000')
     
     start_time = time.time()

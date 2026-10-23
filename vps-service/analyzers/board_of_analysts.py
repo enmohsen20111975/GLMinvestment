@@ -183,7 +183,7 @@ class FundamentalAnalyst(BaseAnalyst):
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT pe_ratio, pb_ratio, roe, dividend_yield, book_value_per_share, sector
@@ -378,7 +378,7 @@ class MacroAnalyst(BaseAnalyst):
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT value FROM app_state WHERE key = 'market_regime'

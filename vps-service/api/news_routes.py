@@ -80,7 +80,7 @@ def init_news_db():
         pass
     # Phase 7.1: migrated (writable for CREATE)
     from core.db_manager import db_manager
-    conn = db_manager.connection(get_db_path(), writable=True).__enter__()
+    conn = db_manager.get_connection(get_db_path(), writable=True)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS news (
@@ -159,7 +159,7 @@ def init_news_agent_db():
     # fallback: raw sqlite3.connect (backward compat)
     # Phase 7.1: migrated to db_manager
     from core.db_manager import db_manager
-    conn = db_manager.connection(NEWS_AGENT_DB, writable=True).__enter__()
+    conn = db_manager.get_connection(NEWS_AGENT_DB, writable=True)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS news_agent_articles (
@@ -595,7 +595,7 @@ def get_egx_news():
         
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        conn = db_manager.connection(get_db_path(), writable=False).__enter__()
+        conn = db_manager.get_connection(get_db_path(), writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         

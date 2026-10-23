@@ -69,7 +69,7 @@ def get_screener_tags(ticker: str) -> Dict[str, Any]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         try:
             conn.execute('SELECT 1 FROM screener_lists LIMIT 1')
@@ -108,7 +108,7 @@ def get_fundamentals_boost(ticker: str) -> Dict[str, Any]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         # FIX-WAVE-2-DATA (AUDIT-DEEP-3 #1): tab_valuation/tab_profitability
         # use `symbol` column (NOT `ticker`). Some rows have an Arabic suffix
@@ -161,7 +161,7 @@ def get_bid_ask_spread(ticker: str) -> Dict[str, Any]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(INTRADAY_DB, writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             '''SELECT bid, ask FROM intraday_prices

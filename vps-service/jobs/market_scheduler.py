@@ -248,8 +248,7 @@ class MarketScheduler:
             # Rule 54 / Phase 3: استخدم db_manager للـ WAL + busy_timeout
             try:
                 from core.db_manager import db_manager
-                conn_stocks_ctx = db_manager.connection('stocks', writable=False)
-                conn_stocks = conn_stocks_ctx.__enter__()
+                conn_stocks = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn_stocks = sqlite3.connect(stocks_db, timeout=30)
 
@@ -1651,7 +1650,7 @@ class MarketScheduler:
                         try:
                             # Phase 7.1: migrated to db_manager (writable=False)
                             from core.db_manager import db_manager
-                            conn = db_manager.connection(db_path, writable=False).__enter__()
+                            conn = db_manager.get_connection(db_path, writable=False)
                             cur = conn.cursor()
                             updated = 0
                             for ticker, data in price_map.items():
@@ -1729,7 +1728,7 @@ class MarketScheduler:
                 # Get tickers
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(db_path, writable=False).__enter__()
+                conn = db_manager.get_connection(db_path, writable=False)
                 try:
                     cur = conn.cursor()
                     ticker_rows = cur.execute("""
@@ -1762,7 +1761,7 @@ class MarketScheduler:
                 errors = 0
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(db_path, writable=False).__enter__()
+                conn = db_manager.get_connection(db_path, writable=False)
                 try:
                     cur = conn.cursor()
 
@@ -1897,7 +1896,7 @@ class MarketScheduler:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(stocks_db, writable=False)
             conn.row_factory = sqlite3.Row
 
             # Ensure table exists
@@ -1945,7 +1944,7 @@ class MarketScheduler:
             # Prepare price history connection for volume sums and change periods
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn_ph = db_manager.connection(price_history_db, writable=True).__enter__()
+            conn_ph = db_manager.get_connection(price_history_db, writable=True)
             conn_ph.row_factory = sqlite3.Row
 
             # Batch insert/update
@@ -2094,7 +2093,7 @@ class MarketScheduler:
             db_path = _os.path.join(_root, 'db', 'stocks.db')
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             try:
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()

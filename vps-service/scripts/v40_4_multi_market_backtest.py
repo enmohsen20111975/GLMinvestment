@@ -78,7 +78,7 @@ def _load_market_tickers(market: str, limit: int) -> list[str]:
     # 1. Pull tickers for this market from stocks.db
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn_s = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    conn_s = db_manager.get_connection(STOCKS_DB, writable=False)
     cur_s = conn_s.cursor()
     cur_s.execute("SELECT ticker FROM stocks WHERE market = ?", (market,))
     stocks_tickers = sorted({str(r[0]) for r in cur_s.fetchall()})
@@ -90,7 +90,7 @@ def _load_market_tickers(market: str, limit: int) -> list[str]:
     # 2. Find which ones have >= 200 days in price_history (data_engine.db.egksco_price_history)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn_p = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+    conn_p = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
     cur_p = conn_p.cursor()
     placeholders = ','.join('?' * len(stocks_tickers))
     cur_p.execute(
@@ -138,7 +138,7 @@ def _load_crypto_tickers_synthetic(limit: int = 5) -> tuple[list[str], str]:
     os.close(tmp_fd)
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(tmp_path, writable=True).__enter__()
+    conn = db_manager.get_connection(tmp_path, writable=True)
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE price_history (

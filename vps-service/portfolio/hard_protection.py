@@ -84,7 +84,7 @@ def _get_stocks_conn() -> sqlite3.Connection:
     """فتح اتصال بـ stocks.db"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(STOCKS_DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(STOCKS_DB_PATH, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -93,7 +93,7 @@ def _get_predictions_conn() -> sqlite3.Connection:
     """فتح اتصال بـ predictions.db (يحتوي portfolio_state.cash)"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(PREDICTIONS_DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(PREDICTIONS_DB_PATH, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

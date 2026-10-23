@@ -42,7 +42,7 @@ def main():
     # Check if stock_price_history already exists in VPS DB
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    vps_conn = db_manager.connection(vps_db_path, writable=False).__enter__()
+    vps_conn = db_manager.get_connection(vps_db_path, writable=False)
     vps_cursor = vps_conn.cursor()
     
     existing = vps_cursor.execute(
@@ -65,7 +65,7 @@ def main():
     print("\nOpening ZIP database (read-only)...")
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    zip_conn = db_manager.connection(zip_db_path, writable=False).__enter__()
+    zip_conn = db_manager.get_connection(zip_db_path, writable=False)
     zip_cursor = zip_conn.cursor()
     
     # Get row count from source

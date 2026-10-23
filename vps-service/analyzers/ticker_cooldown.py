@@ -49,7 +49,7 @@ def check_ticker_cooldown(ticker: str) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
         cur = conn.cursor()
         now = datetime.now()
 
@@ -136,7 +136,7 @@ def check_ticker_cooldown(ticker: str) -> Dict:
                     try:
                         # Phase 7.1: migrated to db_manager (writable=False)
                         from core.db_manager import db_manager
-                        sconn = db_manager.connection(str(stocks_db), writable=False).__enter__()
+                        sconn = db_manager.get_connection(str(stocks_db), writable=False)
                         scur = sconn.cursor()
                         scur.execute("SELECT current_price FROM stocks WHERE ticker = ?", (ticker,))
                         row = scur.fetchone()

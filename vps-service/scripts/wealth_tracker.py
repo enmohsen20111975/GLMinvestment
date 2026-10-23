@@ -32,7 +32,7 @@ class WealthTracker:
         """تسجيل لقطة يومية لثروة العميل."""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         today = datetime.now().strftime('%Y-%m-%d')
@@ -120,7 +120,7 @@ class WealthTracker:
         """جلب تاريخ الثروة للرسوم البيانية."""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         rows = conn.execute("""
@@ -137,7 +137,7 @@ class WealthTracker:
         """ملخص الثروة مع التغيرات."""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         # أحدث لقطة

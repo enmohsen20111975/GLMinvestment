@@ -35,7 +35,7 @@ def _open_stocks_db():
         return None
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    return db_manager.connection(_STOCKS_DB, writable=False).__enter__()
+    return db_manager.get_connection(_STOCKS_DB, writable=False)
 
 
 # ============================================================================

@@ -79,7 +79,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db)
 
@@ -253,7 +253,7 @@ class TelegramSignalImporter:
             try:
                 try:
                     from core.db_manager import db_manager
-                    conn = db_manager.connection('predictions', writable=True).__enter__()
+                    conn = db_manager.get_connection('predictions', writable=True)
                 except Exception:
                     conn = sqlite3.connect(self.predictions_db)
                 table = 'telegram_news' if result['type'] == 'news' else 'telegram_signals'
@@ -283,7 +283,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=False).__enter__()
+                conn = db_manager.get_connection('predictions', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db)
             conn.row_factory = sqlite3.Row
@@ -411,7 +411,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.stocks_db)
             cursor = conn.cursor()
@@ -481,7 +481,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db)
             cur = conn.cursor()
@@ -590,7 +590,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db)
             conn.row_factory = sqlite3.Row
@@ -697,7 +697,7 @@ class TelegramSignalImporter:
 
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('price_history', writable=False).__enter__()
+                conn = db_manager.get_connection('price_history', writable=False)
             except Exception:
                 conn = sqlite3.connect(_price_db)
             conn.row_factory = sqlite3.Row
@@ -737,7 +737,7 @@ class TelegramSignalImporter:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=False).__enter__()
+                conn = db_manager.get_connection('predictions', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db)
             conn.row_factory = sqlite3.Row

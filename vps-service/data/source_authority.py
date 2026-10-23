@@ -115,7 +115,7 @@ def is_primary_fresh(db_path: str, ticker: str, market: str) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         row = conn.execute("""
             SELECT MAX(date) as latest
             FROM price_history
@@ -189,7 +189,7 @@ def write_guarded(
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=True).__enter__()
+        conn = db_manager.get_connection(db_path, writable=True)
         conn.execute("""
             INSERT OR REPLACE INTO price_history
             (ticker, date, open_price, high_price, low_price, close_price, volume, source)
@@ -208,7 +208,7 @@ def get_market_for_ticker(ticker: str, db_path: str = 'db/stocks.db') -> str:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         row = conn.execute(
             "SELECT market FROM stocks WHERE ticker = ? LIMIT 1",
             (ticker,)

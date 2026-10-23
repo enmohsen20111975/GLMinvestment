@@ -206,7 +206,7 @@ def _get_current_price(ticker: str) -> float:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         # جرّب egksco_stocks أولاً (مصدر صحيح)
@@ -278,7 +278,7 @@ def _load_price_history_metrics_batch() -> dict:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(_ph_db, writable=False).__enter__()
+        conn = db_manager.get_connection(_ph_db, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -359,7 +359,7 @@ def _load_stocks_fundamentals_batch() -> dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -1175,7 +1175,7 @@ _EXPERT_VERDICT_CACHE = {}
 def get_predictions_db():
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     # RL-FIX-6: auto-migrate target_price_2 column (المستهدف الثاني)
@@ -1934,7 +1934,7 @@ def get_live_tracking():
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            sconn = db_manager.get_connection(STOCKS_DB, writable=False)
             sconn.row_factory = sqlite3.Row
             scur = sconn.cursor()
             if tickers:
@@ -2225,7 +2225,7 @@ def _check_morning_bell_market_veto():
             if os.path.exists(de_path):
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_de = db_manager.connection(de_path, writable=False).__enter__()
+                conn_de = db_manager.get_connection(de_path, writable=False)
                 conn_de.row_factory = sqlite3.Row
                 cur_de = conn_de.cursor()
                 try:

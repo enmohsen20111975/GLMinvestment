@@ -63,7 +63,7 @@ ROC_WINDOW = 14  # 14-day rate of change for outperforming_market detection
 def _connect_ro(db_path: str) -> sqlite3.Connection:
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

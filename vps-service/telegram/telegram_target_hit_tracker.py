@@ -160,7 +160,7 @@ def get_active_radar_targets() -> List[Dict]:
         try:
             # Phase 7.1: migrated
             from core.db_manager import db_manager
-            with db_manager.connection(STOCKS_DB, writable=False).__enter__() as con_val:
+            with db_manager.get_connection(STOCKS_DB, writable=False) as con_val:
                 rows_tk = con_val.execute("SELECT ticker FROM stocks WHERE market = 'EGX'").fetchall()
                 egx_valid_tickers = {r[0] for r in rows_tk}
         except Exception as e:
@@ -245,7 +245,7 @@ def get_active_radar_targets() -> List[Dict]:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            con_p = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+            con_p = db_manager.get_connection(PREDICTIONS_DB, writable=False)
             con_p.row_factory = sqlite3.Row
             rows = con_p.execute("""
                 SELECT ticker, signal, confidence, target_price, target_price_2, stop_loss, entry_price, prediction_date, created_at, market
@@ -317,7 +317,7 @@ def scan_for_target_hits(active_targets: List[Dict]) -> List[Dict]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        con_s = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        con_s = db_manager.get_connection(STOCKS_DB, writable=False)
         con_s.row_factory = sqlite3.Row
         stocks_map = {r['ticker']: dict(r) for r in con_s.execute("SELECT * FROM stocks WHERE market = 'EGX'").fetchall()}
         con_s.close()
@@ -914,7 +914,7 @@ def record_target_hit_in_db(item: Dict) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cursor = conn.cursor()
 
         # فحص إذا كان هناك توقع نشط مسجل لهذا السهم

@@ -156,7 +156,7 @@ def store_inflation_in_db(value: float, year: str) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB_PATH), writable=True).__enter__()
+        conn = db_manager.get_connection(str(STOCKS_DB_PATH), writable=True)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA busy_timeout=10000;")
 

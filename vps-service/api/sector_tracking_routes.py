@@ -29,7 +29,7 @@ def _get_stocks_conn():
     """Get a connection to stocks.db."""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
+    conn = db_manager.get_connection(DBPaths.STOCKS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -65,7 +65,7 @@ class MacroStateEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(ph_path, writable=False).__enter__()
+            conn = db_manager.get_connection(ph_path, writable=False)
             cursor = conn.cursor()
             
             # استخراج أعلى وأدنى سعر 52 أسبوع ومتوسط الحجم في استعلام تجميعي سريع
@@ -121,7 +121,7 @@ class MacroStateEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(sdb_path, writable=False).__enter__()
+            conn = db_manager.get_connection(sdb_path, writable=False)
             rows = conn.execute("""
                 SELECT ticker, high_52w, low_52w, last_price
                 FROM stocks WHERE is_active = 1

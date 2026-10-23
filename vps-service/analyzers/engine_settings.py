@@ -508,7 +508,7 @@ def _load_all_from_db() -> Dict[str, str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         _ensure_schema(conn)
         cur = conn.execute("SELECT key, value FROM system_settings")
         result = {row[0]: row[1] for row in cur.fetchall()}
@@ -1310,7 +1310,7 @@ def update_setting(key: str, value: Any, updated_by: str = "admin") -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         _ensure_schema(conn)
         # Determine type
         if isinstance(value, bool):

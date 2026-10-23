@@ -48,7 +48,7 @@ def _ensure_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=True)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS decision_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,7 +136,7 @@ def log_decision(
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=True)
         conn.execute('''
             INSERT INTO decision_log
             (timestamp, symbol, market, decision_type, reason_code, reason_text,
@@ -182,7 +182,7 @@ def get_decision_stats(days_back: int = 7) -> Dict[str, Any]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=False)
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
 
         total = conn.execute('SELECT COUNT(*) FROM decision_log WHERE timestamp >= ?', (cutoff,)).fetchone()[0]
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     _ensure_db()
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=True)
     conn.execute("DELETE FROM decision_log WHERE symbol LIKE 'TEST%'")
     conn.commit()
     conn.close()
@@ -337,7 +337,7 @@ if __name__ == '__main__':
     # Cleanup
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=True)
     conn.execute("DELETE FROM decision_log WHERE symbol LIKE 'TEST%'")
     conn.commit()
     conn.close()

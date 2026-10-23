@@ -252,7 +252,7 @@ class ReportsEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.predictions_db_path, writable=True).__enter__()
+            conn = db_manager.get_connection(self.predictions_db_path, writable=True)
             cur = conn.cursor()
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS reports (
@@ -312,7 +312,7 @@ class ReportsEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            return db_manager.connection(self.data_engine_db_path, writable=False).__enter__()
+            return db_manager.get_connection(self.data_engine_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] data_engine.db connect error: {e}")
             return None
@@ -321,7 +321,7 @@ class ReportsEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            return db_manager.connection(self.stocks_db_path, writable=False).__enter__()
+            return db_manager.get_connection(self.stocks_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] stocks.db connect error: {e}")
             return None
@@ -330,7 +330,7 @@ class ReportsEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            return db_manager.connection(self.predictions_db_path, writable=False).__enter__()
+            return db_manager.get_connection(self.predictions_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] predictions.db connect error: {e}")
             return None
@@ -339,7 +339,7 @@ class ReportsEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            return db_manager.connection(self.price_history_db_path, writable=False).__enter__()
+            return db_manager.get_connection(self.price_history_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] price_history.db connect error: {e}")
             return None
@@ -1280,7 +1280,7 @@ class ReportsEngine:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(path, writable=False).__enter__()
+                conn = db_manager.get_connection(path, writable=False)
                 if required_table:
                     cur = conn.cursor()
                     cur.execute(

@@ -161,7 +161,7 @@ class EGXIndicesUpdater:
 
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.price_history_db, writable=True).__enter__()
+        conn = db_manager.get_connection(self.price_history_db, writable=True)
         inserted = 0
         try:
             conn.execute("""
@@ -213,7 +213,7 @@ class EGXIndicesUpdater:
         try:
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=True).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=True)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS egx_indices (
                     ticker TEXT PRIMARY KEY,
@@ -240,7 +240,7 @@ class EGXIndicesUpdater:
         status = {}
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.price_history_db, writable=False).__enter__()
+        conn = db_manager.get_connection(self.price_history_db, writable=False)
         for ticker in self.INDICES:
             try:
                 count = conn.execute(

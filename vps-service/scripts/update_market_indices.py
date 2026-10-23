@@ -171,7 +171,7 @@ def update_market_indices():
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=False)
     ensure_table_schema(conn)
     cur = conn.cursor()
 

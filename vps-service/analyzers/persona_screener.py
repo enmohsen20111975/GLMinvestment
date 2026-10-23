@@ -152,7 +152,7 @@ def _load_all_stocks(market: str = None) -> List[Dict[str, Any]]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         
@@ -217,7 +217,7 @@ def _load_fundamentals_batch(tickers: List[str]) -> Dict[str, Dict[str, Any]]:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -379,7 +379,7 @@ def _load_price_history(ticker: str, days: int = 60) -> List[Dict[str, Any]]:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute('''

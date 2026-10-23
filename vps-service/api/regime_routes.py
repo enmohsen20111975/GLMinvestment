@@ -43,7 +43,7 @@ def get_detector():
                 continue
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            _c = db_manager.connection(p, writable=False).__enter__()
+            _c = db_manager.get_connection(p, writable=False)
             _has = _c.execute(
                 "SELECT 1 FROM sqlite_master WHERE name='stock_price_history' LIMIT 1"
             ).fetchone()

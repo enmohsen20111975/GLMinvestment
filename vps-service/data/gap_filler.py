@@ -30,7 +30,7 @@ def get_last_recorded_date() -> datetime:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         cur.execute("SELECT MAX(date) FROM price_history")
         row = cur.fetchone()
@@ -95,10 +95,10 @@ def check_and_fill_gaps(force_days=None, force=False):
     logger.info(f"[GapFiller] Connecting to databases to fetch {days_to_fetch} days...")
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    s_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    s_conn = db_manager.get_connection(STOCKS_DB, writable=False)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    ph_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+    ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
 
     # Get all active stocks with their market
     cur = s_conn.execute("SELECT ticker, market FROM stocks")

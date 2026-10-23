@@ -175,7 +175,7 @@ def _ensure_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=True)
     conn.execute('''
         CREATE TABLE IF NOT EXISTS crypto_disclosures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -208,7 +208,7 @@ def store_crypto_disclosure(disclosure: Dict[str, Any]) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=True)
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         conn.execute('''
             INSERT OR IGNORE INTO crypto_disclosures
@@ -250,7 +250,7 @@ def get_latest_crypto_disclosure_impact(symbol: str, hours_back: int = 48) -> Di
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=False)
         cutoff = (datetime.now() - timedelta(hours=hours_back)).strftime('%Y-%m-%d %H:%M')
         row = conn.execute('''
             SELECT symbol, event_type, impact_score, verdict, title, published_at

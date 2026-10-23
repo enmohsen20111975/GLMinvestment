@@ -111,7 +111,7 @@ def _load_price_history(ticker: str, days: int = 20) -> list:
             return []
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.execute(
             """SELECT date, high_price, low_price, close_price, volume
                FROM price_history
@@ -134,7 +134,7 @@ def _load_current_stock_data(ticker: str) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cur = conn.execute(
             "SELECT current_price, volume, value_traded, turnover_egp FROM stocks WHERE ticker = ?",
             (ticker,),
@@ -162,7 +162,7 @@ def _load_market_volatility() -> Tuple[float, str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         # جرّب market_indices أو stocks (لو EGX30 موجود كـ ticker)
         cur = conn.execute(
             """SELECT current_value, previous_close, change_percent

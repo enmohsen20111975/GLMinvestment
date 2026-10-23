@@ -92,7 +92,7 @@ class LiveIndicatorEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
 
@@ -175,7 +175,7 @@ class LiveIndicatorEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
 
@@ -272,7 +272,7 @@ class LiveIndicatorEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             conn.execute('PRAGMA busy_timeout = 5000')
             cur = conn.cursor()
 
@@ -919,7 +919,7 @@ class LiveIndicatorEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
             # Get active stocks with price > 0 and volume > 0
@@ -955,7 +955,7 @@ class LiveIndicatorEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
             cur.execute('''

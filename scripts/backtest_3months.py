@@ -110,7 +110,7 @@ def run_predictor(start_date, end_date, dry_run=False):
         '--end', end_date,
         '--scan-interval', '1',
         '--max-tickers', '200',
-        '--keep-old',  # Don't delete old predictions — we want to keep existing ones
+        
     ]
     if dry_run:
         cmd.append('--dry-run')

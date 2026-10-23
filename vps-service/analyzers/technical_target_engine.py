@@ -501,7 +501,7 @@ class TechnicalTargetEngine:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute(
@@ -849,7 +849,7 @@ if __name__ == "__main__":
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DEFAULT_STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DEFAULT_STOCKS_DB, writable=False)
         cur = conn.cursor()
         cur.execute('SELECT current_price FROM stocks WHERE ticker = ?', (_ticker.upper(),))
         row = cur.fetchone()

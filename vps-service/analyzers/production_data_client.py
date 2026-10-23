@@ -255,7 +255,7 @@ class ProductionDataClient:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(INTRADAY_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(INTRADAY_DB), writable=False)
             row = conn.execute('''
                 SELECT close FROM stock_intraday
                 WHERE ticker = ? AND close IS NOT NULL AND close > 0
@@ -273,7 +273,7 @@ class ProductionDataClient:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
             row = conn.execute(
                 'SELECT current_price FROM stocks WHERE ticker = ? AND is_active = 1',
                 (ticker,)
@@ -376,7 +376,7 @@ class ProductionDataClient:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(DATA_ENGINE_DB), writable=False)
             rows = conn.execute('''
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
                 FROM egksco_price_history
@@ -460,7 +460,7 @@ class ProductionDataClient:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
             conn.row_factory = sqlite3.Row
             rows = conn.execute('''
                 SELECT ticker, name_ar, sector, current_price, change_percent,
@@ -518,7 +518,7 @@ class ProductionDataClient:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+                conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
                 conn.row_factory = sqlite3.Row
                 row = conn.execute('''
                     SELECT ticker, name_ar, sector, current_price, change_percent,

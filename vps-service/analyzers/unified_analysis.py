@@ -58,7 +58,7 @@ def _get_ohlcv(ticker: str, days: int = 60) -> Dict[str, List]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DATA_ENGINE_DB), writable=False)
         rows = conn.execute('''
             SELECT price_date, open_price, high_price, low_price, close_price, volume
             FROM egksco_price_history
@@ -88,7 +88,7 @@ def _get_stock_meta(ticker: str) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute('''
             SELECT ticker, name_ar, sector, current_price, change_percent, volume,
@@ -111,7 +111,7 @@ def _get_active_prediction(ticker: str) -> Optional[Dict]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
         conn.row_factory = sqlite3.Row
         cols = [c[1] for c in conn.execute("PRAGMA table_info(predictions)").fetchall()]
         extra_cols = ""
@@ -395,7 +395,7 @@ def analyze_market(market: str = 'EGX', limit: int = 50) -> List[Dict]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+        conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
         # turnover_egp may be NULL — compute from volume × price
         tickers = [r[0] for r in conn.execute('''
             SELECT ticker FROM stocks

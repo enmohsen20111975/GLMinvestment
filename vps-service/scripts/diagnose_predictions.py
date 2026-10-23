@@ -40,7 +40,7 @@ print()
 
 # Phase 7.1: migrated to db_manager (writable=False)
 from core.db_manager import db_manager
-conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+conn = db_manager.get_connection(DB_PATH, writable=False)
 conn.row_factory = sqlite3.Row
 cur = conn.cursor()
 

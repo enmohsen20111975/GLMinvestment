@@ -343,7 +343,7 @@ class SentimentAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             
             # Get sector performance
@@ -394,7 +394,7 @@ class SentimentAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             
             # Check EGX30 index
@@ -450,7 +450,7 @@ class SentimentAnalyzer:
                 _news_db = self.db_path
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(_news_db, writable=False).__enter__()
+            conn = db_manager.get_connection(_news_db, writable=False)
             cursor = conn.cursor()
 
             # Check for recent news (tickers column = JSON array, filter with LIKE)
@@ -550,7 +550,7 @@ class SentimentAnalyzer:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             
             cursor.execute('''

@@ -55,13 +55,13 @@ def sync_persona_predictions(refresh_active: bool = True):
     log(f"Starting persona predictions sync... [{mode_label}]")
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    pconn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+    pconn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     pconn.row_factory = sqlite3.Row
     pcur = pconn.cursor()
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    sconn = db_manager.get_connection(STOCKS_DB, writable=False)
     sconn.row_factory = sqlite3.Row
     scur = sconn.cursor()
 

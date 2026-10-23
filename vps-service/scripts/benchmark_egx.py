@@ -104,7 +104,7 @@ def main():
     # Connect to DB
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
 
     # ────────── Per-Window Returns ──────────

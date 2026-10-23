@@ -100,10 +100,10 @@ class PriceUpdater:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        ph_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
 
         try:
             stocks = conn.execute('''
@@ -229,7 +229,7 @@ class PriceUpdater:
             
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             rows = conn.execute('''
                 SELECT ticker, current_price FROM stocks 
                 WHERE market = "EGX" AND current_price > 0 

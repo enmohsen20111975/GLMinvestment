@@ -228,7 +228,7 @@ class EnhancedPredictionTracker:
     def _get_predictions_connection(self) -> sqlite3.Connection:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.predictions_db, writable=True).__enter__()
+        conn = db_manager.get_connection(self.predictions_db, writable=True)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA journal_mode=WAL;')
         conn.execute('PRAGMA busy_timeout=30000;')
@@ -237,7 +237,7 @@ class EnhancedPredictionTracker:
     def _get_data_engine_connection(self) -> sqlite3.Connection:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.data_engine_db, writable=False).__enter__()
+        conn = db_manager.get_connection(self.data_engine_db, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -269,7 +269,7 @@ class EnhancedPredictionTracker:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+                conn = db_manager.get_connection(STOCKS_DB, writable=False)
                 conn.row_factory = sqlite3.Row
                 try:
                     row = conn.execute(

@@ -244,7 +244,7 @@ def get_all_stocks_without_sector():
     """الحصول على كل الأسهم بدون قطاع"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -264,7 +264,7 @@ def update_stock_sector(ticker: str, sector: str):
     """تحديث قطاع السهم"""
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=True).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=True)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -345,7 +345,7 @@ def main():
     
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('SELECT COUNT(*) FROM stocks WHERE sector IS NOT NULL AND sector != ""')

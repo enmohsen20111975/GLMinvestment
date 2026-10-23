@@ -831,7 +831,7 @@ def save_message():
                 Path(db_path).parent.mkdir(parents=True, exist_ok=True)
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(db_path, writable=False).__enter__()
+                conn = db_manager.get_connection(db_path, writable=False)
                 conn.execute("SELECT 1")
                 db_used = db_path
                 break
@@ -955,7 +955,7 @@ def save_message():
             db_path = str(Path(__file__).parent.parent.parent / 'db' / 'stocks.db')
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(db_path, writable=False)
             c = conn.cursor()
             
             # Ensure table exists

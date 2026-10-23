@@ -181,7 +181,7 @@ class ArabMarketsMaestro:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(self.db_path, writable=False).__enter__()
+                conn = db_manager.get_connection(self.db_path, writable=False)
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT ticker, name, current_price, volume, change_percent,
@@ -467,7 +467,7 @@ class UnifiedMaestroEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT ticker, name, current_price, volume, sector
@@ -520,7 +520,7 @@ class UnifiedMaestroEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             
             # Get stocks for this market

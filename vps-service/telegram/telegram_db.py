@@ -32,7 +32,7 @@ class DatabaseManager:
         """الحصول على اتصال بقاعدة البيانات"""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         try:
             yield conn

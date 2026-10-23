@@ -29,7 +29,7 @@ if os.path.exists(PH_DB):
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PH_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PH_DB, writable=False)
         conn.row_factory = sqlite3.Row
 
         # Tables
@@ -95,7 +95,7 @@ if os.path.exists(S_DB):
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(S_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(S_DB, writable=False)
         conn.row_factory = sqlite3.Row
 
         # Check stock_daily_prices in stocks.db

@@ -52,7 +52,7 @@ def _open_db(db_path: str, writable: bool = False):
     try:
         if _PORT_ROUTES_DBM_AVAILABLE:
             ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -159,12 +159,12 @@ def _get_portfolio_conn():
     try:
         if _PORT_ROUTES_DBM_AVAILABLE:
             _ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
-            return _ctx.__enter__()
+            return 
     except Exception:
         pass
     # Phase 7.1: migrated
     from core.db_manager import db_manager
-    conn = db_manager.connection(_get_portfolio_db_path(), writable=False).__enter__()
+    conn = db_manager.get_connection(_get_portfolio_db_path(), writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -691,7 +691,7 @@ def _batch_compute_flow(positions):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(ph_db, writable=False).__enter__()
+        conn = db_manager.get_connection(ph_db, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

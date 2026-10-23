@@ -691,7 +691,7 @@ class EGXDataFetcher:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute("SELECT ticker FROM stocks WHERE is_active = 1 OR is_active IS NULL")
             tickers = [row[0] for row in cursor.fetchall()]
@@ -709,7 +709,7 @@ class EGXDataFetcher:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.db_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             updated = 0
             

@@ -66,8 +66,7 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
     _v402_dov_ctx = None
     try:
         if _V402_DBM_AVAILABLE:
-            _v402_dov_ctx = _dbm.connection(PREDICTIONS_DB, writable=True)
-            conn = _v402_dov_ctx.__enter__()
+            conn = _dbm.get_connection(PREDICTIONS_DB, writable=True)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:

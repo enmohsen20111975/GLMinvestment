@@ -105,7 +105,7 @@ class LearningEngine:
     def _conn(self, db_path: str = None) -> sqlite3.Connection:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path or self.predictions_db, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path or self.predictions_db, writable=False)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn
@@ -451,7 +451,7 @@ class LearningEngine:
             if os.path.exists(stocks_db):
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_stocks = db_manager.connection(stocks_db, writable=False).__enter__()
+                conn_stocks = db_manager.get_connection(stocks_db, writable=False)
                 conn_stocks.row_factory = sqlite3.Row
                 cursor_s = conn_stocks.cursor()
                 # نشوف هل في بيانات تاريخية لمؤشر EGX30
@@ -1051,7 +1051,7 @@ class LearningEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('''
@@ -1150,7 +1150,7 @@ class LearningEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cutoff = f"date('now', '-{days} days')"

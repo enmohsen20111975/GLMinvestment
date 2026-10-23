@@ -75,7 +75,7 @@ def load_egx_tickers() -> List[str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cur = conn.cursor()
         # نحاول نفلتر بـ market='EGX'
         try:
@@ -194,7 +194,7 @@ def main():
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(SANDBOX_DB, writable=False).__enter__()
+    conn = db_manager.get_connection(SANDBOX_DB, writable=False)
 
     # آخر 30 يوم تداول
     trading_days = [r[0] for r in conn.execute(

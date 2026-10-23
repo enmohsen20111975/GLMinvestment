@@ -130,7 +130,7 @@ def import_csv(filepath: str, symbol: str = None):
     # حفظ في DB
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
+    conn = db_manager.get_connection(str(DB_PATH), writable=True)
     cur = conn.cursor()
 
     # إنشاء جدول التاريخ إذا لم يكن موجودًا
@@ -190,7 +190,7 @@ if __name__ == '__main__':
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+            conn = db_manager.get_connection(str(DB_PATH), writable=False)
             cur = conn.cursor()
             sym = symbol or detect_symbol_from_filename(filepath)
             count = cur.execute("SELECT COUNT(*) FROM market_indices_history WHERE symbol = ?", (sym,)).fetchone()[0]

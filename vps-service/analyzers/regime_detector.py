@@ -113,7 +113,7 @@ class RegimeDetector:
     def detect_regime(self, ticker: str = 'EGX30') -> Dict:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         # Check if ticker exists in stock_price_history (uses ticker column, not stock_id)
@@ -200,7 +200,7 @@ class RegimeDetector:
         # Fallback: analyze top liquid stocks (stock_price_history uses ticker, not stock_id)
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -243,7 +243,7 @@ def save_daily_regime(db_path: str = None) -> Dict:
     # Ensure table exists
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=True).__enter__()
+    conn = db_manager.get_connection(db_path, writable=True)
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS market_regime_log (

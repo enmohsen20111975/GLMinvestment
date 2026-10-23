@@ -98,7 +98,7 @@ def save_metals_to_db(metals: list) -> int:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=False)
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         saved = 0
@@ -239,7 +239,7 @@ def save_forex_to_db(forex: list) -> int:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
+        conn = db_manager.get_connection(str(DB_PATH), writable=False)
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         saved = 0

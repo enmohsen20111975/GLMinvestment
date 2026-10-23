@@ -46,7 +46,7 @@ def cleanup_news(dry_run=False):
 
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    db = db_manager.connection(str(NEWS_DB), writable=True).__enter__()
+    db = db_manager.get_connection(str(NEWS_DB), writable=True)
     db.execute("PRAGMA journal_mode=WAL")
 
     # 1. حذف أخبار بدون title
@@ -88,7 +88,7 @@ def archive_old_predictions(dry_run=False):
 
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    db = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
+    db = db_manager.get_connection(str(PREDICTIONS_DB), writable=True)
     db.execute("PRAGMA journal_mode=WAL")
 
     # التحقق من وجود الأعمدة المطلوبة

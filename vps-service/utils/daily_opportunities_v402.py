@@ -54,7 +54,7 @@ def daily_opportunities_v402(market: str = 'EGX', limit: int = 5) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         try:
             # Get latest BUY/STRONG_BUY/ACCUMULATE predictions (not quarantined)

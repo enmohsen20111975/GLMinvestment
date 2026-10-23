@@ -387,7 +387,7 @@ def compute_radar_markers(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(stocks_db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(stocks_db_path, writable=False)
         cur = conn.cursor()
         rows = cur.execute(
             """SELECT signal_date, signal_type, entry_price, status
@@ -508,7 +508,7 @@ def compute_prediction_ray(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(predictions_db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(predictions_db_path, writable=False)
         cur = conn.cursor()
         row = cur.execute(
             """SELECT ticker, signal, entry_price, target_price, stop_loss,

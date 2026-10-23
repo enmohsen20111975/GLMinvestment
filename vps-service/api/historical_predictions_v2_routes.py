@@ -63,7 +63,7 @@ def _get_price_history(ticker: str, up_to_date: str, limit: int = 200) -> List[D
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT date, open_price, high_price, low_price, close_price, volume "
@@ -85,7 +85,7 @@ def _get_stock_info(ticker: str) -> Dict:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM stocks WHERE ticker = ? LIMIT 1",
@@ -483,7 +483,7 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         try:
@@ -537,7 +537,7 @@ def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         placeholders = ','.join(['?'] * len(tickers))
         upper_tickers = [t.upper() for t in tickers]
@@ -605,7 +605,7 @@ def get_explosive_stocks():
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT ticker, MIN(close_price), MAX(close_price), COUNT(*), MIN(date), MAX(date) "

@@ -50,7 +50,7 @@ def init_learning_tables(db_path=None):
     
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=True).__enter__()
+    conn = db_manager.get_connection(db_path, writable=True)
     cursor = conn.cursor()
     
     # Enable WAL mode for better concurrency

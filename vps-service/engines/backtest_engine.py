@@ -62,7 +62,7 @@ def _open_db(db_path: str, writable: bool = False):
     try:
         if _V38_BT_DBM_AVAILABLE:
             ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -149,8 +149,7 @@ def _resolve_price_history_db():
             _v38_rph_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_rph_ctx = _dbm.connection(primary, writable=False)
-                    db = _v38_rph_ctx.__enter__()
+                    db = _dbm.get_connection(primary, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -176,8 +175,7 @@ def _resolve_price_history_db():
             _v38_rph2_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_rph2_ctx = _dbm.connection(stocks_db, writable=False)
-                    db = _v38_rph2_ctx.__enter__()
+                    db = _dbm.get_connection(stocks_db, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1161,8 +1159,7 @@ class V38BacktestEngine:
                     _v38_fs1_ctx = None
                     try:
                         if _V38_BT_DBM_AVAILABLE:
-                            _v38_fs1_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                            conn = _v38_fs1_ctx.__enter__()
+                            conn = _dbm.get_connection(STOCKS_DB, writable=False)
                         else:
                             raise RuntimeError("db_manager unavailable")
                     except Exception:
@@ -1218,8 +1215,7 @@ class V38BacktestEngine:
             _v38_fs2_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_fs2_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                    conn = _v38_fs2_ctx.__enter__()
+                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1301,8 +1297,7 @@ class V38BacktestEngine:
             _v38_sc_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_sc_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                    conn = _v38_sc_ctx.__enter__()
+                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1329,8 +1324,7 @@ class V38BacktestEngine:
         _v38_gt_ctx = None
         try:
             if _V38_BT_DBM_AVAILABLE:
-                _v38_gt_ctx = _dbm.connection(PRICE_HISTORY_DB, writable=False)
-                conn = _v38_gt_ctx.__enter__()
+                conn = _dbm.get_connection(PRICE_HISTORY_DB, writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1376,7 +1370,7 @@ class V38BacktestEngine:
                 if os.path.exists(_ph_db):
                     # Phase 7.1: migrated to db_manager
                     from core.db_manager import db_manager
-                    conn = db_manager.connection(_ph_db, writable=False).__enter__()
+                    conn = db_manager.get_connection(_ph_db, writable=False)
                     cur = conn.cursor()
                     cur.execute("""
                         SELECT date, open_price, high_price, low_price, close_price, volume
@@ -1402,7 +1396,7 @@ class V38BacktestEngine:
         try:
             # Phase 7.1: migrated to db_manager
             from core.db_manager import db_manager
-            conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
@@ -1427,7 +1421,7 @@ class V38BacktestEngine:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
@@ -2008,8 +2002,7 @@ class V38BacktestEngine:
                 _v38_run_ctx = None
                 try:
                     if _V38_BT_DBM_AVAILABLE:
-                        _v38_run_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                        conn = _v38_run_ctx.__enter__()
+                        conn = _dbm.get_connection(STOCKS_DB, writable=False)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:

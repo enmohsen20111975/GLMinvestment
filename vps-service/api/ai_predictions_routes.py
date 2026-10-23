@@ -127,7 +127,7 @@ def get_db_connection(db_path: str):
     """Get database connection with context manager."""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -217,7 +217,7 @@ def _get_historical_prices(symbol: str, limit: int = 30) -> List[Dict]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT date, open_price as open, high_price as high, low_price as low, "

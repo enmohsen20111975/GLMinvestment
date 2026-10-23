@@ -247,7 +247,7 @@ class TradeJournal:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(self.storage_path, writable=False).__enter__()
+            conn = db_manager.get_connection(self.storage_path, writable=False)
             conn.executescript(self._SCHEMA_SQL)
             conn.executescript(self._SCHEMA_REFLECTIONS_SQL)
             conn.commit()
@@ -259,7 +259,7 @@ class TradeJournal:
     def _get_conn(self) -> sqlite3.Connection:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.storage_path, writable=False).__enter__()
+        conn = db_manager.get_connection(self.storage_path, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 

@@ -59,7 +59,7 @@ def _get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     path = db_path or DEFAULT_DB
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(path, writable=False).__enter__()
+    conn = db_manager.get_connection(path, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

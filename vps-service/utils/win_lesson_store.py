@@ -225,7 +225,7 @@ def record_win_lesson_from_close(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         for lesson_type, condition in (
             ('prediction_outcome', persona_condition),
@@ -384,7 +384,7 @@ def get_win_code_counts(persona: str = 'balanced', days: int = 30) -> Dict[str, 
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         cur.execute('''
             SELECT recommendation AS code, COUNT(*) AS cnt

@@ -187,7 +187,7 @@ class GLMFinanceAgent:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
             row = conn.execute("""
                 SELECT recommendation, maestro_score, analysis_json
                 FROM stored_analyses
@@ -215,7 +215,7 @@ class GLMFinanceAgent:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn2 = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn2 = db_manager.get_connection(STOCKS_DB, writable=False)
             pe_row = conn2.execute("SELECT pe_ratio FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
             conn2.close()
             if pe_row:

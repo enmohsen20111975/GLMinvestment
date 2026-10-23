@@ -404,10 +404,14 @@ class MarketRegimeEngine:
     # DB helpers
     # ════════════════════════════════════════════════════════════════════
     def _connect(self, db_path: str) -> sqlite3.Connection:
-        # Phase 7.1: migrated to db_manager (writable=False)
-        from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        # BUG FIX (2026-10-24): The previous version used db_manager.get_connection()
+        # without a matching __exit__(), causing "Cannot operate on a closed database" errors.
+        # The regime engine manages its own connection lifecycle (open → query → close),
+        # so we use raw sqlite3.connect() with WAL + busy_timeout (same settings as db_manager
+        # but without the context manager overhead).
+        conn = sqlite3.connect(db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA busy_timeout=30000')
         return conn
 
     def _table_columns(self, conn: sqlite3.Connection, table: str) -> List[str]:

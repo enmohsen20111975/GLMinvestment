@@ -381,7 +381,7 @@ def search_stock(query: str) -> Optional[Dict]:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(STOCKS_DB), writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -419,7 +419,7 @@ def search_stock(query: str) -> Optional[Dict]:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(DATA_ENGINE_DB), writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             row = cur.execute(
@@ -497,7 +497,7 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cols = [c[1] for c in cur.execute("PRAGMA table_info(predictions)").fetchall()]
@@ -844,7 +844,7 @@ def check_subscription(chat_id: int) -> dict:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(auth_db_path), writable=False).__enter__()
+            conn = db_manager.get_connection(str(auth_db_path), writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             link = cur.execute(
@@ -1157,7 +1157,7 @@ def handle_radar_command(chat_id: int, sub: Optional[Dict] = None):
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+            conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
             conn.row_factory = sqlite3.Row
             rows = conn.execute("""
                 SELECT ticker, signal, confidence, target_price, stop_loss

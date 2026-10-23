@@ -786,7 +786,7 @@ def get_db_connection(db_path: str):
     """إنشاء اتصال بقاعدة البيانات"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -832,7 +832,7 @@ def get_top_recommendations(limit: int = 5, min_score: int = 70) -> List[Dict]:
             _stocks_db = str(_P(__file__).resolve().parents[2] / 'db' / 'stocks.db')
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            _conn_s = db_manager.connection(_stocks_db, writable=False).__enter__()
+            _conn_s = db_manager.get_connection(_stocks_db, writable=False)
             _cur_s = _conn_s.cursor()
             _cur_s.execute("SELECT ticker FROM stocks WHERE is_active = 1 OR is_active IS NULL")
             _active_tickers = {r[0] for r in _cur_s.fetchall()}
@@ -853,7 +853,7 @@ def get_top_recommendations(limit: int = 5, min_score: int = 70) -> List[Dict]:
         
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn_stocks = db_manager.connection(stocks_db_path, writable=False).__enter__()
+        conn_stocks = db_manager.get_connection(stocks_db_path, writable=False)
         cur_stocks = conn_stocks.cursor()
         
         recommendations = []

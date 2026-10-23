@@ -108,7 +108,7 @@ class EODHDFetcher:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+        conn = db_manager.get_connection(self.stocks_db, writable=False)
         cur = conn.cursor()
         added = 0
         updated = 0
@@ -186,7 +186,7 @@ class EODHDFetcher:
         # ده الكانونيكال لـ stocks.db. price_history.db بيتحدث من خلال sync منفصل.
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+        conn = db_manager.get_connection(self.stocks_db, writable=False)
         cur = conn.cursor()
         saved_daily = 0
         for r in records:
@@ -317,7 +317,7 @@ class EODHDFetcher:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
+        conn = db_manager.get_connection(self.stocks_db, writable=False)
         cur = conn.cursor()
         updated = 0
         errors = 0
@@ -582,7 +582,7 @@ class EODHDFetcher:
         # إنشاء/تأكيد table
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(_db, writable=True).__enter__()
+        conn = db_manager.get_connection(_db, writable=True)
         conn.execute('''
             CREATE TABLE IF NOT EXISTS egx_fundamentals (
                 ticker TEXT PRIMARY KEY,

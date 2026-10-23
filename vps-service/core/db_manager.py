@@ -278,6 +278,53 @@ class DBManager:
                 pass
 
     # -----------------------------------------------------------------
+    # get_connection — raw connection for callers that manage lifecycle
+    # -----------------------------------------------------------------
+    def get_connection(
+        self,
+        db: str = 'stocks',
+        writable: bool = False,
+    ) -> sqlite3.Connection:
+        """
+        افتح connection مباشر (بدون context manager).
+
+        بيـ return sqlite3.Connection مباشر — الـ caller مسؤول عن close().
+
+        استخدم ده لما تحتاج تحتفظ بالـ connection مفتوحة لفترة (زي في الـ loops
+        الكبيرة في daily_predictor أو daily_closer). لا تستخدمه للأQueries الواحدة —
+        استخدم query() بدلاً من ذلك.
+
+        Args:
+            db: اسم الـ DB المختصر أو مسار مباشر.
+            writable: True للكتابة (WAL)، False للقراءة.
+
+        Returns:
+            sqlite3.Connection جاهز للاستخدام (caller must close()).
+        """
+        db_path = _resolve_db_name(db)
+        conn: sqlite3.Connection = None
+
+        if writable:
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA busy_timeout=30000')
+            conn.execute('PRAGMA synchronous=NORMAL')
+            conn.execute('PRAGMA wal_autocheckpoint=1000')
+            conn.execute('PRAGMA foreign_keys=ON')
+        else:
+            # readonly — use raw file path (NOT URI mode=ro) to avoid
+            # the "closed database" bug when multiple connections share
+            # the same DB file in the same thread.
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA busy_timeout=30000')
+            conn.execute('PRAGMA query_only=1')
+
+        self._stats['reads'] += 1
+        return conn
+
+    # -----------------------------------------------------------------
     # دوال راحة (convenience)
     # -----------------------------------------------------------------
     def query(

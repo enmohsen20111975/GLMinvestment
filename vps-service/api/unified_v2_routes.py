@@ -83,7 +83,7 @@ def _load_price_data_from_db(ticker: str, market: str, limit: int = 250) -> Opti
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
         cur = conn.cursor()
 
         # جرّب price_history أولاً
@@ -134,7 +134,7 @@ def _load_current_stock_from_db(ticker: str, market: str) -> Optional[dict]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT ticker, name, current_price, volume,
@@ -169,7 +169,7 @@ def _load_all_market_tickers(market: str, limit: int = 200) -> List[str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT DISTINCT ticker FROM stocks

@@ -55,7 +55,7 @@ def get_stock_id(db_path: str, ticker: str) -> Optional[int]:
     """Get stock_id from ticker"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM stocks WHERE ticker = ?", (ticker,))
     result = cursor.fetchone()
@@ -77,7 +77,7 @@ def get_price_history_by_stock_id(db_path: str, stock_id: int, days: int = 90) -
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(db_path, writable=False).__enter__()
+        conn = db_manager.get_connection(db_path, writable=False)
         cursor = conn.cursor()
         cursor.execute("SELECT ticker FROM stocks WHERE id = ?", (stock_id,))
         row = cursor.fetchone()
@@ -111,7 +111,7 @@ def get_sector_stock_ids(db_path: str, sector: str) -> List[int]:
     """Get all stock_ids in a sector"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -269,7 +269,7 @@ def update_stock_personality(db_path: str, ticker: str, personality: str, beta: 
     """Update stock personality in database"""
     # Phase 7.1: migrated to db_manager (writable=True)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=True).__enter__()
+    conn = db_manager.get_connection(db_path, writable=True)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -286,7 +286,7 @@ def recalculate_all_personalities(db_path: str):
     """Recalculate personalities for ALL stocks"""
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(db_path, writable=False).__enter__()
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     # Get all active stocks with sectors (exclude 'Other')

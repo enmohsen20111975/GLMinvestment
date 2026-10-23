@@ -179,7 +179,7 @@ def get_screener_tags(ticker: str, market: str = '') -> Dict[str, Any]:
         except Exception:
             pass
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         conn.row_factory = sqlite3.Row
         try:
             conn.execute('SELECT 1 FROM screener_lists LIMIT 1')

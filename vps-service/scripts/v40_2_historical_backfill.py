@@ -160,7 +160,7 @@ def run_backfill(start_date: str, end_date: str, scan_interval: int,
 
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+    conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
     cur = conn.cursor()
 
     # Read all V40 predictions with outcomes

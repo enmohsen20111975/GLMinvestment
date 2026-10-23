@@ -49,7 +49,7 @@ class TestConnectionLeaks:
             # Create stocks table with some data
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn = db_manager.connection(stocks_db, writable=True).__enter__()
+            conn = db_manager.get_connection(stocks_db, writable=True)
             conn.execute('''
                 CREATE TABLE stocks (
                     ticker TEXT PRIMARY KEY,
@@ -72,7 +72,7 @@ class TestConnectionLeaks:
             # Create price_history.db WITHOUT the price_history table (triggers exception)
             # Phase 7.1: migrated to db_manager (writable=True)
             from core.db_manager import db_manager
-            conn = db_manager.connection(ph_db, writable=True).__enter__()
+            conn = db_manager.get_connection(ph_db, writable=True)
             conn.execute("CREATE TABLE IF NOT EXISTS dummy (id INTEGER)")
             conn.commit()
             conn.close()
@@ -301,7 +301,7 @@ class TestForeignKeysPragma:
             db_path = os.path.join(tmpdir, 'test_fk.db')
             # Phase 7.1: migrated to db_manager
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=True).__enter__()
+            conn = db_manager.get_connection(db_path, writable=True)
             conn.execute('PRAGMA foreign_keys=ON')
 
             # Create parent table

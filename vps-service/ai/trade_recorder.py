@@ -65,7 +65,7 @@ def _open_db(db_path: str, writable: bool = False):
     try:
         if _TRADE_RECORDER_DBM_AVAILABLE:
             ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = 
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -140,8 +140,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -249,8 +248,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -335,8 +333,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -510,8 +507,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -553,8 +549,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -606,8 +601,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -735,8 +729,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -897,8 +890,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -959,8 +951,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1020,8 +1011,7 @@ class TradeRecorder:
             _tr_ctx = None
             try:
                 if _TRADE_RECORDER_DBM_AVAILABLE:
-                    _tr_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _tr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1065,8 +1055,7 @@ class TradeRecorder:
                 _ph_ctx = None
                 try:
                     if _TRADE_RECORDER_DBM_AVAILABLE:
-                        _ph_ctx = _dbm.connection(PRICE_HISTORY_DB)
-                        conn = _ph_ctx.__enter__()
+                        conn = _dbm.get_connection(PRICE_HISTORY_DB)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:

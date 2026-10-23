@@ -93,7 +93,7 @@ def wal_checkpoint(db_path: Path) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(db_path), writable=True).__enter__()
+        conn = db_manager.get_connection(str(db_path), writable=True)
         conn.execute('PRAGMA wal_checkpoint(TRUNCATE);')
         conn.close()
         return True
@@ -107,7 +107,7 @@ def run_integrity_check(db_path: Path) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(db_path), writable=False).__enter__()
+        conn = db_manager.get_connection(str(db_path), writable=False)
         cur = conn.cursor()
         result = cur.execute('PRAGMA integrity_check;').fetchone()
         conn.close()
@@ -184,10 +184,10 @@ def create_backup(db_path: Path) -> Optional[Path]:
         # Use SQLite backup API for a consistent snapshot
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        source = db_manager.connection(str(db_path), writable=False).__enter__()
+        source = db_manager.get_connection(str(db_path), writable=False)
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        dest = db_manager.connection(str(backup_path), writable=False).__enter__()
+        dest = db_manager.get_connection(str(backup_path), writable=False)
         with dest:
             source.backup(dest)
         dest.close()
@@ -224,7 +224,7 @@ def get_table_row_counts(db_path: Path) -> Dict[str, int]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(db_path), writable=False).__enter__()
+        conn = db_manager.get_connection(str(db_path), writable=False)
         cur = conn.cursor()
         tables = cur.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"

@@ -237,7 +237,7 @@ def load_egksco_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
         cur = conn.cursor()
 
         # Detect column name (canonical schema: price_date; legacy egksco_scraper: date)
@@ -318,7 +318,7 @@ def _canonical_load(ticker: str, limit: int) -> List[Dict]:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT price_date as date, open_price as open, high_price as high, "
@@ -381,7 +381,7 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
             import sqlite3
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             row = conn.execute("SELECT ticker FROM stocks WHERE UPPER(name) = ? OR UPPER(name_ar) = ?", (raw_norm, raw_norm)).fetchone()
             conn.close()
             if row:
@@ -489,7 +489,7 @@ def get_tickers_with_history(min_bars: int = 10) -> List[str]:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         rows = conn.execute(
             "SELECT ticker FROM price_history "
             "GROUP BY ticker HAVING COUNT(*) >= ? "
@@ -503,7 +503,7 @@ def get_tickers_with_history(min_bars: int = 10) -> List[str]:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             rows = conn.execute(
                 "SELECT ticker FROM stock_daily_prices "
                 "GROUP BY ticker HAVING COUNT(*) >= ? "

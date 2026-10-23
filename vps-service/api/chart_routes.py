@@ -1393,7 +1393,7 @@ def chart_full_analysis():
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                _conn_news = db_manager.connection(DB_PATH, writable=False).__enter__()
+                _conn_news = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_news.row_factory = sqlite3.Row
                 from datetime import datetime as _dt_news, timedelta as _td_news
                 _news_cutoff = (_dt_news.now() - _td_news(hours=3)).isoformat()
@@ -2379,7 +2379,7 @@ def chart_full_analysis():
             if Path(_DATA_ENGINE_DB).exists():
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                fe_conn = db_manager.connection(_DATA_ENGINE_DB, writable=False).__enter__()
+                fe_conn = db_manager.get_connection(_DATA_ENGINE_DB, writable=False)
                 fe_cur = fe_conn.cursor()
 
                 def _safe_num(val):
@@ -2656,7 +2656,7 @@ def chart_full_analysis():
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                _conn_p = db_manager.connection(DB_PATH, writable=False).__enter__()
+                _conn_p = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_p.row_factory = sqlite3.Row
                 _cur_p = _conn_p.cursor()
                 _cur_p.execute('SELECT * FROM stocks WHERE ticker = ? LIMIT 1', (ticker,))
@@ -2734,7 +2734,7 @@ def chart_full_analysis():
                 try:
                     # Phase 7.1: migrated to db_manager (writable=False)
                     from core.db_manager import db_manager
-                    _conn_ff = db_manager.connection(DB_PATH, writable=False).__enter__()
+                    _conn_ff = db_manager.get_connection(DB_PATH, writable=False)
                     _conn_ff.row_factory = sqlite3.Row
                     _cur_ff = _conn_ff.cursor()
                     _cur_ff.execute(
@@ -2967,7 +2967,7 @@ def chart_full_analysis():
             if not _stock_name and not _stock_name_ar:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                _conn_n = db_manager.connection(DB_PATH, writable=False).__enter__()
+                _conn_n = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_n.row_factory = sqlite3.Row
                 _cur_n = _conn_n.cursor()
                 _cur_n.execute('SELECT name, name_ar FROM stocks WHERE ticker = ? LIMIT 1', (ticker,))
@@ -3178,7 +3178,7 @@ def chart_full_analysis():
                 if os.path.exists(_pred_db):
                     # Phase 7.1: migrated to db_manager (writable=False)
                     from core.db_manager import db_manager
-                    _bt_conn = db_manager.connection(_pred_db, writable=False).__enter__()
+                    _bt_conn = db_manager.get_connection(_pred_db, writable=False)
                     _bt_conn.row_factory = sqlite3.Row
                     _bt_cur = _bt_conn.execute(
                         "SELECT COUNT(*) as total, "

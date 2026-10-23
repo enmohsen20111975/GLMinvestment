@@ -38,7 +38,7 @@ def _get_cached_analysis(ticker: str) -> Optional[dict]:
         #       AI decisions — currently a decision from 2 weeks ago appears "alive".
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
             SELECT ai_decision, ai_confidence, ai_reason, ai_narrative, ai_updated_at
@@ -112,7 +112,7 @@ def _run_live_analysis(ticker: str) -> dict:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
+                conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
                 cur = conn.cursor()
                 cur.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,))
                 exists = cur.fetchone() is not None
@@ -626,7 +626,7 @@ def telegram_signals_list():
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(_db, writable=False).__enter__()
+        conn = db_manager.get_connection(_db, writable=False)
         conn.row_factory = sqlite3.Row
 
         if evaluated_only:
@@ -686,7 +686,7 @@ def premium_predictions():
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(_db, writable=False).__enter__()
+        conn = db_manager.get_connection(_db, writable=False)
         conn.row_factory = sqlite3.Row
 
         # جلب التوقعات من stored_analyses + aiPrediction
