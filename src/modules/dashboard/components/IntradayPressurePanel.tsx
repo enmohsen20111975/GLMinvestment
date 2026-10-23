@@ -21,7 +21,8 @@
  * NO mock data — كل الأرقام من Python Backend.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { Gauge, TrendingUp, TrendingDown, Loader2, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -77,32 +78,15 @@ function directionMeta(dir: string | undefined): { label: string; className: str
 // ─── Component ──────────────────────────────────────────────────────────
 
 export function IntradayPressurePanel() {
-  const [data, setData] = useState<PressureResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setError(null);
-      const res = await fetch('/api/market/intraday-pressure', {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(15000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: PressureResponse = await res.json();
-      setData(json);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+  // F2.2: useApiQuery replaces manual fetch + useState + setInterval.
+  // 60s polling preserved via refetchInterval. Retry + caching handled by TanStack.
+  const { data, isLoading: loading, error: queryError } = useApiQuery<PressureResponse>('/api/market/intraday-pressure', {
+    queryOptions: {
+      refetchInterval: 60_000, // 60s (was setInterval)
+      refetchOnWindowFocus: false,
+    },
+  });
+  const error = queryError ? (queryError instanceof Error ? queryError.message : String(queryError)) : null;
 
   // ─── Loading ───
   if (loading) {
