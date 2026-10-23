@@ -117,8 +117,8 @@ import {
  type WealthAllocationAlert,
 } from '@/lib/persona-dynamic';
 import { DynamicRiskProfilerModal } from '@/components/persona/DynamicRiskProfilerModal';
+import { usePortfolioData } from '@/hooks/usePortfolioData';
 import { AlertsCenterView } from '@/components/alerts/AlertsCenterView';
-import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import type {
  AssetType,
  PortfolioAsset,
@@ -520,7 +520,7 @@ function CryptoSearchDropdown({
 // when its props (selectedPortfolioId) haven't changed.
 const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: number | 'master' }) {
  const { currentMarket } = useAppStore();
- const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
+ const { loadStockDetail, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
  const t = useTranslation();
  // P39-PHASE-2: state for the DynamicRiskProfilerModal (إعادة الاختبار button).
  const [profilerOpen, setProfilerOpen] = useState(false);
@@ -530,43 +530,22 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  // per-gram) intentionally keep their inline `toFixed(2)} ج.م` suffix.
  const formatCurrency = (value: number | null | undefined) =>
  formatCurrencyRaw(value, displayCurrency, usdRate, sarRate);
- const [assets, setAssets] = useState<(PortfolioAsset & Record<string, unknown>)[]>([]);
- const [obligations, setObligations] = useState<FinancialObligation[]>([]);
- // B-1: Backend-provided net worth math (P34) — gross assets, debts, net worth, yields.
- // Comes straight from /api/finance/calculate-values so we never recompute it locally.
- const [netWorthData, setNetWorthData] = useState<{
- gross: number;
- debts: number;
- net: number;
- monthlyYield: number;
- annualYield: number;
- } | null>(null);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
- const [portfoliosMap, setPortfoliosMap] = useState<Record<string, { name: string; color: string }>>({});
+ // ── F-Strangler-Portfolio: all data-fetching logic extracted to the
+ // usePortfolioData hook (TanStack Query under the hood). The widget is now
+ // render-only — side effects (setFxRates, usePortfolioStore.updateFromCalcValues,
+ // 30s visibility-aware polling) live in the hook.
+ const {
+ assets,
+ obligations,
+ netWorthData,
+ loading,
+ refreshing,
+ portfoliosMap,
+ goldPrices,
+ refetch: refetchPortfolioData,
+ } = usePortfolioData(selectedPortfolioId);
  const [filterType, setFilterType] = useState<string>('all');
 
- useEffect(() => {
- async function fetchPortfoliosMap() {
- try {
- // F1.3 — cleanup 'default' legacy: use authenticated session, not user_id=default
- // (the /api/portfolio/accounts route now requires auth — F1.2 fix)
- const sessionRes = await fetch('/api/auth/session');
- const session = await sessionRes.json();
- if (!session?.user?.id) return; // not authenticated — skip fetch
- const res = await fetch(`/api/portfolio/accounts?user_id=${session.user.id}`);
- const data = await res.json();
- if (data.success && Array.isArray(data.portfolios)) {
- const pmap: Record<string, { name: string; color: string }> = {};
- for (const p of data.portfolios) {
- pmap[String(p.id)] = { name: p.name, color: p.color || 'blue' };
- }
- setPortfoliosMap(pmap);
- }
- } catch {}
- }
- fetchPortfoliosMap();
- }, []);
  const [addDialogOpen, setAddDialogOpen] = useState(false);
  const [editAsset, setEditAsset] = useState<(PortfolioAsset & Record<string, unknown>) | null>(null);
  const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -616,81 +595,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  setFormTicker(''); setFormQuantity(''); setFormAvgBuyPrice(''); setFormSelectedPrice(null);
  };
 
- const [goldPrices, setGoldPrices] = useState<{ '24k': number; '21k': number; '18k': number } | null>(null);
-
- // P30 TASK 7: Silent background update — `silent=true` avoids showing the
- // full skeleton on every 30s poll. Only the initial load shows the skeleton.
- const loadAssets = useCallback(async (silent = false) => {
- if (!silent) setLoading(true);
- else setRefreshing(true);
- try {
- const pidQs = selectedPortfolioId && selectedPortfolioId !== 'master' ? `?portfolio_id=${selectedPortfolioId}` : '';
- // B-1 FIX: Only fetch assets + obligations. Crypto is ALREADY returned by
- // /api/finance/calculate-values (FX-converted to EGP). Fetching
- // /api/crypto/portfolio again here used to (1) double-count crypto and
- // (2) treat USD prices as EGP — both inflating the total. The dedicated
- // crypto endpoint is no longer needed in this view.
- const [assetsRes, obligationsRes] = await Promise.all([
- fetch(`/api/finance/calculate-values${pidQs}`),
- fetch('/api/finance/obligations?status=active'),
- ]);
- 
- const assetsData = await assetsRes.json();
- const obligationsData = await obligationsRes.json();
- 
- const allAssets: (PortfolioAsset & Record<string, unknown>)[] = [];
- 
- if (assetsData.success) {
- allAssets.push(...(assetsData.items || assetsData.assets || []));
- setGoldPrices(assetsData.gold_prices || null);
- // P37-PHASE-2A: Refresh the global USD→EGP FX rate so the header
- // display-currency toggle (EGP/USD/SAR) converts totals correctly.
- // The backend already returns exchange_rates from /api/finance/calculate-values;
- // we just plumb the USD rate into the Zustand store. SAR is derived
- // (usdRate * 3.75 fixed peg) inside setFxRates.
- try {
- const usd = Number(assetsData.exchange_rates?.USD);
- if (Number.isFinite(usd) && usd > 0) setFxRates(usd);
- } catch { /* silent — fall back to default 48.5 */ }
- // B-1: Read the backend P34 net-worth math directly — no local recomputation.
- setNetWorthData({
- gross: assetsData.gross_assets_egp || assetsData.total_current_value || 0,
- debts: assetsData.total_obligations_egp || 0,
- net: assetsData.net_worth_egp || 0,
- monthlyYield: assetsData.smart_math?.monthly_yield_egp || 0,
- annualYield: assetsData.smart_math?.annual_yield_egp || 0,
- });
- } else {
- // fallback للـ API القديم
- setNetWorthData(null);
- try {
- const fallbackRes = await fetch(`/api/finance/assets${pidQs}`);
- const fallbackData = await fallbackRes.json();
- allAssets.push(...(fallbackData.items || fallbackData.assets || []));
- } catch {
- // both APIs failed — continue with empty
- }
- }
- 
- setAssets(allAssets);
- setObligations(obligationsData?.items || []);
- // P30 TASK 8: Push to unified store so MasterPortfolioSummary + RealReturnPanel auto-update
- usePortfolioStore.getState().updateFromCalcValues(assetsData);
- } catch {
- // P30 TASK 7: Only show error toast on initial load, not on silent polls
- if (!silent) toast.error(t('portfolio.toast.loadAssetsFailed'));
- } finally {
- setLoading(false);
- setRefreshing(false);
- }
- }, [selectedPortfolioId]);
-
- useEffect(() => { loadAssets(); }, [loadAssets, selectedPortfolioId]);
-
- // ── P30 TASK 7 / P37-PHASE-2B-4A: Silent polling — refresh every 30s WITHOUT
- // showing the skeleton. Stops entirely when the tab is hidden (saves
- // CPU/battery) and fires immediately when the tab becomes visible again.
- useVisibilityAwarePolling(() => { loadAssets(true); }, 30_000, [loadAssets]);
+ // (F-Strangler-Portfolio) loadAssets + goldPrices state + 30s polling +
+ // portfoliosMap session-fetch — all extracted to usePortfolioData() above.
 
  const addToWatchlist = async (ticker: string) => {
  try {
@@ -812,7 +718,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  }
  setAddDialogOpen(false);
  resetForm();
- loadAssets();
+ void refetchPortfolioData();
  } else {
  const detailMsg = data.detail ? ` (${data.detail})` : '';
  console.error('[Asset Add] Server error:', data);
@@ -853,7 +759,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  if (data.success) {
  toast.success(t('portfolio.toast.updateAssetSuccess'));
  setEditDialogOpen(false);
- loadAssets();
+ void refetchPortfolioData();
  } else {
  toast.error(data.error || t('portfolio.toast.updateAssetFailed'));
  }
@@ -872,7 +778,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
  if (data.success) {
  toast.success(t('portfolio.toast.deleteAssetSuccess'));
  setDeleteId(null);
- loadAssets();
+ void refetchPortfolioData();
  } else {
  toast.error(data.error || t('portfolio.toast.deleteAssetFailed'));
  }
