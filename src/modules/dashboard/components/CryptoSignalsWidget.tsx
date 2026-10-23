@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useApiQuery } from '@/hooks/use-api-query';
 import {
  TrendingUp,
  TrendingDown,
@@ -14,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 
 interface CryptoData {
  id: string;
@@ -57,61 +58,48 @@ function fearGreedLabel(value: number): string {
 }
 
 export function CryptoSignalsWidget() {
- const [cryptos, setCryptos] = useState<CryptoData[]>([]);
- const [fearGreed, setFearGreed] = useState<FearGreedData | null>(null);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
-
- const fetchData = async (showRefresh = false) => {
- if (showRefresh) setRefreshing(true);
- else setLoading(true);
-
- try {
- // Fetch crypto data
- const cryptoRes = await fetch('/api/crypto');
- if (cryptoRes.ok) {
- const data = await cryptoRes.json();
- if (data.success && data.data) {
- const cryptoList = Array.isArray(data.data)
- ? data.data
- : Array.isArray(data.data?.coins)
- ? data.data.coins
- : [];
-
- const btc = cryptoList.find((c: CryptoData) => c?.symbol?.toLowerCase() === 'btc');
- const eth = cryptoList.find((c: CryptoData) => c?.symbol?.toLowerCase() === 'eth');
- setCryptos([btc, eth].filter(Boolean) as CryptoData[]);
- }
- }
-
- // Fetch Fear & Greed
- const fngRes = await fetch('https://api.alternative.me/fng/');
- if (fngRes.ok) {
- const fngData = await fngRes.json();
- if (fngData.data && fngData.data[0]) {
- setFearGreed({
- value: parseInt(fngData.data[0].value),
- value_classification: fngData.data[0].value_classification,
+ // F2.2 — TanStack Query migration: استبدال manual fetch + state بـ useApiQuery + useQuery.
+ // Benefits: caching (60s stale), retry (2x), background refetch, no manual loading/error state.
+ const { data: cryptoData, isLoading: cryptoLoading, isFetching: cryptoRefreshing, refetch: refetchCrypto } = useApiQuery<CryptoData[]>('/api/crypto', {
+   queryOptions: {
+     refetchInterval: 5 * 60 * 1000, // 5 min polling (was useVisibilityAwarePolling)
+     refetchOnWindowFocus: false,
+   },
  });
- }
- }
- } catch (e) {
- console.error('Error fetching crypto data:', e);
- } finally {
- setLoading(false);
- setRefreshing(false);
- }
- };
 
- useEffect(() => {
- fetchData();
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, []);
+ const { data: fngData, isLoading: fngLoading } = useQuery({
+   queryKey: ['fear-greed-index'],
+   queryFn: async () => {
+     const res = await fetch('https://api.alternative.me/fng/');
+     if (!res.ok) throw new Error('Fear & Greed fetch failed');
+     const json = await res.json();
+     if (json?.data?.[0]) {
+       return {
+         value: parseInt(json.data[0].value),
+         value_classification: json.data[0].value_classification,
+       } as FearGreedData;
+     }
+     return null;
+   },
+   refetchInterval: 5 * 60 * 1000,
+   refetchOnWindowFocus: false,
+   retry: 1,
+ });
 
- // P37-PHASE-2B-4A: visibility-aware polling - pauses when the tab is hidden,
- // fires immediately when it becomes visible again.
- // Crypto is 24/7: allowOffMarket: true
- useVisibilityAwarePolling(() => { fetchData(); }, 5 * 60 * 1000, [], { market: 'CRYPTO', allowOffMarket: true });
+ // Derive the filtered crypto list (BTC + ETH) from the cached query data.
+ const cryptos = useMemo<CryptoData[]>(() => {
+   if (!cryptoData) return [];
+   const list = Array.isArray(cryptoData) ? cryptoData : [];
+   const btc = list.find((c) => c?.symbol?.toLowerCase() === 'btc');
+   const eth = list.find((c) => c?.symbol?.toLowerCase() === 'eth');
+   return [btc, eth].filter(Boolean) as CryptoData[];
+ }, [cryptoData]);
+
+ const fearGreed = fngData ?? null;
+ const loading = cryptoLoading || fngLoading;
+ const refreshing = cryptoRefreshing;
+
+ const handleRefresh = () => { void refetchCrypto(); };
 
  const getSignal = (crypto: CryptoData): 'BUY' | 'SELL' | 'HOLD' => {
  const athChange = crypto.ath_change_percentage || 0;
@@ -134,7 +122,7 @@ export function CryptoSignalsWidget() {
  variant="ghost"
  size="icon"
  className="h-7 w-7"
- onClick={() => fetchData(true)}
+ onClick={handleRefresh}
  disabled={refreshing}
  >
  <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
