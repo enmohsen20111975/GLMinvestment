@@ -8,7 +8,7 @@
 // table). They are NOT maestro-engine calls and are intentionally left intact
 // per Rule 4 (NO-DELETION) and the conservative clause of PHASE-2-MAESTRO-UI.
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import {
 import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, computeRR, rrColor, scoreColor, fmtPrice, formatNumber } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
+import { usePersonaTabData } from '@/hooks/usePersonaTabData';
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import dynamic from 'next/dynamic';
@@ -65,13 +66,9 @@ import type {
  StockData,
  LifecycleStatus,
  StatusBadgeStyle,
- PreviousPrediction,
- TestingCandidate,
  PersonaData,
  AnalysisJson,
  StoredAnalysisItem,
- PredictionContext,
- NameMap,
  CryptoPrediction,
  CryptoPredictionsResponse,
  SectorTrackingStock,
@@ -104,13 +101,8 @@ import {
  formatAllExpertPredictionsText,
  isTraderPrediction,
  evalPrediction,
- buildNameMap,
- enrichItems,
- pickPersonaMix,
- pickPersonaDiverged,
  getVerdictColor,
  getScoreColor,
- PERSONA_DISPLAY_LIMIT,
  PERSONA_PAGE_SIZE,
  usdCurrencyFmt,
  arDateTimeFmt,
@@ -1467,460 +1459,20 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
 export function PersonaTab({ market, persona }: { market: MarketType; persona: 'conservative' | 'balanced' | 'gambler' }) {
  // P26: خريطة الشخصية المعروضة لمفتاح analysisJson (conservative→investor، balanced→gambler كتقريب)
  const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
- // cache-bust-force-refresh-20260715
- // RECOMMENDATIONS-FIX-022 (يوليو 2026): default viewMode بقى 'table' عشان
- // المستخدم يشوف الجدول بكل الأعمدة (ticker, name_ar, score, entry, target,
- // stop, R/R, verdict) بدل ما يحتاج يضغط على view selector.
- const [items, setItems] = useState<StoredAnalysisItem[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- const [viewMode, setViewMode] = useState<'image' | 'cards' | 'table' | 'text'>('table');
- const [usingFallback, setUsingFallback] = useState(false);
- const [dataSource, setDataSource] = useState<'stored' | 'predictions'>('stored');
- // REGIME-FIX (2026-10-05): بـ نخزن الـ market regime عشان نـ نفرّق بين
- // "جاري التحليل" (actual in-progress) و "مفيش فرص" (analysis done، 0 signals
- // because regime is DEFENSIVE). قبل كده كانت الشاشة بـ تقول "جاري التحليل"
- // حتى لو التحليل خلص ولقى 0 فرص —误导 المستخدم.
- const [marketRegime, setMarketRegime] = useState<{
- regime: 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | 'UNKNOWN';
- regime_ar: string;
- reasons: string[];
- indicators: Record<string, number | string>;
- } | null>(null);
- const [selectedItem, setSelectedItem] = useState<StoredAnalysisItem | null>(null);
- // ══════ Unified Analysis Modal: السهم المختار لفتح نافذة التحليل الشاملة ══════
- const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
- // COHERENCE-FIX: السياق الكامل للتوقّع اللي العميل ضغط عليها — بينقل من جدول
- // التوقعات للنافذة الشاملة عشان الاتنين يكونوا متسقين (مفيش تناقض في الـ verdict).
- const [selectedContext, setSelectedContext] = useState<PredictionContext | null>(null);
- const [subTab, setSubTab] = useState<'details' | 'chart' | 'verdict'>('details');
- // P42-NO-FREEZE: ترقيم صفحات الكروت (5 لكل صفحة)
- const [personaPage, setPersonaPage] = useState(0);
- const [stockDetail, setStockDetail] = useState<StockDetail | null>(null);
- // P6-PREDICTIONS: أرشيف التوقعات السابقة (يتم عرضه أسفل الـ PersonaTableView).
- // بيتسحب من نفس /api/unified/predictions تحت مفتاح previous_predictions.
- const [previousPredictions, setPreviousPredictions] = useState<PreviousPrediction[]>([]);
- const [showArchive, setShowArchive] = useState(false);
- // BRAVO-TESTING-CANDIDATES (P0-4b): أسهم تحت الاختبار (lifecycle_status='testing').
- // بتيجي من /api/unified/predictions تحت مفتاح testing_candidates — قسم منفصل
- // للأسهم اللحظية اللي بتتحرك مع الجلسة (Pending Confirmation).
- // Pattern: mirror لـ EidPredictionsWidget (3 sections: proven / testing / closed).
- const [testingCandidates, setTestingCandidates] = useState<TestingCandidate[]>([]);
- // ============================================================================
- // BRAVO-WHALE-RADAR-HUNTER-MODE (Per Mohsen's directive 2026-10-20):
- // Whale radar picks — predictions with signal='WHALE_RADAR_BUY' OR
- // who_is_buying_state='WHALE_RADAR'. Generated by daily_predictor.py when
- // market is DEFENSIVE/correction AND classic Trend Following produces no
- // picks. The picks come from maker_radar.py Quiet Accumulation path B
- // (B_quiet_accumulation_strong with 5/6 or 6/6 signals + 10M+ EGP liquidity).
- // These are HIGH-RISK picks — strict risk management (2% position size).
- // ============================================================================
- const [whaleRadarPicks, setWhaleRadarPicks] = useState<PreviousPrediction[]>([]);
- // C2-SECTOR-HEAT: قطاعات ساخنة/ميتة من الـ backend meta (للـ banner).
- const [sectorHeat, setSectorHeat] = useState<{
- hot?: Array<{ sector: string; avg_chg: number; rising_ratio: number; n: number; boost: number }>;
- dead?: Array<{ sector: string; avg_chg: number; rising_ratio: number; n: number; boost: number }>;
- } | null>(null);
- // CL7-UI-SECTORS: ملخص قطاعي ديناميكي كامل من meta.sectorSummary — لكل قطاع:
- // status, n, avg_chg, rising_ratio, leaders/mids/laggards, top_leader, top_laggard.
- // بيتم عرضه في Section "ذكاء القطاعات" عشان العميل يفهم ليه المنصة اختارت السهم.
- const [sectorSummary, setSectorSummary] = useState<Array<{
- sector: string;
- status: 'hot' | 'dead' | 'neutral';
- n: number;
- avg_chg: number;
- rising_ratio: number;
- boost: number;
- leaders: number;
- mids: number;
- laggards: number;
- top_leader: string | null;
- top_leader_chg: number;
- top_laggard: string | null;
- top_laggard_chg: number;
- }>>([]);
-
- const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
-
- // Unified Analysis Modal: بدل ما نعرض StockDetailPanel داخل الصفحة،
- // نفتح نافذة منبثقة ضخمة فيها كل مكونات التحليل (شارت + DNA + SMC + خطة التداول).
- // COHERENCE-FIX: بنبني selectedContext من بيانات الـ PersonaData + StoredAnalysisItem
- // عشان النافذة الشاملة تقدر تعرض التوقّع الأصلي (من محرك V40.2) جنب التحليل الفني.
- const handleSelectItem = useCallback((item: StoredAnalysisItem) => {
- const pd: PersonaData = item.analysisJson?.[_personaKey] || {};
- setSelectedTicker(item.ticker);
- setSelectedContext({
- ticker: item.ticker,
- score: pd.score ?? item.maestroScore ?? 0,
- rating: pd.verdict || item.recommendationAr || '',
- entryPrice: pd.entry ?? item.entry?.price ?? undefined,
- targetPrice: pd.target ?? item.entry?.target ?? undefined,
- stopLoss: pd.stop ?? item.entry?.stopLoss ?? undefined,
- riskReward: pd.risk_reward ?? item.entry?.riskReward ?? undefined,
- horizon: pd.timeframe || '',
- reason: pd.reason || '',
- signal: pd.signal || item.recommendation || 'HOLD',
- confidence: item.confidence ?? pd.score ?? 0,
- source: 'stored',
- });
- }, [_personaKey]);
-
- const handleBack = useCallback(() => {
- setSelectedItem(null);
- setStockDetail(null);
- setSelectedTicker(null);
- setSelectedContext(null);
- }, []);
-
- useEffect(() => {
- if (!selectedItem) { setStockDetail(null); return; }
- let cancelled = false;
- fetch(`/api/stocks/${selectedItem.ticker}?market=${marketCode}`)
- .then(r => r.ok ? r.json() : null)
- .then(d => { if (!cancelled) setStockDetail(d); })
- .catch(() => { if (!cancelled) setStockDetail(null); });
- return () => { cancelled = true; };
- }, [selectedItem, marketCode]);
-
- useEffect(() => {
- setSelectedItem(null);
- setStockDetail(null);
- setSelectedTicker(null);
- setSelectedContext(null);
- setPersonaPage(0);
- }, [market, persona]);
-
- // P6-PREDICTIONS: جلب أرشيف التوقعات السابقة من /api/unified/predictions.
- // الـ endpoint بيرجّع previous_predictions كـ list — بنعرضها في تبويب البرسونا
- // عشان المستخدم يشوف أداء التوقعات السابقة جنب التوقعات الحالية.
- // RL-FIX-9: بنمرّر persona للـ API علشان كل تبويب يعرض توقعاته الخاصة
- // (مش نفس الأرشيف لكل التبويبات).
- useEffect(() => {
- let cancelled = false;
- const fetchPrevious = async () => {
- try {
- const res = await fetch(`/api/unified/predictions?market=${marketCode}&limit=100&persona=${persona}`, {
- cache: 'no-store',
- });
- if (!res.ok) return;
- const data = await res.json();
- if (cancelled) return;
- const prev = Array.isArray(data.previous_predictions) ? data.previous_predictions : [];
- // P26: isLongTerm = conservative (أفق طويل) — للـ balanced و gambler نعرض كل التوقعات.
- const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
- // فلترة خفيفة حسب البرسونا:
- // - المستثمر: يهتم بالأسهم الشرائية (BUY/STRONG_BUY/ACCUMULATE/HOLD).
- // - المتوازن/المضارب: يشوف كل التوقعات بما فيها البيع (SELL/STRONG_SELL/REDUCE).
- const investorSignals = new Set(['BUY', 'STRONG_BUY', 'ACCUMULATE', 'HOLD']);
- const filtered = isLongTerm
- ? prev.filter((p: Record<string, unknown>) => investorSignals.has(String(p.signal || '').toUpperCase()))
- : prev;
- setPreviousPredictions(filtered);
- // P0-4b: استخرج testing_candidates من نفس الـ response (مفتاح منفصل).
- // الـ backend بيرجّعهم في `_get_testing_candidates()` (misc_routes.py:274).
- const tc = Array.isArray(data.testing_candidates) ? data.testing_candidates : [];
- if (!cancelled) setTestingCandidates(tc);
- // BRAVO-WHALE-RADAR: استخرج whale radar picks من active predictions.
- // الـ backend بـ يـخزنهم بـ signal='WHALE_RADAR_BUY' OR who_is_buying_state='WHALE_RADAR'.
- // بنـفلتر من data.predictions (active) + data.previous_predictions (للـ backward compat).
- const _isWhaleRadar = (p: Record<string, unknown>) => {
- const sig = String(p.signal || '').toUpperCase();
- const wib = String(p.who_is_buying_state || '').toUpperCase();
- const notes = String(p.notes || '');
- return sig === 'WHALE_RADAR_BUY' || wib === 'WHALE_RADAR' || notes.includes('WHALE_RADAR');
- };
- const activePreds = Array.isArray(data.predictions) ? data.predictions : [];
- const activeWhales = activePreds.filter(_isWhaleRadar);
- const prevWhales = prev.filter(_isWhaleRadar);
- const allWhales = [...activeWhales, ...prevWhales];
- if (!cancelled) setWhaleRadarPicks(allWhales as PreviousPrediction[]);
- } catch (err) {
- // فشل صامت — الأرشيف مكمّل مش أساسي
- console.warn('[PersonaTab] previous predictions fetch failed', err);
- }
- };
- fetchPrevious();
- // 🔥 P14: polling بيتوقف لو liveMode مش مفعّل (افتراضي).
- const intervalId = setInterval(() => {
- if (!useAnalysisStore.getState().liveMode) return;
- fetchPrevious();
- }, 300_000);
- return () => {
- cancelled = true;
- clearInterval(intervalId);
- };
- }, [marketCode, persona]);
-
- const fetchPersona = useCallback(async () => {
- setLoading(true);
- setError(null);
- setUsingFallback(false);
- setDataSource('stored');
- handleBack();
- try {
- const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
-
- // REGIME-FIX (2026-10-05): fetch market regime في الـ background.
- // الـ regime ده اللي بـ يحدد لو مفيش فرص بسبب "السوق دفاعي" ولا
- // بسبب "التحليل لسه بـ يشتغل". بنـ fetch بشكل non-blocking (مش بنـ await)
- // عشان ما يـ تأخرش الـ UI.
- // Next.js endpoint: /api/market/regime (يعرض من stocks.db — لا يحتاج Python)
- (async () => {
- try {
- const regRes = await fetch(`/api/market/regime?market=${encodeURIComponent(marketCode)}`, {
- cache: 'no-store',
- signal: AbortSignal.timeout(5000),
- });
- if (regRes.ok) {
- const regData = await regRes.json();
- if (regData?.success && regData?.regime) {
- const rawRegime = String(regData.regime).toUpperCase();
- const normalized = (['DEFENSIVE', 'NORMAL', 'AGGRESSIVE'].includes(rawRegime)
- ? rawRegime
- : 'UNKNOWN') as 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | 'UNKNOWN';
- const reasons: string[] = Array.isArray(regData.reasons)
- ? regData.reasons.map((r: unknown) => String(r))
- : [];
- const indicators: Record<string, number | string> = {};
- if (regData.latest_log && typeof regData.latest_log === 'object') {
- const log = regData.latest_log as Record<string, unknown>;
- if (typeof log.index_current === 'number') indicators['index'] = log.index_current;
- if (typeof log.index_daily_change_pct === 'number') indicators['change_pct'] = log.index_daily_change_pct;
- if (typeof log.breadth_pct === 'number') indicators['breadth_pct'] = log.breadth_pct;
- if (typeof log.loss_streak_days === 'number') indicators['loss_streak_days'] = log.loss_streak_days;
- if (typeof log.short_term_drawdown_pct === 'number') indicators['drawdown_pct'] = log.short_term_drawdown_pct;
- }
- setMarketRegime({
- regime: normalized,
- regime_ar: String(regData.regime_ar || normalized),
- reasons,
- indicators,
- });
- }
- }
- } catch {
- // فشل صامت — الـ regime تحسين للـ UI مش أساسي
- }
- })();
-
- // Check cache first
- const cache = useAnalysisStore.getState();
- if (cache.storedAnalysis && cache.market === marketCode && Date.now() - cache.lastFetched < 300000) {
- const nameMap = await buildNameMap(marketCode);
- // P16-PERSONA-DIVERGENCE: لو الـ cached items فيها fundamentals،
- // نستخدم pickPersonaDiverged (فلترة وترتيب مستقل لكل persona).
- // غير كده، fallback لـ pickPersonaMix (السلوك القديم).
- const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
- (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
- );
- // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
- const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
- const filtered = hasFundamentals
- ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
- : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);
- if (filtered.length > 0) {
- setItems(enrichItems(filtered, nameMap));
- setDataSource('stored');
- setLoading(false);
- return;
- }
- }
-
- // خريطة الأسماء (لإثراء النتائج بأسماء الأسهم الحقيقية)
- const nameMap = await buildNameMap(marketCode);
-
- // ═══════════════════════════════════════════════════════
- // PRIMARY: stored-analysis/results — المخزن الذي يُحدَّث كل 15 دقيقة
- // تلقائياً أثناء الجلسة (MarketScheduler.run_daily_closer → generate_predictions_internal)
- // المصدر الأساسي لكل التحليلات والتوقعات
- // ═══════════════════════════════════════════════════════
- try {
- // P16-PERSONA-DIVERGENCE: نمرّر persona param للـ backend عشان يفلتر
- // ويرتّب الأسهم بمنطق مختلف (مضارب: زخم/حجم، مستثمر: أساسيات/قيمة عادلة).
- // الـ backend بيرجّع قوائم مختلفة جذرياً لكل persona بدل ما يرجّع نفس
- // الأسهم بتغيير الـ verdict بس.
- // P42-NO-FREEZE: limit=20 (كان 400) — مفيش فايدة نعمل sort على 400 سهم
- // في المتصفح والمستثمر مش هيفتح 50. محرك التصطاد بيرجّع كام سهم بس.
- const storedRes = await fetch(`/api/stored-analysis/results?market=${marketCode}&limit=20&persona=${persona}`, {
- cache: 'no-store',
- });
- if (storedRes.ok) {
- const storedData = await storedRes.json();
- const all: StoredAnalysisItem[] = storedData.data || [];
- // لو الـ backend طبّق persona filter → الـ items أصلاً مرتبة صح.
- // لو لأ (fallback) → pickPersonaMix بيرتّب محلياً على 20 بس (خفيف).
- const filtered = storedData.meta?.personaFilterApplied
- ? all.slice(0, PERSONA_DISPLAY_LIMIT)
- : pickPersonaMix(all, persona, PERSONA_DISPLAY_LIMIT);
- // C2-SECTOR-HEAT: خد خريطة القطاعات من الـ meta (للـ banner).
- setSectorHeat(storedData.meta?.sectorHeat || null);
- // CL7-UI-SECTORS: خد ملخص القطاعات الكامل من الـ meta (للـ Section).
- setSectorSummary(storedData.meta?.sectorSummary || []);
- if (filtered.length > 0) {
- setItems(enrichItems(filtered, nameMap));
- setDataSource('stored');
- return; // نجح — لا حاجة لـ fallback
- }
- }
- } catch (storedErr) {
- console.warn('[PersonaTab] stored-analysis failed:', storedErr);
- }
-
- // ═══════════════════════════════════════════════════════
- // P42-NO-FREEZE: تم إزالة الـ fallback لـ /api/sniper/scan نهائياً.
- // كان بيشتغل MasterAnalyzer لحظياً على مجموعة أسهم وبيوقف المتصفح
- // ثواني/دقايق (الـ "تموت"/freeze). الشاشة دي دلوقتي بتعتمد على القراءة
- // فقط (stored-analysis + predictions). لو القاعدتين فاضيين → نعرض
- // "جاري تحليل الفرص، سيتم التحديث خلال دقائق" بدون أي API ثقيل.
- // ═══════════════════════════════════════════════════════
-
- // ═══════════════════════════════════════════════════════
- // FALLBACK: unified/predictions (قراءة من DB — مش حسابات لحظية)
- // ═══════════════════════════════════════════════════════
- try {
- const fbRes = await fetch(`/api/unified/predictions?market=${marketCode}&limit=5`, {
- cache: 'no-store',
- });
- if (fbRes.ok) {
- const fbData = await fbRes.json();
- const preds: Array<Record<string, unknown>> = Array.isArray(fbData.predictions) ? fbData.predictions : [];
- const mappedPreds = preds.map((p): StoredAnalysisItem | null => {
- const signal = String(p.signal || 'HOLD').toUpperCase();
- const confidence = Number(p.confidence || p.score || 0);
- const reasons: string[] = Array.isArray(p.reasons) ? p.reasons : [];
- // Only show BUY/STRONG_BUY - skip HOLD/SELL
- // (HOLD fallback was deleted in PRED-RADAR-GAP-AUDIT Step 1 —
- // HOLD was masking the real bug instead of fixing it)
- if (signal !== 'BUY' && signal !== 'STRONG_BUY') return null;
- // ALPHA-STALE-GATE: ممنوع عرض أي توقع راجع من الفولباك تاريخه أقدم من 48 ساعة كفرصة نشطة لليوم
- const _predDateRaw = p.created_at || p.prediction_date;
- if (_predDateRaw) {
- const _predTime = new Date(String(_predDateRaw)).getTime();
- if (!isNaN(_predTime) && (Date.now() - _predTime) > 48 * 3600 * 1000) {
- return null;
- }
- }
- // ALPHA-RR-GATE-1: HARD GATE R/R >= 1.5 — اقتل أي BUY بـ R/R < 1.5 (ممنوع توصيات Zبالة)
- const _rr = p.risk_reward != null ? Number(p.risk_reward) : (() => {
- const _entry = Number(p.entry_price) || 0;
- const _target = Number(p.target_price) || 0;
- const _stop = Number(p.stop_loss) || 0;
- const _risk = _entry - _stop;
- const _reward = _target - _entry;
- return _risk > 0 ? _reward / _risk : 0;
- })();
- if (_rr > 0 && _rr < 1.5) return null;
- // P26: isLongTerm = conservative (أفق طويل). balanced و gambler = أفق أقصر.
- const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';
- let verdict = isLongTerm ? 'شراء قوي' : 'شراء';
- const personaReason = isLongTerm
- ? `توقع ${signal === 'BUY' ? 'صاعد' : (signal as string) === 'SELL' ? 'هابط' : 'متعادل'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى متوسط/طويل`
- : `زخم ${signal === 'BUY' ? 'إيجابي' : (signal as string) === 'SELL' ? 'سلبي' : 'محايد'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى قصير`;
- // P26: _personaKey معرّف على مستوى الـ component (مش محتاجين نعيد تعريفه هنا)
- const pd: PersonaData = {
- verdict,
- score: confidence,
- reason: reasons.length > 0 ? `${personaReason}. ${reasons.slice(0, 2).join(' — ')}` : personaReason,
- conditions: reasons.length > 0 ? reasons.slice(0, 5) : (Array.isArray(p.analysis_methods) ? p.analysis_methods.slice(0, 5) : []),
- entry: p.entry_price !== null && p.entry_price !== undefined ? Number(p.entry_price) : null,
- target: p.target_price !== null && p.target_price !== undefined ? Number(p.target_price) : null,
- stop: p.stop_loss !== null && p.stop_loss !== undefined ? Number(p.stop_loss) : null,
- signal: p.signal != null ? String(p.signal) : undefined,
- timeframe: isLongTerm ? '6-12 شهر' : (persona === 'balanced' ? '2-6 أسابيع' : 'يومي-أسبوعي'),
- fair_value: null,
- };
- return {
- ticker: String(p.symbol || p.ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, ''),
- market: marketCode,
- name: p.name || p.stock_name || p.name_ar || p.symbol || p.ticker || '',
- nameAr: p.name_ar || p.name || p.stock_name || p.symbol || p.ticker || '',
- logoUrl: p.logo_url || null,
- maestroScore: Number(p.score) || 0,
- confidence,
- recommendation: p.signal,
- recommendationAr: p.signal_ar,
- entry: {
- price: p.entry_price !== null && p.entry_price !== undefined ? Number(p.entry_price) : undefined,
- target: p.target_price !== null && p.target_price !== undefined ? Number(p.target_price) : undefined,
- stopLoss: p.stop_loss !== null && p.stop_loss !== undefined ? Number(p.stop_loss) : undefined,
- riskReward: p.risk_reward !== null && p.risk_reward !== undefined ? Number(p.risk_reward) : undefined,
- },
- updatedAt: p.prediction_date || p.created_at || new Date().toISOString(),
- analysisJson: {
- // P26: استخدم _personaKey (investor للـ conservative، gambler للـ balanced/gambler)
- [_personaKey]: pd,
- narrative: {
- line1: p.trend_direction ? `الاتجاه: ${p.trend_direction}` : undefined,
- line2: p.sr_zone ? `منطقة الدعم/المقاومة: ${p.sr_zone}` : undefined,
- line3: p.regime ? `نظام السوق: ${p.regime}` : undefined,
- },
- },
- } as unknown as StoredAnalysisItem;
- });
- const mappedFiltered = mappedPreds.filter((x): x is StoredAnalysisItem => x !== null);
- if (mappedFiltered.length > 0) {
- setItems(enrichItems(mappedFiltered.slice(0, 5), nameMap));
- setDataSource('predictions');
- setUsingFallback(true);
- return;
- }
- }
- } catch (fbErr) {
- console.error('[PersonaTab] fallback failed', fbErr);
- }
-
- // لا توجد صفقات مطابقة (R/R >= 1.5) → عرض «كاش وانتظار»
- // ALPHA-RR-GATE-1: كل الصفقات اتـ filtered (R/R < 1.5) → كاش
- setItems([]);
- } catch (err) {
- setError('فشل في الاتصال بالخادم');
- console.error('[PersonaTab]', err);
- } finally {
- setLoading(false);
- }
- }, [market, persona]);
-
- useEffect(() => {
- const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
- const cache = useAnalysisStore.getState();
- if (cache.storedAnalysis && cache.market === marketCode && Date.now() - cache.lastFetched < 300000) {
- (async () => {
- const nameMap = await buildNameMap(marketCode);
- // P16-PERSONA-DIVERGENCE: استخدم pickPersonaDiverged لو fundamentals موجودة
- const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
- (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
- );
- // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
- const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
- const filtered = hasFundamentals
- ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
- : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);
- if (filtered.length > 0) {
- setItems(enrichItems(filtered, nameMap));
- setDataSource('stored');
- setLoading(false);
- }
- })();
- } else {
- fetchPersona();
- }
-
- // Auto-refresh recommendations every 5 minutes
- // 🔥 P14: polling بيتوقف لو liveMode مش مفعّل (افتراضي).
- const intervalId = setInterval(() => {
- if (!useAnalysisStore.getState().liveMode) return;
- fetchPersona();
- }, 300_000);
-
- function onAnalyticsRefreshed() {
- fetchPersona();
- }
- window.addEventListener('analyticsRefreshed', onAnalyticsRefreshed);
- return () => {
- clearInterval(intervalId);
- window.removeEventListener('analyticsRefreshed', onAnalyticsRefreshed);
- };
- }, [fetchPersona, market, persona]);
+ // F-Strangler-PersonaTab: data-fetch logic moved to usePersonaTabData hook.
+ // الـ widget دلوقتي render-only — كل الـ fetches + state + cache + polling في الـ hook.
+ // (5 fetches: /api/unified/predictions x2, /api/market/regime,
+ //  /api/stored-analysis/results, /api/stocks/[ticker])
+ const {
+   items, loading, error, usingFallback, dataSource, marketRegime,
+   previousPredictions, testingCandidates, whaleRadarPicks,
+   sectorHeat, sectorSummary, stockDetail,
+   viewMode, setViewMode, selectedItem, setSelectedItem,
+   selectedTicker, setSelectedTicker, selectedContext, setSelectedContext,
+   subTab, setSubTab, personaPage, setPersonaPage,
+   showArchive, setShowArchive,
+   fetchPersona, handleSelectItem, handleBack,
+ } = usePersonaTabData(market, persona);
 
  // P26: isLongTerm = conservative (أفق طويل). balanced & gambler = أفق أقصر.
  const isLongTerm = persona === 'conservative' || (persona as string) === 'investor';

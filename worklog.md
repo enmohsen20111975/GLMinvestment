@@ -6879,3 +6879,88 @@ Stage Summary:
 - Rule 75 compliance: commit + push فوري بعد verification.
 - Rule 76 compliance: git pull --rebase قبل push (5 commits rebased cleanly).
 - Commit: 611869c.
+
+---
+Task ID: F-Strangler-Screener
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — extract data-fetching logic from StockScreenerAdvanced.tsx (2,723 LOC, #1 Mega file) into `src/hooks/useScreenerData.ts`.
+
+Work Log:
+- Inspected StockScreenerAdvanced.tsx: identified 3 fetch call sites + 8 useState + 2 useCallback + 2 auto-fetch useEffects to extract.
+  * Tab 1 (AdvancedFiltersTab):
+    - `fetchScreener` useCallback (93 LOC): builds URLSearchParams, parallel Promise.all of `/api/screener/advanced?...` + `/api/maker-radar?market=...&minQuietSignals=5&minPrice=1.0`, builds radarMap from 4 lists (quiet_list/pre_surge_list/explosive_list/early_break_list), merges radar fields into each stock (9 fields: maker_activity/buy_pct/net_flow_egp/accumulation/life_cycle/expected/path/position_size/volume_ratio_10d_vs_20d), 5 useState (stocks/sectors/summary/loading/error), toast.error on failure.
+    - useEffect triggering fetchScreener on filter dep change.
+  * Tab 2 (TopPerformersTab):
+    - `fetchData` useCallback (23 LOC): builds URLSearchParams, fetch `/api/stocks/top-performers?...`, 3 useState (data/loading/error).
+    - useEffect triggering fetchData on param dep change.
+- Created `src/hooks/useScreenerData.ts` (427 LOC) with 2 hook exports + 5 type exports:
+  * `useScreenerData(filters)`: useApiQuery for screener/advanced + maker-radar (parallel via 2 independent useQuery calls — TanStack handles parallelism). Returns `{ results, sectors, summary, loading, error, quietSignals, refetch }`. Radar merge logic (radarMap building + 9-field per-stock merge) preserved verbatim in useMemo.
+  * `useTopPerformersData(params)`: useApiQuery for stocks/top-performers. Returns `{ topPerformers, topLoading, topError, refetch }`.
+  * Types exported: ScreenerStock, ScreenerResponse, TopPerformerStock, TopPerformersResponse, QuietSignalsItem, QuietSignalsResponse.
+  * `loading` uses `isFetching` (not `isLoading`) to preserve original behavior where filter-change refetches also flip loading=true (original `setLoading(true)` in fetchScreener).
+- Modified StockScreenerAdvanced.tsx:
+  * Removed 4 inline interface declarations (ScreenerStock/ScreenerResponse/TopPerformerStock/TopPerformersResponse, 113 LOC) — moved to hook file as single source of truth (Strangler pattern: types live with the data layer).
+  * AdvancedFiltersTab: replaced 5 useState + fetchScreener useCallback + triggering useEffect (lines 549-685) with hook call. Destructured with rename: `results: stocks` (keeps all downstream JSX references unchanged). Toast-on-error preserved via `useEffect(() => { if (error) toast.error(error); }, [error])`.
+  * TopPerformersTab: replaced 3 useState + fetchData useCallback + triggering useEffect with hook call. Destructured with rename: `topPerformers: data`, `topLoading: loading`, `topError: error` (keeps all downstream JSX references including `data?.results`/`data?.summary` unchanged).
+  * Updated 4 button onClick handlers: `fetchScreener` → `refetchScreener` (2 places), `fetchData` → `refetchTopPerformers` (2 places).
+  * All filter UI + render logic untouched (presets, columns, traderPresets, clientExtraFilter, UnifiedTable render, share buttons, etc.).
+- Verification:
+  * `pm2 restart nextjs` → ready in 1.4s, no compile errors.
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → HTTP 200 (compile 12.9s, render 533ms).
+  * pm2 logs: no errors related to StockScreenerAdvanced or useScreenerData (only pre-existing /admin `headersList.get` error from Task F2.2-debug, unrelated).
+- LOC delta:
+  * StockScreenerAdvanced.tsx: 2,723 → 2,517 LOC (−206 LOC, −7.6%). Still #1 Mega file but reduced.
+  * useScreenerData.ts (new): +427 LOC (incl. 6 type exports + extensive JSDoc).
+  * Net file-count: +1 file.
+- Rule 75: commit fb4c293 + push to origin/main (ceafb5a..fb4c293).
+- Rule 76: branch already up-to-date with origin/main, no rebase needed.
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على StockScreenerAdvanced.tsx (#1 Mega file). الـ data logic (3 fetches + 8 useState + 2 fetch useCallback + 2 auto-fetch useEffects) كله في `useScreenerData.ts` hook file.
+- Component بقى render-only for data — كل fetch logic + state + try/catch + Promise.all + radar merge اتشالوا. الـ filter UI + render logic (UnifiedTable columns, presets, trader presets, column visibility, share/publish buttons, state badges) متـرك زي ما هو.
+- HTTP 200 verified. No new TS errors. No new browser errors.
+- Commit: fb4c293.
+
+---
+Task ID: F-Strangler-PersonaTab
+Agent: Alpha (frontend agent)
+Task: Strangler Pattern — extract data-fetching logic from PersonaTab.tsx (2,676 LOC, #3 Mega file) into `src/hooks/usePersonaTabData.ts`.
+
+Work Log:
+- Inspected PersonaTab.tsx: identified 5 fetch call sites + 18 useState + 2 useCallback (handleSelectItem + handleBack) + 1 fetchPersona useCallback (227 LOC orchestrator) + 4 useEffects (stock detail, previous predictions+polling, market/persona reset, fetchPersona polling+event) to extract.
+  * Fetch 1: `/api/unified/predictions?market=X&limit=100&persona=Y` — previous_predictions + testing_candidates + whale_radar_picks (with persona filter + WHALE_RADAR_BUY/who_is_buying_state/notes detection).
+  * Fetch 2: `/api/market/regime?market=X` — DEFENSIVE/NORMAL/AGGRESSIVE regime + reasons + indicators (non-blocking, 5s timeout).
+  * Fetch 3: `/api/stored-analysis/results?market=X&limit=20&persona=Y` — primary, with cache short-circuit via useAnalysisStore.storedAnalysis (5min TTL).
+  * Fetch 4: `/api/unified/predictions?market=X&limit=5` — fallback only when stored returns 0 items (with BUY/STRONG_BUY filter + R/R≥1.5 gate + stale<48h gate).
+  * Fetch 5: `/api/stocks/${ticker}?market=X` — selected stock detail (driven by selectedItem).
+- Created `src/hooks/usePersonaTabData.ts` (668 LOC) with 1 hook export + 4 type exports (MarketRegime, SectorHeat, SectorSummaryEntry, UsePersonaTabDataResult):
+  * 5 useApiQuery calls (one per fetch) — TanStack Query handles caching, retry, refetch.
+  * Fetch 3 + Fetch 4 use `enabled` flags: stored enabled when !cacheHit; fallback enabled when storedEmpty||storedQ.isError && !cacheHit (mirrors original fallback chain).
+  * Fetch 5 uses `enabled: !!selectedItem` (conditional fetch on modal open).
+  * Polling: `refetchInterval: liveMode ? 300_000 : false` on all 4 polling-eligible queries (Rule P14: default off).
+  * Cache-hit short-circuit preserved: useEffect subscribes to useAnalysisStore cache (storedAnalysis + market + lastFetched), computes cacheHit memo, sets items from cache + disables stored/fallback queries.
+  * fetchPersona callback: handleBack() + reset loading/error/dataSource + refetch all 3 main queries (prevPredQ, regimeQ, storedQ). Fallback fires automatically when stored returns empty.
+  * analyticsRefreshed event listener + 5min polling setInterval preserved verbatim.
+  * Reset on market/persona change preserved (clears modal + UI state + data flags).
+  * Loading derived from query isFetching states; error derived from query isError states (matches original outer try/catch semantics).
+- Modified PersonaTab.tsx:
+  * Replaced lines 1468-1923 (456 LOC: 18 useState + 2 useCallback + 4 useEffects + fetchPersona orchestrator + cache short-circuit + fallback chain + analyticsRefreshed listener + polling) with single hook call (15 LOC destructure).
+  * Cleanup: removed `useEffect` from React import (no longer used); removed 4 type imports (PreviousPrediction, TestingCandidate, PredictionContext, NameMap) + 5 helper imports (buildNameMap, enrichItems, pickPersonaMix, pickPersonaDiverged, PERSONA_DISPLAY_LIMIT) — all moved to hook.
+  * Kept: `_personaKey` const (used by 3 render sites for `it.analysisJson?.[_personaKey]`), `useAnalysisStore` import (used by PersonaTableView for `stocks`), `MARKET_CODES` + `PERSONA_PAGE_SIZE` (used in render).
+  * All render logic (PersonaCard, PersonaTableView, StockDetailPanel, view selector, sector heat banner, whale radar section, testing candidates table, previous predictions archive, unified analysis modal) untouched — only data plumbing changed.
+- Verification:
+  * `pm2 restart nextjs` → ready in 1.0s, no compile errors.
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → HTTP 200 (compile 12.2s, render 504ms).
+  * `npx tsc --noEmit -p tsconfig.json` → 0 new errors introduced by this refactor. 2 pre-existing errors remain at PersonaTab.tsx:1998 + :2002 (`PreviousPrediction.current_price` and `PreviousPrediction.notes` — type narrowing gaps that existed before, unrelated to data-fetch logic).
+  * pm2 logs: no PersonaTab or usePersonaTabData errors.
+- LOC delta:
+  * PersonaTab.tsx: 2,676 → 2,228 LOC (−448 LOC, −16.7%). Dropped from #3 Mega file to lower rank.
+  * usePersonaTabData.ts (new): +668 LOC (incl. 4 type exports + extensive JSDoc + 5 useApiQuery calls + orchestration effects).
+  * Net file-count: +1 file.
+
+Stage Summary:
+- Strangler Pattern applied بنجاح على PersonaTab.tsx. الـ data logic (5 fetches + 18 useState + 2 useCallback + 4 useEffects + cache short-circuit + fallback chain + polling + event listener) كله في `usePersonaTabData.ts` hook file.
+- Component بقى render-only for data — كل fetch logic + state + try/catch + cache logic + polling اتشالوا. الـ render logic (PersonaCard, PersonaTableView, StockDetailPanel, view selector, sector heat banner, whale radar, testing candidates, archive, unified modal) متـرك زي ما هو.
+- HTTP 200 verified. صفر new TS errors. صفر new browser errors.
+- Rule 75 compliance: commit + push فوري بعد verification.
+- Rule 76 compliance: branch already up-to-date with origin/main, no rebase needed.
