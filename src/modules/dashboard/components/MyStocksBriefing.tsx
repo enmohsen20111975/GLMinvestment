@@ -18,7 +18,9 @@
  * IntradayPressurePanel اللي اتضافوا في P1-GEMS-WIRING.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import {
  AlertTriangle,
  ArrowDownRight,
@@ -46,7 +48,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): useTranslation hook.
 import { useTranslation } from '@/lib/i18n-context';
 import { useAppStore } from '@/lib/store';
@@ -376,77 +377,43 @@ export function MyStocksBriefing() {
  // no standalone /news route, so navigate through the store instead of a Link.
  const setCurrentView = useAppStore((s) => s.setCurrentView);
 
- const [briefing, setBriefing] = useState<BriefingData | null>(null);
- const [news, setNews] = useState<NewsItem[]>([]);
- const [newsTickers, setNewsTickers] = useState<string[]>([]);
- const [loading, setLoading] = useState(true);
- const [refreshing, setRefreshing] = useState(false);
- const [error, setError] = useState<string | null>(null);
+ // F2.2: useApiQuery replaces manual fetch + useState + useCallback + useEffect.
+ // 1) Fetch unified-watch (portfolio + predictions + advice + exit_radar).
+ const { data: watchData, isLoading: loadingWatch, error: watchError, refetch: refetchWatch, isFetching: refreshingWatch } = useApiQuery<BriefingData>('/api/portfolio/unified-watch', {
+   queryOptions: {
+     enabled: isAuthenticated, // only fetch when authenticated
+     refetchInterval: REFRESH_INTERVAL * 1000, // 60s polling
+     refetchOnWindowFocus: false,
+   },
+ });
 
- const fetchData = useCallback(async () => {
- if (!isAuthenticated) {
- setLoading(false);
- return;
- }
- try {
- if (!briefing) setLoading(true);
- else setRefreshing(true);
+ // Derive briefing + newsTickers from cached watchData
+ const briefing = watchData ?? null;
+ const newsTickers = useMemo(() => {
+   return (watchData?.stocks || [])
+     .map(s => s.ticker)
+     .filter(Boolean)
+     .slice(0, 30);
+ }, [watchData]);
 
- // 1. Fetch unified-watch (portfolio + predictions + advice + exit_radar).
- const watchRes = await fetch('/api/portfolio/unified-watch', { cache: 'no-store' });
- if (!watchRes.ok) {
- if (watchRes.status === 401) {
- setError('auth_required');
- setLoading(false);
- return;
- }
- throw new Error(`unified-watch HTTP ${watchRes.status}`);
- }
- const watchData: BriefingData = await watchRes.json();
- setBriefing(watchData);
+ // 2) Fetch filtered news (only if user has tickers) — depends on watchData
+ const { data: newsData, isLoading: loadingNews } = useApiQuery<NewsResponse>('/api/news', {
+   params: newsTickers.length > 0 ? { tickers: newsTickers.join(','), limit: 3 } : undefined,
+   queryOptions: {
+     enabled: isAuthenticated && newsTickers.length > 0, // only fetch when user has tickers
+     refetchInterval: REFRESH_INTERVAL * 1000,
+     refetchOnWindowFocus: false,
+   },
+ });
 
- // 2. Fetch filtered news (only if the user has stocks).
- const userTickers = (watchData.stocks || [])
- .map(s => s.ticker)
- .filter(Boolean)
- .slice(0, 30); // cap to 30 tickers to keep the URL reasonable.
- setNewsTickers(userTickers);
+ const news = useMemo(() => (Array.isArray(newsData?.news) ? newsData!.news : []), [newsData]);
+ const loading = !isAuthenticated ? false : (loadingWatch || loadingNews);
+ const refreshing = refreshingWatch;
+ const error = !isAuthenticated ? null
+   : (watchError ? 'auth_required' : null);
 
- if (userTickers.length > 0) {
- try {
- const newsRes = await fetch(
- `/api/news?tickers=${encodeURIComponent(userTickers.join(','))}&limit=3`,
- { cache: 'no-store' },
- );
- if (newsRes.ok) {
- const newsData: NewsResponse = await newsRes.json();
- setNews(Array.isArray(newsData.news) ? newsData.news : []);
- } else {
- setNews([]); // news.db missing or error — don't crash the widget.
- }
- } catch {
- setNews([]);
- }
- } else {
- setNews([]);
- }
+ const handleRefresh = () => { void refetchWatch(); };
 
- setError(null);
- } catch (err: any) {
- console.error('[MyStocksBriefing] fetch error:', err);
- setError(err?.message || 'fetch_error');
- } finally {
- setLoading(false);
- setRefreshing(false);
- }
- }, [isAuthenticated, briefing]);
-
- // Initial + visibility-aware polling.
- useVisibilityAwarePolling(fetchData, REFRESH_INTERVAL * 1000);
- useEffect(() => {
- if (isAuthenticated) fetchData();
- else setLoading(false);
- }, [isAuthenticated, fetchData]);
 
  // ─── Loading state ─────────────────────────────────────────
  if (loading) {
@@ -533,7 +500,7 @@ export function MyStocksBriefing() {
  <p className="text-xs text-muted-foreground" dir="rtl">
  {error === 'auth_required' ? 'يلزم تسجيل الدخول.' : 'يرجى المحاولة مرة أخرى.'}
  </p>
- <Button size="sm" variant="outline" onClick={fetchData} className="gap-1.5">
+ <Button size="sm" variant="outline" onClick={handleRefresh} className="gap-1.5">
  <RefreshCw className="w-3.5 h-3.5" />
  إعادة
  </Button>
@@ -581,7 +548,7 @@ export function MyStocksBriefing() {
  size="sm"
  variant="ghost"
  className="h-7 w-7 p-0"
- onClick={fetchData}
+ onClick={handleRefresh}
  disabled={refreshing}
  aria-label="تحديث التنبيهات"
  >
