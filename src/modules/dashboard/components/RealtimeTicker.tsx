@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Database } from 'lucide-react';
 import { useRealtimeUpdates, safeToFixed } from '@/lib/ws-client';
 import { useAppStore } from '@/lib/store';
+import { useApiQuery } from '@/hooks/use-api-query';
 import { cn } from '@/lib/utils';
 
 interface TickerItem {
@@ -14,6 +15,10 @@ interface TickerItem {
  previous_price: number;
  price_change: number;
  volume: number;
+}
+
+interface StocksResponse {
+ stocks?: Array<Record<string, unknown>>;
 }
 
 function TickerCard({ item }: { item: TickerItem }) {
@@ -74,38 +79,32 @@ export function RealtimeTicker() {
  const currentMarket = useAppStore((s) => s.currentMarket);
  const tickerRef = useRef<HTMLDivElement>(null);
  const scrollRef = useRef<number | null>(null);
- const [staticStocks, setStaticStocks] = useState<TickerItem[]>([]);
- const [isLoading, setIsLoading] = useState(true);
 
- // Fetch static stocks from database as fallback
- useEffect(() => {
- if (isConnected && stockPrices.length > 0) {
- setStaticStocks([]);
- setIsLoading(false);
- return;
- }
-
- // Fetch top stocks from API with market filter
- fetch(`/api/stocks?limit=20&market=${currentMarket}`)
- .then(res => res.json())
- .then(data => {
- if (data?.stocks?.length) {
- const formatted: TickerItem[] = data.stocks.map((s: Record<string, unknown>) => ({
- ticker: String(s.ticker || ''),
- name_ar: String(s.name || s.name_ar || ''),
- current_price: Number(s.current_price) || 0,
- previous_price: Number(s.previous_close) || 0,
- price_change: Number(s.change_percent) || Number(s.price_change) || 0,
- volume: Number(s.volume) || 0,
- }));
- setStaticStocks(formatted);
- }
- setIsLoading(false);
- })
- .catch(() => {
- setIsLoading(false);
+ // F2.2: useApiQuery replaces manual fetch + useState.
+ // Only fetch when WebSocket is NOT connected (fallback mode).
+ const { data: stocksData, isLoading } = useApiQuery<StocksResponse>('/api/stocks', {
+   params: { limit: 20, market: currentMarket },
+   queryOptions: {
+     // Only fetch as fallback when WebSocket is disconnected
+     enabled: !isConnected || stockPrices.length === 0,
+     refetchInterval: false, // no polling — WebSocket is primary when connected
+     refetchOnWindowFocus: false,
+   },
  });
- }, [isConnected, stockPrices, currentMarket]);
+
+ // Derive static stocks from cached query data (fallback only)
+ const staticStocks: TickerItem[] = React.useMemo(() => {
+   if (isConnected && stockPrices.length > 0) return [];
+   if (!stocksData?.stocks?.length) return [];
+   return stocksData.stocks.map((s) => ({
+     ticker: String(s.ticker || ''),
+     name_ar: String(s.name || s.name_ar || ''),
+     current_price: Number(s.current_price) || 0,
+     previous_price: Number(s.previous_close) || 0,
+     price_change: Number(s.change_percent) || Number(s.price_change) || 0,
+     volume: Number(s.volume) || 0,
+   }));
+ }, [stocksData, isConnected, stockPrices]);
 
  // Use WebSocket data if connected, otherwise use static data
  const validStockPrices = isConnected && stockPrices.length > 0
