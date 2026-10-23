@@ -38,7 +38,9 @@ DEVIATION_THRESHOLD_PCT = 5.0
 def get_actual_close_at(signal_date_str: str, ticker: str):
     """Get the actual historical close for `ticker` on or before `signal_date_str`."""
     # Try stock_daily_prices in stocks.db
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     try:
         r = conn.execute("""
             SELECT price_date, close, close_price
@@ -55,7 +57,9 @@ def get_actual_close_at(signal_date_str: str, ticker: str):
         conn.close()
 
     # Try egksco_price_history in data_engine.db
-    conn = sqlite3.connect(str(DATA_ENGINE_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
     try:
         r = conn.execute("""
             SELECT price_date, close_price
@@ -75,7 +79,9 @@ def get_actual_close_at(signal_date_str: str, ticker: str):
 
 def get_live_price(ticker: str):
     """Get the current live price for ticker."""
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
     try:
         r = conn.execute("""
             SELECT current_price, last_update
@@ -93,7 +99,9 @@ def get_live_price(ticker: str):
 
 def main():
     print(f'═══ Backfill stale radar signals — {date.today()} ═══')
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     # Task FIX-ORDERING-2026-10-07: أضف الأعمدة لو مش موجودة
@@ -238,7 +246,9 @@ def main():
     print(f'  Marked fresh/stale (within threshold): {fresh_marked}')
 
     # Show summary by status
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     cur = conn.cursor()
     print()
     print('=== Status distribution ===')

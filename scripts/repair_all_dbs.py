@@ -29,7 +29,9 @@ from pathlib import Path
 def check_integrity(db_path: str) -> tuple[bool, str]:
     """فحص سلامة DB. يرجع (is_ok, message)."""
     try:
-        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute('PRAGMA integrity_check')
         result = cur.fetchone()[0]
@@ -45,7 +47,9 @@ def repair_db(db_path: str) -> tuple[bool, str, dict]:
     
     # استراتيجية 1: REINDEX
     try:
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         conn.execute('REINDEX')
         cur = conn.cursor()
         cur.execute('PRAGMA integrity_check')
@@ -62,7 +66,9 @@ def repair_db(db_path: str) -> tuple[bool, str, dict]:
     shutil.copy(db_path, backup_path)
     
     try:
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
         
         # جلب كل الجداول و schemas
@@ -92,7 +98,9 @@ def repair_db(db_path: str) -> tuple[bool, str, dict]:
         tmp_path = db_path + '.repaired'
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-        new_conn = sqlite3.connect(tmp_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        new_conn = db_manager.connection(tmp_path, writable=False).__enter__()
         new_cur = new_conn.cursor()
         
         # إعادة إنشاء الجداول

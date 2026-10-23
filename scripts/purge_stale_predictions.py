@@ -39,7 +39,9 @@ def get_current_prices(tickers: list) -> dict:
     if not STOCKS_DB.exists():
         return prices
     try:
-        conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         for ticker in tickers:
             row = conn.execute(
                 "SELECT current_price FROM stocks WHERE ticker = ?", (ticker,)
@@ -58,7 +60,9 @@ def purge_stale(dry_run: bool = False) -> dict:
         print(f"❌ predictions.db not found: {PREDICTIONS_DB}")
         return {'error': 'DB not found'}
 
-    conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     cur = conn.cursor()
     stats = {
         'stop_broken': 0,

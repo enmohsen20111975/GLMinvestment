@@ -209,7 +209,9 @@ class CryptoDataFetcher:
         """الحصول على اتصال بقاعدة البيانات"""
         try:
             if os.path.exists(DATA_ENGINE_DB):
-                conn = sqlite3.connect(DATA_ENGINE_DB)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
                 conn.row_factory = sqlite3.Row
                 return conn
         except Exception as e:

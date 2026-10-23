@@ -68,7 +68,9 @@ def get_all_user_ids_in_stocks_db(stocks_db_path):
         log(f"stocks.db not found at {stocks_db_path}", 'ERROR')
         return {'portfolio_assets': [], 'user_stock_watchlists': []}
 
-    conn = sqlite3.connect(stocks_db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(stocks_db_path, writable=False).__enter__()
     c = conn.cursor()
 
     result = {'portfolio_assets': [], 'user_stock_watchlists': []}
@@ -93,7 +95,9 @@ def get_all_users_from_auth_db(auth_db_path):
         log(f"auth.db not found at {auth_db_path}", 'ERROR')
         return []
 
-    conn = sqlite3.connect(auth_db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(auth_db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
@@ -121,7 +125,9 @@ def get_account_mappings(auth_db_path):
     if not os.path.exists(auth_db_path):
         return {}
 
-    conn = sqlite3.connect(auth_db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(auth_db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 
@@ -150,7 +156,9 @@ def migrate_table(stocks_db_path, table_name, old_id, new_id, dry_run=False):
     if not os.path.exists(stocks_db_path):
         return 0
 
-    conn = sqlite3.connect(stocks_db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(stocks_db_path, writable=False).__enter__()
     c = conn.cursor()
 
     updated = 0

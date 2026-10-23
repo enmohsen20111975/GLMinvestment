@@ -85,7 +85,9 @@ def _find_radar_db():
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             cur = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
             row = cur.fetchone()
             if not row:
@@ -509,7 +511,9 @@ def main():
     log(f"  DB: {PROD_DB.name} (table: {PROD_TABLE})")
     log(f"  DB source id: {DB_SOURCE_ID}")
 
-    conn = sqlite3.connect(str(PROD_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROD_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # فلتر السوق (نفس منطق maker_radar.py)

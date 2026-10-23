@@ -106,7 +106,9 @@ class EODHDFetcher:
         if not stocks:
             return {'success': False, 'error': 'No stocks fetched'}
 
-        conn = sqlite3.connect(self.stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
         cur = conn.cursor()
         added = 0
         updated = 0
@@ -182,7 +184,9 @@ class EODHDFetcher:
 
         # Store in stock_daily_prices (stocks.db) — P0 fix (يوليو 2026):
         # ده الكانونيكال لـ stocks.db. price_history.db بيتحدث من خلال sync منفصل.
-        conn = sqlite3.connect(self.stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
         cur = conn.cursor()
         saved_daily = 0
         for r in records:
@@ -311,7 +315,9 @@ class EODHDFetcher:
         if not data:
             return {'success': False, 'error': 'No bulk data'}
 
-        conn = sqlite3.connect(self.stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
         cur = conn.cursor()
         updated = 0
         errors = 0
@@ -574,7 +580,9 @@ class EODHDFetcher:
             stocks = stocks[:limit]
 
         # إنشاء/تأكيد table
-        conn = sqlite3.connect(_db)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(_db, writable=True).__enter__()
         conn.execute('''
             CREATE TABLE IF NOT EXISTS egx_fundamentals (
                 ticker TEXT PRIMARY KEY,

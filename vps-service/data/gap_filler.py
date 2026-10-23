@@ -28,7 +28,9 @@ def get_last_recorded_date() -> datetime:
         return None
     
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute("SELECT MAX(date) FROM price_history")
         row = cur.fetchone()
@@ -91,8 +93,12 @@ def check_and_fill_gaps(force_days=None, force=False):
         logger.warning(f"[GapFiller] Gap is too large. Capped at {days_to_fetch} days.")
 
     logger.info(f"[GapFiller] Connecting to databases to fetch {days_to_fetch} days...")
-    s_conn = sqlite3.connect(STOCKS_DB)
-    ph_conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    s_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
 
     # Get all active stocks with their market
     cur = s_conn.execute("SELECT ticker, market FROM stocks")

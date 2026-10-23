@@ -36,7 +36,9 @@ def run_migration():
         print(f"❌ DB not found: {DB_PATH}")
         return 1
 
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
     cur = conn.cursor()
 
     existing = [c[1] for c in cur.execute("PRAGMA table_info(predictions)").fetchall()]

@@ -38,7 +38,9 @@ def main() -> int:
     print(f"TRIAL_DAYS: {TRIAL_DAYS}")
     print(f"{'='*60}")
 
-    conn = sqlite3.connect(str(AUTH_DB), timeout=10.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(AUTH_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # BEFORE

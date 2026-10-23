@@ -14,10 +14,18 @@ PHASE-4-DB-REORG (2026-08-29): إعادة هيكلة لـ 4 قواعد بيان�
 
 الاستخدام:
     from utils.db_paths import DBPaths
-    conn = sqlite3.connect(DBPaths.MARKET_DB)
-    conn = sqlite3.connect(DBPaths.PREDICTIONS_DB)
-    conn = sqlite3.connect(DBPaths.AUTH_DB)
-    conn = sqlite3.connect(DBPaths.CONTENT_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.MARKET_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.PREDICTIONS_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.AUTH_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.CONTENT_DB, writable=False).__enter__()
 
 مبدأ التصميم:
     - المسار الافتراضي = <project_root>/db/<name>.db
@@ -312,7 +320,9 @@ def detect_tab_pk_column(db_path: str, table: str) -> str:
 
     pk = "ticker"  # default (production schema)
     try:
-        conn = _sqlite3.connect(db_path, timeout=5.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
         conn.close()
         if "ticker" in cols:
@@ -338,7 +348,9 @@ def tab_table_exists(db_path: str, table: str) -> bool:
             cur.execute("SELECT * FROM tab_dividends ...")
     """
     try:
-        conn = _sqlite3.connect(db_path, timeout=5.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         exists = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
             (table,),

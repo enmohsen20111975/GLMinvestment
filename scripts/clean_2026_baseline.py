@@ -53,7 +53,9 @@ TEST_START = '2026-08-01'  # Test: أغسطس-أكتوبر
 print("\n[1/4] تحميل البيانات (مايو-أكتوبر 2026)...")
 
 ph_db = DB_DIR / 'price_history.db'
-ph_conn = sqlite3.connect(str(ph_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
 ph_conn.row_factory = sqlite3.Row
 
 # نحتاج بيانات قبل مايو 2026 عشان نحسب MA50 + drop 5 days
@@ -84,7 +86,9 @@ ph_conn.close()
 
 sector_map = {}
 try:
-    s_conn = sqlite3.connect(str(DB_DIR / 'stocks.db'))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    s_conn = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
     s_conn.row_factory = sqlite3.Row
     for r in s_conn.execute("SELECT ticker, sector FROM stocks WHERE sector IS NOT NULL").fetchall():
         sector_map[r['ticker']] = r['sector'] or 'UNKNOWN'

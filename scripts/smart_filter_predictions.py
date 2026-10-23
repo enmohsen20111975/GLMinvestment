@@ -305,7 +305,9 @@ def main():
 
     print(f"\n📂 قاعدة البيانات: {db_path}")
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     try:

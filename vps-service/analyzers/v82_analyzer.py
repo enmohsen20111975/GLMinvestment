@@ -590,7 +590,9 @@ class V82DataLoader:
         # 1. price_history.db (الأفضل للتاريخ الطويل)
         if Path(PRICE_HISTORY_DB).exists():
             try:
-                conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
                 conn.row_factory = sqlite3.Row
                 cur = conn.execute("""
                     SELECT date, ticker, open_price as open, high_price as high,
@@ -627,7 +629,9 @@ class V82DataLoader:
             }.get(market, "market = 'EGX'")
 
             try:
-                conn = sqlite3.connect(DATA_ENGINE_DB, timeout=10)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
                 conn.row_factory = sqlite3.Row
                 cur = conn.execute(f"""
                     SELECT date, symbol as ticker, open, high, low, close, volume
@@ -668,7 +672,9 @@ class V82DataLoader:
 
         # Try market_indices table
         try:
-            conn = sqlite3.connect(STOCKS_DB, timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             row = conn.execute("""
                 SELECT current_value, previous_close, change_percent

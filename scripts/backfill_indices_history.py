@@ -51,7 +51,9 @@ def get_all_historical_prices():
 
     # 1. price_history.db (الأعمق — من 2000)
     if PRICE_HISTORY_DB.exists():
-        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         try:
             rows = conn.execute("""
                 SELECT ticker, date, close_price
@@ -66,7 +68,9 @@ def get_all_historical_prices():
 
     # 2. stock_daily_prices (الأحدث — من 2025)
     # override لو فيه أحدث
-    conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         rows = conn.execute("""
             SELECT ticker, price_date, COALESCE(close, close_price)
@@ -234,7 +238,9 @@ def main():
     print(f"  ✓ EGX dates range: {egx_dates[0] if egx_dates else '—'} → {egx_dates[-1] if egx_dates else '—'} ({len(egx_dates)} dates)")
 
     # 4. تحديد tickers لكل سوق (للمؤشرات المركبة)
-    conn_stocks = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_stocks = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     market_tickers = defaultdict(list)
     try:
         for ticker, market in conn_stocks.execute("SELECT ticker, market FROM stocks WHERE is_active=1"):
@@ -350,7 +356,9 @@ def main():
 
     # 8. اكتب في index_daily_prices
     if not args.dry_run:
-        conn = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
         try:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS index_daily_prices (

@@ -390,7 +390,9 @@ def get_screener_tags(ticker: str, market: str = '') -> Dict[str, Any]:
         except Exception:
             # fallback: raw sqlite3.connect (backward compat)
             pass
-        conn = sqlite3.connect(DATA_ENGINE_DB, timeout=5.0)
+        # Phase 7.1: migrated to db_manager
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         # هل الجدول متاح؟
         try:
@@ -1280,7 +1282,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     # 2. تحميل التاريخ اليومي من price_history.db (مع فلترة المصادر)
     if os.path.exists(price_history_db):
         try:
-            conn = sqlite3.connect(price_history_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(price_history_db, writable=False).__enter__()
             cursor = conn.cursor()
 
             # 2أ. تحقق من توفر بيانات egksco لهذا السهم
@@ -1527,7 +1531,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
         else:
             egksco_conn = None
             try:
-                egksco_conn = sqlite3.connect(egksco_db_path, timeout=3)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                egksco_conn = db_manager.connection(egksco_db_path, writable=False).__enter__()
                 egksco_cur = egksco_conn.cursor()
                 # Detect column name (canonical schema: price_date; legacy scraper: date)
                 egksco_cur.execute("PRAGMA table_info(egksco_price_history)")
@@ -1590,7 +1596,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     asset_type = 'stock'
     if os.path.exists(intraday_db):
         try:
-            conn = sqlite3.connect(intraday_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(intraday_db, writable=False).__enter__()
             c = conn.cursor()
             
             # فحص جداول الأسهم أولاً
@@ -1630,7 +1638,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     intraday_candles = []
     if os.path.exists(intraday_db):
         try:
-            conn = sqlite3.connect(intraday_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(intraday_db, writable=False).__enter__()
             c = conn.cursor()
             
             rows = []
@@ -1696,7 +1706,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     live_stock_candle = None
     if os.path.exists(stocks_db):
         try:
-            conn = sqlite3.connect(stocks_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(stocks_db, writable=False).__enter__()
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(stocks)")
             cols = [col[1] for col in cursor.fetchall()]
@@ -1840,7 +1852,9 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     # been updated today. Use the truthful last_update date from stocks.db.
     if os.path.exists(stocks_db):
         try:
-            conn = sqlite3.connect(stocks_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(stocks_db, writable=False).__enter__()
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(stocks)")
             cols = [col[1] for col in cursor.fetchall()]
@@ -2507,7 +2521,9 @@ class MasterAnalyzer:
             print(f"[MasterAnalyzer] WARNING: Invalid price for {ticker}: {current_price}")
             # Get correct price from stocks table
             try:
-                conn2 = sqlite3.connect(self.db_path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn2 = db_manager.connection(self.db_path, writable=False).__enter__()
                 cursor2 = conn2.cursor()
                 cursor2.execute('SELECT current_price FROM stocks WHERE ticker = ?', (ticker,))
                 row = cursor2.fetchone()
@@ -5235,7 +5251,9 @@ class MasterAnalyzer:
             Tuple[str, str]: (market, name) - defaults to ('EGX', '') if not found
         """
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             cursor.execute('SELECT market, name FROM stocks WHERE ticker = ?', (ticker,))
             row = cursor.fetchone()
@@ -5253,7 +5271,9 @@ class MasterAnalyzer:
     def _get_stock_data(self, ticker: str) -> Dict:
         """Get stock fundamental data - handles missing columns gracefully."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             # Check which columns exist first
@@ -5569,7 +5589,9 @@ class MasterAnalyzer:
                     Defaults to 'EGX'. Pass None for all markets.
         """
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             if market:
                 cursor.execute(

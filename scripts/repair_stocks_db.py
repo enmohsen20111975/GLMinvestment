@@ -11,7 +11,9 @@ backup_path = db_path + '.backup'
 print(f"Creating backup of {db_path} to {backup_path}...")
 shutil.copy2(db_path, backup_path)
 
-conn = sqlite3.connect(db_path)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(db_path, writable=False).__enter__()
 cursor = conn.cursor()
 
 try:
@@ -37,7 +39,9 @@ try:
     
     # Try reading directly from database bypassing SQLite transaction if needed,
     # or just read from backup DB to make sure we don't hit transaction locks!
-    backup_conn = sqlite3.connect(backup_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    backup_conn = db_manager.connection(backup_path, writable=False).__enter__()
     backup_cursor = backup_conn.cursor()
     try:
         backup_cursor.execute("SELECT * FROM screener_results")

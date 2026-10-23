@@ -34,7 +34,9 @@ def update_sectors():
     print(f"Database: {DB_PATH}")
     print()
 
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cursor = conn.cursor()
 
     # Step 1: Check current state
@@ -146,7 +148,9 @@ def verify_data_integrity():
     """Verify that no data was lost."""
     print("\n🔍 التحقق من سلامة البيانات...")
 
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cursor = conn.cursor()
 
     tables_to_check = [

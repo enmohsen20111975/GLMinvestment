@@ -247,7 +247,9 @@ def _fetch_live_enriched_stocks(market: str = '', limit: int = 200) -> list[dict
     Pull all (or filtered) stocks + their daily stats, return enriched list.
     Used as the on-the-fly fallback when screener_presets is empty.
     """
-    conn = sqlite3.connect(DBPaths.STOCKS_DB, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         if market:
@@ -366,7 +368,9 @@ def get_stock_presets():
                 'error': f'Invalid preset. Available: {VALID_PRESETS}',
             }), 400
 
-        conn = sqlite3.connect(DBPaths.STOCKS_DB, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
 
         # Ensure table exists (matches existing schema)

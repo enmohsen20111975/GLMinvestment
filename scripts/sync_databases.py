@@ -422,9 +422,15 @@ def run_sync(clear_historical: bool = False) -> Dict[str, Any]:
     print("=" * 60)
     
     # Connect to databases
-    source_conn = sqlite3.connect(DATA_ENGINE_DB)
-    stocks_conn = sqlite3.connect(STOCKS_DB)
-    price_history_conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    source_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_history_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     
     results = {}
     

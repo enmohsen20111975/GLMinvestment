@@ -60,7 +60,9 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────
 def load_closed_predictions(db_path: str) -> List[Dict]:
     """حمّل كل التوقعات المقفلة من predictions.db."""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     # بس التوقعات اللي مقفولة فعلًا + ليها entry_price/stop_loss/actual_return
@@ -84,7 +86,9 @@ def load_closed_predictions(db_path: str) -> List[Dict]:
 
 def load_price_history_for_ticker(db_path: str, ticker: str) -> List[Dict]:
     """حمّل price_history لسهم معيّن (مرتبة بالـ date)."""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute('''

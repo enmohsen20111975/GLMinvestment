@@ -287,7 +287,9 @@ def _get_testing_candidates() -> list:
         _db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'db', 'predictions.db')
         if not os.path.exists(_db_path):
             return []
-        _con = _sqlite3.connect(_db_path, timeout=5.0)
+        # Phase 7.1: migrated to db_manager
+        from core.db_manager import db_manager
+        _con = db_manager.connection(_db_path, writable=False).__enter__()
         _con.row_factory = _sqlite3.Row
         # check columns exist
         _cols = {r[1] for r in _con.execute("PRAGMA table_info(predictions)").fetchall()}
@@ -692,7 +694,9 @@ def radar_incubator():
         import sqlite3
         data_engine_db = project_root / 'db' / 'data_engine.db'
         if data_engine_db.exists():
-            logo_conn = sqlite3.connect(str(data_engine_db), timeout=3.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            logo_conn = db_manager.connection(str(data_engine_db), writable=False).__enter__()
             for cand in candidates:
                 ticker = (cand.get('ticker') or '').upper()
                 if ticker and not cand.get('logo_url'):

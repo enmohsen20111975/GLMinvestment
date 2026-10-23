@@ -74,7 +74,9 @@ def scan_predictions(pred_db, days):
         return None
 
     cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-    conn = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(pred_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 

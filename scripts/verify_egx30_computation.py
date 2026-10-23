@@ -71,7 +71,9 @@ def get_stock_prices():
     """
     # Try price_history.db first
     if PRICE_HISTORY_DB.exists():
-        conn = sqlite3.connect(str(PRICE_HISTORY_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
         tables = [r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall()]
@@ -92,7 +94,9 @@ def get_stock_prices():
 
     # Fallback: stocks.db.stock_daily_prices
     if STOCKS_DB.exists():
-        conn = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         tables = [r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall()]

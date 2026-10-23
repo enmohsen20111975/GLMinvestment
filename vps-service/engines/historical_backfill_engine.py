@@ -417,7 +417,9 @@ class HistoricalBackfillEngine:
     
     def connect(self):
         """الاتصال بقاعدة البيانات"""
-        self.conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        self.conn = db_manager.connection(self.db_path, writable=False).__enter__()
         self.conn.row_factory = sqlite3.Row
         logger.info("Database connected")
     

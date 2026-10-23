@@ -135,7 +135,9 @@ def main():
     shutil.copy2(STOCKS_DB, backup_file)
     print(f"✓ Backup created at {backup_file}")
 
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     cur = conn.cursor()
 
     stocks = cur.execute("SELECT id, ticker, market, current_price, support, resistance, high_52w, low_52w FROM stocks WHERE current_price > 0").fetchall()

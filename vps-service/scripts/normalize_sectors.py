@@ -40,7 +40,9 @@ def normalize_sectors():
     print("🔄 تحويل القطاعات للعربية الرسمية")
     print("=" * 70)
 
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cursor = conn.cursor()
 
     # Get current distribution

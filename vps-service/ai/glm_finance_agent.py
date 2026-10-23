@@ -185,7 +185,9 @@ class GLMFinanceAgent:
 
     def _fetch_indicators(self, ticker: str) -> Optional[dict]:
         try:
-            conn = sqlite3.connect(PREDICTIONS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
             row = conn.execute("""
                 SELECT recommendation, maestro_score, analysis_json
                 FROM stored_analyses
@@ -211,7 +213,9 @@ class GLMFinanceAgent:
                     "volume_ratio": gambler.get("volume_ratio"),
                 })
 
-            conn2 = sqlite3.connect(STOCKS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn2 = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             pe_row = conn2.execute("SELECT pe_ratio FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
             conn2.close()
             if pe_row:

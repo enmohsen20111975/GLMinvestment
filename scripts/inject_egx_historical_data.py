@@ -36,7 +36,9 @@ BACKFILL_SOURCE = 'egksco_backfill'
 
 def get_stocks_to_inject(specific_ticker=None):
     """تحديد الأسهم التي تحتاج حقن."""
-    conn = sqlite3.connect(str(PRICE_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PRICE_DB), writable=False).__enter__()
     cur = conn.cursor()
     
     if specific_ticker:
@@ -62,7 +64,9 @@ def get_stocks_to_inject(specific_ticker=None):
 
 def inject_ticker(ticker, dry_run=False):
     """حقن بيانات stock_daily_prices لسهم محدد في price_history.db."""
-    stocks_conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     stocks_conn.row_factory = sqlite3.Row
     stocks_cur = stocks_conn.cursor()
     
@@ -80,7 +84,9 @@ def inject_ticker(ticker, dry_run=False):
         return {'ticker': ticker, 'injected': 0, 'skipped': 'no stock_daily_prices data', 'date_range': None}
     
     # تحقق مما هو موجود بالفعل في price_history (idempotent)
-    price_conn = sqlite3.connect(str(PRICE_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_conn = db_manager.connection(str(PRICE_DB), writable=False).__enter__()
     price_cur = price_conn.cursor()
     price_cur.execute("""
         SELECT date FROM price_history
@@ -178,7 +184,9 @@ def inject_from_csv(csv_path, dry_run=False):
         backup_path = PRICE_DB.with_suffix(f'.db.before_csv_{int(datetime.now().timestamp())}')
         shutil.copy(str(PRICE_DB), str(backup_path))
 
-    conn = sqlite3.connect(str(PRICE_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PRICE_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     with open(csv_path, 'r', encoding='utf-8') as f:
@@ -306,7 +314,9 @@ def main():
     if not args.dry_run and total_injected > 0:
         print()
         print(f'═══ التحقق ═══')
-        conn = sqlite3.connect(str(PRICE_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(PRICE_DB), writable=False).__enter__()
         cur = conn.cursor()
         for r in results:
             if r.get('injected', 0) > 0:

@@ -1,7 +1,9 @@
 import sqlite3
 import re
 
-conn = sqlite3.connect('db/price_history.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection('db/price_history.db', writable=False).__enter__()
 
 # Only tickers that actually contain lowercase letters or spaces!
 bad = conn.execute("""

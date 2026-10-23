@@ -219,7 +219,9 @@ def evaluate_predictions(predictions, position_size=0.025):
 print("\n[1/4] تحميل التوقعات + حساب inputs...")
 
 pred_db = DB_DIR / 'predictions.db'
-conn = sqlite3.connect(str(pred_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(str(pred_db), writable=False).__enter__()
 conn.row_factory = sqlite3.Row
 
 all_rows = conn.execute("""
@@ -237,7 +239,9 @@ print(f"  ✅ {len(all_rows)} توقع")
 
 # تحميل بيانات الأسعار
 ph_db = DB_DIR / 'price_history.db'
-ph_conn = sqlite3.connect(str(ph_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
 ph_conn.row_factory = sqlite3.Row
 
 ticker_date_cache = {}

@@ -56,7 +56,9 @@ def scan_source(db_file, table, ticker_col, date_col, price_col, market_col, des
                 'date_min': None, 'date_max': None, 'tickers_count': 0, 'markets': []}
 
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
 
         # تأكد إن الجدول موجود
@@ -168,7 +170,9 @@ def build_index():
     if INDEX_DB.exists():
         INDEX_DB.unlink()
 
-    conn = sqlite3.connect(str(INDEX_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(INDEX_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     # جدول inventory
@@ -310,7 +314,9 @@ def verify_index():
         return 1
 
     print(f"📋 Verifying {INDEX_DB}...\n")
-    conn = sqlite3.connect(f"file:{INDEX_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(INDEX_DB, writable=False).__enter__()
 
     print(f"{'DB':20s} {'Table':25s} {'Rows':>10s} {'Date Range':25s} {'Status':10s} {'Pri':>3s}")
     print("-" * 100)

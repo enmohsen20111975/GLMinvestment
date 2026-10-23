@@ -60,7 +60,9 @@ except Exception:
 def get_stock_prices(ticker: str, days: int = 100) -> tuple:
     """Get historical prices for a stock."""
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -96,7 +98,9 @@ def get_stock_prices(ticker: str, days: int = 100) -> tuple:
 def get_stock_fundamentals(ticker: str) -> Dict:
     """Get fundamental data for a stock."""
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -434,7 +438,9 @@ def get_clean_signals():
     This analyzes stocks that don't have price anomalies.
     """
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cursor = conn.cursor()
         
         # Get clean stocks with valid RSI
@@ -489,7 +495,9 @@ def generate_predictions():
         limit = data.get('limit', 50)
         
         # Get clean stocks
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -551,7 +559,9 @@ def generate_predictions():
             
             # Save to database
             try:
-                conn = sqlite3.connect(PREDICTIONS_DB)
+                # Phase 7.1: migrated to db_manager (writable=True)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
                 cursor = conn.cursor()
                 
                 cursor.execute('''

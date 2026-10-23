@@ -47,7 +47,9 @@ def deep_audit_db(db_path: Path) -> dict:
     result['size_mb'] = round(db_path.stat().st_size / (1024 * 1024), 2)
 
     try:
-        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
 
         # كل الـ tables

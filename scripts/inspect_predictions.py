@@ -1,7 +1,9 @@
 import sqlite3
 
 def inspect_db():
-    conn = sqlite3.connect('db/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection('db/stocks.db', writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 

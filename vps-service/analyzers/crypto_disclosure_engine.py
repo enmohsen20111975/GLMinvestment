@@ -173,7 +173,9 @@ def classify_crypto_event(title: str, content: str = '') -> Optional[Dict[str, A
 
 def _ensure_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS crypto_disclosures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,7 +206,9 @@ def store_crypto_disclosure(disclosure: Dict[str, Any]) -> bool:
     """تخزين حدث كريبتو في DB (dedup)."""
     _ensure_db()
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         conn.execute('''
             INSERT OR IGNORE INTO crypto_disclosures
@@ -244,7 +248,9 @@ def get_latest_crypto_disclosure_impact(symbol: str, hours_back: int = 48) -> Di
     """
     _ensure_db()
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         cutoff = (datetime.now() - timedelta(hours=hours_back)).strftime('%Y-%m-%d %H:%M')
         row = conn.execute('''
             SELECT symbol, event_type, impact_score, verdict, title, published_at

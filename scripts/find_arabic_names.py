@@ -5,7 +5,9 @@ print("--- Checking Arabic Names Across All DBs ---")
 dbs = ['db/market.db', 'db/stocks.db', 'db/data_engine.db']
 for db in dbs:
     if not os.path.exists(db): continue
-    conn = sqlite3.connect(db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db, writable=False).__enter__()
     tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
     for t in tables:
         cols = [c[1] for c in conn.execute(f"PRAGMA table_info({t})").fetchall()]

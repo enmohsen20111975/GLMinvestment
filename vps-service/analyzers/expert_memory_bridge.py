@@ -282,7 +282,9 @@ def fetch_active_expert_recs(ticker: str, days: int = 30) -> List[ExpertRec]:
     conn = None
     try:
         # mode=ro لتفادي lock contention مع الـ Node.js side
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=2.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
 
         # تحقق إن الجدول موجود

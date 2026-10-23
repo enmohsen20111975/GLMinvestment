@@ -1,8 +1,12 @@
 import sqlite3
 import re
 
-conn_ph = sqlite3.connect('db/price_history.db')
-conn_s = sqlite3.connect('db/stocks.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn_ph = db_manager.connection('db/price_history.db', writable=False).__enter__()
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn_s = db_manager.connection('db/stocks.db', writable=False).__enter__()
 
 bad_tickers = [r[0] for r in conn_ph.execute("""
     SELECT DISTINCT ticker FROM price_history 

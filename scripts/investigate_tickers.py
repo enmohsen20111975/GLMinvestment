@@ -8,7 +8,9 @@ print("=" * 70)
 
 # 1. price_history.db contamination
 if os.path.exists('db/price_history.db'):
-    conn_ph = sqlite3.connect('db/price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection('db/price_history.db', writable=False).__enter__()
     bad = conn_ph.execute("""
         SELECT DISTINCT ticker FROM price_history 
         WHERE LENGTH(ticker) > 6 OR ticker LIKE '% %' 
@@ -24,7 +26,9 @@ if os.path.exists('db/price_history.db'):
 
 # 2. stocks.db name_ar investigation
 if os.path.exists('db/stocks.db'):
-    conn_s = sqlite3.connect('db/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_s = db_manager.connection('db/stocks.db', writable=False).__enter__()
     arabic_re = re.compile(r'[\u0600-\u06FF]')
     rows = conn_s.execute("SELECT ticker, name, name_ar, market FROM stocks WHERE market='EGX'").fetchall()
     english_in_ar = []
@@ -45,7 +49,9 @@ if os.path.exists('db/stocks.db'):
 
 # 3. data_engine.db market investigation
 if os.path.exists('db/data_engine.db'):
-    conn_de = sqlite3.connect('db/data_engine.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_de = db_manager.connection('db/data_engine.db', writable=False).__enter__()
     # Check what tables exist in data_engine.db
     tables = [r[0] for r in conn_de.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
     print(f"\n3. data_engine.db tables: {', '.join(tables[:15])}")
@@ -66,7 +72,9 @@ if os.path.exists('db/data_engine.db'):
 
 # 4. Check market.db
 if os.path.exists('db/market.db'):
-    conn_m = sqlite3.connect('db/market.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_m = db_manager.connection('db/market.db', writable=False).__enter__()
     try:
         tables_m = [r[0] for r in conn_m.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
         print(f"\n4. market.db tables: {', '.join(tables_m[:10])}")

@@ -29,6 +29,13 @@ from analyzers.patterns import PatternRecognitionEngine
 from analyzers.fibonacci import FibonacciAnalyzer
 from analyzers.risk import RiskManager
 
+# Phase 8.4: ApiResponseCache — endpoint-level response caching
+try:
+    from core.cache_manager import api_cache
+    _API_CACHE_AVAILABLE = True
+except Exception:
+    _API_CACHE_AVAILABLE = False
+
 public_bp = Blueprint('public', __name__)
 
 # Helper function to safely calculate change amount
@@ -522,13 +529,29 @@ def market_overview():
     """
     try:
         market = request.args.get('market', '')  # Get market filter
+
+        # ── Phase 8.4: ApiResponseCache check (TTL=300s, params=market or 'all') ──
+        _cache_params = {'market': market if market else 'all'}
+        if _API_CACHE_AVAILABLE:
+            _cached = api_cache.get('market_overview', params=_cache_params)
+            if _cached is not None:
+                _cached['cached'] = True
+                _cached['cache_ttl'] = 300
+                return jsonify(_cached)
+
         overview = db.get_market_overview(market if market else None)
-        return jsonify({
+        _response_data = {
             "success": True,
             "timestamp": datetime.now().isoformat(),
             "data": overview,
-            "market_filter": market if market else None
-        })
+            "market_filter": market if market else None,
+        }
+        # ── Phase 8.4: cache + return fresh response (TTL=300s) ──────────────
+        _response_data['cached'] = False
+        _response_data['cache_ttl'] = 300
+        if _API_CACHE_AVAILABLE:
+            api_cache.set('market_overview', _response_data, ttl=300, params=_cache_params)
+        return jsonify(_response_data)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

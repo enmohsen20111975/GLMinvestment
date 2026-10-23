@@ -53,14 +53,18 @@ def sync_egksco_from_price_history():
     
     try:
         # اقرأ آخر تاريخ في egksco_price_history
-        egksco_db = sqlite3.connect(get_db_path('data_engine.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        egksco_db = db_manager.connection(get_db_path('data_engine.db'), writable=False).__enter__()
         last_egksco = egksco_db.execute(
             "SELECT MAX(price_date) FROM egksco_price_history"
         ).fetchone()[0]
         log(f"  آخر تاريخ في egksco_price_history: {last_egksco}")
         
         # اقرأ آخر تاريخ في price_history.db
-        ph_db = sqlite3.connect(get_db_path('price_history.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        ph_db = db_manager.connection(get_db_path('price_history.db'), writable=False).__enter__()
         
         # UNIFY-FIX: price_history.db قد تستخدم 'date' أو 'price_date' — اكتشف العمود
         ph_cols = [row[1] for row in ph_db.execute('PRAGMA table_info(price_history)').fetchall()]
@@ -167,8 +171,12 @@ def sync_egksco_from_stock_daily_prices():
     log("=" * 60)
     
     try:
-        egksco_db = sqlite3.connect(get_db_path('data_engine.db'))
-        stocks_db = sqlite3.connect(get_db_path('stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        egksco_db = db_manager.connection(get_db_path('data_engine.db'), writable=False).__enter__()
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        stocks_db = db_manager.connection(get_db_path('stocks.db'), writable=False).__enter__()
         
         # آخر تاريخ في egksco
         last_egksco = egksco_db.execute(
@@ -250,7 +258,9 @@ def backfill_old_predictions():
     log("=" * 60)
     
     try:
-        pred_db = sqlite3.connect(get_db_path('predictions.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_db = db_manager.connection(get_db_path('predictions.db'), writable=False).__enter__()
         
         # UNIFY-FIX: تأكد من وجود أعمدة risk_reward + who_is_buying (auto-migration)
         pred_cols = [row[1] for row in pred_db.execute('PRAGMA table_info(predictions)').fetchall()]
@@ -355,7 +365,9 @@ def final_report():
     
     try:
         # egksco_price_history
-        egksco_db = sqlite3.connect(get_db_path('data_engine.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        egksco_db = db_manager.connection(get_db_path('data_engine.db'), writable=False).__enter__()
         r = egksco_db.execute(
             "SELECT MAX(price_date), COUNT(*) FROM egksco_price_history"
         ).fetchone()
@@ -373,7 +385,9 @@ def final_report():
         egksco_db.close()
         
         # predictions.db
-        pred_db = sqlite3.connect(get_db_path('predictions.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_db = db_manager.connection(get_db_path('predictions.db'), writable=False).__enter__()
         r = pred_db.execute("""
             SELECT MAX(prediction_date), COUNT(*),
                    COUNT(CASE WHEN risk_reward IS NOT NULL THEN 1 END),

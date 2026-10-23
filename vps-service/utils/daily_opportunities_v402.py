@@ -52,7 +52,9 @@ def daily_opportunities_v402(market: str = 'EGX', limit: int = 5) -> Dict:
         return {'date': date_str, 'top_3': [], 'count': 0, 'error': 'predictions.db not found'}
 
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         try:
             # Get latest BUY/STRONG_BUY/ACCUMULATE predictions (not quarantined)

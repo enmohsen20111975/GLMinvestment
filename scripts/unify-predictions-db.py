@@ -77,7 +77,9 @@ def add_column_if_missing(con, table, col, coldef):
 
 def phase1_add_columns():
     log('═══ Phase 1: إضافة أعمدة ناقصة ═══')
-    con = sqlite3.connect(PRED_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(PRED_DB, writable=False).__enter__()
     try:
         # predictions: + market, confidence
         log('▶ predictions: إضافة market, confidence')
@@ -101,7 +103,9 @@ def phase2_drop_dead_tables():
     log('═══ Phase 2: DROP الجداول الميتة ═══')
 
     # aiPrediction في predictions.db (0 صفوف)
-    con = sqlite3.connect(PRED_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(PRED_DB, writable=False).__enter__()
     try:
         rows = table_rows(con, 'aiPrediction')
         if rows > 0:
@@ -122,7 +126,9 @@ def phase2_drop_dead_tables():
         con.close()
 
     # platform_recommendations في custom.db (0 صفوف)
-    con = sqlite3.connect(CUSTOM_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(CUSTOM_DB, writable=False).__enter__()
     try:
         rows = table_rows(con, 'platform_recommendations')
         if rows > 0:
@@ -211,7 +217,9 @@ def phase3_migrate_prediction_logs():
     log('═══ Phase 3: ترحيل prediction_logs من stocks.db → predictions.db ═══')
 
     # أولاً: هل prediction_logs موجود في predictions.db أصلاً؟
-    con_pred = sqlite3.connect(PRED_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con_pred = db_manager.connection(PRED_DB, writable=False).__enter__()
     try:
         if table_exists(con_pred, 'prediction_logs'):
             existing = table_rows(con_pred, 'prediction_logs')
@@ -222,7 +230,9 @@ def phase3_migrate_prediction_logs():
         con_pred.close()
 
     # اقرأ من stocks.db
-    con_stocks = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con_stocks = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     stocks_rows = []
     stocks_cols = []
     try:
@@ -240,7 +250,9 @@ def phase3_migrate_prediction_logs():
         return
 
     # أنشئ prediction_logs الموحّد في predictions.db
-    con_pred = sqlite3.connect(PRED_DB)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    con_pred = db_manager.connection(PRED_DB, writable=True).__enter__()
     try:
         con_pred.execute(UNIFIED_PREDICTION_LOGS_SCHEMA)
         con_pred.commit()
@@ -302,11 +314,15 @@ def phase3_migrate_prediction_logs():
 
 def phase4_drop_old_prediction_logs():
     log('═══ Phase 4: DROP prediction_logs القديم من stocks.db ═══')
-    con = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         # تأكيد إن الترحيل تم قبل الحذف
         stocks_count = table_rows(con, 'prediction_logs')
-        pred_con = sqlite3.connect(PRED_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_con = db_manager.connection(PRED_DB, writable=False).__enter__()
         pred_count = table_rows(pred_con, 'prediction_logs')
         pred_con.close()
 
@@ -330,7 +346,9 @@ def phase4_drop_old_prediction_logs():
 
 def verify_final_state():
     log('═══ التحقق النهائي ═══')
-    con = sqlite3.connect(PRED_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(PRED_DB, writable=False).__enter__()
     try:
         tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()]
         log(f'  predictions.db tables: {tables}')
@@ -346,7 +364,9 @@ def verify_final_state():
     finally:
         con.close()
 
-    con = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         if table_exists(con, 'prediction_logs'):
             log('  ⚠️ stocks.db.prediction_logs لسه موجود!')
@@ -355,7 +375,9 @@ def verify_final_state():
     finally:
         con.close()
 
-    con = sqlite3.connect(CUSTOM_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(CUSTOM_DB, writable=False).__enter__()
     try:
         if table_exists(con, 'platform_recommendations'):
             log('  ⚠️ custom.db.platform_recommendations لسه موجود!')

@@ -34,7 +34,9 @@ def main():
     log("بدء تنفيذ التطهير الميداني وتحديث المؤشرات التخليقية على الإنتاجي", "🚀")
     log("=" * 70, "🚀")
 
-    conn = sqlite3.connect(str(STOCKS_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     c = conn.cursor()
 
     c.execute("SELECT count(*) FROM stocks")

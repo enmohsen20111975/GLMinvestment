@@ -163,12 +163,16 @@ def _check_egx30_regime(symbol: str, df) -> dict:
     # Determine if the symbol is EGX-listed
     market = None
     try:
-        conn = sqlite3.connect(DBPaths.DATA_ENGINE_DB, timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DBPaths.DATA_ENGINE_DB, writable=False).__enter__()
         row = conn.execute("SELECT market FROM stocks WHERE symbol=?", (symbol,)).fetchone()
         if row:
             market = row[0]
         else:
-            conn2 = sqlite3.connect(DBPaths.STOCKS_DB, timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn2 = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
             row2 = conn2.execute("SELECT market FROM stocks WHERE ticker=?", (symbol,)).fetchone()
             if row2:
                 market = row2[0]

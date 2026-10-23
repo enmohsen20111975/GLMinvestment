@@ -80,7 +80,9 @@ def _load_price_data_from_db(ticker: str, market: str, limit: int = 250) -> Opti
     يدعم جدولي price_history و stocks
     """
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB_PATH, writable=False).__enter__()
         cur = conn.cursor()
 
         # جرّب price_history أولاً
@@ -129,7 +131,9 @@ def _load_price_data_from_db(ticker: str, market: str, limit: int = 250) -> Opti
 def _load_current_stock_from_db(ticker: str, market: str) -> Optional[dict]:
     """جلب بيانات السهم الحالية"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute("""
             SELECT ticker, name, current_price, volume,
@@ -162,7 +166,9 @@ def _load_current_stock_from_db(ticker: str, market: str) -> Optional[dict]:
 def _load_all_market_tickers(market: str, limit: int = 200) -> List[str]:
     """جلب كل أسهم سوق معين"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute("""
             SELECT DISTINCT ticker FROM stocks

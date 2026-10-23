@@ -37,7 +37,9 @@ for db_name, tables in DROPS.items():
         continue
 
     try:
-        conn = sqlite3.connect(db_path, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         conn.execute('PRAGMA busy_timeout = 10000')
     except Exception as e:
         print(f'  ERROR opening: {e}')

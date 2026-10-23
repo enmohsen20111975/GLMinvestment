@@ -157,7 +157,9 @@ def _table_exists(db_name: str, table: str) -> bool:
     if not os.path.exists(path):
         return False
     import sqlite3
-    conn = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager
+    from core.db_manager import db_manager
+    conn = db_manager.connection(path, writable=False).__enter__()
     try:
         row = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -179,7 +181,9 @@ def _table_columns(db_name: str, table: str) -> List[str]:
     if not os.path.exists(path):
         return []
     import sqlite3
-    conn = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager
+    from core.db_manager import db_manager
+    conn = db_manager.connection(path, writable=False).__enter__()
     try:
         return [r[1] for r in conn.execute(f'PRAGMA table_info({table})').fetchall()]
     finally:
@@ -202,7 +206,9 @@ def _index_exists(db_name: str, index_name: str) -> bool:
     if not os.path.exists(path):
         return False
     import sqlite3
-    conn = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager
+    from core.db_manager import db_manager
+    conn = db_manager.connection(path, writable=False).__enter__()
     try:
         row = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='index' AND name=?",
@@ -221,7 +227,9 @@ def _create_index(db_name: str, index_name: str, table: str, columns: str) -> No
     else:
         path = _get_db_path(db_name)
         import sqlite3
-        conn = sqlite3.connect(path, timeout=30.0)
+        # Phase 7.1: migrated to db_manager
+        from core.db_manager import db_manager
+        conn = db_manager.connection(path, writable=True).__enter__()
         try:
             conn.execute('PRAGMA journal_mode=WAL')
             conn.execute('PRAGMA busy_timeout=30000')
@@ -320,7 +328,9 @@ def main() -> int:
         if not os.path.exists(path):
             continue
         import sqlite3
-        conn = sqlite3.connect(path)
+        # Phase 7.1: migrated to db_manager
+        from core.db_manager import db_manager
+        conn = db_manager.connection(path, writable=False).__enter__()
         try:
             rows = conn.execute(
                 "SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL ORDER BY tbl_name, name"

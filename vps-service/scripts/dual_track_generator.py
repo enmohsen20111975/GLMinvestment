@@ -92,7 +92,9 @@ def parse_volume(v) -> int:
 
 def open_db(path: str, readonly: bool = True) -> Optional[sqlite3.Connection]:
     try:
-        conn = sqlite3.connect(path, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:

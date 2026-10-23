@@ -60,7 +60,9 @@ historical_preds_v2_bp = Blueprint('historical_predictions_v2', __name__)
 def _get_price_history(ticker: str, up_to_date: str, limit: int = 200) -> List[Dict]:
     """Load price history for a ticker up to (and including) up_to_date."""
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT date, open_price, high_price, low_price, close_price, volume "
@@ -80,7 +82,9 @@ def _get_price_history(ticker: str, up_to_date: str, limit: int = 200) -> List[D
 def _get_stock_info(ticker: str) -> Dict:
     """Get stock metadata from stocks.db."""
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM stocks WHERE ticker = ? LIMIT 1",
@@ -476,7 +480,9 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
         if _persona not in ('gambler', 'balanced', 'conservative'):
             _persona = 'balanced'
 
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         try:
@@ -528,7 +534,9 @@ def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
     if not tickers:
         return 0
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         cur = conn.cursor()
         placeholders = ','.join(['?'] * len(tickers))
         upper_tickers = [t.upper() for t in tickers]
@@ -594,7 +602,9 @@ def get_explosive_stocks():
         max_swing = float(request.args.get('max_swing', '400'))
 
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute(
             "SELECT ticker, MIN(close_price), MAX(close_price), COUNT(*), MIN(date), MAX(date) "

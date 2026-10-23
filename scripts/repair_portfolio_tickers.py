@@ -75,7 +75,9 @@ def load_tickers():
     if not STOCKS_DB.exists():
         log("❌ stocks.db مش موجود: %s" % STOCKS_DB)
         sys.exit(1)
-    conn = sqlite3.connect("file:%s?mode=ro" % STOCKS_DB, uri=True, timeout=20)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(%s, writable=False).__enter__()
     rows = conn.execute(
         "SELECT ticker, name, market FROM stocks WHERE market = 'EGX'").fetchall()
     conn.close()
@@ -134,7 +136,9 @@ def main():
     log("🔑 EGX tickers: %d" % len(tickers))
     log("=" * 74)
 
-    conn = sqlite3.connect(STOCKS_DB, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
         "SELECT id, user_id, portfolio_id, name, stock_ticker, quantity, "

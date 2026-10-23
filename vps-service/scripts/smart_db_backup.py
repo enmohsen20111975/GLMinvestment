@@ -91,7 +91,9 @@ def human_size(bytes_val: int) -> str:
 def wal_checkpoint(db_path: Path) -> bool:
     """Run WAL checkpoint to merge WAL into main DB."""
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=True).__enter__()
         conn.execute('PRAGMA wal_checkpoint(TRUNCATE);')
         conn.close()
         return True
@@ -103,7 +105,9 @@ def wal_checkpoint(db_path: Path) -> bool:
 def run_integrity_check(db_path: Path) -> bool:
     """Run PRAGMA integrity_check on the DB."""
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         cur = conn.cursor()
         result = cur.execute('PRAGMA integrity_check;').fetchone()
         conn.close()
@@ -178,8 +182,12 @@ def create_backup(db_path: Path) -> Optional[Path]:
     backup_path = BACKUP_DIR / f'{stem}.{timestamp}.db'
     try:
         # Use SQLite backup API for a consistent snapshot
-        source = sqlite3.connect(str(db_path), timeout=10)
-        dest = sqlite3.connect(str(backup_path), timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        source = db_manager.connection(str(db_path), writable=False).__enter__()
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        dest = db_manager.connection(str(backup_path), writable=False).__enter__()
         with dest:
             source.backup(dest)
         dest.close()
@@ -214,7 +222,9 @@ def get_table_row_counts(db_path: Path) -> Dict[str, int]:
     even when file size stays the same (SQLite page allocation)."""
     counts = {}
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         cur = conn.cursor()
         tables = cur.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"

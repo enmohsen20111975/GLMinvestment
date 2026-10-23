@@ -499,7 +499,9 @@ class TechnicalTargetEngine:
             if not os.path.exists(db_path):
                 return []
 
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(db_path, writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute(
@@ -845,7 +847,9 @@ if __name__ == "__main__":
 
     # Get current price from DB
     try:
-        conn = sqlite3.connect(DEFAULT_STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DEFAULT_STOCKS_DB, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute('SELECT current_price FROM stocks WHERE ticker = ?', (_ticker.upper(),))
         row = cur.fetchone()

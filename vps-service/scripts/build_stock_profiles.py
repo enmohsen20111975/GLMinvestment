@@ -115,7 +115,9 @@ def _get_all_stocks(stocks_db: str, market: str = None, ticker: str = None) -> L
     """يجيب كل الأسهم من stocks.db (أو سوق محدد / سهم محدد)."""
     stocks = []
     try:
-        conn = sqlite3.connect(f'file:{stocks_db}?mode=ro', uri=True, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(stocks_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -383,7 +385,9 @@ def build_profiles(
 
     # 1. تأكد إن الجدول موجود
     try:
-        conn = sqlite3.connect(stocks_db, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(stocks_db, writable=False).__enter__()
         conn.executescript(SCHEMA_SQL)
         conn.commit()
         print("  ✅ Table stock_adaptive_profiles ready")
@@ -424,7 +428,9 @@ def build_profiles(
         print(f"  ⚠️ StockDNAAnalyzer not available ({e}) — using basic profiling only")
         use_dna_analyzer = False
 
-    conn = sqlite3.connect(stocks_db, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(stocks_db, writable=False).__enter__()
     conn.executescript(SCHEMA_SQL)
 
     for i, stock in enumerate(stocks):

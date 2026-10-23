@@ -145,7 +145,9 @@ def main():
     print("=" * 60)
     print(f"Database: {DB_PATH}")
 
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
 
     totals = {}
     for ticker, filepath in CSV_FILES.items():

@@ -9,9 +9,13 @@ BACKUP_PATH = f"db/stocks_backup_ohlc_repair_{datetime.now().strftime('%Y%m%d_%H
 shutil.copy2(DB_PATH, BACKUP_PATH)
 print(f"Backed up {DB_PATH} to {BACKUP_PATH}")
 
-con = sqlite3.connect(DB_PATH)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+con = db_manager.connection(DB_PATH, writable=False).__enter__()
 con.row_factory = sqlite3.Row
-con_ph = sqlite3.connect('db/price_history.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+con_ph = db_manager.connection('db/price_history.db', writable=False).__enter__()
 con_ph.row_factory = sqlite3.Row
 
 stocks = con.execute("SELECT * FROM stocks WHERE current_price > 0").fetchall()

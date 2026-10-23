@@ -63,7 +63,9 @@ def fix_stocks_db():
         log(f'❌ {STOCKS_DB} غير موجود', 'ERROR')
         return
 
-    db = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    db = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
     db.execute("PRAGMA journal_mode=WAL")
 
     # Fix 1: تعطيل أسهم بسعر=0/null/negative
@@ -111,7 +113,9 @@ def fix_predictions_db():
         log(f'❌ {PREDICTIONS_DB} غير موجود', 'ERROR')
         return
 
-    db = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    db = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
     db.execute("PRAGMA journal_mode=WAL")
 
     # التحقق من وجود الأعمدة المطلوبة قبل البدء
@@ -209,7 +213,9 @@ def verify_state():
     log('━━━ Verify State ━━━')
 
     if STOCKS_DB.exists():
-        db = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        db = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         zero_price = db.execute(
             "SELECT COUNT(*) FROM stocks WHERE (current_price = 0 OR current_price IS NULL OR current_price < 0) AND is_active = 1"
         ).fetchone()[0]
@@ -223,7 +229,9 @@ def verify_state():
         db.close()
 
     if PREDICTIONS_DB.exists():
-        db = sqlite3.connect(str(PREDICTIONS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        db = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
         bad_rr = db.execute("""
             SELECT COUNT(*) FROM predictions
             WHERE signal IN ('BUY', 'STRONG_BUY') AND status != 'REJECTED_BAD_RR'

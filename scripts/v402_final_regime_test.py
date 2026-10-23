@@ -29,7 +29,9 @@ def extract_v40_metrics(db_path: Path, label: str) -> dict:
     """Read predictions table."""
     if not db_path.exists():
         return {'label': label, 'trades': 0, 'error': 'DB missing'}
-    c = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(db_path), writable=False).__enter__()
     try:
         rows = c.execute('''
             SELECT ticker, entry_price, target_price, stop_loss, actual_return, exit_type, is_correct,
@@ -110,7 +112,9 @@ def run_v40_2(label: str, env_overrides: dict) -> dict:
     if temp_db.exists():
         temp_db.unlink()
     shutil.copy(str(PREDICTIONS_DB), str(temp_db))
-    c = sqlite3.connect(str(temp_db))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(temp_db), writable=True).__enter__()
     try:
         c.execute('DELETE FROM predictions')
         c.commit()

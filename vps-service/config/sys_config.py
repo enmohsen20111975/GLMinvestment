@@ -98,7 +98,9 @@ def get_db_connection(db_path: str = None) -> Generator[sqlite3.Connection, None
     conn = None
     try:
         uri = f'file:{path}?mode=ro'
-        conn = sqlite3.connect(uri, uri=True, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(uri, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         conn.execute('SELECT 1').fetchone()
@@ -109,7 +111,9 @@ def get_db_connection(db_path: str = None) -> Generator[sqlite3.Connection, None
         except:
             pass
         uri = f'file:{path}?immutable=1'
-        conn = sqlite3.connect(uri, uri=True, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(uri, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
     try:
         yield conn

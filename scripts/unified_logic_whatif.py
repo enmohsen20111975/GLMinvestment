@@ -38,7 +38,9 @@ def load_price_history(ticker: str, before_date: str, db_path: str, days: int = 
     """حمّل آخر N يوم من price_history قبل تاريخ معين."""
     if not os.path.exists(db_path):
         return []
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
@@ -62,7 +64,9 @@ def load_predictions() -> List[Dict]:
     db_path = str(PROJECT_ROOT / 'db' / 'predictions.db')
     if not os.path.exists(db_path):
         return []
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(

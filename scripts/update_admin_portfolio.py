@@ -90,7 +90,9 @@ def update_portfolio(apply=False, user_ids=None):
         print(f"❌ stocks.db غير موجود: {STOCKS_DB}")
         return
 
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     c = conn.cursor()
 
     target_users = user_ids or TARGET_ADMIN_IDS

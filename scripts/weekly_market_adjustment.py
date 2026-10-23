@@ -98,7 +98,9 @@ def find_winners(db_path: str = STOCKS_DB, days: int = LOOKBACK_DAYS,
         return winners
 
     try:
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         # جلب كل الأسهم النشطة
@@ -113,7 +115,9 @@ def find_winners(db_path: str = STOCKS_DB, days: int = LOOKBACK_DAYS,
 
     for ticker, sector in all_stocks:
         try:
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(db_path, writable=False).__enter__()
             cur = conn.cursor()
             cur.execute(
                 "SELECT close, volume FROM stock_daily_prices "

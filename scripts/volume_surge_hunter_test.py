@@ -133,7 +133,9 @@ def get_scan_dates(start, end, interval):
 # ─── Main backtest ───
 def main():
     # Get all tickers
-    c = sqlite3.connect(DB_PRICES)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.connection(DB_PRICES, writable=False).__enter__()
     all_tickers = [r[0] for r in c.execute('SELECT DISTINCT symbol FROM egksco_price_history ORDER BY symbol').fetchall()]
     
     # Load toxic blocklist
@@ -261,7 +263,9 @@ def main():
     
     # Save predictions to DB (optional)
     if '--save' in sys.argv:
-        c2 = sqlite3.connect(DB_PREDS)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        c2 = db_manager.connection(DB_PREDS, writable=True).__enter__()
         # Don't delete existing - add as new persona
         for p in predictions:
             c2.execute('''

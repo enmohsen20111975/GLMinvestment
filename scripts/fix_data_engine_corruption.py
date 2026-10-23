@@ -75,7 +75,9 @@ def main():
     # ======================================================================
     log("OPEN:", "Opening in IMMUTABLE mode (bypasses schema validation)...")
     try:
-        conn = sqlite3.connect(f"file:{DB_PATH}?immutable=1", uri=True, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(f"file:{DB_PATH}?immutable=1", writable=False).__enter__()
         conn.execute("PRAGMA query_only = ON")
         log("OK:", "Database opened in IMMUTABLE mode")
     except sqlite3.DatabaseError as e:
@@ -84,11 +86,15 @@ def main():
         
         # Try WAL checkpoint first
         try:
-            conn2 = sqlite3.connect(str(DB_PATH), timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn2 = db_manager.connection(str(DB_PATH), writable=True).__enter__()
             conn2.execute("PRAGMA wal_checkpoint(TRUNCATE)")
             conn2.close()
             log("OK:", "WAL checkpoint completed, retrying...")
-            conn = sqlite3.connect(f"file:{DB_PATH}?immutable=1", uri=True, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(f"file:{DB_PATH}?immutable=1", writable=False).__enter__()
         except Exception as e2:
             log("FAIL:", f"Still cannot open: {e2}")
             return
@@ -140,7 +146,9 @@ def main():
     try:
         if NEW_DB_PATH.exists():
             NEW_DB_PATH.unlink()
-        new_conn = sqlite3.connect(str(NEW_DB_PATH), timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        new_conn = db_manager.connection(str(NEW_DB_PATH), writable=True).__enter__()
         new_conn.execute("PRAGMA journal_mode=WAL")
         new_conn.execute("PRAGMA synchronous=NORMAL")
         log("OK:", "New database created")
@@ -262,7 +270,9 @@ def main():
     # 10. Verify the fix
     log("VERIFY:")
     try:
-        verify_conn = sqlite3.connect(str(DB_PATH), timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        verify_conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         vc = verify_conn.cursor()
 
         vc.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")

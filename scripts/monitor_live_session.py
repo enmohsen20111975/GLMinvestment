@@ -40,7 +40,9 @@ def check_db_freshness():
     stocks_db = ROOT / 'db' / 'stocks.db'
     if stocks_db.exists():
         try:
-            conn = sqlite3.connect(str(stocks_db))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
             c = conn.cursor()
             c.execute("SELECT MAX(price_date) FROM stock_daily_prices")
             max_daily = c.fetchone()[0]
@@ -60,7 +62,9 @@ def check_db_freshness():
     de_db = ROOT / 'db' / 'data_engine.db'
     if de_db.exists():
         try:
-            conn = sqlite3.connect(str(de_db))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(de_db), writable=False).__enter__()
             c = conn.cursor()
             c.execute("SELECT MAX(price_date) FROM egksco_price_history")
             max_egksco = c.fetchone()[0]
@@ -74,7 +78,9 @@ def check_active_predictions():
     pred_db = ROOT / 'db' / 'predictions.db'
     if pred_db.exists():
         try:
-            conn = sqlite3.connect(str(pred_db))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(pred_db), writable=False).__enter__()
             c = conn.cursor()
             c.execute("""
                 SELECT id, ticker, prediction_date, entry_price, target_price, stop_loss, status, master_score
@@ -117,8 +123,12 @@ def check_recommended_stocks():
     pred_db = ROOT / 'db' / 'predictions.db'
     if stocks_db.exists() and pred_db.exists():
         try:
-            s_conn = sqlite3.connect(str(stocks_db))
-            p_conn = sqlite3.connect(str(pred_db))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            s_conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            p_conn = db_manager.connection(str(pred_db), writable=False).__enter__()
             tickers = ['CCAP', 'CANA', 'BINV', 'ATQA', 'DTPP']
             q = f"SELECT ticker, name_ar, current_price, previous_close, high_price, low_price, change_percent, volume, updated_at FROM stocks WHERE ticker IN ({','.join('?' for _ in tickers)})"
             s_rows = {r[0]: r for r in s_conn.execute(q, tickers).fetchall()}

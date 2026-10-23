@@ -35,7 +35,9 @@ def _get_cached_analysis(ticker: str) -> Optional[dict]:
         # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
         # TODO: Add `AND ai_updated_at >= datetime('now', '-2 days')` to filter stale
         #       AI decisions — currently a decision from 2 weeks ago appears "alive".
-        conn = sqlite3.connect(PREDICTIONS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
             SELECT ai_decision, ai_confidence, ai_reason, ai_narrative, ai_updated_at
@@ -107,7 +109,9 @@ def _run_live_analysis(ticker: str) -> dict:
         SKIP_STORED_ANALYSES_WRITE = True
         if not SKIP_STORED_ANALYSES_WRITE:
             try:
-                conn = sqlite3.connect(PREDICTIONS_DB)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
                 cur = conn.cursor()
                 cur.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,))
                 exists = cur.fetchone() is not None
@@ -610,7 +614,9 @@ def telegram_signals_list():
         limit = request.args.get('limit', 50, type=int)
         evaluated_only = request.args.get('evaluated', 'false').lower() == 'true'
 
-        conn = sqlite3.connect(_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
 
         if evaluated_only:
@@ -668,7 +674,9 @@ def premium_predictions():
         _root = Path(__file__).resolve().parent.parent.parent
         _db = str(_root / 'db' / 'predictions.db')
 
-        conn = sqlite3.connect(_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
 
         # جلب التوقعات من stored_analyses + aiPrediction

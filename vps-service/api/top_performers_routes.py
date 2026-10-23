@@ -36,7 +36,9 @@ def _get_data_engine_conn():
     PHASE-2-DB-UNIFY: data_engine.db.egksco_price_history = 0 rows على الإنتاج.
     Use _get_price_history_conn() (price_history.db) as the canonical source.
     """
-    conn = sqlite3.connect(DBPaths.DATA_ENGINE_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.DATA_ENGINE_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -49,14 +51,18 @@ def _get_price_history_conn():
     - schema: ticker, date, open_price, high_price, low_price, close_price, volume, source
     """
     ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
-    conn = sqlite3.connect(ph_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(ph_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def _get_stocks_conn():
     """Get a connection to stocks.db (for metadata: name, sector, market)."""
-    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

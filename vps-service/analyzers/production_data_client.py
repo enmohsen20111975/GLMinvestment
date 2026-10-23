@@ -253,7 +253,9 @@ class ProductionDataClient:
         if not INTRADAY_DB.exists():
             return None
         try:
-            conn = sqlite3.connect(str(INTRADAY_DB), timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(INTRADAY_DB), writable=False).__enter__()
             row = conn.execute('''
                 SELECT close FROM stock_intraday
                 WHERE ticker = ? AND close IS NOT NULL AND close > 0
@@ -269,7 +271,9 @@ class ProductionDataClient:
         if not STOCKS_DB.exists():
             return None
         try:
-            conn = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
             row = conn.execute(
                 'SELECT current_price FROM stocks WHERE ticker = ? AND is_active = 1',
                 (ticker,)
@@ -370,7 +374,9 @@ class ProductionDataClient:
         if not DATA_ENGINE_DB.exists():
             return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
         try:
-            conn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
             rows = conn.execute('''
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
                 FROM egksco_price_history
@@ -452,7 +458,9 @@ class ProductionDataClient:
         if not STOCKS_DB.exists():
             return []
         try:
-            conn = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             rows = conn.execute('''
                 SELECT ticker, name_ar, sector, current_price, change_percent,
@@ -508,7 +516,9 @@ class ProductionDataClient:
         # Fallback to local
         if self.use_local and STOCKS_DB.exists():
             try:
-                conn = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
                 conn.row_factory = sqlite3.Row
                 row = conn.execute('''
                     SELECT ticker, name_ar, sector, current_price, change_percent,

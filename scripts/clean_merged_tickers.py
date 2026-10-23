@@ -298,7 +298,9 @@ def process_database(db_path: Path, apply: bool) -> Tuple[List[TableReport], int
     # Use autocommit isolation level so we can manage BEGIN/COMMIT/ROLLBACK
     # explicitly (the Python sqlite3 module otherwise auto-opens transactions
     # in surprising ways).
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.isolation_level = None
     # Disable FK enforcement during cleanup so updating a PK referenced by
     # another table (e.g. stocks.ticker <- stock_daily_prices.ticker) does

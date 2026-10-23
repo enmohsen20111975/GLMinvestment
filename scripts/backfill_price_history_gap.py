@@ -33,7 +33,9 @@ Usage:
 بعد التشغيل، تحقّق:
     python3 -c "
     import sqlite3
-    ph=sqlite3.connect('db/price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph = db_manager.connection('db/price_history.db', writable=False).__enter__()
     print(ph.execute('SELECT MAX(date), COUNT(*) FROM price_history').fetchone())
     print(ph.execute(\"SELECT MAX(date) FROM price_history WHERE ticker='RMDA'\").fetchone())
     "
@@ -178,7 +180,9 @@ def main():
     if not args.dry_run and result.get('rows_inserted', 0) > 0:
         try:
             import sqlite3
-            conn = sqlite3.connect(args.ph_db, timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(args.ph_db, writable=False).__enter__()
             row = conn.execute("SELECT MAX(date), COUNT(*) FROM price_history").fetchone()
             print(f"✅ Verification: MAX(date)={row[0]}, total rows={row[1]}")
             conn.close()

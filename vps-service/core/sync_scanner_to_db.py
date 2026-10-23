@@ -45,7 +45,9 @@ def _get_stock_names(tickers):
     if not STOCKS_DB.exists():
         return name_map
     try:
-        conn = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         c = conn.cursor()
         placeholders = ",".join("?" for _ in tickers)
         rows = c.execute(
@@ -94,7 +96,9 @@ def sync_scanner_to_stored_analyses(market='EGX'):
     now_iso = datetime.now().isoformat()
     today_date = datetime.now().strftime("%Y-%m-%d")
 
-    conn = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
     c = conn.cursor()
 
     # 1. إفراغ البيانات القديمة المتجمدة لهذا السوق
@@ -247,7 +251,9 @@ def purge_stale_predictions(db_path: Path = None) -> dict:
         logger.error(f"DB not found: {db_path}")
         return {'error': 'DB not found'}
 
-    conn = sqlite3.connect(str(db_path), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     cur = conn.cursor()
     stats = {}
 
@@ -363,7 +369,9 @@ def verify_invariants(db_path: Path = None) -> dict:
     if not db_path.exists():
         return {'error': 'DB not found'}
 
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cur = conn.cursor()
 
     # The mandatory proof query

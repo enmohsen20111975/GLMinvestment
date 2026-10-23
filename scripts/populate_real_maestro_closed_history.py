@@ -37,7 +37,9 @@ def parse_vol(v):
     except: return 0.0
 
 def load_history_direct(ticker):
-    conn = sqlite3.connect(DB_DIR / 'price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_DIR / 'price_history.db', writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("""
@@ -54,11 +56,15 @@ def load_history_direct(ticker):
 def populate_maestro_real_history():
     print("🚀 Starting REAL Maestro 8-Layer Historical Populator (Last 90 Days)...")
     
-    conn_ph = sqlite3.connect(DB_DIR / 'price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(DB_DIR / 'price_history.db', writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
     
     # Load genuine EGX tickers from stocks.db
-    conn_s = sqlite3.connect(DB_DIR / 'stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_s = db_manager.connection(DB_DIR / 'stocks.db', writable=False).__enter__()
     conn_s.row_factory = sqlite3.Row
     egx_rows = conn_s.execute("SELECT ticker, sector FROM stocks WHERE (market = 'EGX' OR market IS NULL OR market = '')").fetchall()
     stock_sectors = {r['ticker']: (r['sector'] or 'Finance') for r in egx_rows}
@@ -84,7 +90,9 @@ def populate_maestro_real_history():
             
     conn_ph.close()
 
-    conn_pred = sqlite3.connect(DB_DIR / 'predictions.db')
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(DB_DIR / 'predictions.db', writable=True).__enter__()
     conn_pred.execute("DELETE FROM predictions")
     conn_pred.execute("DELETE FROM stored_analyses")
     conn_pred.commit()

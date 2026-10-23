@@ -142,7 +142,9 @@ def main():
         log("  ⚠️ --refresh-data مش متاح دلوقتي (الإنتاج تحت ضغط). استخدم البيانات المحلية.")
         log("  💡 لو محتاج تحدّث، شغّل scripts/fetch_production_data.py يدوياً.\n")
 
-    conn = sqlite3.connect(PROD_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PROD_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     stocks = config['stocks']

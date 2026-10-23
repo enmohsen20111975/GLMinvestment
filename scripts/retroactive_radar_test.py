@@ -91,7 +91,9 @@ def is_early_break(closes, volumes):
 
 def fetch_all_data(db_path, market='EGX'):
     """حمّل كل بيانات كل الأسهم في dict."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # فلتر السوق (لو stocks table موجود)

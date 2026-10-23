@@ -689,7 +689,9 @@ class EGXDataFetcher:
     def _get_tickers_from_db(self) -> List[str]:
         """Get tickers from database"""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             cursor.execute("SELECT ticker FROM stocks WHERE is_active = 1 OR is_active IS NULL")
             tickers = [row[0] for row in cursor.fetchall()]
@@ -705,7 +707,9 @@ class EGXDataFetcher:
             return 0
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             updated = 0
             

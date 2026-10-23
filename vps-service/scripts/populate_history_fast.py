@@ -14,10 +14,14 @@ def populate():
     pred_db = 'db/predictions.db'
     prices_db = 'db/price_history.db'
     
-    conn_p = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_p = db_manager.connection(pred_db, writable=False).__enter__()
     conn_p.row_factory = sqlite3.Row
     
-    conn_h = sqlite3.connect(prices_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_h = db_manager.connection(prices_db, writable=False).__enter__()
     conn_h.row_factory = sqlite3.Row
     
     # 1. Fetch from stored_analyses

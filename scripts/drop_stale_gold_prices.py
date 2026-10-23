@@ -131,7 +131,9 @@ def main() -> int:
         log(f"ERROR: {DATA_ENGINE_DB} not found")
         return 3
     log(f"Checking {DATA_ENGINE_DB.name}...")
-    de_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    de_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     try:
         de_stats = check_data_engine_egypt_gold(de_conn)
     finally:
@@ -164,7 +166,9 @@ def main() -> int:
         log(f"ERROR: {STOCKS_DB} not found")
         return 3
     log(f"Checking {STOCKS_DB.name}...")
-    st_conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    st_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         st_stats = check_stocks_gold(st_conn)
     finally:
@@ -198,7 +202,9 @@ def main() -> int:
         # Step 4: DROP
         log(f"Dropping stocks.db.gold_prices...")
         try:
-            conn = sqlite3.connect(str(STOCKS_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
             try:
                 conn.execute("DROP TABLE IF EXISTS gold_prices")
                 conn.commit()
@@ -218,7 +224,9 @@ def main() -> int:
 
         # Step 5: integrity check
         log("Running integrity_check...")
-        conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         try:
             chk = conn.execute("PRAGMA integrity_check").fetchone()[0]
             log(f"  integrity_check: {chk}")

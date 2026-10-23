@@ -385,7 +385,9 @@ def compute_radar_markers(
     markers: List[Dict[str, Any]] = []
 
     try:
-        conn = sqlite3.connect(f"file:{stocks_db_path}?mode=ro", uri=True, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(stocks_db_path, writable=False).__enter__()
         cur = conn.cursor()
         rows = cur.execute(
             """SELECT signal_date, signal_type, entry_price, status
@@ -504,7 +506,9 @@ def compute_prediction_ray(
         return None
 
     try:
-        conn = sqlite3.connect(f"file:{predictions_db_path}?mode=ro", uri=True, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(predictions_db_path, writable=False).__enter__()
         cur = conn.cursor()
         row = cur.execute(
             """SELECT ticker, signal, entry_price, target_price, stop_loss,

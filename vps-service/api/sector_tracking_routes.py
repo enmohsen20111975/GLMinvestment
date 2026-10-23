@@ -15,12 +15,21 @@ from flask import Blueprint, request, jsonify
 
 from utils.db_paths import DBPaths
 
+# Phase 8.4: ApiResponseCache — endpoint-level response caching
+try:
+    from core.cache_manager import api_cache
+    _API_CACHE_AVAILABLE = True
+except Exception:
+    _API_CACHE_AVAILABLE = False
+
 sector_tracking_bp = Blueprint('sector_tracking', __name__)
 
 
 def _get_stocks_conn():
     """Get a connection to stocks.db."""
-    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -84,6 +93,25 @@ def get_sector_tracking():
         if sort_by not in valid_sorts:
             sort_by = 'turnover'
         order_dir = 'desc' if order == 'desc' else 'asc'
+
+        # ── Phase 8.4: ApiResponseCache check ────────────────────────────────
+        # Cache key includes ALL filter params so different views get separate
+        # cache entries. TTL=300s (sector data changes on minute-scale).
+        _cache_params = {
+            'market': market,
+            'with_rotation': str(with_rotation),
+            'with_stocks': str(with_stocks),
+            'sort': sort_by,
+            'order': order_dir,
+            'min_avg_change': str(min_avg_change) if min_avg_change is not None else '',
+            'heat_level': heat_level_filter or '',
+        }
+        if _API_CACHE_AVAILABLE:
+            _cached = api_cache.get('sector_tracking', params=_cache_params)
+            if _cached is not None:
+                _cached['cached'] = True
+                _cached['cache_ttl'] = 300
+                return jsonify(_cached)
 
         # === Use the existing FlowSystemEngine.get_sector_heatmap() ===
         from engine.flow_system import FlowSystemEngine
@@ -282,7 +310,8 @@ def get_sector_tracking():
                 except Exception as rot_e:
                     rotation = {'error': str(rot_e)}
 
-            return jsonify({
+            # Build response payload (Phase 8.4: cached before jsonify).
+            _response_data = {
                 'success': True,
                 'market': market,
                 'sectors': enriched_sectors,
@@ -305,7 +334,13 @@ def get_sector_tracking():
                     'min_avg_change': min_avg_change,
                     'heat_level': heat_level_filter or None,
                 },
-            })
+            }
+            # ── Phase 8.4: cache + return fresh response ────────────────────
+            _response_data['cached'] = False
+            _response_data['cache_ttl'] = 300
+            if _API_CACHE_AVAILABLE:
+                api_cache.set('sector_tracking', _response_data, ttl=300, params=_cache_params)
+            return jsonify(_response_data)
         finally:
             conn.close()
     except Exception as e:

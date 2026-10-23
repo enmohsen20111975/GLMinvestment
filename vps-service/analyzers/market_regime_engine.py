@@ -404,7 +404,9 @@ class MarketRegimeEngine:
     # DB helpers
     # ════════════════════════════════════════════════════════════════════
     def _connect(self, db_path: str) -> sqlite3.Connection:
-        conn = sqlite3.connect(db_path, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         return conn
 

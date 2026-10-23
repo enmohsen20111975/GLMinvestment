@@ -19,7 +19,9 @@ def main():
     print("🔄 مزامنة توقعات V40.2 → hunter_pick_tracking")
     print("=" * 60)
 
-    conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     # 1. اقرأ أحدث 5 توقعات من V40.2 (status='active' OR 'ACTIVE')

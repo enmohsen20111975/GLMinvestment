@@ -92,7 +92,9 @@ def _find_radar_db():
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             cur = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
                 (table,)
@@ -179,7 +181,9 @@ def get_current_price(ticker: str) -> Optional[float]:
     if not PROD_DB:
         return None
     try:
-        conn = sqlite3.connect(str(PROD_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(PROD_DB), writable=False).__enter__()
         query = (
             f"SELECT {PRICE_COL} FROM {PROD_TABLE} "
             f"WHERE {TICKER_COL} = ? AND {PRICE_COL} IS NOT NULL AND {PRICE_COL} > 0 "
@@ -205,7 +209,9 @@ def load_market_regime(market: str = 'EGX') -> Dict[str, Any]:
     if not stocks_db.exists():
         return {'regime': 'NORMAL', 'last_update': None, 'reasons': [], 'source': 'default'}
     try:
-        conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         # 1) current state from system_settings
         settings_key = f"current_regime_{market}"
         row = conn.execute(
@@ -271,7 +277,9 @@ def load_sector_heatmap(market: str = 'EGX', top_n: int = 5) -> List[Dict[str, A
     if not stocks_db.exists():
         return []
     try:
-        conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         # Defensive: check column availability
         cols = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
         if 'sector' not in cols or 'change_percent' not in cols:

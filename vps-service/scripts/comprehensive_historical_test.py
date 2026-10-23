@@ -73,7 +73,9 @@ def load_egx_tickers() -> List[str]:
     """نجيب رموز EGX من stocks.db (لو متاح)، وإلا نرجّع كل الرموز الأبجدية."""
     tickers = []
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cur = conn.cursor()
         # نحاول نفلتر بـ market='EGX'
         try:
@@ -190,7 +192,9 @@ def main():
         print("        شغّل: unzip db/price_history.db.zip -d db_test_sandbox/")
         sys.exit(1)
 
-    conn = sqlite3.connect(SANDBOX_DB, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(SANDBOX_DB, writable=False).__enter__()
 
     # آخر 30 يوم تداول
     trading_days = [r[0] for r in conn.execute(

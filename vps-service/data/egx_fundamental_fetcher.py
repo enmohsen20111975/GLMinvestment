@@ -168,7 +168,9 @@ class EGXFundamentalFetcher:
         # 1. اقرأ من tab_profitability + tab_valuation في data_engine.db
         import sqlite3 as _sqlite3
         try:
-            conn = _sqlite3.connect(self._db_path)
+            # Phase 7.1: migrated
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self._db_path, writable=False).__enter__()
             conn.row_factory = _sqlite3.Row
             cur = conn.cursor()
             # tab_profitability: ROE, ROA, margins
@@ -184,7 +186,9 @@ class EGXFundamentalFetcher:
 
         # 2. اقرأ من stocks.db (price, volume, sector)
         try:
-            conn2 = _sqlite3.connect(self._stocks_db)
+            # Phase 7.1: migrated
+            from core.db_manager import db_manager
+            conn2 = db_manager.connection(self._stocks_db, writable=False).__enter__()
             conn2.row_factory = _sqlite3.Row
             cur2 = conn2.cursor()
             cur2.execute('SELECT current_price, change_percent, volume, sector, name, name_ar, market_cap FROM stocks WHERE ticker = ?', (ticker,))
@@ -395,7 +399,9 @@ class EGXFundamentalFetcher:
             all_stocks = all_stocks[:limit]
 
         # إنشاء/تأكيد table
-        conn = sqlite3.connect(DATA_ENGINE_DB)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATA_ENGINE_DB, writable=True).__enter__()
         conn.execute('''
             CREATE TABLE IF NOT EXISTS egx_fundamentals (
                 ticker TEXT PRIMARY KEY,
@@ -506,7 +512,9 @@ class EGXFundamentalFetcher:
             report['error'] = f'DB not found: {DATA_ENGINE_DB}'
             return report
         try:
-            conn = sqlite3.connect(f'file:{DATA_ENGINE_DB}?mode=ro', uri=True, timeout=10.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
             cur = conn.cursor()
             for table in ('tab_balance_sheet', 'tab_income_statement', 'tab_cash_flow'):
                 try:
@@ -560,7 +568,9 @@ if __name__ == '__main__':
     # 'COMI' test). The cron (`egx_fundamental_fetcher.py` with no args) must
     # actually populate egx_fundamentals, not silently test one stock.
     if len(_sys.argv) > 1 and _sys.argv[1] == "stats":
-        conn = sqlite3.connect(DATA_ENGINE_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
         try:
             total = conn.execute("SELECT COUNT(*) FROM egx_fundamentals").fetchone()[0]
             print(f"Total EGX fundamentals: {total}")

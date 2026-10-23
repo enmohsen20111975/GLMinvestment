@@ -62,7 +62,9 @@ def check_db_health() -> dict:
 
         # count rows in main table
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             main_table = None
             for t in tables:

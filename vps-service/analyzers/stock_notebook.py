@@ -525,7 +525,9 @@ def _load_price_history_for_symbol(symbol: str, days: int = 250) -> Dict[str, Li
         return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
 
     try:
-        conn = _sqlite3.connect(str(db_path), timeout=10.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path, writable=False).__enter__(), timeout=10.0)
         rows = conn.execute('''
             SELECT date, open_price, high_price, low_price, close_price, volume
             FROM price_history
@@ -562,7 +564,9 @@ def _get_stock_metadata(symbol: str) -> Dict[str, str]:
         return {'name_ar': symbol, 'sector': ''}
 
     try:
-        conn = _sqlite3.connect(str(db_path), timeout=5.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path, writable=False).__enter__(), timeout=5.0)
         row = conn.execute(
             'SELECT symbol, name_ar FROM egksco_stocks WHERE UPPER(symbol) = ?',
             (symbol.upper(),)
@@ -792,7 +796,9 @@ def build_notebooks_for_universe(symbols: Any = 'active', market: str = 'EGX',
             db_path = PROJECT_ROOT / 'db' / 'vps_real' / 'stocks.db'
 
         try:
-            conn = _sqlite3.connect(str(db_path), timeout=10.0)
+            # Phase 7.1: migrated
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path, writable=False).__enter__(), timeout=10.0)
             rows = conn.execute('SELECT symbol FROM egksco_stocks').fetchall()
             conn.close()
             symbols = [r[0] for r in rows if r[0] and not r[0].startswith('.')]

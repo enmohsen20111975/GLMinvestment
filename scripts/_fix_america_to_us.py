@@ -126,7 +126,9 @@ def main() -> int:
     print(f"  Mode:       {'VERIFY-ONLY' if args.verify else ('DRY-RUN' if args.dry_run else 'LIVE')}")
     print()
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
 
     # Sanity check — does the stocks table exist?
     tables = [t[0] for t in conn.execute(

@@ -16,7 +16,9 @@ def fix_all():
     # 1. predictions.db -> stored_analyses
     pred_db = PROJECT_ROOT / "db" / "predictions.db"
     if pred_db.exists():
-        conn = sqlite3.connect(str(pred_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(pred_db), writable=False).__enter__()
         c = conn.cursor()
         cols = [r[1] for r in c.execute("PRAGMA table_info(stored_analyses)").fetchall()]
         print(f"stored_analyses columns before: {cols}")
@@ -34,7 +36,9 @@ def fix_all():
     # 2. news.db -> news_signals view
     news_db = PROJECT_ROOT / "db" / "news.db"
     if news_db.exists():
-        conn = sqlite3.connect(str(news_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(news_db), writable=False).__enter__()
         c = conn.cursor()
         c.execute("DROP VIEW IF EXISTS news_signals")
         c.execute("CREATE VIEW news_signals AS SELECT * FROM market_news")
@@ -46,7 +50,9 @@ def fix_all():
     # 3. stocks.db -> stock_daily_prices cleanup
     stocks_db = PROJECT_ROOT / "db" / "stocks.db"
     if stocks_db.exists():
-        conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         c = conn.cursor()
         bad_cnt = c.execute("SELECT COUNT(*) FROM stock_daily_prices WHERE close_price <= 0 OR close_price IS NULL OR close <= 0 OR close IS NULL").fetchone()[0]
         print(f"stock_daily_prices bad rows count: {bad_cnt}")

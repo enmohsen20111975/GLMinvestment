@@ -25,7 +25,9 @@ class StockPersonalityCalculator:
         self.db_path = db_path
     
     def get_connection(self):
-        return sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        return db_manager.connection(self.db_path, writable=False).__enter__()
     
     def get_daily_returns(self) -> Dict:
         """Get daily returns for all stocks"""

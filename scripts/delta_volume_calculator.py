@@ -33,7 +33,9 @@ from paths import DATA_ENGINE_DB, INTRADAY_DB
 
 def ensure_daily_delta_columns():
     """إضافة أعمدة delta_volume لـ egksco_price_history."""
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 10000')
     
     cols = [r[1] for r in conn.execute('PRAGMA table_info(egksco_price_history)').fetchall()]
@@ -59,7 +61,9 @@ def ensure_daily_delta_columns():
 
 def ensure_intraday_delta_columns():
     """إضافة أعمدة delta_volume لـ stock_intraday."""
-    conn = sqlite3.connect(INTRADAY_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 10000')
     
     cols = [r[1] for r in conn.execute('PRAGMA table_info(stock_intraday)').fetchall()]
@@ -141,7 +145,9 @@ def backfill_daily_delta():
     """حساب delta_volume بأثر رجعي لكل البيانات التاريخية."""
     print('\n[BACKFILL] Daily delta_volume for egksco_price_history...')
     
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 30000')
     
     # Get rows where delta_volume IS NULL (not yet calculated)
@@ -201,7 +207,9 @@ def update_intraday_delta():
     """تحديث delta_volume للبيانات اللحظية (آخر 5 دقائق)."""
     print('\n[LIVE] Updating intraday delta_volume...')
     
-    conn = sqlite3.connect(INTRADAY_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 10000')
     
     # Get recent rows without delta_volume
@@ -258,7 +266,9 @@ def update_intraday_delta():
 
 def get_latest_delta(ticker):
     """جلب آخر delta_volume لسهم معين."""
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=5)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     row = conn.execute('''
         SELECT symbol, price_date, volume, buy_volume, sell_volume,
                delta_volume, delta_pct, pressure
@@ -284,7 +294,9 @@ def get_latest_delta(ticker):
 
 def get_delta_history(ticker, days=30):
     """جلب تاريخ delta_volume لسهم معين."""
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=5)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     rows = conn.execute('''
         SELECT price_date, volume, buy_volume, sell_volume,
                delta_volume, delta_pct, pressure, close_price

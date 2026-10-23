@@ -50,7 +50,9 @@ def load_top_candidates():
     print('\n[1/3] Loading candidates using screener + fundamentals...')
 
     # 1. Get screener tickers
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     cur = conn.execute('''
         SELECT DISTINCT symbol FROM screener_lists
         WHERE category IN ('most_active', 'unusual_volume', 'top_gainers')
@@ -61,7 +63,9 @@ def load_top_candidates():
     conn.close()
 
     # 2. Get fundamentals from stocks.db (the canonical source for EGX)
-    conn = sqlite3.connect(STOCKS_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     placeholders = ','.join('?' * len(screener_tickers))
     cur = conn.execute(f'''
         SELECT ticker, name, current_price, pe_ratio, pb_ratio, roe, roa,
@@ -104,7 +108,9 @@ def load_top_candidates():
 
 def load_price_history(ticker, days=60):
     """Load recent price history for a ticker."""
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     cur = conn.execute('''
         SELECT price_date, open_price, high_price, low_price, close_price, volume
         FROM egksco_price_history

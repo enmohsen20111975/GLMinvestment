@@ -37,7 +37,9 @@ def cleanup(dry_run=True, max_age_days=7):
     # Load active tickers from stocks.db
     active_tickers = set()
     if STOCKS_DB.exists():
-        conn_s = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn_s = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         cur_s = conn_s.cursor()
         cur_s.execute("SELECT ticker FROM stocks WHERE is_active = 1 OR is_active IS NULL")
         active_tickers = {r[0] for r in cur_s.fetchall()}
@@ -47,7 +49,9 @@ def cleanup(dry_run=True, max_age_days=7):
         print("⚠️ stocks.db not found — cannot verify active tickers")
         return 1
 
-    conn = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     # Get all stored_analyses entries

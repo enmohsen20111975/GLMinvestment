@@ -224,7 +224,9 @@ def run_analysis_batch(
     # PHASE 5 (v3.54.0): wrap with set_trace_callback to count queries.
     _sql_log: List[str] = []  # collects every SQL statement for counting
     try:
-        pred_conn = sqlite3.connect(PREDICTIONS_DB, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         pred_conn.row_factory = sqlite3.Row
         # Set trace callback BEFORE any execute() so we capture PRAGMA too
         pred_conn.set_trace_callback(lambda stmt: _sql_log.append(stmt))

@@ -4,7 +4,9 @@ fast_dir = sys.argv[1] if len(sys.argv) > 1 else '/home/meme/my_apps/GLMinvestme
 files = glob.glob(fast_dir + '/**/*.db', recursive=True)
 for f in files:
     try:
-        conn = sqlite3.connect(f)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(f, writable=False).__enter__()
         c = conn.cursor()
         c.execute("SELECT name FROM sqlite_master WHERE type='table';")
         for t in [r[0] for z in c.fetchall() if not r[0].startswith('sqlite_')]:

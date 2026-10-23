@@ -184,7 +184,9 @@ def get_quant_cache(ticker: str) -> Optional[Dict[str, Any]]:
     conn = None
     try:
         # mode=ro لتفادي lock contention مع الـ Node.js side
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=2.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
 
         # تحقق إن الجدول موجود بسرعة
@@ -297,7 +299,9 @@ def save_quant_cache(
 
     conn = None
     try:
-        conn = sqlite3.connect(db_path, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=True).__enter__()
         # WAL busy_timeout عشان يقلل lock contentions مع الكتابة المتزامنة
         try:
             conn.execute('PRAGMA journal_mode=WAL')

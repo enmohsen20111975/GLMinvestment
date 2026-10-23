@@ -20,7 +20,9 @@ DB_DIR.mkdir(parents=True, exist_ok=True)
 
 def safe_connect(db_path: Path) -> sqlite3.Connection:
     """Connect with WAL mode for concurrent access."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=True).__enter__()
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
     conn.execute("PRAGMA synchronous=NORMAL")

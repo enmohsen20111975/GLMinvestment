@@ -48,7 +48,9 @@ def main():
         shutil.copy2(str(DB_PATH), str(backup_path))
         print(f"✅ Backup: {backup_path}")
 
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
     cur = conn.cursor()
 
     # 2. Show the shifted rows

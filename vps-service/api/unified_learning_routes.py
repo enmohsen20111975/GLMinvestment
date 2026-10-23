@@ -76,7 +76,9 @@ def get_status():
     try:
         import sqlite3
         
-        conn = sqlite3.connect(LEARNING_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(LEARNING_DB, writable=False).__enter__()
         cursor = conn.cursor()
         
         # Helper function to safely get count

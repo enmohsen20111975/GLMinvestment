@@ -69,7 +69,9 @@ class WindowResult:
 
 def get_db():
     """Get database connection"""
-    conn = sqlite3.connect(DATABASE_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

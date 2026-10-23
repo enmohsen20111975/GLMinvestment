@@ -161,7 +161,9 @@ def _get_portfolio_conn():
             return _ctx.__enter__()
     except Exception:
         pass
-    conn = sqlite3.connect(_get_portfolio_db_path())
+    # Phase 7.1: migrated
+    from core.db_manager import db_manager
+    conn = db_manager.connection(_get_portfolio_db_path(), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -676,7 +678,9 @@ def _batch_compute_flow(positions):
                 result[t] = {'flow_direction': None, 'flow_strength': None, 'flow_score': None}
             return result
 
-        conn = sqlite3.connect(f'file:{ph_db}?mode=ro', uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(ph_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

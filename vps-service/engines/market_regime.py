@@ -208,7 +208,9 @@ class MarketRegimeEngine:
         if not os.path.exists(self.db_path):
             raise FileNotFoundError(f"Database not found: {self.db_path}")
 
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.db_path, writable=False).__enter__()
         try:
             query = """
                 SELECT date, close_price

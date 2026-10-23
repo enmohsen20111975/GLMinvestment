@@ -99,9 +99,13 @@ def migrate(db_path: str, apply: bool = False) -> int:
 
     # Read-only check for dry-run; read-write for apply
     if apply:
-        conn = sqlite3.connect(db_path, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
     else:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
     cur = conn.cursor()
 
     total_deleted = 0

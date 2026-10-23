@@ -814,7 +814,9 @@ def save_message():
         for db_path in db_paths:
             try:
                 Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-                conn = sqlite3.connect(db_path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(db_path, writable=False).__enter__()
                 conn.execute("SELECT 1")
                 db_used = db_path
                 break
@@ -936,7 +938,9 @@ def save_message():
             import sqlite3
             from pathlib import Path
             db_path = str(Path(__file__).parent.parent.parent / 'db' / 'stocks.db')
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(db_path, writable=False).__enter__()
             c = conn.cursor()
             
             # Ensure table exists

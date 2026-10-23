@@ -1374,7 +1374,9 @@ class V38BacktestEngine:
             try:
                 _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
                 if os.path.exists(_ph_db):
-                    conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True, timeout=10.0)
+                    # Phase 7.1: migrated to db_manager
+                    from core.db_manager import db_manager
+                    conn = db_manager.connection(_ph_db, writable=False).__enter__()
                     cur = conn.cursor()
                     cur.execute("""
                         SELECT date, open_price, high_price, low_price, close_price, volume
@@ -1398,7 +1400,9 @@ class V38BacktestEngine:
 
         # 2. PRIMARY INTRADAY/DAILY: data_engine.db (egksco_price_history — طازج)
         try:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+            # Phase 7.1: migrated to db_manager
+            from core.db_manager import db_manager
+            conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
@@ -1421,7 +1425,9 @@ class V38BacktestEngine:
 
         # 3. LATEST: stocks.db.stock_daily_prices (تحديثات اليوم والجلسات الحالية)
         try:
-            conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume

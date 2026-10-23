@@ -242,7 +242,9 @@ def classify_stock(ticker: str, name: str) -> str:
 
 def get_all_stocks_without_sector():
     """الحصول على كل الأسهم بدون قطاع"""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -260,7 +262,9 @@ def get_all_stocks_without_sector():
 
 def update_stock_sector(ticker: str, sector: str):
     """تحديث قطاع السهم"""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=True).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -339,7 +343,9 @@ def main():
     print("📊 الإحصائيات النهائية:")
     print("=" * 60)
     
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('SELECT COUNT(*) FROM stocks WHERE sector IS NOT NULL AND sector != ""')

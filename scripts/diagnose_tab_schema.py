@@ -36,7 +36,9 @@ def main():
         print(f"❌ DB not found: {DB_FILE}")
         return
 
-    conn = sqlite3.connect(str(DB_FILE), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_FILE), writable=False).__enter__()
 
     # 1. كل الـ tables في الـ DB
     print("\n📋 كل الـ tables في data_engine.db:")

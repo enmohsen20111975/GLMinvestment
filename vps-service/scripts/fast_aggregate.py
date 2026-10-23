@@ -40,7 +40,9 @@ def main():
         return 1
 
     # قبل
-    ph = sqlite3.connect(PRICE_HISTORY_DB, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    ph = db_manager.connection(PRICE_HISTORY_DB, writable=True).__enter__()
     ph.execute('PRAGMA busy_timeout = 30000')
     ph.execute("""
         CREATE TABLE IF NOT EXISTS price_history (
@@ -56,7 +58,9 @@ def main():
     print(f"📊 BEFORE: MAX(date)={before[0]} | rows={before[1]}")
 
     # اتصل بـ intraday.db READ-ONLY (مفيش lock conflict مع data-engine)
-    in_db = sqlite3.connect(f"file:{INTRADAY_DB}?mode=ro", uri=True, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    in_db = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
     in_db.execute('PRAGMA busy_timeout = 30000')
 
     # شوف اللي متاح

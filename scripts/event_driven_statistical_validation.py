@@ -104,7 +104,9 @@ def load_sector_map():
     """تحميل ticker → sector من stocks.db"""
     sector_map = {}
     try:
-        conn = sqlite3.connect(str(DB_DIR / 'stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         for r in conn.execute("SELECT ticker, sector FROM stocks WHERE sector IS NOT NULL").fetchall():
             sector_map[r['ticker']] = r['sector'] or 'UNKNOWN'

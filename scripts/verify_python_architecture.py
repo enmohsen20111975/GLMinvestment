@@ -150,7 +150,9 @@ def check_database_connections():
         
         if os.path.exists(db_path):
             try:
-                conn = sqlite3.connect(db_path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(db_path, writable=False).__enter__()
                 cursor = conn.cursor()
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
                 tables = cursor.fetchall()

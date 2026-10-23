@@ -128,7 +128,9 @@ def import_csv(filepath: str, symbol: str = None):
     log(f"  آخر تاريخ: {rows[-1]['date']}")
 
     # حفظ في DB
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     cur = conn.cursor()
 
     # إنشاء جدول التاريخ إذا لم يكن موجودًا
@@ -186,7 +188,9 @@ if __name__ == '__main__':
     # تحقق
     if imported > 0:
         try:
-            conn = sqlite3.connect(str(DB_PATH))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
             cur = conn.cursor()
             sym = symbol or detect_symbol_from_filename(filepath)
             count = cur.execute("SELECT COUNT(*) FROM market_indices_history WHERE symbol = ?", (sym,)).fetchone()[0]

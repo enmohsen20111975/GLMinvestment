@@ -11,7 +11,9 @@ print("=================================================================")
 
 # 1. Step 2.2: Verify source_priority_cleaner status
 print("\n[Step 2.2] source_priority_cleaner status:")
-conn_ph = sqlite3.connect('db/price_history.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn_ph = db_manager.connection('db/price_history.db', writable=False).__enter__()
 multi = conn_ph.execute('SELECT COUNT(*) FROM (SELECT ticker FROM price_history GROUP BY ticker HAVING COUNT(DISTINCT source) > 1)').fetchone()[0]
 total_rows = conn_ph.execute('SELECT COUNT(*) FROM price_history').fetchone()[0]
 print(f"  -> Multi-source tickers in price_history.db: {multi} (Target: 0)")
@@ -20,7 +22,9 @@ conn_ph.close()
 
 # 2. Step 2.3: Fix close column NULL
 print("\n[Step 2.3] Fixing close column NULL in stocks.db:")
-conn_stocks = sqlite3.connect('db/stocks.db')
+# Phase 7.1: migrated to db_manager (writable=True)
+from core.db_manager import db_manager
+conn_stocks = db_manager.connection('db/stocks.db', writable=True).__enter__()
 updated = conn_stocks.execute("""
     UPDATE stocks SET close = current_price
     WHERE (close IS NULL OR close = 0) AND current_price > 0
@@ -59,7 +63,9 @@ for t in tickers_to_test:
 
 # 5. Price Accuracy Comparison (EGX Stocks sample vs stocks.db)
 print("\n[Step 2.5] Live EGX Stock Prices in stocks.db:")
-conn_stocks = sqlite3.connect('db/stocks.db')
+# Phase 7.1: migrated to db_manager (writable=True)
+from core.db_manager import db_manager
+conn_stocks = db_manager.connection('db/stocks.db', writable=True).__enter__()
 sample = ['COMI', 'SWDY', 'ETEL', 'AMOC', 'FWRY', 'EAST', 'TMGH', 'HELI']
 for t in sample:
     row = conn_stocks.execute("SELECT ticker, name_ar, current_price, close, open_price, high_price, low_price, last_update FROM stocks WHERE ticker = ?", (t,)).fetchone()

@@ -70,7 +70,9 @@ def _get_tickers_from_predictions(pred_db: str, market: str = 'EGX') -> List[str
     if not os.path.exists(pred_db):
         return []
     try:
-        conn = sqlite3.connect(pred_db, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(pred_db, writable=False).__enter__()
         conn.execute('PRAGMA busy_timeout = 30000')
         # جرب أعمدة مختلفة (ticker / stock_ticker / symbol)
         for col in ('ticker', 'stock_ticker', 'symbol'):
@@ -98,7 +100,9 @@ def _get_tickers_from_stocks(stocks_db: str, market: str = 'EGX') -> List[str]:
     if not os.path.exists(stocks_db):
         return []
     try:
-        conn = sqlite3.connect(stocks_db, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(stocks_db, writable=False).__enter__()
         conn.execute('PRAGMA busy_timeout = 30000')
         # جرب بأعمدة is_active لو موجودة
         try:
@@ -269,7 +273,9 @@ def fill_price_history_gap(
         return result
 
     # ── 2. اتصل بـ price_history.db ──
-    ph_conn = sqlite3.connect(ph_db, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(ph_db, writable=False).__enter__()
     ph_conn.execute('PRAGMA busy_timeout = 30000')
     if not _ensure_price_history_schema(ph_conn):
         ph_conn.close()

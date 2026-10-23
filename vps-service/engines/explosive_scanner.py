@@ -122,7 +122,9 @@ class ExplosiveScanner:
         self.db_path = db_path or STOCKS_DB
 
     def _get_conn(self):
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.db_path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         return conn
 

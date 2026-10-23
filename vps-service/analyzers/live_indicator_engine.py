@@ -90,7 +90,9 @@ class LiveIndicatorEngine:
             'found': False,
         }
         try:
-            conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
 
@@ -171,7 +173,9 @@ class LiveIndicatorEngine:
 
         # ── 1. اقرأ من stocks.db (الـ DB اللي الـ data_engine/sync.py بيحدّثها) ──
         try:
-            conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
 
@@ -266,7 +270,9 @@ class LiveIndicatorEngine:
         """
         ticker = ticker.upper()
         try:
-            conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
             conn.execute('PRAGMA busy_timeout = 5000')
             cur = conn.cursor()
 
@@ -911,7 +917,9 @@ class LiveIndicatorEngine:
     def scan_live_opportunities(self, limit: int = 10) -> Dict[str, Any]:
         """يفحص الأسهم النشطة ويرجع أعلى الفرص اللحظية."""
         try:
-            conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
             # Get active stocks with price > 0 and volume > 0
@@ -945,7 +953,9 @@ class LiveIndicatorEngine:
     def _get_recent_ohlcv(self, ticker: str, days: int = 90) -> List[Dict[str, Any]]:
         ohlcv = []
         try:
-            conn = sqlite3.connect(self.stocks_db, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.stocks_db, writable=False).__enter__()
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
             cur.execute('''

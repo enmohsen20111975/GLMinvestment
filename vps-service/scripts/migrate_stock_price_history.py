@@ -40,7 +40,9 @@ def main():
         sys.exit(1)
     
     # Check if stock_price_history already exists in VPS DB
-    vps_conn = sqlite3.connect(vps_db_path, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    vps_conn = db_manager.connection(vps_db_path, writable=False).__enter__()
     vps_cursor = vps_conn.cursor()
     
     existing = vps_cursor.execute(
@@ -61,7 +63,9 @@ def main():
     
     # Read from ZIP DB
     print("\nOpening ZIP database (read-only)...")
-    zip_conn = sqlite3.connect(f"file:{zip_db_path}?mode=ro", uri=True, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    zip_conn = db_manager.connection(zip_db_path, writable=False).__enter__()
     zip_cursor = zip_conn.cursor()
     
     # Get row count from source

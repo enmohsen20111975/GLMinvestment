@@ -96,7 +96,9 @@ class MockResult:
 # ──────────────────────────────────────────────────────────────────────────────
 def _load_real_stock(ticker: str, stocks_db: str) -> Optional[dict]:
     """Load the REAL stock dict using the SAME SELECT as trigger_analysis_manual."""
-    conn = sqlite3.connect(stocks_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(stocks_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         row = conn.execute("""
@@ -126,7 +128,9 @@ def _try_load_real_result(ticker: str, predictions_db: str) -> Optional[MockResu
     if not Path(predictions_db).exists():
         return None
     try:
-        conn = sqlite3.connect(predictions_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(predictions_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
             SELECT ticker, recommendation, maestro_score, confidence,

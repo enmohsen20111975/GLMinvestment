@@ -70,7 +70,9 @@ def detect_pk_column(db_path: Path, table: str) -> str:
 
     pk = "ticker"  # default (production schema)
     try:
-        conn = sqlite3.connect(str(db_path), timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         cols = [row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
         conn.close()
         if "ticker" in cols:
@@ -86,7 +88,9 @@ def detect_pk_column(db_path: Path, table: str) -> str:
 def table_exists(db_path: Path, table: str) -> bool:
     """تحقق إن table موجود في الـ DB."""
     try:
-        conn = sqlite3.connect(str(db_path), timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         exists = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
             (table,),
@@ -148,7 +152,9 @@ def count_polluted(db_path: Path, table: str) -> int:
     if pk is None:
         return -1  # table missing
     try:
-        conn = sqlite3.connect(str(db_path), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         cnt = conn.execute(
             f"SELECT COUNT(*) FROM {table} WHERE {pk} GLOB '*[\u0600-\u06ff]*'"
         ).fetchone()[0]
@@ -166,7 +172,9 @@ def count_shifted(db_path: Path, table: str) -> int:
     if pk is None:
         return -1  # table missing
     try:
-        conn = sqlite3.connect(str(db_path), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         placeholders = ",".join([f"'{m}'" for m in SHIFTED_MARKETS])
         cnt = conn.execute(
             f"SELECT COUNT(*) FROM {table} WHERE {pk} IN ({placeholders})"
@@ -209,7 +217,9 @@ def delete_shifted_rows(db_path: Path, apply: bool, verbose: bool) -> dict:
     """DELETE الـ shifted rows (PK column = اسم سوق).
     Skip missing tables gracefully."""
     deleted = {}
-    conn = sqlite3.connect(str(db_path), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
 
     for table in TAB_TABLES:
         pk = get_pk_column(db_path, table)
@@ -269,7 +279,9 @@ def verify_results() -> dict:
         shifted = count_shifted(DATA_ENGINE_DB, table)
         total = -1
         try:
-            conn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=30.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
             total = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             conn.close()
         except Exception:

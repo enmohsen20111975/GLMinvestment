@@ -108,7 +108,9 @@ def fetch_ticker_history(ticker: str, days: int = 365):
 
 def init_db(db_path: Path):
     """أنشئ الـ schema لو مش موجودة."""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=True).__enter__()
     conn.execute("""
         CREATE TABLE IF NOT EXISTS stock_daily_prices (
             ticker TEXT,
@@ -230,7 +232,9 @@ def main():
 
     # 3. init DB
     init_db(OUTPUT_DB)
-    conn = sqlite3.connect(OUTPUT_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(OUTPUT_DB, writable=False).__enter__()
 
     # 4. سحب كل سهم
     log(f"\n  بدء السحب لـ {len(tickers)} سهم...")

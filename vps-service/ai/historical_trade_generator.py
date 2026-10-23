@@ -83,7 +83,9 @@ class HistoricalTradeGenerator:
         self._ensure_schema()
 
     def _conn(self, db_path: str) -> sqlite3.Connection:
-        conn = sqlite3.connect(db_path, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=True).__enter__()
         if not db_path.endswith(".temp"):
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA busy_timeout=30000")

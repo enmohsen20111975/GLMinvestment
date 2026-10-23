@@ -15,7 +15,9 @@ PRICE_HISTORY_DB = os.environ.get('PRICE_HISTORY_DB', str(PROJECT_ROOT / 'db' / 
 
 def import_indices_to_production():
     print(f"Connecting to production DB: {PRICE_HISTORY_DB}")
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     cursor = conn.cursor()
     
     # 1. EGX30

@@ -139,7 +139,9 @@ class FairValueCalculator:
     
     def _get_fundamental_data(self, symbol: str, market: str) -> Dict:
         """Get fundamental data from database"""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.db_path, writable=False).__enter__()
         cursor = conn.cursor()
         
         # Get valuation data from data_engine.db

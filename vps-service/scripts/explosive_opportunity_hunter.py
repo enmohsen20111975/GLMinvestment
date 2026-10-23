@@ -76,7 +76,9 @@ def log(msg: str):
 
 def connect_ro(db_path: Path) -> sqlite3.Connection:
     uri = f"file:{db_path}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(uri, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

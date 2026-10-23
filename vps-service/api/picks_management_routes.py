@@ -44,13 +44,17 @@ picks_mgmt_bp = Blueprint('picks_management', __name__)
 # Helpers
 # ----------------------------------------------------------------------------
 def _get_db_conn():
-    return sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    return db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
 
 
 def _get_current_price(ticker: str) -> tuple:
     """يجلب السعر الحالي + آخر المؤشرات للسهم."""
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute(
             "SELECT close_price, high_price, low_price, volume, date "

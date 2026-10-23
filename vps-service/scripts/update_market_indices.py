@@ -169,7 +169,9 @@ def update_market_indices():
         log(f"❌ قاعدة البيانات غير موجودة: {DB_PATH}", 'ERROR')
         return
 
-    conn = sqlite3.connect(str(DB_PATH))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
     ensure_table_schema(conn)
     cur = conn.cursor()
 

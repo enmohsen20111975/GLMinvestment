@@ -56,8 +56,12 @@ def fill_gap_from_yahoo():
         print("❌ yfinance not available")
         return
     
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
-    stocks_conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     
     # Get all EGX tickers
     egx_tickers = stocks_conn.execute(

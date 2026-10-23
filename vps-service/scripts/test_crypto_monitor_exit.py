@@ -78,7 +78,9 @@ def _make_temp_scheduler(price_sequence):
 
 def _insert_position(sched, symbol, entry, target, stop):
     """Insert a fake open position into the test DB."""
-    conn = sqlite3.connect(sched.predictions_db, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(sched.predictions_db, writable=True).__enter__()
     cur = conn.cursor()
     cur.execute('''
         INSERT INTO crypto_predictions_log
@@ -94,7 +96,9 @@ def _insert_position(sched, symbol, entry, target, stop):
 
 
 def _get_position(sched, pos_id):
-    conn = sqlite3.connect(sched.predictions_db, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(sched.predictions_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     row = conn.execute(
         "SELECT * FROM crypto_predictions_log WHERE id = ?", (pos_id,)

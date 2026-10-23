@@ -55,7 +55,9 @@ def clean_empty_tables(db_path: Path):
     kept = []
     
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         cursor = conn.cursor()
         
         tables = [

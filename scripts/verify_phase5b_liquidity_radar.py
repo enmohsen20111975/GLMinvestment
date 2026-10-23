@@ -96,7 +96,9 @@ def run_checks():
     # Check 7: runtime — compare candle counts
     try:
         ticker = 'COMI'
-        c1 = sqlite3.connect(str(PRICE_HISTORY_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c1 = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
         cur1 = c1.cursor()
         cur1.execute(
             'SELECT COUNT(*) FROM price_history WHERE ticker=? AND close_price > 0 AND volume > 0',
@@ -105,7 +107,9 @@ def run_checks():
         ph_count = cur1.fetchone()[0]
         c1.close()
 
-        c2 = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c2 = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         cur2 = c2.cursor()
         cur2.execute(
             'SELECT COUNT(*) FROM stock_daily_prices WHERE ticker=? AND close > 0 AND volume > 0',

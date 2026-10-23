@@ -28,7 +28,9 @@ def audit_concurrent_trades():
     print("🔍 AUDIT 1: Concurrent Trades Check")
     print("="*70)
     
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -185,7 +187,9 @@ def audit_missing_data():
     print("🔍 AUDIT 3: QSE and Crypto Data Check")
     print("="*70)
     
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     

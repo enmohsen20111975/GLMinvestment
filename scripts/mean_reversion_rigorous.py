@@ -58,7 +58,9 @@ END_DATE = '2026-10-31'
 print("\n[1/7] تحميل البيانات...")
 
 ph_db = DB_DIR / 'price_history.db'
-ph_conn = sqlite3.connect(str(ph_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
 ph_conn.row_factory = sqlite3.Row
 
 tickers = ph_conn.execute("""

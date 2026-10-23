@@ -103,7 +103,9 @@ class LearningEngine:
         self._ensure_tables()
 
     def _conn(self, db_path: str = None) -> sqlite3.Connection:
-        conn = sqlite3.connect(db_path or self.predictions_db, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path or self.predictions_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn
@@ -447,7 +449,9 @@ class LearningEngine:
         try:
             stocks_db = str(_PROJECT_ROOT / 'db' / 'stocks.db')
             if os.path.exists(stocks_db):
-                conn_stocks = sqlite3.connect(stocks_db, timeout=30.0)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn_stocks = db_manager.connection(stocks_db, writable=False).__enter__()
                 conn_stocks.row_factory = sqlite3.Row
                 cursor_s = conn_stocks.cursor()
                 # نشوف هل في بيانات تاريخية لمؤشر EGX30
@@ -1045,7 +1049,9 @@ class LearningEngine:
     def _get_recent_closed_predictions(self, limit: int = 5, regime: str = 'unknown') -> list:
         """جلب آخر التوقعات المقفولة."""
         try:
-            conn = sqlite3.connect(PREDICTIONS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute('''
@@ -1142,7 +1148,9 @@ class LearningEngine:
             dict: {'current_pf': float, 'new_pf': float} أو None لو فشل
         """
         try:
-            conn = sqlite3.connect(PREDICTIONS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cutoff = f"date('now', '-{days} days')"

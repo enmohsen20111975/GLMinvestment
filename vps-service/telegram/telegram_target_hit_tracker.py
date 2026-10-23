@@ -158,7 +158,9 @@ def get_active_radar_targets() -> List[Dict]:
     egx_valid_tickers = set()
     if STOCKS_DB.exists():
         try:
-            with sqlite3.connect(STOCKS_DB) as con_val:
+            # Phase 7.1: migrated
+            from core.db_manager import db_manager
+            with db_manager.connection(STOCKS_DB, writable=False).__enter__() as con_val:
                 rows_tk = con_val.execute("SELECT ticker FROM stocks WHERE market = 'EGX'").fetchall()
                 egx_valid_tickers = {r[0] for r in rows_tk}
         except Exception as e:
@@ -241,7 +243,9 @@ def get_active_radar_targets() -> List[Dict]:
     # ب) جلب التوقعات المؤكدة من predictions.db (EGX فقط)
     if PREDICTIONS_DB.exists():
         try:
-            con_p = sqlite3.connect(PREDICTIONS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            con_p = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
             con_p.row_factory = sqlite3.Row
             rows = con_p.execute("""
                 SELECT ticker, signal, confidence, target_price, target_price_2, stop_loss, entry_price, prediction_date, created_at, market
@@ -311,7 +315,9 @@ def scan_for_target_hits(active_targets: List[Dict]) -> List[Dict]:
     announced = state.get('announced_hits', {})
 
     try:
-        con_s = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        con_s = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         con_s.row_factory = sqlite3.Row
         stocks_map = {r['ticker']: dict(r) for r in con_s.execute("SELECT * FROM stocks WHERE market = 'EGX'").fetchall()}
         con_s.close()
@@ -906,7 +912,9 @@ def record_target_hit_in_db(item: Dict) -> bool:
     exit_reason = f"تحقق {hit_level} عند {hit_price:.2f} ج.م بمكسب +{profit_pct:.1f}% ({duration_text})"
 
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         cursor = conn.cursor()
 
         # فحص إذا كان هناك توقع نشط مسجل لهذا السهم

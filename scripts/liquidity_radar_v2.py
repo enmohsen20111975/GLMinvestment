@@ -258,7 +258,9 @@ def _fetch_active_prediction(ticker: str, market: str = 'EGX') -> Optional[Dict[
     try:
         # mode=ro enforces READ-ONLY at the SQLite layer. Even if a bug
         # tried to commit a write, SQLite would refuse.
-        conn = sqlite3.connect(f"file:{PREDICTIONS_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1098,7 +1100,9 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
     candle_source = 'none'
     try:
         if PRICE_HISTORY_DB.exists():
-            _ph_conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            _ph_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
             _ph_rows = _ph_conn.execute("""
                 SELECT date AS price_date, open_price AS open, high_price AS high,
                        low_price AS low, close_price AS close, volume
@@ -1150,7 +1154,9 @@ def scan_ticker(conn: sqlite3.Connection, ticker: str, market: str, market_regim
         }
 
     # Task BRAVO-CASH-LINKAGE: فتح data_engine.db لسحب fundamentals (cash + free_cf + operating_cf + debt) + screener_lists.
-    de_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True) if DATA_ENGINE_DB.exists() else None
+    # Phase 7.1: migrated to db_manager
+    from core.db_manager import db_manager
+    de_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__() if DATA_ENGINE_DB.exists() else None
     fundamentals = _compute_fundamentals(ticker, de_conn)
     tv_whale = _check_tv_whale(ticker, de_conn)
 
@@ -1352,7 +1358,9 @@ def scan_market(market: str, tickers: Optional[List[str]] = None) -> Dict[str, A
             'stocks': [],
         }
 
-    conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # 1. فلتر حالة السوق (إلزامي أولًا)

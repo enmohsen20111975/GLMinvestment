@@ -173,7 +173,9 @@ def fetch_daleelak():
 def save_currencies(rates):
     if not rates:
         return 0
-    conn = sqlite3.connect(DB_FILE, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_FILE, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 10000')
     inserted = 0
     for r in rates:
@@ -193,7 +195,9 @@ def save_currencies(rates):
 def save_gold(metals):
     if not metals:
         return 0
-    conn = sqlite3.connect(DB_FILE, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_FILE, writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 10000')
     inserted = 0
     for m in metals:
@@ -246,7 +250,9 @@ def fetch_and_save():
                     if buy and buy > 0:
                         rate_to_usd = 1.0 / buy if currency != 'USD' else 1.0
                         try:
-                            conn = sqlite3.connect(DB_FILE, timeout=10)
+                            # Phase 7.1: migrated to db_manager (writable=True)
+                            from core.db_manager import db_manager
+                            conn = db_manager.connection(DB_FILE, writable=True).__enter__()
                             conn.execute('INSERT INTO exchange_rates (timestamp, currency, rate_to_usd) VALUES (?, ?, ?)',
                                         (ts, currency, rate_to_usd))
                             conn.commit()
@@ -259,7 +265,9 @@ def fetch_and_save():
                 global_val = global_data.get('value')
                 if global_val and slug:
                     try:
-                        conn = sqlite3.connect(DB_FILE, timeout=10)
+                        # Phase 7.1: migrated to db_manager (writable=True)
+                        from core.db_manager import db_manager
+                        conn = db_manager.connection(DB_FILE, writable=True).__enter__()
                         conn.execute('INSERT INTO gold_prices (timestamp, country, currency, karat, price_per_ounce) VALUES (?, "Egypt", "EGP", ?, ?)',
                                     (ts, slug, global_val))
                         conn.commit()

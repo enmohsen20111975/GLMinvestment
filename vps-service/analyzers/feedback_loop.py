@@ -42,7 +42,9 @@ class FeedbackLoop:
         self.db_path = db_path or str(PREDICTIONS_DB)
 
     def _conn(self):
-        conn = sqlite3.connect(self.db_path, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.db_path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -95,7 +97,9 @@ class FeedbackLoop:
         if not DATA_ENGINE_DB.exists():
             return None
         try:
-            conn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
             # Try exact date first, then closest within 3 days
             row = conn.execute('''
                 SELECT close_price FROM egksco_price_history

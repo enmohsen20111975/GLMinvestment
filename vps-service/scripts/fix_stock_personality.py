@@ -53,7 +53,9 @@ def calculate_correlation(stock_returns: List[float], sector_returns: List[float
 
 def get_stock_id(db_path: str, ticker: str) -> Optional[int]:
     """Get stock_id from ticker"""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM stocks WHERE ticker = ?", (ticker,))
     result = cursor.fetchone()
@@ -73,7 +75,9 @@ def get_price_history_by_stock_id(db_path: str, stock_id: int, days: int = 90) -
     # 1) Resolve stock_id → ticker via stocks metadata (not a price table).
     ticker = None
     try:
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cursor = conn.cursor()
         cursor.execute("SELECT ticker FROM stocks WHERE id = ?", (stock_id,))
         row = cursor.fetchone()
@@ -105,7 +109,9 @@ def get_price_history_by_stock_id(db_path: str, stock_id: int, days: int = 90) -
 
 def get_sector_stock_ids(db_path: str, sector: str) -> List[int]:
     """Get all stock_ids in a sector"""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -261,7 +267,9 @@ def analyze_stock_personality(db_path: str, ticker: str, sector: str, days: int 
 
 def update_stock_personality(db_path: str, ticker: str, personality: str, beta: float):
     """Update stock personality in database"""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=True).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -276,7 +284,9 @@ def update_stock_personality(db_path: str, ticker: str, personality: str, beta: 
 
 def recalculate_all_personalities(db_path: str):
     """Recalculate personalities for ALL stocks"""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     
     # Get all active stocks with sectors (exclude 'Other')

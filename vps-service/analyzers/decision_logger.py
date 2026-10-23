@@ -46,7 +46,9 @@ logger = logging.getLogger(__name__)
 def _ensure_db():
     """تأكد إن الـ DB + الـ table موجودين."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS decision_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,7 +134,9 @@ def log_decision(
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
         conn.execute('''
             INSERT INTO decision_log
             (timestamp, symbol, market, decision_type, reason_code, reason_text,
@@ -176,7 +180,9 @@ def get_decision_stats(days_back: int = 7) -> Dict[str, Any]:
     """
     _ensure_db()
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
 
         total = conn.execute('SELECT COUNT(*) FROM decision_log WHERE timestamp >= ?', (cutoff,)).fetchone()[0]
@@ -242,7 +248,9 @@ if __name__ == '__main__':
 
     # Clear old test data
     _ensure_db()
-    conn = sqlite3.connect(str(DB_PATH))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     conn.execute("DELETE FROM decision_log WHERE symbol LIKE 'TEST%'")
     conn.commit()
     conn.close()
@@ -327,7 +335,9 @@ if __name__ == '__main__':
     print("  ✅ PASS")
 
     # Cleanup
-    conn = sqlite3.connect(str(DB_PATH))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     conn.execute("DELETE FROM decision_log WHERE symbol LIKE 'TEST%'")
     conn.commit()
     conn.close()

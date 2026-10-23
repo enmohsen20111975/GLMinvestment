@@ -239,9 +239,13 @@ def main():
     print(f"  predictions:   {args.pred_db}")
     print(f"  price_history: {args.ph_db}")
 
-    pred = sqlite3.connect(args.pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pred = db_manager.connection(args.pred_db, writable=False).__enter__()
     pred.row_factory = sqlite3.Row
-    ph = sqlite3.connect(args.ph_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph = db_manager.connection(args.ph_db, writable=False).__enter__()
     ph.row_factory = sqlite3.Row
 
     # 1. Load closed EGX predictions.

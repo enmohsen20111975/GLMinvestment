@@ -42,7 +42,9 @@ RESULTS_DIR = PROJECT_ROOT / "vps-service" / "backtest_results"
 
 
 def get_db():
-    conn = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

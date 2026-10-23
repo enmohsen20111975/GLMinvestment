@@ -142,7 +142,9 @@ def get_learned_lessons():
         lesson_type = request.args.get('lesson_type', '')
         limit = request.args.get('limit', 50, type=int)
         
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -196,7 +198,9 @@ def get_regime_weights():
     Returns weights calculated from historical accuracy
     """
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -243,7 +247,9 @@ def get_prediction_stats():
         - Win rate overall
     """
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATABASE_PATH, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         

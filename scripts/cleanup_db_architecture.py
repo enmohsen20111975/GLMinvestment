@@ -58,7 +58,9 @@ def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
     use_price_history = price_history_db.exists()
     if use_price_history:
         log(f"  ✅ price_history.db موجود — بـ نستخدمه (بيانات عميقة)")
-        src_conn = sqlite3.connect(str(price_history_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        src_conn = db_manager.connection(str(price_history_db), writable=False).__enter__()
         src_conn.row_factory = sqlite3.Row
         # price_history schema: ticker, date, open_price, high_price, low_price, close_price, volume
         src_rows = src_conn.execute("""
@@ -71,7 +73,9 @@ def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
         src_conn.close()
 
         # فلتر EGX tickers فقط
-        stocks_conn = sqlite3.connect(str(stocks_db)) if stocks_db.exists() else None
+                # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        stocks_conn = db_manager.connection(str(stocks_db), writable=False).__enter__() if stocks_db.exists() else None
         if stocks_conn:
             egx_tickers = set(r[0] for r in stocks_conn.execute(
                 "SELECT ticker FROM stocks WHERE market = 'EGX'"
@@ -83,7 +87,9 @@ def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
     elif stocks_db.exists():
         # fallback: stocks.db (بيانات سطحية)
         log(f"  ⚠️ price_history.db مش موجود — بـ نستخدم stocks.db (بيانات سطحية)")
-        src_conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        src_conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         src_conn.row_factory = sqlite3.Row
         src_rows = src_conn.execute("""
             SELECT ticker, price_date, open, high, low, close, volume, turnover
@@ -106,7 +112,9 @@ def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
         return True
 
     # انسخ لـ data_engine.db (بنفس schema الموجود)
-    dst_conn = sqlite3.connect(str(data_engine_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    dst_conn = db_manager.connection(str(data_engine_db), writable=False).__enter__()
 
     def _parse_vol(v):
         if v is None:
@@ -183,7 +191,9 @@ def find_empty_tables(db_path: Path, protect: list = None) -> list:
     if not db_path.exists():
         return []
     protect = protect or []
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()
     empty = []
@@ -209,7 +219,9 @@ def drop_empty_tables(db_path: Path, tables: list, dry_run: bool = False) -> int
         log(f"  [DRY-RUN] كنت هحذف {len(tables)} جدول فاضي من {db_path.name}")
         return len(tables)
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     dropped = 0
     for table in tables:
         try:
@@ -238,7 +250,9 @@ def show_report():
         size_mb = db_file.stat().st_size / (1024 * 1024)
         total_size += size_mb
         try:
-            conn = sqlite3.connect(str(db_file))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_file), writable=False).__enter__()
             tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()
             n_tables = len(tables)
             total_tables += n_tables

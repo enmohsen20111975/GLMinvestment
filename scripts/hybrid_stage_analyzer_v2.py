@@ -232,7 +232,9 @@ def _load_egx30_closes():
         return None
 
     try:
-        conn = sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(ph_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT close_price FROM price_history
@@ -957,7 +959,9 @@ def scan_all_stocks_v2(market='EGX', min_days=200, top_n=20, limit=None):
     market_context = layer_market_context()
     print(f"   EGX30 regime: {market_context['regime']} ({market_context['confidence']:.0f}%) | veto_buy: {market_context['veto_buy']}", flush=True)
 
-    conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     tickers = conn.execute("""
@@ -1083,7 +1087,9 @@ if __name__ == '__main__':
 
     if args.ticker:
         ph_db = DB_DIR / 'price_history.db'
-        conn = sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(ph_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT date, open_price, high_price, low_price, close_price, volume

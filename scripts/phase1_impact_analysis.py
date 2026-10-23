@@ -44,7 +44,9 @@ def main():
     print("=" * 70)
 
     # Connect to predictions.db
-    conn = sqlite3.connect(f"file:{PREDICTIONS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # Get all balanced BUY predictions

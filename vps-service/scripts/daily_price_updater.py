@@ -98,8 +98,12 @@ class PriceUpdater:
 
         today = datetime.now().strftime('%Y-%m-%d')
 
-        conn = sqlite3.connect(STOCKS_DB)
-        ph_conn = sqlite3.connect(PRICE_HISTORY_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        ph_conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
 
         try:
             stocks = conn.execute('''
@@ -223,7 +227,9 @@ class PriceUpdater:
             for s in api_data.get('stocks', []):
                 api_prices[s.get('Symbol', '')] = s.get('LastPrice', 0)
             
-            conn = sqlite3.connect(STOCKS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             rows = conn.execute('''
                 SELECT ticker, current_price FROM stocks 
                 WHERE market = "EGX" AND current_price > 0 

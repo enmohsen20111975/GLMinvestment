@@ -20,7 +20,9 @@ advanced_screener_bp = Blueprint('advanced_screener', __name__)
 
 def _get_stocks_conn():
     """Get a connection to stocks.db."""
-    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DBPaths.STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

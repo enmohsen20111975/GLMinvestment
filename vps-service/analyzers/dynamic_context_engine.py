@@ -109,7 +109,9 @@ def _load_price_history(ticker: str, days: int = 20) -> list:
     try:
         if not Path(PRICE_HISTORY_DB).exists():
             return []
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         cur = conn.execute(
             """SELECT date, high_price, low_price, close_price, volume
                FROM price_history
@@ -130,7 +132,9 @@ def _load_price_history(ticker: str, days: int = 20) -> list:
 def _load_current_stock_data(ticker: str) -> Dict:
     """حمّل السعر والحجم الحالي من stocks.db."""
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cur = conn.execute(
             "SELECT current_price, volume, value_traded, turnover_egp FROM stocks WHERE ticker = ?",
             (ticker,),
@@ -156,7 +160,9 @@ def _load_market_volatility() -> Tuple[float, str]:
     Returns: (volatility_pct, regime) — regime = 'bull'/'bear'/'range'
     """
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         # جرّب market_indices أو stocks (لو EGX30 موجود كـ ticker)
         cur = conn.execute(
             """SELECT current_value, previous_close, change_percent

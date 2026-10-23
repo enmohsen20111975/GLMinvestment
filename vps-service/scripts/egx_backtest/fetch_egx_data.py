@@ -82,7 +82,9 @@ class EGXDataFetcher:
     
     def _init_db(self):
         """Initialize the price_history database"""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(self.db_path, writable=True).__enter__()
         c = conn.cursor()
         c.execute('''
             CREATE TABLE IF NOT EXISTS price_history (
@@ -141,7 +143,9 @@ class EGXDataFetcher:
                 return 0
             
             # Insert into database
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             c = conn.cursor()
             inserted = 0
             
@@ -194,7 +198,9 @@ class EGXDataFetcher:
             # Check if we already have recent data
             if not force:
                 try:
-                    conn = sqlite3.connect(self.db_path)
+                    # Phase 7.1: migrated to db_manager (writable=False)
+                    from core.db_manager import db_manager
+                    conn = db_manager.connection(self.db_path, writable=False).__enter__()
                     c = conn.cursor()
                     c.execute('SELECT MAX(date) FROM price_history WHERE ticker=?', (ticker,))
                     latest = c.fetchone()[0]
@@ -227,7 +233,9 @@ def main():
     fetcher.fetch_all(force=force)
     
     # Print summary
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     c = conn.cursor()
     c.execute('SELECT COUNT(DISTINCT ticker) FROM price_history')
     tickers = c.fetchone()[0]

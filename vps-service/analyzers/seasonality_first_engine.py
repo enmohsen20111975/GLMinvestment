@@ -361,7 +361,9 @@ class SeasonalityFirstEngine:
     def _get_all_tickers(self) -> List[str]:
         """Get all tickers from database."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -394,7 +396,9 @@ class PaperTradingV2:
     def _ensure_table(self):
         """Ensure paper_trades_seasonality table exists."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=True).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -427,7 +431,9 @@ class PaperTradingV2:
     def record_signal(self, signal: ConfluenceSignal, entry_price: float):
         """Record a signal to paper trading."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=True).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -459,7 +465,9 @@ class PaperTradingV2:
     def get_stats(self) -> Dict:
         """Get paper trading statistics."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''

@@ -582,7 +582,9 @@ class PredictionTracker:
                         try:
                             _ph_db_path = os.path.join(os.path.dirname(self.db_path), 'price_history.db')
                             if os.path.exists(_ph_db_path):
-                                _ph_c = sqlite3.connect(_ph_db_path)
+                                # Phase 7.1: migrated to db_manager (writable=False)
+                                from core.db_manager import db_manager
+                                _ph_c = db_manager.connection(_ph_db_path, writable=False).__enter__()
                                 _ph_c.row_factory = sqlite3.Row
                                 _now = datetime.now()
                                 _month_start = _now.strftime('%Y-%m-01')

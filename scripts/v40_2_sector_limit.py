@@ -24,7 +24,9 @@ def load_with_filters():
     NOTEBOOKS_DIR = PROJECT_ROOT / 'notebooks' / 'EGX'
 
     # 1. EGX tickers from stocks.db
-    conn_s = sqlite3.connect(STOCKS_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_s = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     cur = conn_s.execute('''
         SELECT ticker, name, current_price, pe_ratio, pb_ratio, roe, roa,
                dividend_yield, market_cap, beta, ma_50, ma_200, rsi,
@@ -59,7 +61,9 @@ def load_with_filters():
     print(f'[LOAD] EGX tickers: {len(egx_tickers)}')
 
     # 2. Screener tickers
-    conn = sqlite3.connect(DATA_ENGINE_DB, timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     cur = conn.execute('''
         SELECT DISTINCT symbol FROM screener_lists
         WHERE category IN ('most_active', 'unusual_volume', 'top_gainers')

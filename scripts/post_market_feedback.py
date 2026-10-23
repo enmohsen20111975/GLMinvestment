@@ -54,7 +54,9 @@ def send_telegram(message: str):
 def check_yesterday_performance():
     """يفحص أداء التوقعات المغلقة أمس."""
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

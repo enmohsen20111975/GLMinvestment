@@ -77,7 +77,9 @@ def init_news_db():
     except Exception:
         # fallback: raw sqlite3.connect (backward compat)
         pass
-    conn = sqlite3.connect(get_db_path())
+    # Phase 7.1: migrated (writable for CREATE)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(get_db_path(), writable=True).__enter__()
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS news (
@@ -154,7 +156,9 @@ def init_news_agent_db():
     except Exception:
         pass
     # fallback: raw sqlite3.connect (backward compat)
-    conn = sqlite3.connect(NEWS_AGENT_DB)
+    # Phase 7.1: migrated to db_manager
+    from core.db_manager import db_manager
+    conn = db_manager.connection(NEWS_AGENT_DB, writable=True).__enter__()
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS news_agent_articles (
@@ -586,7 +590,9 @@ def get_egx_news():
     try:
         limit = request.args.get('limit', 10, type=int)
         
-        conn = sqlite3.connect(get_db_path())
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.connection(get_db_path(), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         

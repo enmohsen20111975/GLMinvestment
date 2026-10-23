@@ -278,7 +278,9 @@ def _fetch_stock_meta(ticker: str) -> Dict[str, Any]:
         stocks_db = _DB_DIR / 'stocks.db'
         if not stocks_db.exists():
             return out
-        conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT name_ar, sector FROM stocks WHERE ticker = ? LIMIT 1",

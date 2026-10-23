@@ -113,7 +113,9 @@ def _json_safe(v):
 def discover_tables(db_path: Path) -> list:
     """Return list of (table_name, row_count) for a DB."""
     try:
-        conn = sqlite3.connect(str(db_path))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' "
@@ -140,7 +142,9 @@ def export_table(db_path: Path, table: str, out_file: Path) -> dict:
                 'truncated': False, 'columns': [], 'date_range': None,
                 'error': None}
     try:
-        conn = sqlite3.connect(str(db_path))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         # get columns
         cols_info = conn.execute(f'PRAGMA table_info("{table}")').fetchall()

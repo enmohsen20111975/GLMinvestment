@@ -87,7 +87,9 @@ def find_tracker_db():
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             cur = conn.cursor()
             cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='radar_signal_tracking'")
             if cur.fetchone():
@@ -121,7 +123,9 @@ def build_price_index():
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             # Check if table exists + has rows
@@ -201,7 +205,9 @@ def get_future_return(price_index, ticker, signal_date, horizon_days):
 
 def load_signals(db_path, days=90):
     """Load all signals from radar_signal_tracking."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
@@ -301,7 +307,9 @@ def main():
         # Optionally write back to DB
         if args.write:
             try:
-                conn = sqlite3.connect(str(db_path))
+                # Phase 7.1: migrated to db_manager (writable=True)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(str(db_path), writable=True).__enter__()
                 cur = conn.cursor()
                 cur.execute("""
                     UPDATE radar_signal_tracking

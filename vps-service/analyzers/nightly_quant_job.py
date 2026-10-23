@@ -62,7 +62,9 @@ def _load_active_egx_tickers() -> List[Dict[str, Any]]:
 
     conn = None
     try:
-        conn = sqlite3.connect(f"file:{_STOCKS_DB}?mode=ro", uri=True, timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(_STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

@@ -118,7 +118,9 @@ def load_predictions():
     من البيانات دي بتكون "مسمومة" — النظام بيحفظ الامتحانات بالحلول.
     بس نستخدم الـ real-time predictions (is_retroactive=0 أو NULL).
     """
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     # Check if is_retroactive column exists
@@ -674,7 +676,9 @@ def main():
     print()
 
     # Build DB + store
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         recreate_learned_lessons_table(conn)
         store_lessons(conn, lessons)

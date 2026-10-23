@@ -379,7 +379,9 @@ def search_stock(query: str) -> Optional[Dict]:
     # 2. البحث في stocks.db
     if STOCKS_DB.exists():
         try:
-            conn = sqlite3.connect(str(STOCKS_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -415,7 +417,9 @@ def search_stock(query: str) -> Optional[Dict]:
     # 3. البحث في data_engine.db
     if DATA_ENGINE_DB.exists():
         try:
-            conn = sqlite3.connect(str(DATA_ENGINE_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             row = cur.execute(
@@ -491,7 +495,9 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
     # 2. قراءة حالة الرادار ومسار السيولة التجميعية من predictions.db
     if PREDICTIONS_DB.exists():
         try:
-            conn = sqlite3.connect(str(PREDICTIONS_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cols = [c[1] for c in cur.execute("PRAGMA table_info(predictions)").fetchall()]
@@ -836,7 +842,9 @@ def check_subscription(chat_id: int) -> dict:
     auth_db_path = DB_DIR / "auth.db"
     if auth_db_path.exists():
         try:
-            conn = sqlite3.connect(str(auth_db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(auth_db_path), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             link = cur.execute(
@@ -1147,7 +1155,9 @@ def handle_radar_command(chat_id: int, sub: Optional[Dict] = None):
     candidates = []
     if PREDICTIONS_DB.exists():
         try:
-            conn = sqlite3.connect(str(PREDICTIONS_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             rows = conn.execute("""
                 SELECT ticker, signal, confidence, target_price, stop_loss

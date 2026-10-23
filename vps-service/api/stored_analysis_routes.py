@@ -203,7 +203,9 @@ def _get_current_price(ticker: str) -> float:
 
     # Fallback القديم (لو utils/live_price مش متاح)
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         # جرّب egksco_stocks أولاً (مصدر صحيح)
@@ -273,7 +275,9 @@ def _load_price_history_metrics_batch() -> dict:
             # لا price_history.db → رجّع فاضي (الـ fallback هيستخدم stocks.db)
             return result
 
-        conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(_ph_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -352,7 +356,9 @@ def _load_stocks_fundamentals_batch() -> dict:
 
     result: dict = {}
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -1166,7 +1172,9 @@ def _heal_persona_json(analysis_json: dict, row: dict, fund: dict = None) -> dic
 _EXPERT_VERDICT_CACHE = {}
 
 def get_predictions_db():
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     # RL-FIX-6: auto-migrate target_price_2 column (المستهدف الثاني)
@@ -1923,7 +1931,9 @@ def get_live_tracking():
         tickers = [r.get('ticker', '') for r in rows]
         names_map = {}
         try:
-            sconn = sqlite3.connect(STOCKS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             sconn.row_factory = sqlite3.Row
             scur = sconn.cursor()
             if tickers:
@@ -2212,7 +2222,9 @@ def _check_morning_bell_market_veto():
                 'db', 'data_engine.db'
             )
             if os.path.exists(de_path):
-                conn_de = sqlite3.connect(de_path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn_de = db_manager.connection(de_path, writable=False).__enter__()
                 conn_de.row_factory = sqlite3.Row
                 cur_de = conn_de.cursor()
                 try:

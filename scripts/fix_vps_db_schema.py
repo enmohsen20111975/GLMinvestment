@@ -22,7 +22,9 @@ from pathlib import Path
 
 def get_current_columns(db_path):
     """Get current column names and order."""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     cursor.execute('PRAGMA table_info(stocks)')
     columns = cursor.fetchall()
@@ -31,7 +33,9 @@ def get_current_columns(db_path):
 
 def check_schema_issue(db_path):
     """Check if the schema has the market/sector column order issue."""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     
     # Check if market and sector contain numeric values
@@ -74,7 +78,9 @@ def fix_schema(db_path, backup=True):
     print(f"Fixing database: {db_path}")
     print(f"{'='*60}\n")
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     cursor = conn.cursor()
     
     # Check if stocks_backup exists (from failed attempt)

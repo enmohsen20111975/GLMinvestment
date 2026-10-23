@@ -56,7 +56,9 @@ def update_database(db_path=None):
         print(f"❌ Database not found!")
         return
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=True).__enter__()
     cursor = conn.cursor()
     
     # Enable WAL mode

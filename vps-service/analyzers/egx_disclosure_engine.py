@@ -396,7 +396,9 @@ def classify_disclosure(title: str, content: str = '',
 def _ensure_db():
     """تأكد إن الـ DB + الـ table موجودين."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS egx_disclosures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -435,7 +437,9 @@ def store_disclosure(disclosure: Dict[str, Any]) -> bool:
     """
     _ensure_db()
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=True).__enter__()
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         conn.execute('''
             INSERT OR IGNORE INTO egx_disclosures
@@ -478,7 +482,9 @@ def get_latest_disclosure_impact(ticker: str, days_back: int = 3) -> Dict[str, A
     """
     _ensure_db()
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
         row = conn.execute('''
             SELECT ticker, event_type, impact_score, verdict, title, published_at

@@ -235,7 +235,9 @@ def load_egksco_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
 
     conn = None
     try:
-        conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True, timeout=3)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
         cur = conn.cursor()
 
         # Detect column name (canonical schema: price_date; legacy egksco_scraper: date)
@@ -314,7 +316,9 @@ def _canonical_load(ticker: str, limit: int) -> List[Dict]:
         # This should rarely happen — only if master_analyzer import fails.
         import sqlite3
         try:
-            conn = sqlite3.connect(STOCKS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT price_date as date, open_price as open, high_price as high, "
@@ -375,7 +379,9 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     else:
         try:
             import sqlite3
-            conn = sqlite3.connect(STOCKS_DB, timeout=2.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             row = conn.execute("SELECT ticker FROM stocks WHERE UPPER(name) = ? OR UPPER(name_ar) = ?", (raw_norm, raw_norm)).fetchone()
             conn.close()
             if row:
@@ -481,7 +487,9 @@ def get_tickers_with_history(min_bars: int = 10) -> List[str]:
     import sqlite3
     tickers: List[str] = []
     try:
-        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         rows = conn.execute(
             "SELECT ticker FROM price_history "
             "GROUP BY ticker HAVING COUNT(*) >= ? "
@@ -493,7 +501,9 @@ def get_tickers_with_history(min_bars: int = 10) -> List[str]:
     except sqlite3.DatabaseError:
         # price_history.db missing/empty — fall back to stocks.db
         try:
-            conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
             rows = conn.execute(
                 "SELECT ticker FROM stock_daily_prices "
                 "GROUP BY ticker HAVING COUNT(*) >= ? "

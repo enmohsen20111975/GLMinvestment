@@ -47,7 +47,9 @@ class TestConnectionLeaks:
             ph_db = os.path.join(tmpdir, 'price_history.db')
 
             # Create stocks table with some data
-            conn = sqlite3.connect(stocks_db)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(stocks_db, writable=True).__enter__()
             conn.execute('''
                 CREATE TABLE stocks (
                     ticker TEXT PRIMARY KEY,
@@ -68,7 +70,9 @@ class TestConnectionLeaks:
             conn.close()
 
             # Create price_history.db WITHOUT the price_history table (triggers exception)
-            conn = sqlite3.connect(ph_db)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(ph_db, writable=True).__enter__()
             conn.execute("CREATE TABLE IF NOT EXISTS dummy (id INTEGER)")
             conn.commit()
             conn.close()
@@ -295,7 +299,9 @@ class TestForeignKeysPragma:
         """DATA-02: Verify PRAGMA foreign_keys=ON actually prevents orphan inserts."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, 'test_fk.db')
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager
+            from core.db_manager import db_manager
+            conn = db_manager.connection(db_path, writable=True).__enter__()
             conn.execute('PRAGMA foreign_keys=ON')
 
             # Create parent table

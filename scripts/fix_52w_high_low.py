@@ -2,8 +2,12 @@ import sqlite3
 import datetime
 
 def fix_52w_and_day_prices():
-    conn_st = sqlite3.connect('db/stocks.db', timeout=30.0)
-    conn_ph = sqlite3.connect('db/price_history.db', timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_st = db_manager.connection('db/stocks.db', writable=True).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection('db/price_history.db', writable=True).__enter__()
 
     conn_st.execute("PRAGMA journal_mode=WAL")
     conn_ph.execute("PRAGMA journal_mode=WAL")

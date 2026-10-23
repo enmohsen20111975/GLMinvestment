@@ -66,7 +66,9 @@ def main():
         sys.exit(1)
         
     print(f"Opening {DB_PATH}...")
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     try:
         fixed = fix_table_dates(conn)
         print(f"Successfully repaired {fixed} date entries in auth.db!")

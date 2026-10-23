@@ -1167,7 +1167,9 @@ class BackgroundAnalyzer:
             try:
                 # جلب بيانات السهم والسعر
                 import sqlite3
-                conn = sqlite3.connect(self.db_path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.connection(self.db_path, writable=False).__enter__()
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()
 
@@ -2027,7 +2029,9 @@ class BackgroundAnalyzer:
                     **analysis_json
                 }
 
-                w_conn = sqlite3.connect(self.db_path, timeout=30.0)
+                # Phase 7.1: migrated to db_manager (writable=True)
+                from core.db_manager import db_manager
+                w_conn = db_manager.connection(self.db_path, writable=True).__enter__()
                 w_cur = w_conn.cursor()
                 _ensure_cached_analysis_columns(w_conn)
                 w_cur.execute('''
@@ -2305,7 +2309,9 @@ class BackgroundAnalyzer:
                     **result_dict
                 }
 
-                w_conn = sqlite3.connect(self.db_path, timeout=30.0)
+                # Phase 7.1: migrated to db_manager (writable=True)
+                from core.db_manager import db_manager
+                w_conn = db_manager.connection(self.db_path, writable=True).__enter__()
                 w_cur = w_conn.cursor()
                 _ensure_cached_analysis_columns(w_conn)
                 w_cur.execute('''

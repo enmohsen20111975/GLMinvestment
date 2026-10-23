@@ -45,7 +45,9 @@ def test_admin_portfolio():
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
     assert db_path.exists(), f"Database not found: {db_path}"
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     c = conn.cursor()
 
     admin_ids = [

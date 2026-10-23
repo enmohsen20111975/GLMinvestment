@@ -120,7 +120,9 @@ class SectorRelativeAnalyzer:
         self.sector_tickers = {}  # sector -> [tickers]
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -213,7 +215,9 @@ class SectorRelativeAnalyzer:
     def _get_stock_data(self, ticker: str) -> Dict:
         """Get stock data from database."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -255,7 +259,9 @@ class SectorRelativeAnalyzer:
             return {}
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             placeholders = ','.join(['?' for _ in sector_tickers])
@@ -301,7 +307,9 @@ class SectorRelativeAnalyzer:
             return 0
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             placeholders = ','.join(['?' for _ in sector_tickers])
@@ -335,7 +343,9 @@ class SectorRelativeAnalyzer:
             return 'NEUTRAL', 50
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(self.db_path, writable=False).__enter__()
             cursor = conn.cursor()
             
             placeholders = ','.join(['?' for _ in sector_tickers])

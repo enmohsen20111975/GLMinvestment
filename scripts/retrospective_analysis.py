@@ -27,7 +27,9 @@ from utils.entry_gate import check_entry_gate
 
 def load_all_egx_prices():
     """حمّل كل أسعار EGX من data_engine.db."""
-    conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'data_engine.db'))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'data_engine.db'), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     # فلتر EGX canonical فقط
     c = conn.cursor()
@@ -40,7 +42,9 @@ def load_all_egx_prices():
     print(f'📊 إجمالي tickers: {len(all_tickers)} → EGX canonical: {len(egx_tickers)}')
 
     # حمّل أسعار كل سهم EGX
-    conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'data_engine.db'))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'data_engine.db'), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     prices = {}
     for ticker in egx_tickers:
