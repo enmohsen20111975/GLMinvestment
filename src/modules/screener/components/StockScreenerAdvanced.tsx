@@ -9,6 +9,7 @@ import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Select,
  SelectContent,
  SelectItem,
@@ -354,9 +355,7 @@ function CollapsibleSection({
 
 // ─── Format helpers ─────────────────────────────────────────────────────────
 
-function formatNumber(n: number | null | undefined, decimals = 2): string {
- if (n === null || n === undefined || isNaN(n as number)) return '—';
- return Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+/* formatNumber moved to @/lib/format (Phase 1 DRY) */);
 }
 
 function formatVolume(v: number): string {

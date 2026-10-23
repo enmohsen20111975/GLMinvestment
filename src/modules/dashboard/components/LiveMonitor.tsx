@@ -12,6 +12,7 @@
 import React from 'react';
 import { useLiveMonitorData } from '@/hooks/useLiveMonitorData';
 import {
+import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Activity,
  AlertCircle,
  ArrowDownRight,
@@ -166,11 +167,7 @@ const numberFmt2 = new Intl.NumberFormat('en-US', {
 });
 const intFmt = new Intl.NumberFormat('en-US');
 
-function formatNumber(value: number | null | undefined, decimals = 2): string {
- if (value === null || value === undefined || Number.isNaN(value)) return '—';
- if (decimals === 0) return intFmt.format(Math.round(value));
- return numberFmt2.format(value);
-}
+/* formatNumber moved to @/lib/format (Phase 1 DRY) */
 
 function formatCurrency(value: number | null | undefined): string {
  if (value === null || value === undefined || Number.isNaN(value)) return '—';

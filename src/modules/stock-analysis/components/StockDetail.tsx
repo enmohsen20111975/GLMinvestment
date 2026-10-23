@@ -3,6 +3,7 @@ import { MarketDepthPanel } from './MarketDepthPanel';
 
 import React, { Component, useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
 import {
+import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  ArrowRight,
  TrendingUp,
  TrendingDown,
@@ -92,12 +93,7 @@ class ErrorBoundary extends Component<{ children: ReactNode; title?: string }, {
  }
 }
 
-function formatNumber(num: number): string {
- if (num >= 1_000_000_000) return safeToFixed(num / 1_000_000_000, 1) + 'B';
- if (num >= 1_000_000) return safeToFixed(num / 1_000_000, 1) + 'M';
- if (num >= 1_000) return safeToFixed(num / 1_000, 1) + 'K';
- return safeToFixed(num);
-}
+/* formatNumber moved to @/lib/format (Phase 1 DRY) */
 
 function formatVolume(vol: number): string {
  if (vol >= 1_000_000) return safeToFixed(vol / 1_000_000) + 'M';
