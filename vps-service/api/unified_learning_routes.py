@@ -50,7 +50,7 @@ from analyzers.unified_learning_engine import (
 from analyzers.learning_file_storage import get_storage, LearningFileStorage
 
 # Create Blueprint (using /api/unified-learning to avoid conflict)
-learning_bp = Blueprint('unified_learning', __name__, url_prefix='/api/unified-learning')
+unified_learning_bp = Blueprint('unified_learning', __name__, url_prefix='/api/unified-learning')
 
 # Global engine instance
 _engine = None

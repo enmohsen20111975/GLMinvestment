@@ -20,14 +20,14 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 
-market_bp = Blueprint('market', __name__, url_prefix='/api/market')
+market_data_bp = Blueprint('market_data', __name__, url_prefix='/api/market')
 
 # In-memory cache (5 min TTL)
 _top_movers_cache = {'data': None, 'ts': 0.0, 'limit': 0}
 _CACHE_TTL = 300  # 5 minutes
 
 
-@market_bp.route('/top-movers', methods=['GET'])
+@market_data_bp.route('/top-movers', methods=['GET'])
 def top_movers():
     """GET /api/market/top-movers?limit=5
 

@@ -63,7 +63,7 @@ BLUEPRINTS = [
     # مش مُسجّل). الـ frontend بيستخدمها في src/lib/use-python-api.ts (12+ calls).
     # متغير `learning_bp` في unified_learning_routes.py مطابق لـ learning_routes.py
     # لكن ده مش collision — كل module بـ يستورد blueprint مختلف (url_prefix مختلف).
-    ('api.unified_learning_routes', 'learning_bp'),
+    ('api.unified_learning_routes', 'unified_learning_bp'),
     # P1.6 (REFACTORING_REPORT §12): تسجيل optimizer_params_bp لتفعيل
     # /api/prediction-optimizer/* endpoints (4 routes، كلها كانت 404 لأن الـ blueprint
     # مش مُسجّل). الـ admin frontend بيستخدمها في OptimizerParamsPanel.tsx
@@ -115,6 +115,11 @@ BLUEPRINTS = [
     ('api.v38_backtest_routes', 'v38_backtest_bp'),
     # BRAVO-EPIC: market master endpoints (intraday-pressure + investor-flows + metals-forex + liquidity-radar)
     ('api.market_master_endpoints', 'market_master_bp'),
+    # B0.1 (2026-10-23): Register B2 (top-movers) + B3 (notifications) blueprints
+    # B2: /api/market/top-movers — top N stocks by change_percent
+    ('api.market_routes', 'market_data_bp'),
+    # B3: /api/notifications/priority — priority notifications with auth + IDOR guard
+    ('api.notifications_routes', 'notifications_bp'),
 ]
 
 for mod_name, bp_name in BLUEPRINTS:
