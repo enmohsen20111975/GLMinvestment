@@ -22,6 +22,18 @@ const nextConfig = {
   // ─── FIX: Increase static generation timeout ──────────────────────
   // Default is 60s. On slow VPS with large DB, pages may take longer.
   staticPageGenerationTimeout: 300, // 5 minutes
+  // ─── FIX (Next 16): serverExternalPackages moved from experimental to top-level ──
+  // Next 16 deprecated `experimental.serverComponentsExternalPackages`. These packages
+  // are native Node modules (better-sqlite3, sql.js) + Prisma clients that MUST NOT
+  // be bundled into the client/browser. Without this, Turbopack tries to bundle them
+  // → `ReferenceError: module is not defined` in the browser.
+  serverExternalPackages: [
+    "better-sqlite3",
+    "sql.js",
+    "@prisma/client",
+    "@prisma/auth-client",
+    "@prisma/predictions-client",
+  ],
   // ─── FIX: Disable static generation entirely ────────────────────────────
   // The build was crashing with SIGSEGV during 'Generating static pages (0/64)'
   // because Next.js was trying to pre-render pages that import heavy modules
@@ -42,9 +54,8 @@ const nextConfig = {
   // The build worker has its own memory limit. On VPS with 8GB RAM, we need
   // to allow the worker to use more memory during static generation.
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3", "sql.js", "@prisma/client", "@prisma/auth-client", "@prisma/predictions-client"],
-    // Use default worker (child process) — workerThreads: true can crash
-    // with native modules like better-sqlite3
+    // FIX (Next 16): serverComponentsExternalPackages moved to top-level `serverExternalPackages`.
+    // Kept here empty for backward compat — the real config is now top-level.
     cpus: 1,
     optimizePackageImports: [
       "lucide-react",
