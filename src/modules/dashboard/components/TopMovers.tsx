@@ -3,11 +3,10 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn, safeNum } from '@/lib/utils';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import type { StockMini } from '@/types';
 
 function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser' }) {
@@ -115,61 +114,50 @@ function MoverList({ stocks, type }: { stocks: StockMini[]; type: 'gainer' | 'lo
 }
 
 export function TopMovers() {
- const { marketOverview } = useAppStore();
+  const { marketOverview } = useAppStore();
+  const isLoading = !marketOverview;
+  const { top_gainers = [], top_losers = [] } = marketOverview ?? {};
 
- // P1 (Premium Polish Pass): skeleton بدل null لما البيانات لسه بتحمّل.
- // ممنوع spinner — skeleton بـ pulse ناعم (Rule 30 + 31).
- if (!marketOverview) {
- return (
- <Card className="border-0 shadow-sm">
- <CardHeader className="pb-1 px-3 pt-2.5">
- <Skeleton className="h-4 w-28" />
- </CardHeader>
- <CardContent className="px-2 pb-2.5 space-y-2">
- <Skeleton className="h-9 w-full" />
- <Skeleton className="h-9 w-full" />
- <Skeleton className="h-9 w-full" />
- </CardContent>
- </Card>
- );
- }
+  // P1 (Premium Polish Pass): skeleton بدل null لما البيانات لسه بتحمّل.
+  // ممنوع spinner — skeleton بـ pulse ناعم (Rule 30 + 31).
+  // WidgetCard يتكفّل برسم Skeleton داخلياً لما loading=true.
+  return (
+    <WidgetCard
+      title="الأكثر تحركاً"
+      loading={isLoading}
+      hideRefresh
+      skeletonRows={4}
+      skeletonHeight="h-9"
+      className="border-0 shadow-sm"
+      headerClassName="pb-1 px-3 pt-2.5"
+      titleClassName="font-bold"
+      contentClassName="px-2 pb-2.5"
+    >
+      <Tabs defaultValue="gainers" dir="rtl">
+        <TabsList className="w-full mb-1.5">
+          <TabsTrigger
+            value="gainers"
+            className="flex-1 gap-1.5 data-[state=active]:bg-profit data-[state=active]:text-profit dark:data-[state=active]:bg-profit/10 dark:data-[state=active]:text-profit"
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            المرتفعة
+          </TabsTrigger>
+          <TabsTrigger
+            value="losers"
+            className="flex-1 gap-1.5 data-[state=active]:bg-loss data-[state=active]:text-loss dark:data-[state=active]:bg-loss/10 dark:data-[state=active]:text-loss"
+          >
+            <TrendingDown className="w-3.5 h-3.5" />
+            المنخفضة
+          </TabsTrigger>
+        </TabsList>
 
- const { top_gainers, top_losers } = marketOverview;
-
- return (
- <Card className="border-0 shadow-sm">
- <CardHeader className="pb-1 px-3 pt-2.5">
- <CardTitle className="text-sm font-bold" dir="rtl">
- الأكثر تحركاً
- </CardTitle>
- </CardHeader>
- <CardContent className="px-2 pb-2.5">
- <Tabs defaultValue="gainers" dir="rtl">
- <TabsList className="w-full mb-1.5">
- <TabsTrigger
- value="gainers"
- className="flex-1 gap-1.5 data-[state=active]:bg-profit data-[state=active]:text-profit dark:data-[state=active]:bg-profit/10 dark:data-[state=active]:text-profit"
- >
- <TrendingUp className="w-3.5 h-3.5" />
- المرتفعة
- </TabsTrigger>
- <TabsTrigger
- value="losers"
- className="flex-1 gap-1.5 data-[state=active]:bg-loss data-[state=active]:text-loss dark:data-[state=active]:bg-loss/10 dark:data-[state=active]:text-loss"
- >
- <TrendingDown className="w-3.5 h-3.5" />
- المنخفضة
- </TabsTrigger>
- </TabsList>
-
- <TabsContent value="gainers" className="mt-0">
- <MoverList stocks={top_gainers} type="gainer" />
- </TabsContent>
- <TabsContent value="losers" className="mt-0">
- <MoverList stocks={top_losers} type="loser" />
- </TabsContent>
- </Tabs>
- </CardContent>
- </Card>
- );
+        <TabsContent value="gainers" className="mt-0">
+          <MoverList stocks={top_gainers} type="gainer" />
+        </TabsContent>
+        <TabsContent value="losers" className="mt-0">
+          <MoverList stocks={top_losers} type="loser" />
+        </TabsContent>
+      </Tabs>
+    </WidgetCard>
+  );
 }
