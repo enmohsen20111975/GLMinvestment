@@ -74,10 +74,10 @@ export async function DELETE(
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const user_id = searchParams.get('user_id');
+    const queryUserId = searchParams.get('user_id');
 
-    if (!user_id) {
-      return NextResponse.json({ error: 'مطلوب تسجيل الدخول' }, { status: 401 });
+    if (queryUserId && queryUserId !== sessionUserId) {
+      return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
     }
 
     const post = await db.userPost.findUnique({ where: { id } });

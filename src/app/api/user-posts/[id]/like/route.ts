@@ -19,10 +19,10 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { user_id } = body;
+    const { user_id: bodyUserId } = body;
 
-    if (!user_id) {
-      return NextResponse.json({ error: 'مطلوب تسجيل الدخول' }, { status: 401 });
+    if (bodyUserId && bodyUserId !== sessionUserId) {
+      return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
     }
 
     // التحقق من وجود المنشور

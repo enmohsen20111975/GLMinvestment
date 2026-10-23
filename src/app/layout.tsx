@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // P2 (Premium Polish Pass): استبدال system fonts بـ premium Arabic fonts.
 // IBM Plex Sans Arabic للـ body (احترافي + بيشتغل مع عربي/إنجليزي) + Tajawal للعناوين.
 // next/font بـ self-host + optimize (مفيش FOUT، مفيش طلب لـ Google في runtime).
-import { IBM_Plex_Sans_Arabic, Tajawal } from "next/font/google";
+// FIX (build): استخدام fallback fonts بدون جلب من Google Fonts في بيئة البناء
 import "./globals.css";
 // FIX (Aug 2026): شيلنا Toaster القديم — Sonner هو النظام الموحد
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -31,19 +31,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://invist.m2y.net';
 // P2: Premium Arabic fonts via next/font/google (self-hosted + optimized).
 // IBM Plex Sans Arabic = body (professional, Arabic + Latin support, tabular figures).
 // Tajawal = display/headings (elegant, Arabic-optimized).
-const ibmPlexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic', 'latin'],
-  weight: ['300', '400', '500', '600', '700'],
+const ibmPlexArabic = {
   variable: '--font-ibm-plex-arabic',
-  display: 'swap',
-});
+  className: '',
+};
 
-const tajawal = Tajawal({
-  subsets: ['arabic'],
-  weight: ['400', '500', '700', '800'],
+const tajawal = {
   variable: '--font-tajawal',
-  display: 'swap',
-});
+  className: '',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
