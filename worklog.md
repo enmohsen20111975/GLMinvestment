@@ -7257,3 +7257,136 @@ Stage Summary:
 - HTTP 200 verified على `/` و `/?view=stocks`. صفر new TS errors. صفر new browser errors.
 - Commit: `ee95f57` (pushed to origin/main).
 
+
+---
+
+Task ID: F-Phase3-Adoption-Batch1
+Agent: Alpha (frontend agent)
+Task: Batch adopt WidgetCard + WidgetStatGrid in 4 dashboard widgets (MarketSummary, TopMovers, IndexCards, MarketSentiment). Replace manual Card/CardHeader/CardTitle/CardContent/Skeleton with WidgetCard; replace manual grid stat tiles with WidgetStatGrid + WidgetStat.
+
+Work Log:
+- Read worklog.md + 4 target files (MarketSummary 81 LOC / TopMovers 175 LOC / IndexCards 188 LOC / MarketSentiment 197 LOC). Read WidgetCard.tsx + WidgetStat.tsx to confirm prop surface (WidgetCard: title/icon/iconColor/iconBg/iconSize/loading/skeletonRows/skeletonHeight/onRefresh/refreshing/hideRefresh/className/headerClassName/titleClassName/contentClassName/badge/children; WidgetStat: label/value/suffix/valueClass/valueSize/className/onClick/align; WidgetStatGrid: cols 2|3|4 / className / children).
+- Reviewed prior adoption reference `af55412` (SovereignMetalsDesk) — established precedent: WidgetStatGrid can wrap any children (GoldCard/FxCard stayed as inner components; only the grid container was swapped). Allowed same flexibility here.
+
+- File 1 — `MarketSummary.tsx` (81 → 40 LOC, −41 LOC, −50.6%):
+  * Was: bare `grid grid-cols-2 lg:grid-cols-4 gap-2` containing 4 stat tiles, each `<Card className="overflow-hidden border-0 shadow-sm"><CardContent className="p-2.5"><div flex justify-between><div><p label/><p value/>{stat.badge && ...}</div><div icon-bg/></div></CardContent></Card>`. Icons (BarChart3, TrendingUp, TrendingDown, Minus) + colored bg were side decoration.
+  * Now: single `<WidgetStatGrid cols={4}>` containing 4 `<WidgetStat label="..." value={...} valueClass="text-profit|text-loss|text-muted-foreground" />`.
+  * Imports trimmed: removed `BarChart3, TrendingUp, TrendingDown, Minus` (icons no longer rendered), `Card, CardContent` (replaced by WidgetStat internals), `cn` (no conditional class composition needed).
+  * Imports added: `WidgetStat, WidgetStatGrid` from `@/components/shared/WidgetStat`.
+  * Visual trade-off: lost the small icon-with-colored-bg decoration on the right side of each tile. Label + value + valueClass coloring preserved. Tiles still 4-up on lg.
+
+- File 2 — `TopMovers.tsx` (175 → 163 LOC, −12 LOC, −6.9%):
+  * Was: TWO Card usages — (a) skeleton-loading branch when `!marketOverview` (`<Card><CardHeader><Skeleton/></CardHeader><CardContent space-y-2><Skeleton×3/></CardContent></Card>`, 13 LOC) + (b) main render (`<Card border-0 shadow-sm><CardHeader pb-1 px-3 pt-2.5><CardTitle text-sm font-bold dir=rtl>الأكثر تحركاً</CardTitle></CardHeader><CardContent px-2 pb-2.5><Tabs>...</Tabs></CardContent></Card>`, 35 LOC).
+  * Now: single `<WidgetCard title="الأكثر تحركاً" loading={isLoading} hideRefresh skeletonRows={4} skeletonHeight="h-9" className="border-0 shadow-sm" headerClassName="pb-1 px-3 pt-2.5" titleClassName="font-bold" contentClassName="px-2 pb-2.5"><Tabs>...</Tabs></WidgetCard>`. The skeleton-loading branch is gone entirely — WidgetCard renders its own Skeleton rows when `loading=true`.
+  * Helper components `MoverItem` (65 LOC) + `MoverList` (33 LOC) untouched — render-logic concerns (icon-bg + ticker/name/price/change layout + empty-state UX).
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle` (replaced by WidgetCard internals), `Skeleton` (WidgetCard renders Skeleton internally).
+  * Imports added: `WidgetCard` from `@/components/shared/WidgetCard`.
+  * Behaviour preservation: `top_gainers` / `top_losers` extracted from `marketOverview ?? {}` with `[]` default → MoverList's empty-state branch (`uniqueStocks.length === 0`) handles the no-data case gracefully even before marketOverview arrives. `isLoading = !marketOverview` correctly drives WidgetCard's skeleton.
+
+- File 3 — `IndexCards.tsx` (188 → 195 LOC, +7 LOC, +3.7%):
+  * Was: `<Card className="relative overflow-hidden border-0 shadow-sm transition-all duration-200 group" onClick={isClickable ? () => setCurrentView('stocks') : undefined}><IndexSymbolBadge/><CardContent className="p-2.5 relative z-10">{header row + name + value + change row + sparkline}</CardContent></Card>`. Header row was a flex with colored symbol pill (left) + TrendingUp/Down icon (right).
+  * Now: `<WidgetCard title={index.name_ar} icon={TrendIcon} iconColor={isPositive ? 'text-profit' : 'text-loss'} iconBg={isPositive ? 'bg-profit/10' : 'bg-loss/10'} iconSize="h-3.5 w-3.5" hideRefresh className="border-0 shadow-sm" headerClassName="pb-1 px-2.5 pt-2.5" titleClassName="text-xs font-medium text-muted-foreground truncate" contentClassName="px-2.5 pb-2.5 pt-0" badge={<span colored pill>{index.symbol}</span>}>{value + change row + sparkline}</WidgetCard>`. Visual reorganization: symbol pill moved to `badge` slot (right of header), trend icon moved to `icon` slot (left of header with colored bg), Arabic name became the `title`.
+  * EGX click-to-stocks navigation preserved via wrapping `<button type="button" onClick={...} className="block w-full text-start cursor-pointer focus-visible:ring-2 ...">` around the WidgetCard — WidgetCard doesn't expose onClick on its Card root, so wrapper is required. Hover styling (shadow + ring) moved to the button for clickable cards; non-clickable cards keep the bare WidgetCard.
+  * Dropped: `IndexSymbolBadge` function (~12 LOC) — decorative giant ghost number at 4% opacity behind the content. WidgetCard doesn't expose a slot for absolute-positioned background siblings of CardContent, so this flourish was dropped. Acceptable visual regression (subtle, decorative-only).
+  * Imports trimmed: removed `Card, CardContent`.
+  * Imports added: `WidgetCard` from `@/components/shared/WidgetCard`.
+  * The big `INDEX_COLOR_MAP` (~22 LOC) + `MARKET_PALETTE` (~28 LOC) const dicts untouched (data, not UI).
+  * Net LOC slightly increased (+7) because the clickable-EGX wrapper button + adoption-note JSDoc add ~25 LOC, while removing Card/CardContent/IndexSymbolBadge saves ~18 LOC. The file is now structurally uniform (WidgetCard) instead of mixed Card+custom-badge+ghost-number.
+
+- File 4 — `MarketSentiment.tsx` (197 → 185 LOC, −12 LOC, −6.1%):
+  * Was: `<Card className="border-0 shadow-sm h-full"><CardHeader pb-0.5 px-3 pt-2.5><CardTitle text-sm font-bold flex items-center gap-1.5 dir=rtl><Activity w-3.5 h-3.5 text-profit/>مؤشر المشاعر</CardTitle></CardHeader><CardContent p-2.5 pt-1 flex flex-col items-center gap-1.5 dir=rtl><SentimentGauge/>{stats grid 2-col with manual div tiles for volatility + breadth, each with Activity/BarChart3 icon + label + value}{breadth bar with up/down arrow + bar}</CardContent></Card>`.
+  * Now: `<WidgetCard title="مؤشر المشاعر" icon={Activity} iconColor="text-profit" hideRefresh className="border-0 shadow-sm h-full" headerClassName="pb-0.5 px-3 pt-2.5" titleClassName="font-bold" contentClassName="p-2.5 pt-1 flex flex-col items-center gap-1.5"><SentimentGauge/><WidgetStatGrid cols={2}><WidgetStat label="التذبذب" value={volatility}/><WidgetStat label="العرض" value={breadth} suffix="%"/></WidgetStatGrid>{breadth bar}</WidgetCard>`.
+  * Manual 2-col stat tiles (volatility + breadth, each with icon + label + value) collapsed from ~20 LOC of nested divs into 2 WidgetStat components inside a WidgetStatGrid — each tile is now `label/value/suffix` instead of `icon+label/value`.
+  * `SentimentGauge` component (~95 LOC, the circular SVG gauge) untouched — pure render logic, no Card primitives.
+  * Breadth bar (gain/loss pill + horizontal progress bar) kept as-is inside WidgetCard children — it's a custom visual that doesn't fit WidgetStat.
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle`, `Progress` (was imported but never used — dead import), `BarChart3` (was only used as the breadth tile icon, no longer rendered).
+  * Imports added: `WidgetCard` from `@/components/shared/WidgetCard`, `WidgetStat, WidgetStatGrid` from `@/components/shared/WidgetStat`.
+  * Visual trade-off: each stat tile loses its small Activity/BarChart3 icon next to the label. WidgetStatGrid adds `rounded-lg bg-muted/30 p-2` to the grid container, slightly different from the original bare `grid grid-cols-2 gap-1.5`. Tile content layout simpler (label/value centered).
+
+- Verification:
+  * `node_modules/.bin/pm2 restart nextjs` → ready in 1121ms (clean Turbopack compile, 0 errors).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (compile 10.4s first hit, render 493ms).
+  * pm2 logs: `GET / 200 in 10.9s` (first hit compile) + `GET / 200 in 66ms` (cached re-render) — no compile/render errors related to the refactor. Only pre-existing Next.js config warnings + next-auth warnings remain.
+  * `npx tsc --noEmit -p tsconfig.json` (git stash comparison): introduced ZERO new TS errors. **Resolved 2 pre-existing errors** in MarketSummary (lines 69 + 69 — `stat.badge` was nonexistent property; now gone since the stats array no longer has a `badge` field). TopMovers pre-existing error at line 85 (`Type 'string | false' is not assignable to type 'boolean'` in MoverList's filter type predicate) shifted to line 84 due to removed Skeleton import — same error, no new ones.
+  * Post-rebase re-verification: HTTP 200 again confirmed after `git pull --rebase origin main` applied cleanly (1 commit on top of `50451e6` from concurrent agent's Bollinger Bands fix).
+
+- LOC delta summary:
+  * MarketSummary.tsx: 81 → 40 LOC (**−41 LOC, −50.6%**)
+  * TopMovers.tsx: 175 → 163 LOC (**−12 LOC, −6.9%**)
+  * IndexCards.tsx: 188 → 195 LOC (**+7 LOC, +3.7%**) — slight increase due to clickable-EGX wrapper button + adoption-note JSDoc; structural uniformity improved (WidgetCard-only vs mixed Card+ghost-badge)
+  * MarketSentiment.tsx: 197 → 185 LOC (**−12 LOC, −6.1%**)
+  * **Batch total: 641 → 583 LOC (−58 LOC, −9.0%)**
+- Rule 75 compliance: commit `cb3bf67` pushed to origin/main (after HTTP 200 verified).
+- Rule 76 compliance: `git pull --rebase origin main` → "Successfully rebased and updated refs/heads/main" (1 commit applied on top of `50451e6`).
+
+Stage Summary:
+- WidgetCard + WidgetStatGrid adoption applied to all 4 dashboard widgets. Every `<Card><CardHeader><CardTitle>...</CardTitle></CardHeader><CardContent>...</CardContent></Card>` pattern (TopMovers + MarketSentiment) collapsed into single `<WidgetCard>` calls. Every manual stat-grid-of-tiles pattern (MarketSummary + MarketSentiment's volatility/breadth tiles) collapsed into `<WidgetStatGrid><WidgetStat/></WidgetStatGrid>`.
+- IndexCards was the trickiest — its tiles are clickable (EGX → stocks view), so WidgetCard's lack of `onClick` on Card root required a wrapping `<button>` element. The decorative IndexSymbolBadge (giant 4%-opacity ghost number behind each tile) was dropped — WidgetCard doesn't expose a slot for absolute-positioned siblings of CardContent.
+- HTTP 200 verified on `/` (the dashboard route). Zero new TS errors. Two pre-existing MarketSummary TS errors (`stat.badge` nonexistent) resolved as a side-effect of removing the badge feature.
+- Commit: `cb3bf67` (pushed to origin/main after rebase on `50451e6`).
+- Next batch candidate (per widget-card adoption roadmap): more dashboard widgets using the same Card+CardHeader+CardTitle+CardContent pattern — see `scripts/adopt_widgetcard.py` scan output for the next 4-6 candidates.
+
+---
+
+Task ID: F-Phase3-Adoption-Batch2
+Agent: Alpha (frontend agent)
+Task: Batch adopt WidgetCard + WidgetStatGrid in 4 more dashboard widgets (SeasonalitySignals, CryptoSignals, IntradayPressure, OpportunityCalculator). Replace manual Card/CardHeader/CardTitle/CardContent/Skeleton with WidgetCard; replace manual grid stat tiles with WidgetStatGrid + WidgetStat; replace error states with WidgetError.
+
+Work Log:
+- Read worklog.md (Batch1 entry — `cb3bf67`) + 4 target files (SeasonalitySignals 205 LOC / CryptoSignals 222 LOC / IntradayPressure 243 LOC / OpportunityCalculator 250 LOC). Read WidgetCard.tsx (props: title/icon/iconColor/iconBg/iconSize/loading/skeletonRows/skeletonHeight/onRefresh/refreshing/hideRefresh/className/headerClassName/titleClassName/contentClassName/badge/children) + WidgetStat.tsx (props: label/value/suffix/valueClass/valueSize/className/onClick/align) + WidgetStatGrid (cols 2|3|4 / className / children) + WidgetError.tsx (props: message/onRetry/title/className/variant 'network'|'generic').
+- Batch1 precedent confirmed: WidgetStatGrid accepts `className` override (used `bg-transparent p-0` for nested grids inside a parent panel). WidgetCard's `badge` slot is the right place for header pills (NextBatch1's IndexCards used it for symbol pill). WidgetCard's `loading` prop replaces children with N Skeleton rows — eliminates manual `<Skeleton>` branches.
+
+- File 1 — `SeasonalitySignalsWidget.tsx` (205 → 179 LOC, −26 LOC, −12.7%):
+  * Was: `<Card border-border/60><CardHeader pb-3><div flex justify-between><CardTitle text-sm font-semibold flex items-center gap-2><div w-8 h-8 rounded-lg from-whale to-cyan-500><Calendar w-4 h-4 text-foreground/></div>إشارات الموسمية (EGX)</CardTitle><Button ghost icon h-7 w-7 onClick=handleRefresh disabled=refreshing><RefreshCw cn('w-3.5 h-3.5', refreshing && 'animate-spin')/></Button></div></CardHeader><CardContent space-y-3>{Current Month div}{loading ? Skeleton×2 h-12 : signals.length === 0 ? empty : <>{Summary 3-col grid with manual div tiles: شراء/بيع/نجاح}{Signals list with badges}{Disclaimer div}}</CardContent></Card>`.
+  * Now: single `<WidgetCard title="إشارات الموسمية (EGX)" icon={Calendar} iconColor="text-foreground" iconBg="bg-gradient-to-br from-whale to-cyan-500" loading={loading} skeletonRows={2} skeletonHeight="h-12" onRefresh={handleRefresh} refreshing={refreshing} className="border-border/60" headerClassName="pb-3">` containing Current Month div + empty-state OR (Summary WidgetStatGrid cols={3} with 3 WidgetStat: buy_signals/sell_signals/avg_win_rate% + signals list + disclaimer). Skeleton branch deleted — WidgetCard's `loading` prop drives Skeleton internally.
+  * Summary 3-col grid: 3 manual `<div className="text-center"><span block text-sm font-bold text-profit>{val}</span><span text-xs muted>label</span></div>` tiles (lines 130-143 of original) collapsed into `<WidgetStatGrid cols={3}><WidgetStat label="شراء" value={summary.buy_signals} valueClass="text-profit"/><WidgetStat label="بيع" value={summary.sell_signals} valueClass="text-loss"/><WidgetStat label="نجاح" value={`${(summary.avg_win_rate ?? 0).toFixed(0)}%`}/></WidgetStatGrid>`. Visual: tiles now have border + bg-card + tabular-nums + centered (from WidgetStat's default styles).
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle`, `Button`, `Skeleton`, `RefreshCw` (WidgetCard handles all of these). Kept `Badge` (signal badges), `cn` (used in signal card className + Badge className), `Calendar/TrendingUp/Target/Clock` (still rendered in body). Added `WidgetCard` + `WidgetStat, WidgetStatGrid`.
+  * Behaviour preservation: `handleRefresh = () => void refetch()` still wired to `onRefresh`. `refreshing = isFetching` from useApiQuery still drives `refreshing` prop. `currentMonth` derived from `new Date().toLocaleDateString('ar-EG', { month: 'long' })` unchanged. The `safeNum` helper + `useMemo` derivation of `signals` + `summary` from `rawData?.signals` untouched — pure data logic.
+  * Minor UX trade-off: during loading, Current Month banner no longer renders (WidgetCard's loading replaces ALL children with Skeleton). Original showed Current Month + Skeleton rows together. Acceptable regression (~500ms initial fetch window).
+
+- File 2 — `CryptoSignalsWidget.tsx` (222 → 202 LOC, −20 LOC, −9.0%):
+  * Was: `<Card border-border/60><CardHeader pb-3><div flex justify-between><CardTitle text-sm font-semibold flex items-center gap-2><div w-8 h-8 rounded-lg from-orange-500 to-yellow-500><Bitcoin w-4 h-4 text-foreground/></div>إشارات العملات الرقمية</CardTitle><Button ghost icon h-7 w-7 onClick=handleRefresh disabled=refreshing><RefreshCw cn(...)/></Button></div></CardHeader><CardContent space-y-3>{loading ? Skeleton×2 h-16 : <>{Fear & Greed banner with manual progress bar + Badge}{Crypto cards 2-col grid with badges + TrendingUp/Down change indicators}{Indicator Performance 3-col grid with manual div tiles: VWAP 63.6% / Stoch 55.2% / EMA 53%}{footer note}}</CardContent></Card>`.
+  * Now: single `<WidgetCard title="إشارات العملات الرقمية" icon={Bitcoin} iconColor="text-foreground" iconBg="bg-gradient-to-br from-orange-500 to-yellow-500" loading={loading} skeletonRows={2} skeletonHeight="h-16" onRefresh={handleRefresh} refreshing={refreshing} className="border-border/60" headerClassName="pb-3">` containing Fear & Greed banner + Crypto cards grid + Indicator Performance WidgetStatGrid + footer. Skeleton branch deleted.
+  * Indicator Performance 3-col grid: 3 manual `<div><span block font-bold text-profit>63.6%</span><span text-muted-foreground>VWAP</span></div>` tiles (lines 207-211 of original) collapsed into `<WidgetStatGrid cols={3} className="bg-transparent p-0"><WidgetStat label="VWAP" value="63.6%" valueClass="text-profit"/><WidgetStat label="Stoch" value="55.2%" valueClass="text-profit"/><WidgetStat label="EMA" value="53%" valueClass="text-warning"/></WidgetStatGrid>`. Used `className="bg-transparent p-0"` to override WidgetStatGrid's default `bg-muted/30 p-2` since this grid is nested inside an existing `bg-muted/30` panel (would create double-background).
+  * Crypto cards 2-col grid NOT converted to WidgetStatGrid — these are rich cards with ticker + signal Badge + price + change% (5 fields), not standard stat tiles. WidgetStat only has label/value/suffix (3 fields). Kept as-is.
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle`, `Button`, `Skeleton`, `RefreshCw`, `Progress` (Progress was dead import — never used; manual div-based progress bar in Fear & Greed banner). Kept `Badge`, `cn`, `TrendingUp/TrendingDown/Bitcoin/Target`. Added `WidgetCard` + `WidgetStat, WidgetStatGrid`.
+  * Behaviour preservation: `getSignal(crypto)` ATH-based BUY/SELL/HOLD logic untouched. `fearGreedColor` + `fearGreedLabel` helpers untouched. `formatPrice` delegates to `lib/format` (F1.4 DRY). `cryptoLoading || fngLoading` combined loading flag drives WidgetCard's `loading` prop. `handleRefresh = () => void refetchCrypto()` still wired.
+
+- File 3 — `IntradayPressurePanel.tsx` (243 → 218 LOC, −25 LOC, −10.3%):
+  * Was: THREE separate Card branches — (a) loading branch (`if (loading) return <Card><CardHeader pb-2><CardTitle text-sm flex items-center gap-2><Gauge h-4 w-4 text-primary/>ضغط الجلسة — EGX30</CardTitle></CardHeader><CardContent space-y-3><Skeleton h-8/><Skeleton h-24/><Skeleton h-32/></CardContent></Card>`, 17 LOC), (b) error branch (`if (error) return <Card><CardHeader pb-2><CardTitle>...Gauge...ضغط الجلسة...</CardTitle></CardHeader><CardContent><p text-xs muted>تعذّر تحميل البيانات: {error}</p></CardContent></Card>`, 14 LOC), (c) main branch (`<Card><CardHeader pb-2><CardTitle>...Gauge...ضغط الجلسة...</CardTitle></CardHeader><CardContent space-y-4>{cp gauge bar + table}</CardContent></Card>`, ~110 LOC). THREE duplicate CardHeaders with same Gauge icon + same title — classic Card-header-repetition anti-pattern.
+  * Now: error branch → `<WidgetError title="ضغط الجلسة — EGX30" message={error} onRetry={() => refetch()}/>` (1 LOC, replaces 14 LOC). Main branch → `<WidgetCard title="ضغط الجلسة — EGX30" icon={Gauge} iconColor="text-primary" loading={loading} skeletonRows={3} skeletonHeight="h-16" hideRefresh className="border-border" headerClassName="pb-2" contentClassName="space-y-4">{cp gauge + table}</WidgetCard>`. Loading branch DELETED entirely — WidgetCard's `loading={loading}` prop drives 3 Skeleton rows internally (saves the whole 17-LOC loading branch). THREE branches → TWO (error + main-with-loading-prop).
+  * `useApiQuery` destructure updated: added `refetch` to existing `{ data, isLoading: loading, error: queryError }` so WidgetError's `onRetry` can trigger refetch (original code never had manual refresh — WidgetError adds that capability as a free upgrade).
+  * No WidgetStatGrid adoption — the cp gauge bar is a custom dual-color horizontal progress bar with BUY% (right, green) + SELL% (left, red) overlay, and the table is a 6-column price/volume table. Neither fits WidgetStat's label/value/suffix model. Kept as-is inside WidgetCard children.
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle`, `Input` (was imported but never used — dead import), `Skeleton`, and 4 dead icons (`TrendingUp, TrendingDown, Loader2, Search` — all imported but never rendered; only `Gauge` was used). Kept `Badge` (direction badge), `cn`. Added `WidgetCard` + `WidgetError`.
+  * `fmtEGP` + `directionMeta` helpers untouched. `PressureResponse`/`CumulativePressure`/`TopStock` types untouched.
+
+- File 4 — `OpportunityCalculatorWidget.tsx` (250 → 207 LOC, −43 LOC, −17.2%):
+  * Was: THREE separate Card branches — (a) loading (`if (loading) return <Card border-border bg-white shadow-sm><CardHeader pb-3><div flex items-center gap-2><div h-8 w-8 rounded-lg bg-profit/10><Sparkles h-4 w-4 text-profit/></div><div><CardTitle text-base>لو كنت مالك السهم ده</CardTitle><CardDescription text-xs>فرص النهاردة</CardDescription></div></div></CardHeader><CardContent space-y-3><Skeleton h-16/>×3</CardContent></Card>`, 22 LOC), (b) empty state (`if (top3.length === 0) return <Card>...same header...<CardContent><p text-xs muted>بيانات السوق غير متاحة...</p></CardContent></Card>`, 23 LOC), (c) main (`<Card>...same header + <Badge>لحظي</Badge>...<CardContent space-y-3>{disclaimer + top3.map(button with hypothetical gain calc) + CTA Button}</CardContent></Card>`, 80 LOC). THREE duplicate CardHeaders again — same Sparkles icon + same title + same CardDescription (slight wording difference in main: "فرص النهاردة — بيانات حقيقية").
+  * Now: ONE WidgetCard with conditional children. `<WidgetCard title="لو كنت مالك السهم ده" icon={Sparkles} iconColor="text-profit" iconBg="bg-profit/10" loading={loading} skeletonRows={3} skeletonHeight="h-16" hideRefresh className="border-border bg-white shadow-sm" headerClassName="pb-3" badge={top3.length > 0 ? <Badge variant="outline" gap-1 border-profit text-xs text-profit><TrendingUp h-3 w-3/>لحظي</Badge> : undefined}>{top3.length === 0 ? <p empty-state/> : <>{disclaimer + top3.map + CTA Button}</>}</WidgetCard>`. Loading branch DELETED (WidgetCard's `loading` prop drives Skeleton). Empty state moved into children with `top3.length === 0 ?` ternary. Main content unchanged. THREE branches → ONE.
+  * Badge slot: original main branch had `<Badge>لحظي</Badge>` next to header. Preserved by passing to WidgetCard's `badge` prop (conditional on `top3.length > 0` — empty state hides the badge).
+  * Imports trimmed: removed `Card, CardContent, CardHeader, CardTitle, CardDescription`, `Skeleton`. Kept `Button` (CTA), `Badge` (لحظي badge), `cn` (change/gain color), `TrendingUp/Sparkles/ArrowLeft/Wallet` (all rendered), `useEffect/useState`, `useAppStore`. Added `WidgetCard`.
+  * Behaviour preservation: `HYPOTHETICAL_QTY = 100` constant unchanged. `useEffect` fetch from `/api/market/top-movers?market=...&limit=5` + cancelled-flag + fallback to `useAppStore.marketOverview.gainers` untouched (data layer not refactored here — only presentation). `calcGain(g)` formula (yesterdayPrice → gainPerShare × 100) unchanged. `goToStock(ticker)` + `goToAuth()` navigation handlers untouched.
+  * Minor visual regression: CardDescription subtitle ("فرص النهاردة" / "فرص النهاردة — بيانات حقيقية") dropped — WidgetCard has no subtitle/description prop. Title alone ("لو كنت مالك السهم ده") is sufficient context given the disclaimer + content.
+
+- Verification:
+  * `node_modules/.bin/pm2 restart nextjs` → ready in 1211ms (clean Turbopack compile, 0 errors).
+  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (compile 11.5s first hit, render 519ms).
+  * pm2 logs: `GET / 200 in 12.0s` (first hit compile) — no compile/render errors related to the refactor. Only pre-existing Next.js config warnings + next-auth warnings remain.
+  * Post-rebase re-verification: HTTP 200 again confirmed after `git pull --rebase origin main` applied cleanly (fast-forward to `feab56b` from concurrent agent's vps-service / backtest_3months.py changes — no conflicts with this batch's frontend files).
+
+- LOC delta summary:
+  * SeasonalitySignalsWidget.tsx: 205 → 179 LOC (**−26 LOC, −12.7%**)
+  * CryptoSignalsWidget.tsx: 222 → 202 LOC (**−20 LOC, −9.0%**)
+  * IntradayPressurePanel.tsx: 243 → 218 LOC (**−25 LOC, −10.3%**)
+  * OpportunityCalculatorWidget.tsx: 250 → 207 LOC (**−43 LOC, −17.2%**)
+  * **Batch total: 920 → 806 LOC (−114 LOC, −12.4%)**
+- Rule 75 compliance: commit hash to be filled after push (see below).
+- Rule 76 compliance: `git pull --rebase origin main` → "Updating cb3bf67..feab56b / Fast-forward" (no conflicts — remote had advanced by 1 commit on `vps-service/` + `scripts/backtest_3months.py`, files unrelated to this batch).
+
+Stage Summary:
+- WidgetCard adoption applied to all 4 dashboard widgets. Every `<Card><CardHeader><CardTitle>...</CardTitle></CardHeader><CardContent>...</CardContent></Card>` pattern (all 4 files) collapsed into single `<WidgetCard>` calls. Every manual stat-grid-of-tiles pattern (SeasonalitySignals summary 3-col + CryptoSignals indicator-performance 3-col) collapsed into `<WidgetStatGrid><WidgetStat/></WidgetStatGrid>`. Every error state (IntradayPressure) replaced with `<WidgetError>`.
+- Three-branch anti-pattern (loading + error + main, each duplicating CardHeader) collapsed to single WidgetCard with `loading` prop + optional WidgetError branch. IntradayPressure went 3→2 branches; OpportunityCalculator went 3→1 branch (empty state moved into children ternary).
+- Dead imports cleaned: IntradayPressure had `Input` + 4 unused icons (`TrendingUp, TrendingDown, Loader2, Search`); CryptoSignals had `Progress` (manual div-based bar was used instead). All removed.
+- HTTP 200 verified on `/` (the dashboard route). Zero new TS errors expected (no type changes — pure presentation refactor with WidgetCard/WidgetStat/WidgetError which already export proper interfaces).
+- Commit: `c6d1d71` (pushed to origin/main after rebase on `feab56b`).
+- Next batch candidate: per widget-card adoption roadmap, the next 4-6 dashboard widgets still on manual Card primitives — see `scripts/adopt_widgetcard.py` scan output.

@@ -2,18 +2,16 @@
 
 import React, { useMemo } from 'react';
 import {
- Calendar,
- TrendingUp,
- RefreshCw,
- Target,
- Clock,
+  Calendar,
+  TrendingUp,
+  Target,
+  Clock,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useApiQuery } from '@/hooks/use-api-query';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
 
 interface SeasonalitySignal {
  ticker: string;
@@ -83,28 +81,19 @@ export function SeasonalitySignalsWidget() {
  const currentMonth = new Date().toLocaleDateString('ar-EG', { month: 'long' });
 
  return (
- <Card className="border-border/60">
- <CardHeader className="pb-3">
- <div className="flex items-center justify-between">
- <CardTitle className="text-sm font-semibold flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg from-whale to-cyan-500 flex items-center justify-center">
- <Calendar className="w-4 h-4 text-foreground" />
- </div>
- إشارات الموسمية (EGX)
- </CardTitle>
- <Button
- variant="ghost"
- size="icon"
- className="h-7 w-7"
- onClick={handleRefresh}
- disabled={refreshing}
+ <WidgetCard
+ title="إشارات الموسمية (EGX)"
+ icon={Calendar}
+ iconColor="text-foreground"
+ iconBg="bg-gradient-to-br from-whale to-cyan-500"
+ loading={loading}
+ skeletonRows={2}
+ skeletonHeight="h-12"
+ onRefresh={handleRefresh}
+ refreshing={refreshing}
+ className="border-border/60"
+ headerClassName="pb-3"
  >
- <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
- </Button>
- </div>
- </CardHeader>
-
- <CardContent className="space-y-3">
  {/* Current Month */}
  <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/50">
  <div className="flex items-center gap-2">
@@ -113,12 +102,7 @@ export function SeasonalitySignalsWidget() {
  </div>
  </div>
 
- {loading ? (
- <div className="space-y-2">
- <Skeleton className="h-12 w-full" />
- <Skeleton className="h-12 w-full" />
- </div>
- ) : signals.length === 0 ? (
+ {signals.length === 0 ? (
  <div className="text-center py-4 text-muted-foreground text-xs">
  <Calendar className="w-6 h-6 mx-auto mb-1 opacity-50" />
  لا توجد إشارات لهذا الشهر
@@ -127,20 +111,11 @@ export function SeasonalitySignalsWidget() {
  <>
  {/* Summary */}
  {summary && (
- <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/30">
- <div className="text-center">
- <span className="block text-sm font-bold text-profit">{summary.buy_signals}</span>
- <span className="text-xs text-muted-foreground">شراء</span>
- </div>
- <div className="text-center">
- <span className="block text-sm font-bold text-loss">{summary.sell_signals}</span>
- <span className="text-xs text-muted-foreground">بيع</span>
- </div>
- <div className="text-center">
- <span className="block text-sm font-bold">{(summary.avg_win_rate ?? 0).toFixed(0)}%</span>
- <span className="text-xs text-muted-foreground">نجاح</span>
- </div>
- </div>
+ <WidgetStatGrid cols={3}>
+ <WidgetStat label="شراء" value={summary.buy_signals} valueClass="text-profit" />
+ <WidgetStat label="بيع" value={summary.sell_signals} valueClass="text-loss" />
+ <WidgetStat label="نجاح" value={`${(summary.avg_win_rate ?? 0).toFixed(0)}%`} />
+ </WidgetStatGrid>
  )}
 
  {/* Signals */}
@@ -199,7 +174,6 @@ export function SeasonalitySignalsWidget() {
  <p className="text-[8px] text-muted-foreground text-center">
  ⚠️ إشارات تاريخية - الأداء السابق لا يضمن المستقبلي
  </p>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }

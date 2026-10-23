@@ -8,15 +8,12 @@ import {
  TrendingUp,
  TrendingDown,
  Bitcoin,
- RefreshCw,
  Target,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
 
 interface CryptoData {
  id: string;
@@ -110,34 +107,19 @@ export function CryptoSignalsWidget() {
  };
 
  return (
- <Card className="border-border/60">
- <CardHeader className="pb-3">
- <div className="flex items-center justify-between">
- <CardTitle className="text-sm font-semibold flex items-center gap-2">
- <div className="w-8 h-8 rounded-lg from-orange-500 to-yellow-500 flex items-center justify-center">
- <Bitcoin className="w-4 h-4 text-foreground" />
- </div>
- إشارات العملات الرقمية
- </CardTitle>
- <Button
- variant="ghost"
- size="icon"
- className="h-7 w-7"
- onClick={handleRefresh}
- disabled={refreshing}
+ <WidgetCard
+ title="إشارات العملات الرقمية"
+ icon={Bitcoin}
+ iconColor="text-foreground"
+ iconBg="bg-gradient-to-br from-orange-500 to-yellow-500"
+ loading={loading}
+ skeletonRows={2}
+ skeletonHeight="h-16"
+ onRefresh={handleRefresh}
+ refreshing={refreshing}
+ className="border-border/60"
+ headerClassName="pb-3"
  >
- <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
- </Button>
- </div>
- </CardHeader>
-
- <CardContent className="space-y-3">
- {loading ? (
- <div className="space-y-2">
- <Skeleton className="h-16 w-full" />
- <Skeleton className="h-16 w-full" />
- </div>
- ) : (
  <>
  {/* Fear & Greed Index */}
  {fearGreed && (
@@ -204,19 +186,17 @@ export function CryptoSignalsWidget() {
  <Target className="w-3 h-3 text-primary" />
  <span className="text-xs font-medium">أداء المؤشرات المُختبرة</span>
  </div>
- <div className="grid grid-cols-3 gap-1 text-xs text-center">
- <div><span className="block font-bold text-profit">63.6%</span><span className="text-muted-foreground">VWAP</span></div>
- <div><span className="block font-bold text-profit">55.2%</span><span className="text-muted-foreground">Stoch</span></div>
- <div><span className="block font-bold text-warning">53%</span><span className="text-muted-foreground">EMA</span></div>
- </div>
+ <WidgetStatGrid cols={3} className="bg-transparent p-0">
+ <WidgetStat label="VWAP" value="63.6%" valueClass="text-profit" />
+ <WidgetStat label="Stoch" value="55.2%" valueClass="text-profit" />
+ <WidgetStat label="EMA" value="53%" valueClass="text-warning" />
+ </WidgetStatGrid>
  </div>
 
  <p className="text-xs text-muted-foreground text-center">
  ⚠️ تحليل وليس نصيحة مالية
  </p>
  </>
- )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
