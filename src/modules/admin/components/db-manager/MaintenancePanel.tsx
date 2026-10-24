@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import type { MaintenancePanelProps } from './types';
 
 export function MaintenancePanel(props: MaintenancePanelProps) {
@@ -70,49 +71,49 @@ export function MaintenancePanel(props: MaintenancePanelProps) {
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            عمليات الصيانة — <span className="font-mono text-profit">{props.dbName}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {operations.map((op) => (
-            <div key={op.key} className="border rounded-lg p-3 flex flex-col gap-2">
-              <div className="flex items-start gap-2">
-                <op.icon
-                  className={cn(
-                    'w-5 h-5 flex-shrink-0 mt-0.5',
-                    op.destructive ? 'text-warning' : 'text-profit'
-                  )}
-                />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{op.label}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{op.description}</p>
-                </div>
-              </div>
-              <Button
-                onClick={op.onClick}
-                disabled={!!props.loading}
-                size="sm"
-                variant={op.destructive ? 'outline' : 'default'}
+      {/* Database Recovery Tools — replaced with WidgetCard */}
+      <WidgetCard
+        title="عمليات الصيانة"
+        icon={Activity}
+        hideRefresh
+        headerClassName="pb-2"
+        contentClassName="grid grid-cols-1 md:grid-cols-2 gap-3"
+        badge={<span className="font-mono text-profit">{props.dbName}</span>}
+      >
+        {operations.map((op) => (
+          <div key={op.key} className="border rounded-lg p-3 flex flex-col gap-2">
+            <div className="flex items-start gap-2">
+              <op.icon
                 className={cn(
-                  op.destructive &&
-                    'text-warning border-warning hover:bg-warning hover:text-warning'
+                  'w-5 h-5 flex-shrink-0 mt-0.5',
+                  op.destructive ? 'text-warning' : 'text-profit'
                 )}
-              >
-                {props.loading === op.key ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <op.icon className="w-3.5 h-3.5" />
-                )}
-                {op.label}
-              </Button>
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">{op.label}</div>
+                <p className="text-xs text-muted-foreground mt-1">{op.description}</p>
+              </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+            <Button
+              onClick={op.onClick}
+              disabled={!!props.loading}
+              size="sm"
+              variant={op.destructive ? 'outline' : 'default'}
+              className={cn(
+                op.destructive &&
+                  'text-warning border-warning hover:bg-warning hover:text-warning'
+              )}
+            >
+              {props.loading === op.key ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <op.icon className="w-3.5 h-3.5" />
+              )}
+              {op.label}
+            </Button>
+          </div>
+        ))}
+      </WidgetCard>
 
       {props.result && (
         <Card>

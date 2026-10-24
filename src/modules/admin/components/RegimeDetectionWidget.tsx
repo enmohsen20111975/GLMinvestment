@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Minus, Activity, RefreshCw, Target, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 interface RegimeData {
  ticker: string;
@@ -77,20 +78,14 @@ export function RegimeDetectionWidget() {
 
  return (
  <div className="space-y-4" dir="rtl">
- <Card>
- <CardHeader className="pb-2">
- <div className="flex items-center justify-between">
- <CardTitle className="flex items-center gap-2">
- <Activity className="h-5 w-5" />
- حالة السوق
- </CardTitle>
- <Button variant="ghost" size="sm" onClick={fetchRegime} disabled={loading}>
- <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
- </Button>
- </div>
- <CardDescription>تحليل EGX30 - كشف حالة السوق</CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="حالة السوق"
+ icon={Activity}
+ onRefresh={fetchRegime}
+ refreshing={loading}
+ hideRefresh={false}
+ headerClassName="pb-2"
+ >
  <div className={cn("rounded-xl p-6 text-center mb-4", config.bg)}>
  <Icon className={cn("h-12 w-12 mx-auto mb-2", config.color)} />
  <h3 className="text-2xl font-bold">{regime?.regime_ar || config.label}</h3>
@@ -119,8 +114,7 @@ export function RegimeDetectionWidget() {
  </div>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  );
 }

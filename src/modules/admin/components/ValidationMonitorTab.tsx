@@ -15,19 +15,17 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
- Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import {
- ShieldCheck, RefreshCw, AlertTriangle, XCircle, CheckCircle2,
+ ShieldCheck, AlertTriangle, XCircle, CheckCircle2,
  Activity, Bug, Layers, FileWarning,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 type Status = 'VALID' | 'INVALID' | 'SUSPECT' | 'MISSING';
 
@@ -121,25 +119,15 @@ export function ValidationMonitorTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit/20">
- <CardHeader className="pb-3">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <CardTitle className="flex items-center gap-2 text-lg">
- <ShieldCheck className="w-5 h-5 text-profit" />
- مراقبة التحقق — Rule 65
- </CardTitle>
- <CardDescription className="mt-1 text-xs">
- مرآة لـ vps-service/data/validation.py — عدد الحقول الباطلة لكل سهم + الحقول الأكثر فشلاً + آخر الحقول المخفّرة (دعم/مقاومة).
- </CardDescription>
- </div>
- <Button onClick={fetchValidation} disabled={loading} variant="ghost" size="sm" className="gap-2">
- <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
- تحديث
- </Button>
- </div>
- </CardHeader>
- </Card>
+ <WidgetCard
+ title="مراقبة التحقق — Rule 65"
+ icon={ShieldCheck}
+ iconColor="text-profit"
+ onRefresh={fetchValidation}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ />
 
  {/* Stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -212,17 +200,13 @@ export function ValidationMonitorTab() {
 
  {/* Fields by INVALID count */}
  {data?.success && data.fields_by_invalid_count && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Bug className="w-4 h-4 text-loss" />
- الحقول الأكثر إخفاقاً (مرتبة حسب INVALID)
- </CardTitle>
- <CardDescription className="text-xs">
- لكل حقل: عدد الباطل (INVALID) + المشبوه (SUSPECT) + المفقود (MISSING) + السليم (VALID).
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="الحقول الأكثر إخفاقاً (مرتبة حسب INVALID)"
+ icon={Bug}
+ iconColor="text-loss"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="space-y-3">
  {data.fields_by_invalid_count.map((f) => {
  const summary = data.summary?.[f.field];
@@ -272,20 +256,18 @@ export function ValidationMonitorTab() {
  );
  })}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Top invalid tickers */}
  {data?.success && data.top_invalid_tickers && data.top_invalid_tickers.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <XCircle className="w-4 h-4 text-loss" />
- أكثر الأسهم إخفاقاً ({data.top_invalid_tickers.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`أكثر الأسهم إخفاقاً (${data.top_invalid_tickers.length})`}
+ icon={XCircle}
+ iconColor="text-loss"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-80 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <table className="w-full text-xs">
  <thead className="sticky top-0 bg-background z-10">
@@ -347,23 +329,18 @@ export function ValidationMonitorTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Recently nullified findings */}
  {data?.success && data.recent_nullified && data.recent_nullified.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <FileWarning className="w-4 h-4 text-warning" />
- آخر الحقول المخفّرة (دعم/مقاومة باطل)
- </CardTitle>
- <CardDescription className="text-xs">
- هذه الحقول ستُمنع من التأثير على الـ score والتوقّع (Rule 24: INVALID &gt; fake).
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="آخر الحقول المخفّرة (دعم/مقاومة باطل)"
+ icon={FileWarning}
+ iconColor="text-warning"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-80 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <div className="space-y-2">
  {data.recent_nullified.slice(0, 30).map((n, i) => (
@@ -396,8 +373,7 @@ export function ValidationMonitorTab() {
  ))}
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Empty state */}

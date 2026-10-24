@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import {
   Tooltip,
   TooltipContent,
@@ -166,56 +167,53 @@ export function TablesPanel(props: TablesPanelProps) {
   return (
     <div className="space-y-3">
       {/* Tables list */}
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TableIcon className="w-4 h-4" />
-              جداول {props.dbName}
-            </CardTitle>
-            {props.tables && (
-              <Badge variant="outline">{props.tables.length} جدول</Badge>
-            )}
+      <WidgetCard
+        title={`جداول ${props.dbName}`}
+        icon={TableIcon}
+        hideRefresh
+        headerClassName="pb-2"
+        badge={
+          props.tables ? (
+            <Badge variant="outline">{props.tables.length} جدول</Badge>
+          ) : undefined
+        }
+      >
+        {props.tablesLoading ? (
+          <div className="space-y-2 p-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
           </div>
-        </CardHeader>
-        <CardContent className="p-2">
-          {props.tablesLoading ? (
-            <div className="space-y-2 p-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : props.tablesError ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{props.tablesError}</AlertDescription>
-              <Button variant="outline" size="sm" onClick={props.onRetry} className="mt-2">
-                <RefreshCw className="w-3 h-3" />
-                إعادة المحاولة
-              </Button>
-            </Alert>
-          ) : !props.tables || props.tables.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">
-              لا توجد جداول في هذه القاعدة
-            </div>
-          ) : (
-            <UnifiedTable
-              columns={tablesListColumns}
-              data={props.tables || []}
-              keyField="name"
-              dense
-              columnToggle
-              filterable
-              maxHeight="max-h-72"
-              rowClassName={(t) => cn(
-                'cursor-pointer',
-                props.selectedTable === t.name && 'bg-profit/20',
-              )}
-              onRowClick={(t) => props.onSelectTable(t.name)}
-            />
-          )}
-        </CardContent>
-      </Card>
+        ) : props.tablesError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{props.tablesError}</AlertDescription>
+            <Button variant="outline" size="sm" onClick={props.onRetry} className="mt-2">
+              <RefreshCw className="w-3 h-3" />
+              إعادة المحاولة
+            </Button>
+          </Alert>
+        ) : !props.tables || props.tables.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground text-sm">
+            لا توجد جداول في هذه القاعدة
+          </div>
+        ) : (
+          <UnifiedTable
+            columns={tablesListColumns}
+            data={props.tables || []}
+            keyField="name"
+            dense
+            columnToggle
+            filterable
+            maxHeight="max-h-72"
+            rowClassName={(t) => cn(
+              'cursor-pointer',
+              props.selectedTable === t.name && 'bg-profit/20',
+            )}
+            onRowClick={(t) => props.onSelectTable(t.name)}
+          />
+        )}
+      </WidgetCard>
 
       {/* Selected table rows */}
       {props.selectedTable && (

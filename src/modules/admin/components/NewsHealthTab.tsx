@@ -17,18 +17,16 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
- Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
- Newspaper, RefreshCw, AlertTriangle, CheckCircle2, XCircle,
- Clock, Activity, Bug, Wifi, WifiOff,
+ Newspaper, AlertTriangle, CheckCircle2, XCircle,
+ Clock, Activity, Bug, WifiOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 interface SourceHealth {
  source: string;
@@ -101,25 +99,15 @@ export function NewsHealthTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit/20">
- <CardHeader className="pb-3">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <CardTitle className="flex items-center gap-2 text-lg">
- <Newspaper className="w-5 h-5 text-profit" />
- صحة مصادر الأخبار
- </CardTitle>
- <CardDescription className="mt-1 text-xs">
- لكل مصدر: آخر fetch + عدد المقالات + نسبة النجاح. المصادر المعطّلة تُظهر السبب.
- </CardDescription>
- </div>
- <Button onClick={fetchHealth} disabled={loading} variant="ghost" size="sm" className="gap-2">
- <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
- تحديث
- </Button>
- </div>
- </CardHeader>
- </Card>
+ <WidgetCard
+ title="صحة مصادر الأخبار"
+ icon={Newspaper}
+ iconColor="text-profit"
+ onRefresh={fetchHealth}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ />
 
  {/* Stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -192,14 +180,13 @@ export function NewsHealthTab() {
 
  {/* Sources table */}
  {data?.success && sources.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Newspaper className="w-4 h-4 text-profit" />
- المصادر ({sources.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`المصادر (${sources.length})`}
+ icon={Newspaper}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-[40rem] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <table className="w-full text-xs">
  <thead className="sticky top-0 bg-background z-10">
@@ -269,8 +256,7 @@ export function NewsHealthTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Empty state */}

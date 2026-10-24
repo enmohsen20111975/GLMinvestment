@@ -15,7 +15,7 @@
 
 import React, { useState, lazy, Suspense } from 'react';
 import { Megaphone, Film, GraduationCap, Sparkles } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { LazyTabLoader } from '@/components/shared/LazyTabLoader';
@@ -39,24 +39,15 @@ export function MarketingStudio() {
  return (
  <div className="space-y-4">
  {/* Header */}
- <Card className="border-whale/20 via-cyan-500/5 to-violet-500/5">
- <CardHeader>
- <div className="flex items-start gap-3">
- <div className="w-11 h-11 rounded-xl from-whale via-cyan-500 to-violet-500 flex items-center justify-center shrink-0">
- <Sparkles className="w-6 h-6 text-foreground" />
- </div>
- <div className="flex-1 min-w-0">
- <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
- استوديو التسويق والنشر
- <Badge variant="outline" className="text-xs">كل الأدوات في مكان واحد</Badge>
- </CardTitle>
- <CardDescription className="mt-1">
- محرر فيديو + كروت تعليمية + صفقات ناجحة + حملات تسويقية + تقويم محتوى — كله في صفحة واحدة.
- </CardDescription>
- </div>
- </div>
- </CardHeader>
- </Card>
+ <WidgetCard
+ title="استوديو التسويق والنشر"
+ icon={Sparkles}
+ className="border-whale/20 via-cyan-500/5 to-violet-500/5"
+ headerClassName="pb-0"
+ contentClassName="hidden"
+ badge={<Badge variant="outline" className="text-xs">كل الأدوات في مكان واحد</Badge>}
+ hideRefresh
+ />
 
  {/* Tabs selector — plastic cards */}
  <div className="grid grid-cols-3 gap-2.5">

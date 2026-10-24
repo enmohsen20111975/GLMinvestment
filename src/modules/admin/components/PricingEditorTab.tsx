@@ -26,19 +26,17 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
- Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
- DollarSign, RefreshCw, Lock, Unlock, CheckCircle2, XCircle,
- Tag, ShieldCheck, AlertTriangle, Info,
+ DollarSign, Lock, Unlock, CheckCircle2,
+ Tag, AlertTriangle, Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { plans, getAllPlans, type PlanData } from '@/lib/plans';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 /* ------------------------------------------------------------------ */
 /* The 7 paywall gates — mirrored from the codebase */
@@ -183,25 +181,15 @@ export function PricingEditorTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit/20">
- <CardHeader className="pb-3">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <CardTitle className="flex items-center gap-2 text-lg">
- <DollarSign className="w-5 h-5 text-profit" />
- التسعير + بوابات الاشتراك
- </CardTitle>
- <CardDescription className="mt-1 text-xs">
- الباقات الحالية (من src/lib/plans.ts) + حالة بوابات الـ paywall السبع.
- </CardDescription>
- </div>
- <Button onClick={fetchPlans} disabled={loading} variant="ghost" size="sm" className="gap-2">
- <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
- تحديث
- </Button>
- </div>
- </CardHeader>
- </Card>
+ <WidgetCard
+ title="التسعير + بوابات الاشتراك"
+ icon={DollarSign}
+ iconColor="text-profit"
+ onRefresh={fetchPlans}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ />
 
  {/* Stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -242,18 +230,13 @@ export function PricingEditorTab() {
 
  {/* Pricing plans */}
  {!loading && plansList.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Tag className="w-4 h-4 text-profit" />
- الباقات الحالية
- </CardTitle>
- <CardDescription className="text-xs">
- التسعير الحالي من <code dir="ltr" className="text-xs">src/lib/plans.ts</code>.
- لتعديل الأسعار: عدّل الملف ثم أعد deployment (Rule 20 — Python=Brain، لكن الأسعار تكتب في TS).
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="الباقات الحالية"
+ icon={Tag}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
  {plansList.map((plan) => (
  <div
@@ -307,22 +290,17 @@ export function PricingEditorTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Paywall gates */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Lock className="w-4 h-4 text-warning" />
- بوابات الـ Paywall السبع
- </CardTitle>
- <CardDescription className="text-xs">
- البوابات السبع مفعّلة حالياً كلها (hardcoded في API routes). لإيقاف بوابة: علّق الكود في الموقع المحدد + أعد deployment.
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="بوابات الـ Paywall السبع"
+ icon={Lock}
+ iconColor="text-warning"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="space-y-2">
  {PAYWALL_GATES.map((gate) => (
  <div
@@ -372,8 +350,7 @@ export function PricingEditorTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Info / constraints */}
  <Card className="border-sky-200 bg-sky-50 dark:bg-sky-950/20 dark:border-sky-900/40">

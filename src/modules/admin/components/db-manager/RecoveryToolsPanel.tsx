@@ -20,10 +20,10 @@ import {
   Info,
 } from 'lucide-react';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import type { RecoveryToolsPanelProps } from './types';
 
 export function RecoveryToolsPanel(props: RecoveryToolsPanelProps) {
@@ -42,17 +42,14 @@ export function RecoveryToolsPanel(props: RecoveryToolsPanelProps) {
   return (
     <>
       {/* Database Recovery Tools */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-profit" />
-            استعادة قواعد البيانات التالفة
-          </CardTitle>
-          <CardDescription className="text-xs">
-            استعادة تلقائية من النسخ الاحتياطية أو إصلاح via WAL Checkpoint + VACUUM.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <WidgetCard
+        title="استعادة قواعد البيانات التالفة"
+        icon={ShieldCheck}
+        iconColor="text-profit"
+        hideRefresh
+        headerClassName="pb-2"
+      >
+        <div className="space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             {selectedDb && selectedOverview?.integrity === 'corrupt' && (
               <Button
@@ -113,21 +110,17 @@ export function RecoveryToolsPanel(props: RecoveryToolsPanelProps) {
               </AlertDescription>
             </Alert>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </WidgetCard>
 
       {/* Advanced Data Tools */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <DatabaseIcon className="w-4 h-4 text-primary" />
-            أدوات تنظيف وإصلاح البيانات المتقدمة (Advanced Data Tools)
-          </CardTitle>
-          <CardDescription className="text-xs">
-            عمليات صيانة وحفظ سلامة متقدمة وتحديث البيانات التاريخية (تشغيل سكربتات VPS مباشرة من المتصفح).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <WidgetCard
+        title="أدوات تنظيف وإصلاح البيانات المتقدمة (Advanced Data Tools)"
+        icon={DatabaseIcon}
+        hideRefresh
+        headerClassName="pb-2"
+      >
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Repair data_engine.db */}
             <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-slate-50/50">
@@ -242,8 +235,8 @@ export function RecoveryToolsPanel(props: RecoveryToolsPanelProps) {
               </pre>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </WidgetCard>
     </>
   );
 }
