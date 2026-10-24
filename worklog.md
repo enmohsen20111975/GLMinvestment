@@ -8084,3 +8084,18 @@ Stage Summary:
 - F-Phase3-Split-Admin+Predictions complete. Both mega files are now thin re-export shims (28 LOC + 30 LOC) delegating to per-feature folder containers (458 LOC + 152 LOC, both < 500 LOC).
 - Backwards-compatible: all existing import sites (barrels `src/modules/admin/index.ts` + `src/modules/predictions/index.ts`, `SystemProblemsTab.tsx` type import, `src/app/page.tsx` + `UnifiedPredictionsTab.tsx` dynamic imports with `ssr: false`) keep working unchanged.
 - HTTP 200 confirmed on `/`, `/?view=admin`, `/?view=predictions` before commit (Rule 75). Commit + push next.
+
+---
+Task ID: F-Phase3-Split-Reports+Edu
+Agent: Alpha (frontend agent)
+
+Task: Split TWO mega files into per-feature sub-component folders as part of Phase 3 strangler-fig refactor:
+- `src/modules/reports/components/ExecutiveReportView.tsx` (2,087 LOC) → folder `src/modules/reports/components/executive-report/`
+- `src/modules/education/components/AcademyEncyclopedia.tsx` (2,054 LOC) → folder `src/modules/education/components/academy-encyclopedia/`
+
+Work Log:
+- Read both files in full (2,087 + 2,054 LOC) to map every type / interface / const / helper / sub-component.
+- Audited existing import sites:
+  - ExecutiveReportView: imported via `@/modules/reports/components/ExecutiveReportView` (MarketAnalysisView + UnifiedPredictionsTab) + via `./components/ExecutiveReportView` (reports barrel). Original file path MUST stay as a re-export shim.
+  - AcademyEncyclopedia: imported via `../AcademyEncyclopedia` (AcademyView). Original file path MUST stay as a re-export shim.
+- Inspected prior Phase 3 split (prediction-dashboard/) for the convention to mirror: types.ts + constants.ts + helpers.ts + per-component files + container < 500 LOC + parent shim.
