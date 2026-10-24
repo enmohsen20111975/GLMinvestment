@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-10-24T10:52:02.732425",
+  "benchmark": "EGX30ETF",
+  "total_periods": 7,
+  "regimes": [
+    {
+      "type": "BEAR",
+      "start": "2025-02",
+      "end": "2025-03",
+      "duration_months": 2,
+      "total_return": -4.9,
+      "avg_monthly_return": -2.45,
+      "max_drawdown": 0
+    },
+    {
+      "type": "SIDEWAYS",
+      "start": "2025-04",
+      "end": "2025-04",
+      "duration_months": 1,
+      "total_return": -0.8,
+      "avg_monthly_return": -0.76,
+      "max_drawdown": 0
+    },
+    {
+      "type": "BULL",
+      "start": "2025-05",
+      "end": "2025-05",
+      "duration_months": 1,
+      "total_return": 26.7,
+      "avg_monthly_return": 26.7,
+      "max_drawdown": 0
+    },
+    {
+      "type": "SIDEWAYS",
+      "start": "2025-06",
+      "end": "2025-08",
+      "duration_months": 3,
+      "total_return": -8.3,
+      "avg_monthly_return": -2.76,
+      "max_drawdown": 4.9
+    },
+    {
+      "type": "BULL",
+      "start": "2025-09",
+      "end": "2025-10",
+      "duration_months": 2,
+      "total_return": -12.2,
+      "avg_monthly_return": -6.09,
+      "max_drawdown": 10.1
+    },
+    {
+      "type": "SIDEWAYS",
+      "start": "2025-11",
+      "end": "2026-01",
+      "duration_months": 3,
+      "total_return": -23.3,
+      "avg_monthly_return": -7.76,
+      "max_drawdown": 32.6
+    },
+    {
+      "type": "BEAR",
+      "start": "2026-02",
+      "end": "2026-06",
+      "duration_months": 5,
+      "total_return": 2.3,
+      "avg_monthly_return": 0.46,
+      "max_drawdown": 7.1
+    }
+  ],
+  "summary": {
+    "bull_count": 2,
+    "bear_count": 2,
+    "sideways_count": 3
+  }
+}
