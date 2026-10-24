@@ -8331,107 +8331,140 @@ Stage Summary:
 - Resuming Phase 0/1 orchestrator design work using live DBs on sandbox (price_history.db, stocks.db, etc.).
 
 ---
-Task ID: F-Phase3-Adopt-Batch6
-Agent: Alpha (frontend agent)
-Task: Replace manual Card/CardHeader/CardTitle/CardContent with WidgetCard in ALL remaining modules that still use CardHeader — education, predictions, radar, reports, sharia, crypto, subscription, simulation, screener, news, src/components/, and app pages. Only replace SIMPLE patterns; leave complex/nested/conditional Cards alone. HTTP 200 required before push.
+Task ID: P0-Inv-C
+Agent: Explore
+Task: Inventory features 8-10 (fundamentals, news_impact, exit_logic) — callable signatures, inputs, returns, deps, standalone-testability, gotchas.
 
 Work Log:
-- Read /home/z/my-project/worklog.md (8,165 lines) to recap prior Phase 3 context — Batch4 (admin) and Batch5 (market-analysis + stock-analysis + portfolio) already adopted WidgetCard in ~31 files. This task closes out the remaining modules.
-- Surveyed all 132 files with `CardHeader` via Grep. Filtered to the task's target modules (education, predictions, radar, reports, sharia, crypto, subscription, simulation, screener, news, src/components/, src/app/). Excluded admin module (already done in Batch4), dashboard + stock-analysis + portfolio + market-analysis (already done in Batch5), index-detail (out-of-scope), vps-service (do-not-touch).
-- Reused the existing `/tmp/adopt_widgetcard.py` AST-style transform script from Batch5 — 3 regex variants:
-  - Pattern A (icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."><Icon className="w-X h-X text-COLOR" /> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
-  - Pattern B (no icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
-  - Pattern C (no icon, single-line CardTitle): `<Card><CardHeader><CardTitle className="...">Title text</CardTitle></CardHeader><CardContent>...</CardContent></Card>`
-  Depth-tracking parser (`find_matching_close` walks CardContent opens/closes; rejects matches where the close indent doesn't match the open indent — catches nested Cards).
-- Dry-ran the script on all 60+ candidate files in the target modules to identify which ones had simple patterns to convert. Result: 20 files with simple patterns matched (53 total replacements), 40+ files correctly skipped (complex Card patterns: nested CardHeader with flex-wrapped CardTitle+Badge, conditional Card with custom skeleton header, Card with `dir="rtl"` attribute, Card with className={cn(...)} expression, Card without CardHeader, etc.).
-- Applied the script to the 20 candidate files. Total: 53 WidgetCard instances created.
-- Discovered a regex quirk in the script: when a CardTitle's title text contained a JSX expression like `{title}` or `{t('radar.weekly.X.title')}` (with or without surrounding `<span>` wrapper), the script's `title_text` regex captured it as a literal string and produced `title="{title}"` — which renders the literal text `{title}` instead of the variable's value. 9 buggy `title=` attributes across 6 files:
-  - `src/components/backtesting/EGXBacktestDashboard.tsx` — 2 (title="{title}", title="{comparison.title}")
-  - `src/modules/radar/components/WeeklyReportTab.tsx` — 4 (title="<span>{t('radar.weekly.X.title')}</span>")
-  - `src/components/memory/ExpertMemoryPanel.tsx` — 2 (title="ذاكرتك مع {ticker}", title="حالات مشابهة ({insight.similar_cases.length})")
-  - `src/modules/crypto/components/CryptoPortfolioView.tsx` — 1 (title="العملات في المحفظة ({positions.length})")
-  - `src/modules/crypto/components/CryptoPredictionTrackingView.tsx` — 1 (title="التوقعات ({filtered.length})")
-- Also discovered the same bug existed in Batch5's committed code (commit 84b6245). 4 pre-existing buggy `title=` attributes:
-  - `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 3 (stocks, banks, gold counts)
-  - `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 1 (predictions count)
-- Manually fixed all 9 Batch6 + 4 Batch5 = 13 buggy title= attributes:
-  - `{var}` → `title={var}` (JSX expression)
-  - `<span>{t('...')}</span>` → `title={t('...')}`
-  - `literal text ({expr})` → `title={` \`literal text (${expr})\` `}` (template literal)
-  - `ذاكرتك مع {ticker}` → `title={`ذاكرتك مع ${ticker}`}`
-- Cleaned up the extra duplicate `iconColor="..."` lines that my manual edits had introduced in 2 WeeklyReportTab WidgetCards (Stock of the Week + Last week + Sectors).
-
-Files adopted (20 files, 53 WidgetCard instances):
-1. `src/modules/education/components/PaperTradingWorkstation.tsx` — 2 replacements (Order Execution Panel, Trade History + Performance).
-2. `src/modules/predictions/components/DualTrackPredictionsView.tsx` — 2 replacements (Dynamic Thresholds, Top Tickers).
-3. `src/modules/radar/components/WeeklyReportTab.tsx` — 4 replacements (Stock of the Week, Top 5 stocks, Last week performance, Sector heatmap — all 4 were title bugs, fixed to use `title={t('radar.weekly.X.title')}`).
-4. `src/modules/reports/components/StockAnalysisReport.tsx` — 6 replacements (Score Cards, Technical, Fundamental, Risk, Recommendation, Price Levels — entire professional Bloomberg-style report).
-5. `src/modules/reports/components/ReportsView.tsx` — 3 replacements.
-6. `src/modules/crypto/components/CryptoPredictionTrackingView.tsx` — 1 replacement (predictions list — title was a `({filtered.length})` bug, fixed to template literal).
-7. `src/modules/crypto/components/CryptoPortfolioView.tsx` — 2 replacements (Holdings summary, Positions list — positions title was a `({positions.length})` bug, fixed).
-8. `src/modules/simulation/components/simulation-view/tabs.tsx` — 3 replacements (Portfolio performance, Holdings, Watchlist search).
-9. `src/components/publishing/UserPublishingView.tsx` — 3 replacements.
-10. `src/components/v82/V82DecisionPanel.tsx` — 2 replacements.
-11. `src/components/memory/TradingMemoryView.tsx` — 4 replacements.
-12. `src/components/memory/ExpertMemoryPanel.tsx` — 3 replacements (memory summary, similar cases — both title bugs fixed).
-13. `src/components/seasonality/SeasonalityDashboard.tsx` — 1 replacement.
-14. `src/components/ai/AIAnalysisWidget.tsx` — 2 replacements (loading state, error state).
-15. `src/components/journal/TradingJournalView.tsx` — 5 replacements (Best/Worst stocks, Avg P/L, Best/Worst trade, Performance analysis).
-16. `src/components/backtesting/EGXBacktestDashboard.tsx` — 2 replacements (Walk-forward comparison, Comparison card — both title bugs fixed to `title={title}` / `title={comparison.title}`).
-17. `src/app/admin/educational-cards/page.tsx` — 1 replacement.
-18. `src/app/admin/reports/page.tsx` — 1 replacement.
-19. `src/app/backtest/page.tsx` — 2 replacements.
-20. `src/app/rescue/page.tsx` — 4 replacements (Trade Autopsy, Asset Health, Action Plan, 1 more).
-
-Files audited but correctly skipped (40+ files) — too complex (CardTitle with mixed JSX expression + Badge, Card with conditional render, Card with `className={cn(...)}`, CardHeader wrapping flex div with CardTitle + Badge, Card without CardHeader, CardTitle with `<span>{...}</span>` but no icon match, etc.). Examples:
-- education (8): EntryTimingSimulator, PortfolioSimulator, CandlestickSimulator, academy/{ScenarioDecisionTree, ActionPlaybooks, LiveMarketScanner, BiasDetectorQuiz, PositionSizeCalculator}.
-- predictions (5): PredictionTrackingView, prediction-dashboard/{ProofTableCard, FocusStocksBanner, HeaderBar, CumulativeProfitChart}.
-- radar (3): AccuracyDashboard, PersonalizedRadarTab, MultiMarketRadarTab.
-- reports (1): DailyMarketReport.
-- sharia (2): ShariaView, ShariaStockCard.
-- subscription (1): PricingView.
-- screener (1): CollapsibleSection.
-- news (1): NewsFeedView.
-- components (~15): settings/SettingsView, intelligence/WatchlistIntelligenceSection, auto-analysis-widget, subscription/SubscriptionView, deal-advisor/DealAdvisorPanel, zakat/ZakatView, watchlist/ProfessionalWatchlistView, alerts/SmartAlertsPanel, shared/{StockFeelCard, ExpertIntelligencePanel, WidgetError}, eid-predictions-widget, smart-assistant/SmartConfluenceView, tithes/TithesView, auth/AuthView, advanced-analysis/specialist/primitives.
-- app (3): admin/honest-predictions, not-found, error, loading.
-
-Bug-fix files (Batch5 cleanup — 2 files, 4 fixes):
-21. `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 3 title bug fixes (Stocks/Banks/Gold counts).
-22. `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 1 title bug fix (predictions count).
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 766ms).
-- `sleep 18 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~13.1s + render 475ms; subsequent cached at 50-70ms).
-- All target view routes:
-  - `/?view=education` → `HTTP 200` ✓
-  - `/?view=radar` → `HTTP 200` ✓
-  - `/?view=reports` → `HTTP 200` ✓
-  - `/?view=sharia` → `HTTP 200` ✓
-  - `/?view=crypto` → `HTTP 200` ✓
-  - `/?view=subscription` → `HTTP 200` ✓
-  - `/?view=simulation` → `HTTP 200` ✓
-  - `/?view=screener` → `HTTP 200` ✓
-  - `/?view=news` → `HTTP 200` ✓
-  - `/?view=predictions` → `HTTP 200` ✓
-  - `/?view=backtest` → `HTTP 200` ✓
-  - `/?view=rescue` → `HTTP 200` ✓
-- App pages: `/admin/educational-cards` → `HTTP 200` ✓, `/admin/reports` → `HTTP 200` ✓, `/backtest` → `HTTP 200` ✓, `/rescue` → `HTTP 200` ✓.
-- `tsc --noEmit` → only 1 pre-existing error in `trading-view-chart/indicators.ts` (TS1005 ')' expected — truncated file from F-Phase3-Split-StocksView, unrelated to this refactor). ZERO new TS errors introduced by this WidgetCard adoption or the bug-fix edits.
-- pm2 logs: clean compile of `/` + all 12 view routes + 4 app pages. No JSX/parse errors. Only pre-existing config warnings (outputFileTracingRoot deprecated keys, eslint config deprecated, NEXTAUTH_URL warning).
-
-LOC summary:
-- 22 files modified: +542 insertions, −588 deletions = **−46 LOC net** (WidgetCard consolidation saves the boilerplate `<Card><CardHeader><CardTitle className="..."><Icon className="..." /> title </CardTitle></CardHeader><CardContent>` opening + `</CardContent></Card>` closing per instance — avg ~3 LOC saved per replacement × 53 replacements ≈ 159 LOC raw savings, offset by the multi-line WidgetCard prop block).
-- 53 total `<WidgetCard>` instances now in production across the 20 newly-adopted files (avg 2.65 per file).
-- 13 buggy `title=` literal-`{expr}` attributes fixed (9 from this batch + 4 from Batch5).
-- 40+ files audited and intentionally left untouched (complex Card patterns — Rule 75 "don't break anything").
+- Read /home/z/my-project/worklog.md (P0-Inv-A line 8140 + P0-Inv-B line 8217 + DB-RECOVERY tail) — format reference established; signatures must be exact, return shapes documented, verdict explicit per feature.
+- Read fully: vps-service/analyzers/fundamental_engine.py (372 lines, full), vps-service/analyzers/fundamental_data_provider.py (813 lines, full — DB layer for the engine), vps-service/analyzers/fundamental.py (178 lines, legacy dict-in analyzer), vps-service/analyzers/fundamental_scorer.py (569 lines — stocks.db-only path, Piotroski/Altman/Magic-Formula), vps-service/analyzers/fundamental_enhanced.py + fundamental_relative.py (sector-benchmark paths — confirmed via Grep class/def listings).
+- Read fully: vps-service/analyzers/news_impact_scorer.py (619 lines, full — 14 EVENT_TYPES, 5-level classifier, score_news_articles), vps-service/analyzers/news_stop_filter.py (365 lines, full — news.db.market_news + circuit_breaker), vps-service/analyzers/egx_disclosure_engine.py (935 lines — DISCLOSURE_TYPES, classify_disclosure, get_latest_disclosure_impact, get_disclosure_impact_for_ticker, fetch_egx_disclosures — confirmed via Grep class/def listings + targeted reads of 1-100, 280-390, 390-590, 695-815).
+- Read fully: vps-service/portfolio/stop_manager.py (609 lines, full — StopLossManager with 7 stop types + get_optimal_stop + calculate_partial_exit), vps-service/portfolio/smart_exit_engine.py (1294 lines — class + decide() at 568 + decide_exit_action() at 932 + compute_continuation_metrics at 732), vps-service/portfolio/multi_target_exit.py (725 lines — compute_target_levels + decide_t1_holdthrough + simulate_multi_target_exit + attach_to_prediction).
+- Verified via Grep: `StopLossManager` is imported + instantiated by `portfolio/position_manager.py:143` (`self.stop_manager = StopLossManager()`); `SmartExitEngine` is imported + instantiated by `position_manager.py:235` (so V38 already wires both into PositionManager internally — confirms orchestrator must NOT go through PositionManager to keep exit_decision standalone). `engines/backtest_engine.py:1138 _load_fundamentals` is the V38 internal loader — confirmed via Grep (referenced in docstring at fundamental_data_provider.py:540 as the canonical replacement target).
+- Verified via Grep that `tests/unit/test_stop_manager.py` exists — StopLossManager has unit tests → confirms standalone-testability.
 
 Stage Summary:
-- F-Phase3-Adopt-Batch6 complete. WidgetCard adoption applied to 20 files across education (1), predictions (1), radar (1), reports (2), crypto (2), simulation (1), src/components (8), src/app (4). 53 manual Card/CardHeader/CardTitle/CardContent blocks replaced with `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>`.
-- Each adopted file: imports updated (WidgetCard added, unused Card sub-components pruned from `@/components/ui/card` import where applicable).
-- 13 latent `title="{expr}"` literal-string bugs fixed across 6 files (9 from this batch via the script + 4 inherited from Batch5).
-- Combined with Batch4 (admin, 21 files) + Batch5 (market-analysis + stock-analysis + portfolio, 9 files), total WidgetCard adoption across the codebase is now ~50 files with ~140 WidgetCard instances — standardizing all widget-level UI to the unified look (icon in rounded-lg `bg-primary/10` wrapper, optional refresh button on the right, optional skeleton loading).
-- HTTP 200 confirmed on `/` + 12 view routes + 4 app pages before push (Rule 75). Commit + push next.
 
-Commit: 5b384ea
-Message: "refactor(phase3): WidgetCard adoption — remaining modules (education, predictions, radar, reports, etc.)"
-Pushed to: origin/main (7feac6e..5b384ea) — pulled-then-rebased to integrate remote's `docs: DBs now on GitHub Releases` commit before push.
+## Feature 8: fundamentals (fundamental score 0-100)
+- File(s): vps-service/analyzers/fundamental_engine.py (372 lines, THE Gatekeeper) + vps-service/analyzers/fundamental_data_provider.py (813 lines, DB layer + module-level canonical scorer). Legacy: fundamental.py (dict-based, NO DB), fundamental_scorer.py (stocks.db-only, Piotroski/Altman/Magic), fundamental_enhanced.py + fundamental_relative.py (sector-benchmark paths).
+- Main callable (CANONICAL class-form): `FundamentalEngine(db_path: str = None).get_fundamental_score(ticker: str) -> float` (0-100, NO_DATA_SCORE=0.0 on missing data). Richer form: `.get_fundamental_breakdown(ticker: str) -> FundamentalVerdict` (dataclass: ticker, score, is_healthy, has_data, rejection_reason, breakdown, metrics, signal_ar, confidence). Bool gate: `.is_fundamentally_healthy(ticker: str) -> bool` (score >= 40, FAILS-OPEN to True on missing data).
+- Main callable (CANONICAL module-level): `fundamental_data_provider.get_fundamental_score(ticker: str, as_of_date: Optional[str] = None, db_path: str = None) -> Dict[str, Any]` (Stage C — used by backtest_engine._load_fundamentals per docstring line 540). Returns `{ticker, score (0-100 or None), confidence (0-100), available (bool), components (per-field dict {name:{value,score,weight}}), source_symbol, source_market, as_of='2026-08-17'}`.
+- Also: `fundamental_data_provider.get_asset_quality_score(ticker, market='EGX', persona=None, *, coin_id=None, market_data=None, events=None) -> Dict` — unified stock+crypto dispatcher (returns `{ticker, market, quality_score (0-100 or None), verdict (OK/WEAK/POOR for stocks | PASS/REVIEW/FAIL for crypto | NO_DATA), veto (bool), persona, details, source}`).
+- Input: ticker string ONLY (+ optional db_path). NO DataFrame, NO arrays, NO date filtering (as_of_date param is accepted but ignored — DB has no per-date rows, only point-in-time snapshot in tab_* tables). The `as_of='2026-08-17'` is HARDCODED in returned dict (not derived from input date) — adapter MUST NOT claim time-travel.
+- Returns: see above. FundamentalVerdict has `.score` (0-100 float), `.is_healthy` (bool), `.metrics` (dict of raw PE/PB/ROE/ROA/margins/growth/D-E/current_ratio/div_yield/payout/perf_1y — each Optional[float]), `.breakdown` (valuation/profitability/growth/dividend sub-scores), `.confidence` (0-100 based on 13 metrics coverage).
+- Deps: REQUIRES DB. The CANONICAL path reads `db/data_engine.db` (8 tables: tab_valuation, tab_profitability, tab_income_statement, tab_balance_sheet, tab_dividends, tab_performance, tab_technical_analysis — joined via `symbol` column with prefix-LIKE match for EGX alpha tickers stored as 'COMIالبنك'). The LEGACY path (fundamental_scorer.py) reads `db/stocks.db` (stocks table) — different data, different scorer (Piotroski/Altman/Magic-Formula). Adapter MUST use the data_engine.db path (canonical) — the stocks.db path was the broken one (empty columns per docstring at fundamental_engine.py:9-10). Singleton via `get_fundamental_engine()` exists. Uses `core.db_manager.get_connection(path, writable=False)`.
+- Standalone: NO — needs `db/data_engine.db` with populated `tab_*` tables. YES for unit tests via db_path injection (FundamentalEngine(db_path) accepts override) OR via monkey-patching `FundamentalDataProvider.get_fundamental_data`. For orchestrator, adapter MUST inject db_path (or pre-fetched FundamentalData) for testing. NO engine context required (no V38 instance needed).
+- Gotchas: (1) `is_fundamentally_healthy` FAILS-OPEN: returns True on missing data OR on exception ("سيب الفني يحكم") — adapter MUST NOT treat True as "fundamentals are GOOD"; it only means "not bad enough to veto". (2) `get_fundamental_score` returns 0.0 on missing data AND on exception — caller cannot distinguish "no data" from "very bad data" without calling `has_fundamental_data(ticker)` separately. Use `get_fundamental_breakdown(ticker)` instead — it returns `has_data=False` explicitly. (3) `as_of_date` param is accepted but IGNORED in implementation — DB has only point-in-time snapshot, no historical fundamentals. Adapter MUST NOT pass dates expecting time-travel. (4) `tab_income_statement` + `tab_balance_sheet` have documented column-shift bugs (see comments at lines 304-306 + 319-321) — `revenue_growth`, `debt_to_equity`, `current_ratio` are OFTEN None or wrong. Adapter should expect these fields to frequently be missing. (5) Module-level singleton `_engine_instance` (line 332) + `get_fundamental_engine()` — global state; tests that inject db_path MUST reset via `_engine_instance = None` or instantiate `FundamentalEngine(db_path)` directly (bypassing singleton). (6) `get_asset_quality_score` adds persona-aware veto for stocks (fund < 30 + persona != gambler → veto=True) — but the per-ticker `FundamentalEngine.is_fundamentally_healthy` does NOT apply this veto, only the 40-threshold health check. Adapter should pick ONE entry point and stick to it. (7) Hardcoded `as_of='2026-08-17'` in module-level dict — STALE date string, do not trust for time-sensitive logic.
+- VERDICT FOR ADAPTER: NEEDS DB LAYER. Wrap `FundamentalEngine(db_path).get_fundamental_breakdown(ticker)` (richer than the float-only `get_fundamental_score` — exposes `has_data` + `confidence` + sub-scores). Adapter signature:
+  ```python
+  def fundamentals(ticker: str, db_path: str = None) -> Dict:
+      engine = FundamentalEngine(db_path)  # bypass singleton for testability
+      v = engine.get_fundamental_breakdown(ticker)
+      return {
+          'score': v.score,            # 0-100, 0.0 if no data
+          'has_data': v.has_data,      # distinguishes "no data" from "bad data"
+          'is_healthy': v.is_healthy,  # >= 40 threshold (fails-open on missing data)
+          'verdict': 'PASS' if v.is_healthy else 'REJECT',
+          'confidence': v.confidence,  # 0-100 coverage of 13 metrics
+          'breakdown': v.breakdown,    # valuation/profitability/growth/dividend sub-scores
+          'metrics': v.metrics,        # raw PE/PB/ROE/etc
+          'rejection_reason': v.rejection_reason,
+      }
+  ```
+  Adapter MUST inject db_path for tests; default `DATA_ENGINE_DB` env var or `<repo>/db/data_engine.db`. Do NOT call `is_fundamentally_healthy` alone — its fail-open behavior is misleading. Use `get_fundamental_breakdown` and inspect `has_data` explicitly.
+
+## Feature 9: news_impact (news sentiment / disclosure filter)
+- File(s): vps-service/analyzers/news_impact_scorer.py (619 lines — 14 EVENT_TYPES, scoring -25..+20), vps-service/analyzers/news_stop_filter.py (365 lines — DB-backed news-stop + circuit-breaker), vps-service/analyzers/egx_disclosure_engine.py (935 lines — official EGX disclosure classifier, scoring -2..+2).
+- Main callable (CANONICAL — text-based, no DB): `news_impact_scorer.score_news_articles(articles: List[Dict[str, str]], days_window: int = 3) -> Dict[str, Any]` returning `{news_score: int (-25..+20), verdict: 'BOOST'|'REDUCE'|'VETO'|'NEUTRAL', events: List, summary_ar: str, article_count: int, strongest_event: Optional[Dict]}`. Wrapper: `get_news_impact_for_ticker(ticker: str, articles: Optional[List[Dict]] = None, use_live_search: bool = False) -> Dict` (adds `proof_string` + `ticker` to the same shape; live-search uses `ai.news_agent.NewsAgent`).
+- Main callable (DB-backed stop-filter): `news_stop_filter.check_news_stop_filter(ticker: str, db_path: str, days_back: int = 1) -> NewsStopFilterResult` (dataclass: has_news, has_cbe_news, news_count, should_hold, reason, reason_ar, risk_level ('low'/'medium'/'high'), latest_news_date). Reads `news.db.market_news` table — `db_path` param is IGNORED, always reads canonical `_CANONICAL_NEWS_DB` (via `utils.db_paths.DBPaths.NEWS_DB`).
+- Main callable (DB-backed disclosure impact): `egx_disclosure_engine.get_disclosure_impact_for_ticker(ticker: str) -> Dict[str, Any]` returning `{has_disclosure, impact_score (int -2..+2), verdict ('VETO'|'REDUCE'|'NEUTRAL'|'BOOST'|'BOOST_STRONG'), event_type, reason_ar, title, published_at, proof_string}`. Reads `news.db.egx_disclosures` table. Underlying: `get_latest_disclosure_impact(ticker: str, days_back: int = 3) -> Dict` (same shape minus proof_string). Also: `classify_disclosure(title: str, content: str = '', disclosure_date: str = '') -> Optional[Dict]` (pure text classifier — NO DB).
+- Also: `news_impact_scorer.classify_news_impact_level(news_score: int) -> Dict` (5-level classifier: STRONG_POSITIVE/POSITIVE/NEUTRAL/NEGATIVE/STRONG_NEGATIVE) + `get_live_prediction_impact(news_score, ticker, news_summary='') -> Dict` (adds `score_delta` ±15 to V40.2 score).
+- Input: TEXT-based path takes `articles: List[Dict[str, str]]` (each dict: title, content, published_at, source — date-parsing accepts 5 formats). DB-based paths take `ticker: str` only. NO date param on the DB paths (always uses `datetime.now() - timedelta(days=days_back)`).
+- Returns: see above. All shapes are plain Dicts (no dataclasses except NewsStopFilterResult). `news_score` range is -25..+20 (clamped). `impact_score` range is -2..+2 (int). The DB paths return single-dict (latest matching row), not lists.
+- Deps: TWO separate concerns. (A) `news_impact_scorer` is ZERO-DEP pure text classifier — no DB, no I/O. (B) `news_stop_filter` REQUIRES `news.db` with `market_news` table (columns: tickers JSON, content, published_at). (C) `egx_disclosure_engine` REQUIRES `news.db` with `egx_disclosures` table (creates it via `_ensure_db()` if missing) AND optionally does HTTP fetches to `https://www.egx.com.eg/English/Market/Pages/PublicDisclosure.aspx` + EGKSCO fallback + amwalalghad. All DB access via `core.db_manager.get_connection()`.
+- Standalone: YES for `news_impact_scorer.score_news_articles` (pure text scoring, no DB, no I/O). YES for `egx_disclosure_engine.classify_disclosure` (pure text). NO for `news_stop_filter.check_news_stop_filter` (needs news.db). NO for `egx_disclosure_engine.get_disclosure_impact_for_ticker` (needs news.db with egx_disclosures table populated — but `inject_disclosure(ticker, title, event_date, source='MANUAL')` exists for test setup). For orchestrator, adapter should prefer the TEXT-based path (score_news_articles) since articles can be fetched by the orchestrator's data layer OR injected from the news_agent.
+- Gotchas: (1) `news_stop_filter._resolve_news_db` IGNORES the `db_path` argument entirely — always returns `_CANONICAL_NEWS_DB`. Adapter MUST NOT pass a test DB path expecting it to be used; instead monkey-patch `_CANONICAL_NEWS_DB` OR pre-populate the canonical news.db. (2) `check_news_stop_filter` fails-OPEN: ANY exception → returns `risk_level='low', should_hold=False` (does NOT block trading on errors). Adapter should consider fail-closed for production safety. (3) CBE news detection is by `content LIKE '%بنك مركزي%' OR content LIKE '%CBE%'` — fragile string match (no category column). (4) `score_news_articles` sums ALL detected events then clamps to [-25, +20] — a single article can match MULTIPLE event types (e.g., "توزيع أرباح" matches both DIVIDEND_EX_DATE=-12 AND DIVIDEND_ANNOUNCE=+6 → net -6). (5) VETO events (TRADING_HALT=-25, INVESTIGATION_FRAUD=-22) are short-circuited — any VETO event in any article → entire result is VETO. (6) `egx_disclosure_engine.get_disclosure_impact_for_ticker` reads ONLY the latest disclosure in last 3 days — if multiple disclosures exist, returns the one with max `ABS(impact_score)` (line 493). (7) `fetch_egx_disclosures()` does LIVE HTTP fetches — adapter MUST NOT call this synchronously; results should be pre-fetched + stored by a cron job. (8) `news_stop_filter.check_circuit_breaker(egx30_history: List[Dict])` is a SEPARATE pure-compute callable (no DB) — takes `[{date, close, change_percent}, ...]` → `CircuitBreakerResult`. Useful as a separate `circuit_breaker` feature. (9) No global state in news_impact_scorer or egx_disclosure_engine.classify_disclosure. news_stop_filter mutates `_CANONICAL_NEWS_DB` at import time (try/except fallback).
+- VERDICT FOR ADAPTER: WRAP DIRECTLY (text path) + DB LAYER (disclosure path). Two-feature adapter:
+  ```python
+  # Path A: text-based news scoring (orchestrator fetches articles)
+  def news_impact(articles: List[Dict[str, str]]) -> Dict:
+      r = score_news_articles(articles, days_window=3)
+      return {
+          'score': r['news_score'],           # -25..+20
+          'verdict': r['verdict'],            # BOOST/REDUCE/VETO/NEUTRAL
+          'should_veto': r['verdict'] == 'VETO',
+          'should_boost': r['news_score'] >= 8,
+          'events': r['events'],
+          'summary': r['summary_ar'],
+      }
+
+  # Path B: DB-backed disclosure filter (single latest disclosure)
+  def disclosure_impact(ticker: str) -> Dict:
+      r = get_disclosure_impact_for_ticker(ticker)  # needs news.db
+      return {
+          'has_disclosure': r['has_disclosure'],
+          'impact_score': r['impact_score'],    # -2..+2
+          'verdict': r['verdict'],              # VETO/REDUCE/NEUTRAL/BOOST/BOOST_STRONG
+          'should_veto': r['verdict'] == 'VETO',
+          'event_type': r['event_type'],
+          'reason': r['reason_ar'],
+      }
+  ```
+  Path A is fully standalone-testable with synthetic article dicts. Path B needs news.db (inject via pre-populated DB or `inject_disclosure(ticker, title, event_date)` for test setup). Do NOT call `news_stop_filter.check_news_stop_filter` — its fail-open + ignored-db_path semantics are too unreliable for an orchestrator; instead compose Path A (text scoring) on articles fetched by the orchestrator's news layer.
+
+## Feature 10: exit_logic (stop/target/trailing exit decision)
+- File(s): vps-service/portfolio/stop_manager.py (609 lines — StopLossManager, 7 stop types), vps-service/portfolio/smart_exit_engine.py (1294 lines — SmartExitEngine.decide + decide_exit_action + compute_continuation_metrics), vps-service/portfolio/multi_target_exit.py (725 lines — multi-target T1/T2/T3 simulator). All three imported by `portfolio/position_manager.py` (lines 21, 234-235) — V38 uses PositionManager which composes them. The orchestrator should bypass PositionManager and call the standalone exit-decision callables directly.
+- Main callable (CANONICAL live decision — RICHEST): `SmartExitEngine().decide_exit_action(current_price, entry_price, highest_price, atr, recent_highs: List[float], recent_lows: List[float], recent_volumes: List[float], avg_volume_20: float, client_stop: Optional[float] = None, trailing_stop_price: Optional[float] = None, tp1: Optional[float] = None, tp2: Optional[float] = None, sma_20: Optional[float] = None, vwap: Optional[float] = None, rsi_14: Optional[float] = None, sector_momentum: float = 0.0, market_regime: str = "neutral", rvol: float = 1.0, days_held: int = 0) -> Dict[str, Any]` returning `{action: 'EXIT'|'TAKE_PROFIT'|'REDUCE'|'HOLD', reason_code: str, reason_ar: str, new_stop: Optional[float], new_tp: Optional[float], exit_pct: float (0.0-1.0), current_gain_pct: float, confidence: float (0-1), exit_reason: str, continuation: Dict, timestamp: str (ISO UTC)}`.
+- Alternative callable (simpler — single stop-type decision): `StopLossManager().calculate_partial_exit(entry_price: float, current_price: float, stop_loss: float, target_1: Optional[float] = None, highest_high: Optional[float] = None, atr: Optional[float] = None) -> dict` returning `{should_partial_exit: bool, partial_exit_pct: float, partial_exit_price: float, remaining_stop: float, remaining_stop_type: str ('fixed'|'breakeven'|'trailing'), message_ar: str, details: dict}`. Triggers at 1.5R gain (engine_settings: `partial_exit_at_rr=1.5`, sells 50%, raises stop to breakeven+1% or trailing).
+- Alternative callable (full forward-walk simulator — for backtest, NOT live per-trade): `multi_target_exit.simulate_multi_target_exit(signal: str, entry_price: float, stop_loss: float, target_price: float, entry_idx: int, price_history: List[Dict], persona: str = 'balanced', atr_at_entry: float = 0.0, holdthrough_bias: float = 0.0, target_raise_r: float = 0.0) -> MultiTargetExitResult` (dataclass: exited, exit_type, exit_price, exit_date, days_to_exit, realized_return_pct, t1_hit, t2_hit, t3_hit, partial returns, highest_price_reached, stop_adjusted, log). Wrapper: `attach_to_prediction(prediction: Dict, price_history: List[Dict], entry_idx: int, holdthrough_bias: float = 0.0, target_raise_r: float = 0.0) -> Optional[MultiTargetExitResult]` (extracts signal/entry/stop/target/persona/atr_at_entry from prediction dict).
+- Also: `StopLossManager().get_optimal_stop(entry_price, current_price, atr=None, highest_high=None, entry_date=None, target_1=None, portfolio_value=None, position_value=None, persona_stop_pct=8.0) -> dict` (returns `{optimal_stop, all_stops, recommendation, partial_exit}` — ATR-first selection logic per V39.2). And `multi_target_exit.compute_target_levels(signal, entry_price, stop_loss, target_price, target_raise_r=0.0) -> Dict[str, float]` (pure — returns `{t1, t2, t3, r_distance}` using T1_R_MULTIPLE=1.5, T2_R_MULTIPLE=2.5, T3_R_MULTIPLE=4.0).
+- Input: SCALARS + LISTS only — NO DataFrame, NO DB, NO portfolio context. `decide_exit_action` needs 3 scalars (current_price, entry_price, highest_price) + atr + 3 lists (recent_highs, recent_lows, recent_volumes, each 5-20 items newest-first) + avg_volume_20 + optional trailing_stop_price/tp1/tp2/sma_20/vwap/rsi_14/sector_momentum/market_regime/rvol/days_held. `calculate_partial_exit` needs only 3 scalars (entry_price, current_price, stop_loss) + optional target_1/highest_high/atr. `simulate_multi_target_exit` needs the signal string + 3 price scalars + price_history list of daily bars.
+- Returns: see above. `decide_exit_action` returns a flat Dict — the action is one of 4 strings (EXIT/TAKE_PROFIT/REDUCE/HOLD). `calculate_partial_exit` returns a flat Dict — boolean-driven (should_partial_exit). `simulate_multi_target_exit` returns a dataclass. None of them touch DB or portfolio state.
+- Deps: ZERO DB. ZERO portfolio context. All three modules are pure-Python compute over price/volume arrays + scalars. StopLossManager reads defaults from `analyzers.engine_settings.get_setting()` (e.g., `default_stop_pct=5.0`, `volatility_stop_atr_mult=2.5`, `trailing_stop_atr_mult=2.0`, `time_stop_days=45`, `partial_exit_at_rr=1.5`, `partial_exit_pct=50.0`, `breakeven_trigger_pct=7.0`, `max_portfolio_heat_pct=2.0`) — module-level import with safe fallback (`_get_setting = lambda k, default=None: default` if engine_settings unavailable). multi_target_exit reads `PERSONA_TRAIL_ATR` (gambler=1.5/balanced=2.0/conservative=2.5) from engine_settings. smart_exit_engine has hardcoded factor weights (`W_MOMENTUM=0.30, W_VOLUME=0.25, W_SECTOR=0.20, W_REGIME=0.15, W_PATTERN=0.10`) — class attributes, no DB.
+- Standalone: YES — all three are pure compute, NO DB, NO portfolio context, NO global state (StopLossManager instance is stateless; SmartExitEngine instance is stateless; multi_target_exit functions are module-level). `tests/unit/test_stop_manager.py` exists for StopLossManager (confirmed via Grep). For orchestrator, adapter = thin shim over `decide_exit_action` (the richest) OR `calculate_partial_exit` (the simplest).
+- Gotchas: (1) `decide_exit_action` requires 7+ arrays/scalars — orchestrator MUST pre-compute recent_highs/recent_lows/recent_volumes/avg_volume_20 from price_history before calling. Adapter should accept a single `price_history: List[Dict]` + entry/current/days_held and extract these arrays internally. (2) `decide_exit_action` short-circuits on `current_price <= effective_stop` → action='EXIT', exit_pct=1.0 — adapter MUST pass `client_stop` OR `trailing_stop_price` (one of them) for the stop-broken path to fire. If both are None, only the trend/TP paths fire. (3) `calculate_partial_exit` returns `should_partial_exit=False` + `partial_exit_pct=0.0` if `risk <= 0` (entry <= stop) — silent fail-open; adapter should validate inputs. (4) `calculate_partial_exit` requires the `_partial_at_rr` setting (default 1.5) — if engine_settings not loaded, falls back to 1.5 (safe). (5) `simulate_multi_target_exit` skips inverted stops (BUY with stop >= entry, SELL with stop <= entry) — returns `MultiTargetExitResult()` with log entry but `exited=False`. Adapter should pre-validate stop direction. (6) `simulate_multi_target_exit` caps stop_loss at `STOP_LOSS_SANITY_CAP_PCT=30%` from entry — silently mutates the stop if too wide. (7) `multi_target_exit.PERSONA_TRAIL_ATR` is a `_DeprecatedPersonaTrailAtr` dict-subclass that reads from engine_settings on EVERY access (lines 75-100) — performance overhead but no correctness issue. (8) `SmartExitEngine.decide()` (lower-level than decide_exit_action) returns a `SmartExitDecision` dataclass — adapter should NOT use it directly; use `decide_exit_action` which wraps it and returns a flat Dict. (9) All time-related inputs use `days_held: int` (NOT datetime) — simpler than stop_manager's `calculate_time_stop` which takes `entry_date: datetime`. (10) `StopLossManager` uses `_get_setting` from `analyzers.engine_settings` — if the orchestrator runs in a context where engine_settings isn't configured, defaults are used (documented in code: 5%/10%/2.5/2.0/45 days). Tests should monkey-patch engine_settings or instantiate with explicit kwargs.
+- VERDICT FOR ADAPTER: WRAP DIRECTLY — pure compute, NO DB layer needed. Two-tier adapter:
+  ```python
+  # Tier 1: simple per-trade exit decision (3 scalars + optional target/highest/atr)
+  def exit_logic_simple(entry_price: float, current_price: float, stop_loss: float,
+                         target_1: Optional[float] = None,
+                         highest_high: Optional[float] = None,
+                         atr: Optional[float] = None) -> Dict:
+      mgr = StopLossManager()
+      r = mgr.calculate_partial_exit(entry_price, current_price, stop_loss,
+                                      target_1=target_1, highest_high=highest_high, atr=atr)
+      return {
+          'action': 'PARTIAL_EXIT' if r['should_partial_exit'] else 'HOLD',
+          'exit_pct': r['partial_exit_pct'] / 100.0,    # 0.0 or 0.5
+          'new_stop': r['remaining_stop'],
+          'stop_type': r['remaining_stop_type'],
+          'reason': r['message_ar'],
+      }
+
+  # Tier 2: full exit decision with continuation/trajectory analysis (richer)
+  def exit_logic(entry_price: float, current_price: float, highest_price: float,
+                 atr: float, recent_highs: List[float], recent_lows: List[float],
+                 recent_volumes: List[float], avg_volume_20: float,
+                 trailing_stop_price: Optional[float] = None,
+                 tp1: Optional[float] = None, tp2: Optional[float] = None,
+                 days_held: int = 0, market_regime: str = 'neutral',
+                 sma_20: Optional[float] = None) -> Dict:
+      engine = SmartExitEngine()
+      return engine.decide_exit_action(
+          current_price=current_price, entry_price=entry_price,
+          highest_price=highest_price, atr=atr,
+          recent_highs=recent_highs, recent_lows=recent_lows,
+          recent_volumes=recent_volumes, avg_volume_20=avg_volume_20,
+          trailing_stop_price=trailing_stop_price, tp1=tp1, tp2=tp2,
+          sma_20=sma_20, days_held=days_held, market_regime=market_regime,
+      )  # already returns the {action, reason_code, reason_ar, new_stop, new_tp, exit_pct, ...} dict
+  ```
+  Tier 2 is the CANONICAL orchestrator entry point — it returns a flat dict ready for the orchestrator's policy engine. Tier 1 is a fallback for the minimal case (no recent arrays available). NO DB layer. NO portfolio context. V38's PositionManager wraps the same modules — orchestrator's adapter does NOT need PositionManager; calling `SmartExitEngine().decide_exit_action()` directly is the correct standalone path. Confirmed standalone-testable: `tests/unit/test_stop_manager.py` exists; `decide_exit_action` is pure compute.
+
+Adapter-design summary (for orchestrator author, extending P0-Inv-A + P0-Inv-B):
+- LOWEST-FRICTION (pure-fn, no DB, no class): exit_logic (via SmartExitEngine.decide_exit_action OR StopLossManager.calculate_partial_exit). 3-7 scalars + 3 small arrays → flat dict. NO DB layer needed. Adapter = thin shim. Testable with synthetic floats.
+- DB-BOUND (one DB path each): fundamentals (db/data_engine.db — 8 tab_ tables; inject db_path OR pre-fetch FundamentalData), disclosure_impact (db/news.db — egx_disclosures table; inject via inject_disclosure for tests). Both accept db_path override BUT news_stop_filter IGNORES db_path (uses canonical _CANONICAL_NEWS_DB) — adapter should avoid news_stop_filter and prefer the text-based news_impact_scorer OR egx_disclosure_engine (which respects DB_PATH but doesn't take a per-call override).
+- PURE-TEXT (no DB): news_impact (via score_news_articles — orchestrator fetches articles from news_agent). Standalone-testable with synthetic article dicts. Recommended path for orchestrator.
+- Globals to reset between runs: `_engine_instance` singleton in fundamental_engine.py (line 332) — call `_engine_instance = None` or instantiate `FundamentalEngine(db_path)` directly. module-level `_CANONICAL_NEWS_DB` in news_stop_filter.py is set at import time (idempotent). No globals in stop_manager / smart_exit_engine / multi_target_exit.
+- Crash-safe wrapping: fundamental_engine fails-OPEN (returns 0.0 score + has_data=False on exception — adapter MUST inspect has_data explicitly to distinguish from "bad data"). news_stop_filter fails-OPEN (returns risk_level='low' on exception — adapter should consider fail-closed). news_impact_scorer never raises (returns NEUTRAL on empty articles). egx_disclosure_engine returns NEUTRAL on exception. exit_logic callables never raise on bad input (return should_exit=False / action='HOLD' / partial_exit=False) — but validate inputs in adapter to surface bugs.
+- Rule 27 NO-FAKE-DATA compliance: fundamentals returns None/0.0 explicitly when no DB match (FIX-2 at fundamental_data_provider.py:479-483 + 757-785 — placeholder 50.0 replaced with honest None). news_impact_scorer returns NEUTRAL when no events matched. exit_logic returns action='HOLD' with reason_code='TREND_INTACT' when no exit signal — not a fake "exit" signal. Adapter MUST propagate None/False honestly, NOT coerce to neutral defaults.
