@@ -488,7 +488,7 @@ def check_placeholders():
                     continue
                 for i, line in enumerate(lines, 1):
                     # %s in db_manager context
-                    if ('get_connection' in line or 'connection(' in line) and '%s' in line:
+                    if ('get_connection' in line or 'connection(' in line) and '%s' in line and 'pre_deploy_audit' not in fpath:
                         rel = os.path.relpath(fpath, PROJECT_ROOT)
                         issue('placeholder', rel, i, f"Placeholder %s in DB call: {line.strip()[:80]}")
                         count += 1

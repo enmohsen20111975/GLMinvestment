@@ -139,8 +139,7 @@ def _ensure_portfolio_schema():
         _pr_es_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_es_ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
-                conn = _pr_es_ctx.__enter__()
+                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1718,8 +1717,7 @@ def _ensure_equity_schema():
         _pr_eqs_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_eqs_ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
-                conn = _pr_eqs_ctx.__enter__()
+                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -2064,8 +2062,7 @@ def _get_portfolio_value_for_user(user_id: str) -> float:
         _pr_gpv_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_gpv_ctx = _dbm.connection(_get_stocks_db_path(), writable=False)
-                stocks_conn = _pr_gpv_ctx.__enter__()
+                stocks_conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -2096,8 +2093,7 @@ def _get_existing_position_value(user_id: str, ticker: str) -> float:
         _pr_epv_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_epv_ctx = _dbm.connection(_get_stocks_db_path(), writable=False)
-                conn = _pr_epv_ctx.__enter__()
+                conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -2123,8 +2119,7 @@ def _get_total_exposure_value(user_id: str) -> float:
         _pr_tev_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_tev_ctx = _dbm.connection(_get_stocks_db_path(), writable=False)
-                conn = _pr_tev_ctx.__enter__()
+                conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -2420,8 +2415,7 @@ def _ensure_multi_portfolio_schema():
         _pr_mps_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_mps_ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
-                conn = _pr_mps_ctx.__enter__()
+                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -2942,8 +2936,7 @@ def _ensure_watchlist_schema():
         _pr_wls_ctx = None
         try:
             if _PORT_ROUTES_DBM_AVAILABLE:
-                _pr_wls_ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
-                conn = _pr_wls_ctx.__enter__()
+                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:

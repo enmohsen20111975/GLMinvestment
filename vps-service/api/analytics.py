@@ -438,6 +438,7 @@ def end_session():
 
 # ==================== Admin Analytics API ====================
 
+@require_admin
 @analytics_bp.route('/admin/overview', methods=['GET'])
 def get_overview():
     """Get analytics overview for admin dashboard."""
@@ -534,6 +535,7 @@ def get_overview():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/page-views', methods=['GET'])
 def get_page_views():
     """Get detailed page views."""
@@ -575,6 +577,7 @@ def get_page_views():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/feature-usage', methods=['GET'])
 def get_feature_usage():
     """Get detailed feature usage."""

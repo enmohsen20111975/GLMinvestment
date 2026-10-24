@@ -590,6 +590,7 @@ def _format_sse(event: str, data: Dict) -> str:
 # Endpoints
 # ----------------------------------------------------------------------------
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/explosive-stocks', methods=['GET'])
 def get_explosive_stocks():
     """
@@ -1023,6 +1024,7 @@ def generate_historical_predictions_v2():
 # Health
 # ----------------------------------------------------------------------------
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/health', methods=['GET'])
 def health():
     return jsonify({

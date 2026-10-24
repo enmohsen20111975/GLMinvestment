@@ -4154,6 +4154,7 @@ def live_refresh_analyses():
 # REALITY-CHECK-023: Health Check & Alert System (نظام الإنذارات)
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/admin/health', methods=['GET'])
 def admin_health_check():
     """فحص صحة المنصة — للوحة الأدمن.

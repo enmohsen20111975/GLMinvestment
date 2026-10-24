@@ -77,7 +77,7 @@ def load_tickers():
         sys.exit(1)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(%s, writable=False).__enter__()
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     rows = conn.execute(
         "SELECT ticker, name, market FROM stocks WHERE market = 'EGX'").fetchall()
     conn.close()
