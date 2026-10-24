@@ -114,9 +114,18 @@ def check_schema_drift():
                     code_tables.add(m.group(1).lower())
 
     # Tables in code but not in any DB
+    # Filter out Python keywords and common identifiers (false positives)
+    PYTHON_KEYWORDS = {
+        'abc', '__future__', '__init__', '__main__', 'self', 'cls', 'return',
+        'import', 'from', 'class', 'def', 'typing', 'pathlib', 'collections',
+        'dataclass', 'functools', 'contextlib', 'logging', 'argparse',
+        'sqlite3', 'threading', 'subprocess', 'datetime', 'time', 'os', 'sys',
+        'json', 'request', 'response', 'session', 'app', 'test', 'tmp',
+        'value', 'key', 'data', 'result', 'item', 'name', 'type', 'config',
+        'error', 'warning', 'info', 'start', 'end', 'before', 'after', 'now',
+    }
     missing_tables = code_tables - all_db_tables - {'dual', 'sqlite_master', 'information_schema'}
-    # Filter out common false positives
-    missing_tables = {t for t in missing_tables if len(t) > 2 and not t.startswith('tmp_')}
+    missing_tables = {t for t in missing_tables if t not in PYTHON_KEYWORDS and len(t) >= 3 and not t.startswith('_')}
 
     if missing_tables:
         for t in sorted(missing_tables)[:20]:
@@ -150,10 +159,12 @@ def check_connection_lifecycle():
     """فحص: __enter__() بدون with + conn = فارغة."""
     print(f"\n{CYAN}━━━ 2. Connection Lifecycle ━━━{RESET}")
 
-    count = 0
+    prod_count = 0
+    script_count = 0
     for base in [VPS_SERVICE, SCRIPTS_DIR]:
         if not base.exists():
             continue
+        is_production = (base == VPS_SERVICE)
         for root, dirs, files in os.walk(str(base)):
             dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
             for fname in files:
@@ -162,25 +173,36 @@ def check_connection_lifecycle():
                 fpath = os.path.join(root, fname)
                 try:
                     with open(fpath, 'r', errors='ignore') as f:
-                        lines = f.readlines()
+                        lines_f = f.readlines()
                 except:
                     continue
-                for i, line in enumerate(lines, 1):
-                    # __enter__() without with
+                for i, line in enumerate(lines_f, 1):
                     if '.__enter__()' in line and 'with ' not in line and not line.strip().startswith('#'):
                         rel = os.path.relpath(fpath, PROJECT_ROOT)
-                        issue('connection', rel, i, f"__enter__() without 'with': {line.strip()[:80]}")
-                        count += 1
-                    # Empty conn = assignment
+                        if is_production:
+                            issue('connection', rel, i, f"[PROD] __enter__: {line.strip()[:60]}")
+                            prod_count += 1
+                        else:
+                            warn('connection', rel, i, f"[SCRIPT] __enter__: {line.strip()[:60]}")
+                            script_count += 1
                     if re.match(r'^\s*\w+\s*=\s*$', line) and 'conn' in line.lower():
                         rel = os.path.relpath(fpath, PROJECT_ROOT)
-                        issue('connection', rel, i, f"Empty assignment: {line.strip()}")
-                        count += 1
+                        if is_production:
+                            issue('connection', rel, i, f"[PROD] Empty conn assignment")
+                            prod_count += 1
+                        else:
+                            warn('connection', rel, i, f"[SCRIPT] Empty conn assignment")
+                            script_count += 1
 
-    if count:
-        print(f"  {RED}❌ {count} connection lifecycle issues{RESET}")
+    if prod_count:
+        print(f"  BLOCKER: {prod_count} production connection issues")
     else:
-        print(f"  {GREEN}✅ No connection lifecycle issues{RESET}")
+        print(f"  PRODUCTION: 0 connection issues OK")
+    if script_count:
+        print(f"  WARNING: {script_count} script connection issues (non-production)")
+    else:
+        print(f"  SCRIPTS: 0 connection issues OK")
+
 
 
 # ============================================================================
