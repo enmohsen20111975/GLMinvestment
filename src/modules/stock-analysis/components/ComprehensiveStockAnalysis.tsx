@@ -688,11 +688,11 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* RSI */}
  <WidgetCard
- 	title="RSI (14)"
- 	icon={Activity}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="pt-2"
+        title="RSI (14)"
+        icon={Activity}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2"
  >
  <div className="flex items-center justify-between mb-2">
  <span className="text-3xl font-bold tabular-nums">{(rsi ?? 0).toFixed(1)}</span>
@@ -715,11 +715,11 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 
  {/* Moving Averages */}
  <WidgetCard
- 	title="المتوسطات المتحركة"
- 	icon={LineChartIcon}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="pt-2 space-y-2"
+        title="المتوسطات المتحركة"
+        icon={LineChartIcon}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
  >
  <div className="flex items-center justify-between">
  <span className="text-sm">السعر الحالي</span>
@@ -746,11 +746,11 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 
  {/* Support / Resistance */}
  <WidgetCard
- 	title="الدعم والمقاومة"
- 	icon={Shield}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="pt-2 space-y-2"
+        title="الدعم والمقاومة"
+        icon={Shield}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
  >
  <div className="flex items-center justify-between">
  <span className="text-sm text-loss">المقاومة</span>
@@ -774,11 +774,11 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 
  {/* 52-Week Range */}
  <WidgetCard
- 	title="مدى 52 أسبوع"
- 	icon={Gauge}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="pt-2 space-y-2"
+        title="مدى 52 أسبوع"
+        icon={Gauge}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
  >
  <div className="flex items-center justify-between">
  <span className="text-sm">أعلى 52 أسبوع</span>
@@ -842,10 +842,10 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  return (
  <div className="space-y-4">
  <WidgetCard
- 	title="المؤشرات المالية"
- 	icon={BarChart3}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="المؤشرات المالية"
+        icon={BarChart3}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
  {items.map((item, i) => (
@@ -862,9 +862,9 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
 
  {/* Valuation Assessment */}
  <WidgetCard
- 	title="تقييم التقييم"
- 	titleClassName="text-sm"
- 	contentClassName="space-y-2"
+        title="تقييم التقييم"
+        titleClassName="text-sm"
+        contentClassName="space-y-2"
  >
  {m.pe_ratio && (
  <ValuationRow
@@ -944,11 +944,11 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  <div className="space-y-4">
  {/* Maestro Score + Recommendation */}
  <WidgetCard
- 	title="تحليل المايسترو"
- 	icon={Brain}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="pt-2"
+        title="تحليل المايسترو"
+        icon={Brain}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2"
  >
  {(m.maestroScore != null ? Number(m.maestroScore) : 0) !== undefined ? (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1048,10 +1048,10 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  {/* Board Opinions */}
  {board?.available && board.opinions && (
  <WidgetCard
- 	title="آراء المحللين"
- 	icon={Award}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="آراء المحللين"
+        icon={Award}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="space-y-2">
  {Object.entries(board.opinions).map(([analyst, opinion]: [string, any]) => (
@@ -1277,10 +1277,10 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
 
  return (
  <WidgetCard
- 	title="التوقعات السابقة ({predictions.length})"
- 	icon={Target}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title={`التوقعات السابقة (${predictions.length})`}
+        icon={Target}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <ScrollArea className="max-h-96">
  <div className="space-y-2">
@@ -1349,10 +1349,10 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
  return (
  <div className="space-y-4">
  <WidgetCard
- 	title="التحليل الاحترافي بالـ AI"
- 	icon={Brain}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="التحليل الاحترافي بالـ AI"
+        icon={Brain}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  {typeof professional === 'string' ? (
  <p className="text-sm whitespace-pre-wrap">{professional}</p>

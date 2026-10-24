@@ -70,7 +70,7 @@ import {
  Gauge,
  AlertTriangle,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -508,14 +508,14 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
  { label: 'المخاطر', value: analysis.scores.risk, icon: TrendingDown },
  ];
  return (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <BarChart3 className="w-5 h-5" />
- تقييم النقاط · Score Dashboard
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تقييم النقاط · Score Dashboard"
+ 	icon={BarChart3}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+ >
+
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
  {cards.map((card) => {
  const Icon = card.icon;
@@ -544,8 +544,7 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
  );
  })}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -571,14 +570,15 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  ];
 
  return (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <Activity className="w-5 h-5" />
- المؤشرات الفنية · Technical Indicators
- </CardTitle>
- </CardHeader>
- <CardContent className="p-0">
+ <WidgetCard
+ 	title="المؤشرات الفنية · Technical Indicators"
+ 	icon={Activity}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+ 	contentClassName="p-0"
+ >
+
  <div className="grid grid-cols-1 sm:grid-cols-2 divide-x divide-x-reverse divide-slate-700/40">
  {rows.map((row, i) => (
  <div
@@ -611,8 +611,7 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -669,14 +668,14 @@ function FundamentalSection({
  ];
 
  return (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <Scale className="w-5 h-5" />
- القوائم الأساسية · Fundamental Analysis
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="القوائم الأساسية · Fundamental Analysis"
+ 	icon={Scale}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+ >
+
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
  {items.map((it) => {
  const Icon = it.icon;
@@ -735,8 +734,7 @@ function FundamentalSection({
  </div>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -782,14 +780,14 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  neutral: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
  };
  return (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <AlertTriangle className="w-5 h-5" />
- تحليل المخاطر · Risk Metrics
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تحليل المخاطر · Risk Metrics"
+ 	icon={AlertTriangle}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+ >
+
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
  {items.map((it) => (
  <div
@@ -804,8 +802,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -813,14 +810,14 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  const rec = analysis.recommendation;
  return (
- <Card className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <Shield className="w-5 h-5" />
- الخلاصة والتوقع الفني · Conclusion
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="الخلاصة والتوقع الفني · Conclusion"
+ 	icon={Shield}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a] print:break-inside-avoid"
+ >
+
  <div className="grid grid-cols-3 gap-3 mb-4">
  <div className="text-center p-3 rounded-lg bg-whale/10 border border-whale/20">
  <p className="text-xs text-muted-foreground mb-1">سعر الدخول</p>
@@ -867,8 +864,7 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  <p className="text-sm leading-relaxed text-slate-200">{rec.summary_ar}</p>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -894,14 +890,14 @@ function PriceLevelsCard({
  const maxVal = Math.max(...allValues, 1);
  const range = maxVal - minVal || 1;
  return (
- <Card className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <Target className="w-5 h-5" />
- مستويات الأسعار · Price Levels
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="مستويات الأسعار · Price Levels"
+ 	icon={Target}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+ >
+
  <div className="space-y-2">
  {levels.map((level) => {
  const position = ((level.value - minVal) / range) * 100;
@@ -936,8 +932,7 @@ function PriceLevelsCard({
  );
  })}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 

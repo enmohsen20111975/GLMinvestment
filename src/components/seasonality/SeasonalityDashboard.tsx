@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -210,14 +211,12 @@ export function SeasonalityDashboard() {
  )}
 
  {/* Signals Table */}
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <BarChart3 className="h-5 w-5" />
- الإشارات النشطة
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="الإشارات النشطة"
+ 	icon={BarChart3}
+ 	iconSize="h-5 w-5"
+ >
+
  {signals.length === 0 ? (
  <div className="text-center py-12 text-muted-foreground">
  <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -279,8 +278,7 @@ export function SeasonalityDashboard() {
  ))}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Info Alert */}
  <Alert className="bg-success/20 border-success dark:border-success">

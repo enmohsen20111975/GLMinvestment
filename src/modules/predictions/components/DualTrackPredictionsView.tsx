@@ -25,6 +25,7 @@ import {
  Loader2, Brain, ArrowUpCircle, ArrowDownCircle, Layers,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -358,14 +359,14 @@ export function DualTrackPredictionsView() {
 
  {/* Dynamic Thresholds */}
  {thresholds.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-sm flex items-center gap-2">
- <Target className="w-4 h-4 text-warning" />
- الـ Dynamic Threshold لكل سوق (percentile_75)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="الـ Dynamic Threshold لكل سوق (percentile_75)"
+ 	icon={Target}
+ 	iconColor="text-warning"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
+
  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
  {thresholds.map((t) => (
  <div key={t.market} className="p-3 rounded-lg border bg-muted/30">
@@ -390,20 +391,19 @@ export function DualTrackPredictionsView() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Top Tickers */}
  {topTickers.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-sm flex items-center gap-2">
- <ArrowUpCircle className="w-4 h-4 text-profit" />
- أعلى الأسهم أداءً (آخر 30 يوم)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أعلى الأسهم أداءً (آخر 30 يوم)"
+ 	icon={ArrowUpCircle}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
+
  <UnifiedTable<Record<string, unknown>>
  columns={topTickerColumns}
  data={topTickers.slice(0, 8) as unknown as Record<string, unknown>[]}
@@ -411,8 +411,7 @@ export function DualTrackPredictionsView() {
  dense
  emptyTextAr="لا توجد أسهم مميزة"
  />
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Predictions Tabs */}

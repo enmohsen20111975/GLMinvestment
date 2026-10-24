@@ -28,12 +28,8 @@ import React, {
  useMemo,
  useRef,
 } from 'react';
-import {
- Card,
- CardContent,
- CardHeader,
- CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -880,14 +876,16 @@ export function PaperTradingWorkstation() {
  ================================================== */}
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
  {/* Order Execution Panel */}
- <Card className="lg:col-span-4 xl:col-span-3">
- <CardHeader className="pb-3">
- <CardTitle className="flex items-center gap-2 text-base">
- <Zap className="w-4 h-4 text-profit" />
- تنفيذ أمر تداول
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3.5">
+ <WidgetCard
+ 	title="تنفيذ أمر تداول"
+ 	icon={Zap}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	className="lg:col-span-4 xl:col-span-3"
+ 	contentClassName="space-y-3.5"
+ >
+
  {/* Ticker search */}
  <div className="space-y-1.5">
  <Label className="text-xs">البحث عن السهم</Label>
@@ -1138,8 +1136,7 @@ export function PaperTradingWorkstation() {
  )}
  تنفيذ الأمر
  </Button>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Open Positions Table */}
  <Card className="lg:col-span-8 xl:col-span-9">
@@ -1352,14 +1349,14 @@ export function PaperTradingWorkstation() {
  {/* ==================================================
  3. TRADE HISTORY + PERFORMANCE CHART (Tabs)
  ================================================== */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="flex items-center gap-2 text-base">
- <Clock className="w-4 h-4 text-profit" />
- سجل التداول والأداء
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="سجل التداول والأداء"
+ 	icon={Clock}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ >
+
  <Tabs defaultValue="history" className="w-full">
  <TabsList className="mb-3">
  <TabsTrigger value="history" className="text-xs">
@@ -1545,8 +1542,7 @@ export function PaperTradingWorkstation() {
  )}
  </TabsContent>
  </Tabs>
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  );
 }

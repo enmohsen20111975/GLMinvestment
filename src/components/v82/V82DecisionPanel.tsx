@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -224,14 +225,14 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  </Card>
 
  {/* Money Flow */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Activity className="w-4 h-4 text-whale" />
- تدفق الأموال
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تدفق الأموال"
+ 	icon={Activity}
+ 	iconColor="text-whale"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
+
  <div className="grid grid-cols-2 gap-2">
  <div className="text-center p-2 rounded-lg bg-profit/5">
  <div className="text-xs text-muted-foreground">سيولة شراء</div>
@@ -246,18 +247,17 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  </div>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Position Sizing */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <DollarSign className="w-4 h-4 text-warning" />
- إدارة رأس المال (جنيه)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="إدارة رأس المال (جنيه)"
+ 	icon={DollarSign}
+ 	iconColor="text-warning"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
+
  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs">
  <div>
  <div className="text-muted-foreground">عدد الأسهم</div>
@@ -282,8 +282,7 @@ export function V82DecisionPanel({ initialTicker = 'COMI' }: { initialTicker?: s
  </div>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Disclaimer */}
  <Card className="bg-warning/5 border-warning/20">

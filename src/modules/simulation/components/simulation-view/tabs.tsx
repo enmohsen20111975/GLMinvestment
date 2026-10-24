@@ -27,6 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -244,14 +245,14 @@ export function SimulationTabs(props: TabBundleProps) {
 
         {/* Chart + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4" />
-                أداء المحفظة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <WidgetCard
+          	title="أداء المحفظة"
+          	icon={ArrowUpRight}
+          	iconSize="h-4 w-4"
+          	titleClassName="text-base"
+          	className="lg:col-span-2"
+          >
+
               {chartData.length > 1 ? (
                 <ChartContainer
                   config={{
@@ -283,8 +284,7 @@ export function SimulationTabs(props: TabBundleProps) {
                   <p>سيتم عرض الرسم البياني بعد أول تحديث للأسعار</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </WidgetCard>
 
           <Card>
             <CardHeader className="pb-2">
@@ -447,14 +447,15 @@ export function SimulationTabs(props: TabBundleProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Holdings */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                الأصول المحتفظ بها
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
+          <WidgetCard
+          	title="الأصول المحتفظ بها"
+          	icon={Wallet}
+          	iconSize="h-4 w-4"
+          	titleClassName="text-base"
+          	className="lg:col-span-2"
+          	contentClassName="p-0"
+          >
+
               {positions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
                   <Trophy className="h-12 w-12 text-muted-foreground/30" />
@@ -482,8 +483,7 @@ export function SimulationTabs(props: TabBundleProps) {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </WidgetCard>
 
           {/* Sector Allocation */}
           <Card>
@@ -696,14 +696,14 @@ export function SimulationTabs(props: TabBundleProps) {
         )}
 
         {/* Add from search */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة أسهم لقائمة الرغبات
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <WidgetCard
+        	title="إضافة أسهم لقائمة الرغبات"
+        	icon={Plus}
+        	iconSize="h-4 w-4"
+        	titleClassName="text-base"
+        	contentClassName="space-y-4"
+        >
+
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -737,8 +737,7 @@ export function SimulationTabs(props: TabBundleProps) {
                   </div>
                 ))}
             </div>
-          </CardContent>
-        </Card>
+        </WidgetCard>
       </TabsContent>
     </Tabs>
   );

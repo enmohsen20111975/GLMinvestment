@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,14 +159,14 @@ export function TradingMemoryView() {
  ) : stats && (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {/* Pattern Stats */}
- <Card className="md:col-span-2">
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <BarChart3 className="h-4 w-4" />
- إحصائيات الأنماط
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="إحصائيات الأنماط"
+ 	icon={BarChart3}
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-base"
+ 	className="md:col-span-2"
+ >
+
  <div className="space-y-2">
  {stats.patterns.length === 0 ? (
  <p className="text-sm text-muted-foreground text-center py-4">
@@ -202,15 +203,15 @@ export function TradingMemoryView() {
  ))
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Summary */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base">ملخص</CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+ 	title="ملخص"
+ 	titleClassName="text-base"
+ 	contentClassName="space-y-4"
+ >
+
  <div className="text-center py-4">
  <div className="text-4xl font-bold text-primary">
  {stats.total_patterns}
@@ -229,18 +230,17 @@ export function TradingMemoryView() {
  <span className="font-medium">{stats.top_tickers.length}</span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Top Tickers */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Trophy className="h-4 w-4 text-warning" />
- أفضل الأسهم
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أفضل الأسهم"
+ 	icon={Trophy}
+ 	iconColor="text-warning"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-base"
+ >
+
  <div className="space-y-2">
  {stats.top_tickers.length === 0 ? (
  <p className="text-sm text-muted-foreground text-center py-4">
@@ -264,18 +264,17 @@ export function TradingMemoryView() {
  ))
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Worst Tickers */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <AlertTriangle className="h-4 w-4 text-loss" />
- أسوأ الأسهم
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أسوأ الأسهم"
+ 	icon={AlertTriangle}
+ 	iconColor="text-loss"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-base"
+ >
+
  <div className="space-y-2">
  {stats.worst_tickers.length === 0 ? (
  <p className="text-sm text-muted-foreground text-center py-4">
@@ -299,8 +298,7 @@ export function TradingMemoryView() {
  ))
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  )}
 

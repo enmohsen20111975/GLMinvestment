@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -172,36 +173,38 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
 
  if (loading) {
  return (
- <Card className="overflow-hidden">
- <CardHeader className="pb-2 to-transparent">
- <CardTitle className="text-base flex items-center gap-2">
- <Zap className="w-5 h-5 text-primary animate-pulse" />
- التحليل الذكي للسهم
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-4 space-y-3">
+ <WidgetCard
+ 	title="التحليل الذكي للسهم"
+ 	icon={Zap}
+ 	iconColor="text-primary"
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base"
+ 	className="overflow-hidden"
+ 	contentClassName="pt-4 space-y-3"
+ >
+
  <Skeleton className="h-4 w-3/4" />
  <Skeleton className="h-4 w-1/2" />
  <div className="flex gap-2">
  <Skeleton className="h-6 w-20" />
  <Skeleton className="h-6 w-16" />
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
  // Show error if no analysis
  if (error || !analysis) {
  return (
- <Card className="overflow-hidden border-warning bg-warning/10">
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2 text-warning">
- <AlertCircle className="w-5 h-5" />
- التحليل الذكي للسهم
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-4">
+ <WidgetCard
+ 	title="التحليل الذكي للسهم"
+ 	icon={AlertCircle}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base text-warning"
+ 	className="overflow-hidden border-warning bg-warning/10"
+ 	contentClassName="pt-4"
+ >
+
  <p className="text-sm text-muted-foreground mb-3">
  {error || 'لا يوجد تحليل متاح لهذا السهم حالياً.'}
  </p>
@@ -214,8 +217,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
  <RefreshCw className="w-4 h-4" />
  طلب التحليل
  </Button>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 

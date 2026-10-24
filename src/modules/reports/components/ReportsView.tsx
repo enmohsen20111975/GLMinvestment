@@ -55,6 +55,7 @@ import {
  BarChart3,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -442,14 +443,15 @@ function SectorReport() {
 
  {/* Sector Comparison Table */}
  {sectors.length > 0 && (
- <Card className="overflow-hidden border-border bg-[#0d1320] print:break-inside-avoid">
- <CardHeader className="pb-2">
- <CardTitle className="text-base font-bold flex items-center gap-2 text-warning">
- <BarChart3 className="w-5 h-5" />
- جدول مقارنة القطاعات
- </CardTitle>
- </CardHeader>
- <CardContent className="p-0">
+ <WidgetCard
+ 	title="جدول مقارنة القطاعات"
+ 	icon={BarChart3}
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base font-bold text-warning"
+ 	className="overflow-hidden border-border bg-[#0d1320] print:break-inside-avoid"
+ 	contentClassName="p-0"
+ >
+
  <table className="w-full text-sm">
  <thead className="bg-card/60 text-xs text-muted-foreground uppercase">
  <tr>
@@ -488,8 +490,7 @@ function SectorReport() {
  })}
  </tbody>
  </table>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Footer */}
@@ -746,31 +747,30 @@ function PredictionsReport() {
  {(lessons.length > 0 || watchlist.length > 0) && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {lessons.length > 0 && (
- <Card className="overflow-hidden border-warning/20 bg-[#0d1320]">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm font-bold flex items-center gap-2 text-warning">
- <Sparkles className="w-4 h-4" />
- دروس للأسبوع القادم
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="دروس للأسبوع القادم"
+ 	icon={Sparkles}
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm font-bold text-warning"
+ 	className="overflow-hidden border-warning/20 bg-[#0d1320]"
+ >
+
  <ol className="space-y-2 list-decimal list-inside text-xs text-foreground">
  {lessons.map((l, i) => (
  <li key={`lesson-${i}`}>{l}</li>
  ))}
  </ol>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  {watchlist.length > 0 && (
- <Card className="overflow-hidden border-profit/20 bg-[#0d1320]">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm font-bold flex items-center gap-2 text-profit">
- <Shield className="w-4 h-4" />
- أسهم للمتابعة
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أسهم للمتابعة"
+ 	icon={Shield}
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm font-bold text-profit"
+ 	className="overflow-hidden border-profit/20 bg-[#0d1320]"
+ >
+
  <div className="flex flex-wrap gap-1.5">
  {watchlist.map((s, i) => (
  <Badge
@@ -782,8 +782,7 @@ function PredictionsReport() {
  </Badge>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </div>
  )}

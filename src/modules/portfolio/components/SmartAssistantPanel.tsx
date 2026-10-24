@@ -284,12 +284,12 @@ export function SmartAssistantPanel() {
  {/* Alerts Section */}
  {allAlerts.length > 0 && (
  <WidgetCard
- 	title="تنبيهات هامة"
- 	icon={AlertCircle}
- 	iconColor="text-warning"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
- 	className="border-orange-200 bg-warning/20"
+        title="تنبيهات هامة"
+        icon={AlertCircle}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        className="border-orange-200 bg-warning/20"
  >
 
  <div className="space-y-2">
@@ -306,12 +306,12 @@ export function SmartAssistantPanel() {
  {/* Stocks Analysis */}
  {data.stocks.length > 0 && (
  <WidgetCard
- 	title="تحليل الأسهم ({data.stocks.length})"
- 	icon={TrendingUp}
- 	iconColor="text-primary"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
- 	contentClassName="space-y-3"
+        title={`تحليل الأسهم (${data.stocks.length})`}
+        icon={TrendingUp}
+        iconColor="text-primary"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
  >
 
  {data.stocks.map((stock, i) => {
@@ -454,12 +454,12 @@ export function SmartAssistantPanel() {
  {/* Bank Deposits */}
  {data.banks.length > 0 && (
  <WidgetCard
- 	title="الشهادات البنكية ({data.banks.length})"
- 	icon={Landmark}
- 	iconColor="text-primary"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
- 	contentClassName="space-y-3"
+        title={`الشهادات البنكية (${data.banks.length})`}
+        icon={Landmark}
+        iconColor="text-primary"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
  >
 
  {data.banks.map((bank, i) => (
@@ -497,12 +497,12 @@ export function SmartAssistantPanel() {
  {/* Gold */}
  {data.gold.length > 0 && (
  <WidgetCard
- 	title="الذهب ({data.gold.length})"
- 	icon={Gem}
- 	iconColor="text-warning"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
- 	contentClassName="space-y-3"
+        title={`الذهب (${data.gold.length})`}
+        icon={Gem}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
  >
 
  {data.gold.map((gold, i) => (

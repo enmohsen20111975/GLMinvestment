@@ -3,7 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Trophy, Calendar, FileText } from 'lucide-react';
 import { StockLeagueImageCard, type ReportPeriod } from '@/components/market/StockLeagueImageCard';
@@ -49,14 +50,14 @@ export default function ReportsPage() {
  </div>
 
  {/* Period Selector */}
- <Card>
- <CardHeader>
- <CardTitle className="text-base flex items-center gap-2">
- <Calendar className="h-4 w-4 text-warning" />
- اختر الفترة الزمنية
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="اختر الفترة الزمنية"
+ 	icon={Calendar}
+ 	iconColor="text-warning"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-base"
+ >
+
  <div className="flex flex-wrap gap-2">
  {PERIODS.map((p) => {
  const Icon = p.icon;
@@ -84,8 +85,7 @@ export default function ReportsPage() {
  );
  })}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Report Card */}
  <div className="flex justify-center">

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -132,14 +133,13 @@ export function ExpertMemoryPanel({
 
  if (!insight || insight.total_trades === 0) {
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Brain className="h-4 w-4" />
- ذاكرتك مع {ticker}
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title={`ذاكرتك مع ${ticker}`}
+        icon={Brain}
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+ >
+
  <div className="text-center py-6 text-muted-foreground">
  <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
  <p className="text-sm">لا توجد صفقات سابقة على هذا السهم</p>
@@ -150,8 +150,7 @@ export function ExpertMemoryPanel({
  </Button>
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
@@ -239,14 +238,14 @@ export function ExpertMemoryPanel({
  </Card>
 
  {/* Best/Worst Patterns */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Target className="h-4 w-4" />
- أنماطك
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-2">
+ <WidgetCard
+        title="أنماطك"
+        icon={Target}
+        iconSize="h-4 w-4"
+        titleClassName="text-sm"
+        contentClassName="space-y-2"
+ >
+
  {insight.best_pattern && (
  <div className="flex items-center justify-between p-2 bg-success rounded-md">
  <div className="flex items-center gap-2">
@@ -276,8 +275,7 @@ export function ExpertMemoryPanel({
  لا توجد أنماط كافية للتحليل
  </p>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Suggestion */}
  {insight.suggestion && insight.suggestion !== 'لا توجد بيانات كافية' && (
@@ -296,14 +294,13 @@ export function ExpertMemoryPanel({
 
  {/* Similar Cases */}
  {insight.similar_cases && insight.similar_cases.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <History className="h-4 w-4" />
- حالات مشابهة ({insight.similar_cases.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title={`حالات مشابهة (${insight.similar_cases.length})`}
+        icon={History}
+        iconSize="h-4 w-4"
+        titleClassName="text-sm"
+ >
+
  <div className="space-y-2 max-h-48 overflow-y-auto">
  {insight.similar_cases.slice(0, 5).map((c, i) => (
  <div
@@ -333,8 +330,7 @@ export function ExpertMemoryPanel({
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Record Trade Button */}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -467,11 +468,8 @@ export function TradingJournalView() {
  <TabsContent value="stats" className="mt-4">
  {stats && (
  <div className="grid md:grid-cols-2 gap-4">
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">أفضل الأسهم</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="أفضل الأسهم" titleClassName="text-lg">
+
  {stats.bestStocks.length > 0 ? (
  <div className="space-y-2">
  {stats.bestStocks.slice(0, 5).map((s, i) => (
@@ -487,14 +485,10 @@ export function TradingJournalView() {
  ) : (
  <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">أسوأ الأسهم</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="أسوأ الأسهم" titleClassName="text-lg">
+
  {stats.worstStocks.length > 0 ? (
  <div className="space-y-2">
  {stats.worstStocks.slice(0, 5).map((s, i) => (
@@ -510,14 +504,10 @@ export function TradingJournalView() {
  ) : (
  <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">متوسط الربح/الخسارة</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="متوسط الربح/الخسارة" titleClassName="text-lg">
+
  <div className="grid grid-cols-2 gap-4">
  <div className="text-center p-4 bg-success/10 rounded">
  <p className="text-sm text-muted-foreground">متوسط الربح</p>
@@ -532,14 +522,10 @@ export function TradingJournalView() {
  </p>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">أفضل/أسوأ صفقة</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="أفضل/أسوأ صفقة" titleClassName="text-lg">
+
  <div className="space-y-3">
  {stats.bestTrade && (
  <div className="flex justify-between items-center p-3 bg-success/10 rounded">
@@ -560,25 +546,20 @@ export function TradingJournalView() {
  </div>
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  )}
  </TabsContent>
 
  <TabsContent value="analysis" className="mt-4">
- <Card>
- <CardHeader>
- <CardTitle className="text-lg">تحليل الأداء</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="تحليل الأداء" titleClassName="text-lg">
+
  <div className="text-center py-8 text-muted-foreground">
  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
  <p>تحليل الأداء الشهري</p>
  <p className="text-sm">سيظهر هنا بعد تسجيل المزيد من الصفقات</p>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </TabsContent>
  </Tabs>
  </div>
