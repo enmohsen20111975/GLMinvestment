@@ -32,7 +32,7 @@ import { cleanTicker } from './helpers';
 // market-analysis/components/persona/.
 const SingleStockAnalysisViewDynamic = dynamic(
   () =>
-    import('../../stock-analysis/components/SingleStockAnalysisView').then((m) => ({
+    import('@/modules/market-analysis/components/SingleStockAnalysisView').then((m) => ({
       default: m.SingleStockAnalysisView,
     })),
   {

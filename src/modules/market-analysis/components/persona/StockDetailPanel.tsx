@@ -47,7 +47,7 @@ import {
 // Relative paths point two directories up since this file lives in
 // market-analysis/components/persona/.
 const TradingChartViewDynamic = dynamic(
-  () => import('@/modules/stock-analysis/components/TradingChartView').then((m) => ({ default: m.TradingChartView })),
+  () => import('@/modules/stock-analysis/components/TradingViewChart').then((m) => ({ default: m.TradingViewChart })),
   { ssr: false, loading: () => <Skeleton className="h-[500px] w-full rounded-xl" /> }
 );
 
