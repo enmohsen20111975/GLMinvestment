@@ -1,0 +1,165 @@
+{
+  "ts": "2026-10-24T12:03:47.656165",
+  "exps": [
+    {
+      "name": "V38 Baseline",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0,
+      "v": "baseline"
+    },
+    {
+      "name": "V38+NoBear",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0.0,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+BullOnly",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0.0,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+RSI40-70",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0.0,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+Vol1.2x",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0.0,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+Stop5%",
+      "m": {
+        "signals": 302,
+        "wins": 98,
+        "losses": 203,
+        "wr": 32.5,
+        "pf": 0.97,
+        "max_dd": 36.8,
+        "avg_ret": -0.11,
+        "sharpe": -0.28,
+        "expectancy": -0.02
+      },
+      "d": -0.1,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+Target7.5%",
+      "m": {
+        "signals": 302,
+        "wins": 153,
+        "losses": 145,
+        "wr": 50.7,
+        "pf": 0.95,
+        "max_dd": 37.0,
+        "avg_ret": -0.18,
+        "sharpe": -0.41,
+        "expectancy": -0.04
+      },
+      "d": -0.12,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+NoBear+RSI",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0.0,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+NoBear+Stop5",
+      "m": {
+        "signals": 302,
+        "wins": 98,
+        "losses": 203,
+        "wr": 32.5,
+        "pf": 0.97,
+        "max_dd": 36.8,
+        "avg_ret": -0.11,
+        "sharpe": -0.28,
+        "expectancy": -0.02
+      },
+      "d": -0.1,
+      "v": "REJECT"
+    },
+    {
+      "name": "V38+AllBest",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06
+      },
+      "d": 0,
+      "v": "NO KEEP"
+    }
+  ]
+}
