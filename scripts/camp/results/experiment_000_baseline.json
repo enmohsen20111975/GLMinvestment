@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-10-24T11:31:15.631610",
+  "v38": {
+    "signals": 302,
+    "wins": 136,
+    "losses": 154,
+    "wr": 45.0,
+    "pf": 1.07,
+    "avg_ret": 0.28,
+    "max_dd": 34.0,
+    "sharpe": 0.54,
+    "expectancy": 0.06,
+    "gp": 1372.5,
+    "gl": 1287.9
+  },
+  "pipeline_3stage": {
+    "signals": 5245,
+    "wins": 1429,
+    "losses": 2699,
+    "wr": 27.2,
+    "pf": 0.8,
+    "avg_ret": -0.76,
+    "max_dd": 100.0,
+    "sharpe": -7.52,
+    "expectancy": -0.15,
+    "gp": 16030.4,
+    "gl": 20041.5
+  }
+}
