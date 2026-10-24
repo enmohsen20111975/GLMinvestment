@@ -7838,3 +7838,49 @@ Stage Summary:
 - Backwards-compatible: `src/modules/education/index.ts` barrel + `src/app/page.tsx` (dynamic import with `ssr: false`) keep working unchanged.
 - `useAcademyLessonsData` + `useAcademyStocksData` hooks (extracted in Phase 2 — F-Strangler-AcademyView) are still consumed by `AdvancedLessonsTab` and `LiveMarketScanner` respectively. The view layer remains render-only.
 - HTTP 200 confirmed before commit (Rule 75). Commit + push next.
+
+---
+
+Task ID: F-Phase3-Split-StocksView
+Agent: Alpha (frontend agent)
+Task: Split `src/modules/stock-analysis/components/StocksView.tsx` (2,287 LOC) into sub-components in a new `stocks-view/` folder. Container must be < 500 LOC. Re-export from the original file. HTTP 200 required before commit.
+
+Work Log:
+- Read original `StocksView.tsx` (2,287 LOC) end-to-end to map structure: imports + constants (~150 LOC) + 5 helper functions + 3 skeleton components + 4 memo'd sub-components (OverviewSummary, StockCard, MobileStockRow, PresetButtonsRow, AdvancedFilters) + container StocksView (870-2287 = ~1,418 LOC, including ~820 LOC of state/effects/memos/handlers + ~580 LOC of render).
+- Confirmed `useStocksViewData` hook (Phase 2 — F-Strangler-StocksView) is consumed at original line 925; preserved as `import { useStocksViewData } from '@/hooks/useStocksViewData';` inside the new `useStocksViewState.ts` hook.
+- Inspected `src/lib/sector-constants.ts` for canonical `SECTOR_BADGE_CLASSES` map; left the local `SECTOR_COLOR_MAP` copy intact in `helpers.ts` (preserves the exact pre-refactor trailing-space strings — Phase 2 migration is a separate task).
+- Created folder `src/modules/stock-analysis/components/stocks-view/` and extracted 13 files:
+  1. `types.ts` (73 LOC) — QuickFilterKey, StockTab, DesktopRow, prop-shape interfaces for all 5 memo'd sub-components + TranslationFn type alias (matches `I18nContextValue.t` signature).
+  2. `constants.ts` (139 LOC) — SECTORS, INDEX_FILTERS, DEFAULT_INDEX_FILTERS, QUICK_FILTERS, DEFAULT_SORT_KEY/DIR, PRICE_RANGE_OPTIONS, CHANGE_FILTER_OPTIONS, PAGE_SIZE, GUEST_STOCK_LIMIT, PRESET_OPTIONS, PRESET_BUTTONS.
+  3. `helpers.ts` (127 LOC) — formatCleanTicker, parseVolStr, formatVolume, formatTurnover, formatPercent, getSectorColor, formatMarketCap + SECTOR_COLOR_MAP/SECTOR_FALLBACK_COLOR constants.
+  4. `Skeletons.tsx` (51 LOC) — TableSkeleton, CardGridSkeleton, SummarySkeleton.
+  5. `OverviewSummary.tsx` (63 LOC) — memo'd summary bar.
+  6. `StockCard.tsx` (195 LOC) — memo'd desktop card (icon + price + sparkline + metrics).
+  7. `MobileStockRow.tsx` (124 LOC) — memo'd mobile row.
+  8. `PresetButtonsRow.tsx` (71 LOC) — memo'd top preset row (EGX only).
+  9. `AdvancedFilters.tsx` (134 LOC) — memo'd collapsible panel (sector multi-select + price/change min/max).
+  10. `useStocksViewState.ts` (567 LOC) — container state + 4 useEffects (load/cron/poll/debounce) + 6 useMemo (filtered/sorted/summary/preset/availableSectors/activeQuickFilter) + 13 useCallback handlers. Returns 50+ field `StocksViewState` object consumed by the container.
+  11. `StocksTable.tsx` (442 LOC) — desktop `UnifiedTable` + column-defs memo (15 columns: icon, ticker, name, sector, price, change_1d, high/low, sparkline, change_1w, change_1m, volume_int, turnover, volume_week, fair_value, upside_percent, pe_ratio, technical_signal, market_cap, share).
+  12. `MobileStocksList.tsx` (213 LOC) — mobile compact list + mobile-only pagination (max 5 page buttons).
+  13. `StocksToolbar.tsx` (363 LOC) — the big Card: row 1 (search + filter toggle + UnifiedPublishButton) + row 2 (QUICK_FILTERS chips) + row 3 (collapsible: preset select + period buttons + sector select + index chips + price-range select + change-filter select + reset) + AdvancedFilters sub-component.
+  14. `StocksView.tsx` (289 LOC) — container. Calls `useStocksViewState()` then renders: Header + Tabs (stocks/bonds/filters) + conditionally renders PresetButtonsRow (EGX only) + StocksToolbar + OverviewSummary/PresetSummary + (Skeleton | Empty | StocksTable + MobileStocksList + GuestLimitCta). Detail view early-returns StockDetail.
+- Replaced original `src/modules/stock-analysis/components/StocksView.tsx` (2,287 LOC) with a 13-LOC Strangler shim: `export { StocksView } from './stocks-view/StocksView';`. All existing import sites (`src/modules/stock-analysis/index.ts` barrel + `src/app/page.tsx` dynamic import with `ssr: false`) keep working unchanged.
+- Behaviour preservation verified by line-by-line: all useEffect/useMemo/useCallback dependency arrays match the original (including the `// eslint-disable-line react-hooks/exhaustive-deps` on the market-change effect). All memo'd sub-components preserved their `React.memo` wrapping. All stable React.Fragment `key` props preserved.
+
+Verification:
+- `node_modules/.bin/pm2 restart nextjs --update-env` → ✓ online (Ready in 817ms).
+- `sleep 14 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓ (first-hit compile ~19.2s on Turbopack cold start; render ~507ms; proxy.ts: 58ms).
+- `tsc --noEmit` on `stocks-view/**` → 14 errors, all of which are byte-for-byte transplants of pre-existing TS errors from the original StocksView.tsx (verified via `git stash` + tsc + `git stash pop` baseline: original had 10+ same errors at lines 982, 1127, 1128, 1130, 1135, 1208, 1213, 1303, 1353, 1368 — these are `unknown`-from-`Record<string,unknown>` issues in column render fns + preset-data filter fn). No NEW errors introduced by the refactor.
+- pm2 logs: clean compile of `/`. No module-resolution or syntax errors. Only stale pre-existing warnings (outputFileTracing deprecated keys, eslint config deprecated, "middleware" file convention deprecated, Turbopack-vs-webpack config warning — all pre-existing).
+
+LOC summary (after split):
+- Original `StocksView.tsx`: 2,287 → 13 LOC (Strangler shim) (**−2,274 LOC, −99.4%**).
+- New folder `stocks-view/`: 2,851 LOC across 14 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
+- Container `StocksView.tsx`: 289 LOC ✅ (well under < 500 LOC constraint).
+- Largest file: `useStocksViewState.ts` at 567 LOC (state + 4 effects + 6 memos + 13 handlers — single cohesive unit, no further splitting needed).
+- Largest component file: `StocksTable.tsx` at 442 LOC (column-defs memo for 15 columns — single cohesive unit, splitting would just shuffle the column defs around).
+
+Stage Summary:
+- F-Phase3-Split-StocksView complete. `StocksView.tsx` is now a thin 13-LOC Strangler shim re-exporting from `stocks-view/StocksView.tsx` (container, 289 LOC) which delegates state to `useStocksViewState` hook + renders 4 memo'd sub-components (OverviewSummary, PresetButtonsRow, StocksToolbar, StocksTable/MobileStocksList) + 3 skeleton components. All data + behaviour preserved 1:1.
+- Backwards-compatible: `src/modules/stock-analysis/index.ts` barrel + `src/app/page.tsx` (dynamic import with `ssr: false`) keep working unchanged. `useStocksViewData` hook (Phase 2) still consumed by `useStocksViewState.ts`.
+- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
