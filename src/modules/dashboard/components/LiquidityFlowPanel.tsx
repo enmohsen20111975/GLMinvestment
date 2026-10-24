@@ -11,19 +11,25 @@
  *
  * يقرأ currentMarket من useAppStore تلقائياً.
  * NO mock data — كل البيانات من /api/market/liquidity-flow (اللي بدوره من stocks.db).
+ *
+ * Phase 3 (WidgetCard adoption): الـ 3 branches (loading + error + main) اتدمجوا
+ * في WidgetCard واحد مع `loading` prop + badge slot للـ market + flow badges
+ * + period Select، والـ summary strip الـ 4 tiles بقت WidgetStatGrid cols=4.
+ * الـ error state بقا WidgetError مع onRetry=refetch.
  */
 
 import React, { useState } from 'react';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { Waves, TrendingUp, TrendingDown, Activity, Building2, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Waves, TrendingUp, TrendingDown, Activity, Building2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/lib/format';
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, type MarketType } from '@/lib/store';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
+import { WidgetError } from '@/components/shared/WidgetError';
 
 interface SectorFlow {
  sector: string;
@@ -213,7 +219,12 @@ export function LiquidityFlowPanel() {
 
  // F2.2: useApiQuery replaces manual fetch + useState + useEffect.
  // queryKey includes currentMarket + period so refetch happens when they change.
- const { data: raw, isLoading: loading, error: queryError } = useApiQuery<LiquidityData>('/api/market/liquidity-flow', {
+ const {
+ data: raw,
+ isLoading: loading,
+ error: queryError,
+ refetch,
+ } = useApiQuery<LiquidityData>('/api/market/liquidity-flow', {
    params: { market: currentMarket, days: period },
    queryOptions: {
      refetchOnWindowFocus: false,
@@ -229,45 +240,14 @@ export function LiquidityFlowPanel() {
  const marketNameAr = MARKET_NAMES_AR[currentMarket];
  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket];
 
- if (loading) {
- return (
- <Card dir="rtl" className="w-full">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-whale" />
- حركة السيولة
- <Badge variant="outline" className="text-xs">{marketNameAr}</Badge>
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
- <Skeleton className="h-4 w-32" />
- <Skeleton className="h-32 w-full" />
- <Skeleton className="h-20 w-full" />
- </CardContent>
- </Card>
- );
- }
-
  if (error || !data || !data.summary) {
  return (
- <Card dir="rtl" className="w-full">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-whale" />
- حركة السيولة
- <Badge variant="outline" className="text-xs">{marketNameAr}</Badge>
- </CardTitle>
- </CardHeader>
- <CardContent>
- <div className="text-center text-xs text-muted-foreground py-6">
- {error ? (
- <span className="text-loss ">خطأ: {error}</span>
- ) : (
- 'لا توجد بيانات سيولة لهذا السوق'
- )}
- </div>
- </CardContent>
- </Card>
+ <WidgetError
+ title="حركة السيولة"
+ message={error || 'لا توجد بيانات سيولة لهذا السوق'}
+ onRetry={() => refetch()}
+ className="border-border"
+ />
  );
  }
 
@@ -275,12 +255,17 @@ export function LiquidityFlowPanel() {
  const noData = sector_flow.length === 0 && top_inflow_stocks.length === 0 && top_outflow_stocks.length === 0;
 
  return (
- <Card dir="rtl" className="w-full">
- <CardHeader className="pb-2">
- <div className="flex items-center justify-between gap-2 flex-wrap">
- <CardTitle className="text-sm flex items-center gap-2">
- <Waves className="w-4 h-4 text-whale" />
- حركة السيولة
+ <WidgetCard
+ title="حركة السيولة"
+ icon={Waves}
+ iconColor="text-whale"
+ loading={loading}
+ hideRefresh
+ className="border-border w-full"
+ headerClassName="pb-2"
+ titleClassName="text-sm"
+ badge={
+ <>
  <Badge variant="outline" className="text-xs text-whale dark:text-whale border-whale/20">
  {marketNameAr}
  </Badge>
@@ -296,7 +281,6 @@ export function LiquidityFlowPanel() {
  صافي تدفّق خارجة
  </Badge>
  )}
- </CardTitle>
  <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
  <SelectTrigger className="h-7 w-[110px] text-xs">
  <SelectValue />
@@ -307,35 +291,23 @@ export function LiquidityFlowPanel() {
  <SelectItem value="90">{PERIOD_LABEL['90']}</SelectItem>
  </SelectContent>
  </Select>
- </div>
- </CardHeader>
-
- <CardContent className="space-y-4">
+ </>
+ }
+ contentClassName="space-y-4"
+ >
  {noData ? (
  <div className="text-center text-xs text-muted-foreground py-6">
  لا توجد بيانات سيولة لهذا السوق في النافذة المحددة
  </div>
  ) : (
  <>
- {/* Summary strip */}
- <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
- <div className="rounded-md bg-muted/40 p-2">
- <div className="text-xs text-muted-foreground">إجمالي السيولة</div>
- <div className="text-sm font-bold">{formatNumber(summary.total_turnover)} {currencyLabel}</div>
- </div>
- <div className="rounded-md bg-muted/40 p-2">
- <div className="text-xs text-muted-foreground">إجمالي الحجم</div>
- <div className="text-sm font-bold">{formatNumber(summary.total_volume)}</div>
- </div>
- <div className="rounded-md bg-muted/40 p-2">
- <div className="text-xs text-muted-foreground">قطاعات صاعدة</div>
- <div className="text-sm font-bold text-profit ">{summary.advancing_sectors}</div>
- </div>
- <div className="rounded-md bg-muted/40 p-2">
- <div className="text-xs text-muted-foreground">قطاعات هابطة</div>
- <div className="text-sm font-bold text-loss ">{summary.declining_sectors}</div>
- </div>
- </div>
+ {/* Summary strip — adopted WidgetStatGrid (Phase 3) */}
+ <WidgetStatGrid cols={4}>
+ <WidgetStat label="إجمالي السيولة" value={formatNumber(summary.total_turnover)} suffix={currencyLabel} />
+ <WidgetStat label="إجمالي الحجم" value={formatNumber(summary.total_volume)} />
+ <WidgetStat label="قطاعات صاعدة" value={summary.advancing_sectors} valueClass="text-profit" />
+ <WidgetStat label="قطاعات هابطة" value={summary.declining_sectors} valueClass="text-loss" />
+ </WidgetStatGrid>
 
  {/* Sector rotation table */}
  <div>
@@ -443,7 +415,6 @@ export function LiquidityFlowPanel() {
  )}
  </>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
