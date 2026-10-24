@@ -1,0 +1,1488 @@
+{
+  "project": "Comprehensive Multi-Market Indices & Stock Weights Database",
+  "version": "2.0",
+  "updated_at": "2026-10",
+  "markets": {
+    "EGX": {
+      "market_name_ar": "البورصة المصرية",
+      "market_name_en": "The Egyptian Exchange",
+      "country": "Egypt",
+      "currency": "EGP",
+      "indices": {
+        "EGX30": {
+          "index_name_ar": "مؤشر إيجي إكس 30",
+          "index_name_en": "EGX 30 Index",
+          "type": "Capped Free-Float Market Cap Weighted",
+          "max_weight_cap": "15%",
+          "description": "يقيس أداء أنشط 30 شركة مقيدة في البورصة المصرية من حيث السيولة والقيمة السوقية حرة التداول مع حد أقصى للوزن النسبي 15%",
+          "constituents": [
+            {
+              "ticker": "COMI.CA",
+              "code": "COMI",
+              "name_ar": "البنك التجاري الدولي - مصر",
+              "name_en": "Commercial International Bank (Egypt)",
+              "sector": "Banks",
+              "weight_percentage": 14.85
+            },
+            {
+              "ticker": "EAST.CA",
+              "code": "EAST",
+              "name_ar": "الشرقية - إيسترن كومباني",
+              "name_en": "Eastern Company",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 9.42
+            },
+            {
+              "ticker": "TMGH.CA",
+              "code": "TMGH",
+              "name_ar": "مجموعة طلعت مصطفى القابضة",
+              "name_en": "Talaat Moustafa Group Holding",
+              "sector": "Real Estate",
+              "weight_percentage": 9.15
+            },
+            {
+              "ticker": "SWDY.CA",
+              "code": "SWDY",
+              "name_ar": "السويدي إليكتريك",
+              "name_en": "Elsewedy Electric",
+              "sector": "Industrial Goods & Services",
+              "weight_percentage": 7.85
+            },
+            {
+              "ticker": "ETEL.CA",
+              "code": "ETEL",
+              "name_ar": "المصرية للاتصالات",
+              "name_en": "Telecom Egypt",
+              "sector": "Telecommunications",
+              "weight_percentage": 6.3
+            },
+            {
+              "ticker": "MFPC.CA",
+              "code": "MFPC",
+              "name_ar": "مصر لإنتاج الأسمدة - موبكو",
+              "name_en": "Misr Fertilizers Production (MOPCO)",
+              "sector": "Chemicals",
+              "weight_percentage": 5.9
+            },
+            {
+              "ticker": "ABUK.CA",
+              "code": "ABUK",
+              "name_ar": "أبو قير للأسمدة والصناعات الكيماوية",
+              "name_en": "Abu Qir Fertilizers",
+              "sector": "Chemicals",
+              "weight_percentage": 5.45
+            },
+            {
+              "ticker": "ESRS.CA",
+              "code": "ESRS",
+              "name_ar": "حديد عز",
+              "name_en": "Ezz Steel",
+              "sector": "Basic Resources",
+              "weight_percentage": 4.8
+            },
+            {
+              "ticker": "EKHO.CA",
+              "code": "EKHO",
+              "name_ar": "المصرية الكويتية القابضة",
+              "name_en": "Egypt Kuwait Holding",
+              "sector": "Financial Services",
+              "weight_percentage": 4.25
+            },
+            {
+              "ticker": "HRHO.CA",
+              "code": "HRHO",
+              "name_ar": "إي إف جي القابضة (هيرميس)",
+              "name_en": "EFG Holding",
+              "sector": "Financial Services",
+              "weight_percentage": 3.9
+            },
+            {
+              "ticker": "FWRY.CA",
+              "code": "FWRY",
+              "name_ar": "فوري لتكنولوجيا البنوك والمدفوعات الإلكترونية",
+              "name_en": "Fawry Banking & Payment Tech",
+              "sector": "Technology",
+              "weight_percentage": 3.65
+            },
+            {
+              "ticker": "SKPC.CA",
+              "code": "SKPC",
+              "name_ar": "سيدي كرير للبتروكيماويات",
+              "name_en": "Sidi Kerir Petrochemicals",
+              "sector": "Chemicals",
+              "weight_percentage": 3.1
+            },
+            {
+              "ticker": "AMOC.CA",
+              "code": "AMOC",
+              "name_ar": "الإسكندرية للزيوت المعدنية - أموك",
+              "name_en": "Alexandria Mineral Oils Company",
+              "sector": "Energy & Support Services",
+              "weight_percentage": 2.8
+            },
+            {
+              "ticker": "HELI.CA",
+              "code": "HELI",
+              "name_ar": "مصر الجديدة للإسكان والتعمير",
+              "name_en": "Heliopolis Housing",
+              "sector": "Real Estate",
+              "weight_percentage": 2.65
+            },
+            {
+              "ticker": "MNHD.CA",
+              "code": "MNHD",
+              "name_ar": "مدينة مصر للإسكان والتعمير",
+              "name_en": "Madinet Masr Housing & Development",
+              "sector": "Real Estate",
+              "weight_percentage": 2.5
+            },
+            {
+              "ticker": "PHDC.CA",
+              "code": "PHDC",
+              "name_ar": "بالم هيلز للتعمير",
+              "name_en": "Palm Hills Developments",
+              "sector": "Real Estate",
+              "weight_percentage": 2.35
+            },
+            {
+              "ticker": "OCDI.CA",
+              "code": "OCDI",
+              "name_ar": "السادس من أكتوبر للتنمية والاستثمار - سوديك",
+              "name_en": "SODIC",
+              "sector": "Real Estate",
+              "weight_percentage": 2.1
+            },
+            {
+              "ticker": "ORAS.CA",
+              "code": "ORAS",
+              "name_ar": "أوراسكوم كونستراكشون بي إل سي",
+              "name_en": "Orascom Construction PLC",
+              "sector": "Construction & Materials",
+              "weight_percentage": 1.95
+            },
+            {
+              "ticker": "ADIB.CA",
+              "code": "ADIB",
+              "name_ar": "مصرف أبو ظبي الإسلامي - مصر",
+              "name_en": "Abu Dhabi Islamic Bank Egypt",
+              "sector": "Banks",
+              "weight_percentage": 1.8
+            },
+            {
+              "ticker": "CIEB.CA",
+              "code": "CIEB",
+              "name_ar": "بنك كريدي أجريكول مصر",
+              "name_en": "Credit Agricole Egypt",
+              "sector": "Banks",
+              "weight_percentage": 1.7
+            },
+            {
+              "ticker": "ALCN.CA",
+              "code": "ALCN",
+              "name_ar": "الإسكندرية لتداول الحاويات والبضائع",
+              "name_en": "Alexandria Containers & Cargo Handling",
+              "sector": "Transportation & Shipping",
+              "weight_percentage": 1.65
+            },
+            {
+              "ticker": "EFID.CA",
+              "code": "EFID",
+              "name_ar": "إيديتا للصناعات الغذائية",
+              "name_en": "Edita Food Industries",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 1.55
+            },
+            {
+              "ticker": "JUFO.CA",
+              "code": "JUFO",
+              "name_ar": "جهينة للصناعات الغذائية",
+              "name_en": "Juhayna Food Industries",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 1.45
+            },
+            {
+              "ticker": "ORWE.CA",
+              "code": "ORWE",
+              "name_ar": "النساجون الشرقيون للسجاد",
+              "name_en": "Oriental Weavers",
+              "sector": "Textiles & Durables",
+              "weight_percentage": 1.35
+            },
+            {
+              "ticker": "ISPH.CA",
+              "code": "ISPH",
+              "name_ar": "ابن سينا فارما",
+              "name_en": "Ibnsina Pharma",
+              "sector": "Pharmaceuticals",
+              "weight_percentage": 1.2
+            },
+            {
+              "ticker": "AUTO.CA",
+              "code": "AUTO",
+              "name_ar": "جي بي كوربوريشن",
+              "name_en": "GB Corp",
+              "sector": "Automotive",
+              "weight_percentage": 1.15
+            },
+            {
+              "ticker": "ORHD.CA",
+              "code": "ORHD",
+              "name_ar": "أوراسكوم للتنمية مصر",
+              "name_en": "Orascom Development Egypt",
+              "sector": "Travel & Leisure",
+              "weight_percentage": 1.05
+            },
+            {
+              "ticker": "CCAP.CA",
+              "code": "CCAP",
+              "name_ar": "القلعة للاستشارات المالية",
+              "name_en": "Qalaa Holdings",
+              "sector": "Financial Services",
+              "weight_percentage": 0.95
+            },
+            {
+              "ticker": "CERA.CA",
+              "code": "CERA",
+              "name_ar": "العز للسيراميك والبورسلين - الجوهرة",
+              "name_en": "Al Ezz Ceramics and Porcelain",
+              "sector": "Building Materials",
+              "weight_percentage": 0.85
+            },
+            {
+              "ticker": "BTFH.CA",
+              "code": "BTFH",
+              "name_ar": "بلتون المالية القابضة",
+              "name_en": "Beltone Financial Holding",
+              "sector": "Financial Services",
+              "weight_percentage": 0.74
+            }
+          ]
+        },
+        "EGX33_SHARIAH": {
+          "index_name_ar": "مؤشر الشريعة إيجي إكس 33 (EGX 33 Shariah)",
+          "index_name_en": "EGX 33 Shariah Index",
+          "type": "Capped Free-Float Market Cap Weighted (Shariah Compliant)",
+          "max_weight_cap": "15%",
+          "description": "مؤشر الشريعة الإسلامية يضم 33 شركة متوافقة مع معايير الشريعة الإسلامية والمعتمدة من الرقابة الشرعية بالأزهر الشريف والهيئة العامة للرقابة المالية",
+          "constituents": [
+            {
+              "ticker": "TMGH.CA",
+              "code": "TMGH",
+              "name_ar": "مجموعة طلعت مصطفى القابضة",
+              "name_en": "Talaat Moustafa Group Holding",
+              "sector": "Real Estate",
+              "weight_percentage": 14.7
+            },
+            {
+              "ticker": "SWDY.CA",
+              "code": "SWDY",
+              "name_ar": "السويدي إليكتريك",
+              "name_en": "Elsewedy Electric",
+              "sector": "Industrial Goods & Services",
+              "weight_percentage": 13.9
+            },
+            {
+              "ticker": "MFPC.CA",
+              "code": "MFPC",
+              "name_ar": "مصر لإنتاج الأسمدة - موبكو",
+              "name_en": "Misr Fertilizers Production (MOPCO)",
+              "sector": "Chemicals",
+              "weight_percentage": 11.2
+            },
+            {
+              "ticker": "ABUK.CA",
+              "code": "ABUK",
+              "name_ar": "أبو قير للأسمدة والصناعات الكيماوية",
+              "name_en": "Abu Qir Fertilizers",
+              "sector": "Chemicals",
+              "weight_percentage": 10.5
+            },
+            {
+              "ticker": "ESRS.CA",
+              "code": "ESRS",
+              "name_ar": "حديد عز",
+              "name_en": "Ezz Steel",
+              "sector": "Basic Resources",
+              "weight_percentage": 8.6
+            },
+            {
+              "ticker": "SKPC.CA",
+              "code": "SKPC",
+              "name_ar": "سيدي كرير للبتروكيماويات",
+              "name_en": "Sidi Kerir Petrochemicals",
+              "sector": "Chemicals",
+              "weight_percentage": 6.2
+            },
+            {
+              "ticker": "FWRY.CA",
+              "code": "FWRY",
+              "name_ar": "فوري لتكنولوجيا البنوك والمدفوعات الإلكترونية",
+              "name_en": "Fawry Banking & Payment Tech",
+              "sector": "Technology",
+              "weight_percentage": 5.8
+            },
+            {
+              "ticker": "ADIB.CA",
+              "code": "ADIB",
+              "name_ar": "مصرف أبو ظبي الإسلامي - مصر",
+              "name_en": "Abu Dhabi Islamic Bank Egypt",
+              "sector": "Banks (Islamic)",
+              "weight_percentage": 4.9
+            },
+            {
+              "ticker": "ALCN.CA",
+              "code": "ALCN",
+              "name_ar": "الإسكندرية لتداول الحاويات والبضائع",
+              "name_en": "Alexandria Containers & Cargo Handling",
+              "sector": "Transportation & Shipping",
+              "weight_percentage": 4.1
+            },
+            {
+              "ticker": "MNHD.CA",
+              "code": "MNHD",
+              "name_ar": "مدينة مصر للإسكان والتعمير",
+              "name_en": "Madinet Masr Housing",
+              "sector": "Real Estate",
+              "weight_percentage": 3.4
+            },
+            {
+              "ticker": "HELI.CA",
+              "code": "HELI",
+              "name_ar": "مصر الجديدة للإسكان والتعمير",
+              "name_en": "Heliopolis Housing",
+              "sector": "Real Estate",
+              "weight_percentage": 3.2
+            },
+            {
+              "ticker": "EFID.CA",
+              "code": "EFID",
+              "name_ar": "إيديتا للصناعات الغذائية",
+              "name_en": "Edita Food Industries",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 2.7
+            },
+            {
+              "ticker": "JUFO.CA",
+              "code": "JUFO",
+              "name_ar": "جهينة للصناعات الغذائية",
+              "name_en": "Juhayna Food Industries",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 2.5
+            },
+            {
+              "ticker": "ORWE.CA",
+              "code": "ORWE",
+              "name_ar": "النساجون الشرقيون للسجاد",
+              "name_en": "Oriental Weavers",
+              "sector": "Textiles & Durables",
+              "weight_percentage": 2.1
+            },
+            {
+              "ticker": "ISPH.CA",
+              "code": "ISPH",
+              "name_ar": "ابن سينا فارما",
+              "name_en": "Ibnsina Pharma",
+              "sector": "Pharmaceuticals",
+              "weight_percentage": 1.8
+            },
+            {
+              "ticker": "OCDI.CA",
+              "code": "OCDI",
+              "name_ar": "سوديك - السادس من أكتوبر للتنمية والاستثمار",
+              "name_en": "SODIC",
+              "sector": "Real Estate",
+              "weight_percentage": 1.7
+            },
+            {
+              "ticker": "PHDC.CA",
+              "code": "PHDC",
+              "name_ar": "بالم هيلز للتعمير",
+              "name_en": "Palm Hills Developments",
+              "sector": "Real Estate",
+              "weight_percentage": 1.6
+            },
+            {
+              "ticker": "ORAS.CA",
+              "code": "ORAS",
+              "name_ar": "أوراسكوم كونستراكشون بي إل سي",
+              "name_en": "Orascom Construction PLC",
+              "sector": "Construction & Materials",
+              "weight_percentage": 1.5
+            },
+            {
+              "ticker": "BABA.CA",
+              "code": "FAIT",
+              "name_ar": "بنك فيصل الإسلامي المصري",
+              "name_en": "Faisal Islamic Bank of Egypt",
+              "sector": "Banks (Islamic)",
+              "weight_percentage": 1.4
+            },
+            {
+              "ticker": "ALUM.CA",
+              "code": "ALUM",
+              "name_ar": "مصر للألومنيوم",
+              "name_en": "Egypt Aluminum",
+              "sector": "Basic Resources",
+              "weight_percentage": 1.3
+            },
+            {
+              "ticker": "EGCH.CA",
+              "code": "EGCH",
+              "name_ar": "الصناعات الكيماوية المصرية - كيما",
+              "name_en": "KIMA",
+              "sector": "Chemicals",
+              "weight_percentage": 0.95
+            },
+            {
+              "ticker": "SPMD.CA",
+              "code": "SPMD",
+              "name_ar": "سبيد ميديكال",
+              "name_en": "Speed Medical",
+              "sector": "Health Care",
+              "weight_percentage": 0.35
+            },
+            {
+              "ticker": "DSCW.CA",
+              "code": "DSCW",
+              "name_ar": "الشروق الحديثة للطباعة والتغليف",
+              "name_en": "El Shorouk Modern Printing",
+              "sector": "Packaging",
+              "weight_percentage": 0.45
+            }
+          ]
+        },
+        "EGX70_EWI": {
+          "index_name_ar": "مؤشر إيجي إكس 70 متساوي الأوزان",
+          "index_name_en": "EGX 70 EWI (Equal Weight Index)",
+          "type": "Equal Weighted Index",
+          "weight_rule": "وزن متساوي لكل شركة (حوالي 1.43% لكل سهم عند إعادة التوازن الدوري)",
+          "description": "يقيس أداء أفضل 70 شركة متوسطة وصغيرة من حيث السيولة والنشاط، مع إعطاء وزن متساوٍ لجميع الشركات لتلافي هيمنة الشركات الكبرى",
+          "nominal_constituent_weight": 1.428,
+          "constituents_sample": [
+            {
+              "ticker": "RACC.CA",
+              "code": "RACC",
+              "name_ar": "راية لخدمات مراكز الاتصالات",
+              "name_en": "Raya Contact Center",
+              "sector": "Technology",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "RAYA.CA",
+              "code": "RAYA",
+              "name_ar": "راية القابضة للاستثمارات المالية",
+              "name_en": "Raya Holding",
+              "sector": "Financial Services",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "DICE.CA",
+              "code": "DICE",
+              "name_ar": "دايس للملابس الجاهزة",
+              "name_en": "Dice Sport & Casual Wear",
+              "sector": "Textiles & Durables",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "ARAB.CA",
+              "code": "ARAB",
+              "name_ar": "المطورون العرب القابضة",
+              "name_en": "Arab Developers Holding",
+              "sector": "Real Estate",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "MOIL.CA",
+              "code": "MOIL",
+              "name_ar": "ماريديف - الخدمات الملاحية والبترولية",
+              "name_en": "Maridive & Oil Services",
+              "sector": "Energy & Support Services",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "RMDA.CA",
+              "code": "RMDA",
+              "name_ar": "العاشر من رمضان للصناعات الدوائية - راميدا",
+              "name_en": "Rameda",
+              "sector": "Pharmaceuticals",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "ACAMD.CA",
+              "code": "ACAMD",
+              "name_ar": "العربية لإدارة وتطوير الأصول",
+              "name_en": "Arab Co for Asset Management",
+              "sector": "Real Estate",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "PORT.CA",
+              "code": "PORT",
+              "name_ar": "بورتو جروب القابضة",
+              "name_en": "Porto Group Holding",
+              "sector": "Real Estate",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "DSCW.CA",
+              "code": "DSCW",
+              "name_ar": "الشروق الحديثة للطباعة والتغليف",
+              "name_en": "El Shorouk Modern Printing",
+              "sector": "Packaging",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "POUL.CA",
+              "code": "POUL",
+              "name_ar": "القاهرة للدواجن",
+              "name_en": "Cairo Poultry",
+              "sector": "Food, Beverages & Tobacco",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "CLHO.CA",
+              "code": "CLHO",
+              "name_ar": "مستشفى كليوباترا",
+              "name_en": "Cleopatra Hospital",
+              "sector": "Health Care",
+              "weight_percentage": 1.43
+            },
+            {
+              "ticker": "MCQE.CA",
+              "code": "MCQE",
+              "name_ar": "مصر للأسمنت - قنا",
+              "name_en": "Misr Cement - Qena",
+              "sector": "Building Materials",
+              "weight_percentage": 1.43
+            }
+          ]
+        },
+        "EGX100_EWI": {
+          "index_name_ar": "مؤشر إيجي إكس 100 متساوي الأوزان",
+          "index_name_en": "EGX 100 EWI (Equal Weight Index)",
+          "type": "Equal Weighted Index",
+          "weight_rule": "وزن متساوي لكل شركة (1.00% لكل سهم من الـ 100 شركة عند إعادة التوازن)",
+          "description": "يجمع بين الشركات المكونة لمؤشري EGX 30 و EGX 70 EWI ليضم أنشط 100 شركة في السوق بأوزان متساوية",
+          "nominal_constituent_weight": 1.0,
+          "total_stocks_count": 100,
+          "rule": "مكون من كافة أسهم EGX30 (وزن 1% لكل سهم) + كافة أسهم EGX70 EWI (وزن 1% لكل سهم)"
+        }
+      }
+    },
+    "TADAWUL": {
+      "market_name_ar": "السوق المالية السعودية (تداول)",
+      "market_name_en": "Saudi Exchange (Tadawul)",
+      "country": "Saudi Arabia",
+      "currency": "SAR",
+      "indices": {
+        "TASI": {
+          "index_name_ar": "مؤشر السوق الرئيسية (تاسي)",
+          "index_name_en": "Tadawul All Share Index (TASI)",
+          "type": "Free-Float Market Capitalization Weighted (with 15% Index Cap)",
+          "max_weight_cap": "15%",
+          "description": "المؤشر القياسي العام لكافة الشركات المدرجة في السوق الرئيسية السعودية، محكوم بسقف وزن أعلى بنسبة 15% لأي سهم منفرد",
+          "constituents_top_weights": [
+            {
+              "ticker": "1120.SR",
+              "code": "1120",
+              "name_ar": "مصرف الراجحي",
+              "name_en": "Al Rajhi Bank",
+              "sector": "Banks",
+              "weight_percentage": 13.5
+            },
+            {
+              "ticker": "2222.SR",
+              "code": "2222",
+              "name_ar": "أرامكو السعودية",
+              "name_en": "Saudi Aramco",
+              "sector": "Energy",
+              "weight_percentage": 11.2
+            },
+            {
+              "ticker": "1180.SR",
+              "code": "1180",
+              "name_ar": "البنك الأهلي السعودي (SNB)",
+              "name_en": "Saudi National Bank",
+              "sector": "Banks",
+              "weight_percentage": 8.75
+            },
+            {
+              "ticker": "7010.SR",
+              "code": "7010",
+              "name_ar": "إس تي سي (الاتصالات السعودية)",
+              "name_en": "stc",
+              "sector": "Telecommunications",
+              "weight_percentage": 5.95
+            },
+            {
+              "ticker": "2010.SR",
+              "code": "2010",
+              "name_ar": "سابك (الشركة السعودية للصناعات الأساسية)",
+              "name_en": "SABIC",
+              "sector": "Materials",
+              "weight_percentage": 5.4
+            },
+            {
+              "ticker": "1211.SR",
+              "code": "1211",
+              "name_ar": "معادن (شركة التعدين العربية السعودية)",
+              "name_en": "Ma'aden",
+              "sector": "Materials",
+              "weight_percentage": 4.1
+            },
+            {
+              "ticker": "1150.SR",
+              "code": "1150",
+              "name_ar": "مصرف الإنماء",
+              "name_en": "Alinma Bank",
+              "sector": "Banks",
+              "weight_percentage": 3.65
+            },
+            {
+              "ticker": "1010.SR",
+              "code": "1010",
+              "name_ar": "بنك الرياض",
+              "name_en": "Riyad Bank",
+              "sector": "Banks",
+              "weight_percentage": 3.25
+            },
+            {
+              "ticker": "2020.SR",
+              "code": "2020",
+              "name_ar": "سابك للمغذيات الزراعية",
+              "name_en": "SABIC Agri-Nutrients",
+              "sector": "Materials",
+              "weight_percentage": 2.65
+            },
+            {
+              "ticker": "5110.SR",
+              "code": "5110",
+              "name_ar": "الشركة السعودية للكهرباء",
+              "name_en": "Saudi Electricity",
+              "sector": "Utilities",
+              "weight_percentage": 2.45
+            },
+            {
+              "ticker": "2280.SR",
+              "code": "2280",
+              "name_ar": "المراعي",
+              "name_en": "Almarai",
+              "sector": "Food & Beverages",
+              "weight_percentage": 2.15
+            },
+            {
+              "ticker": "4005.SR",
+              "code": "4005",
+              "name_ar": "مجموعة الدكتور سليمان الحبيب الطبية",
+              "name_en": "Dr. Sulaiman Al Habib Medical Group",
+              "sector": "Health Care",
+              "weight_percentage": 2.05
+            },
+            {
+              "ticker": "1050.SR",
+              "code": "1050",
+              "name_ar": "البنك السعودي الفرنسي",
+              "name_en": "Banque Saudi Fransi",
+              "sector": "Banks",
+              "weight_percentage": 1.95
+            },
+            {
+              "ticker": "1060.SR",
+              "code": "1060",
+              "name_ar": "البنك الأول (SAB)",
+              "name_en": "Saudi Awwal Bank (SAB)",
+              "sector": "Banks",
+              "weight_percentage": 1.9
+            },
+            {
+              "ticker": "7020.SR",
+              "code": "7020",
+              "name_ar": "اتحاد اتصالات (موبايلي)",
+              "name_en": "Mobily",
+              "sector": "Telecommunications",
+              "weight_percentage": 1.65
+            },
+            {
+              "ticker": "4190.SR",
+              "code": "4190",
+              "name_ar": "جرير للتسويق",
+              "name_en": "Jarir Marketing",
+              "sector": "Retailing",
+              "weight_percentage": 1.35
+            },
+            {
+              "ticker": "4300.SR",
+              "code": "4300",
+              "name_ar": "دار الأركان للتطوير العقاري",
+              "name_en": "Dar Al Arkan",
+              "sector": "Real Estate",
+              "weight_percentage": 1.25
+            },
+            {
+              "ticker": "8010.SR",
+              "code": "8010",
+              "name_ar": "التعاونية للتأمين",
+              "name_en": "Tawuniya",
+              "sector": "Insurance",
+              "weight_percentage": 1.15
+            },
+            {
+              "ticker": "4003.SR",
+              "code": "4003",
+              "name_ar": "إكسترا (الشركة المتحدة للإلكترونيات)",
+              "name_en": "eXtra",
+              "sector": "Retailing",
+              "weight_percentage": 0.95
+            },
+            {
+              "ticker": "4200.SR",
+              "code": "4200",
+              "name_ar": "الدريس للخدمات البترولية",
+              "name_en": "Aldrees",
+              "sector": "Energy",
+              "weight_percentage": 0.85
+            }
+          ]
+        },
+        "TASI_SHARIAH": {
+          "index_name_ar": "مؤشر تاسي الإسلامي (TASI Shariah Index)",
+          "index_name_en": "TASI Shariah Index",
+          "type": "Free-Float Market Cap (Shariah Compliant)",
+          "description": "يضم جميع الشركات المدرجة في السوق الرئيسية السعودية المتوافقة مع معايير الشريعة الإسلامية الصادرة عن الهيئة الشرعية الموحدة",
+          "constituents_top_weights": [
+            {
+              "ticker": "1120.SR",
+              "code": "1120",
+              "name_ar": "مصرف الراجحي",
+              "name_en": "Al Rajhi Bank",
+              "sector": "Banks (Islamic)",
+              "weight_percentage": 15.0
+            },
+            {
+              "ticker": "2222.SR",
+              "code": "2222",
+              "name_ar": "أرامكو السعودية",
+              "name_en": "Saudi Aramco",
+              "sector": "Energy",
+              "weight_percentage": 14.5
+            },
+            {
+              "ticker": "7010.SR",
+              "code": "7010",
+              "name_ar": "إس تي سي (الاتصالات السعودية)",
+              "name_en": "stc",
+              "sector": "Telecommunications",
+              "weight_percentage": 7.8
+            },
+            {
+              "ticker": "2010.SR",
+              "code": "2010",
+              "name_ar": "سابك",
+              "name_en": "SABIC",
+              "sector": "Materials",
+              "weight_percentage": 7.2
+            },
+            {
+              "ticker": "1211.SR",
+              "code": "1211",
+              "name_ar": "معادن",
+              "name_en": "Ma'aden",
+              "sector": "Materials",
+              "weight_percentage": 5.4
+            },
+            {
+              "ticker": "1150.SR",
+              "code": "1150",
+              "name_ar": "مصرف الإنماء",
+              "name_en": "Alinma Bank",
+              "sector": "Banks (Islamic)",
+              "weight_percentage": 4.8
+            },
+            {
+              "ticker": "2020.SR",
+              "code": "2020",
+              "name_ar": "سابك للمغذيات الزراعية",
+              "name_en": "SABIC Agri-Nutrients",
+              "sector": "Materials",
+              "weight_percentage": 3.5
+            },
+            {
+              "ticker": "2280.SR",
+              "code": "2280",
+              "name_ar": "المراعي",
+              "name_en": "Almarai",
+              "sector": "Food & Beverages",
+              "weight_percentage": 2.85
+            },
+            {
+              "ticker": "4005.SR",
+              "code": "4005",
+              "name_ar": "مجموعة الدكتور سليمان الحبيب",
+              "name_en": "Dr. Sulaiman Al Habib Medical Group",
+              "sector": "Health Care",
+              "weight_percentage": 2.7
+            }
+          ]
+        },
+        "MT30": {
+          "index_name_ar": "مؤشر إم إس سي آي تداول 30 (MSCI Tadawul 30)",
+          "index_name_en": "MSCI Tadawul 30 Index (MT30)",
+          "type": "Capped Free-Float Market Cap (30 Stocks)",
+          "description": "مؤشر تم تطويره بالتعاون بين تداول وMSCI ويضم أكبر 30 سهماً مؤهلاً للاستثمار المؤسسي والمشتقات المالية",
+          "max_weight_cap": "15%"
+        }
+      }
+    },
+    "KSE": {
+      "market_name_ar": "بورصة الكويت",
+      "market_name_en": "Boursa Kuwait",
+      "country": "Kuwait",
+      "currency": "KWD",
+      "indices": {
+        "PREMIER_MARKET": {
+          "index_name_ar": "مؤشر السوق الأول (Premier Market Index - BKP)",
+          "index_name_en": "Boursa Kuwait Premier Market Index",
+          "type": "Free-Float Market Capitalization Weighted",
+          "description": "يقيس أداء نخبة الشركات الرائدة ذات السيولة والقيمة السوقية العالية المؤهلة للاستثمار الأجنبي المباشر",
+          "constituents": [
+            {
+              "ticker": "KFH.KW",
+              "code": "108",
+              "name_ar": "بيت التمويل الكويتي (بيتك)",
+              "name_en": "Kuwait Finance House",
+              "sector": "Banking (Islamic)",
+              "weight_percentage": 32.5
+            },
+            {
+              "ticker": "NBK.KW",
+              "code": "101",
+              "name_ar": "بنك الكويت الوطني",
+              "name_en": "National Bank of Kuwait",
+              "sector": "Banking",
+              "weight_percentage": 24.8
+            },
+            {
+              "ticker": "ZAIN.KW",
+              "code": "605",
+              "name_ar": "مجموعة زين للاتصالات",
+              "name_en": "Mobile Telecommunications Company (Zain)",
+              "sector": "Telecommunications",
+              "weight_percentage": 7.8
+            },
+            {
+              "ticker": "AGLTY.KW",
+              "code": "603",
+              "name_ar": "أجيليتي للمخازن العمومية",
+              "name_en": "Agility Public Warehousing",
+              "sector": "Industrials & Logistics",
+              "weight_percentage": 6.5
+            },
+            {
+              "ticker": "BOUBYAN.KW",
+              "code": "109",
+              "name_ar": "بنك بوبيان",
+              "name_en": "Boubyan Bank",
+              "sector": "Banking (Islamic)",
+              "weight_percentage": 5.4
+            },
+            {
+              "ticker": "GBK.KW",
+              "code": "102",
+              "name_ar": "بنك الخليج",
+              "name_en": "Gulf Bank",
+              "sector": "Banking",
+              "weight_percentage": 4.1
+            },
+            {
+              "ticker": "MABANEE.KW",
+              "code": "413",
+              "name_ar": "شركة المباني",
+              "name_en": "Mabanee Company",
+              "sector": "Real Estate",
+              "weight_percentage": 3.75
+            },
+            {
+              "ticker": "BURGAN.KW",
+              "code": "107",
+              "name_ar": "بنك برقان",
+              "name_en": "Burgan Bank",
+              "sector": "Banking",
+              "weight_percentage": 2.85
+            },
+            {
+              "ticker": "WARBABANK.KW",
+              "code": "822",
+              "name_ar": "بنك وربة",
+              "name_en": "Warba Bank",
+              "sector": "Banking (Islamic)",
+              "weight_percentage": 2.2
+            },
+            {
+              "ticker": "KIB.KW",
+              "code": "106",
+              "name_ar": "بنك الكويت الدولي",
+              "name_en": "Kuwait International Bank",
+              "sector": "Banking (Islamic)",
+              "weight_percentage": 1.95
+            },
+            {
+              "ticker": "NIND.KW",
+              "code": "501",
+              "name_ar": "مجموعة الصناعات الوطنية القابضة",
+              "name_en": "National Industries Group",
+              "sector": "Financial Services",
+              "weight_percentage": 1.85
+            },
+            {
+              "ticker": "HUMANSOFT.KW",
+              "code": "637",
+              "name_ar": "هيومن سوفت القابضة",
+              "name_en": "Human Soft Holding",
+              "sector": "Consumer Services",
+              "weight_percentage": 1.65
+            },
+            {
+              "ticker": "KPROJ.KW",
+              "code": "205",
+              "name_ar": "مشاريع الكويت القابضة (كيبكو)",
+              "name_en": "Kuwait Projects Company (KIPCO)",
+              "sector": "Financial Services",
+              "weight_percentage": 1.5
+            },
+            {
+              "ticker": "BOURSA.KW",
+              "code": "827",
+              "name_ar": "شركة بورصة الكويت للأوراق المالية",
+              "name_en": "Boursa Kuwait Securities",
+              "sector": "Financial Services",
+              "weight_percentage": 1.35
+            },
+            {
+              "ticker": "MEZZAN.KW",
+              "code": "823",
+              "name_ar": "ميزان القابضة",
+              "name_en": "Mezzan Holding",
+              "sector": "Consumer Goods",
+              "weight_percentage": 0.95
+            },
+            {
+              "ticker": "ALALGI.KW",
+              "code": "103",
+              "name_ar": "البنك الأهلي الكويتي",
+              "name_en": "Al Ahli Bank of Kuwait",
+              "sector": "Banking",
+              "weight_percentage": 0.85
+            }
+          ]
+        },
+        "ALL_SHARE": {
+          "index_name_ar": "مؤشر السوق العام (All Share Index - BKAS)",
+          "index_name_en": "Boursa Kuwait All Share Index",
+          "type": "Free-Float Market Capitalization Weighted",
+          "description": "يقيس أداء جميع الشركات المدرجة في بورصة الكويت (السوق الأول والسوق الرئيسي معاً)"
+        },
+        "MAIN_MARKET": {
+          "index_name_ar": "مؤشر السوق الرئيسي (Main Market Index - BKM)",
+          "index_name_en": "Boursa Kuwait Main Market Index",
+          "type": "Free-Float Market Capitalization Weighted",
+          "description": "يقيس أداء الشركات المدرجة في السوق الرئيسي التي لا تفي بمتطلبات السوق الأول"
+        }
+      }
+    },
+    "QSE": {
+      "market_name_ar": "بورصة قطر",
+      "market_name_en": "Qatar Stock Exchange",
+      "country": "Qatar",
+      "currency": "QAR",
+      "indices": {
+        "QE_INDEX": {
+          "index_name_ar": "مؤشر بورصة قطر العام (QE Index)",
+          "index_name_en": "Qatar Exchange General Index",
+          "type": "Free-Float Market Capitalization Weighted (15% Max Capping)",
+          "max_weight_cap": "15%",
+          "description": "يقيس أداء أكبر وأنشط 20 سهماً مدرجاً في بورصة قطر مع تطبيق سقف ترجيح 15%",
+          "constituents": [
+            {
+              "ticker": "QNBK.QA",
+              "code": "QNBK",
+              "name_ar": "بنك قطر الوطني (QNB)",
+              "name_en": "Qatar National Bank",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 15.0
+            },
+            {
+              "ticker": "IQCD.QA",
+              "code": "IQCD",
+              "name_ar": "صناعات قطر",
+              "name_en": "Industries Qatar",
+              "sector": "Industrials",
+              "weight_percentage": 14.2
+            },
+            {
+              "ticker": "QIBK.QA",
+              "code": "QIBK",
+              "name_ar": "مصرف قطر الإسلامي",
+              "name_en": "Qatar Islamic Bank",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 12.8
+            },
+            {
+              "ticker": "MARK.QA",
+              "code": "MARK",
+              "name_ar": "مصرف الريان",
+              "name_en": "Masraf Al Rayan",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 7.95
+            },
+            {
+              "ticker": "CBQK.QA",
+              "code": "CBQK",
+              "name_ar": "البنك التجاري",
+              "name_en": "The Commercial Bank",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 7.45
+            },
+            {
+              "ticker": "ORDS.QA",
+              "code": "ORDS",
+              "name_ar": "مجموعة أوريدو (Ooredoo)",
+              "name_en": "Ooredoo",
+              "sector": "Telecoms",
+              "weight_percentage": 6.85
+            },
+            {
+              "ticker": "MPHC.QA",
+              "code": "MPHC",
+              "name_ar": "مسيعيد للبتروكيماويات القابضة",
+              "name_en": "Mesaieed Petrochemical Holding",
+              "sector": "Industrials",
+              "weight_percentage": 5.4
+            },
+            {
+              "ticker": "QGTS.QA",
+              "code": "QGTS",
+              "name_ar": "قطر لنقل الغاز (ناقلات)",
+              "name_en": "Nakilat",
+              "sector": "Transportation",
+              "weight_percentage": 4.9
+            },
+            {
+              "ticker": "QFLS.QA",
+              "code": "QFLS",
+              "name_ar": "قطر للوقود (وقود)",
+              "name_en": "Qatar Fuel (WOQOD)",
+              "sector": "Consumer Goods & Services",
+              "weight_percentage": 4.35
+            },
+            {
+              "ticker": "BRES.QA",
+              "code": "BRES",
+              "name_ar": "مجموعة بروة العقارية",
+              "name_en": "Barwa Real Estate",
+              "sector": "Real Estate",
+              "weight_percentage": 3.8
+            },
+            {
+              "ticker": "QIIK.QA",
+              "code": "QIIK",
+              "name_ar": "بنك قطر الدولي الإسلامي",
+              "name_en": "Qatar International Islamic Bank",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 3.65
+            },
+            {
+              "ticker": "DHBK.QA",
+              "code": "DHBK",
+              "name_ar": "بنك الدوحة",
+              "name_en": "Doha Bank",
+              "sector": "Banks & Financial Services",
+              "weight_percentage": 2.95
+            },
+            {
+              "ticker": "VFQS.QA",
+              "code": "VFQS",
+              "name_ar": "فودافون قطر",
+              "name_en": "Vodafone Qatar",
+              "sector": "Telecoms",
+              "weight_percentage": 2.45
+            },
+            {
+              "ticker": "UDCD.QA",
+              "code": "UDCD",
+              "name_ar": "الشركة المتحدة للتنمية",
+              "name_en": "United Development Company",
+              "sector": "Real Estate",
+              "weight_percentage": 2.1
+            },
+            {
+              "ticker": "GISS.QA",
+              "code": "GISS",
+              "name_ar": "الخليج الدولية للخدمات",
+              "name_en": "Gulf International Services",
+              "sector": "Industrials",
+              "weight_percentage": 1.95
+            },
+            {
+              "ticker": "NLCS.QA",
+              "code": "NLCS",
+              "name_ar": "شركة الملاحة القطرية (ملاحة)",
+              "name_en": "Qatar Navigation (Milaha)",
+              "sector": "Transportation",
+              "weight_percentage": 1.75
+            },
+            {
+              "ticker": "AHCS.QA",
+              "code": "AHCS",
+              "name_ar": "مجموعة أعمال",
+              "name_en": "Aamal Company",
+              "sector": "Industrials",
+              "weight_percentage": 1.55
+            },
+            {
+              "ticker": "MEZA.QA",
+              "code": "MEZA",
+              "name_ar": "شركة ميزة (Meeza)",
+              "name_en": "Meeza",
+              "sector": "Technology",
+              "weight_percentage": 1.25
+            },
+            {
+              "ticker": "QNCD.QA",
+              "code": "QNCD",
+              "name_ar": "قطر الوطنية لصناعة الأسمنت",
+              "name_en": "Qatar National Cement",
+              "sector": "Industrials",
+              "weight_percentage": 1.1
+            },
+            {
+              "ticker": "SIIS.QA",
+              "code": "SIIS",
+              "name_ar": "السلام العالمية للاستثمار",
+              "name_en": "Salam International",
+              "sector": "Consumer Goods & Services",
+              "weight_percentage": 0.65
+            }
+          ]
+        },
+        "QE_AL_RAYAN_ISLAMIC": {
+          "index_name_ar": "مؤشر بورصة قطر الريان الإسلامي (QE Al Rayan Islamic Index)",
+          "index_name_en": "QE Al Rayan Islamic Index",
+          "type": "Dividend-Adjusted Shariah Compliant Index",
+          "description": "مؤشر الأسهم المتوافقة مع الشريعة الإسلامية في بورصة قطر تم إطلاقه بالتعاون مع مصرف الريان"
+        }
+      }
+    },
+    "US": {
+      "market_name_ar": "الأسواق المالية الأمريكية",
+      "market_name_en": "United States Financial Markets",
+      "country": "United States",
+      "currency": "USD",
+      "indices": {
+        "SP500": {
+          "index_name_ar": "مؤشر ستاندرد آند بورز 500 (S&P 500)",
+          "index_name_en": "Standard & Poor's 500 Index (S&P 500)",
+          "type": "Free-Float Market Capitalization Weighted",
+          "description": "يقيس أداء 500 من كبرى الشركات الأمريكية المساهمة العامة، ويعد المقياس الأهم للاقتصاد الأمريكي وأسواق الأسهم العالمية",
+          "top_constituents": [
+            {
+              "ticker": "MSFT",
+              "code": "MSFT",
+              "name_ar": "مايكروسوفت",
+              "name_en": "Microsoft Corporation",
+              "sector": "Information Technology",
+              "weight_percentage": 7.15
+            },
+            {
+              "ticker": "AAPL",
+              "code": "AAPL",
+              "name_ar": "أبل",
+              "name_en": "Apple Inc.",
+              "sector": "Information Technology",
+              "weight_percentage": 6.85
+            },
+            {
+              "ticker": "NVDA",
+              "code": "NVDA",
+              "name_ar": "إنفيديا",
+              "name_en": "NVIDIA Corporation",
+              "sector": "Information Technology",
+              "weight_percentage": 6.45
+            },
+            {
+              "ticker": "AMZN",
+              "code": "AMZN",
+              "name_ar": "أمازون",
+              "name_en": "Amazon.com Inc.",
+              "sector": "Consumer Discretionary",
+              "weight_percentage": 3.75
+            },
+            {
+              "ticker": "META",
+              "code": "META",
+              "name_ar": "ميتا بلاتفورمز",
+              "name_en": "Meta Platforms Inc.",
+              "sector": "Communication Services",
+              "weight_percentage": 2.55
+            },
+            {
+              "ticker": "GOOGL",
+              "code": "GOOGL",
+              "name_ar": "ألفابت (جوجل - الفئة أ)",
+              "name_en": "Alphabet Inc. (Class A)",
+              "sector": "Communication Services",
+              "weight_percentage": 2.25
+            },
+            {
+              "ticker": "GOOG",
+              "code": "GOOG",
+              "name_ar": "ألفابت (جوجل - الفئة ج)",
+              "name_en": "Alphabet Inc. (Class C)",
+              "sector": "Communication Services",
+              "weight_percentage": 1.9
+            },
+            {
+              "ticker": "BRK.B",
+              "code": "BRK-B",
+              "name_ar": "بيركشاير هاثاواي",
+              "name_en": "Berkshire Hathaway Inc.",
+              "sector": "Financials",
+              "weight_percentage": 1.75
+            },
+            {
+              "ticker": "LLY",
+              "code": "LLY",
+              "name_ar": "إيلي ليلي",
+              "name_en": "Eli Lilly and Company",
+              "sector": "Health Care",
+              "weight_percentage": 1.6
+            },
+            {
+              "ticker": "TSLA",
+              "code": "TSLA",
+              "name_ar": "تسلا",
+              "name_en": "Tesla Inc.",
+              "sector": "Consumer Discretionary",
+              "weight_percentage": 1.5
+            },
+            {
+              "ticker": "JPM",
+              "code": "JPM",
+              "name_ar": "جي بي مورغان تشيس",
+              "name_en": "JPMorgan Chase & Co.",
+              "sector": "Financials",
+              "weight_percentage": 1.35
+            },
+            {
+              "ticker": "V",
+              "code": "V",
+              "name_ar": "فيزا",
+              "name_en": "Visa Inc.",
+              "sector": "Financials",
+              "weight_percentage": 1.1
+            },
+            {
+              "ticker": "UNH",
+              "code": "UNH",
+              "name_ar": "يونايتد هيلث جروب",
+              "name_en": "UnitedHealth Group Inc.",
+              "sector": "Health Care",
+              "weight_percentage": 1.05
+            },
+            {
+              "ticker": "XOM",
+              "code": "XOM",
+              "name_ar": "إكسون موبيل",
+              "name_en": "Exxon Mobil Corp.",
+              "sector": "Energy",
+              "weight_percentage": 1.0
+            },
+            {
+              "ticker": "MA",
+              "code": "MA",
+              "name_ar": "ماستركارد",
+              "name_en": "Mastercard Inc.",
+              "sector": "Financials",
+              "weight_percentage": 0.95
+            }
+          ]
+        },
+        "NASDAQ100": {
+          "index_name_ar": "مؤشر ناسداك 100 (NASDAQ-100)",
+          "index_name_en": "NASDAQ-100 Index",
+          "type": "Modified Market Capitalization Weighted",
+          "description": "يقيس أداء أكبر 100 شركة غير مالية مدرجة في بورصة ناسداك ويهيمن عليه عمالقة التكنولوجيا والابتكار",
+          "top_constituents": [
+            {
+              "ticker": "AAPL",
+              "code": "AAPL",
+              "name_ar": "أبل",
+              "name_en": "Apple Inc.",
+              "sector": "Information Technology",
+              "weight_percentage": 8.85
+            },
+            {
+              "ticker": "MSFT",
+              "code": "MSFT",
+              "name_ar": "مايكروسوفت",
+              "name_en": "Microsoft Corp.",
+              "sector": "Information Technology",
+              "weight_percentage": 8.4
+            },
+            {
+              "ticker": "NVDA",
+              "code": "NVDA",
+              "name_ar": "إنفيديا",
+              "name_en": "NVIDIA Corp.",
+              "sector": "Information Technology",
+              "weight_percentage": 7.95
+            },
+            {
+              "ticker": "AMZN",
+              "code": "AMZN",
+              "name_ar": "أمازون",
+              "name_en": "Amazon.com Inc.",
+              "sector": "Consumer Discretionary",
+              "weight_percentage": 5.25
+            },
+            {
+              "ticker": "AVGO",
+              "code": "AVGO",
+              "name_ar": "برودكوم",
+              "name_en": "Broadcom Inc.",
+              "sector": "Information Technology",
+              "weight_percentage": 4.6
+            },
+            {
+              "ticker": "META",
+              "code": "META",
+              "name_ar": "ميتا بلاتفورمز",
+              "name_en": "Meta Platforms Inc.",
+              "sector": "Communication Services",
+              "weight_percentage": 4.5
+            },
+            {
+              "ticker": "COST",
+              "code": "COST",
+              "name_ar": "كوستكو هولسيل",
+              "name_en": "Costco Wholesale Corp.",
+              "sector": "Consumer Staples",
+              "weight_percentage": 2.5
+            },
+            {
+              "ticker": "AMD",
+              "code": "AMD",
+              "name_ar": "أدفانسد مايكرو ديفايسز",
+              "name_en": "Advanced Micro Devices",
+              "sector": "Information Technology",
+              "weight_percentage": 2.1
+            },
+            {
+              "ticker": "NFLX",
+              "code": "NFLX",
+              "name_ar": "نتفليكس",
+              "name_en": "Netflix Inc.",
+              "sector": "Communication Services",
+              "weight_percentage": 2.0
+            },
+            {
+              "ticker": "ADBE",
+              "code": "ADBE",
+              "name_ar": "أدوبي",
+              "name_en": "Adobe Inc.",
+              "sector": "Information Technology",
+              "weight_percentage": 1.75
+            }
+          ]
+        },
+        "DJIA": {
+          "index_name_ar": "مؤشر داو جونز الصناعي (Dow Jones Industrial Average)",
+          "index_name_en": "Dow Jones Industrial Average (DJIA)",
+          "type": "Price-Weighted Index",
+          "description": "مؤشر مرجح بأسعار الأسهم لـ 30 شركة قيادية عريقة تمثل قطاعات الصناعة والتجارة والخدمات الأمريكية",
+          "top_constituents": [
+            {
+              "ticker": "UNH",
+              "code": "UNH",
+              "name_ar": "يونايتد هيلث جروب",
+              "name_en": "UnitedHealth Group Inc.",
+              "sector": "Health Care",
+              "weight_percentage": 8.9
+            },
+            {
+              "ticker": "GS",
+              "code": "GS",
+              "name_ar": "غولدمان ساكس",
+              "name_en": "Goldman Sachs Group Inc.",
+              "sector": "Financials",
+              "weight_percentage": 7.45
+            },
+            {
+              "ticker": "MSFT",
+              "code": "MSFT",
+              "name_ar": "مايكروسوفت",
+              "name_en": "Microsoft Corp.",
+              "sector": "Information Technology",
+              "weight_percentage": 6.8
+            },
+            {
+              "ticker": "HD",
+              "code": "HD",
+              "name_ar": "هوم ديبوت",
+              "name_en": "The Home Depot Inc.",
+              "sector": "Consumer Discretionary",
+              "weight_percentage": 5.75
+            },
+            {
+              "ticker": "CAT",
+              "code": "CAT",
+              "name_ar": "كاتربيلر",
+              "name_en": "Caterpillar Inc.",
+              "sector": "Industrials",
+              "weight_percentage": 5.6
+            },
+            {
+              "ticker": "AMGN",
+              "code": "AMGN",
+              "name_ar": "أمجن",
+              "name_en": "Amgen Inc.",
+              "sector": "Health Care",
+              "weight_percentage": 4.9
+            },
+            {
+              "ticker": "MCD",
+              "code": "MCD",
+              "name_ar": "ماكدونالدز",
+              "name_en": "McDonald's Corp.",
+              "sector": "Consumer Discretionary",
+              "weight_percentage": 4.45
+            },
+            {
+              "ticker": "V",
+              "code": "V",
+              "name_ar": "فيزا",
+              "name_en": "Visa Inc.",
+              "sector": "Financials",
+              "weight_percentage": 4.2
+            },
+            {
+              "ticker": "BA",
+              "code": "BA",
+              "name_ar": "بوينغ",
+              "name_en": "Boeing Co.",
+              "sector": "Industrials",
+              "weight_percentage": 3.1
+            },
+            {
+              "ticker": "IBM",
+              "code": "IBM",
+              "name_ar": "آي بي إم",
+              "name_en": "International Business Machines",
+              "sector": "Information Technology",
+              "weight_percentage": 3.05
+            }
+          ]
+        }
+      }
+    }
+  }
+}

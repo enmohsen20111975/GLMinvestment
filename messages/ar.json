@@ -1,0 +1,1363 @@
+{
+  "common": {
+    "appName": "دليل الاستثمار",
+    "tagline": "تحليلات الأسهم والعملات الرقمية",
+    "siteUrl": "invist.m2y.net",
+    "loading": "جارٍ التحميل...",
+    "refresh": "تحديث",
+    "close": "إغلاق",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "search": "بحث",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "register": "حساب جديد",
+    "subscribe": "اشترك الآن",
+    "language": "اللغة",
+    "arabic": "العربية",
+    "english": "English",
+    "or": "أو",
+    "yes": "نعم",
+    "no": "لا",
+    "all": "الكل"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "radar": "رادار السيولة",
+    "predictions": "التوقعات",
+    "portfolio": "المحفظة",
+    "watchlist": "المتابعة",
+    "news": "الأخبار",
+    "education": "التعليم",
+    "crypto": "الكريبتو",
+    "gold": "الذهب",
+    "multiMarket": "الأسواق المتعددة",
+    "admin": "الإدارة",
+    "settings": "الإعدادات",
+    "stocks": "الأسهم",
+    "reports": "التقارير",
+    "academy": "الأكاديمية",
+    "tools": "الأدوات",
+    "ai": "الذكاء الاصطناعي"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "subtitle": "نظرة عامة على السوق",
+    "marketSummary": "ملخص السوق",
+    "indexCards": "المؤشرات",
+    "marketPulse": "نبض السوق",
+    "marketSentiment": "مؤشر المشاعر",
+    "todayPredictions": "توقعات اليوم",
+    "autoAnalysis": "التحليل الآلي",
+    "topMovers": "الأكثر تحركاً",
+    "maestro": "لوحة القيادة",
+    "myStocksBriefing": "تنبيهات أسهمك",
+    "portfolioSummary": "ملخص المحفظة",
+    "currentValue": "القيمة الحالية",
+    "gainsLosses": "المكاسب/الخسائر",
+    "stockCount": "عدد الأسهم",
+    "costValue": "قيمة التكلفة",
+    "actionableAlerts": "تنبيهات تحتاج قرار",
+    "latestNews": "آخر أخبار أسهمك",
+    "quickLookup": "بحث سريع عن سهم",
+    "exportPdf": "تصدير PDF",
+    "viewAllNews": "عرض كل الأخبار",
+    "noAlerts": "كل أسهمك في وضع طبيعي — لا توجد تنبيهات مستعجلة حالياً. ✅"
+  },
+  "alerts": {
+    "exitRadar": "إشارة خروج",
+    "stopLoss": "وقف خسارة",
+    "takeProfit": "جني أرباح",
+    "approachingTarget": "اقتراب من الهدف",
+    "hold": "انتظار",
+    "critical": "حرج",
+    "warning": "تحذير",
+    "caution": "احتراس",
+    "noAlerts": "كل أسهمك في وضع طبيعي — لا توجد تنبيهات مستعجلة حالياً. ✅",
+    "action": "الإجراء",
+    "alertsNeedDecision": "تنبيهات تحتاج قرار",
+    "viewStock": "عرض السهم"
+  },
+  "markets": {
+    "EGX": "البورصة المصرية",
+    "TADAWUL": "السوق السعودي",
+    "KSE": "بورصة الكويت",
+    "QSE": "بورصة قطر",
+    "US": "الأسواق الأمريكية",
+    "CRYPTO": "العملات الرقمية",
+    "GOLD": "الذهب",
+    "egypt": "مصر",
+    "saudiArabia": "السعودية",
+    "kuwait": "الكويت",
+    "qatar": "قطر",
+    "unitedStates": "أمريكا"
+  },
+  "footer": {
+    "officialSite": "الموقع الرسمي",
+    "androidApp": "تطبيق أندرويد",
+    "facebook": "فيسبوك",
+    "telegram": "تليجرام",
+    "whatsapp": "واتساب",
+    "site": "الموقع",
+    "android": "أندرويد",
+    "bot": "بوت التحليل",
+    "botApp": "بوت التحليل الذكي للأسهم",
+    "disclaimer": "إخلاء مسؤولية:",
+    "rights": "جميع الحقوق محفوظة",
+    "terms": "الشروط والأحكام",
+    "privacy": "سياسة الخصوصية",
+    "madeWith": "صُنع بشغف في مصر"
+  },
+  "auth": {
+    "loginTitle": "تسجيل الدخول",
+    "welcome": "مرحباً بك في دليل الاستثمار",
+    "loginPrompt": "أدخل بياناتك للوصول إلى حسابك",
+    "usernameOrEmail": "اسم المستخدم أو البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "usernameOrEmailPlaceholder": "أدخل اسم المستخدم أو البريد",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "googleLogin": "الدخول بحساب Google",
+    "newAccount": "حساب جديد",
+    "joinInvestment": "انضم إلى دليل الاستثمار",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "example@email.com",
+    "username": "اسم المستخدم",
+    "usernamePlaceholder": "أدخل اسم المستخدم",
+    "passwordPlaceholder2": "8 أحرف على الأقل، مع حروف وأرقام",
+    "selectLevel": "اختر المستوى",
+    "riskLow": "منخفض - محافظ",
+    "riskMedium": "متوسط - متوازن",
+    "riskHigh": "مرتفع - جريء",
+    "tagline": "البورصة المصرية - استثمر بذكاء"
+  },
+  "theme": {
+    "light": "الوضع الفاتح",
+    "dark": "الوضع الداكن",
+    "toggle": "المظهر",
+    "currencyEGP": "عرض بالجنيه المصري",
+    "currencyUSD": "عرض بالدولار الأمريكي",
+    "currencySAR": "عرض بالريال السعودي"
+  },
+  "marketAnalysis": {
+    "title": "متابعة التوقعات",
+    "tabs": {
+      "predictions": "التوقعات",
+      "marketStatus": "حالة السوق",
+      "sectorsTracking": "تتبع القطاعات",
+      "exitRadar": "رادار الخروج",
+      "weeklyReport": "التقرير الأسبوعي",
+      "historicalTrades": "صفقات تاريخية",
+      "multiMarketRadar": "الرادار الموحّد",
+      "radarAccuracy": "دقة الرادار",
+      "personalizedRadar": "الرادار المخصّص",
+      "netPicks": "صافى التوقعات"
+    },
+    "socialFollow": "📍 تابع أحدث تحليلات السوق على"
+  },
+  "stocks": {
+    "title": {
+      "crypto": "العملات الرقمية",
+      "stocks": "الأسهم"
+    },
+    "subtitle": {
+      "crypto": "تصفّح العملات الرقمية وتداولها",
+      "stocks": "تصفح جميع الأسهم المتداولة في {market}"
+    },
+    "tabs": {
+      "stocks": "الأسهم",
+      "crypto": "العملات الرقمية",
+      "bonds": "السندات وشهادات الاستثمار"
+    },
+    "detail": {
+      "title": "تفاصيل السهم"
+    },
+    "stats": {
+      "total": "الإجمالي",
+      "gainers": "المرتفعة",
+      "losers": "المنخفضة",
+      "unchanged": "الثابتة",
+      "avgChange": "متوسط التغير"
+    },
+    "card": {
+      "currencyCrypto": "دولار",
+      "currencyEgx": "جنيه مصري",
+      "volume": "الحجم",
+      "pe": "مكرر الربحية",
+      "marketCap": "القيمة السوقية"
+    },
+    "presets": {
+      "title": "القوائم المُسبقة",
+      "subtitle": "— اختر قائمة لعرض الأسهم المُصنّفة"
+    },
+    "filters": {
+      "sector": "القطاع",
+      "noSectors": "لا توجد قطاعات متاحة",
+      "priceRange": "نطاق السعر",
+      "changeRange": "نطاق التغير %",
+      "resetAdvanced": "إعادة تعيين الفلاتر المتقدمة",
+      "min": "أقل",
+      "max": "أعلى",
+      "reset": "إعادة تعيين"
+    },
+    "search": {
+      "placeholder": "ابحث بالاسم أو الرمز..."
+    },
+    "filterButton": {
+      "title": "شروط مخصصة (قطاع، نطاق سعر، تغير)",
+      "label": "تصفية"
+    },
+    "period": {
+      "day": "يوم",
+      "week": "أسبوع",
+      "month": "شهر"
+    },
+    "footer": {
+      "count": "العدد",
+      "lastUpdate": "آخر تحديث",
+      "loading": "جاري التحميل..."
+    },
+    "empty": {
+      "presetMissing": "لا توجد بيانات للقائمة المحددة — ربما لم يتم حسابها بعد بعد إغلاق السوق",
+      "noMatches": "لا توجد أسهم مطابقة للبحث",
+      "resetFilters": "إعادة تعيين الفلاتر",
+      "showAll": "عرض كل الأسهم"
+    },
+    "pagination": {
+      "page": "صفحة {current} من {total}"
+    },
+    "mobile": {
+      "week": "أسبوع",
+      "fairValue": "القيمة العادلة",
+      "opportunity": "الفرصة"
+    },
+    "columns": {
+      "ticker": "الرمز",
+      "name": "الاسم",
+      "sector": "القطاع",
+      "price": "السعر {currency}",
+      "dayPct": "يوم %",
+      "highLow": "أعلى/أدنى",
+      "chart7d": "شارت 7 أيام",
+      "weekPct": "أسبوع %",
+      "monthPct": "شهر %",
+      "volumeToday": "حجم اليوم",
+      "turnover": "قيمة التداول",
+      "volumeWeek": "حجم الأسبوع",
+      "fairValue": "القيمة العادلة",
+      "opportunityPct": "الفرصة %",
+      "pe": "مكرر الربحية",
+      "signal": "إشارة",
+      "marketCap": "القيمة السوقية"
+    },
+    "signal": {
+      "buy": "شراء",
+      "sell": "بيع",
+      "hold": "انتظار",
+      "overbought": "تشبع شرائي",
+      "oversold": "تشبع بيعي",
+      "bullish": "صاعد",
+      "bearish": "هابط"
+    }
+  },
+  "watchlist": {
+    "title": "قائمة المراقبة",
+    "subtitle": "تتبع الأسهم المفضلة وأرباحك",
+    "toggle": {
+      "regular": "القائمة العادية",
+      "smart": "التحليل الذكي"
+    },
+    "buttons": {
+      "refresh": "تحديث",
+      "addStock": "إضافة سهم",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "add": "إضافة",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "retry": "حاول مرة أخرى",
+      "support": "تواصل مع الدعم"
+    },
+    "stats": {
+      "count": "عدد الأسهم",
+      "totalInvested": "إجمالي المستثمر",
+      "currentValue": "القيمة الحالية",
+      "pnl": "الربح/الخسارة"
+    },
+    "empty": {
+      "title": "قائمة المراقبة فارغة",
+      "body": "أضف الأسهم التي تريد مراقبتها لعرضها هنا. يمكنك إضافة أسهم من صفحة الأسهم أو بالضغط على زر \"إضافة سهم\".",
+      "addButton": "إضافة سهم"
+    },
+    "error": {
+      "title": "تعذّر تحميل قائمة المراقبة",
+      "body": "حدث خطأ أثناء الاتصال بالخادم. تأكد من اتصالك بالإنترنت ثم حاول مرة أخرى. إذا استمرت المشكلة، تواصل مع فريق الدعم."
+    },
+    "delete": {
+      "title": "تأكيد الحذف",
+      "body": "هل أنت متأكد من حذف هذا السهم من قائمة المراقبة؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "dialog": {
+      "addTitle": "إضافة سهم إلى قائمة المراقبة",
+      "addDescription": "ابحث عن السهم وأضفه مع سعر الشراء والتنبيهات",
+      "editTitle": "تعديل السهم",
+      "tickerLabel": "رمز السهم",
+      "searchPlaceholder": "ابحث بالرمز أو الاسم...",
+      "currentPrice": "السعر الحالي",
+      "purchasePrice": "سعر الشراء (ج.م)",
+      "quantity": "الكمية",
+      "alertAbove": "تنبيه إذا أعلى من",
+      "alertBelow": "تنبيه إذا أقل من",
+      "alertChange": "تنبيه عند تغير بنسبة (%)",
+      "notes": "ملاحظات",
+      "notesOptional": "ملاحظات (اختياري)",
+      "notesPlaceholder": "أضف ملاحظاتك هنا...",
+      "advisor": "مستشار",
+      "advisorTitle": "مستشار الصفقة",
+      "searchRequired": "يرجى اختيار سهم من القائمة",
+      "addSuccess": "تمت إضافة السهم إلى قائمة المراقبة",
+      "addFailed": "فشل في إضافة السهم",
+      "editSuccess": "تم تحديث السهم بنجاح",
+      "editFailed": "فشل في تحديث السهم",
+      "deleteSuccess": "تم حذف السهم من قائمة المراقبة",
+      "deleteFailed": "فشل في حذف السهم",
+      "loadFailed": "فشل في تحميل قائمة المراقبة",
+      "connectionError": "حدث خطأ في الاتصال"
+    },
+    "columns": {
+      "stock": "السهم",
+      "currentPrice": "السعر الحالي",
+      "chart7d": "شارت 7 أيام",
+      "purchasePrice": "سعر الشراء",
+      "quantity": "الكمية",
+      "investor": "المستثمر",
+      "currentValue": "القيمة الحالية",
+      "pnl": "الربح/الخسارة",
+      "change": "التغير",
+      "alerts": "التنبيهات",
+      "actions": "إجراءات"
+    }
+  },
+  "portfolio": {
+    "title": "المحفظة المالية",
+    "subtitle": "إدارة أصولك، دخل ومصروفاتك، والتزاماتك",
+    "tabs": {
+      "assets": "الأصول",
+      "incomeExpense": "الدخل والمصروفات",
+      "obligations": "الالتزامات",
+      "reports": "الحالة المالية"
+    },
+    "subPortfolio": {
+      "banner": "📊 الأصول أدناه مفلترة وخاصة بالمحفظة الفرعية المحددة فقط",
+      "badge": "محفظة مخصصة #{id}"
+    },
+    "summary": {
+      "totalAssets": "إجمالي الأصول",
+      "totalLiabilities": "إجمالي الديون",
+      "afterDeduction": "بعد خصم {amount} التزامات",
+      "netWorth": "صافي الثروة",
+      "monthlyYield": "العائد الشهري",
+      "annualYield": "سنوي: {amount}"
+    },
+    "persona": {
+      "label": "شخصية: {persona}",
+      "retest": "إعادة اختبار الشخصية"
+    },
+    "currency": {
+      "label": "القيم بالعملة: {currency}"
+    },
+    "buttons": {
+      "all": "الكل",
+      "liveRefresh": "تحديث مباشر",
+      "addAsset": "إضافة أصل"
+    },
+    "empty": {
+      "noAssets": "لا توجد أصول"
+    },
+    "assetTypes": {
+      "stock": "أسهم",
+      "gold": "ذهب",
+      "bank": "بنك",
+      "certificate": "شهادات إيداع",
+      "fund": "صناديق استثمار",
+      "crypto": "عملات رقمية",
+      "real_estate": "عقارات",
+      "other": "أخرى"
+    },
+    "toast": {
+      "loadAssetsFailed": "فشل في تحميل الأصول",
+      "addToWatchlistSuccess": "تمت إضافة {ticker} إلى قائمة المراقبة",
+      "selectStock": "يرجى اختيار السهم من القائمة",
+      "selectCrypto": "يرجى اختيار العملة من القائمة",
+      "enterAssetName": "يرجى إدخال اسم الأصل",
+      "serverError": "حدث خطأ في الخادم، حاول مرة أخرى",
+      "addAssetSuccess": "تمت إضافة الأصل بنجاح",
+      "addAssetFailed": "فشل في إضافة الأصل",
+      "connectionError": "حدث خطأ في الاتصال",
+      "updateAssetSuccess": "تم تحديث الأصل بنجاح",
+      "updateAssetFailed": "فشل في تحديث الأصل",
+      "deleteAssetSuccess": "تم حذف الأصل بنجاح",
+      "deleteAssetFailed": "فشل في حذف الأصل",
+      "portfolioBalanced": "المحفظة متوازنة وفقاً لشخصيتك الاستثمارية"
+    }
+  },
+  "alertsCenter": {
+    "title": "مركز التنبيهات",
+    "subtitle": "تنبيهات الأسهم والعملات الرقمية والمحفظة",
+    "buttons": {
+      "refresh": "تحديث",
+      "all": "الكل",
+      "stocks": "الأسهم",
+      "crypto": "العملات الرقمية"
+    },
+    "tabs": {
+      "price": "تنبيهات الأسعار",
+      "priceShort": "الأسعار",
+      "portfolio": "المحفظة",
+      "market": "السوق",
+      "obligations": "📅 التزامات مستحقة",
+      "obligationsShort": "📅 الالتزامات"
+    },
+    "stats": {
+      "total": "إجمالي التنبيهات",
+      "stocks": "تنبيهات الأسهم",
+      "crypto": "تنبيهات العملات",
+      "portfolio": "تنبيهات المحفظة"
+    },
+    "empty": {
+      "priceTitle": "لا توجد تنبيهات أسعار",
+      "priceBody": "أضف أسهم أو عملات لقائمة المراقبة لإنشاء تنبيهات",
+      "portfolioTitle": "لا توجد تنبيهات محفظة",
+      "portfolioBody": "ستظهر هنا تنبيهات الربح والخسارة والتحركات الكبيرة",
+      "marketTitle": "لا توجد أحداث سوقية",
+      "marketBody": "ستظهر هنا أخبار السوق والأحداث المهمة",
+      "obligationsTitle": "لا توجد التزامات مستحقة قريباً",
+      "obligationsBody": "جميع الالتزامات النشطة تستحق بعد أكثر من 30 يوماً"
+    },
+    "card": {
+      "cryptoType": "عملة رقمية",
+      "stockType": "سهم",
+      "triggered": "تم التفعيل",
+      "currentPrice": "السعر الحالي",
+      "targetAbove": "السعر المستهدف (أعلى)",
+      "targetBelow": "السعر المستهدف (أقل)",
+      "distance": "المسافة",
+      "monthlyInstallment": "القسط الشهري",
+      "remaining": "المتبقي",
+      "nextDueDate": "تاريخ الاستحقاق القادم"
+    },
+    "time": {
+      "now": "الآن",
+      "minutesAgo": "منذ {count} دقيقة",
+      "hoursAgo": "منذ {count} ساعة",
+      "daysAgo": "منذ {count} يوم"
+    },
+    "toast": {
+      "loadFailed": "فشل في تحميل التنبيهات"
+    }
+  },
+  "news": {
+    "feed": {
+      "title": "الأخبار المالية والاقتصادية",
+      "subtitle": "تغطية شاملة لأخبار البورصة والشركات المدرجة بالنص الكامل والصور من المصادر",
+      "refresh": "تحديث",
+      "clear": "مسح",
+      "searchPlaceholder": "بحث في الأخبار أو رمز السهم (مثال: COMI, TMGH)...",
+      "filterAll": "جميع الأخبار ({count})",
+      "filterEGX": "البورصة المصرية",
+      "filterGlobal": "الأسواق العالمية",
+      "retry": "إعادة المحاولة",
+      "emptyTitle": "لا توجد أخبار مطابقة حالياً",
+      "emptyBody": "سيتم عرض الأخبار الجديدة تلقائياً بمجرد ورودها من وكيل الأخبار ومصادر البورصة.",
+      "loadMore": "عرض المزيد من الأخبار ({count} متبقي)",
+      "errorLoad": "فشل في تحميل الأخبار",
+      "errorConnection": "خطأ في الاتصال بالخادم",
+      "toastRefreshed": "تم تحديث الأخبار",
+      "imageFromSource": "صورة من المصدر ({source})",
+      "zoom": "تكبير",
+      "closeAriaLabel": "إغلاق",
+      "importanceHigh": "مهم وعاجل",
+      "readFullArticle": "قراءة الخبر كاملاً ↓",
+      "hidePartialText": "إخفاء جزء من النص ↑",
+      "insight": {
+        "title": "تحليل استثماري محلي",
+        "copy": "نسخ",
+        "copied": "تم",
+        "toastCopySuccess": "تم نسخ التحليل الاستثماري",
+        "toastCopyFailed": "فشل النسخ",
+        "sentimentPositive": "إيجابي",
+        "sentimentNegative": "سلبي",
+        "sentimentNeutral": "محايد",
+        "buyOpportunity": "فرصة شراء",
+        "sellSignal": "إشارة بيع",
+        "monitor": "مراقبة",
+        "stocksLabel": "الأسهم:",
+        "copyTextTemplate": "التحليل الاستثماري لخبر ({title})",
+        "sentimentLabel": "التوجه",
+        "recommendationLabel": "التوقع الفني",
+        "analysisLabel": "التحليل"
+      },
+      "share": {
+        "label": "مشاركة ونشر:",
+        "sourceLink": "رابط المصدر الأصلي",
+        "sourceLinkTitle": "الانتقال إلى موقع المصدر الأصلي",
+        "toastCopySuccess": "تم نسخ نص الخبر كاملاً",
+        "toastCopyFailed": "فشل النسخ",
+        "sourceLabel": "المصدر:"
+      }
+    }
+  },
+  "reports": {
+    "view": {
+      "brandName": "دليل الاستثمار",
+      "title": "التقارير المهنية",
+      "subtitle": "تقارير شاملة لسوق الأوراق المالية المصرية",
+      "disclaimer": "⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية وتحليلية فقط، وليست توصية استثمارية. القرار مسؤولية العميل.",
+      "tabs": {
+        "dailyMarket": "تقرير السوق اليومي",
+        "stockAnalysis": "تحليل الأسهم",
+        "sector": "تقرير القطاعات",
+        "recommendations": "تقرير التحليلات"
+      },
+      "columns": {
+        "stock": "السهم",
+        "sector": "القطاع",
+        "price": "السعر",
+        "change": "التغيير",
+        "score": "الدرجة",
+        "stockCount": "عدد الأسهم",
+        "avgChangePercent": "متوسط التغير %",
+        "performance": "الأداء"
+      },
+      "sentiment": {
+        "positive": "إيجابي",
+        "negative": "سلبي",
+        "neutral": "محايد"
+      },
+      "riskLevel": {
+        "low": "منخفض",
+        "medium": "متوسط",
+        "high": "مرتفع"
+      },
+      "toast": {
+        "copiedReport": "تم نسخ التقرير للمشاركة",
+        "copyFailed": "فشل في نسخ النص",
+        "reportExported": "تم تصدير التقرير بنجاح",
+        "exportFailed": "حدث خطأ أثناء تصدير PDF",
+        "reportNotFound": "لم يتم العثور على محتوى التقرير"
+      },
+      "buttons": {
+        "exportPdf": "تصدير PDF",
+        "exporting": "جارٍ التصدير...",
+        "copyReport": "نسخ التقرير",
+        "copied": "تم النسخ"
+      },
+      "sector": {
+        "title": "تقرير القطاعات",
+        "dailyTitle": "تقرير القطاعات اليومي",
+        "empty": "لم يتم تحميل بيانات القطاعات",
+        "stats": {
+          "sectorCount": "عدد القطاعات",
+          "totalStocks": "إجمالي الأسهم",
+          "avgChange": "متوسط التغير",
+          "marketScore": "درجة السوق",
+          "bestSector": "أفضل قطاع",
+          "worstSector": "أسوأ قطاع",
+          "stocksUnit": "سهم"
+        },
+        "comparison": "مقارنة القطاعات",
+        "chartLabel": "رسم بياني للأداء",
+        "footer": "تم إنشاء هذا التقرير تلقائياً بواسطة دليل الاستثمار"
+      },
+      "recommendations": {
+        "title": "تقرير التحليلات",
+        "empty": "لم يتم تحميل بيانات التحليلات",
+        "scoreDistribution": {
+          "strongBuy": "شراء قوي (≥75)",
+          "buy": "شراء (60-74)",
+          "accumulate": "تجميع (50-59)",
+          "hold": "احتفاظ (40-49)",
+          "sell": "بيع (25-39)",
+          "strongSell": "بيع قوي (<25)"
+        },
+        "dataSourceLive": "مصدر البيانات: التحليلات المباشرة (stored_analyses)",
+        "dataSourceFallback": "مصدر البيانات: بيانات السوق اللحظية (احتياطي)",
+        "summary": "ملخص السوق والتحليل",
+        "marketScore": "درجة السوق",
+        "sentiment": "المشاعر",
+        "totalStocksAnalyzed": "إجمالي الأسهم المحللة",
+        "riskLevel": "مستوى المخاطر",
+        "sentimentLabels": {
+          "positiveAccumulate": "إيجابي / تجميع",
+          "hold": "احتفاظ",
+          "sell": "بيع"
+        },
+        "scoreDistributionTitle": "توزيع الدرجات (حسب زخم السعر)",
+        "buySection": {
+          "live": "أعلى {count} أسهم شراء",
+          "fallback": "أسهم شراء وشراء قوي ({count})",
+          "fromLive": "من التحليلات المباشرة",
+          "empty": "لا توجد تحليلات شراء حالياً"
+        },
+        "holdSection": {
+          "live": "أعلى {count} أسهم احتفاظ",
+          "fallback": "أسهم تجميع واحتفاظ ({count})",
+          "fromLive": "من التحليلات المباشرة",
+          "empty": "لا توجد تحليلات تجميع أو احتفاظ حالياً"
+        },
+        "sellSection": {
+          "live": "أعلى {count} أسهم بيع",
+          "fallback": "أسهم بيع وبيع قوي ({count})",
+          "fromLive": "من التحليلات المباشرة",
+          "empty": "لا توجد تحليلات بيع حالياً"
+        },
+        "footer": "تم إنشاء هذا التقرير تلقائياً بواسطة دليل الاستثمار",
+        "disclaimer": "البيانات لأغراض تعليمية ومعلوماتية فقط وليست نصيحة استثمارية"
+      },
+      "share": {
+        "sectorText": {
+          "title": "📊 تقرير القطاعات — {date}",
+          "marketSentiment": "🧠 مشاعر السوق: {sentiment}",
+          "accuracy": "📈 نسبة الدقة: {score}%",
+          "decision": "🔍 القرار: {decision}",
+          "bestSector": "🏆 أفضل قطاع: {name} (+{change}%) — {count} سهم",
+          "worstSector": "⚠️ أسوأ قطاع: {name} ({change}%) — {count} سهم",
+          "performanceHeader": "📋 أداء القطاعات:",
+          "performanceItem": "{i}. {name}: {arrow} {change}% ({count} سهم)",
+          "disclaimer": "⚠️ هذه البيانات لأغراض إعلامية فقط وليست نصيحة استثمارية."
+        },
+        "recommendationsText": {
+          "title": "🛡️ تقرير التحليلات — {date}",
+          "marketSentiment": "🧠 مشاعر السوق: {sentiment}",
+          "accuracy": "📈 نسبة الدقة: {score}%",
+          "riskLevel": "🔍 مستوى المخاطر: {level}",
+          "totalStocksLive": "📊 إجمالي الأسهم المحللة (مباشر): {total}",
+          "topBuys": "🟢 أعلى {count} أسهم شراء:",
+          "topSells": "🔴 أعلى {count} أسهم بيع:",
+          "totalStocks": "📊 إجمالي الأسهم المحللة: {count}",
+          "strongBuy": "🟢 شراء قوي ({count}):",
+          "buy": "🔵 شراء ({count}):",
+          "sell": "🔴 بيع ({count}):",
+          "disclaimer": "⚠️ هذه البيانات لأغراض إعلامية فقط وليست نصيحة استثمارية."
+        }
+      }
+    }
+  },
+  "screener": {
+    "advanced": {
+      "title": "فلاتر الأسهم المتقدمة",
+      "subtitle": "فلترة شاملة + تحديد حالة السهم الفنية (تصحيح / تعافي / قمة / قرب كسر)",
+      "subtitleAuto": "فلترة شاملة + تحديد حالة السهم الفنية — النتائج محدّثة تلقائياً",
+      "tabs": {
+        "advancedFilters": "الفلاتر المتقدمة",
+        "topPerformers": "أعلى الأرباح / الخسائر"
+      },
+      "stateNames": {
+        "recovery": "التصحيح خلص",
+        "balancedMomentum": "زخم متزن",
+        "nearBreak": "قرب يكسر",
+        "atPeak": "في قمة",
+        "nearPeak": "قرب قمة",
+        "neutral": "محايد",
+        "inCorrection": "في تصحيح",
+        "stillFalling": "لسة نازل",
+        "insufficientData": "بيانات غير كافية"
+      },
+      "stateDescriptions": {
+        "recovery": "RSI بين 40-45 + فوق MA50 + صاعد اليوم — مؤشر تعافي بعد تصحيح.",
+        "balancedMomentum": "RSI بين 55-65 + فوق MA50 — زخم صحي مستمر.",
+        "nearBreak": "السعر قرب من المتوسط من تحت (within 2%) — مرشح للكسر للأعلى.",
+        "atPeak": "RSI ≥ 70 — تشبع شرائي، قد يتراجع بعد القمة.",
+        "nearPeak": "RSI بين 65-70 — قرب التشبع الشرائي، حذر.",
+        "neutral": "RSI بين 45-55 + حجم تداول مناسب — بانتظار اتجاه واضح.",
+        "inCorrection": "RSI < 40 + تحت MA50 — في مرحلة تصحيح. لو RSI < 30 وقريب من أدنى 52 أسبوع → تشبع بيعي (قد يرتد).",
+        "stillFalling": "RSI < 40 + تحت MA50 + نازل اليوم — لسه في هبوط.",
+        "insufficientData": "بيانات غير كافية للتصنيف (RSI أو MA50 مفقود) — يحتاج تحديث البيانات."
+      },
+      "stockStateColumn": {
+        "above": "فوق",
+        "below": "تحت"
+      },
+      "collapsible": {
+        "collapse": "طي",
+        "expand": "فرد",
+        "showFilters": "إظهار الفلاتر",
+        "hideStateHelp": "إخفاء",
+        "showStateHelp": "إظهار",
+        "stateHelpLabel": "شرح حالات السهم السبع",
+        "hideFilters": "إخفاء الفلاتر",
+        "readyFilters": "فلاتر جاهزة"
+      },
+      "presets": {
+        "recovery": "تعافي بعد تصحيح",
+        "balancedMomentum": "زخم متزن",
+        "nearBreak": "قرب كسر للأعلى",
+        "atPeak": "في قمة",
+        "active": "أسهم نشطة",
+        "dead": "أسهم ميتة",
+        "undervalued": "مقيّمة (PE منخفض)",
+        "oversold": "تشبع بيعي",
+        "highDividend": "أسهم أرباح عالية",
+        "growth": "أسهم نمو",
+        "value": "أسهم قيمة",
+        "largeCap": "كبار القيمة",
+        "highLiquidity": "سيولة عالية",
+        "sharpDrop": "انخفاض حاد",
+        "low52w": "قاع 52 أسبوع",
+        "high52w": "أعلى 52 أسبوع",
+        "aboveMa": "فوق المتوسطات",
+        "belowMa": "تحت المتوسطات",
+        "moderateRsi": "RSI معتدل",
+        "reversalOpportunity": "فرص انعكاس",
+        "stable": "مستقرة (لا تذبذب)",
+        "highMomentum": "زخم مرتفع",
+        "strongAccumulation": "تجميع قوي",
+        "more": "المزيد"
+      },
+      "columns": {
+        "stock": "السهم",
+        "price": "السعر",
+        "changePercent": "التغير %",
+        "chart": "الرسم البياني",
+        "volume": "الحجم",
+        "liquidityEGP": "السيولة (ج.م)",
+        "peRatio": "مكرر الربحية",
+        "stockState": "حالة السهم",
+        "aboveMa50": "فوق MA50"
+      },
+      "toast": {
+        "loadFailed": "فشل تحميل البيانات",
+        "connectionError": "خطأ في الاتصال",
+        "filtersReset": "تم إعادة ضبط الفلاتر",
+        "exported": "تم تصدير {count} سهم",
+        "copyFailed": "فشل نسخ النص",
+        "copyToClipboard": "تم نسخ النص إلى الحافظة",
+        "presetApplied": "تم تطبيق: {preset}"
+      },
+      "buttons": {
+        "reset": "إعادة الضبط",
+        "refresh": "تحديث",
+        "export": "تصدير",
+        "retry": "إعادة المحاولة",
+        "showMore": "إظهار",
+        "publish": "نشر"
+      },
+      "kpi": {
+        "totalResults": "إجمالي النتائج",
+        "gainers": "صاعدة",
+        "losers": "هابطة",
+        "avgChange": "متوسط التغير",
+        "totalLiquidity": "إجمالي السيولة",
+        "volumeMomentum": "زخم الحجم",
+        "filterResults": "نتائج الفلاتر",
+        "egpSuffix": "ج.م",
+        "daysUnit": "يوم"
+      },
+      "loading": {
+        "loadingStocks": "جاري تحميل الأسهم...",
+        "loadingPerformers": "جاري تحميل أعلى الأسهم أرباحاً / خسارة..."
+      },
+      "empty": {
+        "noResults": "لا توجد نتائج مطابقة للفلاتر الحالية"
+      },
+      "share": {
+        "title": "فلتر الأسهم — {count} سهم",
+        "filterTitle": "نتائج فلتر الأسهم المتقدم",
+        "filterTitleProfessional": "نتائج فلتر الأسهم الاحترافي",
+        "stock": "أسهم",
+        "filter": "فلتر",
+        "hashtags": "تحليل_فني,تداول,فلتر_الأسهم",
+        "copyText": "نسخ النص",
+        "exportResults": "تصدير النتائج",
+        "whatsapp": "واتساب",
+        "facebook": "فيسبوك"
+      },
+      "filters": {
+        "searchPlaceholder": "بحث بالاسم أو الرمز...",
+        "market": "السوق",
+        "allMarkets": "كل الأسواق",
+        "egx": "البورصة المصرية",
+        "sector": "القطاع",
+        "allSectors": "كل القطاعات",
+        "sort": "الترتيب",
+        "sortOptions": {
+          "liquidity": "السيولة",
+          "changePercent": "نسبة التغير",
+          "volume": "الحجم",
+          "marketCap": "القيمة السوقية",
+          "peRatio": "مكرر الربحية",
+          "roe": "العائد على الحقوق",
+          "high52w": "أعلى 52 أسبوع",
+          "low52w": "أدنى 52 أسبوع",
+          "dividendYield": "توزيعات الأرباح",
+          "momentum": "الزخم (محسوب)",
+          "stockState": "حالة السهم (محسوب)"
+        },
+        "order": {
+          "desc": "تنازلي (الأعلى أولاً)",
+          "asc": "تصاعدي (الأقل أولاً)"
+        },
+        "trend": {
+          "all": "الكل",
+          "upOnly": "صاعد فقط (> 0)",
+          "downOnly": "هابط فقط (< 0)",
+          "neutral": "محايد (~ 0)"
+        },
+        "aboveMa": {
+          "all": "الكل",
+          "ma50": "فوق MA50 فقط",
+          "ma200": "فوق MA200 فقط",
+          "both": "فوق الاثنين"
+        },
+        "rsi": {
+          "all": "الكل",
+          "oversold": "تشبع بيعي (< 30)",
+          "overbought": "تشبع شرائي (> 70)"
+        },
+        "stockState": {
+          "all": "كل الحالات",
+          "recovery": "التصحيح خلص (تعافي)",
+          "balancedMomentum": "زخم متزن",
+          "nearBreak": "قرب يكسر (للأعلى)",
+          "neutral": "محايد",
+          "nearPeak": "قرب قمة",
+          "atPeak": "في قمة",
+          "inCorrection": "في تصحيح",
+          "stillFalling": "لسة نازل",
+          "insufficientData": "بيانات غير كافية"
+        },
+        "minPrice": "أدنى سعر",
+        "maxPrice": "أقصى سعر",
+        "minVolume": "أدنى حجم تداول",
+        "minTurnover": "أدنى سيولة (ج.م)",
+        "minPe": "أدنى مكرر ربحية",
+        "maxPe": "أقصى مكرر ربحية",
+        "minRoe": "أدنى ROE (%)",
+        "minDividendYield": "أدنى توزيعات أرباح (%)",
+        "minMarketCap": "أدنى قيمة سوقية (ج.م)",
+        "maxMarketCap": "أقصى قيمة سوقية (ج.م)",
+        "resultCount": "عدد النتائج",
+        "volumeSurge": "زخم الحجم (1.5× المتوسط)",
+        "near52wHigh": "قرب من أعلى 52 أسبوع",
+        "near52wLow": "قرب من أدنى 52 أسبوع",
+        "show": "إظهار",
+        "labels": {
+          "sortBy": "ترتيب بـ",
+          "orderDirection": "اتجاه الترتيب",
+          "dailyTrend": "الاتجاه اليومي",
+          "aboveBelowMa": "فوق/تحت المتوسط",
+          "rsiIndicator": "مؤشر RSI",
+          "technicalStockState": "حالة السهم الفنية"
+        }
+      },
+      "filterHelp": {
+        "market": "يحدد السوق المالي (EGX = البورصة المصرية).",
+        "sector": "يحدد القطاع — اختر القطاع من القائمة أو الكل.",
+        "price": "نطاق السعر (أدنى / أقصى) بالجنيه.",
+        "volume": "الحد الأدنى لحجم التداول اليومي (عدد الأسهم المتداولة).",
+        "turnover": "الحد الأدنى للسيولة (قيمة التداول بالجنيه = سعر × حجم).",
+        "trend": "اتجاه التغير اليومي: صاعد (> 0)، هابط (< 0)، أو محايد (~ 0).",
+        "aboveMa": "فوق المتوسط المتحرك: MA50 (أوائل)، MA200 (طويل الأجل)، أو الاثنين.",
+        "rsi": "مؤشر القوة النسبية: تشبع بيعي < 30 (قد يرتد)، تشبع شرائي > 70 (قد يتراجع).",
+        "volume_surge": "الحجم أعلى من 1.5× متوسط الحجم — دخول سيولة محتمل.",
+        "near_52w_high": "السعر ضمن 5% من أعلى 52 أسبوع — قرب اختبار القمة.",
+        "near_52w_low": "السعر ضمن 5% من أدنى 52 أسبوع — قرب اختبار القاع.",
+        "pe": "مكرر الربحية (P/E): نطاق القيمة. أقل = أرخص نسبياً.",
+        "roe": "الحد الأدنى للعائد على حقوق الملكية (%) — أعلى = أفضل كفاءة.",
+        "dividend_yield": "الحد الأدنى لتوزيعات الأرباح (%) — دخل منتظم.",
+        "market_cap": "القيمة السوقية (ج.م): نطاق حجم الشركة.",
+        "stock_state": "حالة السهم الفنية: انظر الشرح بجوار كل خيار."
+      },
+      "periods": {
+        "yesterday": "أمس (1 يوم)",
+        "week": "أسبوع (7 أيام)",
+        "fifteenDays": "15 يوم",
+        "month": "شهر (30 يوم)",
+        "threeMonths": "3 شهور",
+        "sixMonths": "6 شهور",
+        "ytd": "من أول السنة",
+        "year": "عام كامل (365 يوم)"
+      },
+      "performers": {
+        "both": "أعلى وأدنى",
+        "gainers": "أعلى الأرباح",
+        "losers": "أعلى الخسائر",
+        "directions": {
+          "gainers": "أرباح",
+          "losers": "خسائر",
+          "all": "كل"
+        },
+        "title": "أعلى الأرباح والخسائر — النتائج محدّثة تلقائياً",
+        "topPerformersTitle": "أعلى الأسهم أرباحاً / خسارة",
+        "periodLabel": "الفترة:",
+        "to": "إلى",
+        "kpi": {
+          "totalStocks": "إجمالي الأسهم",
+          "gainers": "الرابحة",
+          "losers": "الخاسرة",
+          "avgChange": "متوسط التغير",
+          "bestWorst": "الأفضل والأ أسوأ سهم"
+        },
+        "filters": {
+          "period": "الفترة",
+          "direction": "النوع",
+          "market": "السوق",
+          "resultsTable": "جدول النتائج"
+        },
+        "columns": {
+          "stock": "السهم",
+          "sector": "القطاع",
+          "startPrice": "سعر البداية",
+          "endPrice": "سعر النهاية",
+          "changePct": "التغير %",
+          "days": "عدد الأيام",
+          "volume": "الحجم (نهاية)"
+        },
+        "empty": "لا توجد نتائج للفلاتر الحالية",
+        "topGainer": "الأعلى ربحاً — {period}",
+        "topLoser": "الأعلى خسارة — {period}",
+        "fromWord": "من",
+        "toWord": "إلى",
+        "footer": "أعلى الأرباح والخسائر — النتائج محدّثة تلقائياً"
+      },
+      "shareText": {
+        "screenerHeader": "📊 فلاتر الأسهم المتقدمة — {market}",
+        "allMarkets": "كل الأسواق",
+        "resultCount": "📋 عدد النتائج: {count}",
+        "stockLine": "  💰 السعر: {price} ج.م | ⚡ التغير: {sign}{changePercent}%",
+        "stockLineLiquidity": "  📊 الحجم: {volume} | 💸 السيولة: {liquidity} ج.م",
+        "stockLineExtra": "  🏷️ الحالة: {state} | 🔥 الزخم: {momentum}",
+        "disclaimer": "⚠️ هذا التحليل لأغراض تعليمية فقط — ليس نصيحة استثمارية",
+        "performersHeader": "🏆 أعلى الأرباح / الخسائر",
+        "performersPeriod": "📋 الفترة: {period} ({direction} | عدد النتائج: {count}",
+        "performersDateRange": "📅 من {startDate} إلى {endDate}",
+        "performersStockLine": "  💰 من {startPrice} → {endPrice} ج.م | ⚡ التغير: {sign}{changePct}%",
+        "performersStockPeriod": "  📅 الفترة: {days} يوم"
+      }
+    }
+  },
+  "radar": {
+    "exit": {
+      "title": "رادار الخروج",
+      "titleWithEmoji": "🚪 رادار الخروج",
+      "subtitle": "إشارات التوزيع والخروج — عكس رادار الميكرز. آخر تحديث: {cacheAge}",
+      "marketLabel": "السوق:",
+      "scannedLabel": "المفحوصين:",
+      "exitCount": "{count} إشارة خروج",
+      "noSignals": "لا توجد إشارات خروج ✅",
+      "refresh": "تحديث",
+      "retry": "إعادة المحاولة",
+      "loadFailed": "فشل تحميل رادار الخروج",
+      "connectionError": "خطأ في الاتصال",
+      "loading": "رادار الخروج قيد التحميل",
+      "warmingUp": "أول تشغيل — نبني قائمة إشارات الخروج. حاول مرة أخرى خلال دقيقة.",
+      "errorPrefix": "تعذّر تحميل رادار الخروج: {error}",
+      "cacheAge": {
+        "unknown": "غير معروف",
+        "seconds": "من {count} ثانية",
+        "minutes": "من {count} دقيقة",
+        "hours": "من {count} ساعة"
+      },
+      "lock": {
+        "title": "🔒 رادار الخروج — متاح للمشتركين",
+        "body": "رادار الخروج بيكشف إشارات التوزيع والبيع المؤسسي قبل ما تحصل.",
+        "teaser": "3 أسهم تقترب من إشارة خروج",
+        "cta": "اشترك للوصول لرادار الخروج"
+      },
+      "empty": {
+        "title": "لا توجد إشارات خروج اليوم",
+        "body": "كل الأسهم المفحوصين لا تظهر عليهم إشارات توزيع أو خروج حالياً. راجع الرادار بانتظام خلال ساعات التداول."
+      },
+      "footer": {
+        "title": "ℹ️ كيف يعمل رادار الخروج؟",
+        "body": "يفحص السكريبت كل الأسهم يومياً على 5 مسارات خروج (X1-X5). الإشارات ترتيبها حسب الأولوية: X5 (Kill Switch) → X1 (توزيع قوي) → X4 (فجوة إرهاق) → X3 (رفض مقاومة) → X2 (تباعد حجمي). كل سهم يظهر مع أعلى مسار خروج محقق له. المصدر:"
+      },
+      "table": {
+        "ticker": "السهم",
+        "price": "السعر",
+        "volumeToday": "حجم اليوم",
+        "rally5d": "صعود 5 أيام",
+        "allPaths": "كل المسارات",
+        "reason": "السبب",
+        "empty": "لا توجد أسهم في هذا المسار"
+      },
+      "stocksCount": "سهم",
+      "suggestedAction": "الإجراء المقترح:",
+      "paths": {
+        "x1": {
+          "label": "توزيع قوي",
+          "desc": "بيع مؤسسي قوي — حجم مرتفع مع إغلاق في النصف السفلي",
+          "action": "بيع كامل أو تقليص قوي للمركز"
+        },
+        "x2": {
+          "label": "تباعد حجمي",
+          "desc": "صعود وهمي — السعر اخترق قمة لكن الحجم ضعيف",
+          "action": "تقليص نصف المركز + وقف مضغوط"
+        },
+        "x3": {
+          "label": "رفض مقاومة",
+          "desc": "اختبر مقاومة وأغلق بـ upper shadow طويلة",
+          "action": "وقف عند آخر قاع + مراقبة الاختراق"
+        },
+        "x4": {
+          "label": "فجوة إرهاق",
+          "desc": "بعد صعود طويل، فجوة صاعدة ثم إغلاق أحمر",
+          "action": "بيع كامل — الاندفاع استُنفد"
+        },
+        "x5": {
+          "label": "Kill Switch",
+          "desc": "إشارة خروج فورية (Limit Up Trap / توزيع قاتل)",
+          "action": "خروج فوري — لا تنتظر"
+        }
+      }
+    },
+    "weekly": {
+      "title": "التقرير الأسبوعي للرادار",
+      "loading": "التقرير الأسبوعي قيد التوليد",
+      "warmingUp": "أول تشغيل — نولّد التقرير الأسبوعي. حاول مرة أخرى خلال دقيقة.",
+      "errorPrefix": "تعذّر تحميل التقرير الأسبوعي: {error}",
+      "retry": "إعادة المحاولة",
+      "loadFailed": "فشل تحميل التقرير الأسبوعي",
+      "connectionError": "خطأ في الاتصال",
+      "noData": "لا توجد بيانات تقرير متاحة.",
+      "weekLabel": "الأسبوع {week}، {year}",
+      "regenerate": "تجديد",
+      "regenerating": "بيتجدد...",
+      "downloadPdf": "تحميل PDF",
+      "regimeLabel": "حالة السوق: {regime}",
+      "regimes": {
+        "DEFENSIVE": "دِفاعي (شد اللجام)",
+        "NORMAL": "عادي",
+        "AGGRESSIVE": "هجومي (دوّسة على الجاز)"
+      },
+      "stockOfWeek": {
+        "title": "سهم الأسبوع",
+        "currentPrice": "السعر الحالي",
+        "target1": "الهدف 1",
+        "target2": "الهدف 2",
+        "stopLoss": "🛑 وقف الخسارة",
+        "signalStrength": "قوة الإشارة:",
+        "reason": "السبب",
+        "empty": "لا يوجد سهم مميز هذا الأسبوع — شغّل رادار الميكرز أولاً."
+      },
+      "top5": {
+        "title": "أفضل 5 أسهم للأسبوع القادم",
+        "empty": "لا توجد أسهم في الكاش — شغّل رادار الميكرز أولاً."
+      },
+      "lastWeek": {
+        "title": "أداء أسهم الأسبوع الماضي",
+        "avgReturn": "متوسط العائد",
+        "winRatio": "نسبة النجاح",
+        "winRate": "🏆 معدل النجاح",
+        "enteredAt": "دخل {price}",
+        "empty": "لا توجد أسهم متابَعة من الأسبوع الماضي.",
+        "emptyHint": "ابدأ بتتبع أسهم من رادار الميكرز ليظهروا هنا الأسبوع القادم."
+      },
+      "sectors": {
+        "title": "خريطة القطاعات",
+        "stockCount": "({count} سهم)"
+      },
+      "subscribe": {
+        "title": "التقرير الأسبوعي كل أحد",
+        "body": "اشترك ليصلك التقرير الأسبوعي على تليجرام كل يوم أحد صباحاً — أفضل 5 أسهم + سهم الأسبوع + متابعة الأداء.",
+        "telegram": "انضم لقناة التليجرام",
+        "website": "الموقع",
+        "android": "تطبيق أندرويد"
+      },
+      "footer": {
+        "disclaimer": "تحليل تلقائي — ليس نصيحة استثمارية. اتخذ قراراتك بناءً على بحثك الخاص.",
+        "lastUpdate": "آخر تحديث:"
+      }
+    },
+    "multiMarket": {
+      "title": "الرادار الموحّد متعدد الأسواق",
+      "marketsCount": "{count} سوق",
+      "stocksUnderRadar": "{count} سهم تحت الرصد",
+      "marketsOpen": "{count} سوق مفتوح",
+      "refresh": "تحديث",
+      "retry": "إعادة المحاولة",
+      "loadFailed": "فشل في تحميل الرادار الموحّد",
+      "connectionError": "خطأ في الاتصال",
+      "displayedMarkets": "الأسواق المعروضة:",
+      "summaryTitle": "ملخص الأسواق",
+      "marketClosed": "مقفول",
+      "stats": {
+        "stocks": "الأسهم",
+        "opportunities": "الفرص",
+        "currency": "العملة"
+      },
+      "marketRegimeLabel": "حالة السوق:",
+      "warmingUp": "جارٍ تسخين الرادار...",
+      "cacheAge": {
+        "seconds": "منذ {count}ث",
+        "minutes": "منذ {count}د"
+      },
+      "unifiedTop5": {
+        "title": "أعلى 5 فرص عبر كل الأسواق",
+        "empty": "لا توجد فرص متاحة حالياً — قد تكون الأسواق مغلقة أو تحت التسخين"
+      },
+      "table": {
+        "rank": "#",
+        "market": "السوق",
+        "stock": "السهم",
+        "path": "المسار",
+        "price": "السعر",
+        "target": "الهدف",
+        "change": "التغير",
+        "roc10d": "ROC 10د",
+        "volume": "الحجم"
+      },
+      "detailTitle": "تفصيل كل سوق",
+      "marketDetail": {
+        "stocksAndOpportunities": "{stockCount} سهم · {opportunityCount} فرصة",
+        "warmingUp": "الرادار تحت التسخين — تحقق لاحقاً",
+        "empty": "لا توجد فرص في هذا السوق حالياً"
+      },
+      "regimes": {
+        "defensive": "دفاعي",
+        "normal": "عادي",
+        "aggressive": "هجومي",
+        "bull": "صاعد",
+        "bear": "هابط",
+        "sideways": "عرضي",
+        "unknown": "غير معروف"
+      },
+      "paths": {
+        "preSurge": "Pre-Surge",
+        "strongAccumulation": "تجميع قوي",
+        "weakAccumulation": "تجميع ضعيف",
+        "explosiveSurge": "انفجار حجمي",
+        "earlyBreak": "اختراق مبكر"
+      },
+      "footer": {
+        "autoRefresh": "يتم التحديث تلقائياً كل 60 ثانية",
+        "dataSource": "البيانات من cached radar JSON لكل سوق",
+        "lastUpdate": "آخر تحديث:"
+      }
+    }
+  },
+  "predictions": {
+    "tracking": {
+      "title": "تتبع التوقعات",
+      "subtitle": "متابعة نسبة نجاح التوقعات عبر الزمن",
+      "refresh": "تحديث",
+      "publish": "نشر",
+      "statuses": {
+        "pending": "قيد الانتظار",
+        "target_hit": "تم الوصول للهدف",
+        "stop_hit": "تم ضرب الوقف",
+        "expired": "منتهي الصلاحية"
+      },
+      "filterStatus": {
+        "label": "الحالة:",
+        "ariaLabel": "فلتر الحالة",
+        "all": "الكل",
+        "pending": "قيد الانتظار",
+        "target_hit": "وصلت للهدف",
+        "stop_hit": "ضربت الوقف",
+        "expired": "منتهية"
+      },
+      "toast": {
+        "verifySuccess": "تم التحقق: {target_hit} وصلت للهدف، {stop_hit} ضربت الوقف، {expired} منتهية",
+        "verifyFailed": "فشل التحقق من التوقعات",
+        "connectionError": "فشل الاتصال بالخادم",
+        "generatingV40": "جاري تشغيل نظام التحليل وفحص السيولة اللحظية...",
+        "generateSuccess": "تم توليد التوقعات بنجاح!",
+        "generateSuccessDesc": "تم تحديث الفرص وحفظها في النظام",
+        "generateFailed": "فشل توليد التوقعات",
+        "serverError": "خطأ في الاتصال بالخادم"
+      },
+      "stats": {
+        "total": "إجمالي التوقعات",
+        "pending": "قيد الانتظار",
+        "successRate": "نسبة النجاح",
+        "failureRate": "نسبة الفشل",
+        "totalHint": "آخر {days} يوم — {market}",
+        "pendingHint": "توقعات لم تُحل بعد",
+        "successHint": "وصلت للهدف: {count}",
+        "failureHint": "ضربت الوقف: {count}"
+      },
+      "summary": {
+        "targetHit": "وصلت للهدف:",
+        "stopHit": "ضربت الوقف:",
+        "expired": "منتهية:",
+        "avgReturn": "متوسط العائد:",
+        "resolved": "التوقعات المحلولة: {resolved} من {total}"
+      },
+      "table": {
+        "title": "سجل التوقعات",
+        "countLabel": "{count} توقع — {market}",
+        "empty": "لا توجد توقعات متتبعة بعد — ستظهر التوقعات هنا تلقائياً عند توليدها.",
+        "lastVerified": "آخر تحقق: {date}",
+        "columns": {
+          "ticker": "السهم",
+          "pickDate": "تاريخ التوقع",
+          "entry": "الدخول",
+          "stop": "الوقف",
+          "target": "الهدف",
+          "currentPrice": "السعر الحالي",
+          "diff": "الفرق",
+          "returnPct": "العائد %",
+          "status": "الحالة"
+        }
+      },
+      "infoNote": "💡 يتم حفظ كل توقع تلقائياً عند توليدها، ويتم التحقق منها يومياً مقابل السعر الحالي لمعرفة ما إذا كانت وصلت للهدف أو ضربت الوقف.",
+      "publishContent": {
+        "title": "تتبع التوقعات",
+        "total": "إجمالي",
+        "pending": "قيد الانتظار",
+        "successRate": "نسبة النجاح",
+        "failureRate": "نسبة الفشل",
+        "top10Header": "أحدث التوقعات",
+        "entry": "دخول",
+        "target": "هدف",
+        "stop": "وقف"
+      }
+    },
+    "makerRadar": {
+      "title": "رادار الميكرز",
+      "paths": {
+        "A_pre_surge": {
+          "label": "Pre-Surge (تجميع مبكر)",
+          "short": "Pre-Surge",
+          "descShort": "تراكم مبكر جداً",
+          "descLong": "السهم بيتجمّع قبل الانفجار — أعلى أولوية"
+        },
+        "B_quiet_accumulation_strong": {
+          "label": "تحت الميكروسكوب",
+          "short": "ميكروسكوب",
+          "descShort": "تراكم صامت قوي",
+          "descLong": "مال كبير بيدخل بهدوء — فرصة دخول متدرّج"
+        },
+        "C_quiet_accumulation_weak": {
+          "label": "تجميع ضعيف",
+          "short": "ضعيف",
+          "descShort": "تراكم صامت ضعيف",
+          "descLong": "إشارات مبكرة — للمتابعة والمراقبة"
+        },
+        "D_explosive_surge": {
+          "label": "موجة انفجارية",
+          "short": "منفجر",
+          "descShort": "انفجار حجمي",
+          "descLong": "تأكيد، الدخول للمتابعة لا للاصطياد"
+        },
+        "E_early_break": {
+          "label": "اختراق مبكر",
+          "short": "اختراق",
+          "descShort": "كسر مبكر محتمل",
+          "descLong": "فرصة قبل التشكّل — اختراق نطاق ضيق"
+        }
+      },
+      "signals": {
+        "volume_high_recurring": "حجم متكرر",
+        "buy_pressure": "ضغط شرائي",
+        "compressed": "ضغط نطاق",
+        "volume_not_low": "حجم صحي",
+        "not_explosive": "غير منفجر",
+        "no_distribution": "لا توزيع",
+        "volume_gradient": "تصاعد حجم",
+        "range_compressed": "نطاق مضغوط",
+        "near_ma10": "قرب MA10",
+        "buy_days": "أيام شراء"
+      },
+      "kpi": {
+        "scanned": "إجمالي الأسهم المفحوصة",
+        "underMicroscope": "تحت الميكروسكوب",
+        "explosive": "موجات منفجرة",
+        "tracked": "أسهم متابَعة"
+      },
+      "pathSections": {
+        "preSurge": {
+          "title": "Pre-Surge — متوقعة الانفجار",
+          "subtitle": "أعلى أولوية — السهم بيتجمع قبل الانفجار"
+        },
+        "explosive": {
+          "title": "🔥 الأسهم المنفجرة الآن",
+          "subtitle": "حجم فجائي + حركة قوية — تنبيه فوري"
+        },
+        "microscope": {
+          "title": "🎯 تحت الميكروسكوب",
+          "subtitle": "تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
+        },
+        "earlyBreak": {
+          "title": "⚡ اختراق مبكر",
+          "subtitle": "خروج من نطاق ضيق بحجم — أول إشارة اختراق"
+        }
+      },
+      "table": {
+        "rank": "#",
+        "ticker": "السهم",
+        "price": "السعر",
+        "changePct": "التغير%",
+        "roc10": "ROC10",
+        "roc20": "ROC20",
+        "relVolume": "حجم نسبي",
+        "rebounds": "الارتدادات",
+        "spark": "سبارك",
+        "liquidityPct": "سيولة %",
+        "netFlow": "Net Flow",
+        "cycleUp": "دورة الصعود",
+        "accDist": "تجميع/تصريف",
+        "freq": "التردد",
+        "expected": "المتوقع",
+        "activation": "التفعيل",
+        "priceHeader": "السعر",
+        "movement": "الحركة",
+        "stars": "⭐"
+      },
+      "buttons": {
+        "refresh": "تحديث",
+        "rerunRadar": "تشغيل الرادار",
+        "warmupCache": "إعادة قراءة الكاش",
+        "rerunRadarTitle": "شغّل الرادار من جديد (Python script)",
+        "generateTodayTitle": "ولّد توقعات اليوم",
+        "publishRadar": "نشر الرادار",
+        "publishStock": "نشر التحليل",
+        "openStockDetail": "افتح صفحة السهم الكاملة",
+        "untrack": "إزالة من المتابعة",
+        "track": "أضف للمتابعة"
+      },
+      "toast": {
+        "radarWarmed": "تم تحديث الرادار ({sec}s)",
+        "warmupFailed": "فشل تشغيل الرادار",
+        "predictionsStarted": "بدأ توليد التوقعات...",
+        "predictionsGenerated": "تم توليد التوقعات بنجاح!",
+        "predictionsFailed": "فشل توليد التوقعات",
+        "trackAdded": "تمت إضافة {ticker} للمتابعة",
+        "trackRemoved": "تمت إزالة {ticker} من المتابعة",
+        "trackFailed": "فشل تحديث المتابعة"
+      },
+      "cache": {
+        "fresh": "طازج {sec}ث",
+        "stale": "قديم {min}د",
+        "warmupRunning": "الرادار قيد التشغيل...",
+        "lastError": "آخر خطأ",
+        "dbSource": "قاعدة البيانات المستخدمة"
+      },
+      "empty": {
+        "noStocks": "لا توجد أسهم مطابقة",
+        "noStocksHint": "جرّب فلتراً آخر أو حدّث بعد قليل",
+        "noTracked": "⚠️ لا توجد أسهم في قائمة المتابعة — افتح أي سهم واضغط ⭐ لإضافته",
+        "noSignals": "لا توجد إشارات واضحة من fundamentals حالياً"
+      },
+      "drawer": {
+        "title": "تحليل سهم: {ticker}",
+        "priceSummary": "ملخص السعر ({days} يوم)",
+        "daysTracked": "{days} يوم · من {price}",
+        "positionSizeTitle": "حجم المركز المقترح من المحفظة"
+      },
+      "stats": {
+        "roc10d": "ROC 10 أيام",
+        "range20d": "مدى 20 يوم",
+        "avgVol20": "متوسط حجم 20 يوم",
+        "avgTurnover20": "متوسط سيولة 20 يوم"
+      },
+      "publishContent": {
+        "title": "رادار الميكرز",
+        "header": "رادار الميكرز — {title}",
+        "stocksCount": "{count} أسهم"
+      }
+    }
+  }
+}

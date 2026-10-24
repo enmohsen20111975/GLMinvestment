@@ -1,0 +1,175 @@
+/**
+ * subscription-view/buildPlans.tsx
+ * ================================
+ * buildPlans(marketConfig) → Plan[] — the 4 plans (free / premium / pro /
+ * vip_pass) for the given market, each with features + limits.
+ *
+ * Each plan's price is sourced from `marketConfig.prices` so the same Plan
+ * card renders differently per selected market (EGX prices vs US prices).
+ *
+ * z-ai-web-dev-sdk NOT used.
+ */
+import React from 'react';
+import {
+  Eye, Building2, Bell, BarChart3, Shield, X, Zap, TrendingUp, Sparkles,
+  Infinity as InfinityIcon, Headphones, Crown, Rocket, FileSpreadsheet,
+  Brain, Key, Globe, MessageCircle,
+} from 'lucide-react';
+import type { MarketPricingConfig, Plan } from './types';
+
+export function buildPlans(marketConfig: MarketPricingConfig): Plan[] {
+  const p = marketConfig.prices;
+
+  return [
+    {
+      id: 'free',
+      name: 'Free',
+      nameAr: 'الأساسية',
+      description: 'للمستثمر المبتدئ لتجربة المنصة واستكشاف الأساسيات',
+      price: 0,
+      priceYearly: 0,
+      cta: 'ابدأ مجاناً',
+      features: [
+        { icon: <Eye className="w-4 h-4" />, text: 'قائمة مراقبة حتى 3 أسهم' },
+        { icon: <Building2 className="w-4 h-4" />, text: 'محفظة واحدة (3 أسهم كحد أقصى)' },
+        { icon: <Bell className="w-4 h-4" />, text: 'تنبيه سعر واحد فقط' },
+        { icon: <BarChart3 className="w-4 h-4" />, text: 'بيانات وإغلاقات الجلسة السابقة (EOD)' },
+        { icon: <Shield className="w-4 h-4" />, text: 'الفاحص الشرعي (محدود لـ 3 أسهم يومياً)' },
+        { icon: <X className="w-4 h-4 text-muted-foreground/60" />, text: 'رادار صانع السوق والسيولة (مغلق)', disabled: true },
+        { icon: <X className="w-4 h-4 text-muted-foreground/60" />, text: 'أهداف التوقعات ونقاط الدخول والوقف (مغلقة)', disabled: true },
+        { icon: <X className="w-4 h-4 text-muted-foreground/60" />, text: 'محرك إنقاذ الأسهم الخاسرة (مغلق)', disabled: true },
+      ],
+      limits: {
+        marketCount: '1 سوق',
+        watchlist: 3,
+        portfolio: 1,
+        alerts: 1,
+        makerRadar: false,
+        predictions: false,
+        exitPolicy: false,
+        sharia: true,
+        screener: false,
+        bagholderRescue: false,
+        exportData: false,
+        telegram: false,
+        prioritySupport: 'عادي (مجتمعي)',
+        apiAccess: false,
+      },
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      nameAr: 'بريميوم',
+      description: 'للمستثمر الجاد — رادار صانع السوق وتدفق السيولة وأهداف التوقعات',
+      price: p.premium.monthly,
+      priceYearly: p.premium.yearly,
+      originalPrice: p.premium.originalMonthly,
+      discountPct: p.premium.discount,
+      popular: true,
+      premium: true,
+      cta: 'اشترك الآن',
+      features: [
+        { icon: <Zap className="w-4 h-4" />, text: 'رادار صانع السوق وتدفق السيولة الذكية (تحديثات دورية)', highlighted: true },
+        { icon: <TrendingUp className="w-4 h-4" />, text: 'أهداف التوقعات ونقاط الدخول ووقف الخسارة (TP1/TP2/SL)', highlighted: true },
+        { icon: <Shield className="w-4 h-4" />, text: 'رادار وسياسة الخروج الاحترافية وجني الأرباح' },
+        { icon: <Sparkles className="w-4 h-4" />, text: 'الفاحص الشرعي وحساب الزكاة والتطهير المالي كامل' },
+        { icon: <BarChart3 className="w-4 h-4" />, text: 'فلاتر وتصفيات الأسهم المتقدمة (Stock Screener)' },
+        { icon: <Bell className="w-4 h-4" />, text: 'إشعارات وتنبيهات تيليجرام الآلية للفرص' },
+        { icon: <InfinityIcon className="w-4 h-4" />, text: 'محافظ وقوائم مراقبة غير محدودة' },
+        { icon: <Headphones className="w-4 h-4" />, text: 'دعم فني ذو أولوية خلال 24 ساعة' },
+      ],
+      limits: {
+        marketCount: '1 سوق',
+        watchlist: '∞',
+        portfolio: '∞',
+        alerts: '∞',
+        makerRadar: true,
+        predictions: true,
+        exitPolicy: true,
+        sharia: true,
+        screener: true,
+        bagholderRescue: false,
+        exportData: false,
+        telegram: true,
+        prioritySupport: 'أولوية 24 ساعة',
+        apiAccess: false,
+      },
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      nameAr: 'برو',
+      description: 'للمضارب المحترف — إنقاذ الأسهم الخاسرة وتصدير التقارير',
+      price: p.pro.monthly,
+      priceYearly: p.pro.yearly,
+      originalPrice: p.pro.originalMonthly,
+      discountPct: p.pro.discount,
+      pro: true,
+      cta: 'اشترك في برو',
+      features: [
+        { icon: <Crown className="w-4 h-4" />, text: 'كل مزايا باقة بريميوم بدون أي حدود' },
+        { icon: <Rocket className="w-4 h-4" />, text: 'محرك إنقاذ الأسهم الخاسرة الذكي (Bagholder Rescue)', highlighted: true },
+        { icon: <Eye className="w-4 h-4" />, text: 'فلاتر واستراتيجيات مخصصة متقدمة (Custom Screeners)' },
+        { icon: <FileSpreadsheet className="w-4 h-4" />, text: 'تصدير كامل للبيانات والتقارير المالية (Excel / CSV)' },
+        { icon: <Bell className="w-4 h-4" />, text: 'تنبيهات فورية متعددة القنوات غير محدودة' },
+        { icon: <Brain className="w-4 h-4" />, text: 'ذاكرة التداول وسجل تحليل سلوك المحفظة' },
+        { icon: <Key className="w-4 h-4" />, text: 'وصول API للاستعلامات المباشرة (1000 طلب/يوم)' },
+        { icon: <Headphones className="w-4 h-4" />, text: 'دعم فني فائق السرعة خلال 4 ساعات' },
+      ],
+      limits: {
+        marketCount: '1 سوق',
+        watchlist: '∞',
+        portfolio: '∞',
+        alerts: '∞',
+        makerRadar: true,
+        predictions: true,
+        exitPolicy: true,
+        sharia: true,
+        screener: true,
+        bagholderRescue: true,
+        exportData: true,
+        telegram: true,
+        prioritySupport: 'فائق السرعة 4 ساعات',
+        apiAccess: true,
+      },
+    },
+    {
+      id: 'vip_pass',
+      name: 'VIP Pass',
+      nameAr: 'الباقة الشاملة VIP',
+      description: 'جميع أسواق المال الـ 6 في اشتراك واحد — أعلى عائد وأشمل تغطية',
+      price: p.vip_pass.monthly,
+      priceYearly: p.vip_pass.yearly,
+      originalPrice: p.vip_pass.originalMonthly,
+      discountPct: p.vip_pass.discount,
+      vip: true,
+      cta: 'اشترك في VIP الشاملة',
+      features: [
+        { icon: <Crown className="w-4 h-4 text-warning" />, text: 'فتح جميع أسواق المنصة الـ 6 في اشتراك موحد', highlighted: true },
+        { icon: <Globe className="w-4 h-4" />, text: '🇪🇬 مصر + 🇸🇦 السعودية + 🇰🇼 الكويت + 🇶🇦 قطر + 🇺🇸 أمريكا + ₿ كريبتو وذهب', highlighted: true },
+        { icon: <Zap className="w-4 h-4" />, text: 'رادار صانع السوق وتدفق السيولة لجميع البورصات معاً' },
+        { icon: <TrendingUp className="w-4 h-4" />, text: 'أهداف التوقعات ورادار الخروج لكافة الأسواق' },
+        { icon: <Rocket className="w-4 h-4" />, text: 'محرك إنقاذ الأسهم الخاسرة لجميع الأسواق' },
+        { icon: <Bell className="w-4 h-4" />, text: 'قنوات تيليجرام مخصصة لكل سوق بدون قيود' },
+        { icon: <InfinityIcon className="w-4 h-4" />, text: 'جميع مزايا باقة برو لكل الأسواق معاً' },
+        { icon: <MessageCircle className="w-4 h-4" />, text: 'خط دعم مباشر VIP عبر واتساب على مدار الساعة', highlighted: true },
+      ],
+      limits: {
+        marketCount: 'جميع الأسواق (6)',
+        watchlist: '∞',
+        portfolio: '∞',
+        alerts: '∞',
+        makerRadar: true,
+        predictions: true,
+        exitPolicy: true,
+        sharia: true,
+        screener: true,
+        bagholderRescue: true,
+        exportData: true,
+        telegram: true,
+        prioritySupport: 'واتساب VIP مباشر 24/7',
+        apiAccess: true,
+      },
+    },
+  ];
+}

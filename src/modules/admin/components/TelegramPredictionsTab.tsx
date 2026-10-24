@@ -1,0 +1,496 @@
+'use client';
+
+/**
+ * TelegramPredictionsTab
+ * =====================
+ * Task 28-B (Fix 7 — Fix Battalion):
+ * Telegram published predictions audit dashboard.
+ *
+ * Shows:
+ * - Summary: total predictions, published count, pending count, with
+ * audit trail count (predictions with telegram_message_id)
+ * - Published predictions list (with published_at + telegram_message_id)
+ * - Pending (not published) predictions for today with manual
+ * "نشر المعلق" button that calls /api/telegram/publish-stock
+ *
+ * Was P0 missing (Task 27-B audit): TelegramTab is full TG client UI,
+ * but admin had NO dedicated published-predictions audit dashboard or
+ * manual "publish pending" button for un-published predictions.
+ */
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+ Card, CardContent,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+ AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+ AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+ Send, AlertTriangle, CheckCircle2, XCircle,
+ MessageSquare, Clock, Loader2, FileText, Eye,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+
+interface PredictionRow {
+ id: number;
+ ticker: string;
+ signal: string | null;
+ signal_type: string | null;
+ market: string | null;
+ prediction_date: string | null;
+ entry_price: number | null;
+ target_price: number | null;
+ stop_loss: number | null;
+ master_score: number | null;
+ status: string | null;
+ published_at: string | null;
+ telegram_message_id: number | null;
+ was_published: number | null;
+}
+
+interface TelegramPredictionsResponse {
+ success: boolean;
+ error?: string;
+ detail?: string;
+ timestamp?: string;
+ audit_columns_present?: boolean;
+ message?: string;
+ summary?: {
+ total: number;
+ published: number;
+ pending: number;
+ pending_today: number;
+ with_message_id: number;
+ };
+ published?: PredictionRow[];
+ pending_today?: PredictionRow[];
+}
+
+function timeAgo(iso: string | null): string {
+ if (!iso) return '—';
+ const d = new Date(iso);
+ if (isNaN(d.getTime())) return '—';
+ const diffMs = Date.now() - d.getTime();
+ if (diffMs < 60_000) return `منذ ${Math.floor(diffMs / 1000)} ثانية`;
+ if (diffMs < 3_600_000) return `منذ ${Math.floor(diffMs / 60_000)} دقيقة`;
+ if (diffMs < 86_400_000) return `منذ ${Math.floor(diffMs / 3_600_000)} ساعة`;
+ return `منذ ${Math.floor(diffMs / 86_400_000)} يوم`;
+}
+
+function signalColor(signal: string | null): string {
+ if (!signal) return 'border-muted text-muted-foreground';
+ const s = signal.toUpperCase();
+ if (s.includes('BUY') || s.includes('LONG')) return 'border-profit text-profit';
+ if (s.includes('SELL') || s.includes('SHORT')) return 'border-loss text-loss';
+ return 'border-warning text-warning';
+}
+
+export function TelegramPredictionsTab() {
+ const [data, setData] = useState<TelegramPredictionsResponse | null>(null);
+ const [loading, setLoading] = useState(true);
+ const [publishingTicker, setPublishingTicker] = useState<string | null>(null);
+ // PHASE2-ADMIN-PANEL: owner request — "المعاينة قبل النشر (Preview)".
+ // Previously: clicking "نشر المعلّق" immediately POSTed to
+ // /api/telegram/publish-stock with no confirmation. Now we open a
+ // preview modal showing the rendered message (ticker / signal /
+ // entry/target/stop / score) and a confirm button.
+ const [previewPrediction, setPreviewPrediction] = useState<PredictionRow | null>(null);
+
+ const fetchData = useCallback(async () => {
+ setLoading(true);
+ try {
+ const res = await fetch('/api/admin/telegram-predictions', { credentials: 'same-origin', cache: 'no-store' });
+ const json: TelegramPredictionsResponse = await res.json();
+ setData(json);
+ if (!json.success) {
+ toast.error(json.error || 'فشل تحميل بيانات التوقعات');
+ }
+ } catch (err) {
+ toast.error(err instanceof Error ? err.message : 'خطأ في الاتصال');
+ } finally {
+ setLoading(false);
+ }
+ }, []);
+
+ useEffect(() => {
+ fetchData();
+ }, [fetchData]);
+
+ const publishPrediction = async (ticker: string) => {
+ setPublishingTicker(ticker);
+ try {
+ const res = await fetch('/api/telegram/publish-stock', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ credentials: 'same-origin',
+ body: JSON.stringify({ ticker }),
+ });
+ const json = await res.json();
+ if (json.success) {
+ toast.success(`تم نشر توقع ${ticker} على تيليجرام`, {
+ description: json.audit_note || `message_id: ${json.message_id ?? '—'}`,
+ });
+ // Refresh data after a short delay so the DB has time to commit
+ setTimeout(() => fetchData(), 800);
+ } else {
+ toast.error(json.error || 'فشل النشر على تيليجرام');
+ }
+ } catch (err) {
+ toast.error(err instanceof Error ? err.message : 'خطأ في الاتصال');
+ } finally {
+ setPublishingTicker(null);
+ }
+ };
+
+ // PHASE2-ADMIN-PANEL: render a preview of the Telegram message before
+ // actually publishing it. Mirrors the structure used by
+ // /api/telegram/publish-stock (ticker + signal + entry/target/stop + score).
+ const previewMessage = useMemo(() => {
+ if (!previewPrediction) return null;
+ const p = previewPrediction;
+ const lines: string[] = [];
+ lines.push(`📊 ${p.ticker}`);
+ if (p.market) lines.push(`السوق: ${p.market}`);
+ if (p.signal) lines.push(`الإشارة: ${p.signal}`);
+ if (p.signal_type) lines.push(`النوع: ${p.signal_type}`);
+ lines.push('');
+ lines.push(`💵 الدخول: ${p.entry_price != null ? p.entry_price.toFixed(2) : '—'}`);
+ lines.push(`🎯 الهدف: ${p.target_price != null ? p.target_price.toFixed(2) : '—'}`);
+ lines.push(`🛑 الوقف: ${p.stop_loss != null ? p.stop_loss.toFixed(2) : '—'}`);
+ if (p.master_score != null) lines.push(`⭐ النتيجة: ${p.master_score.toFixed(1)}`);
+ if (p.prediction_date) lines.push(`\n📅 ${p.prediction_date}`);
+ return lines.join('\n');
+ }, [previewPrediction]);
+
+ const summary = data?.summary;
+ const published = data?.published ?? [];
+ const pendingToday = data?.pending_today ?? [];
+ const auditOk = data?.audit_columns_present === true;
+
+ return (
+ <div className="space-y-5" dir="rtl">
+ {/* Header */}
+ <WidgetCard
+ title="تدقيق التوقعات المنشورة على تيليجرام"
+ icon={Send}
+ iconColor="text-profit"
+ onRefresh={fetchData}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ />
+
+ {/* Audit columns missing alert */}
+ {data && !auditOk && (
+ <Card className="border-warning bg-warning/20 /40">
+ <CardContent className="p-4 flex items-start gap-3">
+ <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+ <div>
+ <p className="font-bold text-warning ">
+ أعمدة التدقيق غير موجودة في predictions.db
+ </p>
+ <p className="text-xs text-muted-foreground mt-1">
+ {data.message || 'الأعمدة was_published / published_at / telegram_message_id غير موجودة.'}
+ </p>
+ </div>
+ </CardContent>
+ </Card>
+ )}
+
+ {/* Stats */}
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+ <StatBox
+ label="إجمالي التوقعات"
+ value={summary?.total ?? '—'}
+ icon={<FileText className="w-4 h-4 text-sky-500" />}
+ />
+ <StatBox
+ label="منشورة"
+ value={summary?.published ?? '—'}
+ icon={<CheckCircle2 className="w-4 h-4 text-profit" />}
+ />
+ <StatBox
+ label="معلّقة (غير منشورة)"
+ value={summary?.pending ?? '—'}
+ icon={<XCircle className="w-4 h-4 text-warning" />}
+ />
+ <StatBox
+ label="معلّقة اليوم"
+ value={summary?.pending_today ?? '—'}
+ icon={<Clock className="w-4 h-4 text-loss" />}
+ />
+ </div>
+
+ {/* Loading */}
+ {loading && !data && (
+ <Card>
+ <CardContent className="p-4 space-y-3">
+ {Array.from({ length: 4 }).map((_, i) => (
+ <Skeleton key={i} className="h-12 w-full" />
+ ))}
+ </CardContent>
+ </Card>
+ )}
+
+ {/* Error */}
+ {!loading && data && !data.success && (
+ <Card className="border-loss bg-loss/20 /40">
+ <CardContent className="p-4 flex items-start gap-3">
+ <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
+ <div>
+ <p className="font-bold text-loss ">فشل تحميل بيانات التوقعات</p>
+ <p className="text-xs text-muted-foreground mt-1">{data.error}</p>
+ </div>
+ </CardContent>
+ </Card>
+ )}
+
+ {/* Pending today — with manual publish button */}
+ {auditOk && pendingToday.length > 0 && (
+ <WidgetCard
+ title={`توقعات اليوم المعلّقة (${pendingToday.length})`}
+ icon={Clock}
+ iconColor="text-loss"
+ hideRefresh
+ headerClassName="pb-2"
+ >
+ <div className="space-y-2">
+ {pendingToday.map((p) => (
+ <div
+ key={p.id}
+ className="p-3 rounded-lg border border-warning bg-warning/20 /40 flex items-center gap-3 flex-wrap"
+ >
+ <div className="flex-1 min-w-0">
+ <div className="flex items-center gap-2 flex-wrap mb-1">
+ <span className="font-mono font-bold" dir="ltr">{p.ticker}</span>
+ {p.market && <Badge variant="outline" className="text-xs">{p.market}</Badge>}
+ {p.signal && (
+ <Badge variant="outline" className={cn('text-xs', signalColor(p.signal))} dir="ltr">
+ {p.signal}
+ </Badge>
+ )}
+ <Badge variant="outline" className="text-xs text-warning border-warning">
+ ⏳ معلّق
+ </Badge>
+ </div>
+ <div className="flex items-center gap-3 text-xs text-muted-foreground" dir="ltr">
+ <span>entry: {p.entry_price?.toFixed(2) ?? '—'}</span>
+ <span>target: {p.target_price?.toFixed(2) ?? '—'}</span>
+ <span>stop: {p.stop_loss?.toFixed(2) ?? '—'}</span>
+ <span>score: {p.master_score?.toFixed(1) ?? '—'}</span>
+ </div>
+ {p.prediction_date && (
+ <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">
+ {p.prediction_date}
+ </div>
+ )}
+ </div>
+ <Button
+ size="sm"
+ onClick={() => setPreviewPrediction(p)}
+ disabled={publishingTicker === p.ticker}
+ className="gap-2 bg-profit hover:bg-profit text-white h-8 text-xs"
+ >
+ {publishingTicker === p.ticker ? (
+ <>
+ <Loader2 className="w-3 h-3 animate-spin" />
+ جاري النشر...
+ </>
+ ) : (
+ <>
+ <Eye className="w-3 h-3" />
+ معاينة ونشر
+ </>
+ )}
+ </Button>
+ </div>
+ ))}
+ </div>
+ </WidgetCard>
+ )}
+
+ {/* Recently published */}
+ {auditOk && published.length > 0 && (
+ <WidgetCard
+ title={`آخر التوقعات المنشورة (${published.length})`}
+ icon={CheckCircle2}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
+ <div className="max-h-[36rem] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+ <table className="w-full text-xs">
+ <thead className="sticky top-0 bg-background z-10">
+ <tr className="text-right border-b">
+ <th className="p-2 font-medium">الرمز</th>
+ <th className="p-2 font-medium">الإشارة</th>
+ <th className="p-2 font-medium">السعر</th>
+ <th className="p-2 font-medium">published_at</th>
+ <th className="p-2 font-medium">message_id</th>
+ </tr>
+ </thead>
+ <tbody>
+ {published.map((p) => (
+ <tr key={p.id} className="border-b hover:bg-muted/30">
+ <td className="p-2">
+ <div className="font-mono font-bold" dir="ltr">{p.ticker}</div>
+ {p.market && <Badge variant="outline" className="text-xs mt-0.5">{p.market}</Badge>}
+ </td>
+ <td className="p-2">
+ {p.signal ? (
+ <Badge variant="outline" className={cn('text-xs', signalColor(p.signal))} dir="ltr">
+ {p.signal}
+ </Badge>
+ ) : '—'}
+ </td>
+ <td className="p-2 font-mono" dir="ltr">
+ {p.entry_price?.toFixed(2) ?? '—'}
+ </td>
+ <td className="p-2">
+ <div className="text-xs">{timeAgo(p.published_at)}</div>
+ {p.published_at && (
+ <div className="text-xs text-muted-foreground" dir="ltr">
+ {new Date(p.published_at).toLocaleString('ar-EG')}
+ </div>
+ )}
+ </td>
+ <td className="p-2 font-mono" dir="ltr">
+ {p.telegram_message_id ?? '—'}
+ </td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+ </WidgetCard>
+ )}
+
+ {/* Empty state */}
+ {auditOk && published.length === 0 && pendingToday.length === 0 && (
+ <Card>
+ <CardContent className="p-8 text-center text-muted-foreground">
+ <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-40" />
+ <p>لا توجد توقعات في قاعدة البيانات</p>
+ <p className="text-xs mt-1">شغّل V40.2 generator لإنتاج توقعات اليوم.</p>
+ </CardContent>
+ </Card>
+ )}
+
+ {/* PHASE2-ADMIN-PANEL: Preview-before-publish AlertDialog.
+ Owner request: "المعاينة قبل النشر (Preview)".
+ Shows the rendered Telegram message + a confirm button that calls
+ the actual publish endpoint. Cancel just closes the dialog. */}
+ <AlertDialog
+ open={previewPrediction !== null}
+ onOpenChange={(v) => !v && setPreviewPrediction(null)}
+ >
+ <AlertDialogContent dir="rtl">
+ <AlertDialogHeader>
+ <AlertDialogTitle className="flex items-center gap-2">
+ <Eye className="w-5 h-5 text-profit" />
+ معاينة قبل النشر على تيليجرام
+ </AlertDialogTitle>
+ <AlertDialogDescription>
+ سيُرسل التالي إلى قناة تيليجرام. راجع المحتوى قبل التأكيد.
+ </AlertDialogDescription>
+ </AlertDialogHeader>
+
+ {previewPrediction && (
+ <div className="space-y-3">
+ {/* Meta badges */}
+ <div className="flex flex-wrap items-center gap-2 text-xs">
+ <span className="font-mono font-bold" dir="ltr">{previewPrediction.ticker}</span>
+ {previewPrediction.market && (
+ <Badge variant="outline" className="text-xs">{previewPrediction.market}</Badge>
+ )}
+ {previewPrediction.signal && (
+ <Badge variant="outline" className={cn('text-xs', signalColor(previewPrediction.signal))} dir="ltr">
+ {previewPrediction.signal}
+ </Badge>
+ )}
+ <Badge variant="outline" className="text-xs text-warning border-warning">
+ ⏳ معلّق
+ </Badge>
+ </div>
+
+ {/* Rendered message preview (mirrors Telegram layout) */}
+ <div className="rounded-lg border border-profit bg-profit/20 /40 p-3">
+ <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+ <MessageSquare className="w-3 h-3" />
+ معاينة الرسالة
+ </div>
+ <pre
+ className="whitespace-pre-wrap text-xs text-foreground font-sans leading-relaxed"
+ dir="rtl"
+ >
+{previewMessage ?? ''}
+ </pre>
+ </div>
+
+ <div className="text-xs text-muted-foreground">
+ ⚠️ سيتم استدعاء <code dir="ltr">/api/telegram/publish-stock</code> فور التأكيد.
+ </div>
+ </div>
+ )}
+
+ <AlertDialogFooter>
+ <AlertDialogCancel>إلغاء</AlertDialogCancel>
+ <AlertDialogAction
+ onClick={() => {
+ if (previewPrediction) {
+ const ticker = previewPrediction.ticker;
+ setPreviewPrediction(null);
+ publishPrediction(ticker);
+ }
+ }}
+ disabled={publishingTicker !== null}
+ className="bg-profit hover:bg-profit text-white gap-2"
+ >
+ {publishingTicker ? (
+ <>
+ <Loader2 className="w-4 h-4 animate-spin" />
+ جاري النشر...
+ </>
+ ) : (
+ <>
+ <Send className="w-4 h-4" />
+ تأكيد النشر
+ </>
+ )}
+ </AlertDialogAction>
+ </AlertDialogFooter>
+ </AlertDialogContent>
+ </AlertDialog>
+ </div>
+ );
+}
+
+/* ------------------------------------------------------------------ */
+/* Small presentational helper */
+/* ------------------------------------------------------------------ */
+
+function StatBox({
+ label,
+ value,
+ icon,
+}: {
+ label: string;
+ value: React.ReactNode;
+ icon: React.ReactNode;
+}) {
+ return (
+ <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
+ <div className="flex items-center justify-between mb-1">
+ <span className="text-xs text-muted-foreground">{label}</span>
+ {icon}
+ </div>
+ <div className="text-lg font-bold">{value}</div>
+ </div>
+ );
+}

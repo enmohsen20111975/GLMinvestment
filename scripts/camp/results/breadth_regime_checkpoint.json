@@ -1,0 +1,260 @@
+{
+  "method": "breadth-only (no EGX30)",
+  "definition": "Bull=breadth>55%, Bear=breadth<45%, Sideways=else",
+  "breadth_def": "% of tickers above their SMA50 on last trading day of month",
+  "monthly": {
+    "2023-01": {
+      "breadth": 50.0,
+      "regime": "Sideways",
+      "trading_days": 20
+    },
+    "2023-02": {
+      "breadth": 44.8,
+      "regime": "Bear",
+      "trading_days": 20
+    },
+    "2023-03": {
+      "breadth": 26.9,
+      "regime": "Bear",
+      "trading_days": 22
+    },
+    "2023-04": {
+      "breadth": 49.8,
+      "regime": "Sideways",
+      "trading_days": 15
+    },
+    "2023-05": {
+      "breadth": 68.5,
+      "regime": "Bull",
+      "trading_days": 22
+    },
+    "2023-06": {
+      "breadth": 46.5,
+      "regime": "Sideways",
+      "trading_days": 18
+    },
+    "2023-07": {
+      "breadth": 44.6,
+      "regime": "Bear",
+      "trading_days": 18
+    },
+    "2023-08": {
+      "breadth": 60.1,
+      "regime": "Bull",
+      "trading_days": 23
+    },
+    "2023-09": {
+      "breadth": 49.3,
+      "regime": "Sideways",
+      "trading_days": 19
+    },
+    "2023-10": {
+      "breadth": 68.2,
+      "regime": "Bull",
+      "trading_days": 22
+    },
+    "2023-11": {
+      "breadth": 79.4,
+      "regime": "Bull",
+      "trading_days": 22
+    },
+    "2023-12": {
+      "breadth": 64.5,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2024-01": {
+      "breadth": 60.3,
+      "regime": "Bull",
+      "trading_days": 20
+    },
+    "2024-02": {
+      "breadth": 57.0,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2024-03": {
+      "breadth": 19.2,
+      "regime": "Bear",
+      "trading_days": 21
+    },
+    "2024-04": {
+      "breadth": 8.9,
+      "regime": "Bear",
+      "trading_days": 17
+    },
+    "2024-05": {
+      "breadth": 24.2,
+      "regime": "Bear",
+      "trading_days": 20
+    },
+    "2024-06": {
+      "breadth": 47.0,
+      "regime": "Sideways",
+      "trading_days": 15
+    },
+    "2024-07": {
+      "breadth": 73.0,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2024-08": {
+      "breadth": 72.9,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2024-09": {
+      "breadth": 73.5,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2024-10": {
+      "breadth": 60.1,
+      "regime": "Bull",
+      "trading_days": 22
+    },
+    "2024-11": {
+      "breadth": 50.2,
+      "regime": "Sideways",
+      "trading_days": 20
+    },
+    "2024-12": {
+      "breadth": 32.9,
+      "regime": "Bear",
+      "trading_days": 23
+    },
+    "2025-01": {
+      "breadth": 50.5,
+      "regime": "Sideways",
+      "trading_days": 20
+    },
+    "2025-02": {
+      "breadth": 45.4,
+      "regime": "Sideways",
+      "trading_days": 20
+    },
+    "2025-03": {
+      "breadth": 57.2,
+      "regime": "Bull",
+      "trading_days": 22
+    },
+    "2025-04": {
+      "breadth": 43.8,
+      "regime": "Bear",
+      "trading_days": 22
+    },
+    "2025-05": {
+      "breadth": 43.1,
+      "regime": "Bear",
+      "trading_days": 21
+    },
+    "2025-06": {
+      "breadth": 44.0,
+      "regime": "Bear",
+      "trading_days": 22
+    },
+    "2025-07": {
+      "breadth": 42.3,
+      "regime": "Bear",
+      "trading_days": 23
+    },
+    "2025-08": {
+      "breadth": 46.7,
+      "regime": "Sideways",
+      "trading_days": 21
+    },
+    "2025-09": {
+      "breadth": 46.0,
+      "regime": "Sideways",
+      "trading_days": 23
+    },
+    "2025-10": {
+      "breadth": 100.0,
+      "regime": "Bull",
+      "trading_days": 27
+    },
+    "2025-11": {
+      "breadth": 46.9,
+      "regime": "Sideways",
+      "trading_days": 25
+    },
+    "2025-12": {
+      "breadth": 49.8,
+      "regime": "Sideways",
+      "trading_days": 27
+    },
+    "2026-01": {
+      "breadth": 68.0,
+      "regime": "Bull",
+      "trading_days": 26
+    },
+    "2026-02": {
+      "breadth": 56.8,
+      "regime": "Bull",
+      "trading_days": 24
+    },
+    "2026-03": {
+      "breadth": 37.9,
+      "regime": "Bear",
+      "trading_days": 27
+    },
+    "2026-04": {
+      "breadth": 58.7,
+      "regime": "Bull",
+      "trading_days": 24
+    },
+    "2026-05": {
+      "breadth": 52.3,
+      "regime": "Sideways",
+      "trading_days": 19
+    },
+    "2026-06": {
+      "breadth": 55.8,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2026-07": {
+      "breadth": 74.6,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2026-08": {
+      "breadth": 73.4,
+      "regime": "Bull",
+      "trading_days": 21
+    },
+    "2026-09": {
+      "breadth": 43.8,
+      "regime": "Bear",
+      "trading_days": 26
+    },
+    "2026-10": {
+      "breadth": 21.6,
+      "regime": "Bear",
+      "trading_days": 18
+    }
+  },
+  "regime_counts": {
+    "bull": 19,
+    "bear": 14,
+    "sideways": 13
+  },
+  "bear_months": [
+    "2023-02",
+    "2023-03",
+    "2023-07",
+    "2024-03",
+    "2024-04",
+    "2024-05",
+    "2024-12",
+    "2025-04",
+    "2025-05",
+    "2025-06",
+    "2025-07",
+    "2026-03",
+    "2026-09",
+    "2026-10"
+  ],
+  "verdict": "PASS \u2705",
+  "timestamp": "2026-10-24T17:49:34.240029"
+}

@@ -1,0 +1,388 @@
+//@version=5
+// This work includes code licensed under Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) © LuxAlgo & BigBeluga
+indicator("محرك القرار المؤسسي V82 - The Ultimate EGX Engine", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+// ==========================================
+// 1. الإعدادات
+// ==========================================
+group_market = "🇪🇬 السوق والقطاع"
+benchmark_ticker = input.symbol("EGX:EGX30", "مؤشر السوق العام", group=group_market)
+sector_benchmark = input.symbol("", "مؤشر القطاع (اختياري)", group=group_market)
+
+group_capital = "💰 إدارة المخاطر بالجنيه"
+account_balance = input.float(10000, "رأس المال (جنيه)", group=group_capital)
+risk_per_trade = input.float(1.0, "المخاطرة %", group=group_capital)
+
+group_ui = "🎨 الشكل والرسم"
+show_zones = input.bool(true, "إظهار خطوط الدعم والمقاومة", group=group_ui)
+
+// ==========================================
+// 2. محرك الزمن والتأخير
+// ==========================================
+int tf_secs = timeframe.in_seconds(timeframe.period)
+int delay_bars = tf_secs >= 300 ? 1 : math.max(1, math.round(300 / tf_secs))
+f_delayed_src(src, bars) => src[bars]
+
+delayed_open = f_delayed_src(open, delay_bars)
+delayed_close = f_delayed_src(close, delay_bars)
+delayed_high = f_delayed_src(high, delay_bars)
+delayed_low = f_delayed_src(low, delay_bars)
+delayed_vol = f_delayed_src(volume, delay_bars)
+
+// ==========================================
+// 3. البيانات الأساسية والسيولة
+// ==========================================
+float atr_val = ta.atr(14)
+float delayed_atr = f_delayed_src(atr_val, delay_bars)
+float atr_sma = ta.sma(atr_val, 50)
+candle_range = delayed_high - delayed_low
+
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+
+float vol_sma_50 = ta.sma(volume, 50)
+var float[] vol_array = array.new_float()
+array.push(vol_array, volume)
+if array.size(vol_array) > 50
+    array.shift(vol_array)
+float[] sorted_vol = array.copy(vol_array)
+array.sort(sorted_vol, order.ascending)
+float median_vol = array.size(sorted_vol) >= 50 ? array.get(sorted_vol, 25) : vol_sma_50
+
+// ==========================================
+// 4. سحابة الإيشيموكو (Ichimoku Cloud)
+// ==========================================
+int conv_len = 9
+int base_len = 26
+int span_b_len = 52
+int displacement = 26
+
+float tenkan = math.avg(ta.highest(high, conv_len), ta.lowest(low, conv_len))
+float kijun = math.avg(ta.highest(high, base_len), ta.lowest(low, base_len))
+float senkouA = math.avg(tenkan, kijun)
+float senkouB = math.avg(ta.highest(high, span_b_len), ta.lowest(low, span_b_len))
+
+float current_cloudA = senkouA[displacement - 1]
+float current_cloudB = senkouB[displacement - 1]
+
+bool ichimoku_bull = not na(current_cloudA) and not na(current_cloudB) and delayed_close > current_cloudA and delayed_close > current_cloudB
+
+// ==========================================
+// 5. تدفق الأموال (Money Flow)
+// ==========================================
+float flow_range = math.max(candle_range, syminfo.mintick)
+float upper_wick = delayed_high - math.max(delayed_close, delayed_open)
+float lower_wick = math.min(delayed_close, delayed_open) - delayed_low
+
+float clv = ((delayed_close - delayed_low) - (delayed_high - delayed_close)) / flow_range
+clv := math.max(-1.0, math.min(1.0, clv))
+float body_pressure = (delayed_close - delayed_open) / flow_range
+body_pressure := math.max(-1.0, math.min(1.0, body_pressure))
+float pressure_score = clv * 0.65 + body_pressure * 0.35
+
+float est_buy_vol = delayed_vol * (0.5 + pressure_score * 0.5)
+float est_sell_vol = delayed_vol - est_buy_vol
+float buy_value_m = (math.max(0, est_buy_vol) * delayed_close) / 1000000
+float sell_value_m = (math.max(0, est_sell_vol) * delayed_close) / 1000000
+
+// ==========================================
+// 6. السوق والقطاع
+// ==========================================
+[market_close, market_roc] = request.security(benchmark_ticker, timeframe.period, [close, ta.roc(close, 14)], barmerge.gaps_off, barmerge.lookahead_off)
+float stock_roc14 = ta.roc(delayed_close, 14)
+bool outperform_market = (stock_roc14 - nz(market_roc)) > 0
+
+bool has_sector = sector_benchmark != ""
+[sec_close, sec_vol, sec_vol_ma] = request.security(has_sector ? sector_benchmark : syminfo.tickerid, timeframe.period, [close, volume, ta.sma(volume, 20)], barmerge.gaps_off, barmerge.lookahead_off)
+float sector_roc = has_sector ? ta.roc(sec_close, 14) : na
+bool sector_money_out = has_sector and sec_vol > sec_vol_ma * 1.2 and sector_roc < 0
+
+// ==========================================
+// 7. الهيكل والدعوم
+// ==========================================
+pivot_h = ta.pivothigh(high, 5, 5)
+pivot_l = ta.pivotlow(low, 5, 5)
+
+var float[] res_levels = array.new_float()
+var float[] sup_levels = array.new_float()
+if not na(pivot_h)
+    array.unshift(res_levels, pivot_h)
+if not na(pivot_l)
+    array.unshift(sup_levels, pivot_l)
+if array.size(res_levels) > 0
+    for i = array.size(res_levels) - 1 to 0
+        if close > array.get(res_levels, i)
+            array.remove(res_levels, i)
+if array.size(sup_levels) > 0
+    for i = array.size(sup_levels) - 1 to 0
+        if close < array.get(sup_levels, i)
+            array.remove(sup_levels, i)
+
+float nearest_res = na
+float nearest_sup = na
+if array.size(res_levels) > 0
+    float min_dist = 1e10
+    for i = 0 to array.size(res_levels) - 1
+        float lvl = array.get(res_levels, i)
+        if lvl > close and (lvl - close) < min_dist
+            min_dist := lvl - close
+            nearest_res := lvl
+if array.size(sup_levels) > 0
+    float min_dist = 1e10
+    for i = 0 to array.size(sup_levels) - 1
+        float lvl = array.get(sup_levels, i)
+        if lvl < close and (close - lvl) < min_dist
+            min_dist := close - lvl
+            nearest_sup := lvl
+
+plot(show_zones and not na(nearest_res) ? nearest_res : na, title="مقاومة", color=color.red, linewidth=2, style=plot.style_linebr)
+plot(show_zones and not na(nearest_sup) ? nearest_sup : na, title="دعم", color=color.green, linewidth=2, style=plot.style_linebr)
+
+// ==========================================
+// 8. الفلاتر الصارمة
+// ==========================================
+bool is_desert_phase = atr_val < (atr_sma * 0.60) and delayed_vol < (median_vol * 0.5)
+bool limit_up_trap = delayed_open > 0 and ((delayed_close - delayed_open) / delayed_open) * 100 > 9.5
+bool is_killer_distribution = delayed_close < delayed_open and candle_range > (delayed_atr * 1.5) and delayed_vol > (median_vol * 2)
+bool is_wash_trade = delayed_vol > (median_vol * 2.0) and candle_range < (delayed_atr * 0.5)
+
+daily_ema50 = request.security(syminfo.tickerid, "D", ta.ema(close, 50)[1], barmerge.gaps_off, barmerge.lookahead_off)
+daily_close = request.security(syminfo.tickerid, "D", close[1], barmerge.gaps_off, barmerge.lookahead_off)
+bool daily_trend_up = not na(daily_ema50) and daily_close > daily_ema50
+
+bool choch_bull = not na(nearest_res) and ta.crossover(delayed_close, nearest_res)
+bool choch_bear = not na(nearest_sup) and ta.crossunder(delayed_close, nearest_sup)
+bool is_healthy_pullback = delayed_close < delayed_open and candle_range < (delayed_atr * 0.5) and delayed_vol < (median_vol * 0.8)
+bool at_retest_zone = delayed_low <= (ema20 * 1.02) or (not na(nearest_sup) and delayed_low <= (nearest_sup * 1.02))
+
+float roc3 = ta.roc(delayed_close, 3)
+bool is_chasing = roc3 > 12.0
+
+string diagnosis = "حركة طبيعية"
+if is_desert_phase
+    diagnosis := "تراكم هادئ"
+else if is_healthy_pullback
+    diagnosis := "جني أرباح صحي"
+else if is_killer_distribution
+    diagnosis := "توزيع قاتل"
+
+// ==========================================
+// 9. محرك أفضل نقطة دخول (Best Entry Engine)
+// ==========================================
+bool price_extended = (delayed_close - ema20) > (delayed_atr * 0.5)
+float best_entry_price = delayed_close
+string best_entry_reason = "الدخول الآن (السعر مدعوم)"
+
+if price_extended
+    best_entry_reason := "استنى تصحيح"
+    float pb_ema20 = (not na(ema20) and ema20 < delayed_close) ? ema20 : na
+    float pb_sup = (not na(nearest_sup) and nearest_sup < delayed_close and (delayed_close - nearest_sup) < delayed_atr * 2.0) ? nearest_sup : na
+    float best_pb = na
+    
+    if not na(pb_ema20)
+        best_pb := pb_ema20
+        best_entry_price := pb_ema20
+    if not na(pb_sup) and pb_sup > nz(best_pb, 0)
+        best_pb := pb_sup
+        best_entry_price := pb_sup
+        
+    if na(best_pb)
+        best_entry_reason := "ممتد جداً (لا تطارد)"
+        best_entry_price := delayed_close
+
+// ==========================================
+// 10. إدارة المخاطر بالجنيه والوقف الديناميكي
+// ==========================================
+float atr_pctrank = nz(ta.percentrank(atr_val, 100), 50)
+float atr_mult = atr_pctrank > 80 ? 2.0 : atr_pctrank < 20 ? 1.1 : 1.5
+
+float technical_stop = not na(nearest_sup) and nearest_sup < best_entry_price ? nearest_sup - (delayed_atr * 0.25) : best_entry_price - (delayed_atr * atr_mult)
+float sl = technical_stop < best_entry_price ? technical_stop : best_entry_price - (delayed_atr * atr_mult)
+float risk_per_share = best_entry_price - sl
+
+float dynamic_rr = outperform_market ? 2.0 : 1.8
+float tp1 = not na(nearest_res) and nearest_res > best_entry_price + (risk_per_share * (dynamic_rr * 0.8)) ? nearest_res : best_entry_price + (risk_per_share * dynamic_rr)
+float tp2 = best_entry_price + (risk_per_share * (dynamic_rr * 2.0))
+bool valid_rr = risk_per_share > 0 and ((tp1 - best_entry_price) / risk_per_share) >= dynamic_rr
+
+float size_multiplier = delayed_vol > (median_vol * 2.0) ? 1.0 : delayed_vol > (median_vol * 1.2) ? 0.8 : 0.5
+if is_wash_trade
+    size_multiplier := 0.5
+
+float risk_amount_egp = account_balance * (risk_per_trade / 100) * size_multiplier
+float position_size = risk_per_share > 0 ? math.floor(risk_amount_egp / risk_per_share) : 0
+float position_value_egp = position_size * best_entry_price
+float expected_profit_egp = position_size * (tp1 - best_entry_price)
+
+// ==========================================
+// 11. إدارة الصفقة + مؤشر الوقود (The Fuel Gauge)
+// ==========================================
+var int total_trades = 0
+var int winning_trades = 0
+var int consecutive_losses = 0 
+var float active_entry = na
+var float active_tp1 = na
+var float active_tp2 = na
+var float active_sl = na
+var int entry_bar = na
+var float entry_atr = na 
+var float entry_vol = na 
+
+bool fuel_exhausted = false
+float fuel_pct = 100.0
+
+if not na(active_entry)
+    int bars_held = bar_index - entry_bar
+    
+    float atr_ratio = entry_atr > 0 ? delayed_atr / entry_atr : 1.0
+    float vol_ratio = entry_vol > 0 ? delayed_vol / entry_vol : 1.0
+    fuel_pct := (atr_ratio * 0.60 + vol_ratio * 0.40) * math.max(0, 1.0 - (bars_held * 0.05))
+    fuel_pct := math.max(0, math.min(fuel_pct, 100))
+
+    fuel_exhausted := fuel_pct < 50.0 and bars_held >= 3
+    bool kill_switch_triggered = choch_bear or is_killer_distribution or fuel_exhausted
+    
+    if high >= active_tp2 or low <= active_sl or kill_switch_triggered
+        if high >= active_tp2 or (kill_switch_triggered and high > active_entry)
+            winning_trades += 1
+            consecutive_losses := 0 
+        else if low <= active_sl
+            consecutive_losses += 1
+        total_trades += 1
+        active_entry := na, active_tp1 := na, active_tp2 := na, active_sl := na, entry_bar := na
+
+bool safe_mode_active = consecutive_losses >= 3
+if safe_mode_active
+    size_multiplier := 0.0
+    risk_amount_egp := 0
+    position_size := 0
+    expected_profit_egp := 0
+
+// ==========================================
+// 12. منطق القناص وبوابة الدخول (The 9-Condition Gate)
+// ==========================================
+string buy_signal = "انتظار"
+string buy_path = "لا توجد إشارة دخول واضحة"
+color buy_color = color.gray
+
+bool golden_retest = daily_trend_up and is_healthy_pullback and at_retest_zone and choch_bull and buy_value_m > sell_value_m
+bool entry_gate_pass = daily_trend_up and valid_rr and not is_chasing and not is_killer_distribution and not is_wash_trade and not sector_money_out and not limit_up_trap and outperform_market and ichimoku_bull
+
+if safe_mode_active
+    buy_signal := "إيقاف مؤقت (خسائر متتالية)"
+    buy_color := color.red
+else if not daily_trend_up
+    buy_signal := "ممنوع الدخول (يومي هابط)"
+    buy_color := color.red
+else if limit_up_trap
+    buy_signal := "ممنوع الدخول (مصيدة لمت أب)"
+    buy_color := color.red
+else if is_chasing
+    buy_signal := "ممنوع الدخول (مطاردة)"
+    buy_path := "السهم صعد أكثر من 12% في 3 أيام"
+    buy_color := color.orange
+else if is_killer_distribution
+    buy_signal := "بيع وابتعاد (توزيع قاتل)"
+    buy_color := color.red
+else if is_wash_trade
+    buy_signal := "ممنوع الدخول (تدوير وهمي)"
+    buy_color := color.orange
+else if sector_money_out
+    buy_signal := "ممنوع الدخول (القطاع يبيع)"
+    buy_color := color.red
+else if not ichimoku_bull
+    buy_signal := "ممنوع الدخول (تحت سحابة)"
+    buy_color := color.red
+else if golden_retest and entry_gate_pass
+    buy_signal := "شراء قوي (A+)"
+    buy_path := "تجاوز شروط الدخول التسعة"
+    buy_color := color.purple
+
+if buy_signal == "شراء قوي (A+)" and na(active_entry)
+    active_entry := best_entry_price
+    active_tp1 := tp1
+    active_tp2 := tp2
+    active_sl := sl
+    entry_bar := bar_index
+    entry_atr := delayed_atr 
+    entry_vol := delayed_vol 
+
+string sell_signal = "لا توجد صفقة مفتوحة"
+string sell_path = "انتظر إشارة الدخول"
+color sell_color = color.gray
+// ✨ إصلاح الخطأ: استخدام risk_per_share بدلاً من risk
+float current_pnl_r = not na(active_entry) and risk_per_share > 0 ? (close - active_entry) / risk_per_share : 0
+
+if not na(active_entry)
+    if choch_bear or is_killer_distribution
+        sell_signal := "إغلاق فوري (Kill Switch)"
+        sell_path := "توزيع قاتل أو كسر هيكل"
+        sell_color := color.red
+    else if fuel_exhausted
+        sell_signal := "إغلاق (نقص الوقود)"
+        sell_path := "الميكرز غادر السهم"
+        sell_color := color.red
+    else if high >= active_tp2
+        sell_signal := "تحقق الهدف الثاني"
+        sell_path := "السهم وصل للمستهدف"
+        sell_color := color.lime
+    else if high >= active_tp1
+        sell_signal := "تحقق الهدف الأول"
+        sell_path := "السهم وصل للمستهدف"
+        sell_color := color.lime
+    else
+        sell_signal := "احتفاظ (وقف التعادل)"
+        sell_path := "الوقود لا يزال جيداً"
+        sell_color := color.lime
+
+// ==========================================
+// 13. لوحة القرار النهائية (The Ultimate Dashboard)
+// ==========================================
+var table dash = table.new(position.top_right, 4, 22, bgcolor=color.rgb(12, 18, 28), border_width=1, border_color=color.gray)
+
+if barstate.islast
+    table.cell(dash, 0, 0, syminfo.ticker + " | V82 Ultimate EGX", text_color=color.white, bgcolor=color.rgb(0, 75, 105), text_halign=text.align_center)
+    table.merge_cells(dash, 0, 0, 3, 0)
+    
+    // 1. حالة السهم
+    table.cell(dash, 0, 1, "حالة السهم والميكرز", text_color=color.yellow, bgcolor=color.rgb(25, 35, 50))
+    table.merge_cells(dash, 0, 1, 3, 1)
+    table.cell(dash, 0, 2, "حالة السهم:", text_color=color.gray), table.cell(dash, 1, 2, diagnosis, text_color=is_killer_distribution ? color.red : is_healthy_pullback ? color.lime : is_desert_phase ? color.yellow : color.white)
+    table.cell(dash, 2, 2, "أقوى من السوق:", text_color=color.gray), table.cell(dash, 3, 2, outperform_market ? "نعم" : "لا", text_color=outperform_market ? color.lime : color.red)
+    table.cell(dash, 0, 3, "سيولة شراء (م):", text_color=color.gray), table.cell(dash, 1, 3, str.tostring(buy_value_m, "#.##"), text_color=color.lime)
+    table.cell(dash, 2, 3, "سيولة بيع (م):", text_color=color.gray), table.cell(dash, 3, 3, str.tostring(sell_value_m, "#.##"), text_color=color.red)
+
+    // 2. بوابة الدخول
+    table.cell(dash, 0, 5, "بوابة الدخول (9 شروط)", text_color=color.yellow, bgcolor=color.rgb(25, 35, 50))
+    table.merge_cells(dash, 0, 5, 3, 5)
+    table.cell(dash, 0, 6, "يومي صاعد:", text_color=color.gray), table.cell(dash, 1, 6, daily_trend_up ? "✅" : "❌", text_color=daily_trend_up ? color.lime : color.red)
+    table.cell(dash, 2, 6, "فوق سحابة إيشيموكو:", text_color=color.gray), table.cell(dash, 3, 6, ichimoku_bull ? "✅" : "❌", text_color=ichimoku_bull ? color.lime : color.red)
+    table.cell(dash, 0, 7, "بدون مطاردة:", text_color=color.gray), table.cell(dash, 1, 7, not is_chasing ? "✅" : "❌", text_color=not is_chasing ? color.lime : color.red)
+    table.cell(dash, 2, 7, "قطاع يشتري:", text_color=color.gray), table.cell(dash, 3, 7, not sector_money_out ? "✅" : "❌", text_color=not sector_money_out ? color.lime : color.red)
+
+    // 3. قرار الدخول ونقطة التصحيح
+    table.cell(dash, 0, 9, "قرار الدخول ونقطة الشراء", text_color=color.lime, bgcolor=color.rgb(20, 40, 30))
+    table.merge_cells(dash, 0, 9, 3, 9)
+    table.cell(dash, 0, 10, "القرار:", text_color=color.gray), table.cell(dash, 1, 10, na(active_entry) ? buy_signal : "—", text_color=na(active_entry) ? buy_color : color.gray)
+    table.cell(dash, 2, 10, "إجراء الدخول:", text_color=color.gray), table.cell(dash, 3, 10, na(active_entry) ? best_entry_reason : "أنت جوه الصفقة", text_color=color.white)
+    table.cell(dash, 0, 11, "أفضل سعر دخول:", text_color=color.gray), table.cell(dash, 1, 11, str.tostring(best_entry_price, "#.##"), text_color=color.aqua)
+    table.cell(dash, 2, 11, "وقف الخسارة (ديناميكي):", text_color=color.gray), table.cell(dash, 3, 11, str.tostring(sl, "#.##") + " (" + str.tostring(atr_mult, "#.1") + "x ATR)", text_color=color.red)
+    table.cell(dash, 0, 12, "الهدف الأول:", text_color=color.gray), table.cell(dash, 1, 12, str.tostring(tp1, "#.##"), text_color=color.green)
+    table.cell(dash, 2, 12, "الهدف الثاني:", text_color=color.gray), table.cell(dash, 3, 12, str.tostring(tp2, "#.##"), text_color=color.green)
+
+    // 4. الفلوس وحجم العقد (EGP)
+    table.cell(dash, 0, 14, "إدارة رأس المال (جنيه)", text_color=color.yellow, bgcolor=color.rgb(25, 35, 50))
+    table.merge_cells(dash, 0, 14, 3, 14)
+    table.cell(dash, 0, 15, "عدد الأسهم:", text_color=color.gray), table.cell(dash, 1, 15, str.tostring(position_size) + " سهم", text_color=color.aqua)
+    table.cell(dash, 2, 15, "قيمة الصفقة:", text_color=color.gray), table.cell(dash, 3, 15, str.tostring(position_value_egp, "#.##") + " ج.م", text_color=color.yellow)
+    table.cell(dash, 0, 16, "المخاطرة بفلوس:", text_color=color.gray), table.cell(dash, 1, 16, str.tostring(risk_amount_egp, "#.##") + " ج.م", text_color=color.red)
+    table.cell(dash, 2, 16, "الربح المتوقع TP1:", text_color=color.gray), table.cell(dash, 3, 16, str.tostring(expected_profit_egp, "#.##") + " ج.م", text_color=color.lime)
+
+    // 5. إدارة الصفقة والوقود
+    table.cell(dash, 0, 18, "إدارة الصفقة والوقود", text_color=color.red, bgcolor=color.rgb(40, 20, 30))
+    table.merge_cells(dash, 0, 18, 3, 18)
+    table.cell(dash, 0, 19, "قرار البيع:", text_color=color.gray), table.cell(dash, 1, 19, not na(active_entry) ? sell_signal : "—", text_color=sell_color)
+    table.cell(dash, 2, 19, "السبب:", text_color=color.gray), table.cell(dash, 3, 19, not na(active_entry) ? sell_path : "—", text_color=color.white)
+    table.cell(dash, 0, 20, "الربح (R):", text_color=color.gray), table.cell(dash, 1, 20, str.tostring(current_pnl_r, "#.##") + " R", text_color=current_pnl_r > 0 ? color.lime : color.red)
+    table.cell(dash, 2, 20, "الوقود المتبقي:", text_color=color.gray), table.cell(dash, 3, 20, not na(active_entry) ? str.tostring(fuel_pct, "#.#") + "%" : "100%", text_color=fuel_pct > 50 ? color.lime : fuel_pct > 20 ? color.yellow : color.red)

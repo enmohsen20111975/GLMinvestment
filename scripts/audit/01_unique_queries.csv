@@ -1,0 +1,30 @@
+     32 SELECT name FROM sqlite_master
+     15 SELECT COUNT(*) as c FROM predictions
+     10 SELECT * FROM portfolio_assets
+      6 SELECT COUNT(*) as count FROM stocks
+      5 UPDATE stocks
+      5 SELECT id FROM stocks
+      5 SELECT * FROM stocks
+      4 UPDATE user_stock_watchlists
+      4 UPDATE user_notifications
+      4 SELECT name, price, change_percent FROM stocks
+      4 SELECT id, user_id FROM user_stock_watchlists
+      4 SELECT id FROM portfolio_assets
+      4 SELECT current_price FROM stocks
+      4 SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks
+      4 SELECT COUNT(*) as n FROM predictions
+      4 SELECT COUNT(*) as cnt FROM analytics_events
+      4 SELECT COUNT(*) as c FROM radar_signal_tracking
+      4 DELETE FROM news_signals
+      4 DELETE FROM market_news
+      3 UPDATE portfolio_assets
+      3 SELECT ticker, name, name_ar FROM stocks
+      3 SELECT ticker FROM stocks
+      3 SELECT COUNT(*) as count FROM price_history
+      3 SELECT * FROM investors_data
+      3 SELECT * FROM financial_obligations
+      3 INSERT INTO user_stock_watchlists
+      3 INSERT INTO stocks
+      2 UPDATE financial_obligations
+      2 SELECT view, COUNT(*) as count FROM analytics_events
+      2 SELECT ticker, name_ar, current_price, previous_close, volume, last_update FROM stocks

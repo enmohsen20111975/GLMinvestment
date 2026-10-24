@@ -1,0 +1,21 @@
+{
+  "name": "data-engine",
+  "version": "2.0.0",
+  "description": "🔥 Data Engine - Arabic Stocks Data Factory",
+  "main": "main.py",
+  "scripts": {
+    "start": "python3 main.py",
+    "dev": "python3 main.py",
+    "stocks": "python3 scrapers/tradingview_scraper.py",
+    "crypto": "python3 scrapers/crypto_fetcher.py",
+    "metals": "python3 scrapers/metals_forex_fetcher.py",
+    "historical": "python3 scrapers/historical_fetcher.py",
+    "logos": "python3 scrapers/fetch_logos.py"
+  },
+  "dependencies": {
+    "flask": "^3.0.0",
+    "flask-cors": "^4.0.0",
+    "playwright": "^1.40.0",
+    "requests": "^2.31.0"
+  }
+}

@@ -1,0 +1,1479 @@
+{
+  "_meta": {
+    "description": "Canonical index constituents — extracted from official sources",
+    "sources": [
+      "data/complete_markets_indices_and_weights.json (EGX30 + EGX33 with official weights)",
+      "data/deepseek_json_20261021_361e11.json (EGX70/EGX100 samples + KSE/TADAWUL/QSE/US top constituents)",
+      "data/deepseek_json_20261021_9cd26f.json (EGX top stocks cross-reference)"
+    ],
+    "updated_at": "2026-10-22",
+    "notes": "EGX70/EGX100 are EWI (equal-weighted) — official constituent lists are not fully published; samples merged from both sources. EGX30 and EGX33 have official weights from complete_markets_indices_and_weights.json."
+  },
+  "EGX30": {
+    "name_ar": "مؤشر إيجي إكس 30 الرئيسي",
+    "type": "capped_market_cap_weighted",
+    "max_weight_cap": 40,
+    "constituents": [
+      {
+        "code": "COMI",
+        "weight": 29.74,
+        "sector": "Banks"
+      },
+      {
+        "code": "TMGH",
+        "weight": 10.09,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "ETEL",
+        "weight": 8.32,
+        "sector": "Telecommunications"
+      },
+      {
+        "code": "FWRY",
+        "weight": 5.52,
+        "sector": "Technology"
+      },
+      {
+        "code": "EAST",
+        "weight": 5.09,
+        "sector": "Food, Beverages & Tobacco"
+      },
+      {
+        "code": "EFIH",
+        "weight": 4.9,
+        "sector": "Technology"
+      },
+      {
+        "code": "ABUK",
+        "weight": 3.58,
+        "sector": "Chemicals"
+      },
+      {
+        "code": "HRHO",
+        "weight": 2.88,
+        "sector": "Financial Services"
+      },
+      {
+        "code": "ADIB",
+        "weight": 2.7,
+        "sector": "Banks"
+      },
+      {
+        "code": "ORAS",
+        "weight": 2.67,
+        "sector": "Construction"
+      },
+      {
+        "code": "MFPC",
+        "weight": 2.23,
+        "sector": "Chemicals"
+      },
+      {
+        "code": "CCAP",
+        "weight": 2.06,
+        "sector": "Financial Services"
+      },
+      {
+        "code": "EFID",
+        "weight": 1.9,
+        "sector": "Food, Beverages & Tobacco"
+      },
+      {
+        "code": "VLMR",
+        "weight": 1.61,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "ALCN",
+        "weight": 1.49,
+        "sector": "Transportation"
+      },
+      {
+        "code": "PHDC",
+        "weight": 1.42,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "AMOC",
+        "weight": 1.31,
+        "sector": "Energy"
+      },
+      {
+        "code": "BTFH",
+        "weight": 1.26,
+        "sector": "Financial Services"
+      },
+      {
+        "code": "GBCO",
+        "weight": 1.21,
+        "sector": "Automobiles"
+      },
+      {
+        "code": "EGAL",
+        "weight": 1.15,
+        "sector": "Basic Resources"
+      },
+      {
+        "code": "ORHD",
+        "weight": 1.08,
+        "sector": "Travel & Leisure"
+      },
+      {
+        "code": "SKPC",
+        "weight": 0.96,
+        "sector": "Chemicals"
+      },
+      {
+        "code": "HELI",
+        "weight": 0.9,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.87,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "ISPH",
+        "weight": 0.87,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.86,
+        "sector": "Food, Beverages & Tobacco"
+      },
+      {
+        "code": "MCQE",
+        "weight": 0.84,
+        "sector": "Construction Materials"
+      },
+      {
+        "code": "EMFD",
+        "weight": 0.71,
+        "sector": "Real Estate"
+      },
+      {
+        "code": "RMDA",
+        "weight": 0.64,
+        "sector": "Healthcare"
+      },
+      {
+        "code": "RAYA",
+        "weight": 0.62,
+        "sector": "Technology"
+      },
+      {
+        "code": "VLMRA",
+        "weight": 0.53,
+        "sector": "Real Estate"
+      }
+    ],
+    "_source": "EGX official (owner research 2026-10-22 — COMI=29.74% not 31.92%)"
+  },
+  "EGX33_SHARIAH": {
+    "name_ar": "مؤشر إيجي إكس 33 الشرعي",
+    "type": "capped_shariah_weighted",
+    "max_weight_cap": 15,
+    "constituents": [
+      {
+        "code": "TMGH",
+        "weight": 15.0
+      },
+      {
+        "code": "SWDY",
+        "weight": 10.27
+      },
+      {
+        "code": "ABUK",
+        "weight": 9.08
+      },
+      {
+        "code": "ETEL",
+        "weight": 8.46
+      },
+      {
+        "code": "FWRY",
+        "weight": 7.02
+      },
+      {
+        "code": "MFPC",
+        "weight": 6.45
+      },
+      {
+        "code": "SKPC",
+        "weight": 4.86
+      },
+      {
+        "code": "FAIT",
+        "weight": 4.72
+      },
+      {
+        "code": "EFID",
+        "weight": 3.48
+      },
+      {
+        "code": "ORAS",
+        "weight": 3.15
+      },
+      {
+        "code": "ADIB",
+        "weight": 0.9486
+      },
+      {
+        "code": "AMOC",
+        "weight": 0.9486
+      },
+      {
+        "code": "GBCO",
+        "weight": 0.9486
+      },
+      {
+        "code": "ORWE",
+        "weight": 0.9486
+      },
+      {
+        "code": "ICFC",
+        "weight": 0.9486
+      },
+      {
+        "code": "GOUR",
+        "weight": 0.9486
+      },
+      {
+        "code": "MPCO",
+        "weight": 0.9486
+      },
+      {
+        "code": "IFAP",
+        "weight": 0.9486
+      },
+      {
+        "code": "ATQA",
+        "weight": 0.9486
+      },
+      {
+        "code": "MCQE",
+        "weight": 0.9486
+      },
+      {
+        "code": "OCDI",
+        "weight": 0.9486
+      },
+      {
+        "code": "RACC",
+        "weight": 0.9486
+      },
+      {
+        "code": "SAUD",
+        "weight": 0.9486
+      },
+      {
+        "code": "ARCC",
+        "weight": 0.9486
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.9486
+      },
+      {
+        "code": "ISPH",
+        "weight": 0.9486
+      },
+      {
+        "code": "EFIH",
+        "weight": 0.9486
+      },
+      {
+        "code": "ORHD",
+        "weight": 0.9486
+      },
+      {
+        "code": "MASR",
+        "weight": 0.9486
+      },
+      {
+        "code": "MTIE",
+        "weight": 0.9486
+      },
+      {
+        "code": "ETRS",
+        "weight": 0.9486
+      },
+      {
+        "code": "EGAL",
+        "weight": 0.9486
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.9486
+      },
+      {
+        "code": "RMDA",
+        "weight": 0.9486
+      },
+      {
+        "code": "LCSW",
+        "weight": 0.9486
+      },
+      {
+        "code": "FAITA",
+        "weight": 0.9486
+      },
+      {
+        "code": "PHDC",
+        "weight": 0.9486
+      },
+      {
+        "code": "ACGC",
+        "weight": 0.9486
+      },
+      {
+        "code": "EGAS",
+        "weight": 0.9486
+      }
+    ],
+    "_source": "EGX official Shariah list (owner 2026-10-22)"
+  },
+  "EGX70_EWI": {
+    "name_ar": "مؤشر إيجي إكس 70 متساوي الأوزان",
+    "type": "equal_weighted",
+    "nominal_weight_per_stock": 1.43,
+    "note": "Official EGX70 constituent list is not fully published. Sample merged from complete_markets + deepseek. Excludes EGX30 members.",
+    "constituents": [
+      {
+        "code": "RACC"
+      },
+      {
+        "code": "RAYA"
+      },
+      {
+        "code": "DICE"
+      },
+      {
+        "code": "ARAB"
+      },
+      {
+        "code": "MOIL"
+      },
+      {
+        "code": "RMDA"
+      },
+      {
+        "code": "ACAP"
+      },
+      {
+        "code": "PORT"
+      },
+      {
+        "code": "DSCW"
+      },
+      {
+        "code": "POUL"
+      },
+      {
+        "code": "KIMA"
+      },
+      {
+        "code": "GOUR"
+      },
+      {
+        "code": "ELEC"
+      },
+      {
+        "code": "ARCC"
+      },
+      {
+        "code": "SUCE"
+      },
+      {
+        "code": "PRDC"
+      },
+      {
+        "code": "ORSC"
+      },
+      {
+        "code": "BONY"
+      },
+      {
+        "code": "CLHO"
+      },
+      {
+        "code": "GBCO"
+      },
+      {
+        "code": "MCQE"
+      },
+      {
+        "code": "EGAL"
+      },
+      {
+        "code": "EMFD"
+      },
+      {
+        "code": "EFIH"
+      },
+      {
+        "code": "IDRE"
+      },
+      {
+        "code": "ACAP"
+      },
+      {
+        "code": "ADRI"
+      },
+      {
+        "code": "AINT"
+      },
+      {
+        "code": "ALEX"
+      },
+      {
+        "code": "AMAI"
+      },
+      {
+        "code": "AMER"
+      },
+      {
+        "code": "AMSW"
+      },
+      {
+        "code": "ANFI"
+      },
+      {
+        "code": "APRI"
+      },
+      {
+        "code": "BPAV"
+      },
+      {
+        "code": "BRSH"
+      },
+      {
+        "code": "CAVA"
+      },
+      {
+        "code": "CICH"
+      },
+      {
+        "code": "CLHO"
+      },
+      {
+        "code": "CODB"
+      },
+      {
+        "code": "CRST"
+      },
+      {
+        "code": "DCGH"
+      },
+      {
+        "code": "DMNT"
+      },
+      {
+        "code": "DMNH"
+      },
+      {
+        "code": "EDFM"
+      },
+      {
+        "code": "EGTS"
+      },
+      {
+        "code": "EUTE"
+      },
+      {
+        "code": "GTHE"
+      },
+      {
+        "code": "KZPC"
+      },
+      {
+        "code": "MAAL"
+      },
+      {
+        "code": "MEDH"
+      },
+      {
+        "code": "MTMT"
+      },
+      {
+        "code": "NREA"
+      },
+      {
+        "code": "ORHD"
+      },
+      {
+        "code": "ORTE"
+      },
+      {
+        "code": "PIOH"
+      },
+      {
+        "code": "SBCE"
+      },
+      {
+        "code": "SIPS"
+      },
+      {
+        "code": "TALA"
+      },
+      {
+        "code": "TOEUB"
+      },
+      {
+        "code": "UEFM"
+      },
+      {
+        "code": "UNIT"
+      },
+      {
+        "code": "UPAC"
+      },
+      {
+        "code": "VBCO"
+      },
+      {
+        "code": "WADI"
+      }
+    ],
+    "constituents_sample": [
+      {
+        "code": "PRDC",
+        "weight": 1.4286
+      },
+      {
+        "code": "GDWA",
+        "weight": 1.4286
+      },
+      {
+        "code": "MOED",
+        "weight": 1.4286
+      },
+      {
+        "code": "TAQA",
+        "weight": 1.4286
+      },
+      {
+        "code": "ACTF",
+        "weight": 1.4286
+      },
+      {
+        "code": "VALU",
+        "weight": 1.4286
+      },
+      {
+        "code": "BONY",
+        "weight": 1.4286
+      },
+      {
+        "code": "ICFC",
+        "weight": 1.4286
+      },
+      {
+        "code": "GOUR",
+        "weight": 1.4286
+      },
+      {
+        "code": "ISMA",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIHC",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPCO",
+        "weight": 1.4286
+      },
+      {
+        "code": "UEGC",
+        "weight": 1.4286
+      },
+      {
+        "code": "HDBK",
+        "weight": 1.4286
+      },
+      {
+        "code": "ATQA",
+        "weight": 1.4286
+      },
+      {
+        "code": "GPIM",
+        "weight": 1.4286
+      },
+      {
+        "code": "SWDY",
+        "weight": 1.4286
+      },
+      {
+        "code": "PHAR",
+        "weight": 1.4286
+      },
+      {
+        "code": "UNIP",
+        "weight": 1.4286
+      },
+      {
+        "code": "EGCH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPCI",
+        "weight": 1.4286
+      },
+      {
+        "code": "ASPI",
+        "weight": 1.4286
+      },
+      {
+        "code": "DSCW",
+        "weight": 1.4286
+      },
+      {
+        "code": "KABO",
+        "weight": 1.4286
+      },
+      {
+        "code": "ORWE",
+        "weight": 1.4286
+      },
+      {
+        "code": "PRCL",
+        "weight": 1.4286
+      },
+      {
+        "code": "SVCE",
+        "weight": 1.4286
+      },
+      {
+        "code": "EXPA",
+        "weight": 1.4286
+      },
+      {
+        "code": "DAPH",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELKA",
+        "weight": 1.4286
+      },
+      {
+        "code": "EGTS",
+        "weight": 1.4286
+      },
+      {
+        "code": "OBRI",
+        "weight": 1.4286
+      },
+      {
+        "code": "OCDI",
+        "weight": 1.4286
+      },
+      {
+        "code": "AMIA",
+        "weight": 1.4286
+      },
+      {
+        "code": "MPRC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ENGC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELEC",
+        "weight": 1.4286
+      },
+      {
+        "code": "CSAG",
+        "weight": 1.4286
+      },
+      {
+        "code": "ATLC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ARAB",
+        "weight": 1.4286
+      },
+      {
+        "code": "MEPA",
+        "weight": 1.4286
+      },
+      {
+        "code": "OIH",
+        "weight": 1.4286
+      },
+      {
+        "code": "SIPC",
+        "weight": 1.4286
+      },
+      {
+        "code": "ARCC",
+        "weight": 1.4286
+      },
+      {
+        "code": "OFH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MCRO",
+        "weight": 1.4286
+      },
+      {
+        "code": "ISMQ",
+        "weight": 1.4286
+      },
+      {
+        "code": "ELSH",
+        "weight": 1.4286
+      },
+      {
+        "code": "MASR",
+        "weight": 1.4286
+      },
+      {
+        "code": "MTIE",
+        "weight": 1.4286
+      },
+      {
+        "code": "CIEB",
+        "weight": 1.4286
+      },
+      {
+        "code": "ETRS",
+        "weight": 1.4286
+      },
+      {
+        "code": "IDRE",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIFI",
+        "weight": 1.4286
+      },
+      {
+        "code": "CNFN",
+        "weight": 1.4286
+      },
+      {
+        "code": "IEEC",
+        "weight": 1.4286
+      },
+      {
+        "code": "LCSW",
+        "weight": 1.4286
+      },
+      {
+        "code": "AIDC",
+        "weight": 1.4286
+      },
+      {
+        "code": "SDTI",
+        "weight": 1.4286
+      },
+      {
+        "code": "POUL",
+        "weight": 1.4286
+      },
+      {
+        "code": "ZMID",
+        "weight": 1.4286
+      },
+      {
+        "code": "NCCW",
+        "weight": 1.4286
+      },
+      {
+        "code": "AMER",
+        "weight": 1.4286
+      },
+      {
+        "code": "ASCM",
+        "weight": 1.4286
+      },
+      {
+        "code": "ZEOT",
+        "weight": 1.4286
+      },
+      {
+        "code": "NIPH",
+        "weight": 1.4286
+      },
+      {
+        "code": "COSG",
+        "weight": 1.4286
+      },
+      {
+        "code": "EHDR",
+        "weight": 1.4286
+      },
+      {
+        "code": "SCEM",
+        "weight": 1.4286
+      },
+      {
+        "code": "MBSC",
+        "weight": 1.4286
+      }
+    ],
+    "_source": "EGX official 70 list (owner 2026-10-22)"
+  },
+  "EGX100_EWI": {
+    "name_ar": "مؤشر إيجي إكس 100 الأوسع نطاقاً",
+    "type": "equal_weighted",
+    "rule": "EGX30 + EGX70 (deduplicated)",
+    "note": "Composite of EGX30 and EGX70_EWI. Computed at runtime by sync_market_indices_live.py.",
+    "constituents_sample": [
+      {
+        "code": "COMI",
+        "weight": 0.9901
+      },
+      {
+        "code": "TMGH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ETEL",
+        "weight": 0.9901
+      },
+      {
+        "code": "FWRY",
+        "weight": 0.9901
+      },
+      {
+        "code": "EAST",
+        "weight": 0.9901
+      },
+      {
+        "code": "EFIH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ABUK",
+        "weight": 0.9901
+      },
+      {
+        "code": "HRHO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ADIB",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORAS",
+        "weight": 0.9901
+      },
+      {
+        "code": "MFPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "CCAP",
+        "weight": 0.9901
+      },
+      {
+        "code": "EFID",
+        "weight": 0.9901
+      },
+      {
+        "code": "VLMR",
+        "weight": 0.9901
+      },
+      {
+        "code": "ALCN",
+        "weight": 0.9901
+      },
+      {
+        "code": "PHDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMOC",
+        "weight": 0.9901
+      },
+      {
+        "code": "BTFH",
+        "weight": 0.9901
+      },
+      {
+        "code": "GBCO",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGAL",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORHD",
+        "weight": 0.9901
+      },
+      {
+        "code": "SKPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "HELI",
+        "weight": 0.9901
+      },
+      {
+        "code": "CLHO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "JUFO",
+        "weight": 0.9901
+      },
+      {
+        "code": "MCQE",
+        "weight": 0.9901
+      },
+      {
+        "code": "EMFD",
+        "weight": 0.9901
+      },
+      {
+        "code": "RMDA",
+        "weight": 0.9901
+      },
+      {
+        "code": "RAYA",
+        "weight": 0.9901
+      },
+      {
+        "code": "VLMRA",
+        "weight": 0.9901
+      },
+      {
+        "code": "PRDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "GDWA",
+        "weight": 0.9901
+      },
+      {
+        "code": "MOED",
+        "weight": 0.9901
+      },
+      {
+        "code": "TAQA",
+        "weight": 0.9901
+      },
+      {
+        "code": "ACTF",
+        "weight": 0.9901
+      },
+      {
+        "code": "VALU",
+        "weight": 0.9901
+      },
+      {
+        "code": "BONY",
+        "weight": 0.9901
+      },
+      {
+        "code": "ICFC",
+        "weight": 0.9901
+      },
+      {
+        "code": "GOUR",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISMA",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIHC",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPCO",
+        "weight": 0.9901
+      },
+      {
+        "code": "UEGC",
+        "weight": 0.9901
+      },
+      {
+        "code": "HDBK",
+        "weight": 0.9901
+      },
+      {
+        "code": "ATQA",
+        "weight": 0.9901
+      },
+      {
+        "code": "GPIM",
+        "weight": 0.9901
+      },
+      {
+        "code": "SWDY",
+        "weight": 0.9901
+      },
+      {
+        "code": "PHAR",
+        "weight": 0.9901
+      },
+      {
+        "code": "UNIP",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGCH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPCI",
+        "weight": 0.9901
+      },
+      {
+        "code": "ASPI",
+        "weight": 0.9901
+      },
+      {
+        "code": "DSCW",
+        "weight": 0.9901
+      },
+      {
+        "code": "KABO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ORWE",
+        "weight": 0.9901
+      },
+      {
+        "code": "PRCL",
+        "weight": 0.9901
+      },
+      {
+        "code": "SVCE",
+        "weight": 0.9901
+      },
+      {
+        "code": "EXPA",
+        "weight": 0.9901
+      },
+      {
+        "code": "DAPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELKA",
+        "weight": 0.9901
+      },
+      {
+        "code": "EGTS",
+        "weight": 0.9901
+      },
+      {
+        "code": "OBRI",
+        "weight": 0.9901
+      },
+      {
+        "code": "OCDI",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMIA",
+        "weight": 0.9901
+      },
+      {
+        "code": "MPRC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ENGC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELEC",
+        "weight": 0.9901
+      },
+      {
+        "code": "CSAG",
+        "weight": 0.9901
+      },
+      {
+        "code": "ATLC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ARAB",
+        "weight": 0.9901
+      },
+      {
+        "code": "MEPA",
+        "weight": 0.9901
+      },
+      {
+        "code": "OIH",
+        "weight": 0.9901
+      },
+      {
+        "code": "SIPC",
+        "weight": 0.9901
+      },
+      {
+        "code": "ARCC",
+        "weight": 0.9901
+      },
+      {
+        "code": "OFH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MCRO",
+        "weight": 0.9901
+      },
+      {
+        "code": "ISMQ",
+        "weight": 0.9901
+      },
+      {
+        "code": "ELSH",
+        "weight": 0.9901
+      },
+      {
+        "code": "MASR",
+        "weight": 0.9901
+      },
+      {
+        "code": "MTIE",
+        "weight": 0.9901
+      },
+      {
+        "code": "CIEB",
+        "weight": 0.9901
+      },
+      {
+        "code": "ETRS",
+        "weight": 0.9901
+      },
+      {
+        "code": "IDRE",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIFI",
+        "weight": 0.9901
+      },
+      {
+        "code": "CNFN",
+        "weight": 0.9901
+      },
+      {
+        "code": "IEEC",
+        "weight": 0.9901
+      },
+      {
+        "code": "LCSW",
+        "weight": 0.9901
+      },
+      {
+        "code": "AIDC",
+        "weight": 0.9901
+      },
+      {
+        "code": "SDTI",
+        "weight": 0.9901
+      },
+      {
+        "code": "POUL",
+        "weight": 0.9901
+      },
+      {
+        "code": "ZMID",
+        "weight": 0.9901
+      },
+      {
+        "code": "NCCW",
+        "weight": 0.9901
+      },
+      {
+        "code": "AMER",
+        "weight": 0.9901
+      },
+      {
+        "code": "ASCM",
+        "weight": 0.9901
+      },
+      {
+        "code": "ZEOT",
+        "weight": 0.9901
+      },
+      {
+        "code": "NIPH",
+        "weight": 0.9901
+      },
+      {
+        "code": "COSG",
+        "weight": 0.9901
+      },
+      {
+        "code": "EHDR",
+        "weight": 0.9901
+      },
+      {
+        "code": "SCEM",
+        "weight": 0.9901
+      },
+      {
+        "code": "MBSC",
+        "weight": 0.9901
+      }
+    ],
+    "_source": "EGX official 100 list = EGX30 ∪ EGX70 (owner 2026-10-22)"
+  },
+  "KSE_PREMIER": {
+    "name_ar": "مؤشر السوق الأول - الكويت",
+    "type": "market_cap_weighted",
+    "note": "KSE Premier Market top constituents. KSE uses numeric codes in some sources; mapped to tickers via deepseek.",
+    "constituents": [
+      {
+        "code": "KFH",
+        "weight": 29.0
+      },
+      {
+        "code": "NBK",
+        "weight": 14.7
+      },
+      {
+        "code": "ZAIN",
+        "weight": 4.6
+      },
+      {
+        "code": "KIPCO",
+        "weight": 0.8
+      },
+      {
+        "code": "KIC",
+        "weight": 0.2
+      }
+    ]
+  },
+  "QSE_QE_INDEX": {
+    "name_ar": "مؤشر بورصة قطر العام (QE Index)",
+    "type": "market_cap_weighted",
+    "constituents": [
+      {
+        "code": "QNBK",
+        "weight": 15.0
+      },
+      {
+        "code": "QIBK",
+        "weight": 15.0
+      },
+      {
+        "code": "IQCD",
+        "weight": 12.75
+      },
+      {
+        "code": "ORDS",
+        "weight": 7.05
+      },
+      {
+        "code": "QGTS",
+        "weight": 5.65
+      },
+      {
+        "code": "MARK",
+        "weight": 5.37
+      },
+      {
+        "code": "QIIK",
+        "weight": 5.07
+      },
+      {
+        "code": "CBQK",
+        "weight": 4.98
+      },
+      {
+        "code": "DUBK",
+        "weight": 4.68
+      },
+      {
+        "code": "QFLS",
+        "weight": 3.5
+      },
+      {
+        "code": "MPHC",
+        "weight": 3.2
+      },
+      {
+        "code": "BRES",
+        "weight": 2.8
+      },
+      {
+        "code": "DHBK",
+        "weight": 2.5
+      },
+      {
+        "code": "VFQS",
+        "weight": 2.2
+      },
+      {
+        "code": "UDCD",
+        "weight": 2.0
+      },
+      {
+        "code": "GISS",
+        "weight": 1.8
+      },
+      {
+        "code": "NLCS",
+        "weight": 1.5
+      },
+      {
+        "code": "AHCS",
+        "weight": 1.3
+      },
+      {
+        "code": "MEZA",
+        "weight": 1.1
+      },
+      {
+        "code": "QNCD",
+        "weight": 0.9
+      },
+      {
+        "code": "SIIS",
+        "weight": 0.7
+      }
+    ]
+  },
+  "TADAWUL_TASI": {
+    "name_ar": "مؤشر تداول العام (TASI)",
+    "type": "market_cap_weighted",
+    "note": "Tadawul uses numeric tickers. Top 6 constituents from deepseek; full list has 200+ stocks.",
+    "constituents": [
+      {
+        "code": "1120",
+        "weight": 13.92,
+        "name": "مصرف الراجحي"
+      },
+      {
+        "code": "2222",
+        "weight": 14.0,
+        "name": "أرامكو السعودية"
+      },
+      {
+        "code": "1180",
+        "weight": 8.0,
+        "name": "البنك الأهلي السعودي (SNB)"
+      },
+      {
+        "code": "2010",
+        "weight": 6.5,
+        "name": "سابك"
+      },
+      {
+        "code": "7010",
+        "weight": 5.1,
+        "name": "اس تي سي (STC)"
+      },
+      {
+        "code": "1211",
+        "weight": 3.5,
+        "name": "معادن"
+      }
+    ]
+  },
+  "US_SP500": {
+    "name_ar": "مؤشر S&P 500",
+    "type": "market_cap_weighted",
+    "note": "Top 16 constituents from deepseek. Full index has 500+ stocks — composite computed at runtime from US active stocks.",
+    "constituents": [
+      {
+        "code": "NVDA",
+        "weight": 7.19
+      },
+      {
+        "code": "AAPL",
+        "weight": 6.52
+      },
+      {
+        "code": "MSFT",
+        "weight": 4.88
+      },
+      {
+        "code": "AMZN",
+        "weight": 3.41
+      },
+      {
+        "code": "GOOGL",
+        "weight": 3.03
+      },
+      {
+        "code": "META",
+        "weight": 2.5
+      },
+      {
+        "code": "AVGO",
+        "weight": 2.2
+      }
+    ]
+  },
+  "US_NASDAQ100": {
+    "name_ar": "مؤشر ناسداك 100",
+    "type": "market_cap_weighted",
+    "constituents": [
+      {
+        "code": "NVDA",
+        "weight": 8.7
+      },
+      {
+        "code": "AAPL",
+        "weight": 7.3
+      },
+      {
+        "code": "MSFT",
+        "weight": 5.9
+      },
+      {
+        "code": "AMZN",
+        "weight": 4.2
+      },
+      {
+        "code": "AVGO",
+        "weight": 3.5
+      }
+    ]
+  },
+  "US_DOW_JONES": {
+    "name_ar": "مؤشر داو جونز الصناعي",
+    "type": "price_weighted",
+    "constituents": [
+      {
+        "code": "GS",
+        "weight": 10.27
+      },
+      {
+        "code": "CAT",
+        "weight": 9.18
+      },
+      {
+        "code": "MSFT",
+        "weight": 6.14
+      },
+      {
+        "code": "AMGN",
+        "weight": 4.76
+      },
+      {
+        "code": "HD",
+        "weight": 4.5
+      }
+    ]
+  }
+}

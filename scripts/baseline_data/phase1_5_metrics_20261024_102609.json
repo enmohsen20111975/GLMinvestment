@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-10-24T10:26:09.045754",
+  "period": "2025-07-01 → 2026-03-31",
+  "total_signals": 422,
+  "wins": 189,
+  "losses": 220,
+  "expired": 13,
+  "win_rate": 44.8,
+  "avg_win": 10.0,
+  "avg_loss": 8.19,
+  "profit_factor": 1.04,
+  "avg_return": 0.19,
+  "avg_r_multiple": 0.03,
+  "max_drawdown": 99.2,
+  "sharpe_ratio": 0.4,
+  "avg_holding_days": 11.3,
+  "longest_losing_streak": 25,
+  "gross_profit": 1901.41,
+  "gross_loss": 1821.08,
+  "exit_distribution": {
+    "target_hit": "44.8%",
+    "stopped": "52.1%",
+    "expired": "3.1%"
+  }
+}

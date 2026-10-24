@@ -1,0 +1,710 @@
+/home/z/my-project/scripts/fix_all_false_targets.py:69: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+================================================================================
+FULL FALSE-TARGET_CLEANUP (APPLY MODE)
+================================================================================
+predictions.db: /home/z/my-project/db/predictions.db
+price_history.db: /home/z/my-project/db/price_history.db
+
+[INFO] Backup already exists at /home/z/my-project/db/predictions.db.bak-full-cleanup — skipping backup
+
+False TARGET_HITs found (exit_type='maker_fuel_exhausted'): 308
+By ticker:
+  MASR: 88
+  ABUK: 68
+  AMOC: 63
+  PHDC: 51
+  CIEB: 5
+  SWDY: 4
+  ALCN: 3
+  GTHE: 3
+  HELI: 3
+  BIDI: 2
+  CRST: 2
+  MBEG: 2
+  TWSA: 2
+  ACAMD: 1
+  AMER: 1
+  AMIA: 1
+  ELKA: 1
+  FIRE: 1
+  MCRO: 1
+  OIH: 1
+  PRMH: 1
+  RKAZ: 1
+  RREI: 1
+  SIPC: 1
+  TAQA: 1
+
+[INFO] Pre-fetching price history for 25 tickers...
+      Cached 88679 price rows across 25 tickers.
+
+/home/z/my-project/scripts/fix_all_false_targets.py:198: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = datetime.utcnow()
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    ID  TICKER   PRED_DATE     ENTRY       TP1       TP2     STOP   MAX_HIGH    MIN_LOW  OLD_STATUS   -> NEW_STATUS     OLD_RET ->  NEW_RET  REASON
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 50218  ABUK     2025-09-22    51.50    114.32     77.25    48.43   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       81.94 ->    81.94  target WAS hit (TP1: max_high=178.0260 >= target=114.3200)
+ 50228  ABUK     2025-09-24    51.48    137.43     61.78    48.42   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       82.01 ->    82.01  target WAS hit (TP1: max_high=178.0260 >= target=137.4300)
+ 50238  ABUK     2025-09-28    53.14    137.76     63.77    49.98   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       76.33 ->    76.33  target WAS hit (TP1: max_high=178.0260 >= target=137.7600)
+ 50248  ABUK     2025-09-30    53.30    137.80     63.96    50.12   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       75.80 ->    75.80  target WAS hit (TP1: max_high=178.0260 >= target=137.8000)
+ 50252  ABUK     2025-10-01    53.30    137.80     63.96    50.12   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       75.80 ->    75.80  target WAS hit (TP1: max_high=178.0260 >= target=137.8000)
+ 50258  ABUK     2025-10-02    53.43    137.82     64.12    50.25   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       75.37 ->    75.37  target WAS hit (TP1: max_high=178.0260 >= target=137.8200)
+ 50262  ABUK     2025-10-05    53.86    137.91     64.63    50.66   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       73.97 ->    73.97  target WAS hit (TP1: max_high=178.0260 >= target=137.9100)
+ 50268  ABUK     2025-10-06    54.00    137.94     64.80    50.79   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       73.52 ->    73.52  target WAS hit (TP1: max_high=178.0260 >= target=137.9400)
+ 50278  ABUK     2025-10-08    53.50    126.28     64.20    50.31   178.0260    45.1800  TARGET_HIT   -> TARGET_HIT       75.14 ->    75.14  target WAS hit (TP1: max_high=178.0260 >= target=126.2800)
+ 50290  ABUK     2025-10-13    52.57    137.65     63.08    49.44   124.6290    45.1800  TARGET_HIT   -> closed_win       78.24 ->    78.24  TP2 was hit but not TP1 (max_high=124.6290, target2=63.0840, target1=137.6500) — truthful status: closed_win
+ 50296  ABUK     2025-10-14    53.20    137.78     63.84    50.03   124.6290    45.1800  TARGET_HIT   -> closed_win       76.13 ->    76.13  TP2 was hit but not TP1 (max_high=124.6290, target2=63.8400, target1=137.7800) — truthful status: closed_win
+ 50307  ABUK     2025-10-16    53.38    137.81     64.06    50.20   124.6290    45.1800  TARGET_HIT   -> closed_win       75.53 ->    75.53  TP2 was hit but not TP1 (max_high=124.6290, target2=64.0560, target1=137.8100) — truthful status: closed_win
+ 50313  ABUK     2025-10-19    53.87    137.91     64.64    50.67   124.6290    45.1800  TARGET_HIT   -> closed_win       73.94 ->    73.94  TP2 was hit but not TP1 (max_high=124.6290, target2=64.6440, target1=137.9100) — truthful status: closed_win
+ 50316  ABUK     2025-10-20    53.89    137.91     64.67    50.69   124.6290    45.1800  TARGET_HIT   -> closed_win       73.87 ->    73.87  TP2 was hit but not TP1 (max_high=124.6290, target2=64.6680, target1=137.9100) — truthful status: closed_win
+ 50321  ABUK     2025-10-21    53.67    137.87     64.40    50.48   124.6290    45.1800  TARGET_HIT   -> closed_win       74.59 ->    74.59  TP2 was hit but not TP1 (max_high=124.6290, target2=64.4040, target1=137.8700) — truthful status: closed_win
+ 50326  ABUK     2025-10-22    49.90    137.12     59.88    46.94   124.6290    45.1800  TARGET_HIT   -> closed_win       87.78 ->    87.78  TP2 was hit but not TP1 (max_high=124.6290, target2=59.8800, target1=137.1200) — truthful status: closed_win
+ 50335  ABUK     2025-10-26    49.23    136.98     59.08    46.30   124.6290    45.1800  TARGET_HIT   -> closed_win       90.33 ->    90.33  TP2 was hit but not TP1 (max_high=124.6290, target2=59.0760, target1=136.9800) — truthful status: closed_win
+ 50339  ABUK     2025-10-27    48.31    136.80     57.97    45.43   124.6290    45.1800  TARGET_HIT   -> closed_win       93.96 ->    93.96  TP2 was hit but not TP1 (max_high=124.6290, target2=57.9720, target1=136.8000) — truthful status: closed_win
+ 50344  ABUK     2025-10-28    48.55    136.85     58.26    45.66   124.6290    45.1800  TARGET_HIT   -> closed_win       93.00 ->    93.00  TP2 was hit but not TP1 (max_high=124.6290, target2=58.2600, target1=136.8500) — truthful status: closed_win
+ 50349  ABUK     2025-10-29    48.50    136.84     58.20    45.61   124.6290    45.1800  TARGET_HIT   -> closed_win       93.20 ->    93.20  TP2 was hit but not TP1 (max_high=124.6290, target2=58.2000, target1=136.8400) — truthful status: closed_win
+ 50356  ABUK     2025-10-30    48.60    136.86     58.32    45.71   124.6290    45.1800  TARGET_HIT   -> closed_win       92.80 ->    92.80  TP2 was hit but not TP1 (max_high=124.6290, target2=58.3200, target1=136.8600) — truthful status: closed_win
+ 50362  ABUK     2025-11-02    48.61    136.86     58.33    45.72   124.6290    45.1800  TARGET_HIT   -> closed_win       92.76 ->    92.76  TP2 was hit but not TP1 (max_high=124.6290, target2=58.3320, target1=136.8600) — truthful status: closed_win
+ 50365  ABUK     2025-11-03    47.60    113.54     71.40    44.77   124.6290    45.1800  TARGET_HIT   -> TARGET_HIT       96.85 ->    96.85  target WAS hit (TP1: max_high=124.6290 >= target=113.5400)
+ 50379  ABUK     2025-11-06    46.73    136.48     56.08    43.95   124.6290    45.1800  TARGET_HIT   -> closed_win      100.51 ->   100.51  TP2 was hit but not TP1 (max_high=124.6290, target2=56.0760, target1=136.4800) — truthful status: closed_win
+ 50384  ABUK     2025-11-09    46.59    136.45     55.91    43.82   124.6290    45.1800  TARGET_HIT   -> closed_win      101.12 ->   101.12  TP2 was hit but not TP1 (max_high=124.6290, target2=55.9080, target1=136.4500) — truthful status: closed_win
+ 50389  ABUK     2025-11-10    46.39    136.41     55.67    43.63   124.6290    45.1800  TARGET_HIT   -> closed_win      101.98 ->   101.98  TP2 was hit but not TP1 (max_high=124.6290, target2=55.6680, target1=136.4100) — truthful status: closed_win
+ 50394  ABUK     2025-11-11    46.25    136.39     55.50    43.50   124.6290    45.1800  TARGET_HIT   -> closed_win      102.59 ->   102.59  TP2 was hit but not TP1 (max_high=124.6290, target2=55.5000, target1=136.3900) — truthful status: closed_win
+ 50399  ABUK     2025-11-12    46.30    136.40     55.56    43.54   124.6290    45.1800  TARGET_HIT   -> closed_win      102.38 ->   102.38  TP2 was hit but not TP1 (max_high=124.6290, target2=55.5600, target1=136.4000) — truthful status: closed_win
+ 50405  ABUK     2025-11-13    46.20    136.38     55.44    43.45   124.6290    45.1800  TARGET_HIT   -> closed_win      102.81 ->   102.81  TP2 was hit but not TP1 (max_high=124.6290, target2=55.4400, target1=136.3800) — truthful status: closed_win
+ 50409  ABUK     2025-11-16    46.18    136.37     55.42    43.43   124.6290    45.1800  TARGET_HIT   -> closed_win      102.90 ->   102.90  TP2 was hit but not TP1 (max_high=124.6290, target2=55.4160, target1=136.3700) — truthful status: closed_win
+ 50415  ABUK     2025-11-17    46.04    136.34     55.25    43.30   124.6290    45.1800  TARGET_HIT   -> closed_win      103.52 ->   103.52  TP2 was hit but not TP1 (max_high=124.6290, target2=55.2480, target1=136.3400) — truthful status: closed_win
+ 50420  ABUK     2025-11-18    46.60    136.46     55.92    43.83   124.6290    45.1800  TARGET_HIT   -> closed_win      101.07 ->   101.07  TP2 was hit but not TP1 (max_high=124.6290, target2=55.9200, target1=136.4600) — truthful status: closed_win
+ 50424  ABUK     2025-11-19    46.65    136.47     55.98    43.88   124.6290    45.1800  TARGET_HIT   -> closed_win      100.86 ->   100.86  TP2 was hit but not TP1 (max_high=124.6290, target2=55.9800, target1=136.4700) — truthful status: closed_win
+ 50432  ABUK     2025-11-20    46.50    136.44     55.80    43.73   124.6290    45.1800  TARGET_HIT   -> closed_win      101.51 ->   101.51  TP2 was hit but not TP1 (max_high=124.6290, target2=55.8000, target1=136.4400) — truthful status: closed_win
+ 50436  ABUK     2025-11-23    46.60    136.46     55.92    43.83   124.6290    45.1800  TARGET_HIT   -> closed_win      101.07 ->   101.07  TP2 was hit but not TP1 (max_high=124.6290, target2=55.9200, target1=136.4600) — truthful status: closed_win
+ 50440  ABUK     2025-11-24    46.48    136.43     55.78    43.72   124.6290    45.1800  TARGET_HIT   -> closed_win      101.59 ->   101.59  TP2 was hit but not TP1 (max_high=124.6290, target2=55.7760, target1=136.4300) — truthful status: closed_win
+ 50446  ABUK     2025-11-25    46.12    136.36     55.34    43.37   124.6290    45.1800  TARGET_HIT   -> closed_win      103.17 ->   103.17  TP2 was hit but not TP1 (max_high=124.6290, target2=55.3440, target1=136.3600) — truthful status: closed_win
+ 50451  ABUK     2025-11-26    46.01    136.34     55.21    43.27   124.6290    45.1800  TARGET_HIT   -> closed_win      103.65 ->   103.65  TP2 was hit but not TP1 (max_high=124.6290, target2=55.2120, target1=136.3400) — truthful status: closed_win
+ 50455  ABUK     2025-11-27    46.00    136.34     55.20    43.26   124.6290    45.1800  TARGET_HIT   -> closed_win      103.70 ->   103.70  TP2 was hit but not TP1 (max_high=124.6290, target2=55.2000, target1=136.3400) — truthful status: closed_win
+ 50461  ABUK     2025-11-30    45.94    136.32     55.13    43.20   124.6290    45.1800  TARGET_HIT   -> closed_win      103.96 ->   103.96  TP2 was hit but not TP1 (max_high=124.6290, target2=55.1280, target1=136.3200) — truthful status: closed_win
+ 50465  ABUK     2025-12-01    45.62    136.26     54.74    42.91   124.6290    45.1800  TARGET_HIT   -> closed_win      105.39 ->   105.39  TP2 was hit but not TP1 (max_high=124.6290, target2=54.7440, target1=136.2600) — truthful status: closed_win
+ 50470  ABUK     2025-12-02    45.57    136.25     54.68    42.86   124.6290    45.1800  TARGET_HIT   -> closed_win      105.62 ->   105.62  TP2 was hit but not TP1 (max_high=124.6290, target2=54.6840, target1=136.2500) — truthful status: closed_win
+ 50475  ABUK     2025-12-03    45.37    136.21     54.44    42.67   124.6290    45.3000  TARGET_HIT   -> closed_win      106.52 ->   106.52  TP2 was hit but not TP1 (max_high=124.6290, target2=54.4440, target1=136.2100) — truthful status: closed_win
+ 50481  ABUK     2025-12-04    45.64    136.26     54.77    42.93   124.6290    45.6500  TARGET_HIT   -> closed_win      105.30 ->   105.30  TP2 was hit but not TP1 (max_high=124.6290, target2=54.7680, target1=136.2600) — truthful status: closed_win
+ 50487  ABUK     2025-12-07    47.00    136.54     56.40    44.20   124.6290    46.5200  TARGET_HIT   -> closed_win       99.36 ->    99.36  TP2 was hit but not TP1 (max_high=124.6290, target2=56.4000, target1=136.5400) — truthful status: closed_win
+ 50489  ABUK     2025-12-08    47.01    113.43     70.52    44.21   124.6290    46.5200  TARGET_HIT   -> TARGET_HIT       99.32 ->    99.32  target WAS hit (TP1: max_high=124.6290 >= target=113.4300)
+ 50497  ABUK     2025-12-09    47.32    136.60     56.78    44.50   124.6290    46.5200  TARGET_HIT   -> closed_win       98.01 ->    98.01  TP2 was hit but not TP1 (max_high=124.6290, target2=56.7840, target1=136.6000) — truthful status: closed_win
+ 50500  ABUK     2025-12-10    47.79    136.69     57.35    44.95   124.6290    46.5200  TARGET_HIT   -> closed_win       96.07 ->    96.07  TP2 was hit but not TP1 (max_high=124.6290, target2=57.3480, target1=136.6900) — truthful status: closed_win
+ 50506  ABUK     2025-12-11    48.26    136.79     57.91    45.39   124.6290    46.5200  TARGET_HIT   -> closed_win       94.16 ->    94.16  TP2 was hit but not TP1 (max_high=124.6290, target2=57.9120, target1=136.7900) — truthful status: closed_win
+ 50512  ABUK     2025-12-14    47.85    136.71     57.42    45.01   124.6290    46.5200  TARGET_HIT   -> closed_win       95.82 ->    95.82  TP2 was hit but not TP1 (max_high=124.6290, target2=57.4200, target1=136.7100) — truthful status: closed_win
+ 50516  ABUK     2025-12-15    47.70    136.68     57.24    44.87   124.6290    46.5200  TARGET_HIT   -> closed_win       96.44 ->    96.44  TP2 was hit but not TP1 (max_high=124.6290, target2=57.2400, target1=136.6800) — truthful status: closed_win
+ 50522  ABUK     2025-12-16    47.00    136.54     56.40    44.20   124.6290    46.5200  TARGET_HIT   -> closed_win       99.36 ->    99.36  TP2 was hit but not TP1 (max_high=124.6290, target2=56.4000, target1=136.5400) — truthful status: closed_win
+ 50527  ABUK     2025-12-17    46.60    136.46     55.92    43.83   124.6290    47.5000  TARGET_HIT   -> closed_win      101.07 ->   101.07  TP2 was hit but not TP1 (max_high=124.6290, target2=55.9200, target1=136.4600) — truthful status: closed_win
+ 50553  ABUK     2025-12-24    52.10    126.00     62.52    49.00   124.6290    48.9000  TARGET_HIT   -> closed_win       79.85 ->    79.85  TP2 was hit but not TP1 (max_high=124.6290, target2=62.5200, target1=126.0000) — truthful status: closed_win
+ 50568  ABUK     2025-12-29    51.48    125.88     61.78    48.42   124.6290    48.9000  TARGET_HIT   -> closed_win       82.01 ->    82.01  TP2 was hit but not TP1 (max_high=124.6290, target2=61.7760, target1=125.8800) — truthful status: closed_win
+ 50573  ABUK     2025-12-30    50.78    125.74     60.94    47.76   124.6290    48.9000  TARGET_HIT   -> closed_win       84.52 ->    84.52  TP2 was hit but not TP1 (max_high=124.6290, target2=60.9360, target1=125.7400) — truthful status: closed_win
+ 50598  ABUK     2026-01-06    50.50    125.68     60.60    47.49   124.6290    49.0100  TARGET_HIT   -> closed_win       85.54 ->    85.54  TP2 was hit but not TP1 (max_high=124.6290, target2=60.6000, target1=125.6800) — truthful status: closed_win
+ 50611  ABUK     2026-01-11    53.25    126.23     63.90    50.08   124.6290    49.0100  TARGET_HIT   -> closed_win       75.96 ->    75.96  TP2 was hit but not TP1 (max_high=124.6290, target2=63.9000, target1=126.2300) — truthful status: closed_win
+ 50617  ABUK     2026-01-12    52.03    125.99     62.44    48.94   124.6290    49.0100  TARGET_HIT   -> closed_win       80.09 ->    80.09  TP2 was hit but not TP1 (max_high=124.6290, target2=62.4360, target1=125.9900) — truthful status: closed_win
+ 50629  ABUK     2026-01-15    50.02    125.59     60.02    47.04   124.6290    50.0300  TARGET_HIT   -> closed_win       87.33 ->    87.33  TP2 was hit but not TP1 (max_high=124.6290, target2=60.0240, target1=125.5900) — truthful status: closed_win
+ 50638  ABUK     2026-01-18    51.80    125.94     62.16    48.72   124.6290    51.6600  TARGET_HIT   -> closed_win       80.89 ->    80.89  TP2 was hit but not TP1 (max_high=124.6290, target2=62.1600, target1=125.9400) — truthful status: closed_win
+ 50643  ABUK     2026-01-19    53.03    126.19     63.64    49.88   124.6290    52.0400  TARGET_HIT   -> closed_win       76.69 ->    76.69  TP2 was hit but not TP1 (max_high=124.6290, target2=63.6360, target1=126.1900) — truthful status: closed_win
+ 50647  ABUK     2026-01-20    53.50    126.28     64.20    50.31   124.6290    52.8000  TARGET_HIT   -> closed_win       75.14 ->    75.14  TP2 was hit but not TP1 (max_high=124.6290, target2=64.2000, target1=126.2800) — truthful status: closed_win
+ 50667  ABUK     2026-01-26    59.00    127.38     70.80    55.49   124.6290    58.7100  TARGET_HIT   -> closed_win       58.81 ->    58.81  TP2 was hit but not TP1 (max_high=124.6290, target2=70.8000, target1=127.3800) — truthful status: closed_win
+ 51326  ABUK     2026-08-13    77.90    142.72    116.85    73.27    96.2900    75.2800  TARGET_HIT   -> EXPIRED          20.28 ->    20.28  window expired without target hit (max_high=96.2900 < target=142.7200, min_low=75.2800 > stop=73.2700, outcome_close=93.7000)
+ 51332  ABUK     2026-08-16    79.60    143.06     95.52    74.86    96.2900    75.2800  TARGET_HIT   -> closed_win       17.71 ->    17.71  TP2 was hit but not TP1 (max_high=96.2900, target2=95.5200, target1=143.0600) — truthful status: closed_win
+ 51380  ABUK     2026-08-30    79.40    143.02    119.10    74.68    96.2900    78.4200  TARGET_HIT   -> EXPIRED          18.01 ->    18.01  window expired without target hit (max_high=96.2900 < target=143.0200, min_low=78.4200 > stop=74.6800, outcome_close=93.7000)
+ 51386  ABUK     2026-08-31    80.90    143.32     97.08    76.09    96.2900    81.3000  TARGET_HIT   -> EXPIRED          15.82 ->    15.82  window expired without target hit (max_high=96.2900 < target=143.3200, min_low=81.3000 > stop=76.0900, outcome_close=93.7000)
+ 50419  ACAMD    2025-11-18     1.21      1.28      1.31     1.13     2.6000     1.1200  TARGET_HIT   -> TARGET_HIT       65.29 ->    65.29  target WAS hit (TP1: max_high=2.6000 >= target=1.2800)
+ 50428  ALCN     2025-11-19    20.69     31.42     24.83    19.46    34.7000    20.6900  TARGET_HIT   -> TARGET_HIT       64.43 ->    64.43  target WAS hit (TP1: max_high=34.7000 >= target=31.4200)
+ 50630  ALCN     2026-01-15    21.57     29.11     25.88    20.29    34.7000    21.0100  TARGET_HIT   -> TARGET_HIT       57.72 ->    57.72  target WAS hit (TP1: max_high=34.7000 >= target=29.1100)
+ 50641  ALCN     2026-01-19    21.78     29.16     26.14    20.48    34.7000    21.0100  TARGET_HIT   -> TARGET_HIT       56.20 ->    56.20  target WAS hit (TP1: max_high=34.7000 >= target=29.1600)
+ 50484  AMER     2025-12-07     2.08      2.20      2.25     1.94     8.4700     1.6900  TARGET_HIT   -> TARGET_HIT      150.00 ->   150.00  target WAS hit (TP1: max_high=8.4700 >= target=2.2000)
+ 50361  AMIA     2025-11-02     4.45      4.70      4.81     4.15    22.0000     3.8700  TARGET_HIT   -> TARGET_HIT      315.51 ->   315.51  target WAS hit (TP1: max_high=22.0000 >= target=4.7000)
+ 50295  AMOC     2025-10-14     6.88     13.21      8.26     6.47    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.22 ->    96.22  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50301  AMOC     2025-10-15     6.86     13.20      8.23     6.45    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.79 ->    96.79  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50306  AMOC     2025-10-16     6.84     13.20      8.21     6.43    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       97.37 ->    97.37  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50311  AMOC     2025-10-19     6.91     13.21      8.29     6.49    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       95.37 ->    95.37  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50315  AMOC     2025-10-20     6.90     13.21      8.28     6.49    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       95.65 ->    95.65  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50336  AMOC     2025-10-26     6.98     13.23      8.38     6.56    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       93.41 ->    93.41  target WAS hit (TP1: max_high=14.6300 >= target=13.2300)
+ 50348  AMOC     2025-10-28     7.02     13.24      8.42     6.60    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       92.31 ->    92.31  target WAS hit (TP1: max_high=14.6300 >= target=13.2400)
+ 50352  AMOC     2025-10-29     7.01     13.23      8.41     6.59    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       92.58 ->    92.58  target WAS hit (TP1: max_high=14.6300 >= target=13.2300)
+ 50357  AMOC     2025-10-30     7.00     13.23      8.40     6.58    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       92.86 ->    92.86  target WAS hit (TP1: max_high=14.6300 >= target=13.2300)
+ 50367  AMOC     2025-11-03     6.94     11.07     10.41     6.52    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       94.52 ->    94.52  target WAS hit (TP1: max_high=14.6300 >= target=11.0700)
+ 50371  AMOC     2025-11-04     6.93     13.22      8.32     6.51    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       94.81 ->    94.81  target WAS hit (TP1: max_high=14.6300 >= target=13.2200)
+ 50382  AMOC     2025-11-06     6.90     13.21      8.28     6.49    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       95.65 ->    95.65  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50387  AMOC     2025-11-09     6.88     13.21      8.26     6.47    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.22 ->    96.22  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50391  AMOC     2025-11-10     6.88     13.21      8.26     6.47    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.22 ->    96.22  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50396  AMOC     2025-11-11     6.88     13.21      8.26     6.47    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.22 ->    96.22  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50401  AMOC     2025-11-12     6.87     13.21      8.24     6.46    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.51 ->    96.51  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50407  AMOC     2025-11-13     6.87     13.21      8.24     6.46    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.51 ->    96.51  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50412  AMOC     2025-11-16     6.87     13.21      8.24     6.46    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.51 ->    96.51  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50417  AMOC     2025-11-17     6.86     13.20      8.23     6.45    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.79 ->    96.79  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50421  AMOC     2025-11-18     6.85     13.20      8.22     6.44    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       97.08 ->    97.08  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50427  AMOC     2025-11-19     6.86     13.20      8.23     6.45    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       96.79 ->    96.79  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50438  AMOC     2025-11-23     6.84     13.20      8.21     6.43    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       97.37 ->    97.37  target WAS hit (TP1: max_high=14.6300 >= target=13.2000)
+ 50442  AMOC     2025-11-24     6.81     13.19      8.17     6.41    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       98.24 ->    98.24  target WAS hit (TP1: max_high=14.6300 >= target=13.1900)
+ 50447  AMOC     2025-11-25     6.79     13.19      8.15     6.39    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       98.82 ->    98.82  target WAS hit (TP1: max_high=14.6300 >= target=13.1900)
+ 50452  AMOC     2025-11-26     6.77     13.19      8.12     6.37    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       99.41 ->    99.41  target WAS hit (TP1: max_high=14.6300 >= target=13.1900)
+ 50457  AMOC     2025-11-27     6.77     13.19      8.12     6.37    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       99.41 ->    99.41  target WAS hit (TP1: max_high=14.6300 >= target=13.1900)
+ 50463  AMOC     2025-11-30     6.76     13.18      8.11     6.36    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       99.70 ->    99.70  target WAS hit (TP1: max_high=14.6300 >= target=13.1800)
+ 50467  AMOC     2025-12-01     6.76     13.18      8.11     6.36    14.6300     6.6600  TARGET_HIT   -> TARGET_HIT       99.70 ->    99.70  target WAS hit (TP1: max_high=14.6300 >= target=13.1800)
+ 50483  AMOC     2025-12-04     6.69     13.17      8.03     6.30    14.6300     6.7000  TARGET_HIT   -> TARGET_HIT      101.79 ->   101.79  target WAS hit (TP1: max_high=14.6300 >= target=13.1700)
+ 50492  AMOC     2025-12-08     6.87     11.05     10.30     6.46    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       96.51 ->    96.51  target WAS hit (TP1: max_high=14.6300 >= target=11.0500)
+ 50498  AMOC     2025-12-09     6.90     13.21      8.28     6.49    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       95.65 ->    95.65  target WAS hit (TP1: max_high=14.6300 >= target=13.2100)
+ 50503  AMOC     2025-12-10     7.05     13.24     10.57     6.63    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       91.49 ->    91.49  target WAS hit (TP1: max_high=14.6300 >= target=13.2400)
+ 50590  AMOC     2026-01-05     7.12     12.18      8.54     6.69    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       89.61 ->    89.61  target WAS hit (TP1: max_high=14.6300 >= target=12.1800)
+ 50612  AMOC     2026-01-11     7.09     12.18      8.51     6.67    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       90.41 ->    90.41  target WAS hit (TP1: max_high=14.6300 >= target=12.1800)
+ 50636  AMOC     2026-01-18     6.84     12.13      8.21     6.43    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       97.37 ->    97.37  target WAS hit (TP1: max_high=14.6300 >= target=12.1300)
+ 50648  AMOC     2026-01-20     6.95     12.15      8.34     6.53    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       94.24 ->    94.24  target WAS hit (TP1: max_high=14.6300 >= target=12.1500)
+ 50653  AMOC     2026-01-21     6.95     12.15      8.34     6.53    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       94.24 ->    94.24  target WAS hit (TP1: max_high=14.6300 >= target=12.1500)
+ 50668  AMOC     2026-01-26     7.17     12.19      8.60     6.74    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       88.28 ->    88.28  target WAS hit (TP1: max_high=14.6300 >= target=12.1900)
+ 50692  AMOC     2026-02-02     7.04     12.17      8.45     6.62    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       91.76 ->    91.76  target WAS hit (TP1: max_high=14.6300 >= target=12.1700)
+ 50697  AMOC     2026-02-03     7.04     12.17      8.45     6.62    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       91.76 ->    91.76  target WAS hit (TP1: max_high=14.6300 >= target=12.1700)
+ 50733  AMOC     2026-02-12     7.10     12.18      8.52     6.67    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       90.14 ->    90.14  target WAS hit (TP1: max_high=14.6300 >= target=12.1800)
+ 50738  AMOC     2026-02-15     7.11     12.18      8.53     6.68    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       89.87 ->    89.87  target WAS hit (TP1: max_high=14.6300 >= target=12.1800)
+ 50741  AMOC     2026-02-16     7.24     12.21      8.69     6.81    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       86.46 ->    86.46  target WAS hit (TP1: max_high=14.6300 >= target=12.2100)
+ 50773  AMOC     2026-02-24     7.33     12.23      8.80     6.89    14.6300     6.7900  TARGET_HIT   -> TARGET_HIT       84.17 ->    84.17  target WAS hit (TP1: max_high=14.6300 >= target=12.2300)
+ 50873  AMOC     2026-03-24     8.75     12.51     10.50     8.23    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       53.14 ->    53.14  target WAS hit (TP1: max_high=14.6300 >= target=12.5100)
+ 50886  AMOC     2026-03-29     8.65     12.49     10.38     8.14    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       56.07 ->    56.07  target WAS hit (TP1: max_high=14.6300 >= target=12.4900)
+ 50923  AMOC     2026-04-07     8.60     12.48     10.32     8.09    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       56.98 ->    56.98  target WAS hit (TP1: max_high=14.6300 >= target=12.4800)
+ 50944  AMOC     2026-04-14     8.25     12.41      9.90     7.76    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       62.42 ->    62.42  target WAS hit (TP1: max_high=14.6300 >= target=12.4100)
+ 50987  AMOC     2026-04-26     8.17     13.47      9.80     7.68    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       65.24 ->    65.24  target WAS hit (TP1: max_high=14.6300 >= target=13.4700)
+ 51038  AMOC     2026-05-10     8.40     13.51     10.08     7.90    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       60.71 ->    60.71  target WAS hit (TP1: max_high=14.6300 >= target=13.5100)
+ 51047  AMOC     2026-05-12     8.59     13.55     10.31     8.08    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       57.16 ->    57.16  target WAS hit (TP1: max_high=14.6300 >= target=13.5500)
+ 51143  AMOC     2026-06-08     8.31     13.49      9.97     7.81    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       62.45 ->    62.45  target WAS hit (TP1: max_high=14.6300 >= target=13.4900)
+ 51171  AMOC     2026-06-16     7.85     13.40      9.42     7.39    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       71.97 ->    71.97  target WAS hit (TP1: max_high=14.6300 >= target=13.4000)
+ 51185  AMOC     2026-06-24     7.67     13.37      9.20     7.22    14.6300     7.4200  TARGET_HIT   -> TARGET_HIT       76.01 ->    76.01  target WAS hit (TP1: max_high=14.6300 >= target=13.3700)
+ 51200  AMOC     2026-06-29     7.52     13.34      9.02     7.07    14.6300     7.5500  TARGET_HIT   -> TARGET_HIT       79.52 ->    79.52  target WAS hit (TP1: max_high=14.6300 >= target=13.3400)
+ 51207  AMOC     2026-06-30     7.75     13.38      9.30     7.29    14.6300     7.6000  TARGET_HIT   -> TARGET_HIT       74.19 ->    74.19  target WAS hit (TP1: max_high=14.6300 >= target=13.3800)
+ 51212  AMOC     2026-07-01     7.78     13.39      9.34     7.32    14.6300     7.6000  TARGET_HIT   -> TARGET_HIT       73.52 ->    73.52  target WAS hit (TP1: max_high=14.6300 >= target=13.3900)
+ 51218  AMOC     2026-07-05     7.85     13.40      9.42     7.39    14.6300     7.6000  TARGET_HIT   -> TARGET_HIT       71.97 ->    71.97  target WAS hit (TP1: max_high=14.6300 >= target=13.4000)
+ 51227  AMOC     2026-07-07     7.75     12.31      9.30     7.29    14.6300     7.6000  TARGET_HIT   -> TARGET_HIT       74.19 ->    74.19  target WAS hit (TP1: max_high=14.6300 >= target=12.3100)
+ 51231  AMOC     2026-07-08     8.13     12.39      9.76     7.64    14.6300     7.6000  TARGET_HIT   -> TARGET_HIT       66.05 ->    66.05  target WAS hit (TP1: max_high=14.6300 >= target=12.3900)
+ 51272  AMOC     2026-07-28     8.30     12.42      9.96     7.81    14.6300     8.2300  TARGET_HIT   -> TARGET_HIT       62.65 ->    62.65  target WAS hit (TP1: max_high=14.6300 >= target=12.4200)
+ 51276  AMOC     2026-07-29     8.33     12.43     10.00     7.83    14.6300     8.3300  TARGET_HIT   -> TARGET_HIT       62.06 ->    62.06  target WAS hit (TP1: max_high=14.6300 >= target=12.4300)
+ 51281  AMOC     2026-07-30     8.91     12.54     13.37     8.38    14.6300     8.9100  TARGET_HIT   -> TARGET_HIT       51.52 ->    51.52  target WAS hit (TP1: max_high=14.6300 >= target=12.5400)
+ 50838  BIDI     2026-03-15     1.26      1.33      1.36     1.18     2.3377     1.2400  TARGET_HIT   -> TARGET_HIT       68.25 ->    68.25  target WAS hit (TP1: max_high=2.3377 >= target=1.3300)
+ 50841  BIDI     2026-03-16     1.32      1.40      1.43     1.23     2.3377     1.2400  TARGET_HIT   -> TARGET_HIT       60.61 ->    60.61  target WAS hit (TP1: max_high=2.3377 >= target=1.4000)
+ 51271  CIEB     2026-07-28    24.15     33.79     28.98    22.71    26.2700    23.7700  TARGET_HIT   -> EXPIRED           2.65 ->     2.65  window expired without target hit (max_high=26.2700 < target=33.7900, min_low=23.7700 > stop=22.7100, outcome_close=24.7900)
+ 51287  CIEB     2026-08-02    24.05     36.67     28.86    22.62    26.2700    23.9700  TARGET_HIT   -> EXPIRED           3.08 ->     3.08  window expired without target hit (max_high=26.2700 < target=36.6700, min_low=23.9700 > stop=22.6200, outcome_close=24.7900)
+ 51290  CIEB     2026-08-03    24.07     36.67     28.88    22.64    26.2700    23.9700  TARGET_HIT   -> EXPIRED           2.99 ->     2.99  window expired without target hit (max_high=26.2700 < target=36.6700, min_low=23.9700 > stop=22.6400, outcome_close=24.7900)
+ 51320  CIEB     2026-08-12    24.10     36.68     28.92    22.67    26.2700    24.0000  TARGET_HIT   -> EXPIRED           2.86 ->     2.86  window expired without target hit (max_high=26.2700 < target=36.6800, min_low=24.0000 > stop=22.6700, outcome_close=24.7900)
+ 51327  CIEB     2026-08-13    24.46     36.75     29.35    23.01    26.2700    24.0100  TARGET_HIT   -> EXPIRED           1.35 ->     1.35  window expired without target hit (max_high=26.2700 < target=36.7500, min_low=24.0100 > stop=23.0100, outcome_close=24.7900)
+ 51305  CRST     2026-08-06     2.29      2.42      2.47     2.14     3.4900     0.6340  TARGET_HIT   -> TARGET_HIT       56.33 ->    56.33  target WAS hit (TP1: max_high=3.4900 >= target=2.4200)
+ 51310  CRST     2026-08-09     2.21      2.34      2.39     2.06     3.4900     0.6340  TARGET_HIT   -> TARGET_HIT       69.23 ->    69.23  target WAS hit (TP1: max_high=3.4900 >= target=2.3400)
+ 50798  ELKA     2026-03-03     1.07      1.23      1.60     1.01     2.1200     1.0200  TARGET_HIT   -> TARGET_HIT       56.07 ->    56.07  target WAS hit (TP1: max_high=2.1200 >= target=1.2300)
+ 50458  FIRE     2025-11-27     2.27      2.40      2.45     2.12     5.7400     1.7400  TARGET_HIT   -> TARGET_HIT       96.48 ->    96.48  target WAS hit (TP1: max_high=5.7400 >= target=2.4000)
+ 51084  GTHE     2026-05-24     3.25      3.64      3.90     3.06     4.8800     2.0000  TARGET_HIT   -> TARGET_HIT       53.54 ->    53.54  target WAS hit (TP1: max_high=4.8800 >= target=3.6400)
+ 51110  GTHE     2026-05-31     3.20      3.63      3.84     3.01     4.8800     2.0000  TARGET_HIT   -> TARGET_HIT       55.94 ->    55.94  target WAS hit (TP1: max_high=4.8800 >= target=3.6300)
+ 51115  GTHE     2026-06-01     3.22      3.64      3.86     3.03     4.8800     2.0000  TARGET_HIT   -> TARGET_HIT       54.97 ->    54.97  target WAS hit (TP1: max_high=4.8800 >= target=3.6400)
+ 50271  HELI     2025-10-07     3.20      8.62      3.84     3.01     8.7700     3.1100  TARGET_HIT   -> TARGET_HIT      156.25 ->   156.25  target WAS hit (TP1: max_high=8.7700 >= target=8.6200)
+ 50368  HELI     2025-11-03     3.27      7.83      4.91     3.08     8.7700     3.2500  TARGET_HIT   -> TARGET_HIT      150.76 ->   150.76  target WAS hit (TP1: max_high=8.7700 >= target=7.8300)
+ 50628  HELI     2026-01-14     3.30      8.64      3.96     3.10     8.7700     3.2500  TARGET_HIT   -> TARGET_HIT      148.48 ->   148.48  target WAS hit (TP1: max_high=8.7700 >= target=8.6400)
+ 50214  MASR     2025-09-22     4.05     44.97      6.07     3.81    62.1442     4.0300  TARGET_HIT   -> TARGET_HIT       89.63 ->    89.63  target WAS hit (TP1: max_high=62.1442 >= target=44.9700)
+ 50220  MASR     2025-09-23     4.05     54.79      4.86     3.81    62.1442     4.0300  TARGET_HIT   -> TARGET_HIT       89.63 ->    89.63  target WAS hit (TP1: max_high=62.1442 >= target=54.7900)
+ 50224  MASR     2025-09-24     4.11     54.80      4.93     3.86    62.1442     4.0800  TARGET_HIT   -> TARGET_HIT       86.86 ->    86.86  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50229  MASR     2025-09-25     4.10     54.80      4.92     3.85    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       87.32 ->    87.32  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50234  MASR     2025-09-28     4.15     54.81      4.98     3.90    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       85.06 ->    85.06  target WAS hit (TP1: max_high=62.1442 >= target=54.8100)
+ 50239  MASR     2025-09-29     4.14     54.80      4.97     3.89    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       85.51 ->    85.51  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50244  MASR     2025-09-30     4.14     54.80      4.97     3.89    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       85.51 ->    85.51  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50249  MASR     2025-10-01     4.12     54.80      4.94     3.87    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       86.41 ->    86.41  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50254  MASR     2025-10-02     4.11     54.80      4.93     3.86    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       86.86 ->    86.86  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50259  MASR     2025-10-05     4.16     54.81      4.99     3.91    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       84.62 ->    84.62  target WAS hit (TP1: max_high=62.1442 >= target=54.8100)
+ 50264  MASR     2025-10-06     4.15     54.81      4.98     3.90    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       85.06 ->    85.06  target WAS hit (TP1: max_high=62.1442 >= target=54.8100)
+ 50269  MASR     2025-10-07     4.13     49.90      4.96     3.88    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       85.96 ->    85.96  target WAS hit (TP1: max_high=62.1442 >= target=49.9000)
+ 50275  MASR     2025-10-08     4.12     49.90      4.94     3.87    62.1442     4.1000  TARGET_HIT   -> TARGET_HIT       86.41 ->    86.41  target WAS hit (TP1: max_high=62.1442 >= target=49.9000)
+ 50289  MASR     2025-10-13     4.14     54.80      4.97     3.89    62.1442     4.1200  TARGET_HIT   -> TARGET_HIT       85.51 ->    85.51  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50294  MASR     2025-10-14     4.12     54.80      4.94     3.87    62.1442     4.1200  TARGET_HIT   -> TARGET_HIT       86.41 ->    86.41  target WAS hit (TP1: max_high=62.1442 >= target=54.8000)
+ 50299  MASR     2025-10-15     4.16     54.81      4.99     3.91    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       84.62 ->    84.62  target WAS hit (TP1: max_high=62.1442 >= target=54.8100)
+ 50304  MASR     2025-10-16     4.22     54.82      5.06     3.97    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.99 ->    81.99  target WAS hit (TP1: max_high=62.1442 >= target=54.8200)
+ 50309  MASR     2025-10-19     4.31     54.84      5.17     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.19 ->    78.19  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50314  MASR     2025-10-20     4.25     54.83      5.10     4.00    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       80.71 ->    80.71  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50319  MASR     2025-10-21     4.22     54.82      5.06     3.97    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.99 ->    81.99  target WAS hit (TP1: max_high=62.1442 >= target=54.8200)
+ 50324  MASR     2025-10-22     4.23     54.82      5.08     3.98    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.56 ->    81.56  target WAS hit (TP1: max_high=62.1442 >= target=54.8200)
+ 50329  MASR     2025-10-23     4.26     54.83      5.11     4.01    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       80.28 ->    80.28  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50334  MASR     2025-10-26     4.30     54.84      5.16     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.60 ->    78.60  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50340  MASR     2025-10-27     4.32     54.84      5.18     4.06    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       77.78 ->    77.78  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50345  MASR     2025-10-28     4.33     54.84      5.20     4.07    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       77.37 ->    77.37  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50350  MASR     2025-10-29     4.35     54.85      5.22     4.09    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.55 ->    76.55  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50354  MASR     2025-10-30     4.30     54.84      5.16     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.60 ->    78.60  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50360  MASR     2025-11-02     4.26     54.83      5.11     4.01    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       80.28 ->    80.28  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50366  MASR     2025-11-03     4.27     45.01      6.40     4.02    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.86 ->    79.86  target WAS hit (TP1: max_high=62.1442 >= target=45.0100)
+ 50370  MASR     2025-11-04     4.31     54.84      5.17     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.19 ->    78.19  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50375  MASR     2025-11-05     4.29     54.83      5.15     4.04    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.02 ->    79.02  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50380  MASR     2025-11-06     4.30     54.84      5.16     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.60 ->    78.60  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50385  MASR     2025-11-09     4.29     54.83      5.15     4.04    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.02 ->    79.02  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50395  MASR     2025-11-11     4.31     54.84      5.17     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.19 ->    78.19  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50400  MASR     2025-11-12     4.34     54.84      5.21     4.08    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.96 ->    76.96  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50406  MASR     2025-11-13     4.41     54.86      5.29     4.15    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       74.15 ->    74.15  target WAS hit (TP1: max_high=62.1442 >= target=54.8600)
+ 50410  MASR     2025-11-16     4.41     54.86      5.29     4.15    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       74.15 ->    74.15  target WAS hit (TP1: max_high=62.1442 >= target=54.8600)
+ 50416  MASR     2025-11-17     4.45     54.87      5.34     4.19    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       72.58 ->    72.58  target WAS hit (TP1: max_high=62.1442 >= target=54.8700)
+ 50425  MASR     2025-11-19     4.36     54.85      5.23     4.10    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.15 ->    76.15  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50433  MASR     2025-11-20     4.37     54.85      5.24     4.11    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       75.74 ->    75.74  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50437  MASR     2025-11-23     4.47     54.87      5.36     4.21    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       71.81 ->    71.81  target WAS hit (TP1: max_high=62.1442 >= target=54.8700)
+ 50441  MASR     2025-11-24     4.35     54.85      5.22     4.09    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.55 ->    76.55  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50444  MASR     2025-11-25     4.30     54.84      5.16     4.05    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       78.60 ->    78.60  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50449  MASR     2025-11-26     4.28     54.83      5.14     4.03    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.44 ->    79.44  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50454  MASR     2025-11-27     4.29     54.83      5.15     4.04    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.02 ->    79.02  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50459  MASR     2025-11-30     4.32     54.84      5.18     4.06    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       77.78 ->    77.78  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50464  MASR     2025-12-01     4.26     54.83      5.11     4.01    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       80.28 ->    80.28  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50469  MASR     2025-12-02     4.22     54.82      5.06     3.97    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.99 ->    81.99  target WAS hit (TP1: max_high=62.1442 >= target=54.8200)
+ 50474  MASR     2025-12-03     4.23     54.82      5.08     3.98    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.56 ->    81.56  target WAS hit (TP1: max_high=62.1442 >= target=54.8200)
+ 50479  MASR     2025-12-04     4.27     54.83      5.12     4.02    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.86 ->    79.86  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50488  MASR     2025-12-07     4.34     54.84      5.21     4.08    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.96 ->    76.96  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50490  MASR     2025-12-08     4.38     45.04      6.57     4.12    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       75.34 ->    75.34  target WAS hit (TP1: max_high=62.1442 >= target=45.0400)
+ 50496  MASR     2025-12-09     4.36     54.85      5.23     4.10    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.15 ->    76.15  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50499  MASR     2025-12-10     4.35     54.85      5.22     4.09    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       76.55 ->    76.55  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50505  MASR     2025-12-11     4.44     54.86      5.33     4.18    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       72.97 ->    72.97  target WAS hit (TP1: max_high=62.1442 >= target=54.8600)
+ 50510  MASR     2025-12-14     4.47     54.87      5.36     4.21    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       71.81 ->    71.81  target WAS hit (TP1: max_high=62.1442 >= target=54.8700)
+ 50515  MASR     2025-12-15     4.48     54.87      5.38     4.22    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       71.43 ->    71.43  target WAS hit (TP1: max_high=62.1442 >= target=54.8700)
+ 50521  MASR     2025-12-16     4.39     54.85      5.27     4.13    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       74.94 ->    74.94  target WAS hit (TP1: max_high=62.1442 >= target=54.8500)
+ 50525  MASR     2025-12-17     4.33     54.84      5.20     4.07    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       77.37 ->    77.37  target WAS hit (TP1: max_high=62.1442 >= target=54.8400)
+ 50530  MASR     2025-12-18     4.28     54.83      5.14     4.03    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.44 ->    79.44  target WAS hit (TP1: max_high=62.1442 >= target=54.8300)
+ 50534  MASR     2025-12-21     4.24     49.92      5.09     3.99    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.13 ->    81.13  target WAS hit (TP1: max_high=62.1442 >= target=49.9200)
+ 50539  MASR     2025-12-22     4.24     49.92      5.09     3.99    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.13 ->    81.13  target WAS hit (TP1: max_high=62.1442 >= target=49.9200)
+ 50544  MASR     2025-12-23     4.21     49.91      5.05     3.96    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       82.42 ->    82.42  target WAS hit (TP1: max_high=62.1442 >= target=49.9100)
+ 50549  MASR     2025-12-24     4.27     49.93      5.12     4.02    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.86 ->    79.86  target WAS hit (TP1: max_high=62.1442 >= target=49.9300)
+ 50554  MASR     2025-12-25     4.24     49.92      5.09     3.99    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.13 ->    81.13  target WAS hit (TP1: max_high=62.1442 >= target=49.9200)
+ 50559  MASR     2025-12-28     4.28     49.93      5.14     4.03    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.44 ->    79.44  target WAS hit (TP1: max_high=62.1442 >= target=49.9300)
+ 50564  MASR     2025-12-29     4.27     49.93      5.12     4.02    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       79.86 ->    79.86  target WAS hit (TP1: max_high=62.1442 >= target=49.9300)
+ 50569  MASR     2025-12-30     4.23     49.92      5.08     3.98    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.56 ->    81.56  target WAS hit (TP1: max_high=62.1442 >= target=49.9200)
+ 50574  MASR     2025-12-31     4.23     49.92      5.08     3.98    62.1442     4.1400  TARGET_HIT   -> TARGET_HIT       81.56 ->    81.56  target WAS hit (TP1: max_high=62.1442 >= target=49.9200)
+ 50594  MASR     2026-01-06     4.16     49.90      4.99     3.91    62.1442     4.1500  TARGET_HIT   -> TARGET_HIT       84.62 ->    84.62  target WAS hit (TP1: max_high=62.1442 >= target=49.9000)
+ 50609  MASR     2026-01-11     4.33     49.94      5.20     4.07    62.1442     4.2500  TARGET_HIT   -> TARGET_HIT       77.37 ->    77.37  target WAS hit (TP1: max_high=62.1442 >= target=49.9400)
+ 50614  MASR     2026-01-12     4.32     49.94      5.18     4.06    62.1442     4.2500  TARGET_HIT   -> TARGET_HIT       77.78 ->    77.78  target WAS hit (TP1: max_high=62.1442 >= target=49.9400)
+ 50619  MASR     2026-01-13     4.34     49.94      5.21     4.08    62.1442     4.2700  TARGET_HIT   -> TARGET_HIT       76.96 ->    76.96  target WAS hit (TP1: max_high=62.1442 >= target=49.9400)
+ 50624  MASR     2026-01-14     4.31     49.93      5.17     4.05    62.1442     4.2800  TARGET_HIT   -> TARGET_HIT       78.19 ->    78.19  target WAS hit (TP1: max_high=62.1442 >= target=49.9300)
+ 50634  MASR     2026-01-18     4.32     49.94      5.18     4.06    62.1442     4.3400  TARGET_HIT   -> TARGET_HIT       77.78 ->    77.78  target WAS hit (TP1: max_high=62.1442 >= target=49.9400)
+ 50640  MASR     2026-01-19     4.53     49.98      5.44     4.26    62.1442     4.5100  TARGET_HIT   -> TARGET_HIT       69.54 ->    69.54  target WAS hit (TP1: max_high=62.1442 >= target=49.9800)
+ 50645  MASR     2026-01-20     4.75     50.02      5.70     4.46    62.1442     4.6200  TARGET_HIT   -> TARGET_HIT       61.68 ->    61.68  target WAS hit (TP1: max_high=62.1442 >= target=50.0200)
+ 50651  MASR     2026-01-21     4.85     50.04      5.82     4.56    62.1442     4.6500  TARGET_HIT   -> TARGET_HIT       58.35 ->    58.35  target WAS hit (TP1: max_high=62.1442 >= target=50.0400)
+ 50655  MASR     2026-01-22     4.85     50.04      5.82     4.56    62.1442     4.6500  TARGET_HIT   -> TARGET_HIT       58.35 ->    58.35  target WAS hit (TP1: max_high=62.1442 >= target=50.0400)
+ 50660  MASR     2026-01-25     4.77     50.03      5.72     4.48    62.1442     4.6500  TARGET_HIT   -> TARGET_HIT       61.01 ->    61.01  target WAS hit (TP1: max_high=62.1442 >= target=50.0300)
+ 50664  MASR     2026-01-26     4.86     50.04      5.83     4.57    62.1442     4.6500  TARGET_HIT   -> TARGET_HIT       58.02 ->    58.02  target WAS hit (TP1: max_high=62.1442 >= target=50.0400)
+ 50670  MASR     2026-01-27     4.73     50.02      5.68     4.45    62.1442     4.6500  TARGET_HIT   -> TARGET_HIT       62.37 ->    62.37  target WAS hit (TP1: max_high=62.1442 >= target=50.0200)
+ 50674  MASR     2026-01-28     4.82     45.12      7.23     4.53    62.1442     4.6800  TARGET_HIT   -> TARGET_HIT       59.34 ->    59.34  target WAS hit (TP1: max_high=62.1442 >= target=45.1200)
+ 51313  MASR     2026-08-11     7.51     55.48      9.01     7.06     8.9500     7.4900  TARGET_HIT   -> EXPIRED           2.26 ->     2.26  window expired without target hit (max_high=8.9500 < target=55.4800, min_low=7.4900 > stop=7.0600, outcome_close=7.6800)
+ 51323  MASR     2026-08-13     7.62     55.50      9.14     7.17     8.9500     7.4900  TARGET_HIT   -> EXPIRED           0.79 ->     0.79  window expired without target hit (max_high=8.9500 < target=55.5000, min_low=7.4900 > stop=7.1700, outcome_close=7.6800)
+ 51329  MASR     2026-08-16     7.66     55.51      9.19     7.21     8.9500     7.4900  TARGET_HIT   -> EXPIRED           0.26 ->     0.26  window expired without target hit (max_high=8.9500 < target=55.5100, min_low=7.4900 > stop=7.2100, outcome_close=7.6800)
+ 51369  MASR     2026-08-26     7.55     55.49      9.06     7.10     8.9500     7.4900  TARGET_HIT   -> EXPIRED           1.72 ->     1.72  window expired without target hit (max_high=8.9500 < target=55.4900, min_low=7.4900 > stop=7.1000, outcome_close=7.6800)
+ 51374  MASR     2026-08-27     7.55     55.49      9.06     7.10     8.9500     7.4900  TARGET_HIT   -> EXPIRED           1.72 ->     1.72  window expired without target hit (max_high=8.9500 < target=55.4900, min_low=7.4900 > stop=7.1000, outcome_close=7.6800)
+ 50519  MBEG     2025-12-16     2.69      2.84      2.91     2.51     7.7400     2.6500  TARGET_HIT   -> TARGET_HIT      161.34 ->   161.34  target WAS hit (TP1: max_high=7.7400 >= target=2.8400)
+ 50526  MBEG     2025-12-17     2.84      3.00      3.07     2.65     7.7400     2.6900  TARGET_HIT   -> TARGET_HIT      147.54 ->   147.54  target WAS hit (TP1: max_high=7.7400 >= target=3.0000)
+ 50429  MCRO     2025-11-20     1.04      1.10      1.12     0.97     1.8100     1.0200  TARGET_HIT   -> TARGET_HIT       61.54 ->    61.54  target WAS hit (TP1: max_high=1.8100 >= target=1.1000)
+ 50663  OIH      2026-01-25     1.21      1.28      1.31     1.13     2.1900     1.1300  TARGET_HIT   -> TARGET_HIT       76.86 ->    76.86  target WAS hit (TP1: max_high=2.1900 >= target=1.2800)
+ 50216  PHDC     2025-09-22     7.16     16.02     10.74     6.73    16.4300     6.1120  TARGET_HIT   -> TARGET_HIT       87.71 ->    87.71  target WAS hit (TP1: max_high=16.4300 >= target=16.0200)
+ 50222  PHDC     2025-09-23     7.08     19.24      8.50     6.66    16.4300     6.1120  TARGET_HIT   -> closed_win       89.83 ->    89.83  TP2 was hit but not TP1 (max_high=16.4300, target2=8.4960, target1=19.2400) — truthful status: closed_win
+ 50227  PHDC     2025-09-24     7.30     19.28      8.76     6.87    16.4300     6.1120  TARGET_HIT   -> closed_win       84.11 ->    84.11  TP2 was hit but not TP1 (max_high=16.4300, target2=8.7600, target1=19.2800) — truthful status: closed_win
+ 50232  PHDC     2025-09-25     7.30     19.28      8.76     6.87    16.4300     6.1120  TARGET_HIT   -> closed_win       84.11 ->    84.11  TP2 was hit but not TP1 (max_high=16.4300, target2=8.7600, target1=19.2800) — truthful status: closed_win
+ 50237  PHDC     2025-09-28     7.29     19.28      8.75     6.86    16.4300     6.1120  TARGET_HIT   -> closed_win       84.36 ->    84.36  TP2 was hit but not TP1 (max_high=16.4300, target2=8.7480, target1=19.2800) — truthful status: closed_win
+ 50242  PHDC     2025-09-29     7.42     19.31      8.90     6.98    16.4300     6.1120  TARGET_HIT   -> closed_win       81.13 ->    81.13  TP2 was hit but not TP1 (max_high=16.4300, target2=8.9040, target1=19.3100) — truthful status: closed_win
+ 50247  PHDC     2025-09-30     7.38     19.30      8.86     6.94    16.4300     6.1120  TARGET_HIT   -> closed_win       82.11 ->    82.11  TP2 was hit but not TP1 (max_high=16.4300, target2=8.8560, target1=19.3000) — truthful status: closed_win
+ 50251  PHDC     2025-10-01     7.36     19.30      8.83     6.92    16.4300     6.1120  TARGET_HIT   -> closed_win       82.61 ->    82.61  TP2 was hit but not TP1 (max_high=16.4300, target2=8.8320, target1=19.3000) — truthful status: closed_win
+ 50257  PHDC     2025-10-02     7.43     19.31      8.92     6.99    16.4300     6.1120  TARGET_HIT   -> closed_win       80.89 ->    80.89  TP2 was hit but not TP1 (max_high=16.4300, target2=8.9160, target1=19.3100) — truthful status: closed_win
+ 50263  PHDC     2025-10-05     7.50     19.32      9.00     7.05    16.4300     6.1120  TARGET_HIT   -> closed_win       79.20 ->    79.20  TP2 was hit but not TP1 (max_high=16.4300, target2=9.0000, target1=19.3200) — truthful status: closed_win
+ 50267  PHDC     2025-10-06     7.41     19.31      8.89     6.97    16.4300     6.1120  TARGET_HIT   -> closed_win       81.38 ->    81.38  TP2 was hit but not TP1 (max_high=16.4300, target2=8.8920, target1=19.3100) — truthful status: closed_win
+ 50273  PHDC     2025-10-07     7.40     17.69      8.88     6.96    16.4300     6.1120  TARGET_HIT   -> closed_win       81.62 ->    81.62  TP2 was hit but not TP1 (max_high=16.4300, target2=8.8800, target1=17.6900) — truthful status: closed_win
+ 50277  PHDC     2025-10-08     7.31     17.67      8.77     6.87    16.4300     6.1120  TARGET_HIT   -> closed_win       83.86 ->    83.86  TP2 was hit but not TP1 (max_high=16.4300, target2=8.7720, target1=17.6700) — truthful status: closed_win
+ 50281  PHDC     2025-10-09     6.12     19.05      7.34     5.76    16.4300     7.2100  TARGET_HIT   -> closed_win      119.61 ->   119.61  TP2 was hit but not TP1 (max_high=16.4300, target2=7.3440, target1=19.0500) — truthful status: closed_win
+ 50287  PHDC     2025-10-12     7.41     19.31      8.89     6.97    16.4300     7.4000  TARGET_HIT   -> closed_win       81.38 ->    81.38  TP2 was hit but not TP1 (max_high=16.4300, target2=8.8920, target1=19.3100) — truthful status: closed_win
+ 50323  PHDC     2025-10-21     8.01     19.43      9.61     7.53    16.4300     7.7400  TARGET_HIT   -> closed_win       67.79 ->    67.79  TP2 was hit but not TP1 (max_high=16.4300, target2=9.6120, target1=19.4300) — truthful status: closed_win
+ 50373  PHDC     2025-11-04     8.20     19.46      9.84     7.71    16.4300     7.7500  TARGET_HIT   -> closed_win       63.90 ->    63.90  TP2 was hit but not TP1 (max_high=16.4300, target2=9.8400, target1=19.4600) — truthful status: closed_win
+ 50377  PHDC     2025-11-05     8.35     19.49     10.02     7.85    16.4300     7.7500  TARGET_HIT   -> closed_win       60.96 ->    60.96  TP2 was hit but not TP1 (max_high=16.4300, target2=10.0200, target1=19.4900) — truthful status: closed_win
+ 50443  PHDC     2025-11-24     7.90     19.40      9.48     7.43    16.4300     7.8800  TARGET_HIT   -> closed_win       70.13 ->    70.13  TP2 was hit but not TP1 (max_high=16.4300, target2=9.4800, target1=19.4000) — truthful status: closed_win
+ 50453  PHDC     2025-11-26     7.92     19.41      9.50     7.44    16.4300     7.9100  TARGET_HIT   -> closed_win       69.70 ->    69.70  TP2 was hit but not TP1 (max_high=16.4300, target2=9.5040, target1=19.4100) — truthful status: closed_win
+ 50493  PHDC     2025-12-08     8.63     16.31     12.95     8.12    16.4300     7.9900  TARGET_HIT   -> TARGET_HIT       55.74 ->    55.74  target WAS hit (TP1: max_high=16.4300 >= target=16.3100)
+ 50502  PHDC     2025-12-10     8.50     19.52     10.20     7.99    16.4300     7.9900  TARGET_HIT   -> closed_win       58.12 ->    58.12  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2000, target1=19.5200) — truthful status: closed_win
+ 50507  PHDC     2025-12-11     8.50     19.52     10.20     7.99    16.4300     7.9900  TARGET_HIT   -> closed_win       58.12 ->    58.12  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2000, target1=19.5200) — truthful status: closed_win
+ 50533  PHDC     2025-12-18     8.30     19.48      9.96     7.81    16.4300     7.9900  TARGET_HIT   -> closed_win       61.93 ->    61.93  TP2 was hit but not TP1 (max_high=16.4300, target2=9.9600, target1=19.4800) — truthful status: closed_win
+ 50538  PHDC     2025-12-21     8.30     17.87      9.96     7.81    16.4300     7.9900  TARGET_HIT   -> closed_win       61.93 ->    61.93  TP2 was hit but not TP1 (max_high=16.4300, target2=9.9600, target1=17.8700) — truthful status: closed_win
+ 50547  PHDC     2025-12-23     8.25     17.86      9.90     7.76    16.4300     7.9900  TARGET_HIT   -> closed_win       62.91 ->    62.91  TP2 was hit but not TP1 (max_high=16.4300, target2=9.9000, target1=17.8600) — truthful status: closed_win
+ 50552  PHDC     2025-12-24     8.35     17.88     10.02     7.85    16.4300     7.9900  TARGET_HIT   -> closed_win       60.96 ->    60.96  TP2 was hit but not TP1 (max_high=16.4300, target2=10.0200, target1=17.8800) — truthful status: closed_win
+ 50563  PHDC     2025-12-28     8.55     17.92     10.26     8.04    16.4300     7.9900  TARGET_HIT   -> closed_win       57.19 ->    57.19  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2600, target1=17.9200) — truthful status: closed_win
+ 50567  PHDC     2025-12-29     8.49     17.91     10.19     7.99    16.4300     7.9900  TARGET_HIT   -> closed_win       58.30 ->    58.30  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1880, target1=17.9100) — truthful status: closed_win
+ 50572  PHDC     2025-12-30     8.51     17.91     10.21     8.00    16.4300     7.9900  TARGET_HIT   -> closed_win       57.93 ->    57.93  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2120, target1=17.9100) — truthful status: closed_win
+ 50578  PHDC     2025-12-31     8.61     17.93     10.33     8.10    16.4300     7.9900  TARGET_HIT   -> closed_win       56.10 ->    56.10  TP2 was hit but not TP1 (max_high=16.4300, target2=10.3320, target1=17.9300) — truthful status: closed_win
+ 50597  PHDC     2026-01-06     8.37     17.88     10.04     7.87    16.4300     7.9900  TARGET_HIT   -> closed_win       60.57 ->    60.57  TP2 was hit but not TP1 (max_high=16.4300, target2=10.0440, target1=17.8800) — truthful status: closed_win
+ 50613  PHDC     2026-01-11     8.79     17.97     10.55     8.27    16.4300     7.9900  TARGET_HIT   -> closed_win       52.90 ->    52.90  TP2 was hit but not TP1 (max_high=16.4300, target2=10.5480, target1=17.9700) — truthful status: closed_win
+ 50625  PHDC     2026-01-14     8.44     17.90     10.13     7.94    16.4300     7.9900  TARGET_HIT   -> closed_win       59.24 ->    59.24  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1280, target1=17.9000) — truthful status: closed_win
+ 50632  PHDC     2026-01-15     8.46     17.90     10.15     7.96    16.4300     7.9900  TARGET_HIT   -> closed_win       58.87 ->    58.87  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1520, target1=17.9000) — truthful status: closed_win
+ 50637  PHDC     2026-01-18     8.50     17.91     10.20     7.99    16.4300     7.9900  TARGET_HIT   -> closed_win       58.12 ->    58.12  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2000, target1=17.9100) — truthful status: closed_win
+ 50797  PHDC     2026-03-03     8.72     16.33     13.08     8.20    16.4300     7.9900  TARGET_HIT   -> TARGET_HIT       54.13 ->    54.13  target WAS hit (TP1: max_high=16.4300 >= target=16.3300)
+ 50802  PHDC     2026-03-04     8.67     16.32     13.00     8.16    16.4300     7.9900  TARGET_HIT   -> TARGET_HIT       55.02 ->    55.02  target WAS hit (TP1: max_high=16.4300 >= target=16.3200)
+ 50813  PHDC     2026-03-08     8.75     16.33     13.12     8.23    16.4300     7.9900  TARGET_HIT   -> TARGET_HIT       53.60 ->    53.60  target WAS hit (TP1: max_high=16.4300 >= target=16.3300)
+ 50817  PHDC     2026-03-09     8.67     17.94     10.40     8.16    16.4300     7.9900  TARGET_HIT   -> closed_win       55.02 ->    55.02  TP2 was hit but not TP1 (max_high=16.4300, target2=10.4040, target1=17.9400) — truthful status: closed_win
+ 50831  PHDC     2026-03-12     8.68     17.94     10.42     8.17    16.4300     7.9900  TARGET_HIT   -> closed_win       54.84 ->    54.84  TP2 was hit but not TP1 (max_high=16.4300, target2=10.4160, target1=17.9400) — truthful status: closed_win
+ 50846  PHDC     2026-03-17     8.49     17.91     10.19     7.99    16.4300     7.9900  TARGET_HIT   -> closed_win       58.30 ->    58.30  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1880, target1=17.9100) — truthful status: closed_win
+ 50851  PHDC     2026-03-18     8.51     17.91     10.21     8.00    16.4300     7.9900  TARGET_HIT   -> closed_win       57.93 ->    57.93  TP2 was hit but not TP1 (max_high=16.4300, target2=10.2120, target1=17.9100) — truthful status: closed_win
+ 50876  PHDC     2026-03-25     8.70     17.95     10.44     8.18    16.4300     7.9900  TARGET_HIT   -> closed_win       54.48 ->    54.48  TP2 was hit but not TP1 (max_high=16.4300, target2=10.4400, target1=17.9500) — truthful status: closed_win
+ 50897  PHDC     2026-03-31     8.39     17.89     10.07     7.89    16.4300     8.2100  TARGET_HIT   -> closed_win       60.19 ->    60.19  TP2 was hit but not TP1 (max_high=16.4300, target2=10.0680, target1=17.8900) — truthful status: closed_win
+ 50902  PHDC     2026-04-01     8.35     17.88     10.02     7.85    16.4300     8.2100  TARGET_HIT   -> closed_win       60.96 ->    60.96  TP2 was hit but not TP1 (max_high=16.4300, target2=10.0200, target1=17.8800) — truthful status: closed_win
+ 50908  PHDC     2026-04-02     8.46     17.90     10.15     7.96    16.4300     8.2100  TARGET_HIT   -> closed_win       58.87 ->    58.87  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1520, target1=17.9000) — truthful status: closed_win
+ 50913  PHDC     2026-04-05     8.42     17.89     10.10     7.92    16.4300     8.2100  TARGET_HIT   -> closed_win       59.62 ->    59.62  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1040, target1=17.8900) — truthful status: closed_win
+ 50917  PHDC     2026-04-06     8.46     17.90     10.15     7.96    16.4300     8.2100  TARGET_HIT   -> closed_win       58.87 ->    58.87  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1520, target1=17.9000) — truthful status: closed_win
+ 50927  PHDC     2026-04-08     8.63     17.93     10.36     8.12    16.4300     8.3900  TARGET_HIT   -> closed_win       55.74 ->    55.74  TP2 was hit but not TP1 (max_high=16.4300, target2=10.3560, target1=17.9300) — truthful status: closed_win
+ 50932  PHDC     2026-04-09     8.43     17.89     10.12     7.93    16.4300     8.4500  TARGET_HIT   -> closed_win       59.43 ->    59.43  TP2 was hit but not TP1 (max_high=16.4300, target2=10.1160, target1=17.8900) — truthful status: closed_win
+ 50322  PRMH     2025-10-21     1.32      1.40      1.43     1.23     3.0200     1.1800  TARGET_HIT   -> TARGET_HIT       96.21 ->    96.21  target WAS hit (TP1: max_high=3.0200 >= target=1.4000)
+ 50756  RKAZ     2026-02-19     2.87      3.03      3.10     2.68     6.1400     2.3500  TARGET_HIT   -> TARGET_HIT       83.28 ->    83.28  target WAS hit (TP1: max_high=6.1400 >= target=3.0300)
+ 50842  RREI     2026-03-16     2.34      2.69      2.81     2.20     4.9900     2.3500  TARGET_HIT   -> TARGET_HIT       79.91 ->    79.91  target WAS hit (TP1: max_high=4.9900 >= target=2.6900)
+ 51195  SIPC     2026-06-28     3.35      3.85      4.02     3.15     7.2800     3.2500  TARGET_HIT   -> TARGET_HIT       62.69 ->    62.69  target WAS hit (TP1: max_high=7.2800 >= target=3.8500)
+ 50688  SWDY     2026-02-01    77.50    115.89     93.00    72.88   139.7000    62.0300  TARGET_HIT   -> TARGET_HIT       62.05 ->    62.05  target WAS hit (TP1: max_high=139.7000 >= target=115.8900)
+ 50881  SWDY     2026-03-26    78.31    116.05     93.97    73.65   139.7000    77.5100  TARGET_HIT   -> TARGET_HIT       60.38 ->    60.38  target WAS hit (TP1: max_high=139.7000 >= target=116.0500)
+ 50887  SWDY     2026-03-29    77.93    115.98     93.52    73.29   139.7000    77.8000  TARGET_HIT   -> TARGET_HIT       61.16 ->    61.16  target WAS hit (TP1: max_high=139.7000 >= target=115.9800)
+ 50891  SWDY     2026-03-30    78.00    105.95    117.00    73.36   139.7000    77.8000  TARGET_HIT   -> TARGET_HIT       61.01 ->    61.01  target WAS hit (TP1: max_high=139.7000 >= target=105.9500)
+ 51277  TAQA     2026-07-29    14.90     17.13     22.35    14.01    16.6300    13.1900  TARGET_HIT   -> STOPPED           0.67 ->    -5.97  stop was hit (min_low=13.1900 <= stop=14.0100)
+ 51286  TWSA     2026-08-02     6.51    165.21      7.81     6.12     8.1000     6.1600  TARGET_HIT   -> closed_win       11.83 ->    16.13  TP2 was hit but not TP1 (max_high=8.1000, target2=7.8120, target1=165.2100) — truthful status: closed_win
+ 51292  TWSA     2026-08-03     6.59    165.23      7.91     6.20     8.1000     6.1600  TARGET_HIT   -> closed_win       10.47 ->    14.72  TP2 was hit but not TP1 (max_high=8.1000, target2=7.9080, target1=165.2300) — truthful status: closed_win
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Summary of new statuses:
+  TARGET_HIT: 192
+  closed_win: 102
+  EXPIRED: 13
+  STOPPED: 1
+
+Total false TARGET_HITs examined       : 308
+  True TP1 hits (kept TARGET_HIT)       : 192
+  Status changes (TARGET_HIT -> X)      : 116
+  highest_price_reached corrections    : 184 (on unchanged rows)
+
+By ticker (new statuses):
+  TICKER   TOTAL  TARGET_HIT  closed_win   STOPPED   EXPIRED  active
+  MASR        88          83           0         0         5       0
+  ABUK        68          11          54         0         3       0
+  AMOC        63          63           0         0         0       0
+  PHDC        51           5          46         0         0       0
+  CIEB         5           0           0         0         5       0
+  SWDY         4           4           0         0         0       0
+  ALCN         3           3           0         0         0       0
+  GTHE         3           3           0         0         0       0
+  HELI         3           3           0         0         0       0
+  BIDI         2           2           0         0         0       0
+  CRST         2           2           0         0         0       0
+  MBEG         2           2           0         0         0       0
+  TWSA         2           0           2         0         0       0
+  ACAMD        1           1           0         0         0       0
+  AMER         1           1           0         0         0       0
+  AMIA         1           1           0         0         0       0
+  ELKA         1           1           0         0         0       0
+  FIRE         1           1           0         0         0       0
+  MCRO         1           1           0         0         0       0
+  OIH          1           1           0         0         0       0
+  PRMH         1           1           0         0         0       0
+  RKAZ         1           1           0         0         0       0
+  RREI         1           1           0         0         0       0
+  SIPC         1           1           0         0         0       0
+  TAQA         1           0           0         1         0       0
+
+[INFO] Applying UPDATEs in a single atomic transaction...
+  ✓ id=50218   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50228   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50238   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50248   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50252   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50258   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50262   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50268   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50278   ABUK    high 93.7000 -> 178.0260, low 93.7000 -> 45.1800
+  ✓ id=50290   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50296   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50307   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50313   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50316   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50321   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50326   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50335   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50339   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50344   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50349   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50356   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50362   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50365   ABUK    high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50379   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50384   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50389   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50394   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50399   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50405   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50409   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50415   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50420   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50424   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50432   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50436   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50440   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50446   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50451   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50455   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50461   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50465   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50470   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.1800
+  ✓ id=50475   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.3000
+  ✓ id=50481   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 45.6500
+  ✓ id=50487   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50489   ABUK    high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50497   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50500   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50506   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50512   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50516   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50522   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 46.5200
+  ✓ id=50527   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 47.5000
+  ✓ id=50553   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 48.9000
+  ✓ id=50568   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 48.9000
+  ✓ id=50573   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 48.9000
+  ✓ id=50598   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 49.0100
+  ✓ id=50611   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 49.0100
+  ✓ id=50617   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 49.0100
+  ✓ id=50629   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 50.0300
+  ✓ id=50638   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 51.6600
+  ✓ id=50643   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 52.0400
+  ✓ id=50647   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 52.8000
+  ✓ id=50667   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 124.6290, low 93.7000 -> 58.7100
+  ✓ id=51326   ABUK    status 'TARGET_HIT' -> 'EXPIRED', high 93.7000 -> 96.2900, low 93.7000 -> 75.2800
+  ✓ id=51332   ABUK    status 'TARGET_HIT' -> 'closed_win', high 93.7000 -> 96.2900, low 93.7000 -> 75.2800
+  ✓ id=51380   ABUK    status 'TARGET_HIT' -> 'EXPIRED', high 93.7000 -> 96.2900, low 93.7000 -> 78.4200
+  ✓ id=51386   ABUK    status 'TARGET_HIT' -> 'EXPIRED', high 93.7000 -> 96.2900, low 93.7000 -> 81.3000
+  ✓ id=50419   ACAMD   high 2.0000 -> 2.6000, low 2.0000 -> 1.1200
+  ✓ id=50428   ALCN    high 34.0200 -> 34.7000, low 34.0200 -> 20.6900
+  ✓ id=50630   ALCN    high 34.0200 -> 34.7000, low 34.0200 -> 21.0100
+  ✓ id=50641   ALCN    high 34.0200 -> 34.7000, low 34.0200 -> 21.0100
+  ✓ id=50484   AMER    high 5.2000 -> 8.4700, low 5.2000 -> 1.6900
+  ✓ id=50361   AMIA    high 18.4900 -> 22.0000, low 18.4900 -> 3.8700
+  ✓ id=50295   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50301   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50306   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50311   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50315   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50336   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50348   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50352   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50357   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50367   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50371   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50382   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50387   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50391   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50396   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50401   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50407   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50412   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50417   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50421   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50427   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50438   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50442   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50447   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50452   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50457   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50463   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50467   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.6600
+  ✓ id=50483   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7000
+  ✓ id=50492   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50498   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50503   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50590   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50612   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50636   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50648   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50653   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50668   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50692   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50697   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50733   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50738   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50741   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50773   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 6.7900
+  ✓ id=50873   AMOC    high 13.4000 -> 14.6300, low 13.4000 -> 7.4200
+  ✓ id=50886   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=50923   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=50944   AMOC    high 13.4000 -> 14.6300, low 13.4000 -> 7.4200
+  ✓ id=50987   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51038   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51047   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51143   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51171   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51185   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.4200
+  ✓ id=51200   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.5500
+  ✓ id=51207   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.6000
+  ✓ id=51212   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.6000
+  ✓ id=51218   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.6000
+  ✓ id=51227   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.6000
+  ✓ id=51231   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 7.6000
+  ✓ id=51272   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 8.2300
+  ✓ id=51276   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 8.3300
+  ✓ id=51281   AMOC    high 13.5000 -> 14.6300, low 13.5000 -> 8.9100
+  ✓ id=50838   BIDI    high 2.1200 -> 2.3377, low 2.1200 -> 1.2400
+  ✓ id=50841   BIDI    high 2.1200 -> 2.3377, low 2.1200 -> 1.2400
+  ✓ id=51271   CIEB    status 'TARGET_HIT' -> 'EXPIRED', high 24.7900 -> 26.2700, low 24.7900 -> 23.7700
+  ✓ id=51287   CIEB    status 'TARGET_HIT' -> 'EXPIRED', high 24.7900 -> 26.2700, low 24.7900 -> 23.9700
+  ✓ id=51290   CIEB    status 'TARGET_HIT' -> 'EXPIRED', high 24.7900 -> 26.2700, low 24.7900 -> 23.9700
+  ✓ id=51320   CIEB    status 'TARGET_HIT' -> 'EXPIRED', high 24.7900 -> 26.2700, low 24.7900 -> 24.0000
+  ✓ id=51327   CIEB    status 'TARGET_HIT' -> 'EXPIRED', high 24.7900 -> 26.2700, low 24.7900 -> 24.0100
+  ✓ id=51305   CRST    low 3.5800 -> 0.6340
+  ✓ id=51310   CRST    low 3.7400 -> 0.6340
+  ✓ id=50798   ELKA    high 1.6700 -> 2.1200, low 1.6700 -> 1.0200
+  ✓ id=50458   FIRE    high 4.4600 -> 5.7400, low 4.4600 -> 1.7400
+  ✓ id=51084   GTHE    low 4.9900 -> 2.0000
+  ✓ id=51110   GTHE    low 4.9900 -> 2.0000
+  ✓ id=51115   GTHE    low 4.9900 -> 2.0000
+  ✓ id=50214   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.0300
+  ✓ id=50220   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.0300
+  ✓ id=50224   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.0800
+  ✓ id=50229   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50234   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50239   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50244   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50249   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50254   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50259   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50264   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50269   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50275   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1000
+  ✓ id=50289   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1200
+  ✓ id=50294   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1200
+  ✓ id=50299   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50304   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50309   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50314   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50319   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50324   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50329   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50334   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50340   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50345   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50350   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50354   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50360   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50366   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50370   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50375   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50380   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50385   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50395   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50400   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50406   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50410   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50416   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50425   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50433   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50437   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50441   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50444   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50449   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50454   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50459   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50464   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50469   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50474   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50479   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50488   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50490   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50496   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50499   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50505   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50510   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50515   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50521   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50525   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50530   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50534   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50539   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50544   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50549   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50554   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50559   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50564   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50569   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50574   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1400
+  ✓ id=50594   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.1500
+  ✓ id=50609   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.2500
+  ✓ id=50614   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.2500
+  ✓ id=50619   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.2700
+  ✓ id=50624   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.2800
+  ✓ id=50634   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.3400
+  ✓ id=50640   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.5100
+  ✓ id=50645   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6200
+  ✓ id=50651   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6500
+  ✓ id=50655   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6500
+  ✓ id=50660   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6500
+  ✓ id=50664   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6500
+  ✓ id=50670   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6500
+  ✓ id=50674   MASR    high 7.6800 -> 62.1442, low 7.6800 -> 4.6800
+  ✓ id=51313   MASR    status 'TARGET_HIT' -> 'EXPIRED', high 7.6800 -> 8.9500, low 7.6800 -> 7.4900
+  ✓ id=51323   MASR    status 'TARGET_HIT' -> 'EXPIRED', high 7.6800 -> 8.9500, low 7.6800 -> 7.4900
+  ✓ id=51329   MASR    status 'TARGET_HIT' -> 'EXPIRED', high 7.6800 -> 8.9500, low 7.6800 -> 7.4900
+  ✓ id=51369   MASR    status 'TARGET_HIT' -> 'EXPIRED', high 7.6800 -> 8.9500, low 7.6800 -> 7.4900
+  ✓ id=51374   MASR    status 'TARGET_HIT' -> 'EXPIRED', high 7.6800 -> 8.9500, low 7.6800 -> 7.4900
+  ✓ id=50519   MBEG    high 7.0300 -> 7.7400, low 7.0300 -> 2.6500
+  ✓ id=50526   MBEG    high 7.0300 -> 7.7400, low 7.0300 -> 2.6900
+  ✓ id=50429   MCRO    high 1.6800 -> 1.8100, low 1.6800 -> 1.0200
+  ✓ id=50663   OIH     high 2.1400 -> 2.1900, low 2.1400 -> 1.1300
+  ✓ id=50216   PHDC    high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50222   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50227   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50232   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50237   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50242   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50247   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50251   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50257   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50263   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50267   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50273   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50277   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 6.1120
+  ✓ id=50281   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.2100
+  ✓ id=50287   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.4000
+  ✓ id=50323   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.7400
+  ✓ id=50373   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.7500
+  ✓ id=50377   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.7500
+  ✓ id=50443   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.8800
+  ✓ id=50453   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9100
+  ✓ id=50493   PHDC    high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50502   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50507   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50533   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50538   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50547   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50552   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50563   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50567   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50572   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50578   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50597   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50613   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50625   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50632   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50637   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50797   PHDC    high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50802   PHDC    high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50813   PHDC    high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50817   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50831   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50846   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50851   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50876   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 7.9900
+  ✓ id=50897   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.2100
+  ✓ id=50902   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.2100
+  ✓ id=50908   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.2100
+  ✓ id=50913   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.2100
+  ✓ id=50917   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.2100
+  ✓ id=50927   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.3900
+  ✓ id=50932   PHDC    status 'TARGET_HIT' -> 'closed_win', high 13.4400 -> 16.4300, low 13.4400 -> 8.4500
+  ✓ id=50322   PRMH    high 2.5900 -> 3.0200, low 2.5900 -> 1.1800
+  ✓ id=50756   RKAZ    high 5.2600 -> 6.1400, low 5.2600 -> 2.3500
+  ✓ id=50842   RREI    high 4.2100 -> 4.9900, low 4.2100 -> 2.3500
+  ✓ id=51195   SIPC    high 5.4500 -> 7.2800, low 5.4500 -> 3.2500
+  ✓ id=50688   SWDY    high 125.5900 -> 139.7000, low 125.5900 -> 62.0300
+  ✓ id=50881   SWDY    high 125.5900 -> 139.7000, low 125.5900 -> 77.5100
+  ✓ id=50887   SWDY    high 125.5900 -> 139.7000, low 125.5900 -> 77.8000
+  ✓ id=50891   SWDY    high 125.5900 -> 139.7000, low 125.5900 -> 77.8000
+  ✓ id=51277   TAQA    status 'TARGET_HIT' -> 'STOPPED', return 0.67% -> -5.97%, high 15.0000 -> 16.6300, low 15.0000 -> 13.1900
+  ✓ id=51286   TWSA    status 'TARGET_HIT' -> 'closed_win', return 11.83% -> 16.13%, high 7.2800 -> 8.1000, low 7.2800 -> 6.1600
+  ✓ id=51292   TWSA    status 'TARGET_HIT' -> 'closed_win', return 10.47% -> 14.72%, high 7.2800 -> 8.1000, low 7.2800 -> 6.1600
+
+[OK] Transaction committed.
+     Status changes applied  : 116
+     highest_price corrected : 300
+     lowest_price corrected  : 305
+/home/z/my-project/scripts/fix_all_false_targets.py:461: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  f.write(f"Run at: {datetime.utcnow().isoformat()}Z\n")
+
+[INFO] Log written to: /home/z/my-project/scripts/output/fix_all_false_targets_log_20260927T162038Z.txt

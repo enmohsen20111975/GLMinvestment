@@ -1,0 +1,31 @@
+# Work Record — FRONTEND-DATA-INTEGRITY-A-1 (Alpha execution)
+
+> تم تنفيذ التکلیف. ده سجل الشغل بتاعي (Alpha) للوكلاء اللي بعد كده يقدروا يقرأوه.
+
+## الحالة: COMPLETED (4/4 bugs FIXED، بانتظار قرار جون)
+
+## الملفات المعدّلة (4، كلها في src/app/api/):
+1. `src/app/api/stocks/search/route.ts` — Bug 1 (search فاضي)
+2. `src/app/api/predictions/route.ts` — Bug 2 (schema mismatch + TDZ typo)
+3. `src/app/api/stocks/[ticker]/route.ts` — Bug 3 (change fields unification)
+4. `src/app/api/stocks/[ticker]/recommendation/route.ts` — Bug 4 (recommendation source unification)
+
+## الـ root causes المؤكدة (بـ better-sqlite3 direct inspect):
+- stocks.db.stocks: عمود `ticker` + `current_price`, market codes خام (EGX/KSE/...).
+- data_engine.db.stocks: عمود `symbol` + `price`, market مختوط (EGX + مصر).
+- **getLightDb() === getStocksDb()** — الاتنين pointer على stocks.db (مش data_engine.db).
+- predictions.db.predictions: مفيهاش entry_price_min/max + support/resistance ×2.
+- predictions.db: مفيهاش توقعات لـ COMI/AAPL، بس فيها 1488 توقع لـ tickers تانية.
+
+## قرارات مهمة للوكلاء اللي بعد كده:
+1. **price_change = percent alias** (مش absolute) — grep أثبت 15+ كومبوننت بيستخدموه كـ percent. لو هتغيّره absolute، refactor الـ frontend الأول.
+2. **TDZ bug في predictions ticker branch** (line 202: validated→v) — كان masked بالـ schema error. أصلحته.
+3. **tsc codebase-wide**: 1679 pre-existing errors. ملفاتي الـ 4 سليمة (0 errors).
+4. **canonical recommendation source** = `getUnifiedStockData().canonical.signal` + 'HOLD' default. مش Python 8010.
+
+## محظورات اتبعت:
+- ما لمستش prisma/config/vps-service/scripts.
+- ما عملتش push (Rule 75 معلّقة).
+- ما invent-يتش بيانات (Rule 27) — كل null-guarded.
+- ما disable-يتش اختبار.
+- مفيش TODO/dead code/console.log debug.

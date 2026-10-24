@@ -1,0 +1,462 @@
+{
+  "months": {
+    "2023-01": {
+      "regime": "Sideways",
+      "breadth": 67.2,
+      "vol_index": 16.5,
+      "proxy_end": 1.0238,
+      "sma50": 1.0238,
+      "sma200": 1.0238,
+      "trading_days": 20
+    },
+    "2023-02": {
+      "regime": "Sideways",
+      "breadth": 50.0,
+      "vol_index": 13.0,
+      "proxy_end": 1.0586,
+      "sma50": 1.0301,
+      "sma200": 1.0301,
+      "trading_days": 20
+    },
+    "2023-03": {
+      "regime": "Sideways",
+      "breadth": 29.5,
+      "vol_index": 28.2,
+      "proxy_end": 1.0046,
+      "sma50": 1.033,
+      "sma200": 1.033,
+      "trading_days": 22
+    },
+    "2023-04": {
+      "regime": "Sideways",
+      "breadth": 46.9,
+      "vol_index": 9.6,
+      "proxy_end": 1.068,
+      "sma50": 1.0266,
+      "sma200": 1.0255,
+      "trading_days": 15
+    },
+    "2023-05": {
+      "regime": "Sideways",
+      "breadth": 54.8,
+      "vol_index": 11.9,
+      "proxy_end": 1.1138,
+      "sma50": 1.0317,
+      "sma200": 1.0298,
+      "trading_days": 22
+    },
+    "2023-06": {
+      "regime": "Sideways",
+      "breadth": 58.4,
+      "vol_index": 7.1,
+      "proxy_end": 1.1287,
+      "sma50": 1.0419,
+      "sma200": 1.039,
+      "trading_days": 18
+    },
+    "2023-07": {
+      "regime": "Sideways",
+      "breadth": 43.5,
+      "vol_index": 13.6,
+      "proxy_end": 1.1191,
+      "sma50": 1.0877,
+      "sma200": 1.0528,
+      "trading_days": 18
+    },
+    "2023-08": {
+      "regime": "Bull",
+      "breadth": 63.1,
+      "vol_index": 6.4,
+      "proxy_end": 1.2042,
+      "sma50": 1.1073,
+      "sma200": 1.0603,
+      "trading_days": 23
+    },
+    "2023-09": {
+      "regime": "Sideways",
+      "breadth": 58.3,
+      "vol_index": 6.5,
+      "proxy_end": 1.2234,
+      "sma50": 1.1358,
+      "sma200": 1.0745,
+      "trading_days": 19
+    },
+    "2023-10": {
+      "regime": "Bull",
+      "breadth": 66.1,
+      "vol_index": 18.2,
+      "proxy_end": 1.3498,
+      "sma50": 1.1734,
+      "sma200": 1.09,
+      "trading_days": 22
+    },
+    "2023-11": {
+      "regime": "Bull",
+      "breadth": 80.6,
+      "vol_index": 9.4,
+      "proxy_end": 1.553,
+      "sma50": 1.2332,
+      "sma200": 1.1094,
+      "trading_days": 22
+    },
+    "2023-12": {
+      "regime": "Bull",
+      "breadth": 76.2,
+      "vol_index": 14.0,
+      "proxy_end": 1.5914,
+      "sma50": 1.348,
+      "sma200": 1.157,
+      "trading_days": 21
+    },
+    "2024-01": {
+      "regime": "Bull",
+      "breadth": 78.7,
+      "vol_index": 25.2,
+      "proxy_end": 1.7619,
+      "sma50": 1.4923,
+      "sma200": 1.213,
+      "trading_days": 20
+    },
+    "2024-02": {
+      "regime": "Bull",
+      "breadth": 70.6,
+      "vol_index": 18.4,
+      "proxy_end": 1.9025,
+      "sma50": 1.6321,
+      "sma200": 1.2865,
+      "trading_days": 21
+    },
+    "2024-03": {
+      "regime": "Sideways",
+      "breadth": 33.6,
+      "vol_index": 27.3,
+      "proxy_end": 1.7039,
+      "sma50": 1.7695,
+      "sma200": 1.3735,
+      "trading_days": 21
+    },
+    "2024-04": {
+      "regime": "Sideways",
+      "breadth": 14.6,
+      "vol_index": 27.5,
+      "proxy_end": 1.5933,
+      "sma50": 1.8426,
+      "sma200": 1.45,
+      "trading_days": 17
+    },
+    "2024-05": {
+      "regime": "Sideways",
+      "breadth": 15.2,
+      "vol_index": 18.7,
+      "proxy_end": 1.6584,
+      "sma50": 1.816,
+      "sma200": 1.5017,
+      "trading_days": 19
+    },
+    "2024-06": {
+      "regime": "Sideways",
+      "breadth": 33.2,
+      "vol_index": 12.3,
+      "proxy_end": 1.6985,
+      "sma50": 1.7109,
+      "sma200": 1.5509,
+      "trading_days": 15
+    },
+    "2024-07": {
+      "regime": "Bull",
+      "breadth": 63.6,
+      "vol_index": 6.7,
+      "proxy_end": 1.8165,
+      "sma50": 1.6743,
+      "sma200": 1.5881,
+      "trading_days": 20
+    },
+    "2024-08": {
+      "regime": "Bull",
+      "breadth": 71.9,
+      "vol_index": 21.7,
+      "proxy_end": 1.9504,
+      "sma50": 1.6904,
+      "sma200": 1.6424,
+      "trading_days": 21
+    },
+    "2024-09": {
+      "regime": "Bull",
+      "breadth": 75.0,
+      "vol_index": 8.6,
+      "proxy_end": 2.0861,
+      "sma50": 1.7695,
+      "sma200": 1.7034,
+      "trading_days": 21
+    },
+    "2024-10": {
+      "regime": "Bull",
+      "breadth": 62.7,
+      "vol_index": 16.2,
+      "proxy_end": 2.1533,
+      "sma50": 1.8946,
+      "sma200": 1.7634,
+      "trading_days": 22
+    },
+    "2024-11": {
+      "regime": "Bull",
+      "breadth": 61.6,
+      "vol_index": 8.4,
+      "proxy_end": 2.2321,
+      "sma50": 2.0235,
+      "sma200": 1.82,
+      "trading_days": 20
+    },
+    "2024-12": {
+      "regime": "Sideways",
+      "breadth": 45.7,
+      "vol_index": 11.1,
+      "proxy_end": 2.2397,
+      "sma50": 2.1351,
+      "sma200": 1.8728,
+      "trading_days": 23
+    },
+    "2025-01": {
+      "regime": "Sideways",
+      "breadth": 51.9,
+      "vol_index": 144.3,
+      "proxy_end": 3.2969,
+      "sma50": 2.2387,
+      "sma200": 1.92,
+      "trading_days": 20
+    },
+    "2025-02": {
+      "regime": "Sideways",
+      "breadth": 47.2,
+      "vol_index": 3.9,
+      "proxy_end": 3.2992,
+      "sma50": 2.6124,
+      "sma200": 2.0496,
+      "trading_days": 20
+    },
+    "2025-03": {
+      "regime": "Bull",
+      "breadth": 64.8,
+      "vol_index": 144.4,
+      "proxy_end": 4.7997,
+      "sma50": 3.0107,
+      "sma200": 2.2041,
+      "trading_days": 22
+    },
+    "2025-04": {
+      "regime": "Sideways",
+      "breadth": 50.0,
+      "vol_index": 183.3,
+      "proxy_end": 8.2785,
+      "sma50": 3.3904,
+      "sma200": 2.4105,
+      "trading_days": 22
+    },
+    "2025-05": {
+      "regime": "Sideways",
+      "breadth": 45.6,
+      "vol_index": 127.3,
+      "proxy_end": 11.0048,
+      "sma50": 4.5925,
+      "sma200": 2.8909,
+      "trading_days": 21
+    },
+    "2025-06": {
+      "regime": "Sideways",
+      "breadth": 47.2,
+      "vol_index": 168.2,
+      "proxy_end": 19.2524,
+      "sma50": 7.7471,
+      "sma200": 3.851,
+      "trading_days": 22
+    },
+    "2025-07": {
+      "regime": "Sideways",
+      "breadth": 44.1,
+      "vol_index": 199.3,
+      "proxy_end": 45.1906,
+      "sma50": 12.2558,
+      "sma200": 5.277,
+      "trading_days": 23
+    },
+    "2025-08": {
+      "regime": "Sideways",
+      "breadth": 46.4,
+      "vol_index": 3.8,
+      "proxy_end": 46.4835,
+      "sma50": 24.0188,
+      "sma200": 9.1702,
+      "trading_days": 21
+    },
+    "2025-09": {
+      "regime": "Sideways",
+      "breadth": 44.3,
+      "vol_index": 95.3,
+      "proxy_end": 61.4167,
+      "sma50": 37.5081,
+      "sma200": 13.7278,
+      "trading_days": 23
+    },
+    "2025-10": {
+      "regime": "Sideways",
+      "breadth": 49.5,
+      "vol_index": 72.6,
+      "proxy_end": 77.7621,
+      "sma50": 51.5917,
+      "sma200": 20.1924,
+      "trading_days": 27
+    },
+    "2025-11": {
+      "regime": "Sideways",
+      "breadth": 47.0,
+      "vol_index": 31.2,
+      "proxy_end": 90.2446,
+      "sma50": 65.9655,
+      "sma200": 29.5822,
+      "trading_days": 25
+    },
+    "2025-12": {
+      "regime": "Sideways",
+      "breadth": 51.0,
+      "vol_index": 29.4,
+      "proxy_end": 106.1356,
+      "sma50": 77.1897,
+      "sma200": 39.283,
+      "trading_days": 27
+    },
+    "2026-01": {
+      "regime": "Sideways",
+      "breadth": 49.5,
+      "vol_index": 95.3,
+      "proxy_end": 191.4801,
+      "sma50": 89.528,
+      "sma200": 51.7483,
+      "trading_days": 26
+    },
+    "2026-02": {
+      "regime": "Sideways",
+      "breadth": 45.2,
+      "vol_index": 16.5,
+      "proxy_end": 202.8142,
+      "sma50": 129.3419,
+      "sma200": 71.2806,
+      "trading_days": 24
+    },
+    "2026-03": {
+      "regime": "Sideways",
+      "breadth": 39.6,
+      "vol_index": 56.3,
+      "proxy_end": 241.6785,
+      "sma50": 177.0291,
+      "sma200": 93.2787,
+      "trading_days": 27
+    },
+    "2026-04": {
+      "regime": "Sideways",
+      "breadth": 54.5,
+      "vol_index": 49.8,
+      "proxy_end": 301.6495,
+      "sma50": 209.0647,
+      "sma200": 118.4024,
+      "trading_days": 24
+    },
+    "2026-05": {
+      "regime": "Sideways",
+      "breadth": 55.0,
+      "vol_index": 46.0,
+      "proxy_end": 377.8869,
+      "sma50": 247.6418,
+      "sma200": 146.2764,
+      "trading_days": 19
+    },
+    "2026-06": {
+      "regime": "Bull",
+      "breadth": 62.2,
+      "vol_index": 15.2,
+      "proxy_end": 392.6294,
+      "sma50": 294.4052,
+      "sma200": 172.3858,
+      "trading_days": 21
+    },
+    "2026-07": {
+      "regime": "Bull",
+      "breadth": 78.3,
+      "vol_index": 23304.0,
+      "proxy_end": 259610.9043,
+      "sma50": 349.9549,
+      "sma200": 205.8861,
+      "trading_days": 21
+    },
+    "2026-08": {
+      "regime": "Bull",
+      "breadth": 78.6,
+      "vol_index": 593.3,
+      "proxy_end": 2560330.4973,
+      "sma50": 23056.1685,
+      "sma200": 5991.3837,
+      "trading_days": 21
+    },
+    "2026-09": {
+      "regime": "Bull",
+      "breadth": 60.1,
+      "vol_index": 3931.5,
+      "proxy_end": 958646947.1013,
+      "sma50": 395702.4433,
+      "sma200": 100573.0369,
+      "trading_days": 26
+    }
+  },
+  "summary": {
+    "total_months": 45,
+    "bull": 16,
+    "bear": 0,
+    "sideways": 29,
+    "transitions": [
+      {
+        "from": "Sideways",
+        "to": "Bull",
+        "month": "2023-08"
+      },
+      {
+        "from": "Bull",
+        "to": "Sideways",
+        "month": "2023-09"
+      },
+      {
+        "from": "Sideways",
+        "to": "Bull",
+        "month": "2023-10"
+      },
+      {
+        "from": "Bull",
+        "to": "Sideways",
+        "month": "2024-03"
+      },
+      {
+        "from": "Sideways",
+        "to": "Bull",
+        "month": "2024-07"
+      },
+      {
+        "from": "Bull",
+        "to": "Sideways",
+        "month": "2024-12"
+      },
+      {
+        "from": "Sideways",
+        "to": "Bull",
+        "month": "2025-03"
+      },
+      {
+        "from": "Bull",
+        "to": "Sideways",
+        "month": "2025-04"
+      },
+      {
+        "from": "Sideways",
+        "to": "Bull",
+        "month": "2026-06"
+      }
+    ]
+  }
+}

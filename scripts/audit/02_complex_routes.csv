@@ -1,0 +1,15 @@
+1012 21 src/app/api/deal-advisor/[ticker]/route.ts.preserved
+818 20 src/app/api/predictions/honest-tracking/list/route.ts
+740 24 src/app/api/radar/accuracy/route.ts
+657 37 src/app/api/admin/platform-performance/route.ts
+640 45 src/app/api/predictions/honest-tracking/stats/route.ts
+638 43 src/app/api/finance/calculate-values/route.ts
+628 28 src/app/api/admin/users/route.ts
+586 9 src/app/api/admin/db-manager/repair/route.ts
+575 15 src/app/api/maker-radar/timeline/route.ts
+556 27 src/app/api/admin/system-resources/route.ts
+533 17 src/app/api/market/sync-live/route.ts
+530 8 src/app/api/market/scheduled-sync/route.ts
+527 17 src/app/api/portfolio/rescue/route.ts
+525 14 src/app/api/egx/investors/route.ts
+479 21 src/app/api/predictions/expert-consensus/route.ts

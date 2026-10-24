@@ -1,0 +1,385 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+skills/
+node_modules/
+
+# Flutter app � separate repo (https://github.com/enmohsen20111975/flutter_investment_App)
+# Cloned locally at /home/z/my-project/flutter_app/ for cross-repo sync.
+# NEVER commit it into GLMinvestment repo � it has its own git history.
+flutter_app/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases � NEVER track DB files (production data, can be corrupted by git LFS / line-ending changes)
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.db.bak*
+*.db.empty*
+*.db.old*
+*.db.seeded
+*.db.broken*
+*.sqlite
+*.sqlite3
+db/*.db
+db/**/*.db
+db/**/*.db-shm
+db/**/*.db-wal
+db/**/*.db-journal
+db/*.db.bak*
+
+# Database backups, dumps, and temp files
+db/*.backup*
+# ANY .BACKUP-* suffix on db files (PRODUCTION-BACKUP, LOCAL-BACKUP, SANDBOX-BACKUP, etc.)
+db/*.db.*BACKUP*
+db/*.db.*backup*
+# Generic backup suffix anywhere in repo
+**/*.BACKUP-*
+**/*.backup-*
+db/*.corrupt*
+db/*.before_*
+db/*.pre_*
+db/*.recovered
+db/*.malformed*
+db/*.old_backup*
+db/db.backup/
+db/backups/
+db/backtest_results/
+db/*.zip
+db/*.tar.xz
+db/*.bak
+db/*.bak.*
+db/*.bak_*
+db/*.empty*
+db/*.old*
+db/*.seeded
+db/*.broken*
+db/stocks_full_data.json
+
+# DB toolkit audit/backup output directories (v3.66.0) � NEVER push these
+db/_audit/
+db/_backups/
+db/_pre_cleanup_backup/
+
+# DB recovery/audit scripts in db/ � local only, never push
+db/recover_*.py
+db/CANONICAL_DB_INVENTORY.md
+db/analysis_tools_audit.json
+db/db_inventory_*.json
+
+# DB modification/migration toolkit � DANGEROUS on VPS, local dev only
+scripts/db_tools/
+scripts/db_cleanup.py
+scripts/db_migration_tool*.py
+scripts/check_db_*.py
+scripts/check_intraday_db.py
+scripts/check_predictions_db.py
+scripts/daily_db_health_check.py
+scripts/analyze-db.ts
+scripts/auto-backup.sh
+scripts/try_backup_recovery.py
+scripts/test-better-sqlite3.js
+scripts/test_better_sqlite3.js
+scripts/analysis_predict_performance.py
+
+# DB cleanup plan docs � local reference only, not for VPS
+Documentation/DB_CLEANUP_*.md
+Documentation/DB_CODE_REFACTOR_*.md
+Documentation/DB_LOCKING_*.md
+
+# DB audit scratch folder � local only
+tmp_audit/
+
+# VPS DB audit data � local only
+vps-service/ai_db_audit.json
+
+# Config outputs
+config/optimizer_params.json
+
+# Next.js build cache and outputs
+.next/
+out/
+build
+
+# Virtual environments
+.venv/
+venv/
+**/venv/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env for sandbox
+
+# Logs
+logs/
+*.log
+vps-service/logs/
+dev.log
+dev.out.log
+server.log
+
+# Task 33 (Rule 68): the /api/admin/engines/logs/ API route directory is named
+# "logs" but must NOT be ignored. Whitelist it explicitly so the engine control
+# room's log route is committed to git (the previous Task 31-B agent's route
+# was missing on disk exactly because it got gitignored silently).
+!src/app/api/admin/engines/logs/
+!src/app/api/admin/engines/logs/**
+
+# Next.js
+=======
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+<<<<<<< HEAD
+# Smoke load test results (generated artifact, not source code)
+scripts/smoke_load_test_results.json
+# Vitest cache
+.vitest/
+=======
+
+# next.js
+/.next/
+/out/
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+<<<<<<< HEAD
+# P0-AUDIT-H FIX (2026-10-14): Allow .env.example (template with no real secrets)
+!.env.example
+=======
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
+
+# vercel
+.vercel
+
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+local-*
+.claude
+.z-ai-config
+<<<<<<< HEAD
+test
+prompt
+
+# Skills directory
+/skills/tool-results/
+.zscripts/*.pid
+.zscripts/*.out
+.zscripts/watchdog.log
+
+# Backup files
+*.bak
+src/*.bak
+
+# Tailwind old config
+tailwind.config.js
+
+# Scraped data / temp exports
+vps-service/data/egksco/*.pdf
+vps-service/data/egksco/*.html
+Documentation/maestro-layout.json
+
+# Telegram temp files
+vps-service/telegram/downloaded_images/
+vps-service/telegram/*.session
+# SQLite sidecar files for the session DBs (-wal / -shm are runtime state, not source)
+vps-service/telegram/*.session-wal
+vps-service/telegram/*.session-shm
+vps-service/telegram/credentials.json
+vps-service/telegram/auto_post_state.json
+vps-service/telegram/target_hit_state.json
+
+# Optimization / analysis outputs
+vps-service/scripts/optimization_results.json
+# Windows Zone.Identifier ADS (alternate data streams)
+*:Zone.Identifier
+
+# Data engine runtime status files
+db/crypto_latest.json
+db/crypto_status.json
+db/engine_status.json
+db/metals_forex_latest.json
+db/metals_forex_status.json
+
+# Shariah scraper HTTP cache (1.8MB, ???? ?????? ??????? ?? ??????)
+db/sharia_scrape_latest.json
+db/sharia_scrape_state.json
+
+# Data engine venv and logs
+data_engine/venv/
+data_engine/logs/
+**/__pycache__/
+*.pyc
+
+# Debug screenshots and generated report images
+db/*.png
+debug_*.png
+*.png.bak
+public/reports/hit_*.png
+public/reports/report_daily_202*.png
+
+
+
+# Tool output artifacts (read tool captures)
+/tool-results/
+.env
+upload/
+p0-*.png
+
+# V40.2 Protection: runtime config (do not commit state)
+db/display_protection.json
+
+# SECURITY: payment & messaging credentials � NEVER commit
+db/pymob
+db/Telegram_data
+db/*pymob*
+db/*paymob*
+db/*telegram_data*
+db/*credentials*
+vps-service/telegram/credentials.json
+vps-service/backtest_results/v40_2_generation_*.json
+vps-service/backtest_results/*.json
+
+# Explicitly track restored database archives & primary DBs
+!active_databases_aug13_full.zip
+!db_aug13_restored_20260815.zip
+!active_databases_aug13_part1.zip
+!active_databases_aug13_part2.zip
+!active_databases_20260817_full.zip
+!data/active_databases_20260817_full.zip
+!**/active_databases_*.zip
+
+# Maker Radar � tracking + paper test data (user-specific, ?? ????)
+db/maker_radar_tracking.json
+db/paper_test_v2.json
+db/paper_mode_v2.json
+db/production_snapshot_progress.json
+# Radar runtime state � ??????? ????? ???? ?? ????. ????? ????????
+# ?? git? ?????? ??????? conflict ?? ?? pull ??? ?????? ???????
+# ?????? ??????. ??? ????? maker_radar_tracking.json ???.
+db/radar_alerts_state.json
+db/radar_cache_status.json
+scripts/output/paper_test_monitor_*.json
+scripts/output/maker_radar_*.json
+scripts/output/ab_liquidity_v2_*.json
+scripts/output/ab_liquidity_v2_backtest_*.json
+scripts/output/explosive_rejections_*.json
+scripts/output/liquidity_rejections_*.json
+scripts/output/missed_opportunities_*.json
+scripts/output/*.json
+
+# Large database archives & zip packages � keep local, don't push to GitHub
+data/*.zip
+data/*.part
+data/*.zip.part
+data/all/
+backups/**/*.zip
+all.zip
+Documentation.zip
+
+# GIT-FILES-MANAGER (2026-10-12): حظر تتبع أي DB backup في data/ نهائياً
+# سيدي طلب: "شيلهم من التعقب بتاع الجت هب"
+# قبل كده: 62 ملف + 1.04 GB من DB backups كانت متتبعة في git → الـ .git وصل لـ 1.7 GB
+# دلوقتي: كل ملفات data/*.zip + *.part + db_backup_* مش متتبعة
+data/**/*.zip
+!data/predictions.db.zip
+data/**/*.zip.part
+data/**/*.part
+data/db_backup_*
+data/db_backup*.zip
+data/db_backup*.zip.part
+data/db_backup*.part
+data/db_snapshot_*/
+data/part*_combined.zip
+
+# IDE & temporary folders
+.kilo/
+
+
+
+
+# Task 35 � runtime-generated scraper status files (should never be tracked)
+data/multi_market_scraper_status.json
+data/us_scraper_status.json
+data/*_scraper_status.json
+data/*_status.json
+
+# Task 34 � DB backup archives must never be tracked (686 MB of zips bloated git history)
+data/db_backup_*.zip
+data/db_backup_*.zip.part
+archive/databases-from-github/*.zip
+# Windows NTFS alternate-data-stream artifacts (Zone.Identifier) from WSL/Windows copies
+*:Zone.Identifier
+
+# GIT-FILES-MANAGER (2026-10-10): ????? ???? ????? DB backups
+# ??????? ?????? ??? GitHub ?? ?? ?????? ??? ???
+data/db_backup_*
+data/db_backup*.zip
+data/db_backup*.zip.part
+data/db_snapshot_2026-10-10/db_backup_full.zip
+db/backup-unify-*/
+=======
+skills/
+node_modules/
+>>>>>>> 3f09ee0 (Initial commit)
+=======
+*.log
+dev.log
+dev.out.log
+test
+prompt
+
+server.log
+# Skills directory
+/skills/
+>>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
+db/archive_storage/
+
+# ─── Phase 9: Untrack all databases + backups ───
+# DBs are now untracked — each environment has its own data.
+# Test/sample DBs were removed from git to avoid overwriting real production data.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.zip
+*.zip.part
+*.part
+db_backup_*
+backtest_results/*.json

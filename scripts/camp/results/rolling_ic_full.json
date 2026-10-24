@@ -1,0 +1,413 @@
+{
+  "rolling_ic": {
+    "breadth_trend": {
+      "1": {
+        "ic": -0.0072,
+        "n": 3989
+      },
+      "5": {
+        "ic": -0.0264,
+        "n": 3989
+      },
+      "10": {
+        "ic": -0.0168,
+        "n": 3989
+      },
+      "20": {
+        "ic": -0.0115,
+        "n": 3989
+      },
+      "best_horizon": 1,
+      "best_ic": -0.0072
+    },
+    "buy_sell_pressure": {
+      "1": {
+        "ic": null,
+        "n": 3989
+      },
+      "5": {
+        "ic": null,
+        "n": 3989
+      },
+      "10": {
+        "ic": null,
+        "n": 3989
+      },
+      "20": {
+        "ic": null,
+        "n": 3989
+      },
+      "best_horizon": null,
+      "best_ic": null
+    },
+    "distance_52w": {
+      "1": {
+        "ic": 0.0113,
+        "n": 3989
+      },
+      "5": {
+        "ic": -0.0596,
+        "n": 3989
+      },
+      "10": {
+        "ic": -0.0802,
+        "n": 3989
+      },
+      "20": {
+        "ic": -0.0841,
+        "n": 3989
+      },
+      "best_horizon": 1,
+      "best_ic": 0.0113
+    },
+    "momentum_20": {
+      "1": {
+        "ic": -0.0869,
+        "n": 3989
+      },
+      "5": {
+        "ic": -0.0748,
+        "n": 3989
+      },
+      "10": {
+        "ic": -0.0501,
+        "n": 3989
+      },
+      "20": {
+        "ic": -0.0118,
+        "n": 3989
+      },
+      "best_horizon": 20,
+      "best_ic": -0.0118
+    },
+    "momentum_60": {
+      "1": {
+        "ic": -0.0765,
+        "n": 3989
+      },
+      "5": {
+        "ic": -0.0894,
+        "n": 3989
+      },
+      "10": {
+        "ic": -0.0755,
+        "n": 3989
+      },
+      "20": {
+        "ic": -0.0922,
+        "n": 3989
+      },
+      "best_horizon": 10,
+      "best_ic": -0.0755
+    },
+    "sector_leadership": {
+      "1": {
+        "ic": null,
+        "n": 3989
+      },
+      "5": {
+        "ic": null,
+        "n": 3989
+      },
+      "10": {
+        "ic": null,
+        "n": 3989
+      },
+      "20": {
+        "ic": null,
+        "n": 3989
+      },
+      "best_horizon": null,
+      "best_ic": null
+    },
+    "volume_price_div": {
+      "1": {
+        "ic": -0.0565,
+        "n": 3989
+      },
+      "5": {
+        "ic": 0.0688,
+        "n": 3989
+      },
+      "10": {
+        "ic": 0.0716,
+        "n": 3989
+      },
+      "20": {
+        "ic": 0.0847,
+        "n": 3989
+      },
+      "best_horizon": 20,
+      "best_ic": 0.0847
+    },
+    "volume_surge": {
+      "1": {
+        "ic": 0.0105,
+        "n": 3989
+      },
+      "5": {
+        "ic": 0.0284,
+        "n": 3989
+      },
+      "10": {
+        "ic": 0.0156,
+        "n": 3989
+      },
+      "20": {
+        "ic": 0.0416,
+        "n": 3989
+      },
+      "best_horizon": 20,
+      "best_ic": 0.0416
+    }
+  },
+  "regime_ic": {
+    "breadth_trend": {
+      "Bull": {
+        "ic": -0.0059,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": -0.0823,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": -0.0162,
+        "n": 1380
+      }
+    },
+    "buy_sell_pressure": {
+      "Bull": {
+        "ic": null,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": null,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": null,
+        "n": 1380
+      }
+    },
+    "distance_52w": {
+      "Bull": {
+        "ic": -0.1031,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": -0.1881,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": 0.0242,
+        "n": 1380
+      }
+    },
+    "momentum_20": {
+      "Bull": {
+        "ic": -0.061,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": -0.1707,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": 0.0693,
+        "n": 1380
+      }
+    },
+    "momentum_60": {
+      "Bull": {
+        "ic": -0.0426,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": -0.1767,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": -0.0283,
+        "n": 1380
+      }
+    },
+    "sector_leadership": {
+      "Bull": {
+        "ic": null,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": null,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": null,
+        "n": 1380
+      }
+    },
+    "volume_price_div": {
+      "Bull": {
+        "ic": 0.0125,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": 0.167,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": 0.0598,
+        "n": 1380
+      }
+    },
+    "volume_surge": {
+      "Bull": {
+        "ic": -0.0393,
+        "n": 1598
+      },
+      "Bear": {
+        "ic": 0.1147,
+        "n": 1011
+      },
+      "Sideways": {
+        "ic": -0.0037,
+        "n": 1380
+      }
+    }
+  },
+  "correlation_matrix": {
+    "breadth_trend": {
+      "breadth_trend": 1.0,
+      "buy_sell_pressure": null,
+      "distance_52w": 0.128,
+      "momentum_20": 0.122,
+      "momentum_60": 0.09,
+      "sector_leadership": null,
+      "volume_price_div": 0.015,
+      "volume_surge": 0.093
+    },
+    "buy_sell_pressure": {
+      "breadth_trend": null,
+      "buy_sell_pressure": null,
+      "distance_52w": null,
+      "momentum_20": null,
+      "momentum_60": null,
+      "sector_leadership": null,
+      "volume_price_div": null,
+      "volume_surge": null
+    },
+    "distance_52w": {
+      "breadth_trend": 0.128,
+      "buy_sell_pressure": null,
+      "distance_52w": 1.0,
+      "momentum_20": 0.151,
+      "momentum_60": 0.068,
+      "sector_leadership": null,
+      "volume_price_div": -0.17,
+      "volume_surge": 0.284
+    },
+    "momentum_20": {
+      "breadth_trend": 0.122,
+      "buy_sell_pressure": null,
+      "distance_52w": 0.151,
+      "momentum_20": 1.0,
+      "momentum_60": 0.418,
+      "sector_leadership": null,
+      "volume_price_div": -0.081,
+      "volume_surge": 0.034
+    },
+    "momentum_60": {
+      "breadth_trend": 0.09,
+      "buy_sell_pressure": null,
+      "distance_52w": 0.068,
+      "momentum_20": 0.418,
+      "momentum_60": 1.0,
+      "sector_leadership": null,
+      "volume_price_div": -0.02,
+      "volume_surge": -0.048
+    },
+    "sector_leadership": {
+      "breadth_trend": null,
+      "buy_sell_pressure": null,
+      "distance_52w": null,
+      "momentum_20": null,
+      "momentum_60": null,
+      "sector_leadership": null,
+      "volume_price_div": null,
+      "volume_surge": null
+    },
+    "volume_price_div": {
+      "breadth_trend": 0.015,
+      "buy_sell_pressure": null,
+      "distance_52w": -0.17,
+      "momentum_20": -0.081,
+      "momentum_60": -0.02,
+      "sector_leadership": null,
+      "volume_price_div": 1.0,
+      "volume_surge": 0.127
+    },
+    "volume_surge": {
+      "breadth_trend": 0.093,
+      "buy_sell_pressure": null,
+      "distance_52w": 0.284,
+      "momentum_20": 0.034,
+      "momentum_60": -0.048,
+      "sector_leadership": null,
+      "volume_price_div": 0.127,
+      "volume_surge": 1.0
+    }
+  },
+  "redundant_pairs": [],
+  "weight_matrix_proposal": {
+    "Bull": {
+      "breadth_trend": 0.0,
+      "buy_sell_pressure": 0.0,
+      "distance_52w": 0.0,
+      "momentum_20": 0.0,
+      "momentum_60": 0.0,
+      "sector_leadership": 0.0,
+      "volume_price_div": 1.0,
+      "volume_surge": 0.0
+    },
+    "Bear": {
+      "breadth_trend": 0.0,
+      "buy_sell_pressure": 0.0,
+      "distance_52w": 0.0,
+      "momentum_20": 0.0,
+      "momentum_60": 0.0,
+      "sector_leadership": 0.0,
+      "volume_price_div": 0.5928,
+      "volume_surge": 0.4072
+    },
+    "Sideways": {
+      "breadth_trend": 0.0,
+      "buy_sell_pressure": 0.0,
+      "distance_52w": 0.1579,
+      "momentum_20": 0.4521,
+      "momentum_60": 0.0,
+      "sector_leadership": 0.0,
+      "volume_price_div": 0.3901,
+      "volume_surge": 0.0
+    },
+    "default": {
+      "breadth_trend": 0.0,
+      "buy_sell_pressure": 0.0,
+      "distance_52w": 0.0,
+      "momentum_20": 0.0,
+      "momentum_60": 0.0,
+      "sector_leadership": 0.0,
+      "volume_price_div": 0.8211,
+      "volume_surge": 0.1789
+    }
+  },
+  "n_observations": 3989,
+  "n_tickers": 20,
+  "horizons": [
+    1,
+    5,
+    10,
+    20
+  ],
+  "period": "2023-01-01 \u2192 2026-09-30",
+  "timestamp": "2026-10-24T18:03:58.663978"
+}

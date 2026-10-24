@@ -1,0 +1,509 @@
+"""
+محلل الأخبار بالذكاء الاصطناعي المحلي (Ollama + Vision)
+========================================================
+يحلل الخبر ويُخرج:
+- قائمة أسهم متأثرة (tickers)
+- درجة الأهمية (0-100)
+- المشاعر (bullish/bearish/neutral)
+- نوع التأثير
+- ملخص عربي مختصر
+- تحليل الصور إن وجدت (نموذج رؤية)
+- نص مستخرج من الصور (OCR)
+
+يستخدم نموذج محلي لفهم سياق الخبر وتأثيره على الأسهم المدرجة.
+"""
+
+import os
+import sys
+import json
+import logging
+import asyncio
+import re
+import importlib.util
+from datetime import datetime
+from pathlib import Path
+
+import httpx
+
+from analyzer.vision_analyzer import VisionAnalyzer
+from config.paths import resolve_vps_service
+from config.text_utils import strip_html
+
+log = logging.getLogger('NewsAnalyzer')
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+GLM_VPS = resolve_vps_service()
+
+if GLM_VPS:
+    sys.path.insert(0, str(Path(GLM_VPS) / "analyzers"))
+    sys.path.insert(0, str(Path(GLM_VPS) / "ai"))
+
+try:
+    from egx_stocks_dictionary import extract_tickers_accurately, get_stock_display_info, EGX_STOCKS_DATA
+    from deepseek_news_service import enrich_news_with_deepseek
+except Exception as _e:
+    log.warning('تعذر استيراد egx_stocks_dictionary أو deepseek_news_service: %s', _e)
+    def extract_tickers_accurately(text: str) -> list:
+        return []
+    def enrich_news_with_deepseek(title: str, content: str = '', tickers: list = None) -> dict:
+        return {}
+
+# Task NEWS-TICKER-EXTRACTION-1: ticker_extractor جديد يعتمد على stocks.db كـ canonical
+# dictionary + multi-tier matching (ticker / full-name / partial-root) مع Arabic normalization.
+# بيعمل union مع tickers اللي AI (Ollama) بيرجّعها + validation على EGX tickers الحقيقية.
+try:
+    from analyzer.ticker_extractor import extract_tickers as _extract_tickers_v2
+    from analyzer.ticker_extractor import merge_tickers as _merge_tickers_v2
+    _TICKER_EXTRACTOR_V2_OK = True
+except Exception as _tk_imp_err:
+    log.warning('تعذر استيراد ticker_extractor (NEWS-TICKER-EXTRACTION-1): %s', _tk_imp_err)
+    _TICKER_EXTRACTOR_V2_OK = False
+
+TICKER_HINTS = {}
+try:
+    if GLM_VPS is None:
+        raise FileNotFoundError('vps-service غير موجود')
+    spec = importlib.util.spec_from_file_location(
+        "news_fetcher_analyzer",
+        Path(GLM_VPS) / "analyzers" / "news_fetcher_analyzer.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    EGX_TICKER_NAMES = mod.EGX_TICKER_NAMES
+    for ticker, names in EGX_TICKER_NAMES.items():
+        TICKER_HINTS[ticker.lower()] = ticker
+        TICKER_HINTS[names['ar']] = ticker
+        TICKER_HINTS[names['en'].lower()] = ticker
+except Exception as _hint_err:
+    log.warning('تعذر تحميل EGX_TICKER_NAMES (%s)', _hint_err)
+
+IMPORTANCE_KEYWORDS = {
+    'urgent': 30, 'عاجل': 30, 'breaking': 25, 'خبر عاجل': 30,
+    'رفع أسعار الفائدة': 25, 'خفض أسعار الفائدة': 25,
+    'أرباح': 20, 'خسارة': 20, 'نتائج': 18, 'ربع سنوي': 18,
+    'توزيع': 15, 'أرباح نقدية': 20, 'أسهم مجانية': 20,
+    'اكتتاب': 22, 'إدراج': 18, 'استحواذ': 20, 'اندماج': 22,
+    'مليار': 15, 'مليون': 10, 'صفقة': 12,
+    'قرار': 10, 'حكومة': 8, 'وزير': 8,
+    'صعود': 5, 'هبوط': 5, 'ارتفع': 5, 'انخفض': 5,
+    'سوق': 3, 'بورصة': 3,
+}
+
+def _extract_tickers_enhanced(original_text: str, clean_text: str, text_lower: str) -> list:
+    """استخراج دقيق 100% بدون هلوسة اعتماداً على قاموس البورصة المصرية المعتمد"""
+    combined = f"{original_text} {clean_text}"
+    return extract_tickers_accurately(combined)
+
+
+
+SENTIMENT_POSITIVE = [
+    'ارتفع', 'صعد', 'قفز', 'نمو', 'أرباح', 'مكاسب', 'اتفاقية',
+    'استحواذ', 'توزيع', 'أسهم مجانية', 'رفع', 'نجاح', 'تميز'
+]
+SENTIMENT_NEGATIVE = [
+    'انخفض', 'هبط', 'خسارة', 'خسائر', 'ضغوط', 'تراجع', 'خفض',
+    'غرامة', 'عقوبة', 'ديون', 'إفلاس', 'تأخير', 'رفض'
+]
+
+IMPACT_TYPES = {
+    'earnings':    ['أرباح', 'خسارة', 'نتائج', 'إيرادات', 'ربحية'],
+    'dividend':    ['توزيع', 'أرباح نقدية', 'مكافأة'],
+    'ipo':         ['اكتتاب', 'إدراج', 'طرح'],
+    'acquisition': ['استحواذ', 'اندماج', 'صفقة', 'شراء'],
+    'macro':       ['فائدة', 'تضخم', 'دولار', 'جنيه', 'احتياطي', 'بنك مركزي'],
+    'regulation':  ['قانون', 'حكومة', 'رسوم', 'ضرائب', 'لائحة'],
+    'price_move':  ['صعود', 'هبوط', 'ارتفع', 'انخفض', 'قمة', 'قاع'],
+}
+
+
+class NewsAnalyzer:
+    """محلل الأخبار بنموذج Ollama المحلي + Vision + keyword fallback"""
+
+    def __init__(self):
+        self.ollama_url      = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+        self.model           = os.getenv('OLLAMA_MODEL', 'qwen2.5-coder:7b')
+        self.fallback_model  = os.getenv('OLLAMA_FALLBACK_MODEL', 'qwen2.5:1.5b')
+        self.vision_model    = os.getenv('OLLAMA_VISION_MODEL', '')
+        self._ollama_ok      = True
+        self._vision_analyzer = VisionAnalyzer()
+
+    async def analyze(self, news: dict) -> dict:
+        """حلل الخبر — نص + صور إن وجدت"""
+        title = strip_html(news.get('title', '') or '')
+        body  = strip_html(news.get('body', '') or '')
+        original_text = f"{title}\n{body}".strip()
+
+        # 1. تنظيف النص + فهم السياق بـ AI
+        clean_text = original_text
+        ai_meta = {}
+        if self._ollama_ok and original_text and len(original_text) > 20:
+            try:
+                ai_meta = await self._analyze_with_ollama(original_text) or {}
+                if ai_meta.get('clean_text') and len(ai_meta['clean_text']) > 10:
+                    clean_text = strip_html(ai_meta['clean_text'])
+            except Exception:
+                pass
+
+        news = {**news, 'title': title, 'body': body}
+
+        # 2. فلترة وتبويب في Python
+        filtered = self._filter_and_classify(clean_text, original_text, news, ai_meta=ai_meta)
+
+        # 3. تحليل الصور إن وجدت
+        image_paths = news.get('image_paths') or []
+        if isinstance(image_paths, str):
+            try:
+                image_paths = json.loads(image_paths)
+            except Exception:
+                image_paths = []
+
+        if image_paths:
+            vision_result = self._vision_analyzer.analyze_images_batch(image_paths)
+            if vision_result.get('description') or vision_result.get('ocr_text'):
+                filtered = self._merge_vision_result(filtered, vision_result, clean_text)
+
+        filtered['image_paths'] = image_paths
+
+        # 4. إثراء الخبر عبر DeepSeek — فقط للأخبار الحرجة المرتبطة بأسهم
+        # Task DEEPSEEK-OPTIMIZE: تقليل استهلاك DeepSeek API
+        # قبل كده: كل خبر importance >= 40 أو له tickers → DeepSeek call (مكلف!)
+        # دلوقتي: فقط الأخبار ذات أهمية عالية (>= 70) ولها tickers محددة + importance >= 50
+        # هذا يقلل استهلاك API بنسبة ~80% مع الحفاظ على جودة التحليل للأخبار المؤثرة
+        if filtered.get('is_valid_news'):
+            has_tickers = bool(filtered.get('tickers'))
+            importance = filtered.get('importance', 0)
+            # DEEPSEEK-OPTIMIZE: شرط صارم — أهمية >= 70 + tickers محددة فقط
+            if has_tickers and importance >= 70:
+                try:
+                    enriched = enrich_news_with_deepseek(
+                        title=title,
+                        content=clean_text,
+                        tickers=filtered.get('tickers', [])
+                    )
+                    if enriched:
+                        if enriched.get('summary_ar'):
+                            filtered['summary_ar'] = enriched['summary_ar']
+                        if enriched.get('sentiment') in ('bullish', 'bearish', 'neutral'):
+                            filtered['sentiment'] = enriched['sentiment']
+                        if enriched.get('impact_type'):
+                            filtered['impact_type'] = enriched['impact_type']
+                        if enriched.get('importance'):
+                            filtered['importance'] = max(filtered['importance'], enriched['importance'])
+                        if 'is_catalyst' in enriched:
+                            filtered['is_catalyst'] = enriched['is_catalyst']
+                        filtered['source'] = 'deepseek+python'
+                except Exception as _deepseek_err:
+                    log.warning(f"DeepSeek enrich failed: {_deepseek_err}")
+
+        return filtered
+
+    def _merge_vision_result(self, text_result: dict, vision: dict, clean_text: str) -> dict:
+        """دمج نتائج تحليل الصور مع نتائج النص"""
+        merged = dict(text_result)
+
+        if vision.get('description'):
+            old_summary = merged.get('summary_ar', '')
+            vision_desc = vision['description'][:200]
+            merged['summary_ar'] = f"{old_summary} | 🖼️ {vision_desc}".strip(' |')
+
+        if vision.get('ocr_text'):
+            merged['ocr_text'] = vision['ocr_text']
+            ocr_text = vision['ocr_text']
+            for hint, ticker in TICKER_HINTS.items():
+                if hint.lower() in ocr_text.lower() and ticker not in merged.get('tickers', []):
+                    merged.setdefault('tickers', []).append(ticker)
+
+        if vision.get('sentiment') in ('bullish', 'bearish'):
+            merged['sentiment'] = vision['sentiment']
+
+        if vision.get('tickers'):
+            for t in vision['tickers']:
+                if t not in merged.get('tickers', []):
+                    merged.setdefault('tickers', []).append(t)
+
+        if vision.get('is_chart'):
+            merged['impact_type'] = 'price_move'
+
+        merged['source'] = 'ollama+vision'
+        return merged
+
+    def _filter_and_classify(self, clean_text: str, original_text: str, news: dict, ai_meta: dict | None = None) -> dict:
+        """فلترة وتبويب الأخبار بالكامل في Python"""
+        text_lower = clean_text.lower()
+        orig_lower = original_text.lower()
+        ai_meta = ai_meta or {}
+
+        # 1. كلمات/keywords وعلامات رفض
+        chat_spam_patterns = [
+            'رد على:', 'رد:', 'رد ', 'اقتباس', 'quoting',
+        ]
+        
+        spam_patterns = [
+            'لايف', 'بث مباشر', 'اكتب اسم السهم', 'سؤال وجواب',
+            'تعليق:', 'share', 'تابعونا', 'يوتيوب', 'facebook',
+            'بدأنا اللايف', 'متابعة', 'اشتراك', 'قناة التليجرام',
+            'انضم للمجموعة', 'تواصل معنا', 'رابط القناة',
+            'مرحبا بك', 'يسعدنا انضمامك', 'قائمة المنشورات',
+            'youtube.com', 'youtu.be', 'facebook.com', 'fb.watch',
+            'انشر', 'منشن', 'tag', 'إعادة نشر',
+        ]
+        
+        source_type = news.get('source_type', '').lower()
+        is_telegram_or_copy = source_type in ('telegram', 'copy', '') or 'telegram' in source_type
+        
+        if is_telegram_or_copy:
+            is_spam = any(p in orig_lower for p in chat_spam_patterns)
+            if not is_spam:
+                is_spam = any(p in orig_lower for p in spam_patterns)
+        else:
+            is_spam = any(p in orig_lower for p in spam_patterns)
+
+        # 2. فلترة URLs فقط (النص اللي مالهوش محتوى غير روابط)
+        url_pattern = re.compile(r'https?://\S+')
+        urls = url_pattern.findall(clean_text)
+        text_without_urls = url_pattern.sub('', clean_text).strip()
+
+        if len(text_without_urls) < 15 and urls:
+            is_spam = True
+
+        # 3. فلترة القصير جداً
+        if len(clean_text.strip()) < 20:
+            is_spam = True
+
+        # 4. استخراج tickers — Task NEWS-TICKER-EXTRACTION-1
+        #    union من tickers الـ AI (Ollama) + ticker_extractor الجديد (stocks.db canonical).
+        #    - لو الـ AI رجّع tickers → نستخدمهم (بعد validation على stocks.db).
+        #    - لو لأ → نستخدم الـ extractor.
+        #    - لو الاتنين رجّعوا → union (validated + capped at 5).
+        #    - fallback على الـ legacy extractor لو الـ module الجديد مش متاح.
+        ai_tickers = ai_meta.get('tickers') or []
+        if isinstance(ai_tickers, str):
+            try:
+                ai_tickers = json.loads(ai_tickers)
+            except Exception:
+                ai_tickers = []
+        if _TICKER_EXTRACTOR_V2_OK:
+            try:
+                extractor_tickers = _extract_tickers_v2(f"{original_text}\n{clean_text}")
+                tickers = _merge_tickers_v2(ai_tickers, extractor_tickers)
+            except Exception as _tk_err:
+                log.warning('ticker_extractor v2 failed, fallback to legacy: %s', _tk_err)
+                tickers = _extract_tickers_enhanced(original_text, clean_text, text_lower)
+        else:
+            tickers = _extract_tickers_enhanced(original_text, clean_text, text_lower)
+
+        # 5. حساب الأهمية
+        importance = 20  # قاعدة أعلى للأخبار المالية
+        
+        # كلمات مفتاحية للأخبار المهمة جداً
+        critical_keywords = {
+            'تشتري': 25, 'شراء أسهم': 30, 'مليون سهم': 25, 'مليار سهم': 30,
+            'زيادة رأس المال': 25, 'استحواذ على': 28, 'تستحوذ': 28,
+            'تشتري حصة': 25, 'صفقة شراء': 28, 'شراء حصة': 25,
+            'اكتتاب': 25, 'إدراج': 20, 'استحواذ': 25, 'اندماج': 25,
+            'أرباح': 22, 'خسارة': 22, 'نتائج': 20, 'ربع سنوي': 20,
+            'توزيع': 18, 'أرباح نقدية': 22, 'أسهم مجانية': 22,
+        }
+        
+        for kw, weight in critical_keywords.items():
+            if kw in clean_text or kw.lower() in text_lower:
+                importance += weight
+        
+        # boost إضافي لأخبار شركات محددة + حركة أسهم
+        company_indicators = ['شركة', 'بنك', 'مجموعة', 'قابضة', 'مصر', 'الرياض', 'السعودية']
+        stock_actions = ['تشتري', 'شراء', 'استحواذ', 'زيادة', 'اكتتاب', 'توزيع', 'أرباح']
+        has_company = any(ind in clean_text for ind in company_indicators)
+        has_stock_action = any(act in clean_text for act in stock_actions)
+        
+        if has_company and has_stock_action:
+            importance = min(100, importance + 20)
+        
+        # boost لمصادر مالية موثوقة
+        trusted_sources = ['جريدة البورصة', 'أموال غد', 'البورصة', 'مباشر', 'موبasher', 'الغد']
+        if any(src in clean_text or src in original_text for src in trusted_sources):
+            importance = min(100, importance + 15)
+        
+        importance = min(100, importance)
+
+        # 6. المشاعر
+        pos = sum(1 for w in SENTIMENT_POSITIVE if w in clean_text)
+        neg = sum(1 for w in SENTIMENT_NEGATIVE if w in clean_text)
+        if pos > neg:
+            sentiment = 'bullish'
+        elif neg > pos:
+            sentiment = 'bearish'
+        else:
+            sentiment = 'neutral'
+
+        # 7. نوع التأثير
+        impact_type = 'general'
+        for itype, keywords in IMPACT_TYPES.items():
+            if any(k in clean_text for k in keywords):
+                impact_type = itype
+                break
+
+        # 8. لو AI فهم سياق الخبر، نثق في قراره الإضافي لو موجود
+        ai_valid = ai_meta.get('is_valid_news')
+        ai_importance = ai_meta.get('importance')
+        ai_sentiment = ai_meta.get('sentiment')
+        ai_impact = ai_meta.get('impact_type')
+        ai_event_type = ai_meta.get('event_type')
+        ai_reasoning = ai_meta.get('reasoning')
+
+        if ai_sentiment in ('bullish', 'bearish', 'neutral'):
+            sentiment = ai_sentiment
+        if ai_impact:
+            impact_type = ai_impact
+        if isinstance(ai_importance, int) and 0 <= ai_importance <= 100:
+            importance = max(importance, ai_importance)
+
+        # لا تعتمد على is_valid_news من AI كحكم نهائي بالرفض
+        # نستخدمه فقط كإشارة إضافية وليس كسبب لتصفير الأهمية
+        # if ai_valid is False:
+        #     is_spam = True
+
+        is_valid = not is_spam and importance >= 10
+
+        return {
+            'is_valid_news': is_valid,
+            'news_text': clean_text.strip() if is_valid else '',
+            'tickers': tickers,
+            'importance': importance if is_valid else 0,
+            'sentiment': sentiment if is_valid else 'neutral',
+            'impact_type': impact_type if is_valid else 'general',
+            'event_type': ai_event_type or impact_type if is_valid else 'general',
+            'summary_ar': clean_text.strip() if is_valid else '',
+            'summary_en': ai_meta.get('summary_en', ''),
+            'reasoning': ai_reasoning or ('ai+python' if ai_meta else 'python_filtered'),
+            'source': 'ollama+python',
+        }
+
+    async def _analyze_with_ollama(self, text: str) -> dict | None:
+        """إرسال الخبر لـ Ollama وانتظار تحليل فهم/أهمية/تأثير/ملخص."""
+        prompt = self._build_prompt(text)
+        try:
+            async with httpx.AsyncClient(timeout=45.0) as client:
+                resp = await client.post(
+                    f"{self.ollama_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"temperature": 0.1, "num_predict": 400}
+                    }
+                )
+                if resp.status_code != 200:
+                    raise Exception(f"HTTP {resp.status_code}")
+
+                raw = resp.json().get('response', '')
+                return self._parse_ollama_response(raw, text)
+
+        except Exception as e:
+            log.warning(f"Ollama error ({self.model}): {e}")
+            if self.model != self.fallback_model:
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        resp = await client.post(
+                            f"{self.ollama_url}/api/generate",
+                            json={"model": self.fallback_model, "prompt": prompt,
+                                  "stream": False, "options": {"temperature": 0.1, "num_predict": 300}}
+                        )
+                        raw = resp.json().get('response', '')
+                        return self._parse_ollama_response(raw, text)
+                except Exception as e2:
+                    log.warning(f"Fallback model also failed: {e2}")
+            self._ollama_ok = False
+            return None
+
+    def _build_prompt(self, text: str) -> str:
+        return f"""أنت محلل أخبار مالية متخصص في البورصة المصرية EGX.
+حلل الخبر التالي وأخرج JSON فقط بالحقول المطلوبة:
+
+{{
+  'is_valid_news': true/false,
+  'clean_text': 'نص الخبر بعد تنظيفه من الهراء والروابط والاشتراكات',
+  'summary_ar': 'ملخص قصير بالعربية',
+  'summary_en': 'short English summary',
+  'importance': 0-100,
+  'sentiment': 'bullish/bearish/neutral',
+  'impact_type': 'earnings/dividend/ipo/acquisition/macro/regulation/price_move/general',
+  'event_type': 'IPO_SUBSCRIPTION|DIVIDEND_EX_DATE|EARNINGS_BEAT|EARNINGS_MISS|MA_ACQUISITION|REGULATORY_APPROVAL|STOCK_SPLIT|MANAGEMENT_CHANGE|CONTRACT_AWARD|EXPANSION|FRAUD|HALT|GENERAL',
+  'reasoning': 'سبب قصير بالعربي ليه الخبر مهم أو مش مهم وإيه تأثيره المتوقع',
+  'tickers': ['SYMBOL1', 'SYMBOL2']
+}}
+
+قواعد هامة:
+- tickers: رموز الأسهم المصرية المتأثرة فقط. استخدم هذه الرموز الشائعة: COMI=البنك التجاري الدولي، TMGH=طلعت مصطفى، MNHD=مدينة نصر، ETEL=المصرية للاتصالات، FWRY=فوري، SKPC=سيدي كرير، AMOC=أموك، ORHD=أوراسكوم، SWDY=السويدي، EAST=الشرقية للدخان
+- لو الخبر عام عن السوق المصري بدون ذكر شركة محددة → tickers = []
+- لو الخبر عن شركة محددة → tickers = ['TICKER']
+- event_type: اختر الأنسب من القائمة
+- impact_type: earnings/dividend/ipo/acquisition/macro/regulation/price_move/general
+
+الخبر:
+{text}
+
+JSON فقط بدون أي نص إضافي."""
+
+    def _parse_ollama_response(self, raw: str, original_text: str) -> dict:
+        """استخرج JSON من رد Ollama"""
+        match = re.search(r'\{[\s\S]*\}', raw)
+        if match:
+            try:
+                data = json.loads(match.group())
+                data.setdefault('clean_text', original_text)
+                data.setdefault('is_valid_news', True)
+                if data.get('affected_tickers') and not data.get('tickers'):
+                    data['tickers'] = data.pop('affected_tickers', [])
+                data.setdefault('tickers', [])
+                return data
+            except json.JSONDecodeError:
+                pass
+        return {'clean_text': original_text, 'tickers': []}
+
+    async def _analyze_with_keywords(self, text: str, news: dict) -> dict:
+        """تحليل بسيط بالكلمات المفتاحية — لا يحتاج Ollama"""
+        text_lower = text.lower()
+
+        tickers = []
+        for hint, ticker in TICKER_HINTS.items():
+            if hint in text_lower or hint in text:
+                if ticker not in tickers:
+                    tickers.append(ticker)
+
+        importance = 10
+        for kw, weight in IMPORTANCE_KEYWORDS.items():
+            if kw in text or kw.lower() in text_lower:
+                importance += weight
+        importance = min(100, importance)
+
+        pos = sum(1 for w in SENTIMENT_POSITIVE if w in text)
+        neg = sum(1 for w in SENTIMENT_NEGATIVE if w in text)
+        if pos > neg:
+            sentiment = 'bullish'
+        elif neg > pos:
+            sentiment = 'bearish'
+        else:
+            sentiment = 'neutral'
+
+        impact_type = 'general'
+        for itype, keywords in IMPACT_TYPES.items():
+            if any(k in text for k in keywords):
+                impact_type = itype
+                break
+
+        title = news.get('title', '') if isinstance(news, dict) else ''
+        summary = title[:100] if title else text[:100]
+
+        is_valid = bool(tickers) or importance > 30
+
+        return {
+            'is_valid_news': is_valid,
+            'news_text': summary if is_valid else '',
+            'tickers':     tickers,
+            'importance':  importance,
+            'sentiment':   sentiment,
+            'impact_type': impact_type,
+            'summary_ar':  summary,
+            'summary_en':  '',
+            'reasoning':   'keyword_fallback',
+        }
