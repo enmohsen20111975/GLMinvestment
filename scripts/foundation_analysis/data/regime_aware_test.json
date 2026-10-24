@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-10-24T11:02:06.366159",
+  "table1_regime_performance": {
+    "bull": {
+      "signals": 109,
+      "wins": 54,
+      "losses": 53,
+      "expired": 2,
+      "wr": 49.5,
+      "pf": 1.2,
+      "max_dd": 69.6,
+      "avg_ret": 0.85,
+      "sharpe": 0.96,
+      "gross_profit": 548.5,
+      "gross_loss": 455.7
+    },
+    "sideways": {
+      "signals": 206,
+      "wins": 93,
+      "losses": 104,
+      "expired": 9,
+      "wr": 45.1,
+      "pf": 1.05,
+      "max_dd": 94.7,
+      "avg_ret": 0.21,
+      "sharpe": 0.33,
+      "gross_profit": 932.9,
+      "gross_loss": 890.1
+    },
+    "bear": {
+      "signals": 107,
+      "wins": 42,
+      "losses": 63,
+      "expired": 2,
+      "wr": 39.3,
+      "pf": 0.88,
+      "max_dd": 92.8,
+      "avg_ret": -0.52,
+      "sharpe": -0.62,
+      "gross_profit": 420.0,
+      "gross_loss": 475.4
+    },
+    "all_baseline": {
+      "signals": 422,
+      "wins": 189,
+      "losses": 220,
+      "expired": 13,
+      "wr": 44.8,
+      "pf": 1.04,
+      "max_dd": 99.2,
+      "avg_ret": 0.19,
+      "sharpe": 0.43,
+      "gross_profit": 1901.4,
+      "gross_loss": 1821.1
+    }
+  },
+  "table2_filter_comparison": {
+    "baseline": {
+      "signals": 422,
+      "wins": 189,
+      "losses": 220,
+      "expired": 13,
+      "wr": 44.8,
+      "pf": 1.04,
+      "max_dd": 99.2,
+      "avg_ret": 0.19,
+      "sharpe": 0.43,
+      "gross_profit": 1901.4,
+      "gross_loss": 1821.1
+    },
+    "bull_only": {
+      "signals": 109,
+      "wins": 54,
+      "losses": 53,
+      "expired": 2,
+      "wr": 49.5,
+      "pf": 1.2,
+      "max_dd": 69.6,
+      "avg_ret": 0.85,
+      "sharpe": 0.96,
+      "gross_profit": 548.5,
+      "gross_loss": 455.7
+    },
+    "no_bear": {
+      "signals": 315,
+      "wins": 147,
+      "losses": 157,
+      "expired": 11,
+      "wr": 46.7,
+      "pf": 1.1,
+      "max_dd": 93.7,
+      "avg_ret": 0.43,
+      "sharpe": 0.84,
+      "gross_profit": 1481.4,
+      "gross_loss": 1345.7
+    }
+  },
+  "best_pf": 1.2,
+  "best_wr": 49.5
+}
