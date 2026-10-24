@@ -30,6 +30,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { cn, safeToFixed } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -582,14 +583,13 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
  if (prof) {
  const s = prof.scores;
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <BarChart3 className="w-4 h-4 text-profit" />
- تصنيف النتائج
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تصنيف النتائج"
+ 	icon={BarChart3}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
  <MiniScoreCard label="الشامل" score={s.composite} />
  <MiniScoreCard label="الفني" score={s.technical} />
@@ -598,20 +598,18 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
  <MiniScoreCard label="الزخم" score={s.momentum} />
  <MiniScoreCard label="المخاطر" score={s.risk} isRisk />
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <BarChart3 className="w-4 h-4 text-profit" />
- تصنيف النتائج
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تصنيف النتائج"
+ 	icon={BarChart3}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
  <div className="space-y-1.5">
  <div className="flex items-center justify-between">
@@ -635,22 +633,20 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
  <Progress value={100 - deepAnalysis.risk_score} className="h-2" />
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
 function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | null; deepAnalysis: { price_targets: { support: number; resistance: number; upside_target: number } } }) {
  if (!prof) {
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Target className="w-4 h-4 text-profit" />
- الأهداف السعرية
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="الأهداف السعرية"
+ 	icon={Target}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-3 gap-3">
  <div className="text-center p-3 rounded-lg bg-loss/20">
  <p className="text-xs text-loss mb-1">مستوى الدعم</p>
@@ -665,8 +661,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  <p className="font-bold text-sm tabular-nums" dir="ltr">{safeToFixed(deepAnalysis.price_targets?.upside_target)}</p>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
@@ -674,14 +669,14 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  const rrColor = rec.risk_reward_ratio >= 2 ? '#10b981' : rec.risk_reward_ratio >= 1 ? '#eab308' : '#ef4444';
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Crosshair className="w-4 h-4 text-profit" />
- تفاصيل التحليل
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+ 	title="تفاصيل التحليل"
+ 	icon={Crosshair}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ 	contentClassName="space-y-4"
+ >
  <div className="flex items-center gap-3 flex-wrap">
  <Badge variant="outline" className="text-xs">
  <Clock className="w-3 h-3 ml-1" />
@@ -721,8 +716,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  <p className="text-xs text-muted-foreground leading-relaxed">{rec.summary_ar}</p>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -740,14 +734,13 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
  };
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Activity className="w-4 h-4 text-profit" />
- الإشارات الفنية
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="الإشارات الفنية"
+ 	icon={Activity}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
  {Object.entries(deepAnalysis.technical_indicators).map(([key, signal]) => {
  const { label, text } = signalLabel(key, signal);
@@ -759,8 +752,7 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
  );
  })}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
@@ -770,14 +762,13 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
  const obvTrendAr = ind.obv_trend === 'rising' ? 'صاعد' : ind.obv_trend === 'falling' ? 'هابط' : 'محايد';
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Activity className="w-4 h-4 text-profit" />
- المؤشرات الفنية
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="المؤشرات الفنية"
+ 	icon={Activity}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
  <IndicatorCard title="MACD" icon={<BarChart3 className="w-3.5 h-3.5" />} signalText={ind.macd.signal_text}>
  <div className="flex justify-between tabular-nums" dir="ltr">
@@ -863,25 +854,22 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
  <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', signalClass(obvTrendAr))}>{obvTrendAr}</span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
 function PriceLevelsCard({ prof, currentPrice }: { prof: ProfessionalAnalysisData | null; currentPrice: number }) {
  if (!prof) return null;
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Layers className="w-4 h-4 text-profit" />
- مستويات الأسعار
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="مستويات الأسعار"
+ 	icon={Layers}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <PriceLevelsVisual levels={prof.price_levels} currentPrice={currentPrice} />
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -901,14 +889,13 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  };
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <CandlestickChart className="w-4 h-4 text-profit" />
- أنماط الرسم البياني
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أنماط الرسم البياني"
+ 	icon={CandlestickChart}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="space-y-2">
  {prof.patterns.detected.map((p, i) => (
  <div key={i} className="flex items-center justify-between rounded-lg border p-2.5">
@@ -936,8 +923,7 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  </div>
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -945,14 +931,13 @@ function VolumeCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  if (!prof) return null;
  const vol = prof.volume_analysis;
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Volume2 className="w-4 h-4 text-profit" />
- تحليل الحجم
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="تحليل الحجم"
+ 	icon={Volume2}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  <div className="rounded-lg border p-3 text-center">
  <p className="text-xs text-muted-foreground mb-1">متوسط الحجم (20 يوم)</p>
@@ -969,8 +954,7 @@ function VolumeCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  <span className={cn('text-xs px-2 py-1 rounded-full font-medium', signalClass(vol.signal_ar))}>{vol.signal_ar}</span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -978,14 +962,13 @@ function RiskMetricsCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  if (!prof) return null;
  const rm = prof.risk_metrics;
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Shield className="w-4 h-4 text-profit" />
- مقاييس المخاطر
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="مقاييس المخاطر"
+ 	icon={Shield}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
  <MiniRiskGauge label="نسبة شارب (Sharpe)" value={rm.sharpe_ratio} thresholds={{ good: 1, bad: -0.5 }} />
  <MiniRiskGauge label="بيتا (Beta)" value={rm.beta} thresholds={{ good: 0.8, bad: 1.5 }} />
@@ -994,8 +977,7 @@ function RiskMetricsCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  <MiniRiskGauge label="التقلب السنوي" value={rm.volatility_annualized * 100} unit="%" thresholds={{ good: 20, bad: 40, invert: true }} />
  <MiniRiskGauge label="قيمة أقصى انخفاض" value={rm.max_drawdown} unit=" ج.م" thresholds={{ good: 1, bad: 10, invert: true }} />
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -1022,14 +1004,13 @@ function StrengthsRisksCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  risks = dedup(risks).slice(0, 5);
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <PieChart className="w-4 h-4 text-profit" />
- نقاط القوة والمخاطر
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="نقاط القوة والمخاطر"
+ 	icon={PieChart}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm"
+ >
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <h4 className="text-xs font-semibold flex items-center gap-1.5 text-profit ">
@@ -1060,8 +1041,7 @@ function StrengthsRisksCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  </ul>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 

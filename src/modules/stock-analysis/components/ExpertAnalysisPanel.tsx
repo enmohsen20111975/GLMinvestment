@@ -14,6 +14,7 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, TrendingUp, TrendingDown, Minus, Target, Shield, AlertTriangle, Activity } from 'lucide-react';
 
@@ -128,14 +129,15 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  </Card>
 
  {/* Entry / Targets / Stop Loss */}
- <Card className="mb-4">
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <Target className="w-4 h-4 text-primary" />
- نقطة الدخول والأهداف
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard
+ 	title="نقطة الدخول والأهداف"
+ 	icon={Target}
+ 	iconColor="text-primary"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	className="mb-4"
+ 	contentClassName="space-y-3"
+ >
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  <PriceBox label="نقطة الدخول" value={analysis.entry.price} rationale={analysis.entry.rationale_ar} color="emerald" />
  <PriceBox label="الهدف الأول" value={analysis.target1.price} pct={analysis.target1.pct} rationale={analysis.target1.rationale_ar} color="blue" />
@@ -150,19 +152,18 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  </Badge>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  <div className="grid md:grid-cols-2 gap-4">
  {/* Technical Analysis */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <Activity className="w-4 h-4 text-primary" />
- التحليل الفني
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3 text-sm">
+ <WidgetCard
+ 	title="التحليل الفني"
+ 	icon={Activity}
+ 	iconColor="text-primary"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	contentClassName="space-y-3 text-sm"
+ >
  <AnalysisRow
  label="RSI"
  value={analysis.technical.rsi.value !== null ? analysis.technical.rsi.value.toFixed(1) : '—'}
@@ -186,18 +187,17 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  badge={analysis.technical.range52w.position_ar}
  analysis={analysis.technical.range52w.analysis_ar}
  />
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Fundamental Analysis */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <TrendingUp className="w-4 h-4 text-primary" />
- التحليل الأساسي
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3 text-sm">
+ <WidgetCard
+ 	title="التحليل الأساسي"
+ 	icon={TrendingUp}
+ 	iconColor="text-primary"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	contentClassName="space-y-3 text-sm"
+ >
  <AnalysisRow
  label="مكرر الربحية (P/E)"
  value={analysis.fundamental.peRatio.value !== null ? `${analysis.fundamental.peRatio.value.toFixed(1)}x` : '—'}
@@ -227,19 +227,19 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  badge={analysis.fundamental.dividend.rating_ar}
  analysis={analysis.fundamental.dividend.analysis_ar}
  />
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
 
  {/* Risk Assessment */}
- <Card className="mt-4">
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <Shield className="w-4 h-4 text-primary" />
- تقييم المخاطر
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-2 text-sm">
+ <WidgetCard
+ 	title="تقييم المخاطر"
+ 	icon={Shield}
+ 	iconColor="text-primary"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	className="mt-4"
+ 	contentClassName="space-y-2 text-sm"
+ >
  <div className="flex items-center justify-between">
  <span className="text-muted-foreground">مستوى المخاطرة</span>
  <Badge variant={analysis.risk.level_ar === 'مرتفع' ? 'destructive' : analysis.risk.level_ar === 'متوسط' ? 'secondary' : 'default'}>
@@ -263,8 +263,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  </ul>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Disclaimer */}
  <div className="mt-4 p-3 rounded-md bg-warning/20 border border-warning ">

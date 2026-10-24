@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -585,14 +586,13 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  {stocks.length > 0 && (
  <div className="grid gap-3 md:grid-cols-2">
  {/* اتساع السوق (Breadth) — Donut */}
- <Card>
- <CardHeader className="pb-1">
- <CardTitle className="text-sm flex items-center gap-2">
- <PieChart className="h-4 w-4 text-profit" />
- اتساع السوق (Breadth)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="اتساع السوق (Breadth)"
+ 	icon={PieChart}
+ 	iconColor="text-profit"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-sm"
+ >
  <ResponsiveContainer width="100%" height={200}>
  <PieChart>
  <Pie
@@ -620,18 +620,16 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  <Legend />
  </PieChart>
  </ResponsiveContainer>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* أبرز الرابحين والخاسرين — Bar */}
- <Card>
- <CardHeader className="pb-1">
- <CardTitle className="text-sm flex items-center gap-2">
- <BarChart3 className="h-4 w-4 text-whale" />
- أبرز الرابحين والخاسرين
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="أبرز الرابحين والخاسرين"
+ 	icon={BarChart3}
+ 	iconColor="text-whale"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-sm"
+ >
  <ResponsiveContainer width="100%" height={200}>
  <BarChart
  data={[
@@ -652,18 +650,17 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  </Bar>
  </BarChart>
  </ResponsiveContainer>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* توزيع القطاعات — Horizontal Bar */}
- <Card className="md:col-span-2">
- <CardHeader className="pb-1">
- <CardTitle className="text-sm flex items-center gap-2">
- <BarChart3 className="h-4 w-4 text-warning" />
- توزيع القطاعات (عدد الأسهم)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="توزيع القطاعات (عدد الأسهم)"
+ 	icon={BarChart3}
+ 	iconColor="text-warning"
+ 	iconSize="h-4 w-4"
+ 	titleClassName="text-sm"
+ 	className="md:col-span-2"
+ >
  <ResponsiveContainer width="100%" height={Math.max(160, Object.keys(weekStats.sectors).length * 26)}>
  <BarChart
  layout="vertical"
@@ -680,8 +677,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} />
  </BarChart>
  </ResponsiveContainer>
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  )}
 

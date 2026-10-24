@@ -32,6 +32,7 @@ import {
 } from '@/lib/canonical-signal';
 import type { Stock, DeepAnalysis as DeepAnalysisType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1574,14 +1575,14 @@ export function StockDetail() {
  {/* Financial & Technical Metrics */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Financial Metrics */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <DollarSign className="w-4 h-4 text-profit" />
- المؤشرات المالية
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-0">
+ <WidgetCard
+ 	title="المؤشرات المالية"
+ 	icon={DollarSign}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	contentClassName="pt-0"
+ >
  <MetricRow label="مضاعف الربحية (P/E)" value={safeToFixed(stock.pe_ratio, 1)} />
  <Separator />
  <MetricRow label="مضاعف القيمة الدفترية (P/B)" value={safeToFixed(stock.pb_ratio, 1)} />
@@ -1604,18 +1605,17 @@ export function StockDetail() {
  label="الدين/حقوق الملكية"
  value={safeToFixed(stock.debt_to_equity)}
  />
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Technical Indicators */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Activity className="w-4 h-4 text-profit" />
- المؤشرات الفنية
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-0">
+ <WidgetCard
+ 	title="المؤشرات الفنية"
+ 	icon={Activity}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ 	contentClassName="pt-0"
+ >
  <MetricRow
  label="RSI"
  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prefer unified.technical.rsi
@@ -1642,8 +1642,7 @@ export function StockDetail() {
  label="القيمة المتداولة"
  value={formatNumber(stock.value_traded || 0) + ' EGP'}
  />
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
 
  {/* AI Analysis Widget - Automatic Background Analysis */}

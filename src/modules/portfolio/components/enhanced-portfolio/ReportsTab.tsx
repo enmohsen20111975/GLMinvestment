@@ -37,7 +37,8 @@ import {
 	PiggyBank,
 	FileText,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -102,14 +103,14 @@ export const ReportsTab = memo(function ReportsTab() {
 	return (
 		<div className="space-y-6">
 			{/* Portfolio Summary Card */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-base flex items-center gap-2">
-						<Wallet className="w-5 h-5 text-profit " />
-						نظرة عامة على الحالة المالية
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-4">
+			<WidgetCard
+				title="نظرة عامة على الحالة المالية"
+				icon={Wallet}
+				iconColor="text-profit"
+				iconSize="w-5 h-5"
+				titleClassName="text-base"
+				contentClassName="space-y-4"
+			>
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 						<div className="text-center p-3 rounded-lg bg-profit/20">
 							<p className="text-xs text-muted-foreground mb-1">إجمالي الأصول</p>
@@ -136,19 +137,19 @@ export const ReportsTab = memo(function ReportsTab() {
 							<p className="text-xs text-muted-foreground mt-1">الدخل - المصروفات</p>
 						</div>
 					</div>
-				</CardContent>
-			</Card>
+			</WidgetCard>
 
 			{/* Investment Returns - NEW */}
 			{investmentReturns && investmentReturns.total_monthly > 0 && (
-				<Card className="border-profit ">
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<TrendingUp className="w-5 h-5 text-profit " />
-							عوائد الاستثمارات الشهرية
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
+				<WidgetCard
+					title="عوائد الاستثمارات الشهرية"
+					icon={TrendingUp}
+					iconColor="text-profit"
+					iconSize="w-5 h-5"
+					titleClassName="text-base"
+					className="border-profit "
+					contentClassName="space-y-4"
+				>
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 							{investmentReturns.bank_monthly > 0 && (
 								<div className="p-3 rounded-lg bg-primary/20 text-center">
@@ -177,20 +178,19 @@ export const ReportsTab = memo(function ReportsTab() {
 							<span className="text-sm text-muted-foreground">العائد السنوي المتوقع</span>
 							<span className="font-bold text-profit ">{formatCurrency(investmentReturns.total_yearly)}</span>
 						</div>
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Income vs Expenses */}
 			{reports && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<TrendingUp className="w-5 h-5 text-profit " />
-							الدخل مقابل المصروفات (الشهر الحالي)
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
+				<WidgetCard
+					title="الدخل مقابل المصروفات (الشهر الحالي)"
+					icon={TrendingUp}
+					iconColor="text-profit"
+					iconSize="w-5 h-5"
+					titleClassName="text-base"
+					contentClassName="space-y-3"
+				>
 						<div className="grid grid-cols-2 gap-4">
 							<div>
 								<div className="flex justify-between text-sm mb-1">
@@ -229,20 +229,19 @@ export const ReportsTab = memo(function ReportsTab() {
 								{formatCurrency(reports.monthly_savings)}
 							</span>
 						</div>
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Alerts */}
 			{safeAlerts.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<AlertTriangle className="w-5 h-5 text-warning" />
-							تنبيهات وتحليلات مالية
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
+				<WidgetCard
+					title="تنبيهات وتحليلات مالية"
+					icon={AlertTriangle}
+					iconColor="text-warning"
+					iconSize="w-5 h-5"
+					titleClassName="text-base"
+					contentClassName="space-y-3"
+				>
 						{safeAlerts.map((alert: FinancialAlert, idx: number) => (
 							<div
 								key={idx}
@@ -261,20 +260,19 @@ export const ReportsTab = memo(function ReportsTab() {
 								</div>
 							</div>
 						))}
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Assets Distribution */}
 			{Object.keys(assetsByType).length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<Coins className="w-5 h-5 text-profit " />
-							توزيع الأصول
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
+				<WidgetCard
+					title="توزيع الأصول"
+					icon={Coins}
+					iconColor="text-profit"
+					iconSize="w-5 h-5"
+					titleClassName="text-base"
+					contentClassName="space-y-3"
+				>
 						{(Object.entries(assetsByType) as [string, number][])
 							.sort(([, a], [, b]) => b - a)
 							.map(([type, value]) => {
@@ -296,20 +294,20 @@ export const ReportsTab = memo(function ReportsTab() {
 									</div>
 								);
 							})}
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Economic Expert Recommendations */}
 			{reports && totalAssets > 0 && (
-				<Card className="border-warning ">
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<Zap className="w-5 h-5 text-warning" />
-							تحليلات خبير اقتصادي
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
+				<WidgetCard
+					title="تحليلات خبير اقتصادي"
+					icon={Zap}
+					iconColor="text-warning"
+					iconSize="w-5 h-5"
+					titleClassName="text-base"
+					className="border-warning "
+					contentClassName="space-y-4"
+				>
 						{/* Portfolio Health Score */}
 						<div className="p-3 rounded-lg from-profit to-primary /20 dark:">
 							<div className="flex items-center justify-between mb-2">
@@ -427,8 +425,7 @@ export const ReportsTab = memo(function ReportsTab() {
 								</div>
 							</div>
 						</div>
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Empty state for no reports */}

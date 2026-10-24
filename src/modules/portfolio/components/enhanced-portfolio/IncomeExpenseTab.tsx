@@ -33,6 +33,7 @@ import {
 	TrendingUp,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -318,11 +319,11 @@ export const IncomeExpenseTab = memo(function IncomeExpenseTab() {
 
 			{/* Expenses breakdown bars */}
 			{summary && summary.expenses_by_category && Object.keys(summary.expenses_by_category).length > 0 && (
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm">توزيع المصروفات</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-2">
+				<WidgetCard
+					title="توزيع المصروفات"
+					titleClassName="text-sm"
+					contentClassName="space-y-2"
+				>
 						{Object.entries(summary.expenses_by_category)
 							.sort(([, a], [, b]) => b - a)
 							.slice(0, 6)
@@ -342,8 +343,7 @@ export const IncomeExpenseTab = memo(function IncomeExpenseTab() {
 									</div>
 								);
 							})}
-					</CardContent>
-				</Card>
+				</WidgetCard>
 			)}
 
 			{/* Transactions Table */}
