@@ -1,0 +1,60 @@
+{
+  "clean_sample": {
+    "total_closed": 1053,
+    "after_quarantine": 276,
+    "dev": 0,
+    "holdout": 276
+  },
+  "per_trade_metrics": {
+    "gross": {
+      "n": 276,
+      "wr": 68.1,
+      "pf": 4.78,
+      "net": 1544.3,
+      "avg": 5.6
+    },
+    "net": {
+      "n": 276,
+      "wr": 67.0,
+      "pf": 3.98,
+      "net": 1378.7,
+      "avg": 5.0
+    }
+  },
+  "dev_metrics": {
+    "n": 0,
+    "wr": 0,
+    "pf": 0,
+    "net": 0,
+    "avg": 0
+  },
+  "holdout_metrics": {
+    "n": 276,
+    "wr": 67.0,
+    "pf": 3.98,
+    "net": 1378.7,
+    "avg": 5.0
+  },
+  "portfolio_metrics": {
+    "final_equity": 366048.0,
+    "total_return": 266.0,
+    "max_dd": 3.8,
+    "max_concurrent": 5,
+    "trades_executed": 94
+  },
+  "t1_comparison": {
+    "same_day": {
+      "n": 276,
+      "wr": 67.0,
+      "pf": 3.98,
+      "net": 1378.7,
+      "avg": 5.0
+    },
+    "t1": {
+      "n": 276,
+      "wr": 76.1,
+      "pf": 5.92
+    },
+    "t1_missing": 0
+  }
+}
