@@ -8329,3 +8329,109 @@ Stage Summary:
 - .gitignore is correct (no need to touch it). working tree clean except for this worklog.
 - README documents how to restore DBs (cat .part files together, then unzip).
 - Resuming Phase 0/1 orchestrator design work using live DBs on sandbox (price_history.db, stocks.db, etc.).
+
+---
+Task ID: F-Phase3-Adopt-Batch6
+Agent: Alpha (frontend agent)
+Task: Replace manual Card/CardHeader/CardTitle/CardContent with WidgetCard in ALL remaining modules that still use CardHeader — education, predictions, radar, reports, sharia, crypto, subscription, simulation, screener, news, src/components/, and app pages. Only replace SIMPLE patterns; leave complex/nested/conditional Cards alone. HTTP 200 required before push.
+
+Work Log:
+- Read /home/z/my-project/worklog.md (8,165 lines) to recap prior Phase 3 context — Batch4 (admin) and Batch5 (market-analysis + stock-analysis + portfolio) already adopted WidgetCard in ~31 files. This task closes out the remaining modules.
+- Surveyed all 132 files with `CardHeader` via Grep. Filtered to the task's target modules (education, predictions, radar, reports, sharia, crypto, subscription, simulation, screener, news, src/components/, src/app/). Excluded admin module (already done in Batch4), dashboard + stock-analysis + portfolio + market-analysis (already done in Batch5), index-detail (out-of-scope), vps-service (do-not-touch).
+- Reused the existing `/tmp/adopt_widgetcard.py` AST-style transform script from Batch5 — 3 regex variants:
+  - Pattern A (icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."><Icon className="w-X h-X text-COLOR" /> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
+  - Pattern B (no icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
+  - Pattern C (no icon, single-line CardTitle): `<Card><CardHeader><CardTitle className="...">Title text</CardTitle></CardHeader><CardContent>...</CardContent></Card>`
+  Depth-tracking parser (`find_matching_close` walks CardContent opens/closes; rejects matches where the close indent doesn't match the open indent — catches nested Cards).
+- Dry-ran the script on all 60+ candidate files in the target modules to identify which ones had simple patterns to convert. Result: 20 files with simple patterns matched (53 total replacements), 40+ files correctly skipped (complex Card patterns: nested CardHeader with flex-wrapped CardTitle+Badge, conditional Card with custom skeleton header, Card with `dir="rtl"` attribute, Card with className={cn(...)} expression, Card without CardHeader, etc.).
+- Applied the script to the 20 candidate files. Total: 53 WidgetCard instances created.
+- Discovered a regex quirk in the script: when a CardTitle's title text contained a JSX expression like `{title}` or `{t('radar.weekly.X.title')}` (with or without surrounding `<span>` wrapper), the script's `title_text` regex captured it as a literal string and produced `title="{title}"` — which renders the literal text `{title}` instead of the variable's value. 9 buggy `title=` attributes across 6 files:
+  - `src/components/backtesting/EGXBacktestDashboard.tsx` — 2 (title="{title}", title="{comparison.title}")
+  - `src/modules/radar/components/WeeklyReportTab.tsx` — 4 (title="<span>{t('radar.weekly.X.title')}</span>")
+  - `src/components/memory/ExpertMemoryPanel.tsx` — 2 (title="ذاكرتك مع {ticker}", title="حالات مشابهة ({insight.similar_cases.length})")
+  - `src/modules/crypto/components/CryptoPortfolioView.tsx` — 1 (title="العملات في المحفظة ({positions.length})")
+  - `src/modules/crypto/components/CryptoPredictionTrackingView.tsx` — 1 (title="التوقعات ({filtered.length})")
+- Also discovered the same bug existed in Batch5's committed code (commit 84b6245). 4 pre-existing buggy `title=` attributes:
+  - `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 3 (stocks, banks, gold counts)
+  - `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 1 (predictions count)
+- Manually fixed all 9 Batch6 + 4 Batch5 = 13 buggy title= attributes:
+  - `{var}` → `title={var}` (JSX expression)
+  - `<span>{t('...')}</span>` → `title={t('...')}`
+  - `literal text ({expr})` → `title={` \`literal text (${expr})\` `}` (template literal)
+  - `ذاكرتك مع {ticker}` → `title={`ذاكرتك مع ${ticker}`}`
+- Cleaned up the extra duplicate `iconColor="..."` lines that my manual edits had introduced in 2 WeeklyReportTab WidgetCards (Stock of the Week + Last week + Sectors).
+
+Files adopted (20 files, 53 WidgetCard instances):
+1. `src/modules/education/components/PaperTradingWorkstation.tsx` — 2 replacements (Order Execution Panel, Trade History + Performance).
+2. `src/modules/predictions/components/DualTrackPredictionsView.tsx` — 2 replacements (Dynamic Thresholds, Top Tickers).
+3. `src/modules/radar/components/WeeklyReportTab.tsx` — 4 replacements (Stock of the Week, Top 5 stocks, Last week performance, Sector heatmap — all 4 were title bugs, fixed to use `title={t('radar.weekly.X.title')}`).
+4. `src/modules/reports/components/StockAnalysisReport.tsx` — 6 replacements (Score Cards, Technical, Fundamental, Risk, Recommendation, Price Levels — entire professional Bloomberg-style report).
+5. `src/modules/reports/components/ReportsView.tsx` — 3 replacements.
+6. `src/modules/crypto/components/CryptoPredictionTrackingView.tsx` — 1 replacement (predictions list — title was a `({filtered.length})` bug, fixed to template literal).
+7. `src/modules/crypto/components/CryptoPortfolioView.tsx` — 2 replacements (Holdings summary, Positions list — positions title was a `({positions.length})` bug, fixed).
+8. `src/modules/simulation/components/simulation-view/tabs.tsx` — 3 replacements (Portfolio performance, Holdings, Watchlist search).
+9. `src/components/publishing/UserPublishingView.tsx` — 3 replacements.
+10. `src/components/v82/V82DecisionPanel.tsx` — 2 replacements.
+11. `src/components/memory/TradingMemoryView.tsx` — 4 replacements.
+12. `src/components/memory/ExpertMemoryPanel.tsx` — 3 replacements (memory summary, similar cases — both title bugs fixed).
+13. `src/components/seasonality/SeasonalityDashboard.tsx` — 1 replacement.
+14. `src/components/ai/AIAnalysisWidget.tsx` — 2 replacements (loading state, error state).
+15. `src/components/journal/TradingJournalView.tsx` — 5 replacements (Best/Worst stocks, Avg P/L, Best/Worst trade, Performance analysis).
+16. `src/components/backtesting/EGXBacktestDashboard.tsx` — 2 replacements (Walk-forward comparison, Comparison card — both title bugs fixed to `title={title}` / `title={comparison.title}`).
+17. `src/app/admin/educational-cards/page.tsx` — 1 replacement.
+18. `src/app/admin/reports/page.tsx` — 1 replacement.
+19. `src/app/backtest/page.tsx` — 2 replacements.
+20. `src/app/rescue/page.tsx` — 4 replacements (Trade Autopsy, Asset Health, Action Plan, 1 more).
+
+Files audited but correctly skipped (40+ files) — too complex (CardTitle with mixed JSX expression + Badge, Card with conditional render, Card with `className={cn(...)}`, CardHeader wrapping flex div with CardTitle + Badge, Card without CardHeader, CardTitle with `<span>{...}</span>` but no icon match, etc.). Examples:
+- education (8): EntryTimingSimulator, PortfolioSimulator, CandlestickSimulator, academy/{ScenarioDecisionTree, ActionPlaybooks, LiveMarketScanner, BiasDetectorQuiz, PositionSizeCalculator}.
+- predictions (5): PredictionTrackingView, prediction-dashboard/{ProofTableCard, FocusStocksBanner, HeaderBar, CumulativeProfitChart}.
+- radar (3): AccuracyDashboard, PersonalizedRadarTab, MultiMarketRadarTab.
+- reports (1): DailyMarketReport.
+- sharia (2): ShariaView, ShariaStockCard.
+- subscription (1): PricingView.
+- screener (1): CollapsibleSection.
+- news (1): NewsFeedView.
+- components (~15): settings/SettingsView, intelligence/WatchlistIntelligenceSection, auto-analysis-widget, subscription/SubscriptionView, deal-advisor/DealAdvisorPanel, zakat/ZakatView, watchlist/ProfessionalWatchlistView, alerts/SmartAlertsPanel, shared/{StockFeelCard, ExpertIntelligencePanel, WidgetError}, eid-predictions-widget, smart-assistant/SmartConfluenceView, tithes/TithesView, auth/AuthView, advanced-analysis/specialist/primitives.
+- app (3): admin/honest-predictions, not-found, error, loading.
+
+Bug-fix files (Batch5 cleanup — 2 files, 4 fixes):
+21. `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 3 title bug fixes (Stocks/Banks/Gold counts).
+22. `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 1 title bug fix (predictions count).
+
+Verification:
+- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 766ms).
+- `sleep 18 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~13.1s + render 475ms; subsequent cached at 50-70ms).
+- All target view routes:
+  - `/?view=education` → `HTTP 200` ✓
+  - `/?view=radar` → `HTTP 200` ✓
+  - `/?view=reports` → `HTTP 200` ✓
+  - `/?view=sharia` → `HTTP 200` ✓
+  - `/?view=crypto` → `HTTP 200` ✓
+  - `/?view=subscription` → `HTTP 200` ✓
+  - `/?view=simulation` → `HTTP 200` ✓
+  - `/?view=screener` → `HTTP 200` ✓
+  - `/?view=news` → `HTTP 200` ✓
+  - `/?view=predictions` → `HTTP 200` ✓
+  - `/?view=backtest` → `HTTP 200` ✓
+  - `/?view=rescue` → `HTTP 200` ✓
+- App pages: `/admin/educational-cards` → `HTTP 200` ✓, `/admin/reports` → `HTTP 200` ✓, `/backtest` → `HTTP 200` ✓, `/rescue` → `HTTP 200` ✓.
+- `tsc --noEmit` → only 1 pre-existing error in `trading-view-chart/indicators.ts` (TS1005 ')' expected — truncated file from F-Phase3-Split-StocksView, unrelated to this refactor). ZERO new TS errors introduced by this WidgetCard adoption or the bug-fix edits.
+- pm2 logs: clean compile of `/` + all 12 view routes + 4 app pages. No JSX/parse errors. Only pre-existing config warnings (outputFileTracingRoot deprecated keys, eslint config deprecated, NEXTAUTH_URL warning).
+
+LOC summary:
+- 22 files modified: +542 insertions, −588 deletions = **−46 LOC net** (WidgetCard consolidation saves the boilerplate `<Card><CardHeader><CardTitle className="..."><Icon className="..." /> title </CardTitle></CardHeader><CardContent>` opening + `</CardContent></Card>` closing per instance — avg ~3 LOC saved per replacement × 53 replacements ≈ 159 LOC raw savings, offset by the multi-line WidgetCard prop block).
+- 53 total `<WidgetCard>` instances now in production across the 20 newly-adopted files (avg 2.65 per file).
+- 13 buggy `title=` literal-`{expr}` attributes fixed (9 from this batch + 4 from Batch5).
+- 40+ files audited and intentionally left untouched (complex Card patterns — Rule 75 "don't break anything").
+
+Stage Summary:
+- F-Phase3-Adopt-Batch6 complete. WidgetCard adoption applied to 20 files across education (1), predictions (1), radar (1), reports (2), crypto (2), simulation (1), src/components (8), src/app (4). 53 manual Card/CardHeader/CardTitle/CardContent blocks replaced with `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>`.
+- Each adopted file: imports updated (WidgetCard added, unused Card sub-components pruned from `@/components/ui/card` import where applicable).
+- 13 latent `title="{expr}"` literal-string bugs fixed across 6 files (9 from this batch via the script + 4 inherited from Batch5).
+- Combined with Batch4 (admin, 21 files) + Batch5 (market-analysis + stock-analysis + portfolio, 9 files), total WidgetCard adoption across the codebase is now ~50 files with ~140 WidgetCard instances — standardizing all widget-level UI to the unified look (icon in rounded-lg `bg-primary/10` wrapper, optional refresh button on the right, optional skeleton loading).
+- HTTP 200 confirmed on `/` + 12 view routes + 4 app pages before push (Rule 75). Commit + push next.
+
+Commit: 5b384ea
+Message: "refactor(phase3): WidgetCard adoption — remaining modules (education, predictions, radar, reports, etc.)"
+Pushed to: origin/main (7feac6e..5b384ea) — pulled-then-rebased to integrate remote's `docs: DBs now on GitHub Releases` commit before push.
