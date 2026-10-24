@@ -7783,3 +7783,58 @@ Stage Summary:
 - Backwards-compatible: 3 external importers (`src/app/page.tsx`, `PredictionTrackingDashboard.tsx`, `StocksView.tsx`) + the screener module barrel all work unchanged.
 - HTTP 200 confirmed before commit (Rule 75). Commit + push next.
 
+
+---
+Task ID: F-Phase3-Split-Academy
+Agent: Alpha (frontend agent)
+Task: Split `src/modules/education/components/AcademyView.tsx` (2,357 LOC) into sub-components under a new `src/modules/education/components/academy/` folder. Container must stay < 500 LOC; the original file becomes a backwards-compatible Strangler re-export shim. `useAcademyLessonsData` / `useAcademyStocksData` hooks (Phase 2 / F-Strangler-AcademyView) are preserved as-is.
+
+Work Log:
+- Read 2,357 LOC of the original AcademyView.tsx and mapped every sub-component, helper, type, and constant to its target file. The file already consumes the Phase 2 hooks `useAcademyLessonsData` (lessons list + lazy fullContent fetch) and `useAcademyStocksData` (60s polling + FALLBACK_STOCKS) — all data-fetching is fully owned by those hooks. This refactor is purely structural on the view layer.
+- Identified the 8 tabs rendered by the container: Encyclopedia / PaperTrading / CandleSim / StrategySandbox / AdvancedLessons / TradingFloor / PracticalTools / AdvancedLab. The first 4 are imported from sibling files (`../AcademyEncyclopedia` etc.) and were NOT split (they're already self-contained). The last 4 are inlined in AcademyView.tsx and were extracted into the new folder.
+- Created `src/modules/education/components/academy/` folder with 13 files (11 .tsx + 2 .ts):
+  1. `types.ts` (83 LOC) — re-export barrel for `AdvancedLesson`, `AdvancedLessonSection`, `FloorStock`, `EducationalLessonsResponse`, `StocksListResponse` from `@/hooks/useAcademyData` (Phase 2 single source of truth) + local types: `MdBlock` (markdown parsed block discriminated union), `AnalysisState` (LiveMarketScanner sheet state), `ScenarioTone` + `Verdict` (TradingFloor scenario tones), `ScenarioBranch` + `Scenario` (decision tree shape), `Playbook` (action playbook shape w/ LucideIcon). Pure `.ts` — no JSX.
+  2. `helpers.ts` (584 LOC) — pure utility functions + non-JSX data constants. Pure `.ts` (no JSX). Includes: `LEVEL_VARIANT` (Arabic level → badge variant map), markdown parser helpers (`splitTableRow`, `isTableRow`, `isTableSeparator`, `parseMarkdown` — 100-LOC minimal MD parser), market helpers (`changeTone`, `formatVolume`, `analysisHint`), TradingFloor data arrays (`SCENARIOS` 6-scenario array, `SCENARIO_TONE_STYLES` 4-tone style map, `VERDICT_STYLE` 3-verdict icon+color map using `typeof CheckCircle2`), `PLAYBOOKS` 5-playbook array (icons imported as values — Rocket, ArrowDownCircle, ShieldAlert, Layers, Target — not rendered as JSX in this file so it stays `.ts`), `BIAS_QUESTIONS` 7-question quiz data array.
+  3. `AdvancedMarkdownRenderer.tsx` (259 LOC) — minimal MD → JSX renderer. Handles fenced code blocks (```), #/##/###/#### headings, - bullets, 1. numbered lists, > blockquotes, **bold**, *italic*, `code`, markdown tables, hr, and plain paragraphs. Detects ASCII-art code blocks (Loss Aversion curve, SOP pipeline, Algo pipeline) and swaps them for premium SVG visuals (`LossAversionCurve`, `SopPipelineFlow`, `TradingSystemPipeline` from `../LearningVisuals`). Includes private `renderInline()` helper that returns `React.ReactNode` (kept local to this file — not exported).
+  4. `AdvancedLessonsTab.tsx` (392 LOC) — Tab 5 main component. Wires `content/education/*.md` (12+ institutional lessons) via `/api/ads/educational-lessons` API. Sidebar list + master-detail panel. PAYWALL Gate 4: first 3 lessons free, 4+ locked (blurred) for free users post-trial. Uses `useAcademyLessonsData` hook (Phase 2) for all data + UI state only (activeId + showFull).
+  5. `LiveMarketScanner.tsx` (374 LOC) — TradingFloor §1. Top tickers table (desktop) + cards (mobile) + quick-analysis Sheet. Uses `useAcademyStocksData` hook (Phase 2 — polling + FALLBACK_STOCKS owned by hook). UI state only: search filter + showAll toggle + analysis modal.
+  6. `ScenarioDecisionTree.tsx` (142 LOC) — TradingFloor §2. 6-scenario decision tree cards with branching verdicts (✅ go / ⚠️ wait / 🚫 avoid). Includes private `ScenarioToneIcon` helper component.
+  7. `ActionPlaybooks.tsx` (135 LOC) — TradingFloor §3. 5 collapsible playbook cards (Breakout, Pullback, Stop-loss, DCA, Take-profit). Includes private `PlaybookCard` component.
+  8. `TradingFloorView.tsx` (61 LOC) — TradingFloor container. Combines TradingSystemPipeline (premium SVG) + LiveMarketScanner + ScenarioDecisionTree + ActionPlaybooks.
+  9. `PositionSizeCalculator.tsx` (207 LOC) — PracticalTools §1. Interactive calculator: capital × risk% / |entry−stop| → max shares + R:R + direction (Long/Short). Includes typed `PositionSizeResult` discriminated union (result | error | null).
+ 10. `BiasDetectorQuiz.tsx` (200 LOC) — PracticalTools §2. 7-question self-assessment for behavioral biases (Loss Aversion / FOMO / Confirmation / Ego / Revenge / Hope / Overtrading) with link-back to relevant lesson.
+ 11. `PracticalToolsView.tsx` (31 LOC) — PracticalTools container (banner + 2 calculators).
+ 12. `AdvancedLabView.tsx` (50 LOC) — AdvancedLab container (banner + 5 visuals + 2 simulators from `../LearningVisuals`, `../PortfolioSimulator`, `../EntryTimingSimulator`).
+ 13. `AcademyView.tsx` (113 LOC — ✅ < 500 LOC constraint) — Main container. Renders sticky header + Tabs (8 triggers) + 8 TabsContent blocks. Imports 4 sibling pillar components (`AcademyEncyclopedia`, `PaperTradingWorkstation`, `CandlestickSimulator`, `StrategySandbox` from `../`) + 4 academy sub-components (`AdvancedLessonsTab`, `TradingFloorView`, `PracticalToolsView`, `AdvancedLabView` from `./`). Owns ZERO data-fetching logic — pure render-only container. Also exports `default` to preserve the original `export default AcademyView` semantics.
+- (Strangler shim) `src/modules/education/components/AcademyView.tsx` (was 2,357 LOC, now 7 LOC):
+  ```ts
+  export { AcademyView } from './academy/AcademyView';
+  export { AcademyView as default } from './academy/AcademyView';
+  ```
+  External importers (`src/modules/education/index.ts` barrel + `src/app/page.tsx` dynamic import) keep working unchanged.
+
+Parser pitfalls avoided:
+- **TypeScript import vs re-export**: `export type { FloorStock } from '...'` does NOT bring the type into local scope for use in other interfaces. Added a separate `import type { FloorStock } from '@/hooks/useAcademyData'` line so `AnalysisState` can reference `FloorStock` in its `stock: FloorStock | null` field.
+- **JSX in `.ts` files**: `helpers.ts` references lucide icons (`Rocket`, `CheckCircle2` etc.) as VALUES inside the `PLAYBOOKS` and `VERDICT_STYLE` data arrays — they're imported but never rendered as `<Rocket />` JSX. This keeps the file valid as `.ts` (no JSX) while still allowing sub-components to import and render them. The `VERDICT_STYLE` uses `typeof CheckCircle2` as the type for `Icon` field — pure type reference, no JSX.
+- **Unused imports**: Original file imported many lucide icons at the top — split per-file so each sub-component only imports what it actually uses. `AdvancedMarkdownRenderer` imports only `cn` from utils + 3 SVG visuals from `../LearningVisuals`. `AcademyView` container imports ZERO utils (no `cn`) and ZERO lucide icons — it only uses `Tabs` components + sibling pillar imports.
+- **`'use client'` directive**: Each sub-component file that uses React hooks (`useState`, `useEffect`, `useMemo`, `useCallback`) gets `'use client'` at the top. Pure modules (`types.ts`, `helpers.ts`) do NOT — they're imported by client components but are themselves framework-agnostic. The container `AcademyView.tsx` keeps `'use client'` for consistency with the original (and because it's dynamically imported with `ssr: false`).
+
+Verification:
+- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 934ms).
+- `sleep 12 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓ (first-hit compile ~16.8s on Turbopack cold start; render ~467ms; subsequent hits cached at ~55-67ms).
+- Stability check: 3× HTTP 200 in a row on `/` (67ms / 54ms / 56ms — cached after first compile).
+- `tsc --noEmit` on `src/modules/education/**` → 0 errors related to the academy folder. Only pre-existing `.next/dev/types/*` errors remain (auto-generated Next.js dev routes types — unrelated to this refactor).
+- pm2 logs: clean compile of `/`. Only stale pre-existing warnings remain (outputFileTracing deprecated keys in next.config.mjs, eslint config deprecated, "middleware" file convention deprecated, Turbopack-vs-webpack config warning — all pre-existing).
+
+LOC summary (after split):
+- Original `AcademyView.tsx`: 2,357 → 7 LOC (Strangler shim) (**−2,350 LOC, −99.7%**).
+- New folder `academy/`: 2,631 LOC across 13 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
+- Container `AcademyView.tsx`: 113 LOC ✅ (well under < 500 LOC constraint).
+- Largest sub-component: `helpers.ts` at 584 LOC (mostly data: SCENARIOS 6-scenario array + PLAYBOOKS 5-playbook array + BIAS_QUESTIONS 7-question array + parseMarkdown 100-LOC parser).
+- Largest component file: `AdvancedLessonsTab.tsx` at 392 LOC.
+
+Stage Summary:
+- F-Phase3-Split-Academy complete. `AcademyView.tsx` is now a thin 7-LOC Strangler shim re-exporting from `academy/AcademyView.tsx` (container, 113 LOC) which orchestrates 4 sibling pillar components (`AcademyEncyclopedia`, `PaperTradingWorkstation`, `CandlestickSimulator`, `StrategySandbox` — unchanged) + 4 academy sub-components (`AdvancedLessonsTab`, `TradingFloorView`, `PracticalToolsView`, `AdvancedLabView`). TradingFloor further decomposes into `LiveMarketScanner` + `ScenarioDecisionTree` + `ActionPlaybooks`; PracticalTools into `PositionSizeCalculator` + `BiasDetectorQuiz`; AdvancedLab composes 5 visuals + 2 simulators from sibling files. Markdown renderer isolated in `AdvancedMarkdownRenderer.tsx` with its parser in `helpers.ts`. All data constants (`SCENARIOS`, `PLAYBOOKS`, `BIAS_QUESTIONS`, `LEVEL_VARIANT`, `SCENARIO_TONE_STYLES`, `VERDICT_STYLE`) in `helpers.ts`. All types/interfaces in `types.ts`.
+- Backwards-compatible: `src/modules/education/index.ts` barrel + `src/app/page.tsx` (dynamic import with `ssr: false`) keep working unchanged.
+- `useAcademyLessonsData` + `useAcademyStocksData` hooks (extracted in Phase 2 — F-Strangler-AcademyView) are still consumed by `AdvancedLessonsTab` and `LiveMarketScanner` respectively. The view layer remains render-only.
+- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
