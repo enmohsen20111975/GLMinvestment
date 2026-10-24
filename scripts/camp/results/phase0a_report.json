@@ -1,0 +1,156 @@
+{
+  "price_history": {
+    "columns": [
+      "id",
+      "ticker",
+      "date",
+      "open_price",
+      "high_price",
+      "low_price",
+      "close_price",
+      "volume",
+      "source",
+      "created_at",
+      "adjusted",
+      "buy_volume",
+      "sell_volume",
+      "delta_volume",
+      "delta_pct",
+      "pressure",
+      "market"
+    ],
+    "min_date": "2000-11-27",
+    "max_date": "2026-10-21",
+    "rows": 1311000,
+    "tickers": 1557,
+    "year_2022": {
+      "rows": 51692,
+      "tickers": 213
+    },
+    "year_2023": {
+      "rows": 51661,
+      "tickers": 215
+    },
+    "year_2024": {
+      "rows": 51542,
+      "tickers": 216
+    },
+    "year_2025": {
+      "rows": 203980,
+      "tickers": 887
+    },
+    "year_2026": {
+      "rows": 174438,
+      "tickers": 1557
+    },
+    "missing_bars": {
+      "sample_size": 30,
+      "trading_days": 86,
+      "avg_missing": 10.0,
+      "worst": [
+        [
+          "CLHO",
+          74,
+          12
+        ],
+        [
+          "COMI",
+          76,
+          10
+        ],
+        [
+          "ETEL",
+          76,
+          10
+        ]
+      ]
+    },
+    "duplicate_bars": 0,
+    "splits_sample": {
+      "count": 1539,
+      "sample_size": 100,
+      "top_10": [
+        {
+          "ticker": "ADIB",
+          "date": "2007-04-12",
+          "prev": 26.58420181274414,
+          "today": 12.349721908569336,
+          "chg_pct": -53.5
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-06-05",
+          "prev": 22.68000030517578,
+          "today": 50.817,
+          "chg_pct": 124.1
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-06-10",
+          "prev": 49.548,
+          "today": 23.950000762939453,
+          "chg_pct": -51.7
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-06-26",
+          "prev": 23.309999465942383,
+          "today": 47.913,
+          "chg_pct": 105.5
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-03",
+          "prev": 23.309999465942383,
+          "today": 48.583,
+          "chg_pct": 108.4
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-06",
+          "prev": 48.583,
+          "today": 23.34000015258789,
+          "chg_pct": -52.0
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-08",
+          "prev": 23.34000015258789,
+          "today": 47.706,
+          "chg_pct": 104.4
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-09",
+          "prev": 47.706,
+          "today": 22.989999771118164,
+          "chg_pct": -51.8
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-24",
+          "prev": 23.649999618530273,
+          "today": 50.839,
+          "chg_pct": 115.0
+        },
+        {
+          "ticker": "ADIB",
+          "date": "2025-07-27",
+          "prev": 50.839,
+          "today": 24.290000915527344,
+          "chg_pct": -52.2
+        }
+      ]
+    },
+    "adjusted_column": {
+      "0": 1281689,
+      "1": 29311
+    },
+    "buy_sell_volume": {
+      "buy_volume_rows": 681,
+      "sell_volume_rows": 734,
+      "delta_pct_rows": 758,
+      "total": 1311000
+    }
+  }
+}
