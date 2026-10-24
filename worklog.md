@@ -8099,3 +8099,67 @@ Work Log:
   - ExecutiveReportView: imported via `@/modules/reports/components/ExecutiveReportView` (MarketAnalysisView + UnifiedPredictionsTab) + via `./components/ExecutiveReportView` (reports barrel). Original file path MUST stay as a re-export shim.
   - AcademyEncyclopedia: imported via `../AcademyEncyclopedia` (AcademyView). Original file path MUST stay as a re-export shim.
 - Inspected prior Phase 3 split (prediction-dashboard/) for the convention to mirror: types.ts + constants.ts + helpers.ts + per-component files + container < 500 LOC + parent shim.
+
+---
+
+Task ID: F-Phase3-Adopt-Batch5
+Agent: Alpha (frontend agent)
+Task: Replace manual Card/CardHeader/CardTitle/CardContent with WidgetCard in market-analysis (~13 files with CardHeader) + stock-analysis (~10 files) + portfolio (~8 files). Only replace SIMPLE patterns; leave complex/nested/conditional Cards alone. HTTP 200 required before push.
+
+Work Log:
+- Read /home/z/my-project/src/components/shared/WidgetCard.tsx to understand the unified API (title, icon, iconColor, iconBg, iconSize, loading, skeletonRows, skeletonHeight, onRefresh, refreshing, hideRefresh, className, headerClassName, titleClassName, contentClassName, children, badge).
+- Surveyed all 31 candidate files via Grep for `CardHeader` usage. Cross-referenced against actual JSX Card patterns.
+- Wrote `/tmp/adopt_widgetcard.py` — a Python AST-style transform that:
+  1. Detects SIMPLE Card patterns via 3 regex variants:
+     - Pattern A (with icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."><Icon className="w-X h-X text-COLOR" /> Title text </CardTitle></CardHeader><CardContent className="...">...</CardContent></Card>`
+     - Pattern B (no icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
+     - Pattern C (no icon, single-line CardTitle): `<Card><CardHeader><CardTitle className="...">Title text</CardTitle></CardHeader><CardContent>...</CardContent></Card>`
+  2. Properly handles NESTED Cards via depth-tracking parser (`find_matching_close` walks the content counting `<CardContent>` opens vs `</CardContent>` closes; rejects matches where the close indent doesn't match the open indent — this catches the SmartAssistantPanel "outer Card with inner per-stock Cards" pattern that the v1 non-greedy regex got wrong).
+  3. Builds a `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>` replacement, preserving the body content and outer indent.
+  4. Adds `import { WidgetCard } from '@/components/shared/WidgetCard';` if not already present (placed right after the `@/components/ui/card` import).
+  5. Prunes unused `CardHeader` / `CardTitle` / `CardContent` / `Card` named exports from the `@/components/ui/card` import if no longer referenced in JSX. Removes the entire import line if all 4 become unused.
+- Audited the script's coverage and behavior:
+  - Files with simple `<Card><CardHeader><CardTitle>` pattern → adopted.
+  - Files with CardHeader but complex inner structure (e.g., `<CardHeader><div className="flex..."><CardTitle>...</CardTitle><Badge>...</Badge></div></CardHeader>` like RoboAdvisorPanel, AdvancedPortfolioManager, RiskProfilerQuiz, WealthAllocationMatrixCard, PersonaCard, SingleStockAnalysisView, ExpertRecommendationsPanel, MorningBellSection, LearnedLessonsDashboard, HistoricalTradesTable, MarketDepthLiquidityWidget, MarketDepthPanel, GateAnalysisView, CalculationBreakdown, TreasuryBondsView) → correctly skipped (regex requires CardTitle to be the immediate child of CardHeader).
+  - Files with no CardHeader in JSX (only import) → correctly skipped.
+  - Files with `<Card><CardContent>` only (no CardHeader/CardTitle) like SectorTrackingTab, PredictionsTab, LiveTrackingTab, CryptoPredictionsTab, StockNews, PortfolioIntelligencePanel → not candidates for WidgetCard (WidgetCard's whole point is the title+icon header), correctly skipped.
+
+Files adopted (9 files, 50 WidgetCard instances):
+1. `src/modules/market-analysis/components/MarketStatusTab.tsx` — 3 replacements (Breadth donut, Gainers/Losers bar, Sector distribution bar).
+2. `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 4 replacements (Alerts card, Stocks analysis card with nested per-stock Cards, Bank Deposits card, Gold card).
+3. `src/modules/portfolio/components/enhanced-portfolio/IncomeExpenseTab.tsx` — 1 replacement (Expenses distribution card, no-icon inline pattern).
+4. `src/modules/portfolio/components/enhanced-portfolio/ReportsTab.tsx` — 6 replacements (Portfolio overview, Investment returns, Income vs Expenses, Alerts, Assets distribution, Economic expert recommendations).
+5. `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 14 replacements (RSI, Moving Averages, Support/Resistance, 52-week range, Price+MA chart, Financial metrics, Valuation assessment, Maestro analysis, etc.).
+6. `src/modules/stock-analysis/components/DeepAnalysis.tsx` — 11 replacements (Score breakdown loading/loaded, Price targets, Analysis details, Technical signals, etc.).
+7. `src/modules/stock-analysis/components/ExpertAnalysisPanel.tsx` — 4 replacements (Entry/Targets/Stop, Technical analysis, Fundamental analysis, Risk assessment — kept the recommendation banner Card complex header untouched).
+8. `src/modules/stock-analysis/components/StockAdvancedAnalysisView.tsx` — 5 replacements (Score breakdown, Risk profile, Market regime overview, etc.).
+9. `src/modules/stock-analysis/components/StockDetail.tsx` — 2 replacements (Financial metrics, Technical indicators).
+
+Files audited but correctly skipped (22 files) because their Card patterns were too complex (nested CardHeader with flex-wrapped CardTitle+Badge, conditional Card with custom skeleton header, Card with `dir="rtl"` attribute, Card without CardHeader, etc.):
+- market-analysis (12): SectorTrackingTab, LearnedLessonsDashboard, ExpertPredictionsTab, ExpertRecommendationsPanel, MorningBellSection, HistoricalTradesTable, PredictionsTab, MarketDepthLiquidityWidget, CryptoPredictionsTab, persona/PersonaCard, SingleStockAnalysisView, LiveTrackingTab.
+- stock-analysis (5): StockNews, TreasuryBondsView, GateAnalysisView, MarketDepthPanel, CalculationBreakdown.
+- portfolio (5): RoboAdvisorPanel, enhanced-portfolio/WealthAllocationMatrixCard, PortfolioIntelligencePanel, AdvancedPortfolioManager, RiskProfilerQuiz.
+
+Verification:
+- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 1.5s).
+- `sleep 18 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~12.4s + render 520ms; subsequent cached at 55-65ms).
+- `curl http://localhost:3000/?view=portfolio` → `HTTP 200` ✓ (SmartAssistantPanel + enhanced-portfolio tabs render cleanly — no JSX errors).
+- `curl http://localhost:3000/?view=market-analysis` → `HTTP 200` ✓ (MarketStatusTab renders cleanly).
+- `curl http://localhost:3000/?view=stock-analysis` → `HTTP 200` ✓ (ComprehensiveStockAnalysis + DeepAnalysis + ExpertAnalysisPanel + StockAdvancedAnalysisView + StockDetail render cleanly).
+- `tsc --noEmit` → only 1 pre-existing error in `trading-view-chart/indicators.ts` (truncated file — unrelated to this refactor; pre-existing from F-Phase3-Split-StocksView task family). ZERO new TS errors introduced by this WidgetCard adoption.
+- pm2 logs: clean compile of `/`, `/?view=portfolio`, `/?view=market-analysis`, `/?view=stock-analysis`. No JSX/parse errors. Only pre-existing config warnings (outputFileTracingRoot deprecated keys, eslint config deprecated, "middleware" file convention deprecated, NEXTAUTH_URL warning).
+
+LOC summary:
+- 9 files modified: +391 insertions, −476 deletions = **−85 LOC net** (WidgetCard consolidation saves the boilerplate `<Card><CardHeader><CardTitle className="..."><Icon className="..." /> title </CardTitle></CardHeader><CardContent>` opening + `</CardContent></Card>` closing per instance — avg ~3 LOC saved per replacement × 50 replacements ≈ 150 LOC raw savings, offset by the multi-line WidgetCard prop block).
+- 50 total `<WidgetCard>` instances now in production across the 9 adopted files (avg 5.5 per file).
+- 22 files audited and intentionally left untouched (complex Card patterns — Rule 75 "don't break anything").
+
+Stage Summary:
+- F-Phase3-Adopt-Batch5 complete. WidgetCard adoption applied to 9 files across market-analysis (1), stock-analysis (5), portfolio (3). 50 manual Card/CardHeader/CardTitle/CardContent blocks replaced with `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>`.
+- Each adopted file: imports updated (WidgetCard added, unused Card sub-components pruned from `@/components/ui/card` import where applicable).
+- Visual: standardizes all adopted widgets to the WidgetCard look (icon in rounded-lg `bg-primary/10` wrapper, refresh button on the right when `onRefresh` passed, optional skeleton loading). Adopted widgets now share visual language with the 37 other files that already use WidgetCard (admin module + dashboard module from earlier Phase 3 batches).
+- HTTP 200 confirmed on `/`, `/?view=portfolio`, `/?view=market-analysis`, `/?view=stock-analysis` before commit (Rule 75). Commit + push next.
+
+Commit: 84b6245bdc2a9785bdca900afcaf15d2a2460599
+Message: "refactor(phase3): WidgetCard adoption — market-analysis + stock-analysis + portfolio"
+Pushed to: origin/main (68d76d0..84b6245)
