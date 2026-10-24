@@ -8101,65 +8101,231 @@ Work Log:
 - Inspected prior Phase 3 split (prediction-dashboard/) for the convention to mirror: types.ts + constants.ts + helpers.ts + per-component files + container < 500 LOC + parent shim.
 
 ---
-
-Task ID: F-Phase3-Adopt-Batch5
-Agent: Alpha (frontend agent)
-Task: Replace manual Card/CardHeader/CardTitle/CardContent with WidgetCard in market-analysis (~13 files with CardHeader) + stock-analysis (~10 files) + portfolio (~8 files). Only replace SIMPLE patterns; leave complex/nested/conditional Cards alone. HTTP 200 required before push.
+Task ID: P1-V38-Analysis
+Agent: Explore
+Task: Analyze V38 engine logic to identify indicators used, BUY signal logic, and 5+ blind spots (gaps).
 
 Work Log:
-- Read /home/z/my-project/src/components/shared/WidgetCard.tsx to understand the unified API (title, icon, iconColor, iconBg, iconSize, loading, skeletonRows, skeletonHeight, onRefresh, refreshing, hideRefresh, className, headerClassName, titleClassName, contentClassName, children, badge).
-- Surveyed all 31 candidate files via Grep for `CardHeader` usage. Cross-referenced against actual JSX Card patterns.
-- Wrote `/tmp/adopt_widgetcard.py` — a Python AST-style transform that:
-  1. Detects SIMPLE Card patterns via 3 regex variants:
-     - Pattern A (with icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."><Icon className="w-X h-X text-COLOR" /> Title text </CardTitle></CardHeader><CardContent className="...">...</CardContent></Card>`
-     - Pattern B (no icon, multi-line CardTitle): `<Card><CardHeader><CardTitle className="..."> Title text </CardTitle></CardHeader><CardContent>...</CardContent></Card>`
-     - Pattern C (no icon, single-line CardTitle): `<Card><CardHeader><CardTitle className="...">Title text</CardTitle></CardHeader><CardContent>...</CardContent></Card>`
-  2. Properly handles NESTED Cards via depth-tracking parser (`find_matching_close` walks the content counting `<CardContent>` opens vs `</CardContent>` closes; rejects matches where the close indent doesn't match the open indent — this catches the SmartAssistantPanel "outer Card with inner per-stock Cards" pattern that the v1 non-greedy regex got wrong).
-  3. Builds a `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>` replacement, preserving the body content and outer indent.
-  4. Adds `import { WidgetCard } from '@/components/shared/WidgetCard';` if not already present (placed right after the `@/components/ui/card` import).
-  5. Prunes unused `CardHeader` / `CardTitle` / `CardContent` / `Card` named exports from the `@/components/ui/card` import if no longer referenced in JSX. Removes the entire import line if all 4 become unused.
-- Audited the script's coverage and behavior:
-  - Files with simple `<Card><CardHeader><CardTitle>` pattern → adopted.
-  - Files with CardHeader but complex inner structure (e.g., `<CardHeader><div className="flex..."><CardTitle>...</CardTitle><Badge>...</Badge></div></CardHeader>` like RoboAdvisorPanel, AdvancedPortfolioManager, RiskProfilerQuiz, WealthAllocationMatrixCard, PersonaCard, SingleStockAnalysisView, ExpertRecommendationsPanel, MorningBellSection, LearnedLessonsDashboard, HistoricalTradesTable, MarketDepthLiquidityWidget, MarketDepthPanel, GateAnalysisView, CalculationBreakdown, TreasuryBondsView) → correctly skipped (regex requires CardTitle to be the immediate child of CardHeader).
-  - Files with no CardHeader in JSX (only import) → correctly skipped.
-  - Files with `<Card><CardContent>` only (no CardHeader/CardTitle) like SectorTrackingTab, PredictionsTab, LiveTrackingTab, CryptoPredictionsTab, StockNews, PortfolioIntelligencePanel → not candidates for WidgetCard (WidgetCard's whole point is the title+icon header), correctly skipped.
-
-Files adopted (9 files, 50 WidgetCard instances):
-1. `src/modules/market-analysis/components/MarketStatusTab.tsx` — 3 replacements (Breadth donut, Gainers/Losers bar, Sector distribution bar).
-2. `src/modules/portfolio/components/SmartAssistantPanel.tsx` — 4 replacements (Alerts card, Stocks analysis card with nested per-stock Cards, Bank Deposits card, Gold card).
-3. `src/modules/portfolio/components/enhanced-portfolio/IncomeExpenseTab.tsx` — 1 replacement (Expenses distribution card, no-icon inline pattern).
-4. `src/modules/portfolio/components/enhanced-portfolio/ReportsTab.tsx` — 6 replacements (Portfolio overview, Investment returns, Income vs Expenses, Alerts, Assets distribution, Economic expert recommendations).
-5. `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 14 replacements (RSI, Moving Averages, Support/Resistance, 52-week range, Price+MA chart, Financial metrics, Valuation assessment, Maestro analysis, etc.).
-6. `src/modules/stock-analysis/components/DeepAnalysis.tsx` — 11 replacements (Score breakdown loading/loaded, Price targets, Analysis details, Technical signals, etc.).
-7. `src/modules/stock-analysis/components/ExpertAnalysisPanel.tsx` — 4 replacements (Entry/Targets/Stop, Technical analysis, Fundamental analysis, Risk assessment — kept the recommendation banner Card complex header untouched).
-8. `src/modules/stock-analysis/components/StockAdvancedAnalysisView.tsx` — 5 replacements (Score breakdown, Risk profile, Market regime overview, etc.).
-9. `src/modules/stock-analysis/components/StockDetail.tsx` — 2 replacements (Financial metrics, Technical indicators).
-
-Files audited but correctly skipped (22 files) because their Card patterns were too complex (nested CardHeader with flex-wrapped CardTitle+Badge, conditional Card with custom skeleton header, Card with `dir="rtl"` attribute, Card without CardHeader, etc.):
-- market-analysis (12): SectorTrackingTab, LearnedLessonsDashboard, ExpertPredictionsTab, ExpertRecommendationsPanel, MorningBellSection, HistoricalTradesTable, PredictionsTab, MarketDepthLiquidityWidget, CryptoPredictionsTab, persona/PersonaCard, SingleStockAnalysisView, LiveTrackingTab.
-- stock-analysis (5): StockNews, TreasuryBondsView, GateAnalysisView, MarketDepthPanel, CalculationBreakdown.
-- portfolio (5): RoboAdvisorPanel, enhanced-portfolio/WealthAllocationMatrixCard, PortfolioIntelligencePanel, AdvancedPortfolioManager, RiskProfilerQuiz.
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 1.5s).
-- `sleep 18 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~12.4s + render 520ms; subsequent cached at 55-65ms).
-- `curl http://localhost:3000/?view=portfolio` → `HTTP 200` ✓ (SmartAssistantPanel + enhanced-portfolio tabs render cleanly — no JSX errors).
-- `curl http://localhost:3000/?view=market-analysis` → `HTTP 200` ✓ (MarketStatusTab renders cleanly).
-- `curl http://localhost:3000/?view=stock-analysis` → `HTTP 200` ✓ (ComprehensiveStockAnalysis + DeepAnalysis + ExpertAnalysisPanel + StockAdvancedAnalysisView + StockDetail render cleanly).
-- `tsc --noEmit` → only 1 pre-existing error in `trading-view-chart/indicators.ts` (truncated file — unrelated to this refactor; pre-existing from F-Phase3-Split-StocksView task family). ZERO new TS errors introduced by this WidgetCard adoption.
-- pm2 logs: clean compile of `/`, `/?view=portfolio`, `/?view=market-analysis`, `/?view=stock-analysis`. No JSX/parse errors. Only pre-existing config warnings (outputFileTracingRoot deprecated keys, eslint config deprecated, "middleware" file convention deprecated, NEXTAUTH_URL warning).
-
-LOC summary:
-- 9 files modified: +391 insertions, −476 deletions = **−85 LOC net** (WidgetCard consolidation saves the boilerplate `<Card><CardHeader><CardTitle className="..."><Icon className="..." /> title </CardTitle></CardHeader><CardContent>` opening + `</CardContent></Card>` closing per instance — avg ~3 LOC saved per replacement × 50 replacements ≈ 150 LOC raw savings, offset by the multi-line WidgetCard prop block).
-- 50 total `<WidgetCard>` instances now in production across the 9 adopted files (avg 5.5 per file).
-- 22 files audited and intentionally left untouched (complex Card patterns — Rule 75 "don't break anything").
+- Read /home/z/my-project/worklog.md (context only — prior migration logs)
+- Read /home/z/my-project/vps-service/engines/backtest_engine.py (2,374 lines) — V38BacktestEngine class
+- Verified via AST: V38BacktestEngine has DUPLICATE `analyze_single_day` method (lines 1455 + 1588). In Python the SECOND definition OVERRIDES the first — so the ACTIVE path is the V39.3/V40 version that delegates to build_institutional_decision. The V38-native block at 1455-1586 is DEAD CODE but still represents the original V38 logic.
+- Read /home/z/my-project/vps-service/analyzers/backtest_engine.py (1,267 lines) — confirmed it is a DIFFERENT engine: class `BacktestEngine` (not V38) that wraps `MasterAnalyzer`. Not used by V38 path.
+- Read /home/z/my-project/vps-service/analyzers/institutional_decision_engine.py (1,507 lines) — build_institutional_decision: builds 6 Proofs (trend, maker, DNA, fundamentals, sector, benchmark RS), computes tech_score (base 50 ± weighted deltas), applies Market Breadth Hard Veto (bear regime + benchmark<-1% + breadth<40%), and emits Arabic signal_final mapped to STRONG_BUY/BUY/WAIT.
+- Key findings:
+  * Active V38/V39.3 indicators: ATR(14), SMA(200), SMA(20), Bollinger(20,2.0)+BB-width SMA(50) for squeeze/expansion, Volume SMA(20), Order Blocks/Sweeps (pivot lookback=5), VWAP fair value (period=100), DNA pattern-match (10-bar pct-change, search_depth=100, proj_len=10), 14-day ROC, EGX30ETF benchmark ROC-14, fundamentals 0-100 score from data_engine.db (P/E, ROE, dividends).
+  * Scoring (legacy V38 calculate_score_and_proofs, dead code): base = tech_score_base(50) - 20 = 30; +w_trend(15) +w_maker(20) +w_dna(15) +w_fund(15) +w_sector(10) +5 bonus if sector_change>1%. Clamped 0-100.
+  * Active V39.3 path: tech_score = base(50) + sum of proof score_impacts; STRONG_BUY if (maker_bullish AND flight_up) OR strong_count>=3 + RS>=1.0; BUY if strong_count>=2 + R/R>=1.5; WAIT otherwise.
+  * buy_threshold default = 75 (NOT 60 as task brief stated). Task brief may be referring to a downstream filter; the engine-level default is 75.
+  * Entry = last close (or decision.risk_profile.entry); SL = active_ob - 0.5*ATR (or entry - 1.5*ATR), clamped to [5%, 9%] of entry (env V40_2_STOP_MAX_PCT); TP1 = entry + 2*risk (or DNA target if higher), TP2 = entry + 3*risk. Trailing stop activates at +5% gain, breakeven floor at entry*1.01. Partial exit 50% at 1R via StopLossManager.
+  * Entry gate (Task part4-stop-loss): BUY rejected → WAIT if stock in active correction (price<MA50 AND RSI<45 AND change<0 AND not near 52w low). Only applies to BUY (not STRONG_BUY).
+  * Adaptive threshold: after ≥5 trades, win_rate>=65% → lower threshold by 5; win_rate<40% → raise by 5.
 
 Stage Summary:
-- F-Phase3-Adopt-Batch5 complete. WidgetCard adoption applied to 9 files across market-analysis (1), stock-analysis (5), portfolio (3). 50 manual Card/CardHeader/CardTitle/CardContent blocks replaced with `<WidgetCard title="..." icon={Icon} iconColor="..." iconSize="..." titleClassName="..." contentClassName="..." className="...">...</WidgetCard>`.
-- Each adopted file: imports updated (WidgetCard added, unused Card sub-components pruned from `@/components/ui/card` import where applicable).
-- Visual: standardizes all adopted widgets to the WidgetCard look (icon in rounded-lg `bg-primary/10` wrapper, refresh button on the right when `onRefresh` passed, optional skeleton loading). Adopted widgets now share visual language with the 37 other files that already use WidgetCard (admin module + dashboard module from earlier Phase 3 batches).
-- HTTP 200 confirmed on `/`, `/?view=portfolio`, `/?view=market-analysis`, `/?view=stock-analysis` before commit (Rule 75). Commit + push next.
+- Indicators used: ATR(14), SMA(20), SMA(200), Bollinger Bands(20, 2.0) + BB-width SMA(50) squeeze/expansion, Volume SMA(20) + vol_ratio, Order Blocks & Liquidity Sweeps (pivot lookback=5), VWAP fair value (period=100), DNA pattern match (pattern_len=10, search_depth=100, proj_len=10), 14-day stock ROC, EGX30ETF benchmark ROC-14, Fundamentals (P/E + ROE → 0-100 score). NOT used: RSI (except in entry-gate helper), MACD, ADX, Stochastic, MFI, CCI, OBV, Ichimoku, Donchian channels (the codebase HAS modules for these but V38 path does not call them).
+- BUY logic: Active path computes 6 Proofs (trend/maker/DNA/fundamentals/sector/benchmark-RS), sums score_impacts onto tech_score_base=50. STRONG_BUY if maker_bullish AND flight_up (BB expansion + broke resistance), OR strong_count>=3 + benchmark_passed (RS>=1.0). BUY if strong_count>=2 and R:R>=1.5 and no weak_blocks and market breadth veto not triggered. Hard veto when regime=bear (close<SMA200 proxy) AND benchmark<-1%. Note: dead-code V38 path uses simple threshold: score>=buy_threshold(75) → STRONG_BUY.
+- 5+ GAPS (blind spots):
+  1. No real market-regime classifier — uses close vs SMA200 as crude bull/bear proxy; engines/market_regime.py + HMM modules exist but are NOT called. Bear-market severity (drawdown depth, vol expansion) is invisible → strategy can't scale position size to regime.
+  2. No sector rotation / money-flow tracking — sector_change is just today's AVG(change_percent) of stocks in sector (single-day, not multi-week momentum). No relative-strength ranking of stock vs sector peers, no inter-sector rotation.
+  3. No earnings/event calendar — fundamentals are static snapshots (cached once); no upcoming earnings date, ex-div date, corporate-action calendar, dilution events. V38 can BUY the day before earnings or a capital-increase — catastrophic in bear markets where earnings whipsaw.
+  4. No news/sentiment/disclosure feed — egx_disclosure_engine.py, news_impact_scorer.py, live_news_integration.py exist in codebase but V38 never imports them. Negative disclosures (loss reports, regulatory action) are invisible — common trigger for bear-market gap-downs.
+  5. No volatility regime / VIX-equivalent — BB squeeze/expansion is a poor proxy; no realized-vol percentile, no EGX VIX. position_sizing.py only bins ATR/price into LOW/NORMAL/HIGH; no bear-regime vol-expansion handling.
+  6. No inter-market signals — no EGP/USD, no Egypt 10Y bond yield, no MSCI EM, no gold/oil correlation. Capital-flight signals (EGP depreciation, rising local yields) typically precede EGX sell-offs but V38 ignores them.
+  7. No volume profile / institutional order flow — daily vol_ratio vs 20-SMA only. volume_profile.py exists but unused. Block-trade distribution during bear rallies (sign of institutional selling) is invisible.
+  8. No calendar effects — no month-end, quarter-end, Ramadan thin-liquidity, year-end window-dressing signals (EGX has strong seasonality around Ramadan/Eid).
+  9. No fundamental momentum — P/E and ROE are point-in-time cached; no delta (improving vs deteriorating fundamentals). Bear markets are preceded by declining ROE which V38 cannot detect.
+  10. Adaptive threshold is reactive (needs 5+ losing trades before tightening) — by then a bear regime may have inflicted significant drawdown.
+- Trend-following vs mean-reverting verdict: V38 is PRIMARILY TREND-FOLLOWING with a thin mean-reversion entry layer. Trend bias comes from: SMA(200) trend filter (only BUY when close>SMA200), BB-squeeze→expansion breakout detection, DNA pattern continuation assumption, trailing stops + 1R partial exits (let profits run). Mean-reversion bias is secondary and only at entry timing: maker absorption (red candle + high vol + close near top = capitulation fade) and liquidity sweep detection (low<support, close>support). In a BEAR market, the trend-following bias means V38 will mostly sit out (price rarely >SMA200) but its occasional BUY signals during bear rallies get stopped when trend resumes down, while the maker-absorption/sweep signals can fire false reversals during downtrends.
 
-Commit: 84b6245bdc2a9785bdca900afcaf15d2a2460599
-Message: "refactor(phase3): WidgetCard adoption — market-analysis + stock-analysis + portfolio"
-Pushed to: origin/main (68d76d0..84b6245)
+---
+Task ID: P0-Inv-A
+Agent: Explore
+Task: Inventory features 1-4 (liquidity_filter, strict_entry_filters, regime_filter, risk) — extract callable signatures, inputs, returns, deps, standalone-testability, gotchas.
+
+Work Log:
+- Read /home/z/my-project/worklog.md (P1-V38-Analysis entry at line 8104 — context: V38 uses ATR14, SMA20/200, BB(20,2), Volume SMA20, Order Blocks/Sweeps, VWAP100, DNA, ROC14, EGX30ETF RS, fundamentals; buy_threshold=75; gaps include no real regime classifier, no volatility regime, no volume-profile, no news/disclosure integration).
+- Read fully: vps-service/analyzers/liquidity_filter.py (1,112 lines), strict_entry_filters.py (830 lines), regime_filter.py (247 lines), risk.py (320 lines).
+- Verified all public function/method signatures against source (parameter names, types, defaults, return shapes).
+- Key signature findings (exact):
+  * liquidity_filter.evaluate_kill_filters(ticker, closes=None, volumes=None, current_price=0.0, avg_turnover=0.0, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> Dict[str, Any]  returning {passed, kill_reasons, kill_details, kill_filter_active}.
+  * LiquidityFilter(db_path).analyze(ticker, closes=None, volumes=None, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> LiquidityProfile  (dataclass: is_tradeable, level, liquidity_mult, warning, kill_filter_result, free_float_*).
+  * strict_entry_filters.evaluate_strict_entry(closes, highs, lows, volumes, rsi=None) -> Dict  with {'decision':'ACCEPT'|'REJECT', 'reason', 'is_accumulation', 'is_grab', 'is_late', 'accumulation_details', 'grab_details', 'late_details'}.
+  * regime_filter.is_bullish_regime(closes, mode='A', ma_short_period=20, ma_long_period=50) -> Dict  with {is_bullish, mode, close, sma50, sma20, reason}.
+  * risk.RiskManager(capital=10000, risk_percent=2.0).evaluate_trade(entry_price, target_price=None, stop_loss=None, signal='HOLD', support_level=None, resistance_level=None) -> RiskAssessment (dataclass; .to_dict() available).
+- Confirmed: NONE of the 4 files writes to any DB; all reads on liquidity_filter go through db_manager (writable=False). strict_entry_filters/regime_filter/risk have ZERO DB dependency.
+
+Stage Summary:
+## Feature 1: liquidity_filter
+- File: vps-service/analyzers/liquidity_filter.py
+- Main callables:
+  (a) `evaluate_kill_filters(ticker: str, closes: List[float]=None, volumes: List[float]=None, current_price: float=0.0, avg_turnover: float=0.0, benchmark_change: float=0.0, stock_roc: float=0.0, data_bars_count: int=0) -> Dict[str, Any]`
+  (b) `LiquidityFilter(db_path).analyze(ticker: str, closes=None, volumes=None, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> LiquidityProfile`
+  (c) `check_liquidity_first(ticker, db_path) -> Tuple[bool, Optional[LiquidityProfile]]` (convenience wrapper)
+- Input: ticker string + raw lists of closes/volumes + scalars (current_price, avg_turnover, benchmark_change, stock_roc, data_bars_count). NO DataFrame. List length ≥20 needed for wash-trading/distribution/dead-money filters.
+- Returns: (a) Dict `{passed: bool, kill_reasons: List[str], kill_details: dict, kill_filter_active: bool}` where kill_details has per-filter keys (liquidity, price, volume_volatility, data_bars, relative_strength, wash_trading, distribution_trap, dead_money). (b) LiquidityProfile dataclass: ticker, avg_daily_volume, avg_daily_turnover, volume_20d, turnover_20d, level (LiquidityLevel enum: EXCLUDED/WEAK/MODERATE/LIQUID/HIGH_LIQUIDITY), is_tradeable, warning, free_float_percentage, free_float_shares, free_float_warning, liquidity_mult (0.0–1.1), kill_filter_result (Dict or None). `.to_dict()` available.
+- Deps: (a) is DB-FREE but reads admin settings via `analyzers.engine_settings.get_setting(key, default)` — falls back to defaults if module missing. Also imports `analyzers.dynamic_context_engine.get_dynamic_context` and `utils.shared_liquidity.*` (all stubbed if import fails). (b) REQUIRES DB: reads `stocks` table (current_price, free_float_percentage, free_float_shares, volume) from `db_path` and `price_history` table from `price_history.db` (sibling path). Uses `core.db_manager.get_connection(path, writable=False)`.
+- Standalone: (a) YES — pure function with pre-fetched inputs. (b) NO — needs DB; but if caller pre-fetches volume/price and calls evaluate_kill_filters directly, fully testable. (c) NO — wraps (b).
+- Gotchas: (1) Module-level global `_STRICT_KILL_FILTERS` toggled by `set_strict_kill_filters(bool)` — backtests MUST call `set_strict_kill_filters(True)` else data-bars threshold relaxed ×0.15 when EGX market closed. (2) `_is_egx_market_open()` reads system clock → tests on weekends auto-relax thresholds (surprising). (3) `_get_volume_data` has bare `except:` (swallows ALL errors silently → returns None). (4) `volume` column in stocks table is a STRING like "2.28 M" — parsed by `_parse_volume_string` (handles K/M/B suffixes); silent 0 if malformed. (5) No DB writes. (6) dynamic_min_turnover thresholds per-price-bucket: <5 → 80K, 5-15 → 200K, >15 → 400K (override legacy 3M). (7) `kill_filter_result` is None on profile unless caller passes closes/volumes/benchmark/roc/bars.
+
+## Feature 2: strict_entry_filters
+- File: vps-service/analyzers/strict_entry_filters.py
+- Main callables (4 public + 2 helpers — all module-level functions, no class):
+  (a) `is_in_accumulation(closes, highs, lows, volumes) -> Dict[str, Any]`
+  (b) `is_liquidity_grab(highs, lows, closes, volumes) -> Dict[str, Any]`  (NOTE arg order differs from (a))
+  (c) `is_late_entry(closes, highs, rsi: Optional[float]=None) -> Dict[str, Any]`
+  (d) `evaluate_strict_entry(closes, highs, lows, volumes, rsi: Optional[float]=None) -> Dict[str, Any]`  ← orchestrator (calls a, b, c)
+  (e) `is_liquidity_grab_opportunity(closes, highs, lows, volumes, sma50: Optional[float]=None) -> Dict[str, Any]`
+  (f) `evaluate_average_down(closes, highs, lows, volumes, original_entry: float, original_stop: float, current_price: float, sma50: Optional[float]=None, already_averaged: bool=False) -> Dict[str, Any]`
+- Input: raw `List[float]` arrays (closes/highs/lows/volumes, oldest→newest). NO DataFrame. RSI optional (computed internally via canonical `calc_rsi` if None). Needs ≥20-25 bars for most checks.
+- Returns: every function returns `Dict[str, Any]`. (d) returns `{'decision':'ACCEPT'|'REJECT', 'reason':str, 'is_accumulation':bool, 'is_grab':bool, 'is_late':bool, 'accumulation_details':dict, 'grab_details':dict, 'late_details':dict}`. (a) returns `{is_accumulation, reason, range_pct, vol_ratio, recent_gain_pct, dist_from_high_pct}`. (b) returns `{is_grab, reason, support_level, penetration_pct, recovered, volume_confirmed}`. (c) returns `{is_late, reason, dist_from_high_pct, rsi, recent_gain_pct}`. (e) returns `{is_opportunity, break_pct, recovered, recovery_days, vol_confirmed, near_sma50, no_bearish_choc, reason, details}`. (f) returns `{should_average, avg_price, new_avg_entry, new_stop, reason, opportunity_details}`.
+- Deps: imports `analyzers.indicators.ma.sma` and `analyzers.indicators.rsi.calc_rsi` (canonical SSOT — must be importable). NO DB. NO engine context. NO global state.
+- Standalone: YES — pure functions, has `if __name__=='__main__'` self-test using synthetic arrays.
+- Gotchas: (1) thresholds are MODULE-LEVEL CONSTANTS (ACCUM_RANGE_MAX_PCT=18.0, ACCUM_VOL_MAX_RATIO=1.4, ACCUM_RECENT_GAIN_MAX_PCT=15.0, ACCUM_DIST_FROM_20D_HIGH_MIN_PCT=6.0, GRAB_PENETRATION_PCT=0.5, LATE_DIST_FROM_HIGH_MAX_PCT=8.0, LATE_RSI_THRESHOLD=70.0, LATE_RECENT_GAIN_PCT=18.0) — to override at runtime you must monkey-patch module attrs (no parameter). (2) `_rsi()` returns 50.0 (neutral) if canonical returns None → masks missing-data case. (3) `is_late_entry` returns `is_late=False` silently if `len(closes) < 20` (caller must check data sufficiency separately). (4) `is_liquidity_grab` arg order is (highs, lows, closes, volumes) — DIFFERENT from `is_in_accumulation` (closes, highs, lows, volumes). Adapter must preserve order. (5) No DB writes, no side effects.
+
+## Feature 3: regime_filter
+- File: vps-service/analyzers/regime_filter.py
+- Main callables:
+  (a) `is_bullish_regime(closes: List[float], mode: str='A', ma_short_period: int=20, ma_long_period: int=50) -> Dict[str, Any]`  ← per-stock
+  (b) `passes_regime_filter(closes: List[float], mode: str='A') -> bool`  (thin wrapper: `return is_bullish_regime(closes, mode=mode)['is_bullish']`)
+  (c) `compute_market_proxy_index(per_ticker_closes: Dict[str, List[float]]) -> List[float]`  (equal-weighted EGX proxy index, base=100)
+  (d) `is_market_bullish(per_ticker_closes: Dict[str, List[float]], ma_period: int=50) -> Dict[str, Any]`  ← market-level
+- Input: (a)(b) `List[float]` closes (oldest→newest). (c)(d) `Dict[str, List[float]]` per-ticker closes (all should be aligned length; misalignment silently truncated to min).
+- Returns: (a) Dict `{is_bullish: bool, mode: str, close: float|None, sma50: float|None, sma20: float|None, reason: str}` (reason is Arabic human-readable). (d) Dict `{is_bullish: bool, index: List[float], sma: float (only if computed), reason: str}`.
+- Deps: imports `analyzers.indicators.ma.sma` only. NO DB. NO engine context. NO global state.
+- Standalone: YES — pure functions, has `__main__` self-test (bull/bear/sideways scenarios).
+- Gotchas: (1) Returns `is_bullish=False` silently if `len(closes) < ma_long_period` (default 50) — caller MUST check `reason` field or pre-validate length. (2) Unknown `mode` (not 'A' or 'B') → returns dict with `is_bullish=False` and reason "mode غير معروف". (3) Mode A = Close > SMA50 (single condition); Mode B = Close > SMA20 AND Close > SMA50 (stricter). (4) Market-level uses equal-weighted proxy index (NOT cap-weighted) — may diverge from real EGX30. (5) No DB writes, no side effects.
+
+## Feature 4: risk (RiskManager)
+- File: vps-service/analyzers/risk.py
+- Main callables:
+  (a) `RiskManager(capital: float=10000, risk_percent: float=2.0).evaluate_trade(entry_price: float, target_price: Optional[float]=None, stop_loss: Optional[float]=None, signal: str='HOLD', support_level: Optional[float]=None, resistance_level: Optional[float]=None) -> RiskAssessment`
+  (b) `RiskManager.calculate_position_size(entry_price: float, stop_loss: float, capital: Optional[float]=None, risk_percent: Optional[float]=None) -> Dict`
+  (c) `RiskManager.suggest_stop_loss(entry_price: float, support_level: Optional[float]=None, resistance_level: Optional[float]=None, signal: str='BUY', atr: Optional[float]=None) -> Dict`
+- Input: scalar prices (entry/target/stop/support/resistance) + signal string ('BUY'/'SELL'/'HOLD') + optional ATR. NO DataFrame, NO lists.
+- Returns: (a) RiskAssessment dataclass with fields: entry_price, target_price, stop_loss, position_size (int shares), position_value (float), risk_amount, risk_percent, reward_amount, reward_percent, risk_reward_ratio (float), signal (str), signal_quality (str: 'EXCELLENT'≥3, 'GOOD'≥2, 'ACCEPTABLE'≥1.5, 'POOR'≥1, 'BAD'<1), warnings (list[str]). Has `.to_dict()`. (b) Dict `{shares, position_value, risk_amount, risk_percent, formula}` (or `{shares:0, error:'Invalid stop loss'}` if sl_distance≤0). (c) Dict with optional keys: `percentage_based` (always None per Rule 27), `support_based`/`resistance_based` (only if provided), `atr_based` (only if atr given), `recommended` (max for BUY, min for SELL, or None).
+- Deps: lazily imports `utils.risk_reward.compute_risk_reward` inside `evaluate_trade` (wrapped in try/except — falls back to `reward_amount/risk_amount` if missing). NO DB. NO engine context. NO global state.
+- Standalone: YES — pure class instantiation, no I/O.
+- Gotchas: (1) `risk_percent` clamped to [0.5, 10.0] in `__init__` (caller value silently overridden). (2) If `signal='HOLD'` OR `entry_price <= 0` → returns early with empty assessment (no SL/TP/size computed, signal_quality='NEUTRAL'). (3) If `stop_loss=None` AND no support/resistance → Rule 27 NO-FAKE-DATA: stop_loss stays None, position_size=0, target_price=None, reward_amount=0. Pre-2026 this fabricated entry*0.95. (4) **BUG**: line 212 references `sl_distance` in `if sl_distance / entry_price > 0.1` warning check, but `sl_distance` is only assigned inside the `if stop_loss is not None:` branch — if stop_loss is None, raises `UnboundLocalError`. Adapter MUST either pass stop_loss explicitly OR wrap evaluate_trade in try/except. (5) `RiskAssessment.warnings: list = None` is a mutable default at class level — instances created via direct `RiskAssessment(...)` without passing warnings share the SAME list object; only `evaluate_trade` constructs with `warnings=[]` (safe). (6) `suggest_stop_loss` returns dict with potentially-missing keys — caller MUST use `.get(key)` not `[]`. (7) No DB writes, no side effects.
+
+Adapter-design summary (for orchestrator author):
+- LOWEST-FRICTION targets (pure-fn, no DB): strict_entry_filters.* , regime_filter.*, risk.RiskManager. Adapter = thin shim passing lists/scalars directly.
+- DB-BOUND target: LiquidityFilter.analyze needs stocks.db + price_history.db; ADAPTER should either (a) inject a fake db_path that the orchestrator pre-populates, (b) bypass and call evaluate_kill_filters directly with pre-fetched volume/price (preferred for unit testing — evaluate_kill_filters is DB-free).
+- All 4 modules tolerate missing optional imports via try/except stubs — adapter does NOT need to spin full engine context.
+- Globals to reset between runs: liquidity_filter._STRICT_KILL_FILTERS (call set_strict_kill_filters(False) for live, True for backtest). strict_entry_filters thresholds are module constants (monkey-patch to override).
+- Crash-safe wrapping: liquidity_filter._get_volume_data and risk.evaluate_trade both can raise (bare except / UnboundLocalError) — adapter should wrap in try/except and return REJECT on exception.
+
+---
+Task ID: P0-Inv-B
+Agent: Explore
+Task: Inventory features 5-7 (rr_gate, sector_heat, whale_guard) — callable signatures, inputs, returns, deps, standalone-testability, gotchas.
+
+Work Log:
+- Read /home/z/my-project/worklog.md (P0-Inv-A + P1-V38-Analysis entries — context: RiskManager.evaluate_trade already inventoried; V38 uses sector_change = AVG(change_percent) of sector peers single-day, no real RS ranking; gap #7 = no volume-profile / institutional order flow).
+- Read fully: vps-service/analyzers/sector_relative.py (471 lines), vps-service/jobs/predictor_modules/whale_guard.py (42 lines), vps-service/utils/risk_reward.py (89 lines), vps-service/utils/entry_gate.py (858 lines — esp. _check_rr + check_entry_gate), scripts/liquidity_radar_v2.py (relevant slice: compute_whale_flow at lines 579-710, classify_phase at 716, MIN_CANDLES/LOOKBACK_DAYS at 120-121), vps-service/risk_management_advanced.py (get_rr_verdict 1295, calculate_dynamic_rr 1822), vps-service/analyzers/conviction_engine.py (_score_risk_reward 260, calculate_conviction 342), vps-service/jobs/predictor_modules/__init__.py, vps-service/jobs/daily_predictor.py (whale_guard import + call site at line 1060).
+- Verified via Glob: NO dedicated `rr_gate.py` or `sector_heat.py` file exists anywhere in repo. Only one `whale_guard.py` exists. Confirmed predictor_modules/__init__.py lists whale_guard as Phase 7.2 extraction from daily_predictor.py (Strangler Pattern).
+- Confirmed via Grep: 92 files mention "risk_reward" — all derive from utils/risk_reward.compute_risk_reward (Rule 67 canonical) OR RiskManager.evaluate_trade. No standalone "rr_gate" callable. entry_gate._check_rr is private (underscore) and only used inside check_entry_gate.
+- Confirmed compute_whale_flow returns Dict with net_flow_egp, avg_daily_flow_egp, whale_present, flow_strength, cash_ratio, cash_safety_multiplier, flow_method, whale_threshold_egp, reason. _whale_distribution_guard reduces this to single bool: `net_flow_egp < 0` (distributing → block BUY).
+
+Stage Summary:
+## Feature 5: rr_gate (Risk:Reward gate)
+- File: NO DEDICATED FILE. Closest canonical primitives:
+  (a) `utils/risk_reward.py::compute_risk_reward(entry: float, target: float, stop: float, fallback: float=0.0) -> float` (Rule 67 canonical, 89 lines)
+  (b) `utils/risk_reward.py::compute_risk_reward_safe(entry, target, stop) -> Optional[float]` (None on invalid)
+  (c) `analyzers/risk.py::RiskManager.evaluate_trade(entry_price, target_price=None, stop_loss=None, signal='HOLD', support_level=None, resistance_level=None) -> RiskAssessment` (dataclass with .risk_reward_ratio + .signal_quality; already inventoried in P0-Inv-A)
+  (d) `utils/entry_gate.py::_check_rr(entry_price, target_price, stop_price) -> Dict` (PRIVATE; returns `{name:'rr_ratio', passed:bool, reason:str, weight:3}`; threshold = `MIN_RR_RATIO=1.5` module constant at line 86)
+  (e) `risk_management_advanced.py::get_rr_verdict(risk_reward: float) -> Dict` (label-only: `{level, label_ar, emoji, color}`)
+  (f) `risk_management_advanced.py::calculate_dynamic_rr(entry_price, current_price, stop_price, target_price) -> Dict` (DYNAMIC — uses current_price, not entry; semantics differ)
+- Input: 3 scalars (entry, target, stop). NO DataFrame, NO lists, NO DB.
+- Returns: (a)(b) float R:R ratio (or fallback/None). (c) RiskAssessment dataclass. (d) Dict {name, passed, reason, weight}. (e) Dict {level, label_ar, emoji, color}. (f) Dict {risk_reward_ratio, risk_amount, reward_amount, risk_pct, reward_pct, verdict, message}.
+- Deps: utils/risk_reward.py is ZERO-DEP (pure Python, only `from __future__ import annotations` + `typing.Optional`). entry_gate._check_rr imports compute_risk_reward lazily inside the function. risk_management_advanced imports utils.risk_reward lazily. RiskManager lazily imports utils.risk_reward (already inventoried P0-Inv-A).
+- Standalone: YES — `compute_risk_reward` is a pure function, no class, no DB, no I/O, no global state. The 3-scalar signature is the cleanest possible gate input.
+- Gotchas: (1) `compute_risk_reward` auto-detects BUY vs SELL from `target/stop` relationship to `entry` — if geometry is reversed (target < entry AND stop < entry, or vice-versa mismatched) → returns `fallback` (default 0.0). Adapter MUST pass correctly-oriented prices or gate will silently return 0 → reject. (2) If `entry == stop` (risk=0) → returns `fallback` (NOT infinity). (3) If `target == entry` (reward=0) → returns 0.0 explicitly. (4) Result is `round(reward/risk, 2)` — 2-decimal precision. (5) `entry_gate.MIN_RR_RATIO` was lowered 1.8 → 1.5 (comment: "DNA-WINNER" at line 86) — V38 buy_threshold default is 75 but R:R floor is 1.5. Adapter should expose threshold as parameter, NOT rely on module constant. (6) `RiskManager.evaluate_trade` has UnboundLocalError bug if stop_loss=None (P0-Inv-A gotcha #4) — prefer `compute_risk_reward` over `evaluate_trade` for the gate.
+- VERDICT FOR ADAPTER: DOES NOT EXIST standalone. Recommend adapter = thin wrapper:
+  ```python
+  def rr_gate(entry: float, target: float, stop: float, threshold: float = 1.5) -> Dict:
+      rr = compute_risk_reward(entry, target, stop, fallback=0.0)
+      return {'passed': rr >= threshold, 'rr': rr, 'threshold': threshold}
+  ```
+  Wraps `utils.risk_reward.compute_risk_reward` directly. NO DB layer needed. NO class instantiation. Testable with 3 floats.
+
+## Feature 6: sector_heat (sector momentum / relative strength)
+- File: `vps-service/analyzers/sector_relative.py` (471 lines)
+- Main callable: `SectorRelativeAnalyzer(db_path: str = None).analyze(ticker: str) -> SectorRelativeScore`
+  - Also: `get_all_sectors() -> List[str]`, `get_stocks_in_sector(sector: str) -> List[str]` (lookups)
+- Input: ticker string only. NO arrays, NO DataFrame. The class reads ALL context from `db/stocks.db` (default path: `<project_root>/db/stocks.db`).
+- Returns: `SectorRelativeScore` dataclass with fields:
+  ```
+  ticker: str
+  sector: str
+  vs_sector_pe: float          # % diff from sector avg P/E
+  vs_sector_roe: float        # % diff from sector avg ROE
+  sector_rank: int             # 1=best (ranked by ROE within sector); 0 if not found
+  sector_momentum: str         # 'BULLISH' | 'BEARISH' | 'NEUTRAL'  ← THIS IS "sector_heat"
+  sector_strength: float       # 0-100 (70 if avg_change>3%, 60 if >1%, 40 if <-1%, 30 if <-3%, else 50)
+  relative_score: float        # 0-100 overall (50 base ± deltas)
+  signal: str                  # STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL
+  confidence: float            # 0.5-0.95 (data-quality based)
+  ```
+  Has `.to_dict()`. Sector heat answers "hot/cold" via `sector_momentum` + `sector_strength` (e.g., strength≥60 = hot, ≤40 = cold).
+- Deps: REQUIRES DB. `SectorRelativeAnalyzer.__init__` calls `_build_sector_lookup()` which queries `SELECT ticker, sector FROM stocks WHERE is_active=1 AND sector IS NOT NULL` — populates `self.ticker_to_sector` + `self.sector_tickers`. Each `analyze()` call makes 3 more DB queries: (1) `_get_stock_data` → `SELECT pe_ratio, roe, sector, current_price, previous_close FROM stocks WHERE ticker=?`; (2) `_get_sector_stats` → `SELECT AVG(pe_ratio), AVG(roe), AVG(debt_to_equity), COUNT(*) FROM stocks WHERE ticker IN (...)`; (3) `_get_sector_rank` → `SELECT ticker, roe FROM stocks WHERE ticker IN (...) ORDER BY roe DESC`; (4) `_get_sector_momentum` → `SELECT AVG(change_percent) FROM stocks WHERE ticker IN (...)`. Uses `core.db_manager.get_connection(path, writable=False)`. Also imports `data.egx_official_sectors` (EGX_OFFICIAL_SECTORS + STOCK_SECTORS) — module-level sys.path insertion.
+- Standalone: NO — needs `db/stocks.db` with populated `stocks` table (columns: ticker, sector, is_active, pe_ratio, roe, debt_to_equity, current_price, previous_close, change_percent, volume). For unit testing, must inject a fake db_path or mock `db_manager.get_connection`.
+- Gotchas: (1) Sector momentum is SINGLE-DAY `AVG(change_percent)` of sector peers — NOT multi-week momentum. Same limitation flagged in P1-V38-Analysis gap #2 (no real sector rotation / money-flow tracking). Adapter MUST document this — "sector_strength=70" means "sector avg was up >3% TODAY", not "sector is in a multi-week uptrend". (2) `_get_sector_momentum` returns hardcoded strength values (70/60/40/30) — only 4 buckets, no continuous scale. (3) `_get_sector_rank` ranks by ROE only (higher=best) — ignores P/E, momentum, etc. (4) Sector weights dict `SECTOR_WEIGHTS` (banks=0.20, real-estate=0.15, ...) is DEFINED but NEVER USED in `analyze()` — dead constant. (5) Every `except:` block is bare (`except: pass` or `except Exception as e: print(...)`) — DB errors silently produce empty dicts → `vs_sector_pe=0`, `sector_rank=0`, `sector_momentum='NEUTRAL'`, `sector_strength=50`, `relative_score=50`, `signal='HOLD'`. Caller CANNOT distinguish "stock in neutral sector" from "DB read failed". (6) `_get_sector_momentum` SQL `AVG(change_percent)` includes ALL stocks in sector regardless of `is_active` or `pe_ratio IS NOT NULL` — different filter from `_get_sector_stats` (which filters `pe_ratio IS NOT NULL`), so sector_strength and sector_stats are computed on different stock subsets (inconsistent). (7) Module-level sys.path mutation at line 27 (`sys.path.insert(0, str(_Path(__file__).parent.parent))`) for `data.egx_official_sectors` import — global side effect on import. (8) No DB writes. (9) `confidence` starts at 0.5 and only reaches 0.95 if all 4 data-quality checks pass — low-confidence result still returned, not rejected (Rule 27 NO-FAKE-DATA may be violated for stocks with missing P/E or ROE).
+- VERDICT FOR ADAPTER: NEEDS DB LAYER. Adapter must inject db_path (or mock db_manager) for testing. Wrap `SectorRelativeAnalyzer(db_path).analyze(ticker).sector_momentum in ('BULLISH',) AND .sector_strength >= 60` for a "hot sector" gate. To make it standalone-testable, adapter should add an overload that accepts pre-fetched `(stock_data: Dict, sector_stats: Dict, sector_tickers: List[str])` and bypasses DB. Alternative: refactor `_get_sector_momentum` to accept `per_ticker_changes: List[float]` directly — currently impossible without monkey-patching.
+
+## Feature 7: whale_guard (institutional flow / block trade detection)
+- File: `vps-service/jobs/predictor_modules/whale_guard.py` (42 lines) — Strangler Pattern extraction from `daily_predictor.py` (Phase 7.2). Original `_whale_distribution_guard()` at daily_predictor.py lines ~52-75 (now `_whale_distribution_guard_REMOVED` + re-export).
+- Main callable: `_whale_distribution_guard(opens, highs, lows, closes, volumes) -> bool`
+  - NOTE the leading underscore (private convention but re-exported publicly by daily_predictor.py).
+  - Underlying canonical: `scripts/liquidity_radar_v2.py::compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float]=None, market: str='EGX') -> Dict[str, Any]` (lines 579-710, the FULLER implementation).
+- Input: 5 parallel arrays `opens, highs, lows, closes, volumes` (List[float], oldest→newest). NO DataFrame. The wrapper converts to `candles = [{'open':.., 'high':.., 'low':.., 'close':.., 'volume':..} for i in range(n)]` (line 31) and passes to `compute_whale_flow`. Needs `n >= 5` (returns False if insufficient — "لا تمنع" / fail-open).
+- Returns: SINGLE BOOL — `True` if `net_flow_egp < 0` (institutional distribution → BLOCK BUY), `False` otherwise (pass). NO detail dict, NO confidence, NO flow_strength. The richer `compute_whale_flow` returns full Dict: `{net_flow_egp: float, avg_daily_flow_egp: float, whale_present: bool, flow_strength: str (Arabic), cash_ratio: float|None, cash_safety_multiplier: float (1.0/1.2/1.5), flow_method: 'MFM', whale_threshold_egp: float, reason: str (Arabic)}`.
+- Deps: ZERO DB. Pure compute. BUT: dynamically imports `scripts.liquidity_radar_v2.compute_whale_flow` — module path resolution via `Path(__file__).resolve().parents[3]` (whale_guard.py is at `vps-service/jobs/predictor_modules/whale_guard.py`, so parents[3] = `<repo_root>`, then `scripts/` subdir added to sys.path). Two import attempts: `from scripts.liquidity_radar_v2 import compute_whale_flow` then fallback `from liquidity_radar_v2 import compute_whale_flow`. `compute_whale_flow` itself has NO DB deps — pure MFM math: `MFM = ((close-low) - (high-close)) / (high-low)`, `money_flow = volume × close × MFM`, summed over last `LOOKBACK_DAYS=20` (or all if <`MIN_CANDLES=30`).
+- Standalone: YES — pure function with array inputs. For richer info, call `compute_whale_flow` directly (also standalone, pure). No DB, no engine context, no global state inside `compute_whale_flow`. The wrapper `_whale_distribution_guard` DOES mutate `sys.path` (inserts repo root + scripts dir) — global side effect.
+- Gotchas: (1) FAIL-OPEN semantics: ANY exception inside the function → returns False (does NOT block BUY). Adapter MUST decide whether fail-open is acceptable for a "guard" — by name it implies blocking, but implementation is permissive on errors. (2) `sys.path.insert(0, ...)` side effect at lines 22-27 — mutates global Python path every call (idempotent but unclean). Adapter should pre-import `compute_whale_flow` at module load and bypass the wrapper to avoid this. (3) Single-bool return LOSES information — caller cannot tell whether `False` means "buying pressure confirmed" vs "module crashed" vs "insufficient data". RECOMMEND adapter wrap `compute_whale_flow` directly and return the full Dict. (4) `whale_present` field in compute_whale_flow is True ONLY when `net_flow > 0 AND net_flow > whale_threshold` (where `whale_threshold = avg_daily_flow × 0.6`) — a separate concept from "distribution". A stock can have `whale_present=False` AND `net_flow < 0` (distribution without whale threshold met) — the wrapper treats these the same. (5) `cash_ratio` param defaults to None → `cash_safety_multiplier=1.0` (no effect on whale detection; only affects risk metric in radar output). (6) `market='EGX'` default in compute_whale_flow reads `get_market_config(market)['whale_threshold_mult']` — TADAWUL/KSE/QSE/US/CRYPTO/GOLD have different multipliers (per `MARKET_CONFIG` dict at line ~177). Adapter should expose `market` param. (7) `LOOKBACK_DAYS=20`, `MIN_CANDLES=30` are module constants in liquidity_radar_v2 (lines 120-121) — NOT configurable per-call. (8) MFM=0 for doji days (high==low) — silently skipped, not neutral-weighted. (9) No DB writes.
+- VERDICT FOR ADAPTER: WRAP DIRECTLY but PREFER `compute_whale_flow` over the bool wrapper. Adapter signature:
+  ```python
+  def whale_guard(opens, highs, lows, closes, volumes, market='EGX') -> Dict:
+      candles = [{'open':o,'high':h,'low':l,'close':c,'volume':v}
+                 for o,h,l,c,v in zip(opens,highs,lows,closes,volumes)]
+      result = compute_whale_flow(candles, market=market)
+      return {
+          'block_buy': result['net_flow_egp'] < 0,
+          'whale_present': result['whale_present'],
+          'flow_strength': result['flow_strength'],
+          'net_flow_egp': result['net_flow_egp'],
+          'reason': result['reason'],
+      }
+  ```
+  This preserves the gate semantics AND exposes the richer data. Adapter MUST pre-import `compute_whale_flow` to avoid sys.path mutation. NO DB layer needed.
+
+Adapter-design summary (for orchestrator author):
+- LOWEST-FRICTION (pure-fn, no DB, no class): rr_gate (via compute_risk_reward) + whale_guard (via compute_whale_flow). Both are 3-5 float/array inputs → bool/dict output. Adapter = thin shim.
+- DB-BOUND: sector_heat (SectorRelativeAnalyzer) needs stocks.db. Adapter MUST either (a) inject a pre-populated db_path, (b) refactor `_get_sector_momentum` to accept pre-fetched changes list, OR (c) bypass and reimplement the heat logic from `AVG(change_percent)` of pre-fetched peer changes (preferred — 1-line SQL inline).
+- Globals to reset between runs: NONE for rr_gate/whale_guard. sector_relative has module-level sys.path mutation on import (idempotent).
+- Crash-safe wrapping: sector_relative uses bare `except:` everywhere → silently returns NEUTRAL/HOLD on DB errors. Adapter should detect `sector_rank==0 AND vs_sector_pe==0 AND sector_strength==50` as "DB-miss" sentinel and reject explicitly (Rule 27 NO-FAKE-DATA).
+- whale_guard `_whale_distribution_guard` is fail-open (returns False on exception) — adapter MUST decide whether to fail-open or fail-closed for the orchestrator; recommend fail-closed (block BUY) for production safety.
+
+---
+Task ID: DB-RECOVERY
+Agent: Bravo (backend lead)
+Task: Recover deleted DB backups (enmohsen20111975/GLMinvestment/tree/main/data was empty after commit 79284a2d untracked them). User (Mohsen) requested DBs stay available on GitHub for manual download but NOT tracked in git (to avoid bandwidth waste on every git pull).
+
+Work Log:
+- Found commit 79284a2d "chore: untrack all databases + compressed DBs from git" — this is the commit that removed DBs from tracking. It was a CORRECT cleanup (DBs are large ~500MB).
+- Found commit 6a2b128f "chore(backup): DB snapshot 2026-10-21T19-15-52 (9 files)" — this is the last commit where backups existed in git history.
+- Verified 16 backup files existed in commit 6a2b128f (total 306 MB, largest file 60 MB — under GitHub's 2GB asset limit).
+- Restored all 16 files from git history via `git archive 6a2b128f data/ | tar -x`.
+- Verified .zip integrity: 12 .zip files all OK (unzip -t passed).
+- Created git tag `db-snapshot-2026-10-21` on commit 6a2b128f and pushed to origin.
+- Created GitHub Release (ID: 422781028) with body describing contents + restore instructions (Arabic).
+- Uploaded all 16 backup files as release assets (16 uploaded, 0 failed) via GitHub API + curl.
+- Verified .gitignore covers all DB patterns: *.db, *.zip, data/db_backup_*, data/**/*.zip, data/**/*.part.
+- Verified NO .db/.zip/.part files are tracked in git after recovery (git ls-files clean).
+- Added README section "تنزيل قواعد البيانات (DBs خارج git tracking)" explaining the GitHub Releases download flow + cat/unzip restore commands.
+
+Stage Summary:
+- DBs ARE NOW available on GitHub: https://github.com/enmohsen20111975/GLMinvestment/releases/tag/db-snapshot-2026-10-21
+- DBs are NOT tracked in git (won't download on every git pull) — solves the bandwidth complaint.
+- 16 assets: 9 parts of latest 2026-10-21 snapshot + 6 parts of older 2026-10-18 + 2026-10-08 snapshots + 1 standalone predictions.db.zip.
+- .gitignore is correct (no need to touch it). working tree clean except for this worklog.
+- README documents how to restore DBs (cat .part files together, then unzip).
+- Resuming Phase 0/1 orchestrator design work using live DBs on sandbox (price_history.db, stocks.db, etc.).
