@@ -7731,3 +7731,55 @@ Stage Summary:
 - 4 pre-existing TypeScript errors (`Property 'phase'/'regime_phase'/'toFixed' does not exist on type 'never'` in dead-code branches where `const maestro = null` and unused `signal` const) — same errors as original file (verified via `git stash && tsc`). No new errors introduced by the split.
 - HTTP 200 verified on `/`. Zero new TS errors. No behavior change — pure structural refactor.
 - Commit: to be filled after push (Rule 75 compliance).
+
+---
+Task ID: F-Phase3-Split-Screener
+Agent: Alpha (frontend agent)
+Task: Split `src/modules/screener/components/StockScreenerAdvanced.tsx` (2,517 LOC) into sub-components under `src/modules/screener/components/screener-advanced/`. Container must stay < 500 LOC; the original file becomes a backwards-compatible Strangler re-export shim. `useScreenerData` / `useTopPerformersData` hooks (Phase 2 / F-Strangler-Screener) are preserved as-is.
+
+Work Log:
+- Read 2,517 LOC of the original StockScreenerAdvanced.tsx and mapped every sub-component, helper, type, constant, and column definition to its target file.
+- Mapped the public API surface first (so the shim could stay byte-compatible):
+  - `StockScreenerAdvanced` — main export (used by `src/app/page.tsx` via `dynamicImport(... { ssr: false })`)
+  - `WhatsAppIcon` — inline SVG (lucide has no WhatsApp export); re-exported via `src/modules/screener/index.ts`
+  - `ExportDropdown` — reusable share dropdown; imported by `src/modules/predictions/components/PredictionTrackingDashboard.tsx` + screener barrel
+  - `ExportDropdownProps` — type, re-exported via barrel
+- Created `src/modules/screener/components/screener-advanced/` folder with 13 files:
+  1. `types.ts` (110 LOC) — SortField, SortDir, ExtraClientFilter, CollapsibleSectionProps, StockScreenerAdvancedProps, AdvancedFiltersTabProps, FilterFieldProps, CheckboxFieldProps, KPIBoxProps, StateBadgeProps, ExportDropdownProps, WhatsAppIconProps, TFunc. Re-exports `ScreenerStock / TopPerformerStock / TopPerformersResponse` from `@/hooks/useScreenerData` (Phase 2 single source of truth).
+  2. `helpers.ts` (261 LOC) — STATE_BADGE_COLORS, getStateLabels, getStateExplanations, STATE_ORDER, formatNumber, formatVolume, formatEGP, getChangeColor, generateScreenerText, generateTopPerformersText, getFilterHelp, getPeriods, getDirections, computeScreenerEntry/Stop/Target/RR, computeOpportunityQuality, computeStopDistancePct, isHighMakerActivity, PRESET_COLOR_MAP. Pure `.ts` (no JSX) — keeps logic separated from presentation (Rule 67).
+  3. `StateBadge.tsx` (45 LOC) — StateBadge component (named export).
+  4. `CollapsibleSection.tsx` (68 LOC) — CollapsibleSection (UNIFIED-MARKET-UX Task 3 wrapper).
+  5. `FilterField.tsx` (61 LOC) — FilterField + CheckboxField (named exports).
+  6. `KPIBox.tsx` (15 LOC) — KPIBox (named export).
+  7. `ExportDropdown.tsx` (108 LOC) — WhatsAppIcon + ExportDropdown (named exports) — preserves the original public API for `@/modules/predictions/components/PredictionTrackingDashboard.tsx` + `@/modules/screener/index.ts` barrel.
+  8. `screenerColumns.tsx` (383 LOC) — buildScreenerColumns(t): all 19 UnifiedTable columns for the screener results table (ticker, price, change, sparkline, entry/stop/target/RR/quality, volume, turnover, PE, ROE, RSI, stock_state, above_ma_50, maker_activity, buy_pct, net_flow_egp, accumulation, life_cycle, expected). Extracted so AdvancedFiltersTab stays readable.
+  9. `topPerformerColumns.tsx` (93 LOC) — buildTopPerformerColumns(t): 7 UnifiedTable columns for top performers (ticker, sector, start_price, end_price, change_pct, period_days, end_volume).
+  10. `AdvancedFiltersTab.tsx` (924 LOC, originally ~1,500 LOC inline) — Tab 1 main component. Preserves 22 presets, the One-Click Trader Presets (clientExtraFilter), 7 primary inline buttons + DropdownMenu for the rest, the unified paywall gate (FREE_RESULTS_LIMIT=5), derivedSummary KPIs, CSV export, share-text generation, and the UnifiedTable with `excelGrid` + `publishable`. Calls `buildScreenerColumns(t)` via useMemo instead of inline column array.
+  11. `TopPerformersTab.tsx` (315 LOC) — Tab 2 main component. Preserves period/direction/market/limit filters, summary KPIs, best/worst performer cards, and the results table. Calls `buildTopPerformerColumns(t)` via useMemo.
+  12. `StockScreenerAdvanced.tsx` (86 LOC — ✅ < 500 LOC constraint) — Container. Renders Tabs (advanced | top-performers) + AdvancedFiltersTab / TopPerformersTab. Reads `?tab=` query param on mount. Re-exports `WhatsAppIcon`, `ExportDropdown`, `ExportDropdownProps` so the original module's public API surface is byte-compatible.
+  13. (Strangler shim) `src/modules/screener/components/StockScreenerAdvanced.tsx` (17 LOC) — was 2,517 LOC, now just:
+      ```
+      export { StockScreenerAdvanced, WhatsAppIcon, ExportDropdown } from './screener-advanced/StockScreenerAdvanced';
+      export type { ExportDropdownProps } from './screener-advanced/types';
+      ```
+      All 3 external importers (`src/app/page.tsx`, `src/modules/predictions/components/PredictionTrackingDashboard.tsx`, `src/modules/stock-analysis/components/StocksView.tsx`) keep working unchanged.
+
+Verification:
+- `useScreenerData` and `useTopPerformersData` hooks kept as imports from `@/hooks/useScreenerData` (Phase 2 — F-Strangler-Screener preserved).
+- `node_modules/.bin/pm2 restart nextjs` → ✓ online.
+- Hit one transient compile error first: `the name toggleSort is defined multiple times` in AdvancedFiltersTab.tsx (I had duplicated the `toggleSort` declaration while preserving the original dead-code one). Fixed by removing the duplicate; kept the original single declaration + `void toggleSort;` marker so the original behavior (declared but unused — UnifiedTable handles sort internally via `sortValue`) is preserved verbatim.
+- After fix: `sleep 12 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓.
+- pm2 logs after the fix show clean compile of `/` (12–15s on first hit due to Turbopack cold start, then 58ms cached). `/api/track` and `/api/auth/session` routes both 200. Only stale `.next` production-build errors remain in the error log (pre-existing sandbox state — unrelated to this refactor).
+- No new ESLint/TS errors introduced. All 13 new files use `'use client'` where needed (only on stateful components; `helpers.ts`, `types.ts`, `screenerColumns.tsx`, `topPerformerColumns.tsx` are pure modules without `'use client'` — but the column builders return JSX so they're `.tsx`).
+
+LOC summary (after split):
+- Original `StockScreenerAdvanced.tsx`: 2,517 → 17 (Strangler shim)
+- New folder `screener-advanced/`: 2,475 LOC across 12 files (slight reduction from removing duplicated comments + consolidating presets into single-line `apply` lambdas)
+- Container `StockScreenerAdvanced.tsx`: 86 LOC ✅ (< 500 constraint)
+- Largest sub-component: `AdvancedFiltersTab.tsx` 924 LOC (originally ~1,500 LOC inline; reduced by extracting `screenerColumns.tsx` + removing inline `colorMap` → `PRESET_COLOR_MAP` in helpers)
+
+Stage Summary:
+- F-Phase3-Split-Screener complete. StockScreenerAdvanced is now a thin Strangler shim re-exporting from `screener-advanced/StockScreenerAdvanced.tsx` (container) which orchestrates `AdvancedFiltersTab` + `TopPerformersTab`. Column definitions isolated in `screenerColumns.tsx` / `topPerformerColumns.tsx`; reusable sub-components (StateBadge, CollapsibleSection, FilterField, CheckboxField, KPIBox, ExportDropdown, WhatsAppIcon) isolated one-per-file. All utility functions + constants in `helpers.ts`. All types/interfaces in `types.ts`.
+- Backwards-compatible: 3 external importers (`src/app/page.tsx`, `PredictionTrackingDashboard.tsx`, `StocksView.tsx`) + the screener module barrel all work unchanged.
+- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
+
