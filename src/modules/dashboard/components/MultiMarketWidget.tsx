@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +10,8 @@ import { TrendingUp, TrendingDown, Minus, Coins, ArrowUpRight, ArrowDownRight, G
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
 
 // Market configuration
 const MARKETS = [
@@ -344,25 +345,15 @@ export function MultiMarketWidget() {
  })}
  </div>
 
- {/* Gold Pound & Ounce Cards */}
- <div className="grid grid-cols-2 gap-2 pt-1">
+ {/* Gold Pound & Ounce — adopted WidgetStatGrid (Phase 3) */}
+ <WidgetStatGrid cols={2} className="bg-transparent p-0 pt-1">
  {goldPoundEstimate && (
- <div className="p-2 rounded-lg bg-muted/50 border border-border/50 text-center">
- <p className="text-xs text-muted-foreground mb-0.5">جنيه ذهب (8ج عيار 21)</p>
- <p className="text-xs font-bold text-warning tabular-nums">
- {goldPoundEstimate.toLocaleString()} {marketInfo.currency}
- </p>
- </div>
+ <WidgetStat label="جنيه ذهب (8ج عيار 21)" value={goldPoundEstimate.toLocaleString()} suffix={marketInfo.currency} valueClass="text-warning" valueSize="xs" className="bg-muted/50 border-border/50" />
  )}
  {goldOunceEstimate && (
- <div className="p-2 rounded-lg bg-muted/50 border border-border/50 text-center">
- <p className="text-xs text-muted-foreground mb-0.5">أوقية ذهب (31.1ج)</p>
- <p className="text-xs font-bold tabular-nums">
- {goldOunceEstimate.toLocaleString()} {marketInfo.currency}
- </p>
- </div>
+ <WidgetStat label="أوقية ذهب (31.1ج)" value={goldOunceEstimate.toLocaleString()} suffix={marketInfo.currency} valueSize="xs" className="bg-muted/50 border-border/50" />
  )}
- </div>
+ </WidgetStatGrid>
  </div>
  );
  };
@@ -519,19 +510,15 @@ export function MultiMarketWidget() {
  };
 
  return (
- <Card className="border-border/60 shadow-sm overflow-hidden">
- <CardHeader className="pb-2 pt-3.5 px-4">
- <div className="flex items-center justify-between">
- <CardTitle className="text-sm font-bold flex items-center gap-2">
- <Globe className="w-4 h-4 text-primary" />
- الأسواق المتعددة
- </CardTitle>
+ <WidgetCard title="الأسواق المتعددة" icon={Globe} iconColor="text-primary" iconBg="bg-primary/10" iconSize="w-4 h-4" hideRefresh
+ className="border-border/60 shadow-sm overflow-hidden" headerClassName="pb-2 pt-3.5 px-4"
+ titleClassName="text-sm font-bold" contentClassName="p-0 space-y-0"
+ badge={
  <Badge variant="outline" className="text-xs font-normal px-2 py-0.5 border-primary/20 text-primary bg-primary/5">
  {marketInfo.flag} {marketInfo.name} ({marketInfo.currency})
  </Badge>
- </div>
- </CardHeader>
- <CardContent className="p-0">
+ }
+ >
  {/* Market Country Selector */}
  <div className="px-3.5 pt-1">
  {renderMarketSelector()}
@@ -581,7 +568,6 @@ export function MultiMarketWidget() {
  </TabsContent>
  </div>
  </Tabs>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }

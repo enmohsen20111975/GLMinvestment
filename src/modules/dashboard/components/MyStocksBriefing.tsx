@@ -23,31 +23,20 @@ import { useApiQuery } from '@/hooks/use-api-query';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import {
  AlertTriangle,
- ArrowDownRight,
- ArrowUpRight,
- Bell,
  BellRing,
  BookOpen,
  ChevronLeft,
- Loader2,
  LogIn,
  PlusCircle,
- RefreshCw,
- Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import {
- Card,
- CardContent,
- CardDescription,
- CardHeader,
- CardTitle,
-} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
+import { WidgetError } from '@/components/shared/WidgetError';
 // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): useTranslation hook.
 import { useTranslation } from '@/lib/i18n-context';
 import { useAppStore } from '@/lib/store';
@@ -289,38 +278,16 @@ function PortfolioSummaryCard({ data }: { data: BriefingData }) {
  const isPositive = summary.total_pnl >= 0;
 
  return (
- <div className="grid grid-cols-2 gap-2" dir="rtl">
- <div className="rounded-lg border bg-card p-2.5">
- <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
- <Wallet className="w-3 h-3" />
- القيمة الحالية
- </div>
- <div className="text-sm font-bold">{fmtCurrency(summary.total_value)}</div>
- </div>
- <div className="rounded-lg border bg-card p-2.5">
- <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
- {isPositive ? <ArrowUpRight className="w-3 h-3 text-profit" /> : <ArrowDownRight className="w-3 h-3 text-loss" />}
- المكاسب/الخسائر
- </div>
- <div className={cn(
- 'text-sm font-bold',
- isPositive ? 'text-profit ' : 'text-loss ',
- )}>
- {isPositive ? '+' : ''}{fmtCurrency(summary.total_pnl)}
- <span className="text-xs ms-1 opacity-70">
- ({fmtPct(summary.total_pnl_pct)})
- </span>
- </div>
- </div>
- <div className="rounded-lg border bg-card p-2.5">
- <div className="text-xs text-muted-foreground mb-1">عدد الأسهم</div>
- <div className="text-sm font-bold">{intFmt.format(summary.portfolio_stocks)}</div>
- </div>
- <div className="rounded-lg border bg-card p-2.5">
- <div className="text-xs text-muted-foreground mb-1">قيمة التكلفة</div>
- <div className="text-sm font-bold">{fmtCurrency(summary.total_cost)}</div>
- </div>
- </div>
+ <WidgetStatGrid cols={2} className="bg-transparent p-0">
+ <WidgetStat label="القيمة الحالية" value={fmtCurrency(summary.total_value)} />
+ <WidgetStat
+ label="المكاسب/الخسائر"
+ value={<>{isPositive ? '+' : ''}{fmtCurrency(summary.total_pnl)} <span className="text-xs ms-1 opacity-70">({fmtPct(summary.total_pnl_pct)})</span></>}
+ valueClass={isPositive ? 'text-profit' : 'text-loss'}
+ />
+ <WidgetStat label="عدد الأسهم" value={intFmt.format(summary.portfolio_stocks)} />
+ <WidgetStat label="قيمة التكلفة" value={fmtCurrency(summary.total_cost)} />
+ </WidgetStatGrid>
  );
 }
 
@@ -418,97 +385,52 @@ export function MyStocksBriefing() {
  // ─── Loading state ─────────────────────────────────────────
  if (loading) {
  return (
- <Card className="border-profit ">
- <CardHeader className="pb-2">
- <div className="flex items-center gap-2">
- <BellRing className="w-4 h-4 text-profit" />
- <Skeleton className="h-4 w-32" />
- </div>
- </CardHeader>
- <CardContent className="space-y-2">
- {Array.from({ length: 3 }).map((_, i) => (
- <Skeleton key={i} className="h-16 w-full rounded-lg" />
- ))}
- </CardContent>
- </Card>
+ <WidgetCard title={t('dashboard.myStocksBriefing')} icon={BellRing} iconColor="text-profit" iconBg="bg-transparent" iconSize="w-4 h-4"
+ hideRefresh className="border-profit" titleClassName="text-base"
+ loading skeletonRows={3} skeletonHeight="h-16" />
  );
  }
 
  // ─── Not authenticated ─────────────────────────────────────
  if (!isAuthenticated) {
  return (
- <Card className="border-profit to-background /20">
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <BellRing className="w-4 h-4 text-profit" />
- {t('dashboard.myStocksBriefing')}
- </CardTitle>
- <CardDescription className="text-xs">
- {t('auth.loginPrompt')}
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard title={t('dashboard.myStocksBriefing')} icon={BellRing} iconColor="text-profit" iconBg="bg-transparent" iconSize="w-4 h-4"
+ hideRefresh className="border-profit" titleClassName="text-base">
+ <p className="text-xs text-muted-foreground text-center">{t('auth.loginPrompt')}</p>
  <Button asChild size="sm" className="gap-2 w-full">
  <Link href="/?dev=1">
  <LogIn className="w-4 h-4" />
  {t('common.login')}
  </Link>
  </Button>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
  // ─── Authenticated but no portfolio yet ────────────────────
  if (briefing && briefing.summary.portfolio_stocks === 0 && briefing.summary.watchlist_stocks === 0 && briefing.summary.radar_tracked === 0) {
  return (
- <Card className="border-profit ">
- <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
- <div>
- <CardTitle className="text-base flex items-center gap-2">
- <BellRing className="w-4 h-4 text-profit" />
- {t('dashboard.myStocksBriefing')}
- </CardTitle>
- <CardDescription className="text-xs mt-0.5">
- {t('alerts.noAlerts')}
- </CardDescription>
- </div>
- </CardHeader>
- <CardContent>
+ <WidgetCard title={t('dashboard.myStocksBriefing')} icon={BellRing} iconColor="text-profit" iconBg="bg-transparent" iconSize="w-4 h-4"
+ hideRefresh className="border-profit" titleClassName="text-base">
+ <p className="text-xs text-muted-foreground text-center">{t('alerts.noAlerts')}</p>
  <Button asChild size="sm" variant="outline" className="gap-2 w-full">
  <Link href="/?ticker=COMI">
  <PlusCircle className="w-4 h-4" />
  {t('dashboard.myStocksBriefing')}
  </Link>
  </Button>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
  }
 
  // ─── Error state ────────────────────────────────────────────
  if (error || !briefing) {
  return (
- <Card className="border-loss ">
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <AlertTriangle className="w-4 h-4 text-loss" />
- تعذّر تحميل التنبيهات
- </CardTitle>
- </CardHeader>
- <CardContent className="flex items-center justify-between gap-2">
- <p className="text-xs text-muted-foreground" dir="rtl">
- {error === 'auth_required' ? 'يلزم تسجيل الدخول.' : 'يرجى المحاولة مرة أخرى.'}
- </p>
- <Button size="sm" variant="outline" onClick={handleRefresh} className="gap-1.5">
- <RefreshCw className="w-3.5 h-3.5" />
- إعادة
- </Button>
- </CardContent>
- </Card>
+ <WidgetError title={t('dashboard.myStocksBriefing')}
+ message={error === 'auth_required' ? 'يلزم تسجيل الدخول.' : 'يرجى المحاولة مرة أخرى.'}
+ onRetry={handleRefresh} className="border-loss/20" />
  );
  }
-
  // ─── Main content ───────────────────────────────────────────
  const { summary, stocks } = briefing;
 
@@ -524,38 +446,10 @@ export function MyStocksBriefing() {
  const hasAlerts = alerts && alerts.total > 0;
 
  return (
- <Card className="border-profit via-background to-background /10">
- <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
- <div className="flex items-center gap-2 min-w-0">
- <div className="relative flex-shrink-0">
- <BellRing className="w-4 h-4 text-profit" />
- {hasAlerts && (
- <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-1 rounded-full bg-loss text-white text-xs font-bold flex items-center justify-center">
- {alerts.total > 9 ? '9+' : alerts.total}
- </span>
- )}
- </div>
- <div className="min-w-0">
- <CardTitle className="text-base truncate">{t('dashboard.myStocksBriefing')}</CardTitle>
- <CardDescription className="text-xs truncate">
- {summary.portfolio_stocks > 0
- ? `${summary.portfolio_stocks} {t('alerts.viewStock')}`
- : `${summary.total_stocks} {t('alerts.viewStock')}`}
- </CardDescription>
- </div>
- </div>
- <Button
- size="sm"
- variant="ghost"
- className="h-7 w-7 p-0"
- onClick={handleRefresh}
- disabled={refreshing}
- aria-label="تحديث التنبيهات"
- >
- <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
- </Button>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard title={t('dashboard.myStocksBriefing')} icon={BellRing} iconColor="text-profit" iconBg="bg-transparent" iconSize="w-4 h-4"
+ className="border-profit" titleClassName="text-base"
+ onRefresh={handleRefresh} refreshing={refreshing}
+ badge={hasAlerts ? <Badge variant="outline" className="text-xs py-0 px-1.5 h-5 flex-shrink-0">{alerts.total > 9 ? '9+' : alerts.total}</Badge> : undefined}>
  {/* 1. Portfolio summary (Task 1) */}
  <PortfolioSummaryCard data={briefing} />
 
@@ -618,7 +512,6 @@ export function MyStocksBriefing() {
  {summary.exit_radar_cache_age_seconds > 30 * 60 && ' (قديم — اتحدّث قريبًا)'}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
