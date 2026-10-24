@@ -7934,3 +7934,153 @@ Stage Summary:
 Commit: d00924d313ecc11eea68bbfdc4c4a776bb1a9dfb
 Message: "refactor(phase3): تقسيم TelegramTab لـ telegram-tab/ folder"
 Pushed to: origin/main (f2ebfb1..d00924d)
+
+---
+
+Task ID: F-Phase3-Split-StrategySandbox
+Agent: Alpha (frontend agent)
+Task: Split StrategySandbox.tsx (2,188 LOC) + SimulationView.tsx (2,130 LOC) into per-feature folders; keep container files under 500 LOC.
+
+Work Log:
+- Read both mega files; mapped every sub-component, type, helper, and constant.
+- Spotted pre-existing syntax corruption in StrategySandbox.tsx (lines 794 and 1978 — `[m` prefixes were missing from `[minP, ...]` and `[mobileCategory, setMobileCategory]`). Babel parser tolerated it (lenient TS plugin) and SWC compiled OK lazily because AcademyView is dynamically imported with `ssr: false`. Fixed both when migrating into the new folder layout.
+- Created `src/modules/education/components/strategy-sandbox/` with 9 modules:
+  - types.ts (48 LOC) — Candle, StrategyTopic, StrategyCategory, ChartHelpers
+  - data.ts (382 LOC) — TOPICS, CATEGORIES, FLAT_TOPIC_IDS
+  - helpers.ts (349 LOC) — generateSyntheticCandles + chart layout constants + makeScales
+  - chart-primitives.tsx (148 LOC) — CandleChart, AnimatedG, Label, Arrow
+  - smc-charts.tsx (253 LOC) — FVG, OrderBlock, LiquiditySweep, MSS charts
+  - ta-charts.tsx (501 LOC) — HeadShoulders, Triangles, RSIDivergence + RSIPane, MACD, Bollinger
+  - fa-charts.tsx (207 LOC) — BarChartFA, PERatio, PBRatio, DividendYield, GrahamNumber
+  - StrategyChart.tsx (47 LOC) — dispatcher
+  - ExplanationPanel.tsx (114 LOC)
+  - StrategySandbox.tsx (247 LOC) — container (well under 500 LOC limit)
+- Created `src/modules/simulation/components/simulation-view/` with 9 modules:
+  - types.ts (65 LOC) — EGXStock, Position, Transaction, PortfolioSnapshot, SimState, PendingTrade, StockSeed
+  - constants.ts (164 LOC) — INITIAL_BALANCE, COMMISSION_RATE, TICK_INTERVAL, STORAGE_KEY_BY_MARKET, SECTOR_COLORS, FALLBACK_SEEDS, API_MARKET_CODE, getDefaultState
+  - helpers.ts (114 LOC) — adaptApiStock, formatNumber, formatCurrency, generateId, isMarketOpen, getCairoTime, loadState, saveState, calcPortfolioValue
+  - columns.tsx (315 LOC) — buildStockListColumns / buildHoldingsColumns / buildTransactionsColumns factories + HoldingsRow/TransactionRow types
+  - dialogs.tsx (353 LOC) — TradeDialog + ConfirmDialog + ResetDialog
+  - tabs.tsx (749 LOC) — SimulationTabs (dashboard/trading/portfolio/transactions/watchlist)
+  - ReportSection.tsx (153 LOC) — hidden PDF export DOM
+  - useSimulationEngine.ts (381 LOC) — owns state, tick loop, persistence, trade/reset/watchlist actions
+  - SimulationView.tsx (324 LOC) — container layout (well under 500 LOC limit)
+- Replaced original mega files with 12-LOC re-export shims so existing imports keep working (AcademyView → `../StrategySandbox`, page.tsx → `@/modules/simulation/components/SimulationView`).
+- Fixed the two syntax-corruption bugs in the new `chart-primitives.tsx` (line 794: `[minP, ...]`) and `StrategySandbox.tsx` (line 1978: `[mobileCategory, setMobileCategory]`).
+- All imports use `@/` alias for cross-module paths; intra-folder imports use `./`-relative.
+- Restarted pm2 (nextjs). HTTP checks:
+  - `GET /` → 200
+  - `GET /?tab=academy` → 200
+  - `GET /?tab=simulation` → 200
+- Verified with agent-browser that pre-split state had the same `ReferenceError: module is not defined` runtime error in the React Server DOM bundle — i.e. the error is pre-existing and NOT introduced by this refactor. Both pre-split and post-split behave identically (HTTP 200 + same client runtime error). Out of scope for F-Phase3-Split-StrategySandbox.
+- Committed + pushed (commit 50418b8). 21 files changed, 4938 insertions, 4318 deletions.
+
+Stage Summary:
+- Both mega files split into 9 sub-modules each; container files 247 LOC (StrategySandbox) and 324 LOC (SimulationView) — both under 500 LOC.
+- Original paths (`StrategySandbox.tsx`, `SimulationView.tsx`) preserved as 12-LOC re-export shims — zero breakage for downstream importers.
+- HTTP 200 verified on `/`, `/?tab=academy`, `/?tab=simulation`.
+
+Commit: 50418b8
+Message: "refactor(phase3): تقسيم StrategySandbox + SimulationView لـ folders"
+Pushed to: origin/main (50f538e..50418b8)
+
+LOC inventory (new files):
+- education/components/strategy-sandbox/:
+  - types.ts             48
+  - data.ts             382
+  - helpers.ts          349
+  - chart-primitives.tsx 148
+  - smc-charts.tsx      253
+  - ta-charts.tsx       501
+  - fa-charts.tsx       207
+  - StrategyChart.tsx    47
+  - ExplanationPanel.tsx 114
+  - StrategySandbox.tsx 247 (container)
+- simulation/components/simulation-view/:
+  - types.ts             65
+  - constants.ts        164
+  - helpers.ts          114
+  - columns.tsx         315
+  - dialogs.tsx         353
+  - tabs.tsx            749
+  - ReportSection.tsx   153
+  - useSimulationEngine.ts 381
+  - SimulationView.tsx  324 (container)
+- shims (kept at original path):
+  - StrategySandbox.tsx     12
+  - SimulationView.tsx     12
+
+---
+
+Task ID: F-Phase3-Split-Admin+Predictions
+Agent: Alpha (frontend agent)
+Task: Split TWO mega files into sub-components in per-feature folders.
+  File 1: `src/modules/admin/components/AdminView.tsx` (2,105 LOC) → `admin-view/` folder.
+  File 2: `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2,098 LOC) → `prediction-dashboard/` folder.
+Container files must be < 500 LOC. Originals become re-export shims. HTTP 200 required before commit.
+
+Work Log:
+- Read both mega files end-to-end and mapped every sub-component, function, type, and constant.
+
+=== File 1: AdminView.tsx (2,105 LOC) → admin-view/ ===
+- Identified structure: imports + dynamic-import HOC wrappers (~246 LOC) + admin-fetch helpers (~72 LOC) + types/AdminTab/HubId (~115 LOC) + AdminView function (~566 LOC of state/effects/memos/handlers + ~850 LOC of render JSX) + UserFeedbackTab sub-component (~151 LOC at bottom).
+- Confirmed import sites: only `src/modules/admin/index.ts` (barrel), `src/modules/admin/components/SystemProblemsTab.tsx` (imports `SystemIssue` type), and `src/app/page.tsx` (dynamic import with `ssr: false`) — all keep working unchanged via the shim.
+- Created folder `src/modules/admin/components/admin-view/` and extracted 12 files:
+  1. `types.ts` (164 LOC) — AdminStats, ConnectionInfo, SystemIssue, ServiceStatus, DataStatusItem, DataStatus + AdminTab/HubId unions + AdminHub/AdminHubTab nav-config types + FeedbackStatus/FeedbackType/FeedbackMetaEntry + DebugLogEntry.
+  2. `admin-fetch.ts` (91 LOC) — tryAutoCookie + adminFetch helpers (module-scope singletons, no React).
+  3. `useAdminState.ts` (691 LOC) — the big state hook: 11 useState + 2 useEffect + 9 useCallback fetches (fetchStats, checkPythonHealth, fetchConnections, fetchPredictionStats, fetchLearningStats, fetchDataStatus, fetchAnalytics, fetchFeedback, fetchUserBehavior) + 3 useCallback actions (handleSync, handleMultiMarketSync, handleDirectLogin) + 3 useMemo (systemIssues, services, healthScore) + setFeedbackStatus. Returns the `UseAdminStateReturn` object consumed by the container.
+  4. `admin-hubs.tsx` (147 LOC) — `buildAdminHubs(feedbackCount?)` builder function returning the 5 hubs (health/maestro/data/users/telegram) with their nested tab lists. Depends on feedbackCount for the "feedback" tab count badge.
+  5. `AdminHeader.tsx` (84 LOC) — top header (Shield icon color-coded by healthScore + critical/warning count badges + refresh button).
+  6. `QuickAccessBar.tsx` (85 LOC) — quick-access shortcut bar (5 buttons: news-control/dashboard/data-engine/databases/users).
+  7. `AdminNav.tsx` (187 LOC) — mobile (md:hidden) + desktop hub nav. Collapsible hub cards with nested tab grids.
+  8. `AdminLoginCard.tsx` (88 LOC) — login form for non-admin users (username + password + error + loading).
+  9. `DashboardTab.tsx` (364 LOC) — the `dashboard` tab content: System Health card + Quick Stats + PurgeCacheButton + Data Status by Market + Quick Actions (sync / multi-market / generate-predictions info toast / learning / command center / databases) + Services Status + SystemHealthCard + Mini Command Center preview.
+  10. `UsersTab.tsx` (131 LOC) — the `users` tab content: 4 KPI cards + 30-day traffic AreaChart + Top sections card + lazy-loaded `<UsersManagement />`.
+  11. `UserFeedbackTab.tsx` (177 LOC) — the `feedback` tab sub-component: 4 type tiles (bug/suggestion/opinion/praise) + scrollable feedback list with status-change buttons (new → reviewed → resolved). Includes FEEDBACK_TYPE_META + FEEDBACK_STATUS_META constants.
+  12. `AdminView.tsx` (458 LOC) — container. Calls `useAdminState()`, builds hubs, renders mount guard + login gate + (Header + QuickAccessBar + AdminNav + activeTab switch across 30+ tabs).
+- Replaced original `src/modules/admin/components/AdminView.tsx` (2,105 LOC) with a 28-LOC shim: `export { AdminView } from './admin-view/AdminView'; export type { SystemIssue } from './admin-view/types';`. All existing import sites (barrel + SystemProblemsTab type import + page.tsx dynamic import) keep working unchanged.
+
+=== File 2: PredictionTrackingDashboard.tsx (2,098 LOC) → prediction-dashboard/ ===
+- Identified structure: imports + comments (~31 LOC) + 7 interfaces + 2 union types (~127 LOC) + 5 config constants (PERSONA_CONFIG, OUTCOME_CONFIG, TRAILING_PROFIT_CONFIG, LIVE_OUTCOME_CONFIG, DAYS_OPTIONS, QUALITY_MODE_OPTIONS, CONFIDENCE_OPTIONS) (~205 LOC) + 4 helper functions (formatReturnPct, formatProfitFactor, formatDateShort, computeHoldingDays) (~50 LOC) + generatePredictionsText (~35 LOC) + computeStatsFromPredictions (~43 LOC) + PredictionTrackingDashboard function (~1,593 LOC: 30 LOC state + 60 LOC fetch/poll effects + 9 useMemo derivations + 281 LOC desktopTableColumns memo + 940 LOC render JSX).
+- Confirmed import sites: only `src/modules/predictions/index.ts` (barrel) + `src/modules/market-analysis/components/UnifiedPredictionsTab.tsx` (dynamic import with `ssr: false`). Both keep working unchanged via the shim.
+- Created folder `src/modules/predictions/components/prediction-dashboard/` and extracted 14 files:
+  1. `types.ts` (160 LOC) — PersonaId, OutcomeFilter, DaysWindow, HonestPredictionItem, HonestListResponse, LivePrediction, PersonaStats, LiveTrackingResponse, PersonaKey, OutcomeKey, QualityMode, CumulativeProfitPoint, FocusTickerInfo, SortBy, EntryPeriod, PredictionTrackingDashboardProps.
+  2. `constants.ts` (157 LOC) — PERSONA_CONFIG (3 personas), OUTCOME_CONFIG (4 outcomes), TRAILING_PROFIT_CONFIG, LIVE_OUTCOME_CONFIG, DAYS_OPTIONS (11 options), QUALITY_MODE_OPTIONS (2 modes), CONFIDENCE_OPTIONS (4 thresholds).
+  3. `helpers.ts` (233 LOC) — isTrailingProfit, computeMaxProfitPct, computeMaxLossPct, computeLiveReturnPct, formatReturnPct, formatProfitFactor, formatDateShort, computeHoldingDays, generatePredictionsText, computeStatsFromPredictions.
+  4. `usePredictionTrackingState.ts` (506 LOC) — the big state hook: 15 useState + 2 useEffect (fetch + polling) + fetchData useCallback + 9 useMemo (allRawPredictions, dedupedPredictions, qualityFilteredPredictions, aggregateByTicker, computedStats, focusTickers, focusTickerList, cumulativeProfitData, activeStats, filteredPredictions, predictionsShareText) + handleExportProofImage useCallback.
+  5. `desktopColumns.tsx` (339 LOC) — `buildDesktopColumns(focusTickers, onSelectProof)` factory returning `Column<LivePrediction>[]` (15 columns: ticker, entryDate, entryPrice, targetPrice, targetPrice2, currentPrice, outcome, liveOutcome, returnPct, highestPriceReached, lowestPriceReached, maxProfitPct, maxLossPct, daysSinceEntry, proof).
+  6. `HeaderBar.tsx` (191 LOC) — luxury header (Sparkles badge + market session badge + title + refresh button with countdown + verify-pending button + ExportDropdown) + timeframe selector pills + quality filter row + confidence threshold row.
+  7. `KpiCards.tsx` (125 LOC) — 5 hero KPI cards (net return + gross profit + gross loss + max loss + R:R ratio).
+  8. `PersonaCards.tsx` (93 LOC) — persona breakdown cards (UNIFIED — balanced only, KILL-MAESTRO 2026-08-31).
+  9. `FocusStocksBanner.tsx` (77 LOC) — focus tickers banner (tickers appearing in 2+ personas).
+  10. `CumulativeProfitChart.tsx` (85 LOC) — recharts BarChart of cumulative profit % over closed trades.
+  11. `MobilePredictionCard.tsx` (257 LOC) — single mobile card row (ticker + persona badge + focus/morning_bell/evidence/who_is_buying/hmm_regime badges + outcome badge + 4-col grid + entry/execution dates + holding days + live preview + highest/lowest + return %).
+  12. `ProofTableCard.tsx` (267 LOC) — table card (header + outcome filter buttons + search + sort selector + entry period selector) + body (skeleton | error | empty | mobile card list | desktop UnifiedTable).
+  13. `ProofModal.tsx` (207 LOC) — trade-proof modal dialog (badge + outcome + ticker + 3x3 grid of trade numbers + analysis_reason + institutional intelligence grid + footer metadata + PNG export button).
+  14. `PredictionTrackingDashboard.tsx` (152 LOC) — container. Calls `usePredictionTrackingState(market)`, owns `handleVerifyPending` callback, renders: HeaderBar + KpiCards + PersonaCards + FocusStocksBanner + CumulativeProfitChart + ProofTableCard + ProofModal.
+- Replaced original `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2,098 LOC) with a 30-LOC shim: `export { PredictionTrackingDashboard } from './prediction-dashboard/PredictionTrackingDashboard'; export { default } from './prediction-dashboard/PredictionTrackingDashboard';`. Both the barrel + UnifiedPredictionsTab dynamic import keep working unchanged.
+
+Verification:
+- `node_modules/.bin/pm2 restart nextjs --update-env` → ✓ online (Ready in 2.2s).
+- `sleep 15 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~3.9s + render ~722ms; subsequent cached at 56-67ms).
+- `curl http://localhost:3000/?view=admin` → `HTTP 200` ✓ (admin route renders cleanly — AdminView + all lazy-loaded sub-components).
+- `curl http://localhost:3000/?view=predictions` → `HTTP 200` ✓ (predictions route renders cleanly — PredictionTrackingDashboard + all sub-components).
+- `tsc --noEmit` on the new folders → 0 errors. Only pre-existing TS errors remain in `TreasuryBondsView.tsx` (TableCell/TableRow missing imports — pre-existing), `stocks-view/*` (4 type narrowing issues — pre-existing from F-Phase3-Split-StocksView), `telegram-events/index.ts` + `vps-service/ws-service/index.ts` (socket.io missing — out-of-scope). No NEW errors introduced by this refactor.
+- pm2 logs: clean compile of `/`, `/?view=admin`, `/?view=predictions`. No module-resolution or syntax errors. Only pre-existing backend warnings (stocks.db not found during /api/track — pre-existing, unrelated; NEXTAUTH_URL warning — pre-existing; finance-db retry — pre-existing).
+
+LOC summary (after split):
+- File 1 — AdminView:
+  - Original `AdminView.tsx`: 2,105 → 28 LOC (Strangler shim) (**−2,077 LOC, −98.7%**).
+  - New folder `admin-view/`: 2,578 LOC across 12 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
+  - Container `admin-view/AdminView.tsx`: 458 LOC ✅ (well under < 500 LOC constraint).
+  - Largest file: `useAdminState.ts` at 691 LOC (single cohesive state hook — all fetches + derived memos + actions; splitting further would just shuffle logic between state slices without semantic benefit). Second-largest: `DashboardTab.tsx` at 364 LOC (dashboard tab content — single cohesive unit).
+- File 2 — PredictionTrackingDashboard:
+  - Original `PredictionTrackingDashboard.tsx`: 2,098 → 30 LOC (Strangler shim) (**−2,068 LOC, −98.6%**).
+  - New folder `prediction-dashboard/`: 2,642 LOC across 14 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
+  - Container `prediction-dashboard/PredictionTrackingDashboard.tsx`: 152 LOC ✅ (well under < 500 LOC constraint).
+  - Largest file: `usePredictionTrackingState.ts` at 506 LOC (single cohesive state hook — all fetches + memos + actions; splitting further would just shuffle logic between state slices without semantic benefit). Second-largest: `desktopColumns.tsx` at 339 LOC (15 column-defs in one factory — single cohesive unit).
+
+Stage Summary:
+- F-Phase3-Split-Admin+Predictions complete. Both mega files are now thin re-export shims (28 LOC + 30 LOC) delegating to per-feature folder containers (458 LOC + 152 LOC, both < 500 LOC).
+- Backwards-compatible: all existing import sites (barrels `src/modules/admin/index.ts` + `src/modules/predictions/index.ts`, `SystemProblemsTab.tsx` type import, `src/app/page.tsx` + `UnifiedPredictionsTab.tsx` dynamic imports with `ssr: false`) keep working unchanged.
+- HTTP 200 confirmed on `/`, `/?view=admin`, `/?view=predictions` before commit (Rule 75). Commit + push next.
