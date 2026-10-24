@@ -1,0 +1,36 @@
+{
+  "common_cohort_same_day": {
+    "n": 276,
+    "wr": 68.1,
+    "pf": 4.78,
+    "net": 1544.3,
+    "dd": 20.8,
+    "avg": 5.6
+  },
+  "common_cohort_t1": {
+    "n": 276,
+    "wr": 77.5,
+    "pf": 7.01,
+    "net": 1959.6,
+    "dd": 15.1,
+    "avg": 7.1
+  },
+  "excluded_cohort": {
+    "n": 0,
+    "wr": 0,
+    "pf": 0,
+    "net": 0,
+    "dd": 0,
+    "avg": 0
+  },
+  "full_cohort": {
+    "n": 276,
+    "wr": 68.1,
+    "pf": 4.78,
+    "net": 1544.3,
+    "dd": 20.8,
+    "avg": 5.6
+  },
+  "t1_eligible_count": 276,
+  "t1_excluded_count": 0
+}
