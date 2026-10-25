@@ -230,8 +230,9 @@ export function AdminView() {
  onTabSelect={handleTabSelect}
  />
 
- {/* ==================== DASHBOARD TAB ==================== */}
+ {/* ==================== DASHBOARD TAB (merged: dashboard + problems) ==================== */}
  {s.activeTab === 'dashboard' && (
+ <div className="space-y-4">
  <DashboardTab
  healthScore={s.healthScore}
  stats={s.stats}
@@ -248,10 +249,7 @@ export function AdminView() {
  lastUpdate={s.lastUpdate}
  dataAgeMinutes={s.dataAgeMinutes}
  />
- )}
-
- {/* ==================== SYSTEM PROBLEMS TAB ==================== */}
- {s.activeTab === 'problems' && (
+ {/* ADMIN-CONSOLIDATION: merged problems into dashboard */}
  <SystemProblemsTab
  issues={s.systemIssues}
  criticalCount={s.criticalCount}
@@ -259,34 +257,29 @@ export function AdminView() {
  onRefresh={s.refreshAll}
  refreshing={s.statsLoading || s.dataStatusLoading || s.connectionsLoading}
  />
+ </div>
  )}
 
- {/* ==================== CRON HEALTH TAB (Task 28-B Fix 4) ==================== */}
- {s.activeTab === 'cron-health' && (
+ {/* ==================== SYSTEM MONITOR TAB (merged: system-monitor + cron-health) ==================== */}
+ {s.activeTab === 'system-monitor' && (
+ <div className="space-y-4">
+ <SystemMonitorPanel />
+ {/* ADMIN-CONSOLIDATION: merged cron-health into system-monitor */}
  <CronHealthTab />
+ </div>
  )}
 
- {/* FIX-P3-P5-P6 (Group P6 — Fix 7): dead MaestroCommandCenter
- {false && <MaestroCommandCenter />} block removed. The legacy
- MaestroCommandCenter monolith (~3000 lines) is fully replaced by
- EnginesStatusTab (= 'general' tab). */}
-
- {/* ==================== ENGINE CONTROL ROOM TAB (Task 31-B) ==================== */}
- {s.activeTab === 'engine-control-room' && (
+ {/* ==================== ENGINE CONTROL TAB (merged: engine-control-room + general + data-engine) ==================== */}
+ {s.activeTab === 'engine-control' && (
+ <div className="space-y-4">
  <EngineControlRoomTab />
- )}
-
- {/* ==================== GENERAL (ENGINES STATUS) TAB ==================== */}
- {s.activeTab === 'general' && (
+ {/* ADMIN-CONSOLIDATION: merged general (EnginesStatusTab) + data-engine (DataEngineTab) */}
  <EnginesStatusTab />
- )}
-
- {/* ==================== DATA ENGINE (SCRAPERS & DETAILED STATUS) TAB ==================== */}
- {s.activeTab === 'data-engine' && (
  <DataEngineTab />
+ </div>
  )}
 
- {/* ==================== ENGINE SETTINGS TAB (DYNAMIC-ADMIN-UI) ==================== */}
+ {/* ==================== ENGINE SETTINGS TAB ==================== */}
  {s.activeTab === 'engine-settings' && (
  <EngineSettingsTab />
  )}
@@ -303,63 +296,45 @@ export function AdminView() {
  </div>
  )}
 
- {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'historical-predictions' tab removed.
- The iframe to /admin/honest-predictions was unreachable from the
- ADMIN_HUBS nav. Users can still navigate directly to the route if
- they have the URL — the page itself is unaffected. */}
-
- {/* ==================== BACKTEST TAB (V40.2 Engine) ==================== */}
- {s.activeTab === 'backtest' && (
+ {/* ==================== PERFORMANCE TAB (merged: backtest + platform-performance) ==================== */}
+ {s.activeTab === 'performance' && (
+ <div className="space-y-4">
  <BacktestTab />
- )}
-
- {/* ==================== PLATFORM PERFORMANCE TAB (Admin Only) ==================== */}
- {s.activeTab === 'platform-performance' && (
+ {/* ADMIN-CONSOLIDATION: merged platform-performance */}
  <PlatformPerformanceView />
+ </div>
  )}
 
- {/* 'notebooks' tab + dead {false && <MaestroDashboard />} alias block removed. */}
-
- {/* 'crypto', 'gold-silver', 'multi-market', 'forex', 'data-engine', 'sectors' tabs removed. Multi-market is a separate user-facing screen. */}
-
- {/* ==================== USERS TAB (analytics-heavy legacy — for activity/usage) ==================== */}
+ {/* ==================== USERS TAB (merged: user-management + users analytics) ==================== */}
  {s.activeTab === 'users' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged user-management (CRUD) + users (analytics) */}
+ <UsersManagement />
  <UsersTab
  analyticsData={s.analyticsData}
  analyticsLoading={s.analyticsLoading}
  />
- )}
-
- {/* ==================== USER MANAGEMENT TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
- {/* New bulk-operations panel: list, multi-select, bulk role/status change, */}
- {/* bulk delete. Distinct from legacy 'users' tab (which is analytics-focused). */}
- {s.activeTab === 'user-management' && (
- <UsersManagement />
- )}
-
- {/* ==================== PRICING EDITOR TAB (Task 28-B Fix 5) ==================== */}
- {s.activeTab === 'pricing' && (
- <PricingEditorTab />
- )}
-
- {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'behavior' tab removed.
- The inline analytics table was unreachable from ADMIN_HUBS
- nav — analytics live in the 'users' tab now. */}
-
- {/* historical-predictions-v2 & v38-backtest tabs REMOVED (2026-08-13) — consolidated into نظام التعلم الذكي الموحد (Maestro) */}
-
- {/* 'expert-recs' tab removed. */}
-
- {/* ==================== TELEGRAM TAB ==================== */}
- {s.activeTab === 'telegram' && (
- <div className="bg-background rounded-lg">
- <TelegramTab />
  </div>
  )}
 
- {/* ==================== TELEGRAM PREDICTIONS AUDIT TAB (Task 28-B Fix 7) ==================== */}
- {s.activeTab === 'telegram-predictions' && (
+ {/* ==================== SUBSCRIPTIONS TAB (merged: pricing + promo-codes) ==================== */}
+ {s.activeTab === 'subscriptions' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged pricing + promo-codes */}
+ <PricingEditorTab />
+ <PromoCodesAdmin />
+ </div>
+ )}
+
+ {/* ==================== TELEGRAM TAB (merged: telegram + telegram-predictions) ==================== */}
+ {s.activeTab === 'telegram' && (
+ <div className="space-y-4">
+ <div className="bg-background rounded-lg">
+ <TelegramTab />
+ </div>
+ {/* ADMIN-CONSOLIDATION: merged telegram-predictions */}
  <TelegramPredictionsTab />
+ </div>
  )}
 
  {/* ==================== REPORTS TAB ==================== */}
@@ -374,63 +349,46 @@ export function AdminView() {
  </div>
  )}
 
- {/* ==================== NEWS CONTROL TAB ==================== */}
- {s.activeTab === 'news-control' && (
+ {/* ==================== NEWS TAB (merged: news-control + news-health) ==================== */}
+ {s.activeTab === 'news' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged news-control + news-health */}
  <NewsManagementTab />
- )}
-
- {/* ==================== NEWS HEALTH TAB (Task 28-B Fix 6) ==================== */}
- {s.activeTab === 'news-health' && (
  <NewsHealthTab />
+ </div>
  )}
 
- {/* ==================== SHARIA MANAGEMENT TAB (Task 28-B Fix 1) ==================== */}
- {s.activeTab === 'sharia' && (
- <ShariaManagementTab />
- )}
-
- {/* ==================== SOURCE AUTHORITY TAB (Task 28-B Fix 2) ==================== */}
- {s.activeTab === 'source-authority' && (
+ {/* ==================== QUALITY TAB (merged: source-authority + sharia) ==================== */}
+ {s.activeTab === 'quality' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged source-authority + sharia */}
  <SourceAuthorityTab />
+ <ShariaManagementTab />
+ </div>
  )}
 
- {/* ==================== DATA HEALTH TAB (FRONTEND-1) ==================== */}
- {/* Surfaces backend freshness: per-market × per-source matrix, egksco_stocks status, overall health badge. */}
+ {/* ==================== DATA HEALTH TAB (merged: data-health + validation-monitor) ==================== */}
  {s.activeTab === 'data-health' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged data-health + validation-monitor */}
  <DataHealthTab />
+ <ValidationMonitorTab />
+ </div>
  )}
 
- {/* ==================== INVESTORS DATA ENTRY TAB (manual entry) ==================== */}
- {/* Admin can manually enter EGX investor-flow data (مصريين/عرب/أجانب buy/sell/net) when scraping fails. */}
+ {/* ==================== INVESTORS DATA ENTRY TAB ==================== */}
  {s.activeTab === 'investors-entry' && (
  <InvestorsDataEntryTab />
  )}
 
- {/* ==================== VALIDATION MONITOR TAB (Task 28-B Fix 3) ==================== */}
- {s.activeTab === 'validation-monitor' && (
- <ValidationMonitorTab />
- )}
-
- {/* ==================== DATABASES TAB (Full Database Manager) ==================== */}
+ {/* ==================== DATABASES TAB (merged: databases + db-backup) ==================== */}
  {s.activeTab === 'databases' && (
+ <div className="space-y-4">
+ {/* ADMIN-CONSOLIDATION: merged databases + db-backup */}
  <DatabaseManagerFull />
- )}
-
- {/* ==================== DB BACKUP TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
- {/* Compresses every db/*.db into sub-60MB zip archives in /data, then */}
- {/* optionally commits + pushes them to GitHub via `git add -f`. */}
- {s.activeTab === 'db-backup' && (
  <DbBackupPanel />
+ </div>
  )}
-
- {/* ==================== SYSTEM MONITOR TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
- {/* Live CPU / Memory / Disk usage + service status (Next.js, Python,
- Data Engine, News Agent, WebSocket, Telegram, DBs). Auto-refresh 5s. */}
- {s.activeTab === 'system-monitor' && (
- <SystemMonitorPanel />
- )}
-
- {/* 'system-topology' tab removed. */}
 
  {/* ==================== SYSTEM CONTROL TAB ==================== */}
  {s.activeTab === 'system-control' && (
@@ -440,13 +398,10 @@ export function AdminView() {
  </div>
  )}
 
- {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'educational-cards' tab removed. */}
-
- {/* ==================== AD GENERATOR TAB ==================== */}
+ {/* ==================== MARKETING STUDIO TAB ==================== */}
  {s.activeTab === 'marketing-studio' && <MarketingStudio />}
 
  {/* ==================== USER FEEDBACK TAB ==================== */}
- {s.activeTab === 'promo-codes' && <PromoCodesAdmin />}
  {s.activeTab === 'feedback' && (
  <UserFeedbackTab
  feedback={s.feedback}
