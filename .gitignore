@@ -395,3 +395,6 @@ data/*.zip.part
 data/*.db
 upload/*.zip
 upload/*.db
+db/*.zip
+public/*.tar.gz
+db_release_*/
