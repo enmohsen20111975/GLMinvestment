@@ -165,8 +165,14 @@ count = conn_st.execute(
     "SELECT COUNT(*) FROM radar_signal_tracking WHERE ticker=? AND signal_date=?",
     (test_ticker, test_date)
 ).fetchone()[0]
-log('Single record per (ticker, date): INSERT OR REPLACE works',
-    count == 1, f'rows for ({test_ticker}, {test_date}) = {count} (expected 1)')
+# EXPECTATION: with current schema (no UNIQUE constraint on ticker+signal_date),
+# INSERT OR REPLACE does NOT actually replace — it inserts a new row each
+# time. This test RECORDS the actual behavior as a FINDING, not as PASS.
+# The owner has been notified; schema migration is deferred.
+log('Single record per (ticker, date): INSERT OR REPLACE behavior',
+    count == 1,
+    f'rows for ({test_ticker}, {test_date}) = {count} (FINDING: expected 1 if UNIQUE exists; '
+    f'actual={count} — no UNIQUE constraint on (ticker, signal_date) → duplicates allowed)')
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 3. TIMELINE: تشغيل 3 تواريخ متتالية ومراجعة transitions
@@ -206,25 +212,28 @@ log('Timeline: 3 records stored correctly',
 # 4. days_in_state accumulation: CONTINUE → days +1
 # ═══════════════════════════════════════════════════════════════════════════
 print('\n' + '='*80)
-print('4. days_in_state ACCUMULATION — CONTINUE → +1')
-print('='*80)
-
-# read back and check days_in_state is monotonic for CONTINUE
+# days_in_state sequence (timeline returns DESC — newest first)
 days_seq = [t['days_in_state'] for t in timeline]
-print(f'  days_in_state sequence: {days_seq}')
-
-# If all 3 dates have same state → days should be 1, 2, 3
 states_seq = [t['state'] for t in timeline]
-if len(set(states_seq)) == 1:
-    expected_days = [1, 2, 3]
-    log('days_in_state: monotonic accumulation (1,2,3)',
-        days_seq == expected_days,
-        f'actual={days_seq} expected={expected_days}')
+print(f'  days_in_state sequence (DESC): {days_seq}')
+print(f'  states sequence (DESC):        {states_seq}')
+
+# Reverse to ASC (oldest first) for monotonic check
+days_asc = list(reversed(days_seq))
+states_asc = list(reversed(states_seq))
+print(f'  days_in_state sequence (ASC):  {days_asc}')
+
+if len(set(states_asc)) == 1:
+    # All 3 dates same state → days should be 1, 2, 3 in ASC order
+    expected = [1, 2, 3]
+    log('days_in_state: monotonic accumulation (1,2,3) when state unchanged',
+        days_asc == expected,
+        f'days_asc={days_asc} expected={expected}')
 else:
-    # state changed at some point — days_in_state resets
-    log('days_in_state: state changed (acceptable)',
+    # State changed at some point → days_in_state resets to 1 on transition
+    log('days_in_state: state changed (acceptable, days reset on transition)',
         True,
-        f'states_seq={states_seq} days_seq={days_seq} (reset on transition is correct)')
+        f'states_asc={states_asc} days_asc={days_asc}')
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 5. REAL DATA: تشغيل على 5 tickers حقيقيين

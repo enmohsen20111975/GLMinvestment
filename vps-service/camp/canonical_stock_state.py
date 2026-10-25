@@ -282,10 +282,19 @@ def assess_state(
     atr_val = _atr(highs, lows, closes, 14)
     vol_ratio = _volume_ratio(volumes, 20)
 
-    if not ma50 or not ma200 or roc_10d is None or not atr_val:
+    # FIX (Phase 2 — owner directive point (a)): missing MA200 must NOT
+    # abort the entire assessment. It only disables MA200-dependent evidence
+    # (E2: price vs MA200, E3: golden/death cross). Other indicators
+    # (MA50, ROC, ATR, volume ratio, buy_pct) remain valid.
+    # Hard floor: MA50 (50 closes minimum), ROC_10d, ATR — these are
+    # required for the core price/volume evidence. If any of THEM is
+    # missing, the data really is too thin to classify → DATA_INCOMPLETE.
+    if not ma50 or roc_10d is None or not atr_val:
         assessment.state = DATA_INCOMPLETE
         assessment.data_freshness = 'incomplete'
         return assessment
+    # ma200 may be None when 50 ≤ len(closes) < 200. E2/E3 will be skipped
+    # gracefully below (see "if ma200 is not None" guards).
 
     atr_pct = (atr_val / price) * 100 if price > 0 else 0
     # FIX (Phase 2): no fabricated default. If buy_pct is None, E6 evidence
@@ -304,21 +313,27 @@ def assess_state(
         evidence_oppose.append(Evidence('price_below_ma50', ma50 - price, DOWNTREND, 1.0,
                                          f'السعر تحت MA50 ({ma50:.2f})', 'bearish'))
 
-    # E2: Price vs MA200
-    if price > ma200:
-        evidence_support.append(Evidence('price_above_ma200', price - ma200, UPTREND, 0.8,
-                                          f'السعر فوق MA200 ({ma200:.2f})', 'bullish'))
-    else:
-        evidence_oppose.append(Evidence('price_below_ma200', ma200 - price, DOWNTREND, 0.8,
-                                         f'السعر تحت MA200 ({ma200:.2f})', 'bearish'))
+    # E2: Price vs MA200 — SKIPPED when ma200 is None (insufficient history)
+    # FIX (Phase 2 — owner directive point (a)): do NOT fabricate evidence
+    # when MA200 is unavailable; simply skip E2. State will rely on other
+    # indicators (MA50, ROC, ATR, volume, buy_pct).
+    if ma200 is not None:
+        if price > ma200:
+            evidence_support.append(Evidence('price_above_ma200', price - ma200, UPTREND, 0.8,
+                                              f'السعر فوق MA200 ({ma200:.2f})', 'bullish'))
+        else:
+            evidence_oppose.append(Evidence('price_below_ma200', ma200 - price, DOWNTREND, 0.8,
+                                             f'السعر تحت MA200 ({ma200:.2f})', 'bearish'))
 
-    # E3: MA alignment (golden/death cross)
-    if ma50 > ma200:
-        evidence_support.append(Evidence('ma_golden_cross', ma50 - ma200, UPTREND, 0.7,
-                                          'تقاطع ذهبي (MA50 > MA200)', 'bullish'))
-    else:
-        evidence_oppose.append(Evidence('ma_death_cross', ma200 - ma50, DOWNTREND, 0.7,
-                                         'تقاطع смерти (MA200 > MA50)', 'bearish'))
+    # E3: MA alignment (golden/death cross) — SKIPPED when ma200 is None
+    # (cannot compare MA50 to a non-existent MA200).
+    if ma200 is not None:
+        if ma50 > ma200:
+            evidence_support.append(Evidence('ma_golden_cross', ma50 - ma200, UPTREND, 0.7,
+                                              'golden cross (MA50 > MA200)', 'bullish'))
+        else:
+            evidence_oppose.append(Evidence('ma_death_cross', ma200 - ma50, DOWNTREND, 0.7,
+                                             'death cross (MA200 > MA50)', 'bearish'))
 
     # E4: Short-term momentum (ROC 10d)
     if roc_10d is not None:
@@ -378,7 +393,11 @@ def assess_state(
                                          f'تقلب مرتفع ({atr_pct:.1f}%) — عدم استقرار', 'bearish'))
 
     # E8: 5-day pullback (for CORRECTION_HEALTHY detection)
-    if roc_5d is not None and roc_5d < -2 and price > ma50 and ma50 > ma200:
+    # FIX (Phase 2): guard against ma200 being None — healthy pullback
+    # requires MA50 > MA200 (bullish structure); if MA200 is unavailable,
+    # we cannot confirm the structure, so E8 is skipped.
+    if (roc_5d is not None and roc_5d < -2 and price > ma50
+            and ma200 is not None and ma50 > ma200):
         # Price pulled back but still above MA50 and MA50 > MA200 = healthy correction
         evidence_support.append(Evidence('healthy_pullback', roc_5d, CORRECTION_HEALTHY, 0.5,
                                           f'تراجع ({roc_5d:+.1f}%) لكن البنية الإيجابية سليمة', 'bearish'))

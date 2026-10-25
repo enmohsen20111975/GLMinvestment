@@ -76,10 +76,10 @@ def load_ticker_history(ticker, max_days=300, as_of_date=None):
     return {'dates': d, 'opens': o, 'highs': h, 'lows': l, 'closes': c, 'volumes': v}
 
 # ═══════════════════════════════════════════════════════════════════════════
-# 1. MA200 FIX: بيانات قصيرة (50-199 يوم) لازم تُرجع DATA_INCOMPLETE
-# ═══════════════════════════════════════════════════════════════════════════
+# 1. MA200 FIX (point a): بيانات قصيرة (50-199 يوم) → يستمر التصنيف
+#    MA200 بس اللي يتعطل، مش التحليل كله. لازم state ≠ DATA_INCOMPLETE.
 print('\n' + '='*80)
-print('1. MA200 FIX — بيانات قصيرة (50-199 يوم) → DATA_INCOMPLETE')
+print('1. MA200 FIX (point a) — بيانات 50-199 يوم → التصنيف يستمر (مش DATA_INCOMPLETE)')
 print('='*80)
 
 test_ticker = 'COMI'
@@ -98,11 +98,51 @@ if hist and len(hist['closes']) >= 200:
         buy_pct=None,
         latest_price_date=short_date,
     )
-    log('MA200 fix: 100-day data → DATA_INCOMPLETE',
-        result.state == DATA_INCOMPLETE,
-        f'state={result.state} (expected {DATA_INCOMPLETE}), closes={len(short_closes)}')
+    real_or_unconfirmed = [ACCUMULATION, UPTREND, CORRECTION_HEALTHY,
+                           DISTRIBUTION, DOWNTREND, RECOVERY, STATE_UNCONFIRMED]
+    log('MA200 fix: 100-day data → state continues (not DATA_INCOMPLETE)',
+        result.state in real_or_unconfirmed,
+        f'state={result.state} (expected real state, not {DATA_INCOMPLETE}), closes={len(short_closes)} '
+        f'evidence_support={len(result.evidence_supporting)} evidence_oppose={len(result.evidence_opposing)}')
+
+    all_ev = result.evidence_supporting + result.evidence_opposing
+    ma200_evidence = [e for e in all_ev if 'ma200' in e.name.lower() or 'golden_cross' in e.name.lower() or 'death_cross' in e.name.lower()]
+    log('MA200 fix: E2/E3 (MA200-dependent) skipped when ma200=None',
+        len(ma200_evidence) == 0,
+        f'ma200_evidence_count={len(ma200_evidence)} (expected 0)')
 else:
-    log('MA200 fix: setup', False, f'could not load ≥200 days for {test_ticker}')
+    log('MA200 fix: setup', False, f'could not load >=200 days for {test_ticker}')
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 1b. MA200 PRESENT: بيانات ≥ 200 يوم → E2/E3 evidence يجب أن تظهر
+# ═══════════════════════════════════════════════════════════════════════════
+print('\n' + '='*80)
+print('1b. MA200 PRESENT — بيانات ≥ 200 يوم → E2/E3 evidence يجب أن تظهر')
+print('='*80)
+
+if hist and len(hist['closes']) >= 200:
+    full_date = hist['dates'][-1]
+    result_full = assess_state(
+        ticker=test_ticker,
+        date=full_date,
+        closes=hist['closes'], highs=hist['highs'], lows=hist['lows'], volumes=hist['volumes'],
+        buy_pct=None,
+        latest_price_date=full_date,
+    )
+    real_states = [ACCUMULATION, UPTREND, CORRECTION_HEALTHY, DISTRIBUTION, DOWNTREND, RECOVERY,
+                   STATE_UNCONFIRMED]
+    log('MA200 present: ≥200-day data → real state',
+        result_full.state in real_states and result_full.state != DATA_INCOMPLETE,
+        f'state={result_full.state} conf={result_full.confidence:.2f} '
+        f'closes={len(hist["closes"])} last_date={full_date} last_price={result_full.last_price:.2f}')
+
+    all_ev_full = result_full.evidence_supporting + result_full.evidence_opposing
+    ma200_ev_full = [e for e in all_ev_full if 'ma200' in e.name.lower() or 'golden_cross' in e.name.lower() or 'death_cross' in e.name.lower()]
+    log('MA200 present: E2/E3 evidence generated',
+        len(ma200_ev_full) >= 1,
+        f'ma200_evidence_count={len(ma200_ev_full)} (expected >=1)')
+else:
+    log('MA200 present: setup', False, 'no ≥200-day data available')
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 2. MA200 FIX: بيانات ≥ 200 يوم لازم تشتغل وتُرجع state حقيقي
@@ -162,7 +202,10 @@ gap = _trading_days_between('2026-10-23', '2026-10-26')  # Fri → Mon
 log('trading_days: Fri→Mon = 1', gap == 1, f'got {gap}')
 
 gap = _trading_days_between('2026-10-19', '2026-10-26')  # Mon → Mon
-log('trading_days: Mon→Mon = 5', gap == 5, f'got {gap}')
+# Semantics: "between" = exclusive of both endpoints. Trading days
+# strictly between Mon 19 and Mon 26 = Tue, Wed, Thu, Fri = 4 (Mon 26
+# itself is NOT counted as "missed").
+log('trading_days: Mon→Mon = 4 (between, exclusive)', gap == 4, f'got {gap}')
 
 gap = _trading_days_between('2026-10-26', '2026-10-26')
 log('trading_days: same day = 0', gap == 0, f'got {gap}')
