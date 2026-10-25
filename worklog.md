@@ -8814,3 +8814,489 @@ where `daily_dryness = vol / sma(vol,20)`, `contraction = atr(5) < atr(20)`, `ML
 
 ### Whether state transition tracking exists (owner's #1 priority)
 **NO.** Confirmed by: (a) DB inspection — `radar_signal_tracking` has no prev_state/transition_type columns; (b) `stock_phase` overwrites via PRIMARY KEY=symbol; (c) grep for `prev_state|previous_state|transition_to|state_change|days_in_state` across vps-service returns only `data_source_circuit_breaker.py` (irrelevant); (d) the only "state machine" in the repo is the circuit breaker for data sources. **The owner's vision of "Accumulation → Uptrend → Correction → Distribution → Downtrend → Recovery" with transition monitoring is functionally absent from the production codebase.** It can be bootstrapped from existing `radar_signal_tracking` rows (1259 historical rows = ~23 days of per-ticker snapshots) without writing any new indicator — just a diff job + a new table.
+
+---
+Task ID: RADAR-INTEGRATION-MAP
+Agent: Explore
+Task: Phase 1 — Full radar system integration map (components, call graph, DB tables, frontend, conflicts).
+
+Work Log:
+- Read /home/z/my-project/worklog.md tail (last 200 lines — RADAR-DEEP-AUDIT + PHASE0-WS-C findings).
+- Read full: vps-service/analyzers/radar_integration.py (416L), vps-service/jobs/predictor_modules/whale_guard.py (42L), vps-service/core/real_liquidity_radar.py (232L), vps-service/utils/canonical_signal.py (309L).
+- Read partial (radar-relevant sections): scripts/liquidity_radar_v2.py (lines 1-200, 579-720, 716-915, 1066-1240), scripts/maker_radar.py (lines 1-200, 400-810), vps-service/utils/shared_liquidity.py (lines 1-200, 751-1050), vps-service/utils/entry_gate.py (lines 450-560, 716-815), vps-service/core/unified_scanner.py (lines 320-440), vps-service/api/market_master_endpoints.py (full 521L), vps-service/engines/flow_system.py (lines 100-300), vps-service/analyzers/master_analyzer.py (lines 1134-1213), vps-service/analyzers/institutional_decision_engine.py (lines 755-785), vps-service/jobs/daily_predictor.py (lines 1748-1847, 3220-3420, 3940-4000).
+- Read frontend: src/app/api/v2/liquidity-radar/route.ts (217L), src/app/api/maker-radar/route.ts (80L), src/components/shared/ui/FlowPhaseTag.tsx (118L), src/lib/schedulers/radar-alerts.ts (60L header).
+- DB inspection via Python sqlite3: stocks.db (51 tables), predictions.db (33 tables), price_history.db (3 tables), intraday.db (6 tables), data_engine.db (29 tables). Sampled rows + schemas of radar_signal_tracking, stock_phase, market_regime_log, liquidity_signal_outcomes, liquidity_backtest_results, liquidity_dynamic_threshold.
+- Grep'd for: maker_state|MakerState|stock_phase|liquidity_radar|radar_integration|is_radar_strong|compute_money_flow|detect_life_cycle|classify_stock_phase|accumulation|distribution|whale_guard|_check_stock_phase + scan_market + compute_whale_flow + analyze_liquidity + NEAR_RESISTANCE/TREND_UP_HOLD (production + archive).
+- crontab.txt + ecosystem.config.js + scripts/deploy_production.sh checked for radar scheduling.
+- NO files modified — read-only throughout.
+
+Stage Summary:
+
+# Phase 1 — Liquidity Radar System Integration Map
+
+## Part A: Component Inventory (12 production files + 2 DB-writer archives + 1 orphaned)
+
+### A1. `scripts/maker_radar.py` (1689L) — THE PRODUCER (cron every 5 min)
+- **What:** Scans daily OHLCV for ~200 tickers, classifies into 6 paths, writes `scripts/output/maker_radar_{MARKET}_{DATE}.json` + inserts rows into `stocks.db.radar_signal_tracking` (after `DELETE WHERE signal_date=?` — same-day upsert pattern).
+- **Data source:** Per-market chain (Phase-3 canonical: price_history.db.price_history → stocks.db.stock_daily_prices → data_engine.db.egksco_price_history → data_engine.db.historical_data). `fetch_ticker_series` 40-day window. NO intraday.
+- **States classified:** `A_pre_surge` | `B_quiet_accumulation_strong` | `C_quiet_accumulation_weak` | `D_explosive_surge` | `E_early_break` | `distribution` (override via BRAVO-FLOW-GATE-ALL when `net_flow_egp < 0`, line 515-527) | `None` (disqualified_illiquid). Plus: `accumulation` label (canonical_signal.classify_accumulation), `life_cycle` (shared_liquidity.detect_life_cycle), `money_flow_state`, `liquidity_state`, `kill_switch` flag, `correction_status`, `expected`.
+- **Production path:** YES (cron-driven, 8-14h weekdays + 5-min for CRYPTO/GOLD per `crontab.txt:201-208`).
+- **UI consumers:** `/api/maker-radar`, `/api/maker-radar/multi-market`, `/api/m2/liquidity-radar`, `/api/v2/liquidity-radar`, `/api/radar/incubator`, `/api/radar/accuracy` (all read JSON), `/api/radar/weekly-report`.
+- **Depends on:** `utils.shared_liquidity` (detect_quiet_accumulation, detect_pre_surge, detect_life_cycle, compute_money_flow, check_limit_up_trap, check_kill_switch, is_explosive_surge, classify_price_bucket, dynamic_min_turnover) + `utils.canonical_signal.classify_accumulation` (line 558).
+- **Broken/inconsistent:** `signal_type` column mixes legacy (`quiet_accumulation_strong`=523, `pre_surge`=382) + new (`A_pre_surge`=213, `B_quiet_accumulation_strong`=108, `D_explosive_surge`=14, `disqualified_illiquid`=14, `explosive_surge`=5). Path='distribution' override (BRAVO-FLOW-GATE-ALL) writes to JSON but RADAR-TRACKING INSERTs use `path` field — verified zero `path='distribution'` rows in DB because the override clears `under_microscope=False` before the tracking call (line 675-680). So distribution overrides are silently lost from history.
+
+### A2. `vps-service/analyzers/radar_integration.py` (416L) — JSON CONSUMER + HARD GATE
+- **What:** Reads `scripts/output/maker_radar_{MARKET}_{DATE}.json` + `exit_radar_{DATE}.json`. Provides 4 entry points: `check_exit_radar_conflict`, `is_radar_strong_accumulation`, `is_radar_confirmed_accumulation`, `radar_data_available`, `get_radar_state`, `get_radar_boost` (legacy).
+- **Data source:** JSON files only (no DB). Loads last 7 days, scans for `under_microscope` + `quiet_list/pre_surge_list/explosive_list/early_break_list`.
+- **States classified:** None new — passes through maker_radar paths + new `phase`/`liquidity_bucket` fields (`تراكم مع اتجاه` / `تراكم هادئ` / `تصريف` / `محايد` + `strong_whale_inflow` / `moderate_inflow` / `whale_outflow`).
+- **Production path:** YES — `daily_predictor.py:1759-1813` calls `is_radar_strong_accumulation` as HARD GATE (skip prediction if not A_pre_surge / B_quiet_accumulation_strong / new phase/bucket equivalent). `daily_predictor.py:3102` calls `is_radar_confirmed_accumulation` for DNA-EGX30-DOWN bypass. `institutional_decision_engine.py:767` calls `is_radar_strong_accumulation` for counter-trend bypass. `entry_gate.py:784` calls `is_radar_confirmed_accumulation` for market_context bypass.
+- **UI consumers:** None (called only from Python predictor).
+- **Depends on:** `maker_radar.py` JSON output existing (caches for one pipeline run).
+- **Broken/inconsistent:** HARD GATE fail-opens if JSON missing (`radar_data_available` returns False → `if _radar_on: ... else: # safe-by-design`). `_load_maker_radar` falls back to legacy file `maker_radar_{date}.json` (no market suffix) — file doesn't exist in current `scripts/output/` listing. JSON keys `quiet_list` and `pre_surge_list` are expected but `is_radar_strong_accumulation` lines 341-355 ALSO inspect `stocks`/`under_microscope` for `phase` + `liquidity_bucket` fields — these fields are produced by `liquidity_radar_v2.py` (not by `maker_radar.py`). So the "NEW phase + liquidity_bucket" branch is DEAD CODE unless the JSON is from liquidity_radar_v2.
+
+### A3. `scripts/liquidity_radar_v2.py` (1487L) — STRICT 4-PILLAR RADAR (ORPHANED in production)
+- **What:** The "BRAVO-RADAR-V2" rewrite (2026-10-14). 4 pillars: MFM whale flow, market regime, phase, entry/defense. Computes `phase` ∈ {`PHASE_ABSORBING='تراكم مع اتجاه'`, `PHASE_PREPARING='تراكم هادئ'`, `PHASE_DISTRIBUTING='تصريف'`, `PHASE_NEUTRAL='محايد'`, `PHASE_INSUFFICIENT='بيانات غير كافية'`} via `classify_phase` (line 716-783). `classify_phase` priority: insufficient_data > bear-market distribution > MFM− distribution > whale_present+above_MA20 = absorbing > whale_present+below_MA20 = preparing > MFM+ weak+above_MA20 = preparing > MFM+ weak+below_MA20 = neutral. Also calls `api/canonical_flow.classify_liquidity_bucket` for a separate mutually-exclusive `liquidity_bucket` field.
+- **Data source:** stocks.db.stocks (stock_info) + price_history.db.price_history (PRIMARY candles) + stocks.db.stock_daily_prices (FALLBACK) + predictions.db (read-only, for active prediction check). 20-day MFM window, 30-candle min.
+- **States classified:** 5 phases + canonical `liquidity_bucket` (canonical_flow taxonomy).
+- **Production path:** **NO** — `crontab.txt` has no entry for `liquidity_radar_v2.py` (only `maker_radar.py`). `whale_guard.py:33` imports ONLY `compute_whale_flow` from this module (a single function, not `scan_market`). `scan_market` (line 1338) has ZERO callers in production Python — only `scripts/liquidity_radar_v2.py` CLI invocation. The JSON output file is NEVER referenced by any cron or API route.
+- **UI consumers:** None (orphaned — the v2 route.ts at `src/app/api/v2/liquidity-radar/route.ts` reads `readRadarCache(market)` which loads `maker_radar_*.json`, NOT `liquidity_radar_v2_*.json`).
+- **Depends on:** `api.canonical_flow` (`classify_liquidity_bucket`, `_is_falling_knife`, `_compute_ma`).
+- **Broken/inconsistent:** `compute_whale_flow` (MFM-based) is called by `whale_guard.py` for the `_whale_distribution_guard` HARD GATE in daily_predictor (line 1060). But the maker_radar.py uses the OLD `compute_money_flow` (CLV+CMF+vol+SMA) from `shared_liquidity.py`. **Two different money-flow algorithms coexist** for the same stock: MFM (whale_guard) vs CLV+CMF (maker_radar). They will give different `net_flow_egp` for the same candle.
+
+### A4. `scripts/exit_radar.py` (661L) — DISTRIBUTION DETECTOR (NO CRON)
+- **What:** 5 exit paths: `X1_distribution_strong`, `X2_volume_divergence`, `X3_resistance_rejection`, `X4_exhaustion_gap`, `X5_kill_switch_triggered`. Writes `scripts/output/exit_radar_{date}.json`.
+- **Data source:** same DB chain as maker_radar.
+- **States classified:** X1/X2/X3/X4/X5 paths.
+- **Production path:** **PARTIAL** — `radar_integration.check_exit_radar_conflict` reads the JSON file (last 7 days). `daily_predictor.py:1767` HARD-BLOCKs if X1/X5 present, soft-warns + score −3 if X2/X3/X4. **BUT no cron entry** in `crontab.txt` for `exit_radar.py` — file generation is unreliable. `scripts/output/exit_radar_*.json` does NOT exist in current snapshot. Safe-by-design: missing file → no conflict returned → no block.
+- **UI consumers:** `/api/maker-radar/exit-radar` (Next.js) calls a separate route that re-runs the Python script (per `src/app/api/maker-radar/exit-radar/route.ts:115`).
+- **Depends on:** `shared_liquidity.check_kill_switch` (for X5).
+- **Broken/inconsistent:** Hard-blocker depends on a file produced by an unscheduled script. If the script never runs, the hard gate silently fail-opens.
+
+### A5. `vps-service/core/real_liquidity_radar.py` (232L) — 5-STATE WICK/DRYNESS (DISPLAY-ONLY)
+- **What:** `analyze_liquidity(ticker, daily_data, intraday_data)` returns `LiquidityResult.classification` ∈ {`ACCUMULATION_CONFIRMED`, `DRY_EXPLOSION_READY`, `DIRTY_DISTRIBUTION`, `SUSPICIOUS_WATCH`, `FALLING_KNIFE`}. Thresholds all hardcoded (L170-220).
+- **Data source:** daily OHLCV passed in + optional intraday (last 3 hours / 6 ticks) for `effort_signal` + `low_trajectory`.
+- **States classified:** 5 (above).
+- **Production path:** **INDIRECT** — called only by `core/unified_scanner.py:357`. `unified_scanner` is called by `daily_predictor.py:617` for WHALE_RADAR candidate enrichment (veto only on `DISTRIBUTION_VETO`) + by `core/sync_scanner_to_db.py:76`. NOT in the main V40.2 prediction path.
+- **UI consumers:** None directly. `unified_scanner` output is consumed by `/api/...` scanner routes (display).
+- **Depends on:** None (self-contained).
+- **Broken/inconsistent:** Taxonomy is unique — none of its 5 states matches the maker_radar A-E paths or canonical_signal's تجميع/تصاعد/توزيع/تخفيض. Thresholds hardcoded (0.7, 1.2, 1.3, 1.5, 2.0, 3.0, 15, 30, 40, 60, 80, 85, 0.15, 0.6, 0.998, 1.002). Owner cannot tune without editing source.
+
+### A6. `vps-service/core/unified_scanner.py` (533L) — BRAVO-QUAD-SCORE SCANNER
+- **What:** 4-pillar score: VP(0-30) + SMC(0-30) + Liq(0-20, from real_liquidity_radar) + Season(0-20). Decision logic at line 417-440.
+- **Data source:** stocks.db.stock_daily_prices.
+- **States classified:** Decision tracks: `STRONG_BUY`+`ACCUMULATION_BUY` | `STRONG_BUY`+`GOLDEN_DIP` | `WATCH`+`PEAK_MINEFIELD_WAIT` | `HOLD`+`FALLING_KNIFE_VETO`/`ILLIQUID`/`DISTRIBUTION_RISK`/`DISTRIBUTION_VETO`/`LOW_RR`/`DIRTY_DIST`.
+- **Production path:** Called by `daily_predictor.py:617` ONLY for WHALE_RADAR enrichment, NOT for V40.2 prediction. Called by `sync_scanner_to_db.py:76`.
+- **UI consumers:** `/api/...` scanner routes (display).
+- **Depends on:** `core.real_liquidity_radar.analyze_liquidity`.
+- **Broken/inconsistent:** Computes its own `DISTRIBUTION_RISK` / `DIRTY_DIST` veto labels — completely separate from maker_radar's `distribution` override and from canonical_signal's `تصريف`.
+
+### A7. `vps-service/utils/shared_liquidity.py` (1151L) — LIBRARY (compute_money_flow + 9 other functions)
+- **What:** Dynamic liquidity thresholds (80K/200K/400K by price bucket) + `compute_money_flow` (CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15, legacy formula) + `detect_quiet_accumulation` (5-6/6 signals) + `detect_pre_surge` (3/4 signals) + `detect_life_cycle` (7 phases: نعاس/قفزة أولى/جني أرباح صحي/توزيع قاتل/تدوير وهمي/حبس/عادي) + `check_kill_switch` + `is_explosive_surge` + `should_reject_by_liquidity` + `classify_price_bucket`.
+- **Data source:** Pure function — callers pass candles.
+- **States classified:** Multiple: `quiet_accumulation` (5-6/6 signals), `pre_surge` (3-4/4 signals), `life_cycle` 7 phases, `money_flow_state` 5 states, `liquidity_state` 5 states.
+- **Production path:** YES — `compute_money_flow` called by `daily_predictor.py:3239` (RADAR-BOOST scoring) + by `maker_radar.py:501`. `check_kill_switch` called by `daily_predictor.py:3231` (RADAR-KILL reject) + `maker_radar.py:504`. `detect_quiet_accumulation`/`detect_pre_surge`/`detect_life_cycle`/`is_explosive_surge` called by `maker_radar.py:457-466`.
+- **UI consumers:** None direct.
+- **Depends on:** `canonical_signal.classify_accumulation` (used by `maker_radar.py`, not by shared_liquidity itself).
+- **Broken/inconsistent:** `compute_money_flow` has flag `RADAR_USE_PINE_FORMULA` (default `false`, line 877). Pine formula `CLV×0.65 + body×0.35` is gated off — legacy formula still in use. "Backtest needed before switch" comment from 2026-10 — backtest never happened. **Note:** `compute_money_flow` (this file, CLV+CMF+vol+SMA) is DIFFERENT from `liquidity_radar_v2.compute_whale_flow` (MFM-only). Two parallel money-flow algorithms.
+
+### A8. `vps-service/utils/canonical_signal.py` (309L) — CANONICAL LABELS (but only 2/5 are used)
+- **What:** 5 canonical classifiers: `classify_signal` (STRONG_BUY/.../STRONG_SELL), `classify_accumulation` (تجميع قوي/تجميع/تجميع خفيف/محايد/تصريف خفيف/تصريف/تصريف قوي), `classify_money_flow` (🟢/🔴 labels), `classify_volume_ratio` (capped 50), `classify_stock_phase` (تجميع/تصاعد/توزيع/تخفيض/محايد).
+- **States classified:** 5-phase regime-based taxonomy (تجميع/تصاعد/توزيع/تخفيض/محايد).
+- **Production path:** PARTIAL — `classify_accumulation` called by `maker_radar.py:558`. `classify_signal` called by master_analyzer. `classify_money_flow` imported by telegram_interactive_bot + telegram_target_hit_tracker. **`classify_stock_phase` is imported by `telegram_interactive_bot.py:31` but the function is stubbed-out at line 38** (`def classify_stock_phase(*_a, **_kw): pass`). So canonical_stock_phase has ZERO active callers in production.
+- **UI consumers:** None direct.
+- **Depends on:** None.
+- **Broken/inconsistent:** Docstring (line 207-213) explicitly documents "4 taxonomies مختلفة لـ phase" as the problem — but `classify_stock_phase` itself is never persisted and never used by the prediction path. It's a library function with no live caller.
+
+### A9. `vps-service/utils/entry_gate.py` (857L) — 10-CHECK ENTRY FILTER
+- **What:** `check_entry_gate(data)` runs 10 checks (evidence, R/R, above-SMA50, relative-strength, market-context, liquidity, entry-zone, **stock_phase** (MA50/MA200), RSI-zone, POC-distance, accumulation-ratio).
+- **Data source:** Closes + volumes passed in by caller.
+- **States classified:** `_check_stock_phase` (line 460-519): `DOWNTREND` (price<MA50 & <MA200) | `PULLBACK` (MA50>price>MA200) | `UPTREND` (price>MA50>MA200) | `BULLISH_RECOVERY` (MA200>MA50 & price>both) | `TRANSITIONAL` (default). HARD-BLOCKs `CORRECTION` (line 499) and `TRANSITIONAL` (line 506) — **BUT** `CORRECTION` is unreachable code: the if/elif chain never assigns `phase='CORRECTION'`. The branch at line 493 actually assigns `BULLISH_RECOVERY`, not `CORRECTION`. Docstring/backtest comment (0.6% WR for CORRECTION) refers to a phase label that no longer exists in code.
+- **Production path:** YES — `daily_predictor.py:1602, 1664` calls `check_entry_gate`. Result.passed=False → continue (skip).
+- **UI consumers:** None direct.
+- **Depends on:** `radar_integration.is_radar_confirmed_accumulation` (line 784, for market_context bypass).
+- **Broken/inconsistent:** Phase taxonomy (DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL) is its own — different from canonical_signal (تجميع/تصاعد/توزيع/تخفيض), from stock_phase table (NEAR_RESISTANCE/...), from maker_radar paths (A/B/C/D/E), and from liquidity_radar_v2 phases (PHASE_ABSORBING/...).
+
+### A10. `vps-service/jobs/predictor_modules/whale_guard.py` (42L) — WHALE DISTRIBUTION GATE
+- **What:** `_whale_distribution_guard(opens, highs, lows, closes, volumes)` calls `scripts.liquidity_radar_v2.compute_whale_flow(candles)` and returns True if `net_flow_egp < 0` (block BUY).
+- **Data source:** Candles passed in by caller.
+- **States classified:** Boolean (distributing or not).
+- **Production path:** YES — `daily_predictor.py:1060` HARD-BLOCKs if True.
+- **UI consumers:** None.
+- **Depends on:** `scripts.liquidity_radar_v2.compute_whale_flow` (MFM algorithm).
+- **Broken/inconsistent:** Uses MFM algorithm. `maker_radar.py` uses CLV+CMF+vol+SMA (different algorithm). Same stock can produce different `net_flow_egp` signs depending on which function runs. Fail-opens on exception.
+
+### A11. `vps-service/utils/stock_state.py` — CORRECTION-STAGE CLASSIFIER (8 phases)
+- **What:** `compute_stock_state`, `classify_correction_stage` (NO_CORRECTION/EARLY_DROP/LATE_BASE/RECOVERY_STARTING/DEEP_CORRECTION), `is_near_correction_end`, `is_in_active_correction`, `is_extended_chase`, `confirm_recovery_starting`.
+- **States classified:** NO_CORRECTION | EARLY_DROP | LATE_BASE | RECOVERY_STARTING | DEEP_CORRECTION (per line 738-852) — different from all other taxonomies.
+- **Production path:** PARTIAL — `daily_closer.py:193` uses `is_near_correction_end` for stop-loss deferral. `unified_analysis.py:231` + `advanced_screener_routes.py:16` use `compute_stock_state`. **NOT called by daily_predictor.py**.
+- **UI consumers:** `/api/advanced-screener/*` routes.
+- **Depends on:** None.
+- **Broken/inconsistent:** 5th phase taxonomy in the same project. Never persisted.
+
+### A12. `vps-service/api/market_master_endpoints.py` (521L) — 4 DISPLAY ENDPOINTS
+- **What:** Flask blueprint `/api/market/`: (1) `/intraday-pressure` (10 LARGE_CAPS pressure), (2) `/investor-flows` (EGX investors_data), (3) `/metals-forex/summary` (gold/forex), (4) `/liquidity-radar` (10 LARGE_CAPS RVOL+Wick classifier).
+- **States classified by `/liquidity-radar`:** `ILLIQUID_TRAP` | `DISTRIBUTION_RISK` | `ACCUMULATION_BUY` | `DRY_ACCUMULATION` | `ACCUMULATION_CONFIRMED` | `NEUTRAL` (6th unique taxonomy!).
+- **Production path:** NO — display only.
+- **UI consumers:** `src/app/api/market/liquidity-radar/route.ts` proxies to this Python endpoint (per header comment). BUT — the actual frontend `LiquidityRadarView.tsx:287` now fetches `/api/v2/liquidity-radar` (cache-based) instead. So this Python endpoint is **legacy / display-only / not the active UI source**.
+- **Depends on:** `stocks.db.stock_daily_prices`.
+- **Broken/inconsistent:** Computes its own 6-state taxonomy using different thresholds (`dryness_rvol ≤ 0.60` for large caps, `1.80` for explosion, `1_000_000` illiquid trap floor). The `ACCUMULATION_CONFIRMED` label COLLIDES with `real_liquidity_radar.ACCUMULATION_CONFIRMED` but uses different thresholds (rvol ≥ 1.5 + close_loc > 60 vs lower_wick_pct > 30 + close_loc > 60 + 0.8 ≤ dryness ≤ 1.5).
+
+### A13. `vps-service/api/institutional_levels.py:342-394` — RADAR MARKERS READER
+- **What:** Reads `radar_signal_tracking` to build "Radar Markers" for institutional-level analysis.
+- **Production path:** Display-only (called by chart_routes for chart annotations).
+- **Depends on:** `radar_signal_tracking` table.
+
+### A14. (ORPHANED WRITER) `archive/old-scripts/maestro_backfill_v2.py` — was the stock_phase writer
+- **What:** Backfilled `stocks.db.stock_phase` table with NEAR_RESISTANCE / TREND_UP_HOLD / BREAKOUT_WATCH / etc. (12-state S/R-level taxonomy).
+- **Status:** ARCHIVED. No production Python file writes to `stock_phase` table. `download/SERVER_FIX_COMMANDS.sh:312` only UPDATES last_close + updated_at columns; never recomputes phase. The 1238 rows in `stock_phase` are from a one-time backfill — table is effectively frozen at `computed_at='2026-10-07'` (990 rows) + 3 earlier partial runs (4+3+241 = 248 rows from old runs that happened to use distinct symbols).
+
+---
+
+## Part B: Integration Map (Call Graph)
+
+```
+daily_predictor.py  (V40.2 prediction path, writes predictions.db.predictions + stored_analyses)
+  │
+  ├─[1] line 1060  _whale_distribution_guard(opens,highs,lows,closes,volumes) [HARD GATE]
+  │      └→ scripts/liquidity_radar_v2.compute_whale_flow(candles)  [MFM algorithm]
+  │            (returns net_flow_egp; <0 → block BUY)
+  │
+  ├─[2] line 1602  utils.entry_gate.check_entry_gate(data)  [HARD GATE — 10 checks]
+  │      ├→ _check_stock_phase(closes)               [MA50/MA200 taxonomy: DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL]
+  │      │   (HARD-BLOCKs TRANSITIONAL; "CORRECTION" branch unreachable)
+  │      ├→ _check_market_context(...)
+  │      │   └→ analyzers.radar_integration.is_radar_confirmed_accumulation(ticker,'EGX')  [bypass if confirmed]
+  │      ├→ _check_liquidity / _check_rr / _check_evidence_count / _check_above_sma50 /
+  │      │   _check_relative_strength / _check_entry_zone / _check_rsi_zone / _check_poc_distance / _check_accumulation_ratio
+  │      └→ result.passed=False → continue (skip prediction)
+  │
+  ├─[3] line 1759-1813  analyzers.radar_integration.*  [HARD GATE — owner directive 2026-10-07]
+  │      ├→ check_exit_radar_conflict(ticker)        [reads scripts/output/exit_radar_{date}.json]
+  │      │   └→ if path=X1 or X5 → continue (BLOCK)
+  │      ├→ radar_data_available(market)              [reads scripts/output/maker_radar_{MARKET}_{date}.json]
+  │      ├→ is_radar_strong_accumulation(ticker, market)
+  │      │   └→ returns True if path ∈ {A_pre_surge, B_quiet_accumulation_strong}
+  │      │       OR phase ∈ {تراكم مع اتجاه, تراكم هادئ}      ← DEAD branch (liquidity_radar_v2 fields, not in maker_radar JSON)
+  │      │       OR bucket ∈ {strong_whale_inflow, moderate_inflow}  ← DEAD branch
+  │      │   └→ if False → continue (BLOCK — no prediction)
+  │      └→ if True → score += 4 or 5 + proof 'radar_gate'
+  │
+  ├─[4] line 3089-3110  DNA-EGX30-DOWN bypass
+  │      └→ analyzers.radar_integration.is_radar_confirmed_accumulation(ticker, market)
+  │           (accepts A_pre_surge / B_quiet_accumulation_strong / C_quiet_accumulation_weak)
+  │
+  ├─[5] line 3220-3260  utils.shared_liquidity.check_kill_switch(closes,volumes,highs,lows) [HARD GATE]
+  │      └→ if kill_triggered → continue (RADAR-KILL reject)
+  │      + utils.shared_liquidity.compute_money_flow(closes,volumes,highs,lows)
+  │           → money_flow_state → ±5 score boost (RADAR-BOOST)
+  │
+  ├─[6] line 3397  analyzers.master_analyzer.generate_analysis_reason(...)
+  │      └→ uses radar_path=result.get('radar_path', '')   ← ALWAYS '' (never set anywhere in daily_predictor)
+  │
+  ├─[7] line 3946-3989  engines.flow_system.evaluate_risk(entry,stop,target,pos_size,confidence)
+  │      └→ HARD-KILL if R/R<1.8 OR invalid geometry; caps pos_size at 0.025
+  │      (NOTE: evaluate_risk does NOT call _check_stock_phase — only R/R + geometry)
+  │
+  └─[8] line 4449  inject_whale_radar_picks(market='EGX', dry_run=False)
+         └→ reads scripts/output/maker_radar_*.json → injects WHALE_RADAR predictions
+              into predictions.db.stored_analyses (post-run)
+
+daily_predictor.py → analyzers.institutional_decision_engine.py:767
+  └→ analyzers.radar_integration.is_radar_strong_accumulation  (counter-trend bypass logic)
+
+scheduler: scripts/cron_radar.sh + crontab.txt:201-208
+  └→ scripts/maker_radar.py --market {EGX,TADAWUL,KSE,QSE,US,CRYPTO,GOLD} --json-only
+        ├→ utils.shared_liquidity.detect_quiet_accumulation / detect_pre_surge / detect_life_cycle /
+        │   compute_money_flow / check_kill_switch / is_explosive_surge / classify_price_bucket /
+        │   dynamic_min_turnover / check_limit_up_trap
+        ├→ utils.canonical_signal.classify_accumulation(buy_pct)   [canonical label]
+        └→ writes scripts/output/maker_radar_{MARKET}_{DATE}.json
+        └→ writes stocks.db.radar_signal_tracking  (DELETE same-day + INSERT under_microscope)
+
+scripts/liquidity_radar_v2.py (CLI only, NO cron)
+  └→ api.canonical_flow.classify_liquidity_bucket
+  └→ writes scripts/output/liquidity_radar_v2_*.json (orphaned — no API reads this)
+  (compute_whale_flow is imported by whale_guard.py — but scan_market + classify_phase are UNUSED)
+
+scripts/exit_radar.py (CLI only, NO cron)
+  └→ utils.shared_liquidity.check_kill_switch (X5)
+  └→ writes scripts/output/exit_radar_{date}.json (read by radar_integration.check_exit_radar_conflict)
+
+unified_scanner.py (called by daily_predictor for WHALE_RADAR candidate enrichment only)
+  └→ core.real_liquidity_radar.analyze_liquidity(ticker, daily_data, intraday_data=None)
+        └→ 5-state classification (ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / DIRTY_DISTRIBUTION / SUSPICIOUS_WATCH / FALLING_KNIFE)
+```
+
+### Production-path components (influence final BUY decision):
+- daily_predictor.py (orchestrator)
+- entry_gate.check_entry_gate (incl. _check_stock_phase)
+- radar_integration.is_radar_strong_accumulation + is_radar_confirmed_accumulation + check_exit_radar_conflict + radar_data_available + get_radar_state
+- whale_guard._whale_distribution_guard (→ liquidity_radar_v2.compute_whale_flow)
+- shared_liquidity.check_kill_switch + compute_money_flow
+- engines.flow_system.evaluate_risk (R/R + pos cap — does NOT call _check_stock_phase)
+- institutional_decision_engine.build_institutional_decision (calls is_radar_strong_accumulation for counter-trend bypass)
+- master_analyzer.generate_analysis_reason (consumes radar_path field — always '')
+
+### Display-only (NO influence on BUY):
+- `/api/market/liquidity-radar` (market_master_endpoints.py — 6-state taxonomy, LARGE_CAPS only)
+- `/api/market/intraday-pressure` + `/api/market/investor-flows` + `/api/market/metals-forex/summary`
+- `/api/v2/liquidity-radar` (Next.js — reads maker_radar JSON cache)
+- `/api/maker-radar/*` (16 sub-routes)
+- `/api/radar/accuracy` + `/api/radar/incubator` + `/api/radar/weekly-report` + `/api/radar/personalized`
+- core/unified_scanner (called for WHALE_RADAR enrichment veto only — DISTRIBUTION_VETO)
+
+### Orphaned (exist but ZERO production callers):
+- `scripts/liquidity_radar_v2.py::scan_market` + `classify_phase` + `compute_entry_defense` + `check_falling_knife` (only `compute_whale_flow` is imported)
+- `core/real_liquidity_radar.py` is called only by `unified_scanner` (which is display-only in the BUY path)
+- `vps-service/utils/canonical_signal.classify_stock_phase` — imported by telegram_interactive_bot but stubbed to `pass` at line 38 (dead import)
+- `vps-service/utils/stock_state.py::classify_correction_stage` — NOT called by daily_predictor; only by daily_closer + advanced_screener_routes
+- `stocks.db.stock_phase` table — no Python writer exists (archived `maestro_backfill_v2.py` was the writer; data frozen at 2026-10-07)
+
+---
+
+## Part C: Database Tables Inventory
+
+### C1. `stocks.db.radar_signal_tracking` (1259 rows, append-only by date)
+- **Schema:** id (PK auto), ticker TEXT, signal_date TEXT, signal_type TEXT, entry_price REAL, path TEXT, reason TEXT, status TEXT DEFAULT 'pending', outcome_7d/14d/30d REAL, max_price_after/min_price_after REAL, verified_at TEXT, created_at TEXT, **+ freshness cols added via ALTER TABLE** (data_date, data_quality, staleness_days, price_source, live_price, daily_price).
+- **Row count:** 1259
+- **Date range:** signal_date 2026-09-28 → 2026-10-21 (24 distinct dates); data_date 2026-08-10 → 2026-10-21.
+- **History behavior:** Daily append (DELETE same signal_date then INSERT — `_track_signals_to_db` at maker_radar.py:752). Previous days' rows preserved. Same ticker can have multiple daily rows with different paths (USDY has 10 daily rows flipping B↔A↔B↔A).
+- **Writer:** `scripts/maker_radar.py::_track_signals_to_db` (line 691-809). `scripts/verify_radar_signals.py:178` writes back outcome_7d/14d/30d + verified_at + status='verified_win/verified_loss'.
+- **Readers:** `src/app/api/maker-radar/signal-tracker/route.ts` (GET stats + POST record), `src/app/api/maker-radar/signal-tracker/verify/route.ts` (POST verify), `src/app/api/maker-radar/timeline/route.ts:177` (signal events), `src/app/api/radar/accuracy/route.ts:536` (accuracy backtest), `vps-service/analyzers/institutional_levels.py:394` (radar markers), `scripts/radar_accuracy_report.py`, `scripts/verify_radar_signals.py`, `scripts/verify_radar_fix.py`.
+- **Status distribution:** verified_loss=457, stale_data=432, pending=281, verified_win=75, disqualified_illiquid=14.
+- **Broken:** NO `prev_path`, `transition_type`, `days_in_state`, `confirmed_at` columns — pure daily snapshot, not a transition log. `signal_type` column mixes legacy + new schemas.
+
+### C2. `stocks.db.stock_phase` (1238 rows, OVERWRITES via PRIMARY KEY)
+- **Schema:** symbol TEXT PRIMARY KEY, phase TEXT, phase_ar TEXT, summary_ar TEXT, support, support_2, resistance, resistance_2, green_floor, invalidation, pct_to_support, pct_to_resistance, rvol, above_sma20, above_sma50, above_sma200, atr_pct, chg_5d, chg_20d, correction_ending_score, breakout_ready, profit_taking_risk, last_close, computed_at TEXT, updated_at TEXT.
+- **Row count:** 1238 (only 990 unique symbols — overlap because symbol is PK so re-runs UPSERT).
+- **Date range:** computed_at has 4 distinct values: `2026-08-25T22:13:11+00:00` (241 rows), `2026-09-02` (3 rows), `2026-09-16` (4 rows), `2026-10-07` (990 rows). Latest = 2026-10-07.
+- **History behavior:** OVERWRITES (PRIMARY KEY symbol). All previous states destroyed by latest run. NOT a transition log.
+- **Phase distribution (12 unique):** NEAR_RESISTANCE=279, TREND_UP_HOLD=208, NEAR_SUPPORT=165, UNCLEAR=150, BREAKOUT_WATCH=126, BREAKDOWN=91, BREAK_RISK_SUPPORT=56, BREAKOUT=55, CORRECTION_ACTIVE=42, PROFIT_TAKING_ZONE=41, CONSOLIDATION=19, CORRECTION_ENDING=6.
+- **Writer:** NONE in production. `download/SERVER_FIX_COMMANDS.sh:312` only UPDATES `last_close` + `updated_at` (no recompute). The original writer (`archive/old-scripts/maestro_backfill_v2.py` is referenced but file shows it actually writes predictions.db not stock_phase — let me re-check: archive/garage shows it as a moved file; production `scripts/` does NOT contain it). Likely the table was populated by a manual/one-shot script that has been removed.
+- **Readers:** NONE in Python production code (only `audit_production_db.py` lists it as expected_tables). NOT referenced by any TS/TSX frontend file. Effectively orphaned.
+- **Broken:** Table is frozen — no fresh data since 2026-10-07. No code reads it. No code writes it. The 12-state taxonomy is unique (NEAR_RESISTANCE/BREAKOUT_WATCH/etc.) and doesn't map to any of the other 5 taxonomies.
+
+### C3. `stocks.db.market_regime_log` (56 rows, append by UNIQUE date)
+- **Schema:** id PK, date TEXT UNIQUE, regime TEXT, confidence REAL, egx30_close, egx30_change_pct, volume_ratio, adx, rsi, created_at, +ALTER-added cols (stock_id, regime_ar, ticker, reason, indicators, market, raw_regime, candidate_regime, candidate_days, reasons, index_ticker, index_source, index_current, index_daily_change_pct, breadth_pct, atr_ratio, turnover_ratio, loss_streak_days, short_term_drawdown_pct, computed_at).
+- **Date range:** 2026-06-21 → 2026-10-21.
+- **Regime distribution:** unknown=16, ranging=15, DEFENSIVE=11, NORMAL=8, bull_trend=6.
+- **History behavior:** Daily append (UNIQUE on date — upserts same date).
+- **Writer:** `engines/market_regime.py` (likely — not directly inspected).
+- **Readers:** consumed by `liquidity_radar_v2.detect_market_regime` + `engines/market_regime.py` + UI `/api/market/regime`.
+
+### C4. `predictions.db.liquidity_signal_outcomes` (1308 rows, UNIQUE per market+ticker+signal_date)
+- **Schema:** id PK, market, ticker, signal_date, entry_price, exit_price, return_pct, hit INTEGER, holding_days DEFAULT 5, threshold_used, created_at, UNIQUE(market, ticker, signal_date).
+- **Date range:** 2021-06-10 → 2026-09-20.
+- **History behavior:** Append by UNIQUE key — overwrites same market+ticker+date.
+- **Writer:** `vps-service/scripts/liquidity_backtest_engine.py:598` (INSERT OR REPLACE).
+- **Readers:** `vps-service/scripts/dual_track_generator.py:124, 483` + `src/app/api/predictions/dual-track/list/route.ts` + `src/app/api/predictions/dual-track/stats/route.ts`.
+- **Purpose:** Radar accuracy backtest — stores outcomes for each radar signal. NOT a transition log.
+
+### C5. `predictions.db.liquidity_backtest_results` (10 rows)
+- **Schema:** id PK, market, ticker, total_signals, successful_signals, failed_signals, hit_rate, avg_return, dynamic_threshold, backtest_start, backtest_end, backtest_days, qualified, notes, created_at, UNIQUE(market, ticker, backtest_start, backtest_end).
+- **Writer:** `vps-service/scripts/liquidity_backtest_engine.py:574` (INSERT OR REPLACE).
+- **Readers:** `vps-service/scripts/dual_track_generator.py:124, 136, 483` + dual-track UI routes.
+- **Sample:** EGX 63 signals 47.62% hit_rate @ 62M threshold; US 50578 signals 73.55% @ 2.6M; CRYPTO 152 signals 75.0% @ 523M.
+
+### C6. `predictions.db.liquidity_dynamic_threshold` (5 rows)
+- **Schema:** id PK, market, threshold_date, threshold_value, percentile_method, sample_size, fallback_used, created_at, UNIQUE(market, threshold_date).
+- **Date range:** single date 2026-09-24 for 5 markets.
+- **Writer:** `liquidity_backtest_engine.py:620` (INSERT OR REPLACE).
+- **Readers:** `dual_track_generator.py:136`.
+- **Sample:** EGX=62.5M, US=2.6M, KSA=1.5M, CRYPTO=523.8M, GOLD=1M.
+
+### C7. `db/maker_radar_tracking.json` (file, not table)
+- **Writer:** `/api/maker-radar/track` POST route (UI-triggered).
+- **Reader:** `analyzers.radar_integration._load_tracking` + `daily_predictor` legacy boost path (now superseded by HARD GATE).
+- **Purpose:** User-tracked tickers (manual watchlist), not state history.
+
+---
+
+## Part D: Frontend Components
+
+### D1. `src/components/shared/LiquidityRadarView.tsx` — main radar UI (mapped to `/#liquidity-radar` tab)
+- **API:** `/api/v2/liquidity-radar?market=EGX` (line 287).
+- **Data shown:** `phase` (= maker_radar `path` field), `whale.net_flow_egp`, `entry_defense.entry_level/defense_level`, `liquidity_bucket`, `liquidity_bucket_ar`, `correction_status`, `drop_from_peak`, `accumulation` label, `expected`, `roc_10d`.
+- **History:** No — current snapshot only. Has `SignalTrackingTimeline` child component for per-ticker timeline (fetches `/api/maker-radar/timeline?ticker=X&days=60`).
+- **Connected to production radar?** YES — reads maker_radar JSON cache via v2 route.
+
+### D2. `src/components/shared/ui/FlowPhaseTag.tsx` — phase pill component
+- **Input:** `phase` string (any taxonomy).
+- **PHASE_MAP** (line 28-50) recognizes: `b_quiet_accumulation_strong` → "تجميع هادئ مؤسسي", `whale_inflow` → "تدفق سيولة ذكية", `distribution` → "تصريف وحذر", `absorption` → "امتصاص عروض بيعية", `neutral`, `mixed`, `churning`, etc.
+- **Broken:** Maker_radar produces `B_quiet_accumulation_strong` (uppercase) + `A_pre_surge` + `D_explosive_surge` + `E_early_break` — NONE of these are in PHASE_MAP. After lowercase normalization (`B_quiet_accumulation_strong` → `b_quiet_accumulation_strong`) the `B_quiet_accumulation_strong` DOES match. But `A_pre_surge`, `D_explosive_surge`, `E_early_break` have NO mapping — they render as raw code with muted tone. Also `تراكم مع اتجاه` (Arabic, from liquidity_radar_v2) doesn't normalize correctly (Arabic chars survive `.toLowerCase()` but no PHASE_MAP entry exists for them).
+
+### D3. `src/modules/radar/components/MultiMarketRadarTab.tsx`
+- **API:** `/api/maker-radar/multi-market?markets=EGX,TADAWUL,KSE,QSE,US,CRYPTO,GOLD` (line 199).
+- **Data shown:** Multi-market radar stocks. Same fields as LiquidityRadarView.
+
+### D4. `src/modules/radar/components/ExitRadarTab.tsx`
+- **API:** `/api/maker-radar/exit-radar?market=EGX` (line 202, 235). Triggers Python script run (not cached).
+- **Data shown:** X1/X2/X3/X4/X5 paths.
+
+### D5. `src/modules/radar/components/NetPicksTab.tsx`
+- **APIs:** `/api/maker-radar/net-picks?market=X` + `/api/maker-radar/stock-analysis?tickers=...`.
+- **Data shown:** Top picks + L2 Wyckoff analysis (phase / phase_ar / has_accumulation / has_spring / has_sos).
+
+### D6. `src/modules/radar/components/RadarStatsCards.tsx`
+- **APIs:** `/api/maker-radar/signal-tracker` (signal stats), `/api/maker-radar/signal-tracker/verify` (POST verify), `/api/maker-radar/sector-treemap`, `/api/maker-radar/entry-timing`.
+- **Data shown:** Aggregate signal counts + win rates + sector heatmap + entry timing.
+
+### D7. `src/modules/radar/components/AccuracyDashboard.tsx`
+- **API:** `/api/radar/accuracy?market=EGX&days=90`.
+- **Data shown:** Radar accuracy backtest from `radar_signal_tracking` + `liquidity_signal_outcomes`.
+
+### D8. `src/modules/radar/components/SignalTrackingTimeline.tsx`
+- **API:** `/api/maker-radar/timeline?ticker=X&days=60`.
+- **Data shown:** Per-ticker signal events (from radar_signal_tracking). Shows history.
+
+### D9. `src/modules/radar/components/WeeklyReportTab.tsx`
+- **APIs:** `/api/radar/weekly-report?market=X` (JSON) + `/api/radar/weekly-report/pdf?market=X` (PDF).
+
+### D10. `src/modules/radar/components/PersonalizedRadarTab.tsx`
+- **API:** `/api/radar/personalized` (auth required).
+
+### D11. `src/modules/radar/components/IncubatorSection.tsx`
+- **API:** `/api/radar/incubator?market=X`.
+- **Data shown:** 4/6 or 5/6 signal stocks (heating up) + missing trigger.
+
+### D12. `src/modules/predictions/components/maker-radar/*` (RadarSection, StockTable, MakerRadarTab, TradingPlanSection, helpers, types)
+- **APIs:** `/api/maker-radar/track` (POST/GET/DELETE), `/api/maker-radar/stock?ticker=X&days=30`, `/api/maker-radar/market-intelligence?ticker=X`, `/api/maker-radar/fundamentals?ticker=X`.
+- Embedded tabs: ExitRadarTab, WeeklyReportTab, MultiMarketRadarTab, AccuracyDashboard, PersonalizedRadarTab, IncubatorSection.
+
+### D13. `src/modules/market-analysis/components/persona/WhaleRadarSection.tsx` (in PersonaTab)
+- **Purpose:** Whale radar display within persona tab.
+
+### D14. `src/components/advanced-analysis/specialist/LiquidityFootprintSection.tsx`
+- **Purpose:** Liquidity footprint analysis (display).
+
+### D15. `src/lib/schedulers/radar-alerts.ts` (server-side scheduler)
+- **Reads:** `readRadarCache(market)` + `readExitRadarCache()` + previous snapshot at `db/radar_alerts_state.json`.
+- **Emits alerts:** `radar_explosive`, `radar_opportunity`, `radar_distribution`, `radar_flare`, `radar_path_upgrade`, `radar_signal_upgrade`, `radar_volume_surge`, `radar_target_hit`, `radar_take_profit`, `radar_exit_signal`.
+- **Tracks:** `tracked_paths` (prev path per ticker) + `stock_stages` (1-5 progression per ticker) — this is the CLOSEST thing to a transition monitor in the system, but it's a JSON snapshot file, not a DB table, and it's only used for alert deduplication.
+
+### D16. `src/modules/radar/lib/radar-signal-tracker.ts` (lib)
+- Wraps `/api/maker-radar/signal-tracker` (GET stats) + `/api/maker-radar/signal-tracker/verify` (POST).
+
+### D17. `src/modules/radar/lib/radar-cache.ts` (lib)
+- Production-safe cache reader. Spawns `python3 scripts/maker_radar.py --json-only` for background warmup. Mutex via lock file `db/radar_warmup.lock`. STALE_THRESHOLD = 15 min.
+
+### D18. `src/app/api/market/liquidity-radar/route.ts` (LEGACY proxy)
+- Proxies to Python `http://PY_BACKEND/api/market/liquidity-radar` (market_master_endpoints.py).
+- **Status:** SUPERSEDED — `LiquidityRadarView.tsx:285` switched to `/api/v2/liquidity-radar` on 2026-10 (per comment line 284-285).
+
+### D19. `src/app/api/maker-radar/exit-radar/route.ts` — runs Python exit_radar script live (line 115)
+
+### D20. `src/app/api/stocks/[ticker]/publish-data/route.ts:217` — fetches `/api/maker-radar?market=EGX` for stock publishing.
+
+---
+
+## Part E: Conflicts + Inconsistencies
+
+### E1. Six incompatible "phase" taxonomies coexist
+| # | Component | Taxonomy | Logic |
+|---|---|---|---|
+| 1 | `canonical_signal.classify_stock_phase` | تجميع / تصاعد / توزيع / تخفيض / محايد | buy_pct + roc_10d (regime-based) |
+| 2 | `entry_gate._check_stock_phase` | DOWNTREND / PULLBACK / UPTREND / BULLISH_RECOVERY / TRANSITIONAL | MA50/MA200 structure |
+| 3 | `shared_liquidity.detect_life_cycle` | نعاس / قفزة أولى / جني أرباح صحي / توزيع قاتل / تدوير وهمي / حبس / عادي | last candle + ATR |
+| 4 | `real_liquidity_radar.analyze_liquidity` | ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / DIRTY_DISTRIBUTION / SUSPICIOUS_WATCH / FALLING_KNIFE | wick + dryness + effort |
+| 5 | `liquidity_radar_v2.classify_phase` | تراكم مع اتجاه / تراكم هادئ / تصريف / محايد / بيانات غير كافية | MFM + market regime + MA20 |
+| 6 | `stocks.db.stock_phase` table | NEAR_RESISTANCE / TREND_UP_HOLD / NEAR_SUPPORT / UNCLEAR / BREAKOUT_WATCH / BREAKDOWN / BREAK_RISK_SUPPORT / BREAKOUT / CORRECTION_ACTIVE / PROFIT_TAKING_ZONE / CONSOLIDATION / CORRECTION_ENDING | S/R levels + chg_5d/20d (NO WRITER in production) |
+| 7 | `market_master_endpoints./api/market/liquidity-radar` | ILLIQUID_TRAP / DISTRIBUTION_RISK / ACCUMULATION_BUY / DRY_ACCUMULATION / ACCUMULATION_CONFIRMED / NEUTRAL | RVOL + wick + turnover |
+| 8 | `maker_radar.py` paths | A_pre_surge / B_quiet_accumulation_strong / C_quiet_accumulation_weak / D_explosive_surge / E_early_break / distribution | detect_pre_surge / detect_quiet_accumulation / is_explosive_surge / is_early_break + BRAVO-FLOW-GATE-ALL override |
+
+That's 8 taxonomies — none mapped to each other. Owner's 6-state vision (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is NOT used anywhere.
+
+### E2. Same stock gets different states from different components (no canonical)
+For ticker USDY on 2026-10-21:
+- `maker_radar.py` JSON: path=A_pre_surge (most recent)
+- `entry_gate._check_stock_phase`: depends on MA50/MA200 (likely TRANSITIONAL if no clear trend)
+- `real_liquidity_radar.analyze_liquidity`: depends on last candle (could be SUSPICIOUS_WATCH default)
+- `liquidity_radar_v2.classify_phase` (if it ran): depends on MFM (could be PHASE_NEUTRAL)
+- `stock_phase` table: frozen at 2026-10-07, no row for USDY (it's a crypto/US ticker)
+- `canonical_signal.classify_stock_phase`: depends on buy_pct (not stored, computed on demand)
+- `FlowPhaseTag.tsx`: lowercase A_pre_surge → not in PHASE_MAP → renders as raw "A_pre_surge" with muted tone (display bug)
+
+### E3. Component says "accumulation" but HARD GATE rejects it
+- `entry_gate._check_stock_phase` can HARD-BLOCK `TRANSITIONAL` (line 506). If a stock is in TRANSITIONAL phase but `radar_integration.is_radar_strong_accumulation` returns True (path=A_pre_surge or B_quiet_accumulation_strong), the stock passes the radar gate but FAILS the entry_gate. No bypass exists for this combination (radar bypass at entry_gate line 784 only bypasses market_context, not _check_stock_phase).
+- Conversely, `entry_gate._check_stock_phase` returns UPTREND (pass with warning) for a stock where `is_radar_strong_accumulation` returns False — radar gate kills it even though entry_gate allows it.
+
+### E4. UI shows one state, DB has another
+- `LiquidityRadarView.tsx` shows `phase` field from maker_radar JSON (`path` value, e.g. `A_pre_surge`).
+- `stocks.db.radar_signal_tracking` stores `path` (e.g. `A_pre_surge` — matches UI for today).
+- `stocks.db.stock_phase` table is frozen at 2026-10-07 with 12-state S/R taxonomy (NEAR_RESISTANCE etc.) — DOES NOT MATCH UI's maker_radar path values. No UI component reads stock_phase table.
+
+### E5. Same term ("distribution") with different definitions
+- `maker_radar.py` `path='distribution'` (BRAVO-FLOW-GATE-ALL override, line 515-527): net_flow_egp < 0 on any bullish path. Override clears `under_microscope=False` → stock EXCLUDED from radar_signal_tracking (verified: 0 rows with path='distribution' in DB).
+- `entry_gate._check_stock_phase` `phase='CORRECTION'`: unreachable code (if/elif chain never assigns CORRECTION).
+- `real_liquidity_radar.classification='DIRTY_DISTRIBUTION'`: upper_wick > 40 + dryness > 1.3 + close_loc < 40 (or intraday selling_pressure).
+- `canonical_signal.classify_stock_phase='توزيع'`: buy_pct ≤ 40% + roc_10d > -3%.
+- `shared_liquidity.detect_life_cycle='توزيع قاتل'`: strong bear candle with volume.
+- `liquidity_radar_v2.PHASE_DISTRIBUTING='تصريف'`: MFM < 0 (net_flow_egp < 0) OR bear market.
+- `market_master_endpoints.classification='DISTRIBUTION_RISK'`: rvol ≥ 1.80 + close_loc ≥ 67 OR upper_wick ≥ 40.
+- `unified_scanner` decision track `'DISTRIBUTION_VETO'`: dist_warn ≥ 2 (composite of chg_1d, adx, liq_classification).
+- `FlowPhaseTag.tsx` `'distribution'` → "تصريف وحذر" (loss tone).
+
+8 different definitions of "distribution" — none canonical.
+
+### E6. Table overwrites history instead of appending
+- **`stocks.db.stock_phase`**: PRIMARY KEY symbol. Latest run = 2026-10-07 (990 rows). All prior states destroyed. Only 248 rows survive from 3 older `computed_at` runs because they used symbols not in the 2026-10-07 run.
+- **`stocks.db.radar_signal_tracking`**: Daily DELETE then INSERT pattern (line 752). Same-date upsert is correct. BUT no `prev_path` column — daily snapshots are stored but never diffed into transitions.
+- **`predictions.db.liquidity_signal_outcomes`**: UNIQUE(market, ticker, signal_date) — same-date upsert. Correct for outcome storage.
+- **`predictions.db.liquidity_backtest_results`**: UNIQUE(market, ticker, backtest_start, backtest_end) — same-key upsert. Correct for backtest storage.
+
+### E7. `result['radar_path']` is never set in daily_predictor.py
+- `daily_predictor.py:3397` passes `radar_path=result.get('radar_path', '')` to `generate_analysis_reason`. Grep confirms `result['radar_path'] = ...` appears NOWHERE in daily_predictor. So `analysis_reason` always omits the radar path label (lines 1196-1205 in master_analyzer are dead). The radar state IS available via `get_radar_state(ticker, market)` but it's only logged to stdout at line 1789-1794 — never persisted to `predictions.db.stored_analyses` or surfaced in the UI's prediction record.
+
+### E8. compute_money_flow vs compute_whale_flow — two algorithms for same metric
+- `shared_liquidity.compute_money_flow` (line 751, CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15): called by `daily_predictor.py:3239` (RADAR-BOOST) + `maker_radar.py:501` (path detection).
+- `liquidity_radar_v2.compute_whale_flow` (line 579, MFM-only = ((close-low)-(high-close))/(high-low) × vol × close): called by `whale_guard._whale_distribution_guard` (daily_predictor.py:1060).
+- Same stock on same day: maker_radar.py reports `net_flow_egp` via CLV+CMF+vol+SMA. whale_guard.py reports `net_flow_egp` via MFM. **They can disagree on sign** — e.g. CLV might be +5M (accumulation) while MFM is -2M (distribution) for the same candle. Result: stock can be HARD-BLOCKED by whale_guard AND HARD-PASSED by maker_radar — contradiction.
+
+### E9. Hard gate depends on file produced by unscheduled script
+- `radar_integration.check_exit_radar_conflict` reads `scripts/output/exit_radar_{date}.json` (last 7 days). `crontab.txt` has NO entry for `exit_radar.py`. Currently `scripts/output/exit_radar_*.json` does NOT exist. Safe-by-design: missing file → no conflict → no block. So the X1/X5 HARD BLOCK is silently disabled in production unless someone manually runs `python3 scripts/exit_radar.py`.
+
+### E10. liquidity_radar_v2.py is orphaned
+- `scan_market`, `classify_phase`, `compute_entry_defense`, `check_falling_knife` — ZERO production callers. Only `compute_whale_flow` is imported (by whale_guard).
+- `crontab.txt` has no entry for it.
+- Its output JSON (if anyone ran it) is never read by any API route — the v2 frontend route reads `maker_radar_*.json` via `readRadarCache`, NOT `liquidity_radar_v2_*.json`.
+- So 4 of the 5 pillars (whale flow via MFM is the exception) of the "BRAVO-RADAR-V2" redesign are dead code.
+
+### E11. canonical_signal.classify_stock_phase is dead-imported
+- `canonical_signal.py:215` defines `classify_stock_phase` (the "canonical" 4-state تجميع/تصاعد/توزيع/تخفيض taxonomy).
+- `telegram_interactive_bot.py:31` imports it but line 38 STUBS it to `pass` (type: ignore[no-redef]).
+- ZERO active callers in production. The canonical taxonomy that was supposed to unify all 4 conflicting phase schemes is itself unused.
+
+### E12. radar_signal_tracking records noise as signal
+- USDY has 10 daily rows (2026-10-08 → 2026-10-19) flipping B→B→A→B→A→B→B→B→A→B. No "confirmation days" filter requires N consecutive days in same state before persisting. The signal_type flips daily are recorded as independent signals — but they're noise (3-day quiet accumulation doesn't survive a 1-day pre_surge trigger, and vice versa).
+- 10 tickers have >5 signal_dates (USDY=10, DOT=8, QNT=8, ABUK=7, ACGC=7, ADCI=7, AJWA=7, ALCN=7, APSW=7, BCH=7).
+
+### E13. stock_phase table fully orphaned
+- 1238 rows, frozen at 2026-10-07.
+- NO Python file in production writes to it (writer archived).
+- NO Python file reads it (only `audit_production_db.py` lists it as expected_tables).
+- NO TS/TSX file references it.
+- 12-state taxonomy unique to this table.
+- Effectively a fossil — should either be dropped or revived with a fresh writer.
+
+### E14. FlowPhaseTag has incomplete PHASE_MAP
+- Recognizes: `b_quiet_accumulation_strong`, `b_quiet_accumulation`, `quiet_accumulation`, `accumulation`, `accumulation_strong`, `whale_inflow`, `whale_inflow_strong`, `smart_inflow`, `distribution`, `distribution_strong`, `smart_distribution`, `absorption`, `absorption_strong`, `neutral`, `mixed`, `churning`.
+- Does NOT recognize: `A_pre_surge`, `a_pre_surge`, `D_explosive_surge`, `d_explosive_surge`, `E_early_break`, `e_early_break`, `C_quiet_accumulation_weak`, `c_quiet_accumulation_weak`, `تراكم مع اتجاه`, `تراكم هادئ`, `تصريف`, `محايد`, `NEAR_RESISTANCE`, `TREND_UP_HOLD`, `BREAKDOWN`, `BREAKOUT`, `BREAKOUT_WATCH`, `BREAK_RISK_SUPPORT`, `CORRECTION_ACTIVE`, `CORRECTION_ENDING`, `PROFIT_TAKING_ZONE`, `CONSOLIDATION`, `ILLIQUID_TRAP`, `DISTRIBUTION_RISK`, `ACCUMULATION_BUY`, `DRY_ACCUMULATION`, `ACCUMULATION_CONFIRMED`, `DRY_EXPLOSION_READY`, `DIRTY_DISTRIBUTION`, `SUSPICIOUS_WATCH`, `FALLING_KNIFE`, `DOWNTREND`, `PULLBACK`, `UPTREND`, `BULLISH_RECOVERY`, `TRANSITIONAL`.
+- 23 unmatched phase labels render as raw codes with muted tone — display bug.
+
+### E15. stock_phase table's "CORRECTION_ENDING" collides with daily_closer's "HOLD_CORRECTION_ENDING"
+- `stocks.db.stock_phase.phase='CORRECTION_ENDING'` (6 rows, frozen 2026-10-07) — a 12-state S/R-level label meaning "قرب نهاية التصحيح — علامات استرجاع".
+- `predictions.db.exit_notifications` has rows with `notification_type='HOLD_CORRECTION_ENDING'` — a daily_closer stop-loss-defer flag (different concept, same word).
+- No actual collision in DB schema but semantic confusion for anyone querying "correction_ending" without specifying table.
+
+### E16. `maker_radar.py` `distribution` override silently drops stocks
+- BRAVO-FLOW-GATE-ALL (line 515-527): if `winner_path in _BULLISH_PATHS and net_flow_egp < 0` → set `winner_path='distribution'`, `under_microscope=False`, clear all bullish flags.
+- `_track_signals_to_db` (line 755) only INSERTs stocks where `under_microscope=True` (implicit — actually it inserts all under_microscope list members, and the override REMOVES the stock from under_microscope before tracking). Verified: `SELECT COUNT(*) FROM radar_signal_tracking WHERE path='distribution'` = 0.
+- So distribution-flip events are NOT recorded in DB history. The owner's #1 ask (transition monitoring) cannot be answered for the accumulation→distribution transition because the override happens BEFORE tracking, not after.
+
+---
+
+## Summary Verdict
+
+The radar system today is **5 parallel daily classifiers** (maker_radar, real_liquidity_radar, liquidity_radar_v2, exit_radar, market_master_endpoints) + **3 library classifiers** (canonical_signal, shared_liquidity.detect_life_cycle, stock_state.classify_correction_stage) + **2 frozen tables** (stock_phase, market_regime_log — only the latter is alive) + **1 append-only daily snapshot** (radar_signal_tracking). 8 incompatible phase taxonomies. NO state machine. NO transition log. NO `prev_path`/`days_in_state`/`confirmed_transitions` columns anywhere. Owner's 6-state vision (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is NOT MAPPED in any production code. The HARD GATE (`is_radar_strong_accumulation`) accepts only `A_pre_surge` + `B_quiet_accumulation_strong` from the maker_radar path taxonomy — none of the other 7 taxonomies feed the BUY decision. Frontend shows raw `path` codes that `FlowPhaseTag` cannot render for 5 of 6 maker_radar paths.
+
+NO files modified — read-only Phase 1 audit throughout.
