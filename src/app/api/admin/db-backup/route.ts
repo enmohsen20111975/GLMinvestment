@@ -321,6 +321,7 @@ export async function POST(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 async function runBackupJob(jobId: string, body: PostBody) {
+ try {
   const uploadToGithub = body.upload_to_github === true;
   const pruneOlderThanDays = Math.max(0, Number(body.prune_older_than_days) || 0);
   const maxPartSizeMb = Math.max(10, Math.min(95, Number(body.max_part_size_mb) || DEFAULT_MAX_ZIP_MB));
