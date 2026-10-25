@@ -80,12 +80,14 @@ def assess_and_record(conn_ph: sqlite3.Connection, conn_st: sqlite3.Connection,
     rows = conn_ph.execute("""
         SELECT date, open_price, high_price, low_price, close_price, volume
         FROM price_history WHERE ticker=? AND date<=? AND close_price>0 AND high_price>0
-        ORDER BY date LIMIT 300
+        ORDER BY date DESC LIMIT 300
     """, (ticker, assessment_date)).fetchall()
 
     if len(rows) < 60:
         return {'ticker': ticker, 'state': 'DATA_INCOMPLETE', 'skipped': True}
 
+    # Rows are DESC (newest first) — reverse to oldest first
+    rows = list(reversed(rows))
     d = [r[0] for r in rows]
     o = [float(r[1] or 0) for r in rows]
     h = [float(r[2] or 0) for r in rows]

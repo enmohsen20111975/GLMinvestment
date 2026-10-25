@@ -4,18 +4,20 @@ export const runtime = 'nodejs';
 
 /**
  * /api/stock-state/[ticker]
- * 
+ *
  * Returns the canonical stock state + timeline from radar_signal_tracking.
  * This is the SINGLE SOURCE OF TRUTH for stock state.
- * 
+ *
  * Phase 5 of Liquidity Radar development.
  */
 
+// Next.js 16 requires params to be awaited in dynamic routes
 export async function GET(
   req: NextRequest,
-  { params }: { params: { ticker: string } }
+  context: { params: Promise<{ ticker: string }> }
 ) {
-  const ticker = params.ticker?.toUpperCase().replace('.CA', '');
+  const { ticker: rawTicker } = await context.params;
+  const ticker = rawTicker?.toUpperCase().replace('.CA', '');
   if (!ticker) {
     return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
   }
@@ -69,7 +71,7 @@ export async function GET(
     } catch {}
 
     // Parse invalidation
-    let invalidation = [];
+    let invalidation: string[] = [];
     try {
       if (latest.invalidation_json) {
         invalidation = JSON.parse(latest.invalidation_json);
