@@ -759,6 +759,9 @@ interface AppStore {
 
   // UI State
   isLoading: boolean;
+  // ALPHA-SMOOTH-UX: isRefreshing للفصل بين initial load (skeleton) و refetch (keep data)
+  // لما true: البيانات القديمة تفضل ظاهرة + spinner صغير — بدون flicker
+  isRefreshing: boolean;
   activeMobileTab: string;
   setActiveMobileTab: (tab: string) => void;
 
@@ -986,7 +989,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadDashboard: () => {
-    set({ isLoading: true });
+    // ALPHA-SMOOTH-UX: لو فيه بيانات موجودة، استخدم isRefreshing بدل isLoading
+    // ده يمنع الـ skeleton flicker لما المستخدم يضغط refresh
+    const hasExisting = !!get().marketOverview || !!get().v2Data;
+    set({ isLoading: !hasExisting, isRefreshing: hasExisting });
     const currentMarket = get().currentMarket;
 
     Promise.all([
@@ -1014,12 +1020,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
           marketOverview: getEmptyMarketOverview(),
           aiInsights: getEmptyAiInsights(),
           isLoading: false,
+          isRefreshing: false,
         });
       });
   },
 
   loadStocks: (query, page = 1) => {
-    set({ isLoading: true, searchQuery: query || '' });
+    // ALPHA-SMOOTH-UX: keep existing stocks visible during refetch
+    const hasExisting = get().stocks.length > 0;
+    set({ isLoading: !hasExisting, isRefreshing: hasExisting, searchQuery: query || '' });
 
     const params: Record<string, unknown> = {
       page,
@@ -1078,7 +1087,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           | Array<Record<string, unknown>>
           | undefined;
         if (!Array.isArray(all)) {
-          set({ stocks: [], stocksTotal: 0, isLoading: false });
+          set({ stocks: [], stocksTotal: 0, isLoading: false, isRefreshing: false });
           return;
         }
         const coins = all
@@ -1147,7 +1156,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadStockDetail: (ticker) => {
-    set({ isLoading: true, selectedTicker: ticker, professionalAnalysis: null });
+    // ALPHA-SMOOTH-UX: keep existing stockDetail visible during refetch
+    const hasExisting = !!get().stockDetail;
+    set({ isLoading: !hasExisting, isRefreshing: hasExisting, selectedTicker: ticker, professionalAnalysis: null });
 
     const upperTicker = ticker.toUpperCase();
 
@@ -1227,7 +1238,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadPortfolio: () => {
-    set({ isLoading: true });
+    // ALPHA-SMOOTH-UX: keep existing portfolio visible during refetch
+    const hasExisting = get().portfolio.length > 0;
+    set({ isLoading: !hasExisting, isRefreshing: hasExisting });
     fetch('/api/portfolio', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
@@ -1301,7 +1314,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   loadAiInsights: () => {
-    set({ isLoading: true });
+    // ALPHA-SMOOTH-UX: keep existing aiInsights visible during refetch
+    const hasExisting = !!get().aiInsights;
+    set({ isLoading: !hasExisting, isRefreshing: hasExisting });
 
     apiClient.getAiInsights()
       .then((raw) => {
@@ -1312,7 +1327,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             (s): s is NonNullable<typeof s> => s != null && s.ticker
           );
         }
-        set({ aiInsights: insights, isLoading: false });
+        set({ aiInsights: insights, isLoading: false, isRefreshing: false });
       })
       .catch((err) => {
         console.error('[Store] Failed to load AI insights:', err);
@@ -1513,6 +1528,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   // UI
   isLoading: false,
+  isRefreshing: false,
   activeMobileTab: 'dashboard',
   setActiveMobileTab: (tab) => set({ activeMobileTab: tab }),
 

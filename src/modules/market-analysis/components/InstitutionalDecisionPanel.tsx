@@ -205,7 +205,7 @@ const qualityColorMap: Record<string, string> = {
 };
 
 // ───────── Component ─────────
-export function InstitutionalDecisionPanel({
+export const InstitutionalDecisionPanel = React.memo(function InstitutionalDecisionPanel({
  decision,
  ticker,
  currencyLabel = 'ج.م',
@@ -703,6 +703,6 @@ export function InstitutionalDecisionPanel({
  </div>
  </div>
  );
-}
+});
 
 export default InstitutionalDecisionPanel;

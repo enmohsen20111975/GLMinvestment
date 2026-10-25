@@ -166,20 +166,13 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  };
  }, [marketCode]);
 
- // 🔥 v3.66.9 LIVE: countdown badge لإظهار التحديث التلقائي القادم
- const [liveCountdown, setLiveCountdown] = useState(60);
+ // 🔥 v3.66.9 LIVE: countdown badge معزول في مكون منفصل لمنع re-render للـ parent كل ثانية
  const [isLive, setIsLive] = useState(_isEgxIntradayNow());
  useEffect(() => {
  const checkSession = setInterval(() => {
  setIsLive(_isEgxIntradayNow());
  }, 60000);
- const countdown = setInterval(() => {
- setLiveCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
- }, 1000);
- return () => {
- clearInterval(checkSession);
- clearInterval(countdown);
- };
+ return () => clearInterval(checkSession);
  }, []);
 
  return (
@@ -189,12 +182,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-profit flex-shrink-0" />
  <span>{t('marketAnalysis.title')}</span>
  {/* v3.66.9 LIVE badge — بيتحدث تلقائياً خلال جلسة EGX */}
- {isLive && (
- <span className="inline-flex items-center gap-1 text-xs sm:text-xs font-bold px-2 py-0.5 rounded-full bg-profit/10 text-profit animate-pulse">
- <Activity className="h-3 w-3" />
- LIVE · {liveCountdown}s
- </span>
- )}
+ {isLive && <LiveCountdownBadge />}
  </h2>
  <div className="flex items-center gap-2 flex-wrap">
  <RefreshAnalyticsButton variant="glow" size="default" />
@@ -266,3 +254,20 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 }
 
 export default MarketAnalysisView;
+
+// ─── ALPHA-SMOOTH-UX: مكون عداد معزول — بيتحرك كل ثانية بدون إعادة render الـ parent ───
+function LiveCountdownBadge() {
+ const [liveCountdown, setLiveCountdown] = useState(60);
+ useEffect(() => {
+ const countdown = setInterval(() => {
+ setLiveCountdown((prev) => (prev <= 1 ? 60 : prev - 1));
+ }, 1000);
+ return () => clearInterval(countdown);
+ }, []);
+ return (
+ <span className="inline-flex items-center gap-1 text-xs sm:text-xs font-bold px-2 py-0.5 rounded-full bg-profit/10 text-profit animate-pulse">
+ <Activity className="h-3 w-3" />
+ LIVE · {liveCountdown}s
+ </span>
+ );
+}

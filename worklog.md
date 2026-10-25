@@ -8434,3 +8434,179 @@ Stage Summary:
 الملفات المعدلة:
 - src/modules/market-analysis/components/TradingChartView.tsx (إضافة تحليلات + زر تبديل)
 - next.config.mjs (allowedDevOrigins + turbopack config)
+
+---
+Task ID: 1-a
+Agent: Explore (admin DB upload)
+Task: Find admin DB upload section and gaps
+
+Work Log:
+- Read /home/z/my-project/worklog.md tail (lines 8200-8436) — confirmed prior context: Task 1 migrated GLMinvestment v3.4.41 to /home/z/my-project, Task 1-a/1-b/1-c explored archived interactive chart (not related to admin DB upload).
+- Listed src/modules/admin/ — 90+ files. Spotted DbBackupPanel.tsx (1,310 LOC) and DatabaseManagerFull.tsx as DB-related candidates.
+- Listed src/app/api/admin/ — 90+ route files. Spotted db-backup/route.ts (846 LOC), code-backup/route.ts (150 LOC), code-backup/download/route.ts (39 LOC), and db-manager/* (16 routes for table-level DB ops — not GitHub upload).
+- Grep'd for `github|upload|backup|git\b` in src/modules/admin — 25 file hits. Top: DbBackupPanel.tsx, AdminView.tsx, admin-hubs.tsx, db-manager/* (BackupsPanel/MaintenancePanel/DailyBackupsPanel).
+- Grep'd for `github.*db|db.*github|upload.*github|backup.*github|push.*github` across src/ — 3 hits: DbBackupPanel.tsx, AdminView.tsx, db-backup/route.ts. Confirmed DbBackupPanel is THE frontend.
+- Read DbBackupPanel.tsx FULLY (1,310 lines): selection UI (chunk-size radio + upload-to-GitHub checkbox + advanced push options collapse), DB list table, archives list table, code-only backup card, delete dialog. handleExecuteBackup() at lines 337-419 fires single POST to /api/admin/db-backup with body {upload_to_github, prune_older_than_days, selected_dbs, max_part_size_mb, selected_archives, push_strategy, rollback_last_commit, delete_remote_archives_before_push}. On response, renders up to 5 toasts: success count, git.pushed status, warnings (sliced 0-5), errors (sliced 0-3). NO live log anywhere.
+- Read /api/admin/db-backup/route.ts FULLY (846 lines): GET lists db/*.db + data/*.zip files; POST does mkdir → prune → chunkDbs() → loop compressToZip (zip binary w/ Python zipfile fallback) → optional split for >maxZipBytes → git add -f data/* → git commit → git fetch origin → rev-list ahead/behind → strategy dispatch (fetch_rebase / fetch_merge / force_push / no_pull) → git push. All sequential in a single request; maxDuration = 180s. Errors captured into `errors: string[]` and `git.warnings: string[]` arrays; messages truncated to 100-200 chars. PATCH supports abort/rollback/list_remote/status.
+- Read AdminView.tsx (458 lines): line 63 imports DbBackupPanel (eagerly — NOT lazy-loaded like the heavy 3000-LOC tabs); line 417-422 renders it when s.activeTab === 'db-backup'. Comment at 417-419 documents: "Compresses every db/*.db into sub-60MB zip archives in /data, then optionally commits + pushes them to GitHub via `git add -f`."
+- Read admin-hubs.tsx (148 lines): line 104 — db-backup is the 4th tab in the "data" hub (label "النسخ الاحتياطي", icon Upload, desc "backup/restore"). 4 hubs × 26 tabs total. Hub id `'data'`.
+- Read code-backup/route.ts (150 lines): code-only source backup (zip without node_modules/.next/db/data/.git). NO GitHub push — only creates local archive in data/. Triggered by handleCreateCodeBackup() in DbBackupPanel lines 230-252. Out of scope of the GitHub upload issue but lives in same panel.
+- Confirmed NO SSE/WebSocket/streaming pattern in the codebase. Grep for `text/event-stream|EventSource|ReadableStream|new Response.*stream|dynamic.*streaming` returned 0 matches in src/. BUT discovered existing polling-based live console: src/modules/admin/components/engine-control/LiveLogConsole.tsx (322 LOC) — polls /api/admin/engines/logs?engine=X&limit=50 every 2s + /api/admin/engines/logs/control?engine=X every 2s, dark terminal style, auto-scroll, manual override, clear button, ✅/❌ exit detection. This is the established convention.
+
+Stage Summary:
+- **Frontend file:** /home/z/my-project/src/modules/admin/components/DbBackupPanel.tsx (1,310 LOC)
+  - Mounted at: src/modules/admin/components/admin-view/AdminView.tsx:417-422 (`activeTab === 'db-backup'`)
+  - Nav entry: src/modules/admin/components/admin-view/admin-hubs.tsx:104 — hub `'data'`, tab id `'db-backup'`, label "النسخ الاحتياطي", icon Upload
+  - Reachable from: Admin → "البيانات وقواعد البيانات" hub → "النسخ الاحتياطي" tab (URL hash `#db-backup`)
+- **Backend file:** /home/z/my-project/src/app/api/admin/db-backup/route.ts (846 LOC)
+  - Endpoints: GET (list), POST (compress+push), DELETE (delete), PATCH (abort/rollback/list_remote/status)
+  - POST flow: mkdir data/ → optional prune (>30d) → chunkDbs() batches → loop: compressToZip (zip→python fallback) + optional `split` for >maxZipBytes → if upload_to_github: git add -f data/* → git commit → git fetch origin → rev-list ahead/behind → strategy dispatch (fetch_rebase|fetch_merge|force_push|no_pull) → git push origin HEAD. Single JSON response with archives[] + git{committed,pushed,message,ahead_behind,warnings[]} + errors[].
+  - maxDuration = 180s (line 13) — may be too short for large uploads.
+  - Also exists (sibling): /api/admin/code-backup/route.ts (150 LOC) — code-only zip without GitHub push.
+- **Current UX when user clicks "ضغط + رفع على GitHub" button:**
+  1. User selects DBs (checkboxes, default = all)
+  2. Picks chunk size (25/50/60/80/95 MB, default 60)
+  3. Toggles "رفع على GitHub مباشرة بعد الضغط" (default ON)
+  4. (optional) Expands "خيارات الرفع المتقدمة" → chooses push_strategy + rollback/delete-remote checkboxes
+  5. Clicks button → button shows spinner + label "جاري الضغط والتجزئة والرفع إلى GitHub..."
+  6. Browser fires single POST. UI is FROZEN — no progress, no log, no step indicator.
+  7. After POST resolves (could be 1-180s), up to 5 toasts appear: success count, git.pushed state, warnings (sliced 0-5), errors (sliced 0-3), rollback/deletes info.
+  8. If request times out at 180s, user gets generic "network error" — no idea how far it got.
+- **Specific gaps (missing features):**
+  1. ❌ NO live log stream — no real-time stdout/stderr from `zip` / `split` / `git` commands (all output captured into truncated strings).
+  2. ❌ NO progress bar / percentage — no per-batch progress, no per-step progress.
+  3. ❌ NO step/phase indicator (compressing / splitting / committing / fetching / rebasing / pushing / done).
+  4. ❌ NO per-file checklist (which DBs are being zipped right now, which archives were created, which were uploaded successfully).
+  5. ❌ NO error visibility at fine-grained level — `errors[]` truncated to first 3 in toasts (DbBackupPanel.tsx:401-405). Backend truncates each error message to 100-200 chars (route.ts:489,498,551,554).
+  6. ❌ NO full warning visibility — `warnings[]` truncated to first 5 in toasts (DbBackupPanel.tsx:388-392).
+  7. ❌ NO way to see git push output (commits added, remote rejected reasons) — collapsed into single `git.message` string truncated to 200 chars.
+  8. ❌ NO terminal/console UI anywhere on this screen, despite the codebase already having a polished `<LiveLogConsole>` (engine-control/LiveLogConsole.tsx, 322 LOC) for engine logs.
+  9. ❌ NO abort button visible during upload — handleAbort() exists (lines 445-469) but is buried inside the "advanced push options" panel which only shows AFTER uploadToGithub is checked AND user clicked "إظهار".
+  10. ❌ NO timestamps on results — user can't see when each step started/finished.
+  11. ❌ NO partial-success reporting — if 3 of 5 archives uploaded OK then push failed, response collapses to single `pushed: false` boolean.
+  12. ❌ NO background job model — request blocks for up to 180s; if user navigates away or browser closes, job state is lost.
+- **API endpoints used:**
+  - `GET  /api/admin/db-backup` — list DBs + archives (called on mount + after every action)
+  - `POST /api/admin/db-backup` — compress + (optional) push (body: upload_to_github, selected_dbs, max_part_size_mb, prune_older_than_days, selected_archives, push_strategy, rollback_last_commit, delete_remote_archives_before_push)
+  - `DELETE /api/admin/db-backup` — delete DBs/archives
+  - `PATCH /api/admin/db-backup` — abort/rollback/list_remote/status (body: action)
+  - `GET/POST/DELETE /api/admin/code-backup` — code-only zips (no GitHub push)
+  - `GET /api/admin/code-backup/download?file=X` — code zip download
+- **Recommended approach (aligned with existing codebase conventions):**
+  Use the SAME polling-based pattern that already exists for engine-control's LiveLogConsole — NO SSE, NO WebSocket (zero matches in src/).
+  Plan:
+  1. **Backend refactor:** Have POST /api/admin/db-backup spawn the work as a detached background child process (so 180s maxDuration isn't the limit) writing progress events to `logs/db-backup-<stamp>.log` line by line (JSON-lines: {ts, phase, level, message, pct?}). POST returns immediately with {job_id: stamp, log_path, status: 'running'}.
+  2. **Two new GET endpoints** mirroring engine-control's pattern:
+     - `GET /api/admin/db-backup/logs?job=<stamp>&limit=200` → returns tail of log file (same response shape as /api/admin/engines/logs: {success, lines[], fetched_at, file_exists})
+     - `GET /api/admin/db-backup/status?job=<stamp>` → returns current snapshot {running, phase, pct, archives_created, archives_pushed, errors[], warnings[], started_at, finished_at} (mirrors /api/admin/engines/logs/control)
+  3. **Frontend:** Extract `LiveLogConsole` (engine-control/LiveLogConsole.tsx) into a shared component at `src/components/shared/LiveLogConsole.tsx` (parameterized by log URL + status URL + title), then mount a `<DbBackupLiveConsole>` bottom Sheet inside DbBackupPanel that opens when user clicks the upload button. It polls every 2s, displays terminal-style streaming output (dark bg, monospace, LTR), step indicator with current phase highlighted, per-archive checklist (✅ zipped / ✅ pushed / ❌ failed), full warnings/errors list (NOT truncated), "copy log to clipboard" + "download full log" buttons, and an "abort" button that calls the existing PATCH /api/admin/db-backup {action:'abort'}.
+  4. **Keep the final toasts** as confirmation, but the live console becomes the primary progress UI.
+  5. **Bonus:** Add a "history" view listing last N backup jobs (by stamp) with their final status + a "view log" button — so admins can review past uploads.
+
+---
+Task ID: 1-b
+Agent: Explore (rebuild-on-data-change)
+Task: Find screens that rebuild on data change
+
+Work Log:
+- Read worklog tail (~8200-8436) to understand context — Tasks 1, 1-a, 1-b (archived chart), 1-c (premium chart built) precede this; the codebase has a 110-engine backend, 9 DBs, Next.js + Zustand + TanStack Query + lightweight-charts v5 + socket.io-client. PremiumChart was just added at src/components/premium-chart/ (Task 1-c).
+- Grep'd 4 anti-pattern categories: (1) random/uuid/index keys, (2) window.location.reload/router.refresh, (3) setData(null) on fetch start, (4) useEffect with [] + state setters.
+- Read fully: DashboardView.tsx (630 LOC), MarketAnalysisView.tsx (268 LOC), TradingChartView.tsx (989 LOC, key sections), ws-client.ts (458 LOC), query-client.ts (51 LOC), EnhancedPortfolioView.tsx (shim), parts of NewsFeedView (891 LOC), EnhancedWatchlistView (1357 LOC), usePredictionTrackingState.ts (507 LOC), MakerRadarTab.tsx, MobilePredictionCard.tsx, ProofTableCard.tsx, MorningBellSection.tsx, LiveMonitor.tsx (1353 LOC, key sections), LiveStockTicker.tsx (key sections), RealtimeTicker.tsx, IndexCards.tsx, MarketSummary.tsx, WidgetCard.tsx, use-api-query.ts.
+- Grep'd `useAppStore()` without selector → 40+ components subscribe to ENTIRE store state, re-rendering on every store change. Worst offenders: DashboardView:139, MarketAnalysisView:100, TradingChartView:205+475, StockDetail:1061, SingleStockAnalysisView:74, DeepAnalysis:1073, AssetsTab:95+96 (two calls), Header:21+22 (two calls), MobileMoreSheet:70, TopBar:89, page.tsx:484, NewsFeedView (uses store in card children), EnhancedWatchlistView:768+769 (two calls).
+- Grep'd React.memo usage → only ~17 components memoized (StockTable, RadarSection, AdvancedFilters, MobileStockRow, StockCard, PresetButtonsRow, OverviewSummary, AssetsTab, IncomeExpenseTab, ObligationsTab, ReportsTab, LiquidityFlashCell, DeltaBadge, FlashingChangeCell, FlashingPriceCell, MarketRegimeBanner, WatchlistMobileCard). NOT memoized: TradingViewChart (1895 LOC), PremiumChart (heavy), NewsCard, UnifiedTable, WidgetCard, InstitutionalDecisionPanel, CanonicalWhoIsBuyingBanner, AlertPanel, UnifiedPredictionsTab, all dashboard widgets (MarketSummary/IndexCards/TopMovers/MarketSentiment/LiveMonitor/LiveStockTicker/InvestorsFlowPanel/LiquidityFlowPanel/IntradayPressurePanel/MultiMarketWidget/MarketPulseWidget/MyStocksBriefing/TrackRecordWidget/OpportunityCalculatorWidget/PriorityNotificationsWidget/SovereignMetalsDesk/CryptoSignalsWidget/SeasonalitySignalsWidget), MorningBellSection/HorizontalSectorsBar.
+- Grep'd store.ts → confirmed 6 store actions (loadDashboard:988, loadStocks:1021, loadCryptoList:1073, loadStockDetail:1149, loadPortfolio:1229, loadV2Recommendations:1304) all begin with `set({ isLoading: true })` BEFORE fetching data. Any consumer that gates rendering on `isLoading` (e.g., DashboardView:416 `!mounted || isLoading ? <DashboardSkeleton/> : ...`) flips to skeleton → ALL widgets unmount → remount on data arrival → big visual flicker on every refresh click or filter change.
+- Read query-client.ts → TanStack Query properly configured (refetchOnWindowFocus:false, staleTime:60s, structuralSharing enabled). NOT the source of remounts.
+- Read ws-client.ts → useRealtimeUpdates + useLiveTicker are OK; useLiveTicker throttles at 2s and merges prev+next state correctly. But the consumers (TickerChartCard in TradingChartView) read `liveData` and derive `livePrice` → TickerChartCard re-renders every 2s → its non-memoized child TradingViewChart/PremiumChart re-renders too (no actual remount, but expensive re-render).
+- Read page.tsx:985 → `key={currentView}` on motion.div is INTENTIONAL (we WANT remount on view switch). Not a bug. But page.tsx:484 `useAppStore()` (no selector) means the AppShell re-renders on every store change.
+- Identified 1 Math.random() key fallback: StockAnalysisReport.tsx:1167 `key={stock.ticker || Math.random()}` — row remounts every render if ticker missing.
+- Identified 2 window.location.reload() in production code: TradingViewChart.tsx:1548 (error retry button reloads ENTIRE app for one chart failure — loses all other open charts, scroll, watchlist state), SmartConfluenceView.tsx:131 (fallback button). Plus router.refresh() at payment/success/page.tsx:181 (post-payment refresh — acceptable, one-time).
+- Identified MarketAnalysisView.tsx:170-183 → 1-second `setLiveCountdown` interval causes MarketAnalysisView + ALL children (UnifiedPredictionsTab, HorizontalSectorsBar) to re-render EVERY SECOND during session. Children not memoized.
+- Identified usePredictionTrackingState.ts:180-186 → useEffect sets `setLoading(true)` on every filter change (persona, days, qualityMode, minConfidence). User changes persona filter → entire dashboard switches to skeleton → remounts, losing scroll position.
+- Identified MobilePredictionCard.tsx:74 + ProofTableCard.tsx:237 → `key={\`mob-pred-${pred.ticker}-${idx}\`}` — uses array index in key. When prediction list reorders during refetch (e.g., sorted by score), all mobile cards remount.
+- Identified LiveStockTicker.tsx:255 → `key={\`${s.ticker}-${idx}\`}` — idx in key. Same remount problem.
+- Confirmed `setData(null)` calls in 15+ files (ExitRadarTab, WeeklyReportTab, SignalTrackingTimeline, TrackRecordWidget, PriorityNotificationsWidget, MarketDepthPanel, MarketDepthLiquidityWidget, DealAdvisorPanel, ShariaStockDetailModal, ProcessResourceHistory, PlatformPerformanceView, LiquidityRadarView) — but these are on ERROR/EMPTY paths, NOT before fetch start. Pattern OK in most cases. The problematic ones are: MorningBellSection.tsx:189+250 (setStocks([]) before fetch / on veto), TrackRecordWidget.tsx:89 (setData(null) on missing summary).
+
+Stage Summary:
+
+**TOP 10 WORST OFFENDERS (file:line — problem):**
+
+1. **DashboardView.tsx:416** — `!mounted || isLoading ? <DashboardSkeleton/> : (...)`. Refresh button (line 368 `onClick={() => loadDashboard()}`) flips `isLoading:true` via store action → ENTIRE dashboard switches to skeleton → 10+ widgets unmount+remount → big visual flicker. Fix: separate `isRefreshing` from `isLoading`; only show skeleton when `!data`.
+
+2. **store.ts:988, 1021, 1073, 1149, 1229, 1304** — 6 store actions all start with `set({ isLoading: true })` BEFORE fetching. Fix: use `isRefreshing: true` for refetches, reserve `isLoading: true` for initial load only.
+
+3. **MarketAnalysisView.tsx:170-183** — `setInterval(() => setLiveCountdown(...), 1000)` causes parent + ALL children to re-render every second during EGX session. Fix: isolate countdown to its own `<LiveCountdown/>` component, or use `useRef` + `requestAnimationFrame` direct DOM mutation.
+
+4. **usePredictionTrackingState.ts:180-186** — `setLoading(true)` on every filter change (persona/days/qualityMode/minConfidence). Each filter tweak shows skeleton → remounts dashboard → loses scroll + KPI state. Fix: distinguish `isRefreshing` (refetch with existing data) from `isLoading` (initial load).
+
+5. **40+ components using `useAppStore()` without selector** (full list in work log). Each subscribes to ENTIRE Zustand state → re-renders on every unrelated state change (e.g., ticker price update → MarketSummary, IndexCards, TopMovers all re-render). Fix: `useAppStore((s) => s.fieldName)` or `useShallow(useAppStore, (s) => ({ a: s.a, b: s.b }))`.
+
+6. **TradingViewChart.tsx:1548** — error retry button calls `window.location.reload()` → reloads ENTIRE app (loses all other open charts in trading-chart room, scroll positions, watchlist, market selector). Fix: chart-local reset via `key={retryKey}` state bump on the chart instance only, or `setData(null); setError(null); fetchData(ticker, timeframe)`.
+
+7. **TradingViewChart + PremiumChart NOT memoized** — heavy chart components (1895 + ~350 LOC) re-render every 2s when `useLiveTicker` pushes a `ticker:live` update (parent TickerChartCard re-renders, children re-render). Fix: wrap in `React.memo` + stabilize `ohlcv`, `indicators`, `tradePlan`, `smcData` props with `useMemo`.
+
+8. **NewsCard (NewsFeedView.tsx:453)** — NOT memoized. Every 3-min auto-refresh (line 679) and every search keystroke re-renders ALL visible NewsCards. Fix: `const NewsCard = memo(function NewsCard({ item }: ...) { ... })` + ensure `item` reference is stable (TanStack Query structuralSharing already keeps references stable).
+
+9. **MobilePredictionCard.tsx:74 + ProofTableCard.tsx:237** — `key={\`mob-pred-${pred.ticker}-${idx}\`}` (index-based). When predictions re-order (sort/filter/refetch), all mobile cards remount → lose hover state, animations restart. Fix: `key={\`mob-pred-${pred.ticker}-${pred.entryDate}\`}` — use stable unique fields, not array index.
+
+10. **StockAnalysisReport.tsx:1167** — `key={stock.ticker || Math.random()}`. If ticker missing, row remounts on EVERY render. Fix: filter list before `.map` to guarantee ticker, or use `key={\`row-${i}-${stock.name}\`}` (still index-based but stable across renders when list is static).
+
+**Bonus offenders (close to top 10):**
+- LiveStockTicker.tsx:255 — `key={\`${s.ticker}-${idx}\`}` (scrolling ticker; remounts on reorder).
+- LiveMonitor.tsx:652 — `portfolioColumns` array defined inside component body, recreated every render. Even if UnifiedTable were memoized (it isn't), this would defeat memo.
+- MorningBellSection.tsx:189,250 — `setStocks([])` on market change / veto → blanks section before fetch returns.
+- EnhancedWatchlistView.tsx:768-769 — two `useAppStore()` calls in same component (both without selector).
+- AssetsTab.tsx:95-96 — two `useAppStore()` calls in same component (both without selector).
+- SmartConfluenceView.tsx:131 — `window.location.reload()` in fallback button.
+- TradingChartView.tsx:932 — inline `tradePlan={{entry, stop, ...}}` object created on every render. If PremiumChart were memoized, this would defeat it.
+
+**PATTERN CATEGORIES:**
+
+A. **Zustand full-state subscription (useAppStore() with no selector)** — 40+ components. Re-render on every store change. Fix: switch to selector form `useAppStore((s) => s.x)`; for multiple fields use `useShallow` from `zustand/react/shallow`.
+
+B. **Store actions flip isLoading:true before fetch** — 6 actions in store.ts. Causes skeleton/blank-flash on every refresh. Fix: split `isLoading` (initial only) vs `isRefreshing` (refetch with existing data kept on screen).
+
+C. **1Hz countdown timers re-render entire parent** — MarketAnalysisView:170, usePredictionTrackingState:194. Fix: isolate countdown to own child component OR mutate DOM via `useRef` + `requestAnimationFrame` without setState.
+
+D. **Heavy chart/list components not React.memo'd** — TradingViewChart, PremiumChart, NewsCard, UnifiedTable, WidgetCard, 19 dashboard widgets, InstitutionalDecisionPanel, CanonicalWhoIsBuyingBanner, AlertPanel, UnifiedPredictionsTab, MorningBellSection. Fix: wrap exports in `React.memo` + stabilize props via `useMemo`/`useCallback` at call sites.
+
+E. **Index-based keys for dynamic lists** — 50+ occurrences across the codebase (key={i}, key={idx}, key={`x-${idx}`}). Only stable for STATIC lists. Fix: use stable unique IDs (ticker, id, date, hash of content).
+
+F. **window.location.reload() for error recovery** — TradingViewChart.tsx:1548, SmartConfluenceView.tsx:131. Fix: component-level error boundary + reset state.
+
+G. **Math.random() as key fallback** — StockAnalysisReport.tsx:1167. Fix: filter list before mapping.
+
+H. **Inline object/array props to memoized children** — TradingChartView.tsx:932 (tradePlan={{...}}), various style={{...}} and columns=[...] inside component bodies (LiveMonitor:652). Fix: wrap in `useMemo`.
+
+I. **setData(null) on market change / veto** — MorningBellSection.tsx:189+250, TrackRecordWidget.tsx:89. Blanks UI before fetch. Fix: keep previous data + show toast/banner.
+
+J. **`useAppStore()` called twice in same component** — EnhancedWatchlistView.tsx:768-769, AssetsTab.tsx:95-96, Header.tsx:21-22. Fix: single call with multiple fields via `useShallow`.
+
+**FILES NEEDING React.memo WRAPPING (priority order):**
+
+HIGH PRIORITY (heavy components, frequent parent re-renders):
+1. src/modules/stock-analysis/components/TradingViewChart.tsx (1895 LOC chart, re-renders every 2s via WS)
+2. src/components/premium-chart/PremiumChart.tsx (new premium chart, same WS-driven re-render)
+3. src/modules/news/components/NewsFeedView.tsx — NewsCard (re-renders on every keystroke + 3-min poll)
+4. src/components/shared/UnifiedTable.tsx (used in 30+ places, parents re-render on every store change)
+5. src/components/shared/WidgetCard.tsx (used in 105+ widgets)
+6. src/modules/market-analysis/components/InstitutionalDecisionPanel.tsx (708 LOC, used in TradingChartView)
+7. src/modules/market-analysis/components/CanonicalWhoIsBuyingBanner.tsx (338 LOC)
+8. src/modules/market-analysis/components/UnifiedPredictionsTab.tsx (rendered in MarketAnalysisView — suffers 1Hz re-render)
+9. src/modules/market-analysis/components/MorningBellSection.tsx (+ HorizontalSectorsBar)
+10. src/modules/market-analysis/components/AlertPanel.tsx
+
+MEDIUM PRIORITY (dashboard widgets, all re-render when isLoading flips):
+11-29. All dashboard widgets in src/modules/dashboard/components/: MarketSummary, IndexCards, TopMovers, MarketSentiment, LiveMonitor, LiveStockTicker, InvestorsFlowPanel, LiquidityFlowPanel, IntradayPressurePanel, MultiMarketWidget, MarketPulseWidget, MyStocksBriefing, TrackRecordWidget, OpportunityCalculatorWidget, PriorityNotificationsWidget, SovereignMetalsDesk, CryptoSignalsWidget, SeasonalitySignalsWidget, AssetPreferenceOnboarding, DevelopmentNotice, RealtimeTicker.
+
+LOWER PRIORITY:
+30+. src/components/shared/WidgetStat.tsx, src/components/shared/MarketSelector.tsx, src/components/shared/StockSearchSelector.tsx, src/components/layout/Header.tsx, src/components/layout/TopBar.tsx, src/components/layout/MobileNav.tsx, src/components/layout/MobileMoreSheet.tsx, src/components/layout/ExchangeSelector.tsx, src/components/shared/UnifiedEmptyState.tsx.
+
+**RECOMMENDED FIX SEQUENCE:**
+1. Refactor `store.ts` load actions to use `isRefreshing` (or split into `_loading` vs `_refreshing` flags). One-line change × 6 actions → kills the dashboard skeleton flicker immediately.
+2. Add `React.memo` to the top 10 heavy components above (especially TradingViewChart, PremiumChart, NewsCard, UnifiedTable, WidgetCard). Combined with stabilizing object/array props via `useMemo` at call sites.
+3. Migrate the 40+ `useAppStore()` callers to selector form. Mechanical refactor — high impact, low risk.
+4. Replace 1Hz `setLiveCountdown` interval in MarketAnalysisView with an isolated `<LiveCountdownBadge>` child component (its own useState, no parent re-render).
+5. Replace `key={idx}` patterns in dynamic lists with stable IDs (ticker+date for predictions; ticker for stocks; id for news).
+6. Replace `window.location.reload()` in TradingViewChart error UI with chart-local reset.
+7. Replace `key={stock.ticker || Math.random()}` in StockAnalysisReport with pre-filter.
+8. Move `columns={[...]}` arrays out of component bodies into module scope OR wrap in `useMemo` with stable deps.

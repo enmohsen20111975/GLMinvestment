@@ -102,7 +102,7 @@ const MONEY_FLOW_STYLES: Record<string, string> = {
  'سيولة خارجة قوية': 'bg-loss text-white',
 };
 
-export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Props) {
+export const CanonicalWhoIsBuyingBanner = React.memo(function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Props) {
  const { canonical, prediction, technical, stock, radar } = data;
 
  // ⚠️ CRITICAL FIX (CONFLICT-AVOIDANCE, 2026-10-07):
@@ -332,7 +332,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
  )}
  </div>
  );
-}
+});
 
 // ─── مكون مساعد: خلية مستوى سعري ─────────────────────────────────────────────
 function LevelCell({
@@ -362,3 +362,5 @@ function LevelCell({
  </div>
  );
 }
+
+export default CanonicalWhoIsBuyingBanner;

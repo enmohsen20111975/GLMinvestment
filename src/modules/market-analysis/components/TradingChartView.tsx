@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // TradingChartView owns the per-ticker data fetch + tooling header.
 // InteractiveChart REMOVED — TradingViewChart is the sole chart.
 import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
@@ -605,6 +605,14 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  const target1 = isBuySignal ? rawTarget1 : null;
  const target2 = isBuySignal ? rawTarget2 : null;
  const rr = isBuySignal ? rawRr : null;
+ // ALPHA-SMOOTH-UX: تثبيت tradePlan object بـ useMemo لمنع re-render الـ PremiumChart
+ const stableTradePlan = useMemo(() => ({
+  entry,
+  stop,
+  target1,
+  target2,
+  riskReward: rr,
+ }), [entry, stop, target1, target2, rr]);
  const techScore = masterScore;
 
  // السعر الحالي
@@ -929,13 +937,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
     stockName={tickerName}
     ohlcv={data.ohlcv}
     indicators={data.indicators}
-    tradePlan={{
-     entry,
-     stop,
-     target1,
-     target2,
-     riskReward: rr,
-    }}
+    tradePlan={stableTradePlan}
     smcData={data.smc_data}
     livePrice={livePrice}
     currencyLabel={currencyLabel}
