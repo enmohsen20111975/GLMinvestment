@@ -19,7 +19,6 @@ export { SystemControlPanel } from './components/SystemControlPanel';
 export { SystemMonitorPanel } from './components/SystemMonitorPanel';
 export { SystemProblemsTab } from './components/SystemProblemsTab';
 export { TelegramTab } from './components/TelegramTab';
-export { UserManagementPanel } from './components/UserManagementPanel';
 export { UsersManagement } from './components/UsersManagement';
 export { WealthCharts } from './components/WealthCharts';
 

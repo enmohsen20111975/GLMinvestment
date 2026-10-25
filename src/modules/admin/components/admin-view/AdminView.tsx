@@ -62,7 +62,9 @@ import { PlatformPerformanceView } from '@/modules/admin/components/platform-per
 import { BacktestTab } from '@/modules/admin/components/BacktestTab';
 import { DbBackupPanel } from '@/modules/admin/components/DbBackupPanel';
 import { SystemMonitorPanel } from '@/modules/admin/components/SystemMonitorPanel';
-import { UserManagementPanel } from '@/modules/admin/components/UserManagementPanel';
+// ADMIN-CLEANUP: switched from UserManagementPanel (legacy, 904 LOC, fetches /users/[id] directly)
+// to UsersManagement (newer, split into users-mgmt/ folder, uses adminFetch helper)
+import { UsersManagement } from '@/modules/admin/components/UsersManagement';
 
 import { EnginesStatusTab } from '@/modules/admin/components/EnginesStatusTab';
 import { DataEngineTab } from '@/modules/admin/components/DataEngineTab';
@@ -332,7 +334,7 @@ export function AdminView() {
  {/* New bulk-operations panel: list, multi-select, bulk role/status change, */}
  {/* bulk delete. Distinct from legacy 'users' tab (which is analytics-focused). */}
  {s.activeTab === 'user-management' && (
- <UserManagementPanel />
+ <UsersManagement />
  )}
 
  {/* ==================== PRICING EDITOR TAB (Task 28-B Fix 5) ==================== */}
