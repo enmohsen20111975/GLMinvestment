@@ -1,0 +1,15 @@
+-rw-r--r-- 1 root root  25M Oct 25 15:07 data_engine.db.tar.gz.aa
+-rw-r--r-- 1 root root  25M Oct 25 15:07 data_engine.db.tar.gz.ab
+-rw-r--r-- 1 root root  25M Oct 25 15:07 data_engine.db.tar.gz.ac
+-rw-r--r-- 1 root root  25M Oct 25 15:08 data_engine.db.tar.gz.ad
+-rw-r--r-- 1 root root  22M Oct 25 15:08 data_engine.db.tar.gz.ae
+-rw-r--r-- 1 root root  25M Oct 25 15:07 intraday.db.tar.gz.aa
+-rw-r--r-- 1 root root  25M Oct 25 15:07 intraday.db.tar.gz.ab
+-rw-r--r-- 1 root root 341K Oct 25 15:07 intraday.db.tar.gz.ac
+-rw-r--r-- 1 root root 788K Oct 25 15:08 news.db.tar.gz.aa
+-rw-r--r-- 1 root root  25M Oct 25 15:08 predictions.db.tar.gz.aa
+-rw-r--r-- 1 root root 5.5M Oct 25 15:08 predictions.db.tar.gz.ab
+-rw-r--r-- 1 root root  25M Oct 25 15:07 price_history.db.tar.gz.aa
+-rw-r--r-- 1 root root  25M Oct 25 15:07 price_history.db.tar.gz.ab
+-rw-r--r-- 1 root root  18M Oct 25 15:07 price_history.db.tar.gz.ac
+-rw-r--r-- 1 root root 6.1M Oct 25 15:07 stocks.db.tar.gz.aa
