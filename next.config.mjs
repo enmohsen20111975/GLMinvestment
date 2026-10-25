@@ -23,6 +23,24 @@ const nextConfig = {
   // ─── FIX: Increase static generation timeout ──────────────────────
   // Default is 60s. On slow VPS with large DB, pages may take longer.
   staticPageGenerationTimeout: 300, // 5 minutes
+  // ─── FIX: Allow cross-origin requests from preview/sandbox domains ────────
+  // The sandbox serves the app via a preview domain (e.g. preview-chat-*.space-z.ai)
+  // which Next.js sees as cross-origin. Without this, Turbopack chunks fail to load
+  // → "ChunkLoadError" → "module is not defined" → page crashes with error boundary.
+  allowedDevOrigins: [
+    '*.space-z.ai',
+    'localhost',
+    '127.0.0.1',
+    '*.preview.com',
+  ],
+  // ─── FIX (Next 16): Turbopack is the default bundler. Acknowledge it ──────
+  // Next 16 crashes if you have a `webpack` config without a `turbopack` config.
+  // The @ alias is handled by tsconfig.json paths, so we just need an empty config.
+  turbopack: {
+    resolveAlias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
   // ─── FIX (Next 16): serverExternalPackages moved from experimental to top-level ──
   // Next 16 deprecated `experimental.serverComponentsExternalPackages`. These packages
   // are native Node modules (better-sqlite3, sql.js) + Prisma clients that MUST NOT

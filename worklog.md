@@ -8279,3 +8279,158 @@ Stage Summary:
 - يحتوي على Decision Trees + Position Sizing Table + Exit Strategy Table
 - يحتوي على معجم مصطلحات (23 مصطلح)
 - المرجع المعماري النهائي للنظام
+
+---
+Task ID: 1-a
+Agent: Explore (trading-chart screen)
+Task: Find trading-chart screen and identify missing analysis
+
+Work Log:
+- Read worklog.md (last ~300 lines) to understand previous Task 1 migration context and the 110-engine backend layout (sections C-M).
+- Grep'd for `trading-chart` (case-insensitive) across src/ → 17 file matches. Hot spots: `src/app/page.tsx` (route table), `src/lib/valid-views.ts` (whitelist), `src/lib/nav-config.ts` (nav item id), `src/modules/market-analysis/components/TradingChartView.tsx` (the actual component).
+- Confirmed routing in `src/app/page.tsx` lines 598-600: case `'trading-chart'` AND `'crypto-trading-chart'` (fallthrough) both render `<TradingChartView />`. View is wrapped in ErrorBoundary + dynamic-import ssr:false (page.tsx line 229).
+- Read `TradingChartView.tsx` fully (832 LOC). Found it renders a multi-stock workspace (1-6 `TickerChartCard`s in a 1-or-2-column grid). Each card fetches:
+  • `GET /api/stocks/[ticker]/unified` (canonical decision — Rule 73)
+  • `GET /api/v2/chart/full-analysis?ticker=X&timeframe=DAY&limit=365` (EGX)
+  • `GET /api/crypto/full-analysis?ticker=X&timeframe=DAY&limit=500` (CRYPTO)
+- Confirmed each `TickerChartCard` body (lines 797-827) renders ONLY `<TradingViewChart ticker={ticker} stockName={tickerName} />`. The state vars `advancedLevels`, `extraIndicators`, `visibleIndicators` (lines 457-486) only flip their OWN button styling — never passed to TradingViewChart. The props bundles `canonicalProp` (lines 657-668) and `decisionDataProp` (lines 670-675) are computed but NEVER passed to any child (dead code — left over from the removed `InteractiveChart`).
+- Verified the fetched `ChartAnalysisData` type (lines 59-173) carries rich fields: `institutional_decision`, `fusion_metrics.risk{entry,sl,tp1,tp2,rr_ratio_tp1}`, `smc_data`, `confluence`, `market_regime`, `current_indicators{rsi,macd,atr,sma20,sma50}`, `smc_analysis`, `candle_probabilities` (sister view uses), `stock_dna`, `levels`, `smart_markers`, `bos_events`, `bb_squeeze`, `macd_projection` — NONE rendered.
+- Confirmed `canonical` (UnifiedStockData) carries `canonical.signal`, `canonical.master_score`, `canonical.money_flow`, `canonical.accumulation`, `canonical.phase`, `prediction.entry_price/stop_loss/target_price/target_price_2/target_price_3/risk_reward/confidence/who_is_buying/analysis_reason`, `technical.rsi/atr/support/resistance` — NONE rendered.
+- Read sister component `SingleStockAnalysisView.tsx` (1549 LOC, same folder) to confirm what the analysis layout SHOULD look like. It uses `<CanonicalWhoIsBuyingBanner>` (line 581), `<TradingViewChart>` (858), `<InstitutionalDecisionPanel>` (954), `<DealAdvisorPanel>` (1538) + custom cards for candle_probabilities (1054) and stock_dna (1211). BUT `SingleStockAnalysisView` is only rendered inside `PersonaTab.tsx` line 2212 — NOT directly reachable from any hash route.
+- Read `InstitutionalDecisionPanel.tsx` (708 LOC) — confirms it displays signal_final, maker_state, flight_state, proofs, tech_score, risk_profile(entry/sl/tp1/tp2/rr), fair_value, portfolio_advice, prediction_ar, rsi_status, dynamic_thresh, backtest, model_quality.
+- Verified chart library in `package.json`: `lightweight-charts ^5.2.0` (TradingView's OSS lib, imported in `TradingViewChart.tsx` line 6) + `recharts ^2.15.4` (not used by this screen). `html-to-image ^1.11.13` for screenshot/PNG publish.
+- Verified API route files exist: `src/app/api/stocks/[ticker]/unified/route.ts` (canonical SSOT, Rule 67+72), `src/app/api/v2/chart/full-analysis/route.ts` (proxies Python :8010 + SQLite fallback), `src/app/api/crypto/full-analysis/route.ts`.
+
+Stage Summary:
+- **File path:** `/home/z/my-project/src/modules/market-analysis/components/TradingChartView.tsx` (832 LOC) — the `#trading-chart` screen. Wrapped by ErrorBoundary + dynamic ssr:false in `src/app/page.tsx:229` and routed at `page.tsx:598-600`. Also reused by `StockDetail.tsx` (`#stock-detail`) and `PersonaTab.tsx` line 1261.
+- **Current structure (8 sections):** (1) room header "غرفة التداول" + ExchangeSelector + gainers/losers badges; (2) toolbar — StockSearchSelector (add stock) + 1/2-column toggle + count badge + reset + "نشر الكل" Telegram publish; (3) selected tickers badge strip with remove buttons; (4) grid of `TickerChartCard`s; per-card (5) header — StockSearchSelector + live price + change% + LIVE badge; (6) tooling row — timeframe (DAY/WEEK/MONTH) + refresh + alerts + quick-add alert + maximize + screenshot; (7) chart toolbar — "advanced levels" + "indicators" toggles (DEAD — only style their own buttons); (8) body — `<TradingViewChart ticker stockName>` ONLY + `<AlertPanel>` slide-over. The `canonicalProp`/`decisionDataProp` bundles (lines 657-675) are dead code.
+- **MISSING analysis parts (fetched but not displayed):**
+  • Signal verdict (STRONG_BUY/BUY/HOLD/SELL — `canonical.signal` / `canonical.signal_ar`)
+  • Master score 0-100 (`canonical.master_score`)
+  • Entry / stop-loss / target1 / target2 / R:R (`prediction.entry_price`, `prediction.stop_loss`, `prediction.target_price`, `prediction.target_price_2`, `prediction.risk_reward`)
+  • ATR + dynamic stops (`current_indicators.atr`, `risk_management_advanced` outputs)
+  • Market regime DEFENSIVE/NORMAL/AGGRESSIVE (`data.market_regime`)
+  • Minervini Stage 1-4 (`canonical.phase`)
+  • Persona fit Investor/Gambler (`prediction.who_is_buying`)
+  • Confluence breakdown + score (`data.confluence.breakdown`, `data.confluence.score`)
+  • SMC score + order blocks/FVG/sweeps (`data.smc_data`, `data.smc_analysis`)
+  • Fusion score + fair value + bigbeluga (`data.fusion_metrics`)
+  • Candle up/dn probabilities (sister view has card; not present here)
+  • Stock DNA typical-range position (sister view has card; not present here)
+  • Live news feed (`<StockNews>` exists but only used in `StockDetail`)
+  • AI narrative (`prediction.analysis_reason`)
+  • Confidence + position size hint (`prediction.confidence`, `prediction.suggested_position_size_pct`)
+- **Chart library:** `lightweight-charts ^5.2.0` (TradingView OSS) inside `src/modules/stock-analysis/components/TradingViewChart.tsx` (1895 LOC). Props accepted: `ticker`, `stockName`, `height` ONLY — no analysis slot.
+- **API endpoints currently called by `#trading-chart`:**
+  • `GET /api/stocks/[ticker]/unified` — canonical decision (signal/score/entry/stop/target)
+  • `GET /api/v2/chart/full-analysis?ticker=X&timeframe=DAY&limit=365` (EGX) — proxies Python :8010, returns ohlcv + indicators + smc_data + fusion + institutional_decision
+  • `GET /api/crypto/full-analysis?ticker=X&timeframe=DAY&limit=500` (CRYPTO)
+  • `POST /api/alerts/quick-add` — quick price alert
+  • `POST /api/market/publish-status-image` — Telegram publish screenshot
+- **Existing analysis components NOT wired up in TradingChartView but available:**
+  1. `InstitutionalDecisionPanel` (`src/modules/market-analysis/components/InstitutionalDecisionPanel.tsx`, 708 LOC) — full risk/signal/fair_value/backtest panel. Currently only used in `SingleStockAnalysisView.tsx:954`.
+  2. `CanonicalWhoIsBuyingBanner` (`src/modules/market-analysis/components/CanonicalWhoIsBuyingBanner.tsx`, 338 LOC) — money_flow / accumulation / phase / who_is_buying banner. Only used in `SingleStockAnalysisView.tsx:581`.
+  3. `DealAdvisorPanel` (`src/components/deal-advisor/DealAdvisorPanel.tsx`) — interactive deal advisor (entry price + qty + R/R). Only used in `SingleStockAnalysisView.tsx:1538`.
+  4. `ChartControls` (`src/modules/market-analysis/components/ChartControls.tsx`) — indicator toggle bar. Only used in `SingleStockAnalysisView`.
+  5. `ComprehensiveStockAnalysis`, `MarketDepthPanel`, `DeepAnalysis`, `StockNews`, `ExpertAnalysisPanel` (in `src/modules/stock-analysis/components/`) — used by `StockDetail.tsx` (`#stock-detail`), NOT by `#trading-chart`.
+  6. Sister component `SingleStockAnalysisView` (1549 LOC) is the COMPLETE analysis layout but is only embedded inside `PersonaTab.tsx:2212` — never directly reachable from a hash route.
+- **Root cause:** `TradingChartView` was originally designed to render `<InteractiveChart>` (which consumed `canonicalProp` / `decisionDataProp` and rendered an analysis §1 header). Per top-of-file comment: "InteractiveChart REMOVED — TradingViewChart is the sole chart." The switch to TradingViewChart (which takes only `ticker`+`stockName`) orphaned all the analysis rendering. The data is still fetched; only the UI was deleted.
+
+---
+Task ID: 1-b
+Agent: Explore (archived interactive chart)
+Task: Find and analyze the archived interactive chart component
+
+Work Log:
+- Read /home/z/my-project/worklog.md tail (8,282 LOC) — confirmed archived InteractiveChart was removed from live codebase (only comments remain in TradingChartView.tsx, SingleStockAnalysisView.tsx, market-analysis/index.ts).
+- Listed /home/z/my-project/archive/ — found interactive-chart module at archive/market-analysis/components/interactive-chart/ (5 files: InteractiveChart.tsx 1,719 LOC + types.ts 182 + utils.ts 142 + indicators.ts 100 + sub-components.tsx 125 + index.ts 27 = ~2,195 LOC total).
+- Also located sibling candidates: archive/garage/src-hooks/useSmartChart.ts (281 LOC data-fetching hook), archive/dead-components-2026-10-08/crypto/CryptoTradingChartView.tsx (wrapper, not a chart itself), archive/wave-2-cleanup-2026-10-01/src/components/advanced-analysis/{FibonacciWidget,CandlestickWidget}.tsx (analysis widgets, not chart), archive/wave-2-cleanup-2026-10-01/src/modules/admin/components/live-chart/index.tsx (LiveStatusBar helpers, not a financial chart).
+- Read all 6 files of the interactive-chart module fully + read live TradingViewChart.tsx (1,895 LOC) header for comparison.
+- Inventoried features: lightweight-charts v5.2.0 library; multi-pane layout (candlestick + volume + RSI + CMF + MACD); 12+ indicators (SMA20/50/200, EMA9/21, BB, RSI, MACD, MACD Projection, CMF, OBV, Vol MA20, Fibonacci auto, Stochastic via live TradingViewChart); 4 chart series types (Candlestick/Line/Histogram/Bar); 25+ price-line overlays (last, entry, SL, TP1/TP2/TP3, support/resistance/pivot, VWAP, Fib 0.618/0.786 Golden Pocket, TP1=1.5R/TP2=3.0R, SMC Order Blocks/FVG/Sweeps); 2 marker systems (BOS arrows + Smart Markers); live candle update via series.update(); crosshair; zoom (mouseWheel/pinch/axisDoubleClickReset) + pan (pressedMouseMove/horzTouchDrag); custom intraday time formatter (DD/MM HH:MM); ResizeObserver; sanitizeCandles (drops null/NaN + sorts + dedupes + suppresses outliers); 7 professional wrapper sections (§1 Decision Header, §2 Regime badge, §3 Chart, §4 Trade Plan, §5 Reasons, §6 Collapsible Tech Details, §7 Rescue CTA).
+- Identified bugs: (1) sub-components.tsx line 1 imports only `React` but uses `useState`, `Gauge`, `ChevronDown` — COMPILE-TIME crash; (2) `signalToArabic` has dead unreachable `return` at line 124 after full if-else chain; (3) ALPHA-RESTORE comment at line 57 documents a prior ReferenceError (CHART_TEXT not defined); (4) useEffect exhaustive-deps eslint-disable at line 1243 — many props used inside (entryPrice/target2Price/target3Price/livePrice/smcData/fusionMetrics/cmfData/macdProjection/smartMarkers/visibleIndicators.ema/obv) are omitted from deps array → chart silently fails to update on prop changes; (5) line 331 uses raw `ohlcv` instead of sanitized `ohlcvClean` for EMA calc; (6) line 1183 hardcodes `const MACD_PANE_INDEX = 1` inside cmfData block — wrong pane index when RSI/CMF panes are conditionally added; (7) createSeriesMarkers(candleSeriesRef.current || candleSeries) race condition; (8) emoji in price-line titles (`🛑 SL`, `🎯 TP1`) can break axis labels; (9) NO user-controlled drawing tools — all "drawing" is data-driven (price lines from props + auto-fib from swing); (10) worklog line 6048 flagged `fmtDateLabel is not a function` runtime bug; (11) heavy prop coupling (35+ props in FullChartProps); (12) live ChartToggle/store.chartPreference now vestigial (InteractiveChart removed, only TradingViewChart renders).
+
+Stage Summary:
+- Best candidate: /home/z/my-project/archive/market-analysis/components/interactive-chart/InteractiveChart.tsx (1,719 LOC, refactored into 5 modules). Library: lightweight-charts v5.2.0 (TradingView's open-source lib, same as live TradingViewChart — already in package.json).
+- Features: see inventory above — comprehensive analysis overlays (multi-pane indicators, SMC zones, V20 Fusion, BOS markers, MACD projection) but ZERO user-controlled drawing tools (no trendline/rectangle/manual fib/text annotation).
+- Problems: compile-time bug in sub-components.tsx (missing imports), exhaustive-deps lint suppression hiding prop-change updates, hardcoded pane index for CMF (wrong pane when RSI missing), emoji in axis labels, dead code, 35+ prop coupling, no tests, no abstraction for panes/overlays/indicators.
+- Reusable: types.ts theme constants, utils.ts (sanitizeCandles/toTime/timeToNumber/formatVolumeData), indicators.ts (calcEMA/calcMACD/calcOBV/calcFibLevels — though should consolidate with @/lib/canonical-rsi + TradingViewChart.tsx local calcs), 7 professional sections (Decision Header/Trade Plan/Reasons/etc), live candle update pattern, last-fit-key ref pattern.
+- Rewrite: main useEffect (1,200+ LOC) → split into composable indicator plugins (useSMA/useRSI/useMACD/...); pane index management → named panes (panesRef.current.rsi); add REAL drawing tools via custom canvas overlay (lightweight-charts v5 has no native drawing API) using chart.timeScale().coordinateToTime + series.coordinateToPrice; add DrawingStore (Zustand with undo/redo + localStorage persistence per ticker+timeframe); externalize Arabic strings → i18n; remove emoji from price-line titles; restore or remove vestigial ChartToggle.
+- Premium chart recommendation: keep lightweight-charts v5 (already installed, performant, TradingView API compatible) + add custom canvas drawing layer. Proposed structure: src/components/premium-chart/ with core/ (useChartInstance/useCandleSeries/usePaneManager), indicators/ (one hook per indicator), overlays/ (price-line-based), markers/, drawing/ (NEW — DrawingCanvas + 7 tools: Trendline/HorizontalLine/VerticalLine/Rectangle/FibRetracement/Brush/TextAnnotation), ui/ (DrawingToolbar/IndicatorPanel/ChartLegend/TimeframeSelector), sections/ (kept from archive). Alternative: klinecharts v9 (30+ built-in drawing tools) — but breaks existing lightweight-charts investment. Stay with lightweight-charts + custom overlay = lower risk.
+
+---
+Task ID: 1-c (chart fix + premium chart)
+Agent: Alpha (main agent)
+Task: إصلاح trading-chart المفقود + بناء مكون شارت تفاعلي جديد
+
+Work Log:
+- استكشفت TradingChartView.tsx (832 LOC) — البيانات كانت محسوبة بس مش معروضة
+- استكشفت archived interactive-chart في archive/market-analysis/components/interactive-chart/ (5 ملفات، 1719 LOC main)
+- وثّقت 14 مشكلة في الـ archived chart + 14 ميزة قابلة لإعادة الاستخدام
+
+المرحلة 1 — إصلاح TradingChartView (تم):
+- أضفت imports لـ CanonicalWhoIsBuyingBanner + InstitutionalDecisionPanel
+- أضفت signalColor + signalArabic helpers
+- أضفت Decision Badge Bar فوق الشارت (signal + score + phase + entry/stop/target + R:R + persona)
+- أضفت InstitutionalDecisionPanel تحت الشارت (إثباتات + خطة تداول)
+- أضفت CanonicalWhoIsBuyingBanner تحت الشارت (سيولة + مرحلة)
+- أضفت زر PenTool للتبديل بين PremiumChart و TradingViewChart
+
+المرحلة 2 — بناء PremiumChart (تم):
+- أنشأت src/components/premium-chart/ بـ 9 ملفات
+- types.ts (370 LOC) — كل الأنواع: ChartData, Drawing, ToolType, ChartTheme, PremiumChartProps
+- utils.ts (180 LOC) — toTime, sanitizeCandles, formatPrice, formatVolumeData
+- indicators.ts (200 LOC) — calcSMA, calcEMA, calcMACD, calcRSI, calcATR, calcBollinger, calcFibLevels
+- drawing/drawing-store.ts (260 LOC) — Zustand store مع undo/redo + localStorage persistence
+- drawing/DrawingCanvas.tsx (610 LOC) — canvas overlay مع pixel↔time/price conversion + 9 renderers + hit-test
+- drawing/DrawingToolbar.tsx (210 LOC) — شريط أدوات رأسي مع 10 أدوات + ألوان + سُمك + أنماط
+- core/useChartTheme.ts (15 LOC) — dark/light theme hook
+- PremiumChart.tsx (350 LOC) — main orchestrator (chart + indicators + trade plan lines + SMC zones)
+- index.ts (55 LOC) — barrel exports
+
+أدوات الرسم المدعومة:
+1. cursor (مؤشر عادي)
+2. trendline (خط اتجاه — نقطتين)
+3. hline (خط أفقي — مستوى سعر)
+4. vline (خط رأسي — مستوى زمني)
+5. rectangle (مستطيل — منطقة)
+6. fib (فيبوناتشي retracement — 7 مستويات)
+7. brush (فرشاة — رسم حر)
+8. text (نص — ملاحظة)
+9. arrow (سهم)
+10. measure (قياس — مسافة + نسبة)
+
+المميزات الإضافية:
+- 8 ألوان (أحمر/أخضر/أزرق/برتقالي/بنفسجي/ذهبي/أبيض/رمادي)
+- 4 سُمك خط (1-4)
+- 4 أنماط خط (solid/dashed/dotted/large_dashed)
+- magnet mode (snap للشموع)
+- undo/redo (Ctrl+Z / Ctrl+Y)
+- delete selected (Delete key)
+- escape للإلغاء
+- right-click للحذف
+- persistence في localStorage حسب `${ticker}__${timeframe}`
+- إظهار/إخفاء الرسومات
+- عداد الرسومات
+
+Stage Summary:
+- ✅ TradingChartView.tsx تم إصلاحه — التحليلات الآن معروضة (signal + score + entry/stop/target + Institutional Decision Panel + Who Is Buying Banner)
+- ✅ PremiumChart component تم بناؤه بالكامل في src/components/premium-chart/ (9 ملفات، ~2250 LOC)
+- ✅ زر تبديل بين PremiumChart (تفاعلي مع رسم) و TradingViewChart (بسيط)
+- ✅ lint ناجح بدون أخطاء
+- ⚠️ مشكلة pre-existing: "module is not defined" في Turbopack — تمنع اختبار المتصفح. موجودة قبل تغييراتي (أكدت بـ git stash test)
+- 🔧 إصلاحات next.config.mjs: أضفت allowedDevOrigins + turbopack config
+
+الملفات المنشأة:
+- src/components/premium-chart/types.ts
+- src/components/premium-chart/utils.ts
+- src/components/premium-chart/indicators.ts
+- src/components/premium-chart/drawing/drawing-store.ts
+- src/components/premium-chart/drawing/DrawingCanvas.tsx
+- src/components/premium-chart/drawing/DrawingToolbar.tsx
+- src/components/premium-chart/core/useChartTheme.ts
+- src/components/premium-chart/PremiumChart.tsx
+- src/components/premium-chart/index.ts
+
+الملفات المعدلة:
+- src/modules/market-analysis/components/TradingChartView.tsx (إضافة تحليلات + زر تبديل)
+- next.config.mjs (allowedDevOrigins + turbopack config)
