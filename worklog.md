@@ -9173,3 +9173,55 @@ Stage Summary:
 - 19/19 tests pass — الفرق الجوهري عن التسليم السابق: tests تثبت الإصلاح فعلاً (مش توثق العيب كـ PASS).
 - لا تعديل على الإنتاج ولا migration.
 - يحتاج موافقة المالك قبل: (1) merge للـ branch، (2) deployment على VPS، (3) schema migration + backfill.
+
+---
+Task ID: RADAR-ENGINE-HISTORICAL-VALIDATION
+Agent: Bravo (Z.ai sandbox)
+Task: Liquidity Radar Engine and Historical Validation — read-only audit.
+
+Work Log:
+- B1: تتبع مسار الإنتاج الفعلي:
+  * UI: LiquidityRadarView.tsx → fetch /api/v2/liquidity-radar
+  * API: route.ts → readRadarCache() (reads JSON file from scripts/output/)
+  * Cache: radar-cache.ts → spawn `python3 scripts/maker_radar.py --json-only`
+  * Engine: scripts/maker_radar.py → imports from vps-service/utils/shared_liquidity.py
+  * Data source: price_history.db.price_history (PRIMARY for EGX, per Rule 12)
+  * Signal tracking: stocks.db.radar_signal_tracking
+  * Outcome verification: src/app/api/maker-radar/signal-tracker/verify/route.ts
+
+- B2: فحص حسابات المحرك (shared_liquidity.py + maker_radar.py):
+  * detect_quiet_accumulation: 6 إشارات (volume recurring + buy pressure + range + vol ratio + ROC + distribution)
+  * detect_pre_surge: 4 إشارات (volume gradient + range + buy days + MA proximity)
+  * is_explosive_surge: 3 شروط (vol surge ≥ 2.0× + price > SMA20 + range < 18%)
+  * is_early_break: 3 شروط (breakout + volume + range)
+  * should_reject_by_liquidity: dynamic threshold + bypass + explosive path
+  * Money flow gate: net_flow_egp < 0 → override to 'distribution'
+
+- B3: اكتشاف BUG جوهري في outcome_7d:
+  * DB outcome_7d محسوب بـ max(close_price) في أول 7 أيام تداول
+  * السلوك الصحيح: close_price في اليوم السابع
+  * الأثر: WR منحازة للأعلى (45.4% DB vs 30.1% ACTUAL)
+  * متوسط العائد أيضاً منحاز (+11.72% DB vs +18.60% ACTUAL)
+  * 10 من 20 إشارة تطابق max(close)، 1 فقط يطابق close_at_day_7
+
+- B4: إعادة حساب الأداء الفعلي (close-at-day-7):
+  * إجمالي: 438 إشارة قابلة للحساب
+  * DB WR: 45.4% | ACTUAL WR: 30.1% (انخفاض 15 نقطة مئوية!)
+  * quiet_accumulation_strong: DB 46.8% → ACTUAL 31.2% (avg +19.39% → +32.00%)
+  * pre_surge: DB 45.2% → ACTUAL 29.5% (avg -0.60% → -3.14%)
+  * A_pre_surge: DB 37.5% → ACTUAL 25.0%
+  * explosive_surge: DB 66.7% → ACTUAL 0.0% (3 إشارات كلها خسرت!)
+
+- B5: اكتشافات إضافية:
+  * MENA: stock split (6.50 → 129.00) → outcome_7d = +1853.85% (خاطئ، لم يتم تعديله للسبليت)
+  * POUL: entry=38.20 → actual close next day = 9.71 (انخفاض 74% — سبليت أو خطأ بيانات)
+  * ORHD: entry=40.67 → actual close = 12.00 (انخفاض 70% — سبليت)
+  * هذه الـ splits تلوث الإحصائيات: 3 إشارات بـ outcome > 1000% أو < -50%
+
+Stage Summary:
+- المحرك الفعلي: scripts/maker_radar.py + vps-service/utils/shared_liquidity.py
+- BUG #1 (مؤكد): outcome_7d = max(close) مش close_at_day_7 → WR منحازة +15 نقطة
+- BUG #2 (مؤكد): stock splits مش متعالج → outcomes خاطئة (>1000% or <-50%)
+- BUG #3 (مشتبه): 9 من 20 إشارة لا تطابق max(close) ولا close_at_day_7 → مصدر بيانات مختلف
+- الأداء الفعلي: WR 30.1% (مش 45.4%) — الرادار بيصنف بيانات لا تثبت ميزة تنبؤية واضحة
+- لا تعديل على الإنتاج. لا تعديل على الكود. قراءة فقط.
