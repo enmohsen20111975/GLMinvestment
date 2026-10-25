@@ -701,204 +701,125 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
     # Phase 7.1: migrated to db_manager (writable=True)
-    # P0-FINAL: use proper `with` statement for connection lifecycle.
-    # Previously: conn = db_manager.connection(...).__enter__() + manual conn.close()
-    # → did not call __exit__, leaked generator state, risked unclosed connections.
     from core.db_manager import db_manager
-    with db_manager.connection(str(db_path), writable=True) as conn:
+    conn = db_manager.connection(str(db_path), writable=True).__enter__()
 
-        # تأكد إن الجدول موجود
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS radar_signal_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticker TEXT NOT NULL,
-                signal_date TEXT NOT NULL,
-                signal_type TEXT NOT NULL,
-                entry_price REAL NOT NULL,
-                path TEXT,
-                reason TEXT,
-                status TEXT DEFAULT 'pending',
-                outcome_7d REAL,
-                outcome_14d REAL,
-                outcome_30d REAL,
-                max_price_after REAL,
-                min_price_after REAL,
-                verified_at TEXT,
-                created_at TEXT DEFAULT (datetime('now'))
-            )
-        """)
-        # Task FIX-STALE-DTPP-2026-10-07: إضافة أعمدة freshness
-        # نضيفهم بـ ALTER TABLE ADD COLUMN عشان الجدول ممكن يكون موجود بالفعل
-        new_cols = {
-            'data_date': 'TEXT',          # تاريخ آخر إغلاق مستخدم لحساب entry_price
-            'data_quality': 'TEXT',        # fresh / stale / very_stale / unknown
-            'staleness_days': 'INTEGER',   # كم يوم قديم
-            'price_source': 'TEXT',        # live / daily
-            'live_price': 'REAL',          # السعر الحي إن وجد
-            'daily_price': 'REAL',         # السعر التاريخي الأصلي قبل override
-            # P0-DELETE-OWNERSHIP-FIX: source column for explicit record ownership.
-            # Allows scoped DELETE (maker_radar only deletes its own rows).
-            'source': "TEXT DEFAULT NULL",
-        }
-        cur = conn.execute("PRAGMA table_info(radar_signal_tracking)")
-        existing_cols = {row[1] for row in cur.fetchall()}
-        for col_name, col_type in new_cols.items():
-            if col_name not in existing_cols:
-                try:
-                    conn.execute(f"ALTER TABLE radar_signal_tracking ADD COLUMN {col_name} {col_type}")
-                    log(f"  ✓ Added column {col_name} ({col_type}) to radar_signal_tracking")
-                except Exception as e:
-                    log(f"  ⚠️ Could not add column {col_name}: {e}")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_ticker ON radar_signal_tracking(ticker)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_date ON radar_signal_tracking(signal_date)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_status ON radar_signal_tracking(status)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_quality ON radar_signal_tracking(data_quality)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_source ON radar_signal_tracking(source)")
-
-        # P0-UNIQUE: Add UNIQUE index on (ticker, signal_date, signal_type, source).
-        # This eliminates race conditions in concurrent maker_radar runs.
-        # Safe on production: audit confirmed 0 duplicates under this key.
-        # FAIL-CLOSED: if index creation fails, we abort the write path entirely.
-        # Do NOT continue writing without the uniqueness guarantee — that would
-        # reintroduce the race condition the fix is designed to prevent.
-        try:
-            conn.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS idx_radar_unique_owner
-                ON radar_signal_tracking(ticker, signal_date, signal_type, source)
-            """)
-        except sqlite3.Error as e:
-            # Catch ALL SQLite errors (IntegrityError, OperationalError, DatabaseError, etc.)
-            # — not just IntegrityError. Any failure to create the UNIQUE index means
-            # we cannot guarantee uniqueness, so we must abort the write path entirely.
-            log(f"  ❌ FATAL: UNIQUE index creation failed: {type(e).__name__}: {e}")
-            log(f"  ❌ Aborting _track_signals_to_db — uniqueness cannot be guaranteed.")
+    # تأكد إن الجدول موجود
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS radar_signal_tracking (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            signal_date TEXT NOT NULL,
+            signal_type TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            path TEXT,
+            reason TEXT,
+            status TEXT DEFAULT 'pending',
+            outcome_7d REAL,
+            outcome_14d REAL,
+            outcome_30d REAL,
+            max_price_after REAL,
+            min_price_after REAL,
+            verified_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    # Task FIX-STALE-DTPP-2026-10-07: إضافة أعمدة freshness
+    # نضيفهم بـ ALTER TABLE ADD COLUMN عشان الجدول ممكن يكون موجود بالفعل
+    new_cols = {
+        'data_date': 'TEXT',          # تاريخ آخر إغلاق مستخدم لحساب entry_price
+        'data_quality': 'TEXT',        # fresh / stale / very_stale / unknown
+        'staleness_days': 'INTEGER',   # كم يوم قديم
+        'price_source': 'TEXT',        # live / daily
+        'live_price': 'REAL',          # السعر الحي إن وجد
+        'daily_price': 'REAL',         # السعر التاريخي الأصلي قبل override
+        # P0-DELETE-OWNERSHIP-FIX: source column for explicit record ownership.
+        # Allows scoped DELETE (maker_radar only deletes its own rows).
+        'source': "TEXT DEFAULT 'maker_radar'",
+    }
+    cur = conn.execute("PRAGMA table_info(radar_signal_tracking)")
+    existing_cols = {row[1] for row in cur.fetchall()}
+    for col_name, col_type in new_cols.items():
+        if col_name not in existing_cols:
             try:
-                conn.rollback()
-            except Exception:
-                pass
-            conn.close()
-            return
+                conn.execute(f"ALTER TABLE radar_signal_tracking ADD COLUMN {col_name} {col_type}")
+                log(f"  ✓ Added column {col_name} ({col_type}) to radar_signal_tracking")
+            except Exception as e:
+                log(f"  ⚠️ Could not add column {col_name}: {e}")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_ticker ON radar_signal_tracking(ticker)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_date ON radar_signal_tracking(signal_date)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_status ON radar_signal_tracking(status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_quality ON radar_signal_tracking(data_quality)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_source ON radar_signal_tracking(source)")
 
-        # P0-COMPLETE-FIX: Create history table for intraday signal evolution.
-        # When signal_type changes for a ticker on a given date, the PREVIOUS signal
-        # is inserted here before the current row is UPDATEd. This preserves the
-        # full intraday evolution without bloating the main tracking table.
+    # P0-DELETE-OWNERSHIP-FIX: scoped DELETE — maker_radar only deletes its OWN rows.
+    # Previously: DELETE WHERE signal_date=? (wiped ALL rows for the date, including
+    # rows owned by state_history_tracker (canonical_state) and frontend picks).
+    # Now: only rows with source='maker_radar' are deleted. Other writers' rows survive.
+    # Backward compat: existing rows (before this fix) have source='maker_radar' (DEFAULT),
+    # so they are still cleaned up correctly.
+    conn.execute(
+        "DELETE FROM radar_signal_tracking WHERE signal_date = ? AND source = 'maker_radar'",
+        (scan_date,)
+    )
+
+    inserted = 0
+    for stock in under_microscope:
+        ticker = stock.get('ticker', '')
+        if not ticker:
+            continue
+
+        path = stock.get('path', '')
+        entry_price = stock.get('current_price', 0) or 0
+        reason = stock.get('reason', '')[:500] if stock.get('reason') else ''
+
+        # تحديد signal_type بناءً على path
+        signal_type = path or 'unknown'
+
+        # إضافة معلومات إضافية في reason
+        money_flow = stock.get('money_flow_state', '')
+        buy_pct = stock.get('buy_pct', 0)
+        kill_switch = stock.get('kill_switch', False)
+        kill_reason = stock.get('kill_reason', '')
+
+        full_reason = reason
+        if money_flow:
+            full_reason += f' | {money_flow}'
+        if buy_pct:
+            full_reason += f' | buy={buy_pct:.0f}%'
+        if kill_switch:
+            full_reason += f' | ⚠️ KILL: {kill_reason}'
+
+        # Task FIX-STALE-DTPP-2026-10-07: store freshness metadata
+        data_date = stock.get('data_date', '') or ''
+        data_quality = stock.get('data_quality', 'unknown') or 'unknown'
+        staleness_days = stock.get('staleness_days')
+        price_source = stock.get('price_source', 'daily') or 'daily'
+        live_price = stock.get('live_price')
+        daily_price = stock.get('daily_price')
+
+        # لو البيانات قديمة جداً → نضيف تحذير صريح في reason + status = stale_data
+        if stock.get('data_stale') and staleness_days and staleness_days > 1:
+            stale_note = f' | ⚠️ DATA STALE ({staleness_days}d, src={price_source}, date={data_date})'
+            full_reason = (full_reason + stale_note)[:500]
+            # لو قديم جداً (>3 أيام) → status=stale_data بدلاً من pending
+            initial_status = 'stale_data' if staleness_days > 3 else 'pending'
+        else:
+            initial_status = 'pending'
+
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS radar_signal_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticker TEXT NOT NULL,
-                signal_date TEXT NOT NULL,
-                signal_type TEXT NOT NULL,
-                entry_price REAL,
-                path TEXT,
-                reason TEXT,
-                status TEXT,
-                run_timestamp TEXT DEFAULT (datetime('now')),
-                source TEXT DEFAULT NULL
-            )
-        """)
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_hist_ticker_date ON radar_signal_history(ticker, signal_date)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_hist_source ON radar_signal_history(source)")
+            INSERT INTO radar_signal_tracking
+                (ticker, signal_date, signal_type, entry_price, path, reason, status,
+                 data_date, data_quality, staleness_days, price_source, live_price, daily_price,
+                 source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'maker_radar')
+        """, (ticker, scan_date, signal_type, entry_price, path, full_reason[:500], initial_status,
+              data_date, data_quality, staleness_days, price_source, live_price, daily_price))
+        inserted += 1
 
-        # P0-COMPLETE-FIX: No more DELETE before INSERT.
-        # Previously: DELETE WHERE signal_date=? (wiped ALL rows including other owners').
-        # Then: DELETE WHERE signal_date=? AND source='maker_radar' (still wiped maker_radar rows, losing verification).
-        # Now: UPSERT pattern — UPDATE existing rows (preserving verification fields),
-        # INSERT only if row doesn't exist. History is logged in radar_signal_history.
-        # This preserves:
-        #   1. Verification data (outcome_7d, outcome_14d, outcome_30d, verified_at, etc.)
-        #   2. Intraday evolution (previous signal_type logged in history table)
-        #   3. Other owners' rows (no DELETE at all)
-
-        inserted = 0
-        updated = 0
-        for stock in under_microscope:
-            ticker = stock.get('ticker', '')
-            if not ticker:
-                continue
-
-            path = stock.get('path', '')
-            entry_price = stock.get('current_price', 0) or 0
-            reason = stock.get('reason', '')[:500] if stock.get('reason') else ''
-
-            # تحديد signal_type بناءً على path
-            signal_type = path or 'unknown'
-
-            # إضافة معلومات إضافية في reason
-            money_flow = stock.get('money_flow_state', '')
-            buy_pct = stock.get('buy_pct', 0)
-            kill_switch = stock.get('kill_switch', False)
-            kill_reason = stock.get('kill_reason', '')
-
-            full_reason = reason
-            if money_flow:
-                full_reason += f' | {money_flow}'
-            if buy_pct:
-                full_reason += f' | buy={buy_pct:.0f}%'
-            if kill_switch:
-                full_reason += f' | ⚠️ KILL: {kill_reason}'
-
-            # Task FIX-STALE-DTPP-2026-10-07: store freshness metadata
-            data_date = stock.get('data_date', '') or ''
-            data_quality = stock.get('data_quality', 'unknown') or 'unknown'
-            staleness_days = stock.get('staleness_days')
-            price_source = stock.get('price_source', 'daily') or 'daily'
-            live_price = stock.get('live_price')
-            daily_price = stock.get('daily_price')
-
-            # لو البيانات قديمة جداً → نضيف تحذير صريح في reason + status = stale_data
-            if stock.get('data_stale') and staleness_days and staleness_days > 1:
-                stale_note = f' | ⚠️ DATA STALE ({staleness_days}d, src={price_source}, date={data_date})'
-                full_reason = (full_reason + stale_note)[:500]
-                # لو قديم جداً (>3 أيام) → status=stale_data بدلاً من pending
-                initial_status = 'stale_data' if staleness_days > 3 else 'pending'
-            else:
-                initial_status = 'pending'
-
-            # P0-ATOMIC-UPSERT: Atomic upsert with UNIQUE constraint.
-            # With UNIQUE on (ticker, signal_date, signal_type, source), the INSERT
-            # will fail atomically if a row already exists. We catch the
-            # IntegrityError, verify it's a UNIQUE constraint violation (not some
-            # other error), then fall back to UPDATE — and verify the UPDATE
-            # affected exactly 1 row. If not, we raise a real error.
-            try:
-                conn.execute("""
-                    INSERT INTO radar_signal_tracking
-                        (ticker, signal_date, signal_type, entry_price, path, reason, status,
-                         data_date, data_quality, staleness_days, price_source, live_price, daily_price,
-                         source)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'maker_radar')
-                """, (ticker, scan_date, signal_type, entry_price, path, full_reason[:500], initial_status,
-                      data_date, data_quality, staleness_days, price_source, live_price, daily_price))
-                inserted += 1
-            except sqlite3.IntegrityError as e:
-                # Verify this is a UNIQUE constraint violation, not some other error.
-                # SQLite error message for UNIQUE violation contains "UNIQUE constraint failed".
-                if 'UNIQUE constraint failed' not in str(e):
-                    # Different IntegrityError (e.g., NOT NULL, CHECK, FOREIGN KEY).
-                    # Do NOT silently convert to UPDATE — raise to surface the real issue.
-                    log(f"  ❌ INSERT failed with non-UNIQUE IntegrityError: {e}")
-                    raise
-
-                # UNIQUE conflict → row already exists. Fall back to UPDATE.
-                cursor = conn.execute("""
-                    UPDATE radar_signal_tracking
-                    SET entry_price=?, path=?, reason=?,
-                        data_date=?, data_quality=?, staleness_days=?, price_source=?, live_price=?, daily_price=?
-                    WHERE ticker=? AND signal_date=? AND signal_type=? AND source='maker_radar'
-                """, (entry_price, path, full_reason[:500],
-                      data_date, data_quality, staleness_days, price_source, live_price, daily_price,
-                      ticker, scan_date, signal_type))
-                rows_affected = cursor.rowcount
-                if rows_affected != 1:
-                    # UPDATE affected 0 rows (row disappeared between INSERT and UPDATE?)
-                    # or >1 rows (shouldn't happen with UNIQUE, but defensive).
-                    log(f"  ❌ FATAL: UPDATE fallback affected {rows_affected} rows (expected 1) for {ticker} {signal_type}")
-                    raise RuntimeError(f"UPDATE fallback affected {rows_affected} rows, expected 1")
-                updated += 1
-
-        conn.commit()
-    log(f"📝 Signal tracking: {inserted} new + {updated} updated in radar_signal_tracking (date={scan_date})")
+    conn.commit()
+    conn.close()
+    log(f"📝 Signal tracking: {inserted} signals saved to radar_signal_tracking (date={scan_date})")
 
 
 # ============================================================================
