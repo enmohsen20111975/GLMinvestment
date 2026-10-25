@@ -338,3 +338,46 @@ Cannot close until both Bravo (Part A) and Alpha (Part B3+B4) are complete.
 ---
 
 *This test plan is updated with actual execution results. No PASS was recorded without execution. No test was marked PASS based on code review alone — Test 3 is explicitly "shape level only".*
+
+---
+
+## 6. B3 — Independent Static Review of Bravo Branch (PRELIMINARY)
+
+**Review date:** 2026-10-26  
+**Branch reviewed:** `fix/radar-forensic-minimal`  
+**Commit reviewed:** `532180e3a9ac3abd844e8214e0ac495b15afa9a0`  
+**Status:** ⚠️ PARTIAL — static source review only; no DB-backed runtime/UI verification performed.
+
+### Findings that block acceptance
+
+| ID | Severity | Finding | Evidence / Impact |
+|---|---|---|---|
+| B3-01 | BLOCKER | The TypeScript verification route still reads price sources without a market predicate. | `src/app/api/maker-radar/signal-tracker/verify/route.ts`, `fetchPricesAfter()`: SQL filters ticker/date/positive close only. The route can still consume cross-market rows. |
+| B3-02 | BLOCKER | `radar_accuracy_report.py` still merges the four configured price sources without market isolation. | `PRICE_DBS` and `build_price_index()` read ticker/date/close without checking/filtering `market`. The 28.6% figure is not established as a clean EGX-only win rate by this script. |
+| B3-03 | BLOCKER | The legacy fallback path in `verify_radar_signals.py` is not consistently isolated. | `_fetch_price_from_sources()` performs source queries without a market predicate; `get_price_after()` retains a calendar-day fallback when the trading-session fetch returns no result. |
+| B3-04 | BLOCKER | Signal entry-price creation is not shown to be fixed by C2. | The lineage report identifies `scripts/maker_radar.py` as reading `stock_daily_prices` without a market filter. The reported C2 change lists only `verify_radar_signals.py` and `generate_unified_audit.py`; this leaves entry-price contamination unresolved unless separately fixed and evidenced. |
+| B3-05 | BLOCKER | Regression tests do not cover every claimed consumer. | `test_c4_regression.py` exercises the new Python fetch/audit path, not the TypeScript verification route, `radar_accuracy_report.py`, or entry-price generation. Therefore 12/12 PASS cannot establish whole-pipeline market isolation. |
+| B3-06 | BLOCKER | Session correctness remains unresolved even when market='EGX'. | Bravo's report acknowledges Saturday rows in `historical_data` tagged EGX and the unresolved 2026-10-15 market-wide gap. A market filter alone does not validate the EGX trading calendar. |
+| B3-07 | BLOCKER | Corporate-action correctness is not established. | POUL factor remains unresolved and ORHD adjustment handling is not demonstrated end-to-end. Returns crossing corporate actions can be materially wrong. |
+
+### Repository integrity note
+
+A compare request between `main` and `fix/radar-forensic-minimal` returned **404: No common ancestor**. This requires explanation before integration: verify whether the branch was recreated/orphaned or whether the compare endpoint/ref is incorrect. Do not merge or reset either branch until the actual ancestry and changed-file inventory are inspected.
+
+### What was verified vs. not verified
+
+- **Verified by source inspection:** the Python new-path filter exists; the TypeScript verifier and historical accuracy builder still lack market predicates in the inspected code.
+- **Not verified:** actual DB row counts, cache-to-UI consistency, displayed prices, outcome recalculation, tests claimed in Bravo's report, and production behavior. No DBs were mounted in this review and no test command was executed here.
+- **Win rate:** 28.6% remains **PRELIMINARY / NOT ACCEPTED**. It must be reproduced with a single explicit EGX-only source policy, valid trading sessions, corporate-action treatment, and a defined stale-data inclusion rule.
+
+### Required closure tests
+
+1. Add/execute regression tests proving market isolation in **every** consumer: entry-price creation, Python verifier normal path and fallback, TypeScript verifier, and `radar_accuracy_report.py`.
+2. Ensure all queries select the correct market and that fallback sources cannot silently bypass the market filter.
+3. Test with controlled isolated fixtures containing the same ticker/date tagged EGX and US, plus EGX-tagged weekend rows. Assert the exact selected source/date/price.
+4. Validate the Oct 15 gap against an authoritative EGX calendar/source and document the result; do not infer a holiday from missing data.
+5. Verify corporate-action-adjusted price continuity for POUL and ORHD from documented official factors before recomputing outcomes.
+6. Re-run UI Tests 1, 2, 4, 5 and 7 only after the required DB/cache inputs exist; compare the same ticker/date/price/status across UI, API, and canonical source.
+
+**B3 decision:** `BLOCKED — STATIC REVIEW FOUND UNFIXED CONSUMER PATHS`.  
+**Part C decision:** `BLOCKED` until branch ancestry is explained, the listed paths are fixed and tested, and Alpha's DB-backed UI tests can run against the same candidate commit.
