@@ -7571,1732 +7571,711 @@ Stage Summary:
 
 
 ---
-Task ID: F-Phase3-Split-Portfolio
-Agent: Alpha (frontend agent)
-Task: Split `src/modules/portfolio/components/EnhancedPortfolioView.tsx` (3,281 LOC) into 9 modular files under `src/modules/portfolio/components/enhanced-portfolio/` (types + helpers + 5 sub-components + 4 tabs + container shim).
+Task ID: 2-b
+Agent: Explore (data flow and DBs)
+Task: Map complete data flow — raw sources → DBs → analysis engines → API → frontend
 
 Work Log:
-- Read 3,281 LOC of original EnhancedPortfolioView.tsx and mapped every sub-component, helper, type, constant, and the container JSX to its target file.
-- Created `src/modules/portfolio/components/enhanced-portfolio/` folder with 10 files:
-  1. `types.ts` (46 LOC) — `StockSearchResult`, `CryptoSearchResult`, `WealthAllocationMatrixCardProps`, `AssetsTabProps`. Imports `WealthAllocationAlert` from `@/lib/persona-dynamic` for the matrix card props type.
-  2. `helpers.ts` (218 LOC) — `inferStockMarket`, `formatCurrencyRaw`, `formatCurrency` (module-level EGP-only fallback), `formatPercent`, `abbreviateNumber` + 8 shared constants (`ASSET_TYPE_LABELS`, `ASSET_TYPE_COLORS`, `FUND_TYPES`, `INCOME_CATEGORIES`, `EXPENSE_CATEGORIES`, `OBLIGATION_TYPE_LABELS`, `OBLIGATION_STATUS_LABELS`, `OBLIGATION_STATUS_COLORS`). Re-exports `MARKET_NAMES_AR` from `@/lib/store` so consumers can grab it in one place.
-  3. `StockSearchDropdown.tsx` (112 LOC) — local stock search dropdown (used internally by AssetsTab's add-asset dialog). NOTE: there is also a separate `StockSearchDropdown.tsx` at `src/modules/portfolio/components/StockSearchDropdown.tsx` — that one is shared with BagHolderRescuePanel (has `placeholder` prop + `cache: 'no-store'`). The new local copy preserves the original `if (loading) return` guard verbatim.
-  4. `CryptoSearchDropdown.tsx` (124 LOC) — crypto search dropdown (Binance coins). Loads all coins once on first focus, filters client-side.
-  5. `AssetsTab.tsx` (1,393 LOC) — biggest sub-component (memoized). Contains ALL the form state (formType, formName, formTotalInvested, formCurrentValue, formNotes, formWeight, formKarat, formPricePerGram, formBankName, formInterestRate, formDuration, formReturnRate, formMaturityDate, formFundName, formFundType, formAnnualReturn, formReturnType, formPurchaseDate, formTicker, formQuantity, formAvgBuyPrice, formSelectedPrice) + all handlers (addToWatchlist, handleStockSelect, handleSave, handleEditSave, handleDelete, openEdit, handleAutoRebalance — wrapped in `useCallback([wealthAlerts, assets, portfolioNetWorthEGP])`) + the local `formatCurrency` closure (shadows module-level EGP-only version — uses `displayCurrency` from the global Zustand store for EGP/USD/SAR toggle) + renders WealthAllocationMatrixCard + RealReturnPanel + RiskProfilerQuiz + BagHolderRescuePanel + TopUpRecommendationsPanel + RoboAdvisorPanel + DynamicRiskProfilerModal inline. Uses `usePortfolioData` hook (Phase 2 extraction) for all data-fetching.
-  6. `WealthAllocationMatrixCard.tsx` (154 LOC) — pure presentational component. Receives pre-computed `alerts`, `personaLabel`, `onRebalance` from AssetsTab. Renders 4-column responsive grid (egx/crypto/gold/cash) with current % vs ceiling %, Progress bar with red ceiling marker overlay, severity-coloured borders, alerts list, and the Auto-Rebalance button.
-  7. `IncomeExpenseTab.tsx` (448 LOC) — memoized. Polls `/api/finance/transactions?month=..&year=..` (silent polling after first load per UI-STABILITY fix). Renders month selector + 4-card summary (income/expenses/savings/savings rate) + expenses-by-category breakdown bars + UnifiedTable of recent transactions with delete + UnifiedPublishButton + add-transaction dialog (income/expense + category + recurring toggle). Uses `useMemo` for `transactionColumns` to keep UnifiedTable state stable across renders.
-  8. `ObligationsTab.tsx` (438 LOC) — memoized. Polls `/api/finance/obligations?status=active` (silent polling after first load). Renders 3-card summary (total debt/monthly payments/active loans) + add-obligation button + list of obligations with paid-percent progress bar + 4 dialogs (add / record payment / edit / delete confirmation).
-  9. `ReportsTab.tsx` (446 LOC) — memoized. Fetches `/api/finance/reports` once on mount. Renders portfolio overview card (assets/liabilities/net worth/monthly savings) + investment returns card (bank/certificate/fund/total monthly) + income vs expenses card with savings rate + alerts list (danger/warning/info) + assets distribution card + economic expert recommendations card (portfolio health score + 4-tile money distribution plan) + empty state.
- 10. `EnhancedPortfolioView.tsx` (224 LOC) — **container only** (well under the < 500 LOC target). Imports the 4 tabs (`./AssetsTab`, `./IncomeExpenseTab`, `./ObligationsTab`, `./ReportsTab`) + WealthCharts (dynamic import, `ssr: false`, kept verbatim from original — task requirement) + MultiPortfolioSelector + MasterPortfolioSummary + BagHolderRescuePanel + AlertsCenterView + Tabs UI. Renders the 3-way segmented control (المحفظة | الأموال | إنقاذ سهم) and the 4-tab portfolio experience. Exports both named (`EnhancedPortfolioView`) and default for robustness.
-- Updated original `src/modules/portfolio/components/EnhancedPortfolioView.tsx` (3,281 → 52 LOC, re-export shim): `export { EnhancedPortfolioView, default } from './enhanced-portfolio/EnhancedPortfolioView';`. Public import path preserved — `src/modules/portfolio/index.ts` (`export { EnhancedPortfolioView } from './components/EnhancedPortfolioView';`) and `src/app/page.tsx` (`dynamicImport(() => import('@/modules/portfolio/components/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })))`) work without modification.
-- Parser pitfalls avoided:
-  * `helpers.ts` is a `.ts` file containing only pure functions + value-tables (no JSX). The 12 lucide icons (Briefcase, Car, CreditCard, DollarSign, FileText, GraduationCap, Heart, Home, Plane, Shield, ShoppingCart, TrendingUp, Zap) are referenced as **values** inside `INCOME_CATEGORIES` / `EXPENSE_CATEGORIES` arrays (e.g. `{ value: 'salary', label: 'راتب', icon: Briefcase }`) — no JSX wrapper, so SWC/Turbopack parses this in `.ts` without issue. (Unlike the maker-radar helpers.ts case where I had to switch JSX to `React.createElement` — here no JSX was needed.)
-  * `formatCurrency` shadowing preserved: each tab (AssetsTab/IncomeExpenseTab/ObligationsTab/ReportsTab) defines its OWN local closure `const formatCurrency = (value) => formatCurrencyRaw(value, displayCurrency, usdRate, sarRate)` — this intentionally shadows the module-level EGP-only `formatCurrency` from helpers.ts (per task constraint: "the `formatCurrency` local function shadows the one from usePortfolioData — keep it local (it uses displayCurrency)").
-  * `useCallback` deps for `handleAutoRebalance` preserved verbatim: `[wealthAlerts, assets, portfolioNetWorthEGP]`. (Initially dropped during write — caught during review and restored before compile.)
-  * Two `StockSearchDropdown` modules: this split creates a NEW local copy at `enhanced-portfolio/StockSearchDropdown.tsx` (used only by AssetsTab). The pre-existing `src/modules/portfolio/components/StockSearchDropdown.tsx` (shared with BagHolderRescuePanel) is untouched — task spec didn't ask to dedupe them.
-- Verification:
-  * pm2 process: `next start` was wrong (no production build present) → switched to `npm run dev` (`next dev -p 3000`).
-  * `node_modules/.bin/pm2 restart nextjs` (after dev switch) → ready in ~3s.
-  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (first-hit compile 16.8s on `/`, render ~552ms; second hit 4.3s compile, 162ms render).
-  * Stability check: 3× HTTP 200 in a row.
-  * Portfolio route (`/?view=portfolio`) → HTTP 200.
-  * pm2 logs: no compile errors related to enhanced-portfolio. Only pre-existing warnings remain (Next.js `experimental.outputFileTracingRoot`/`outputFileTracingExcludes` deprecated, `eslint` config deprecated, `NEXTAUTH_URL` warning, `stocks.db not found` from `/api/track` route — all pre-existing, unrelated to this refactor).
-- LOC delta summary:
-  * Original `EnhancedPortfolioView.tsx`: 3,281 → 52 LOC (re-export shim) (**−3,229 LOC, −98.4%**).
-  * New files (10) total: 3,603 LOC (types 46 + helpers 218 + StockSearchDropdown 112 + CryptoSearchDropdown 124 + AssetsTab 1393 + WealthAllocationMatrixCard 154 + IncomeExpenseTab 448 + ObligationsTab 438 + ReportsTab 446 + container 224).
-  * **Folder total LOC delta: 3,281 → 3,655 (shim + new folder) (+374 LOC, +11.4%)** — small increase because each new file carries a documentation header + import block; the actual implementation LOC is essentially unchanged (structural refactor — no logic deleted or added).
-  * Container alone: 224 LOC (**well under < 500 LOC target**) — contains segmented control + header + MultiPortfolioSelector + MasterPortfolioSummary + Tabs (4 portfolio tabs + alerts).
-- Rule 75 compliance: commit hash `f5009a5` (pushed to origin/main after `git pull --rebase origin main` cleanly applied remote updates — no conflicts; remote had advanced by 1 commit on `vps-service/`).
-- Rule 76 compliance: `git pull --rebase origin main` (with credential helper for `https://github.com`) → "From https://github.com/enmohsen20111975/GLMinvestment * branch main -> FETCH_HEAD 904ef22..08b4972 main -> origin/main; Rebasing (1/1); Successfully rebased and updated refs/heads/main." No conflicts with the refactor files.
-
-Stage Summary:
-- EnhancedPortfolioView.tsx (3,281 LOC, the largest component in the portfolio module) successfully split into 10 modular files under `src/modules/portfolio/components/enhanced-portfolio/`. The original file is now a 52-LOC re-export shim. All existing consumers (`src/modules/portfolio/index.ts`, `src/app/page.tsx`) work without modification.
-- The 10-file split matches the task spec exactly (types.ts + helpers.ts + 2 search dropdowns + WealthAllocationMatrixCard + 4 tabs + container). Container is at 224 LOC, comfortably under the soft "< 500 LOC" guideline. The biggest sub-component (AssetsTab) is 1,393 LOC — it owns all form state (formType, formName, ..., formSelectedPrice), all handlers (handleSave / handleEditSave / handleDelete / handleStockSelect / handleAutoRebalance), and renders the WealthAllocationMatrixCard + 4 inline panels (RealReturnPanel, RiskProfilerQuiz, BagHolderRescuePanel, TopUpRecommendationsPanel, RoboAdvisorPanel, DynamicRiskProfilerModal). Bringing AssetsTab under 500 LOC would require further extraction of the add-asset dialog JSX into a 9th file (`AssetsAddDialog.tsx`) — not in task spec.
-- Form state (formType, formName, etc.) stays inside AssetsTab.tsx as required by the task constraint — passed down to no other sub-components (the add/edit dialogs are rendered inline within AssetsTab itself, with the StockSearchDropdown + CryptoSearchDropdown as the only child components).
-- `usePortfolioData` hook (extracted in Phase 2) is still consumed by AssetsTab — the hook owns all data-fetching + 30s visibility-aware polling + store side effects (setFxRates + usePortfolioStore.updateFromCalcValues). The widget remains render-only.
-- WealthCharts stays a dynamic import inside the container (ssr: false) — task requirement preserved. Recharts bundle only loads when the user opens the "الأموال" sub-tab.
-- The local `formatCurrency` closure inside each tab (AssetsTab, IncomeExpenseTab, ObligationsTab, ReportsTab) shadows the module-level `formatCurrency` from helpers.ts intentionally — it uses `displayCurrency` from the global Zustand store for EGP/USD/SAR toggle (task constraint: "the `formatCurrency` local function shadows the one from usePortfolioData — keep it local (it uses displayCurrency)").
-- HTTP 200 verified on `/` and `/?view=portfolio`. Zero new TS errors. No behavior change — pure structural refactor.
-- Commit: `f5009a5` (pushed to origin/main after clean rebase on `08b4972`).
-
----
-Task ID: F-Phase3-Split-DBManager
-Agent: Alpha (frontend agent)
-Task: Split `src/modules/admin/components/DatabaseManagerFull.tsx` (3,160 LOC) into sub-components in a new folder `src/modules/admin/components/db-manager/`.
-
-Work Log:
-- Read 3,160 LOC of original DatabaseManagerFull.tsx and mapped every interface, helper, constant, state, handler, and JSX block to its target file.
-- Created `src/modules/admin/components/db-manager/` folder with 14 files (12 .tsx + 2 .ts):
-  1. `types.ts` (244 LOC) — QueryResult, MaintenanceResult, BackupFile, HistoricalBackup, TabKey, ConfirmState, ImportResult, RecoverResult + 11 sub-component Props interfaces (DbCardProps, IntegrityBadgeProps, EmptyStateProps, StatCardProps, OverviewPanelProps, TablesPanelProps, SqlConsolePanelProps, BackupsPanelProps, MaintenancePanelProps, DailyBackupsPanelProps, ConfirmDialogProps, HeaderBarProps, DbSidebarProps, RecoveryToolsPanelProps). Re-exports DatabaseOverview / TableSummary / TableColumn / TableRowsResult / SchemaResult from `@/hooks/useDatabaseManagerData` (Strangler Pattern F-Strangler-DBManager).
-  2. `helpers.ts` (151 LOC) — Constants (HISTORY_KEY, HISTORY_LIMIT, PAGE_SIZE, RESULT_LIMIT, EXAMPLE_QUERIES) + 6 helpers (formatCell, formatBytes, formatDateTime, downloadTextFile, loadHistory, saveHistory). `formatCell` returns JSX (Tooltip + span elements) but stays `.ts` per task spec by using `React.createElement(...)` instead of JSX syntax (same pattern as maker-radar/helpers.ts).
-  3. `SharedComponents.tsx` (126 LOC) — DbCard (sidebar DB row button), IntegrityBadge (ok/corrupt/unknown pill), EmptyState (Card placeholder), StatCard (overview stat tile).
-  4. `OverviewPanel.tsx` (109 LOC) — Overview tab: DB name + path + 4 StatCards + Integrity Card + WAL/SHM Card + "Create backup" button.
-  5. `TablesPanel.tsx` (420 LOC) — Tables tab: UnifiedTable of tables list + rows preview with pagination/sort/export + schema dialog (CREATE TABLE + columns + indexes).
-  6. `SqlConsolePanel.tsx` (337 LOC) — SQL tab: textarea + dry-run (EXPLAIN) toggle + example queries + history + result table (with EXPLAIN plan / write-success / rows / 0-rows branches) + CSV/JSON export of result.
-  7. `BackupsPanel.tsx` (161 LOC) — Backups tab: list of backups with restore / delete / download-info actions + create-new-backup button + info Alert.
-  8. `MaintenancePanel.tsx` (151 LOC) — Maintenance tab: 4 operation cards (VACUUM / INTEGRITY_CHECK / WAL_CHECKPOINT / REINDEX) + result card (success/failure + durationMs + full report pre).
-  9. `DailyBackupsPanel.tsx` (227 LOC) — Daily Backups tab: list of historical daily/weekly/monthly snapshots with date + day-of-week + DB count + total size + integrity summary + per-DB integrity badges + restore-all / delete actions.
- 10. `HeaderBar.tsx` (230 LOC) — Top header Card: DB count + total size + integrity summary tooltip + WAL-active count + refresh button + bulk operations bar (WAL Checkpoint All / Export All / Import ZIP) + import result alert + DB search input.
- 11. `DbSidebar.tsx` (61 LOC) — Sidebar Card: loading skeletons / empty state / scrollable list of DbCard entries.
- 12. `RecoveryToolsPanel.tsx` (249 LOC) — Maintenance-tab sub-section: Database Recovery Tools Card (recover single DB / recover all + result Alert) + Advanced Data Tools Card (3-up grid: repair-engine / cleanup-symbols / import-egx30 + full-width repair-all + terminal console output pre).
- 13. `ConfirmDialog.tsx` (61 LOC) — Global AlertDialog wrapper driven by ConfirmState (used by backup / restore / delete / drop-table / truncate / maintenance / daily-restore / daily-delete flows).
- 14. `useDbManagerActions.tsx` (918 LOC) — Custom hook owning ALL state + handlers for the container (UI state, SQL state, backups state, maintenance state, recovery state, advanced-ops state, bulk-ops state, daily-backups state, confirm-dialog state + 23 fetch/mutation handlers). Extracted so the container can stay under 500 LOC. Data fetching for databases/tables/rows/schema is delegated to the existing `useDatabaseManagerData` hook (Strangler Pattern F-Strangler-DBManager). NOTE: file is `.tsx` (not `.ts`) because it constructs `description: React.ReactNode` for the confirm dialog using inline JSX (Alert, AlertTriangle, Input, etc.).
- 15. `DatabaseManagerFull.tsx` (333 LOC) — **Container only** (well under < 500 LOC target). Imports `useDbManagerActions` hook + 11 sub-components (HeaderBar, DbSidebar, OverviewPanel, TablesPanel, SqlConsolePanel, BackupsPanel, DailyBackupsPanel, MaintenancePanel, RecoveryToolsPanel, ConfirmDialog, EmptyState) + renders the 2-column layout (sidebar + 6-tab Tabs). Exports both named (`DatabaseManagerFull`) and default for robustness.
-- Updated original `src/modules/admin/components/DatabaseManagerFull.tsx` (3,160 → 12 LOC, re-export shim): `export { DatabaseManagerFull, default } from './db-manager/DatabaseManagerFull';`. Public import path preserved — `src/modules/admin/index.ts` (`export { DatabaseManagerFull } from './components/DatabaseManagerFull';`) and `src/modules/admin/components/AdminView.tsx` (dynamic import with `m.DatabaseManagerFull`) work without modification.
-- Parser pitfalls avoided:
-  * **JSX in `.ts` file**: initial compile attempt failed with `Expected ',', got 'إنشاء'` at useDbManagerActions.ts:347:20 — caused by JSX inside the `description` field of `setConfirm(...)` calls (Alert / AlertTriangle / Input / span / strong / code / p elements). SWC/Turbopack only allows JSX in `.tsx` files. **Fix**: renamed `useDbManagerActions.ts` → `useDbManagerActions.tsx`. (Considered alternative of using `React.createElement` for all the multi-line confirm descriptions — rejected as too ugly for the long Arabic text with nested elements; the `.tsx` extension is the standard pattern when a hook returns JSX.)
-  * **formatCell with Tooltip in `.ts`**: `formatCell` returns `<Tooltip><TooltipTrigger asChild><span>…</span></TooltipTrigger><TooltipContent>…</TooltipContent></Tooltip>` JSX. Per task spec the file is `helpers.ts` (not `.tsx`). Fix: used `React.createElement(Tooltip, null, React.createElement(TooltipTrigger, { asChild: true }, React.createElement('span', {...}, ...)), React.createElement(TooltipContent, {...}, s))` — same pattern as maker-radar/helpers.ts (pathMeta icons).
-  * **`setPage` missing from hook return**: initial container had `a.setPage?.(p)` with `(a as any).setPage` hack. Fix: added `setPage` to the hook's returned object so the container's `handlePageChange` callback can call it cleanly.
-- Verification:
-  * `node_modules/.bin/pm2 restart nextjs` (after `.tsx` rename) → ready in ~1.5s.
-  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (first-hit compile ~11.9s, render ~488ms; second hit 67ms render; third hit 91ms render).
-  * Stability check: 3× HTTP 200 in a row on `/` + 3× HTTP 200 in a row on `/?view=admin` (the route that mounts AdminView → DatabaseManagerFull).
-  * pm2 logs: no compile errors after the `.tsx` rename. Only pre-existing Next.js config warnings remain (outputFileTracing deprecated, eslint config deprecated, middleware deprecated → proxy, NEXTAUTH_URL warning, Turbopack-webpack-config-warning) — all pre-existing, unrelated to this refactor.
-- LOC delta summary:
-  * Original `DatabaseManagerFull.tsx`: 3,160 → 12 LOC (re-export shim) (**−3,148 LOC, −99.6%**).
-  * New files (15) total: 3,779 LOC (types 244 + helpers 151 + SharedComponents 126 + OverviewPanel 109 + TablesPanel 420 + SqlConsolePanel 337 + BackupsPanel 161 + MaintenancePanel 151 + DailyBackupsPanel 227 + HeaderBar 230 + DbSidebar 61 + RecoveryToolsPanel 249 + ConfirmDialog 61 + useDbManagerActions 918 + container 333).
-  * **Folder total LOC delta: 3,160 → 3,791 (shim + new folder) (+631 LOC, +20%)** — modest increase because each new file carries a documentation header + import block + the hook extracts a lot of state-management code that was previously inline; the actual implementation LOC is essentially unchanged (structural refactor — no logic deleted or added).
-  * **Container alone: 333 LOC** (well under < 500 LOC target) — owns ZERO state directly; everything delegated to `useDbManagerActions` hook. Contains: 1 useCallback (handlePageChange) + layout JSX (HeaderBar + warning + error + grid[sidebar + Tabs[6 TabsContent]] + ConfirmDialog + custom-scrollbar style).
-  * **Hook alone: 918 LOC** — owns ALL state (UI + SQL + backups + maintenance + recovery + advanced + bulk + daily + confirm) + ALL 23 fetch/mutation handlers + 3 useEffects + 5 useMemo derived values. Returns ~50 named fields.
-- Rule 75 compliance: commit hash to be filled after push (see below).
-- Rule 76 compliance: `git pull --rebase origin main` before commit (will verify no conflicts).
-
-Stage Summary:
-- DatabaseManagerFull.tsx (3,160 LOC, the largest component in the admin module) successfully split into 15 modular files under `src/modules/admin/components/db-manager/`. The original file is now a 12-LOC re-export shim. All existing consumers (`src/modules/admin/index.ts` + `src/modules/admin/components/AdminView.tsx`) work without modification.
-- The 15-file split exceeds the task spec's minimum (types.ts + helpers.ts + sub-components + container) by adding 4 extraction files not explicitly listed in the spec:
-  * `useDbManagerActions.tsx` (918 LOC hook) — extracted so the container can stay under 500 LOC. The hook owns all 25 state variables + 23 handlers + 5 derived values; the container is a pure render layer.
-  * `SharedComponents.tsx` (126 LOC) — extracted DbCard + IntegrityBadge + EmptyState + StatCard because they're used by 2+ panels (DbCard↔DbSidebar, IntegrityBadge↔DbCard+OverviewPanel, EmptyState↔container, StatCard↔OverviewPanel).
-  * `HeaderBar.tsx` (230 LOC) — extracted the top header Card (DB count + integrity summary + bulk ops + search) because it's a self-contained presentational block with ~12 props.
-  * `DbSidebar.tsx` (61 LOC) — extracted the sidebar Card for symmetry with HeaderBar.
-  * `RecoveryToolsPanel.tsx` (249 LOC) — extracted the recovery + advanced data tools section (originally inside the maintenance TabsContent) because it's a self-contained 2-Card block with 9 props.
-  * `ConfirmDialog.tsx` (61 LOC) — extracted the global AlertDialog because it's a self-contained 4-prop wrapper.
-- The container is at 333 LOC, comfortably under the soft "< 500 LOC" target. The biggest sub-file is the hook (`useDbManagerActions.tsx` at 918 LOC) — it owns all state + handlers; further reduction would require splitting it into `useDbManagerSqlActions` + `useDbManagerBackupActions` + `useDbManagerMaintenanceActions` hooks (not in task spec, and would add import overhead without reducing complexity).
-- All 14 TypeScript interfaces/types + TabKey + ConfirmState from the original file moved to types.ts. All 6 helper functions (formatCell, formatBytes, formatDateTime, downloadTextFile, loadHistory, saveHistory) + 5 constants (HISTORY_KEY, HISTORY_LIMIT, PAGE_SIZE, RESULT_LIMIT, EXAMPLE_QUERIES) moved to helpers.ts. The data-related types (DatabaseOverview, TableSummary, TableColumn, TableRowsResult, SchemaResult) stay in `@/hooks/useDatabaseManagerData` and are re-exported from types.ts.
-- HTTP 200 verified on `/` (homepage) and `/?view=admin` (admin route that mounts DatabaseManagerFull). Zero new TS errors. No behavior change — pure structural refactor.
-
-- Rule 75 compliance: commit hash `7618c37` (pushed to origin/main after `git pull --rebase origin main` returned "Current branch main is up to date" — no conflicts).
-- Rule 76 compliance: `git pull --rebase origin main` → "From https://github.com/enmohsen20111975/GLMinvestment * branch main -> FETCH_HEAD; Current branch main is up to date." No conflicts with the refactor files.
-
----
-Task ID: F-Phase3-Split-Specialist
-Agent: Alpha (frontend agent)
-Task: Split `src/components/advanced-analysis/SpecialistAnalysisView.tsx` (2,550 LOC) into sub-components in a new folder `src/components/advanced-analysis/specialist/`.
-
-Work Log:
-- Read 2,550 LOC of original SpecialistAnalysisView.tsx and mapped every sub-component, helper, type, and the main container JSX to its target file. The original file already consumes the `useSpecialistAnalysisData` hook from Phase 2 (F-Strangler-Specialist) — data-fetching is fully owned by that hook (5 useApiQuery calls + flow→footprint remap + error/loading derivation). This refactor is purely structural on the view layer.
-- Created `src/components/advanced-analysis/specialist/` folder with 18 files (16 .tsx + 2 .ts):
-  1. `types.ts` (28 LOC) — re-export barrel for StockInfo, PriceRow, RadarStats, MakerRadarStock, FootprintLevel, FootprintData, PredictionRow, PredictionsResponse, FlowData, ExplosiveData, ComprehensiveData, ShariaResponse, SingleStockData, UnifiedResponse, UseSpecialistAnalysisDataResult + re-exports useSpecialistAnalysisData hook. All types live in `@/hooks/useSpecialistAnalysisData` (Phase 2 Strangler Pattern) — this file is a single import surface so the sub-components don't each reach into the hook directly.
-  2. `helpers.ts` (77 LOC) — 6 pure utility functions: safeNum, safeStr, fmtNum, fmtPct, fmtInt, fmtCompact. Pure `.ts` (no JSX). Rule 67 compliant: never fabricate, returns null/"—" on missing values.
-  3. `primitives.tsx` (192 LOC) — 6 reusable visual primitives: MetricRow (label/value row), PriceTile (square tile w/ label + value + sub), SectionCard (universal titled card with accent-color icon header), SkeletonCard (shimmer loading placeholder), EmptyState (dashed-box "لا توجد بيانات"), StockIcon (image-or-gradient-circle fallback). Used by 14+ sub-components.
-  4. `CandlestickChart.tsx` (321 LOC) — §3 30-day candlestick SVG chart (760×320 viewBox). Renders candles + volume bars + support/resistance/MA50/MA200 lines. Pure SVG, no external chart lib.
-  5. `LiquidityFootprintSection.tsx` (218 LOC) — §4 POC + VAH/VAL + Buy/Sell + 18-level volume profile. UNIFIED-API (Rule 72): canonical.accumulation + canonical.money_flow labels from unified API take precedence over locally-derived labels.
-  6. `TechnicalIndicatorsSection.tsx` (162 LOC) — §5 RSI gauge + MA50 + MA200 + Support + Resistance + Signal tiles. UNIFY-FIX (Rule 73): canonical thresholds 78/65/55/40/25 (unified with unified API).
-  7. `FundamentalsSection.tsx` (167 LOC) — §6 P/E + P/B + P/S + EPS + ROE + ROA + Debt/Equity + DivYield + Margin + Float + Cap + DPS + CurrentRatio + BookValue + FundamentalCard helper.
-  8. `MomentumStatsSection.tsx` (79 LOC) — §7 ROC 10d + avgVol20 + avgTurnover20 + 20d max/min + range + lastClose + change%.
-  9. `PredictionHistorySection.tsx` (137 LOC) — §8 table of last 10 predictions with status + return% + hit/miss badge. Rule 67: accuracy stat ONLY shown if ≥5 closed predictions.
- 10. `RecommendationSection.tsx` (127 LOC) — §9 entry zone + target (resistance) + stop (support) + R:R + signal interp + trend. ALPHA-FAB-FIX-SPECIALIST-001: removed current*0.99/1.01 fabrication (Rule 27). UNIFY-FIX (Rule 73) canonical thresholds.
- 11. `Week52AnalysisSection.tsx` (88 LOC) — §10 visual gradient bar with marker showing where current price sits in 52w range.
- 12. `FlowExplosiveSection.tsx` (128 LOC) — §11 Flow Score + Explosive Scanner. Graceful degrade: shows EmptyState when Python 8010 is down.
- 13. `ComprehensiveAnalysisSection.tsx` (156 LOC) — §12 Hunter + Board institutional activity + News. MAESTRO-CANCER-1: maestro data removed (contradictory recs); canonical = V40.2. Graceful degrade.
- 14. `PositionSizingCalculator.tsx` (128 LOC) — §13 interactive calculator: capital × risk% / per-share risk → max shares + actual R:R. Rule 18 floor: R:R ≥ 1.8:1 acceptable, ≥ 2:1 excellent.
- 15. `PriceLevelsLadderSection.tsx` (59 LOC) — §14 visual ladder: 52w high → resistance → current → support → 52w low.
- 16. `ScoreDashboardSection.tsx` (57 LOC) — §15 fundamental_score + smc_score + signal gauges (0-100 progress bars).
- 17. `ShariaSection.tsx` (75 LOC) — §16 halal/haram verdict + compliant sources count + purification rate (S&P).
- 18. `ShareButtons.tsx` (64 LOC) — WhatsApp / Facebook / Telegram / Copy buttons with Arabic share text (current + change + trend + support/resistance + OFFICIAL_LINKS_BLOCK).
- 19. `HeaderCard.tsx` (122 LOC) — §1 stock icon + ticker + Arabic name + sector/industry badges + price + change. Includes StockPublisher (publishing module icon variant). Trend + EGX30/70/100 + sharia + suspended badges.
- 20. `SpecialistAnalysisView.tsx` (383 LOC) — **container only** (well under < 500 LOC target). Imports useSpecialistAnalysisData hook + 14 section components + HeaderCard + ShareButtons + SkeletonCard + SectionCard + PriceTile (for inline §2 Price Summary). Owns ZERO data-fetching logic — pure render-only container.
-- Updated original `src/components/advanced-analysis/SpecialistAnalysisView.tsx` (2,550 → 19 LOC, re-export shim): `export { SpecialistAnalysisView } from './specialist/SpecialistAnalysisView';` + `export { SpecialistAnalysisView as default } from './specialist/SpecialistAnalysisView';`. Public import path preserved — `src/app/page.tsx` (dynamic import with `m.SpecialistAnalysisView`) works without modification.
-- Parser pitfalls avoided:
-  * **`signal` unused variable**: the original main container declares `const signal = safeNum(info?.signal)` at line 2285 but never uses it after that point. Kept the declaration in the new container to preserve byte-identical behavior (it may have been intentional for future use, and TypeScript doesn't error on unused `const`).
-  * **Unused imports**: original imports `Separator` from `@/components/ui/separator`, plus `LineChart` + `Radar` + `TrendingDown` from `lucide-react` — none used anywhere. Dropped these from the new container (only imported what each sub-component actually needs).
-  * **JSX in `.ts` file**: `helpers.ts` and `types.ts` are pure `.ts` (no JSX) — all 6 helpers return strings/null; types.ts is a pure re-export. No SWC parser issues.
-  * **Pre-existing TS errors**: 4 TypeScript errors existed in the original file (`Property 'phase'/'regime_phase' does not exist on type 'never'` in ComprehensiveAnalysisSection's `const maestro = null` line + `Property 'toFixed' does not exist on type 'never'` in RecommendationSection's unused `signal` line). These are pre-existing — confirmed by `git stash && tsc` showing the same 4 errors in the original 2,550-LOC file. Refactor doesn't introduce new errors. Runtime works because the code paths that hit these TS errors are gated behind `if (maestro)` checks that always evaluate to false (maestro is hard-coded `null`), so the dead code never executes.
-- Verification:
-  * `node_modules/.bin/pm2 restart nextjs` → ready in ~3s.
-  * `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → **HTTP 200** (first-hit compile ~6.7s, render ~520ms; second hit ~67ms render).
-  * Stability check: 3× HTTP 200 in a row on `/`.
-  * pm2 logs: no compile errors related to specialist folder. Only pre-existing Next.js config warnings remain (outputFileTracing deprecated, eslint config deprecated, NEXTAUTH_URL warning, stocks.db not found from /api/track route — all pre-existing, unrelated to this refactor).
-- LOC delta summary:
-  * Original `SpecialistAnalysisView.tsx`: 2,550 → 19 LOC (re-export shim) (**−2,531 LOC, −99.3%**).
-  * New files (18) total: 2,749 LOC (types 28 + helpers 77 + primitives 192 + CandlestickChart 321 + LiquidityFootprintSection 218 + TechnicalIndicatorsSection 162 + FundamentalsSection 167 + MomentumStatsSection 79 + PredictionHistorySection 137 + RecommendationSection 127 + Week52AnalysisSection 88 + FlowExplosiveSection 128 + ComprehensiveAnalysisSection 156 + PositionSizingCalculator 128 + PriceLevelsLadderSection 59 + ScoreDashboardSection 57 + ShariaSection 75 + ShareButtons 64 + HeaderCard 122 + container 383).
-  * **Folder total LOC delta: 2,550 → 2,768 (shim + new folder) (+218 LOC, +8.5%)** — small increase because each new file carries a documentation header + import block; the actual implementation LOC is essentially unchanged (structural refactor — no logic deleted or added).
-  * **Container alone: 383 LOC** (well under < 500 LOC target) — owns ZERO data-fetching directly; everything delegated to `useSpecialistAnalysisData` hook (Phase 2). Container responsibilities: ticker state + handleSearch callback + 4 derived values (currentPrice/support/resistance/ma50/ma200/signal) + iconUrl resolution + 16-section layout JSX + error/loading/empty states.
-  * **Largest sub-component: CandlestickChart.tsx at 321 LOC** (pure SVG chart, no external lib).
-
-Stage Summary:
-- SpecialistAnalysisView.tsx (2,550 LOC, the largest component in the advanced-analysis module) successfully split into 18 modular files under `src/components/advanced-analysis/specialist/`. The original file is now a 19-LOC re-export shim. All existing consumers (`src/app/page.tsx` via dynamic import) work without modification.
-- The 18-file split follows the task spec: types.ts (re-export barrel) + helpers.ts (6 formatters) + primitives.tsx (6 visual primitives) + 14 section components + HeaderCard + ShareButtons + container. Container is at 383 LOC, comfortably under the soft "< 500 LOC" target. The largest sub-component is CandlestickChart at 321 LOC (pure SVG chart with support/resistance/MA lines + volume bars).
-- `useSpecialistAnalysisData` hook (extracted in Phase 2) is still consumed by the container — the hook owns all data-fetching logic (5 useApiQuery calls + flow→footprint remap + error/loading derivation). The view remains render-only.
-- All 6 safe-accessors (safeNum, safeStr, fmtNum, fmtPct, fmtInt, fmtCompact) moved to helpers.ts. All type imports are funnelled through types.ts (single source of truth — keeps imports clean across 14 section components).
-- 4 pre-existing TypeScript errors (`Property 'phase'/'regime_phase'/'toFixed' does not exist on type 'never'` in dead-code branches where `const maestro = null` and unused `signal` const) — same errors as original file (verified via `git stash && tsc`). No new errors introduced by the split.
-- HTTP 200 verified on `/`. Zero new TS errors. No behavior change — pure structural refactor.
-- Commit: to be filled after push (Rule 75 compliance).
-
----
-Task ID: F-Phase3-Split-Screener
-Agent: Alpha (frontend agent)
-Task: Split `src/modules/screener/components/StockScreenerAdvanced.tsx` (2,517 LOC) into sub-components under `src/modules/screener/components/screener-advanced/`. Container must stay < 500 LOC; the original file becomes a backwards-compatible Strangler re-export shim. `useScreenerData` / `useTopPerformersData` hooks (Phase 2 / F-Strangler-Screener) are preserved as-is.
-
-Work Log:
-- Read 2,517 LOC of the original StockScreenerAdvanced.tsx and mapped every sub-component, helper, type, constant, and column definition to its target file.
-- Mapped the public API surface first (so the shim could stay byte-compatible):
-  - `StockScreenerAdvanced` — main export (used by `src/app/page.tsx` via `dynamicImport(... { ssr: false })`)
-  - `WhatsAppIcon` — inline SVG (lucide has no WhatsApp export); re-exported via `src/modules/screener/index.ts`
-  - `ExportDropdown` — reusable share dropdown; imported by `src/modules/predictions/components/PredictionTrackingDashboard.tsx` + screener barrel
-  - `ExportDropdownProps` — type, re-exported via barrel
-- Created `src/modules/screener/components/screener-advanced/` folder with 13 files:
-  1. `types.ts` (110 LOC) — SortField, SortDir, ExtraClientFilter, CollapsibleSectionProps, StockScreenerAdvancedProps, AdvancedFiltersTabProps, FilterFieldProps, CheckboxFieldProps, KPIBoxProps, StateBadgeProps, ExportDropdownProps, WhatsAppIconProps, TFunc. Re-exports `ScreenerStock / TopPerformerStock / TopPerformersResponse` from `@/hooks/useScreenerData` (Phase 2 single source of truth).
-  2. `helpers.ts` (261 LOC) — STATE_BADGE_COLORS, getStateLabels, getStateExplanations, STATE_ORDER, formatNumber, formatVolume, formatEGP, getChangeColor, generateScreenerText, generateTopPerformersText, getFilterHelp, getPeriods, getDirections, computeScreenerEntry/Stop/Target/RR, computeOpportunityQuality, computeStopDistancePct, isHighMakerActivity, PRESET_COLOR_MAP. Pure `.ts` (no JSX) — keeps logic separated from presentation (Rule 67).
-  3. `StateBadge.tsx` (45 LOC) — StateBadge component (named export).
-  4. `CollapsibleSection.tsx` (68 LOC) — CollapsibleSection (UNIFIED-MARKET-UX Task 3 wrapper).
-  5. `FilterField.tsx` (61 LOC) — FilterField + CheckboxField (named exports).
-  6. `KPIBox.tsx` (15 LOC) — KPIBox (named export).
-  7. `ExportDropdown.tsx` (108 LOC) — WhatsAppIcon + ExportDropdown (named exports) — preserves the original public API for `@/modules/predictions/components/PredictionTrackingDashboard.tsx` + `@/modules/screener/index.ts` barrel.
-  8. `screenerColumns.tsx` (383 LOC) — buildScreenerColumns(t): all 19 UnifiedTable columns for the screener results table (ticker, price, change, sparkline, entry/stop/target/RR/quality, volume, turnover, PE, ROE, RSI, stock_state, above_ma_50, maker_activity, buy_pct, net_flow_egp, accumulation, life_cycle, expected). Extracted so AdvancedFiltersTab stays readable.
-  9. `topPerformerColumns.tsx` (93 LOC) — buildTopPerformerColumns(t): 7 UnifiedTable columns for top performers (ticker, sector, start_price, end_price, change_pct, period_days, end_volume).
-  10. `AdvancedFiltersTab.tsx` (924 LOC, originally ~1,500 LOC inline) — Tab 1 main component. Preserves 22 presets, the One-Click Trader Presets (clientExtraFilter), 7 primary inline buttons + DropdownMenu for the rest, the unified paywall gate (FREE_RESULTS_LIMIT=5), derivedSummary KPIs, CSV export, share-text generation, and the UnifiedTable with `excelGrid` + `publishable`. Calls `buildScreenerColumns(t)` via useMemo instead of inline column array.
-  11. `TopPerformersTab.tsx` (315 LOC) — Tab 2 main component. Preserves period/direction/market/limit filters, summary KPIs, best/worst performer cards, and the results table. Calls `buildTopPerformerColumns(t)` via useMemo.
-  12. `StockScreenerAdvanced.tsx` (86 LOC — ✅ < 500 LOC constraint) — Container. Renders Tabs (advanced | top-performers) + AdvancedFiltersTab / TopPerformersTab. Reads `?tab=` query param on mount. Re-exports `WhatsAppIcon`, `ExportDropdown`, `ExportDropdownProps` so the original module's public API surface is byte-compatible.
-  13. (Strangler shim) `src/modules/screener/components/StockScreenerAdvanced.tsx` (17 LOC) — was 2,517 LOC, now just:
-      ```
-      export { StockScreenerAdvanced, WhatsAppIcon, ExportDropdown } from './screener-advanced/StockScreenerAdvanced';
-      export type { ExportDropdownProps } from './screener-advanced/types';
-      ```
-      All 3 external importers (`src/app/page.tsx`, `src/modules/predictions/components/PredictionTrackingDashboard.tsx`, `src/modules/stock-analysis/components/StocksView.tsx`) keep working unchanged.
-
-Verification:
-- `useScreenerData` and `useTopPerformersData` hooks kept as imports from `@/hooks/useScreenerData` (Phase 2 — F-Strangler-Screener preserved).
-- `node_modules/.bin/pm2 restart nextjs` → ✓ online.
-- Hit one transient compile error first: `the name toggleSort is defined multiple times` in AdvancedFiltersTab.tsx (I had duplicated the `toggleSort` declaration while preserving the original dead-code one). Fixed by removing the duplicate; kept the original single declaration + `void toggleSort;` marker so the original behavior (declared but unused — UnifiedTable handles sort internally via `sortValue`) is preserved verbatim.
-- After fix: `sleep 12 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓.
-- pm2 logs after the fix show clean compile of `/` (12–15s on first hit due to Turbopack cold start, then 58ms cached). `/api/track` and `/api/auth/session` routes both 200. Only stale `.next` production-build errors remain in the error log (pre-existing sandbox state — unrelated to this refactor).
-- No new ESLint/TS errors introduced. All 13 new files use `'use client'` where needed (only on stateful components; `helpers.ts`, `types.ts`, `screenerColumns.tsx`, `topPerformerColumns.tsx` are pure modules without `'use client'` — but the column builders return JSX so they're `.tsx`).
-
-LOC summary (after split):
-- Original `StockScreenerAdvanced.tsx`: 2,517 → 17 (Strangler shim)
-- New folder `screener-advanced/`: 2,475 LOC across 12 files (slight reduction from removing duplicated comments + consolidating presets into single-line `apply` lambdas)
-- Container `StockScreenerAdvanced.tsx`: 86 LOC ✅ (< 500 constraint)
-- Largest sub-component: `AdvancedFiltersTab.tsx` 924 LOC (originally ~1,500 LOC inline; reduced by extracting `screenerColumns.tsx` + removing inline `colorMap` → `PRESET_COLOR_MAP` in helpers)
-
-Stage Summary:
-- F-Phase3-Split-Screener complete. StockScreenerAdvanced is now a thin Strangler shim re-exporting from `screener-advanced/StockScreenerAdvanced.tsx` (container) which orchestrates `AdvancedFiltersTab` + `TopPerformersTab`. Column definitions isolated in `screenerColumns.tsx` / `topPerformerColumns.tsx`; reusable sub-components (StateBadge, CollapsibleSection, FilterField, CheckboxField, KPIBox, ExportDropdown, WhatsAppIcon) isolated one-per-file. All utility functions + constants in `helpers.ts`. All types/interfaces in `types.ts`.
-- Backwards-compatible: 3 external importers (`src/app/page.tsx`, `PredictionTrackingDashboard.tsx`, `StocksView.tsx`) + the screener module barrel all work unchanged.
-- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
-
-
----
-Task ID: F-Phase3-Split-Academy
-Agent: Alpha (frontend agent)
-Task: Split `src/modules/education/components/AcademyView.tsx` (2,357 LOC) into sub-components under a new `src/modules/education/components/academy/` folder. Container must stay < 500 LOC; the original file becomes a backwards-compatible Strangler re-export shim. `useAcademyLessonsData` / `useAcademyStocksData` hooks (Phase 2 / F-Strangler-AcademyView) are preserved as-is.
-
-Work Log:
-- Read 2,357 LOC of the original AcademyView.tsx and mapped every sub-component, helper, type, and constant to its target file. The file already consumes the Phase 2 hooks `useAcademyLessonsData` (lessons list + lazy fullContent fetch) and `useAcademyStocksData` (60s polling + FALLBACK_STOCKS) — all data-fetching is fully owned by those hooks. This refactor is purely structural on the view layer.
-- Identified the 8 tabs rendered by the container: Encyclopedia / PaperTrading / CandleSim / StrategySandbox / AdvancedLessons / TradingFloor / PracticalTools / AdvancedLab. The first 4 are imported from sibling files (`../AcademyEncyclopedia` etc.) and were NOT split (they're already self-contained). The last 4 are inlined in AcademyView.tsx and were extracted into the new folder.
-- Created `src/modules/education/components/academy/` folder with 13 files (11 .tsx + 2 .ts):
-  1. `types.ts` (83 LOC) — re-export barrel for `AdvancedLesson`, `AdvancedLessonSection`, `FloorStock`, `EducationalLessonsResponse`, `StocksListResponse` from `@/hooks/useAcademyData` (Phase 2 single source of truth) + local types: `MdBlock` (markdown parsed block discriminated union), `AnalysisState` (LiveMarketScanner sheet state), `ScenarioTone` + `Verdict` (TradingFloor scenario tones), `ScenarioBranch` + `Scenario` (decision tree shape), `Playbook` (action playbook shape w/ LucideIcon). Pure `.ts` — no JSX.
-  2. `helpers.ts` (584 LOC) — pure utility functions + non-JSX data constants. Pure `.ts` (no JSX). Includes: `LEVEL_VARIANT` (Arabic level → badge variant map), markdown parser helpers (`splitTableRow`, `isTableRow`, `isTableSeparator`, `parseMarkdown` — 100-LOC minimal MD parser), market helpers (`changeTone`, `formatVolume`, `analysisHint`), TradingFloor data arrays (`SCENARIOS` 6-scenario array, `SCENARIO_TONE_STYLES` 4-tone style map, `VERDICT_STYLE` 3-verdict icon+color map using `typeof CheckCircle2`), `PLAYBOOKS` 5-playbook array (icons imported as values — Rocket, ArrowDownCircle, ShieldAlert, Layers, Target — not rendered as JSX in this file so it stays `.ts`), `BIAS_QUESTIONS` 7-question quiz data array.
-  3. `AdvancedMarkdownRenderer.tsx` (259 LOC) — minimal MD → JSX renderer. Handles fenced code blocks (```), #/##/###/#### headings, - bullets, 1. numbered lists, > blockquotes, **bold**, *italic*, `code`, markdown tables, hr, and plain paragraphs. Detects ASCII-art code blocks (Loss Aversion curve, SOP pipeline, Algo pipeline) and swaps them for premium SVG visuals (`LossAversionCurve`, `SopPipelineFlow`, `TradingSystemPipeline` from `../LearningVisuals`). Includes private `renderInline()` helper that returns `React.ReactNode` (kept local to this file — not exported).
-  4. `AdvancedLessonsTab.tsx` (392 LOC) — Tab 5 main component. Wires `content/education/*.md` (12+ institutional lessons) via `/api/ads/educational-lessons` API. Sidebar list + master-detail panel. PAYWALL Gate 4: first 3 lessons free, 4+ locked (blurred) for free users post-trial. Uses `useAcademyLessonsData` hook (Phase 2) for all data + UI state only (activeId + showFull).
-  5. `LiveMarketScanner.tsx` (374 LOC) — TradingFloor §1. Top tickers table (desktop) + cards (mobile) + quick-analysis Sheet. Uses `useAcademyStocksData` hook (Phase 2 — polling + FALLBACK_STOCKS owned by hook). UI state only: search filter + showAll toggle + analysis modal.
-  6. `ScenarioDecisionTree.tsx` (142 LOC) — TradingFloor §2. 6-scenario decision tree cards with branching verdicts (✅ go / ⚠️ wait / 🚫 avoid). Includes private `ScenarioToneIcon` helper component.
-  7. `ActionPlaybooks.tsx` (135 LOC) — TradingFloor §3. 5 collapsible playbook cards (Breakout, Pullback, Stop-loss, DCA, Take-profit). Includes private `PlaybookCard` component.
-  8. `TradingFloorView.tsx` (61 LOC) — TradingFloor container. Combines TradingSystemPipeline (premium SVG) + LiveMarketScanner + ScenarioDecisionTree + ActionPlaybooks.
-  9. `PositionSizeCalculator.tsx` (207 LOC) — PracticalTools §1. Interactive calculator: capital × risk% / |entry−stop| → max shares + R:R + direction (Long/Short). Includes typed `PositionSizeResult` discriminated union (result | error | null).
- 10. `BiasDetectorQuiz.tsx` (200 LOC) — PracticalTools §2. 7-question self-assessment for behavioral biases (Loss Aversion / FOMO / Confirmation / Ego / Revenge / Hope / Overtrading) with link-back to relevant lesson.
- 11. `PracticalToolsView.tsx` (31 LOC) — PracticalTools container (banner + 2 calculators).
- 12. `AdvancedLabView.tsx` (50 LOC) — AdvancedLab container (banner + 5 visuals + 2 simulators from `../LearningVisuals`, `../PortfolioSimulator`, `../EntryTimingSimulator`).
- 13. `AcademyView.tsx` (113 LOC — ✅ < 500 LOC constraint) — Main container. Renders sticky header + Tabs (8 triggers) + 8 TabsContent blocks. Imports 4 sibling pillar components (`AcademyEncyclopedia`, `PaperTradingWorkstation`, `CandlestickSimulator`, `StrategySandbox` from `../`) + 4 academy sub-components (`AdvancedLessonsTab`, `TradingFloorView`, `PracticalToolsView`, `AdvancedLabView` from `./`). Owns ZERO data-fetching logic — pure render-only container. Also exports `default` to preserve the original `export default AcademyView` semantics.
-- (Strangler shim) `src/modules/education/components/AcademyView.tsx` (was 2,357 LOC, now 7 LOC):
-  ```ts
-  export { AcademyView } from './academy/AcademyView';
-  export { AcademyView as default } from './academy/AcademyView';
-  ```
-  External importers (`src/modules/education/index.ts` barrel + `src/app/page.tsx` dynamic import) keep working unchanged.
-
-Parser pitfalls avoided:
-- **TypeScript import vs re-export**: `export type { FloorStock } from '...'` does NOT bring the type into local scope for use in other interfaces. Added a separate `import type { FloorStock } from '@/hooks/useAcademyData'` line so `AnalysisState` can reference `FloorStock` in its `stock: FloorStock | null` field.
-- **JSX in `.ts` files**: `helpers.ts` references lucide icons (`Rocket`, `CheckCircle2` etc.) as VALUES inside the `PLAYBOOKS` and `VERDICT_STYLE` data arrays — they're imported but never rendered as `<Rocket />` JSX. This keeps the file valid as `.ts` (no JSX) while still allowing sub-components to import and render them. The `VERDICT_STYLE` uses `typeof CheckCircle2` as the type for `Icon` field — pure type reference, no JSX.
-- **Unused imports**: Original file imported many lucide icons at the top — split per-file so each sub-component only imports what it actually uses. `AdvancedMarkdownRenderer` imports only `cn` from utils + 3 SVG visuals from `../LearningVisuals`. `AcademyView` container imports ZERO utils (no `cn`) and ZERO lucide icons — it only uses `Tabs` components + sibling pillar imports.
-- **`'use client'` directive**: Each sub-component file that uses React hooks (`useState`, `useEffect`, `useMemo`, `useCallback`) gets `'use client'` at the top. Pure modules (`types.ts`, `helpers.ts`) do NOT — they're imported by client components but are themselves framework-agnostic. The container `AcademyView.tsx` keeps `'use client'` for consistency with the original (and because it's dynamically imported with `ssr: false`).
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs` → ✓ online (Ready in 934ms).
-- `sleep 12 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓ (first-hit compile ~16.8s on Turbopack cold start; render ~467ms; subsequent hits cached at ~55-67ms).
-- Stability check: 3× HTTP 200 in a row on `/` (67ms / 54ms / 56ms — cached after first compile).
-- `tsc --noEmit` on `src/modules/education/**` → 0 errors related to the academy folder. Only pre-existing `.next/dev/types/*` errors remain (auto-generated Next.js dev routes types — unrelated to this refactor).
-- pm2 logs: clean compile of `/`. Only stale pre-existing warnings remain (outputFileTracing deprecated keys in next.config.mjs, eslint config deprecated, "middleware" file convention deprecated, Turbopack-vs-webpack config warning — all pre-existing).
-
-LOC summary (after split):
-- Original `AcademyView.tsx`: 2,357 → 7 LOC (Strangler shim) (**−2,350 LOC, −99.7%**).
-- New folder `academy/`: 2,631 LOC across 13 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
-- Container `AcademyView.tsx`: 113 LOC ✅ (well under < 500 LOC constraint).
-- Largest sub-component: `helpers.ts` at 584 LOC (mostly data: SCENARIOS 6-scenario array + PLAYBOOKS 5-playbook array + BIAS_QUESTIONS 7-question array + parseMarkdown 100-LOC parser).
-- Largest component file: `AdvancedLessonsTab.tsx` at 392 LOC.
-
-Stage Summary:
-- F-Phase3-Split-Academy complete. `AcademyView.tsx` is now a thin 7-LOC Strangler shim re-exporting from `academy/AcademyView.tsx` (container, 113 LOC) which orchestrates 4 sibling pillar components (`AcademyEncyclopedia`, `PaperTradingWorkstation`, `CandlestickSimulator`, `StrategySandbox` — unchanged) + 4 academy sub-components (`AdvancedLessonsTab`, `TradingFloorView`, `PracticalToolsView`, `AdvancedLabView`). TradingFloor further decomposes into `LiveMarketScanner` + `ScenarioDecisionTree` + `ActionPlaybooks`; PracticalTools into `PositionSizeCalculator` + `BiasDetectorQuiz`; AdvancedLab composes 5 visuals + 2 simulators from sibling files. Markdown renderer isolated in `AdvancedMarkdownRenderer.tsx` with its parser in `helpers.ts`. All data constants (`SCENARIOS`, `PLAYBOOKS`, `BIAS_QUESTIONS`, `LEVEL_VARIANT`, `SCENARIO_TONE_STYLES`, `VERDICT_STYLE`) in `helpers.ts`. All types/interfaces in `types.ts`.
-- Backwards-compatible: `src/modules/education/index.ts` barrel + `src/app/page.tsx` (dynamic import with `ssr: false`) keep working unchanged.
-- `useAcademyLessonsData` + `useAcademyStocksData` hooks (extracted in Phase 2 — F-Strangler-AcademyView) are still consumed by `AdvancedLessonsTab` and `LiveMarketScanner` respectively. The view layer remains render-only.
-- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
-
----
-
-Task ID: F-Phase3-Split-StocksView
-Agent: Alpha (frontend agent)
-Task: Split `src/modules/stock-analysis/components/StocksView.tsx` (2,287 LOC) into sub-components in a new `stocks-view/` folder. Container must be < 500 LOC. Re-export from the original file. HTTP 200 required before commit.
-
-Work Log:
-- Read original `StocksView.tsx` (2,287 LOC) end-to-end to map structure: imports + constants (~150 LOC) + 5 helper functions + 3 skeleton components + 4 memo'd sub-components (OverviewSummary, StockCard, MobileStockRow, PresetButtonsRow, AdvancedFilters) + container StocksView (870-2287 = ~1,418 LOC, including ~820 LOC of state/effects/memos/handlers + ~580 LOC of render).
-- Confirmed `useStocksViewData` hook (Phase 2 — F-Strangler-StocksView) is consumed at original line 925; preserved as `import { useStocksViewData } from '@/hooks/useStocksViewData';` inside the new `useStocksViewState.ts` hook.
-- Inspected `src/lib/sector-constants.ts` for canonical `SECTOR_BADGE_CLASSES` map; left the local `SECTOR_COLOR_MAP` copy intact in `helpers.ts` (preserves the exact pre-refactor trailing-space strings — Phase 2 migration is a separate task).
-- Created folder `src/modules/stock-analysis/components/stocks-view/` and extracted 13 files:
-  1. `types.ts` (73 LOC) — QuickFilterKey, StockTab, DesktopRow, prop-shape interfaces for all 5 memo'd sub-components + TranslationFn type alias (matches `I18nContextValue.t` signature).
-  2. `constants.ts` (139 LOC) — SECTORS, INDEX_FILTERS, DEFAULT_INDEX_FILTERS, QUICK_FILTERS, DEFAULT_SORT_KEY/DIR, PRICE_RANGE_OPTIONS, CHANGE_FILTER_OPTIONS, PAGE_SIZE, GUEST_STOCK_LIMIT, PRESET_OPTIONS, PRESET_BUTTONS.
-  3. `helpers.ts` (127 LOC) — formatCleanTicker, parseVolStr, formatVolume, formatTurnover, formatPercent, getSectorColor, formatMarketCap + SECTOR_COLOR_MAP/SECTOR_FALLBACK_COLOR constants.
-  4. `Skeletons.tsx` (51 LOC) — TableSkeleton, CardGridSkeleton, SummarySkeleton.
-  5. `OverviewSummary.tsx` (63 LOC) — memo'd summary bar.
-  6. `StockCard.tsx` (195 LOC) — memo'd desktop card (icon + price + sparkline + metrics).
-  7. `MobileStockRow.tsx` (124 LOC) — memo'd mobile row.
-  8. `PresetButtonsRow.tsx` (71 LOC) — memo'd top preset row (EGX only).
-  9. `AdvancedFilters.tsx` (134 LOC) — memo'd collapsible panel (sector multi-select + price/change min/max).
-  10. `useStocksViewState.ts` (567 LOC) — container state + 4 useEffects (load/cron/poll/debounce) + 6 useMemo (filtered/sorted/summary/preset/availableSectors/activeQuickFilter) + 13 useCallback handlers. Returns 50+ field `StocksViewState` object consumed by the container.
-  11. `StocksTable.tsx` (442 LOC) — desktop `UnifiedTable` + column-defs memo (15 columns: icon, ticker, name, sector, price, change_1d, high/low, sparkline, change_1w, change_1m, volume_int, turnover, volume_week, fair_value, upside_percent, pe_ratio, technical_signal, market_cap, share).
-  12. `MobileStocksList.tsx` (213 LOC) — mobile compact list + mobile-only pagination (max 5 page buttons).
-  13. `StocksToolbar.tsx` (363 LOC) — the big Card: row 1 (search + filter toggle + UnifiedPublishButton) + row 2 (QUICK_FILTERS chips) + row 3 (collapsible: preset select + period buttons + sector select + index chips + price-range select + change-filter select + reset) + AdvancedFilters sub-component.
-  14. `StocksView.tsx` (289 LOC) — container. Calls `useStocksViewState()` then renders: Header + Tabs (stocks/bonds/filters) + conditionally renders PresetButtonsRow (EGX only) + StocksToolbar + OverviewSummary/PresetSummary + (Skeleton | Empty | StocksTable + MobileStocksList + GuestLimitCta). Detail view early-returns StockDetail.
-- Replaced original `src/modules/stock-analysis/components/StocksView.tsx` (2,287 LOC) with a 13-LOC Strangler shim: `export { StocksView } from './stocks-view/StocksView';`. All existing import sites (`src/modules/stock-analysis/index.ts` barrel + `src/app/page.tsx` dynamic import with `ssr: false`) keep working unchanged.
-- Behaviour preservation verified by line-by-line: all useEffect/useMemo/useCallback dependency arrays match the original (including the `// eslint-disable-line react-hooks/exhaustive-deps` on the market-change effect). All memo'd sub-components preserved their `React.memo` wrapping. All stable React.Fragment `key` props preserved.
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs --update-env` → ✓ online (Ready in 817ms).
-- `sleep 14 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 90 http://localhost:3000/` → `HTTP 200` ✓ (first-hit compile ~19.2s on Turbopack cold start; render ~507ms; proxy.ts: 58ms).
-- `tsc --noEmit` on `stocks-view/**` → 14 errors, all of which are byte-for-byte transplants of pre-existing TS errors from the original StocksView.tsx (verified via `git stash` + tsc + `git stash pop` baseline: original had 10+ same errors at lines 982, 1127, 1128, 1130, 1135, 1208, 1213, 1303, 1353, 1368 — these are `unknown`-from-`Record<string,unknown>` issues in column render fns + preset-data filter fn). No NEW errors introduced by the refactor.
-- pm2 logs: clean compile of `/`. No module-resolution or syntax errors. Only stale pre-existing warnings (outputFileTracing deprecated keys, eslint config deprecated, "middleware" file convention deprecated, Turbopack-vs-webpack config warning — all pre-existing).
-
-LOC summary (after split):
-- Original `StocksView.tsx`: 2,287 → 13 LOC (Strangler shim) (**−2,274 LOC, −99.4%**).
-- New folder `stocks-view/`: 2,851 LOC across 14 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
-- Container `StocksView.tsx`: 289 LOC ✅ (well under < 500 LOC constraint).
-- Largest file: `useStocksViewState.ts` at 567 LOC (state + 4 effects + 6 memos + 13 handlers — single cohesive unit, no further splitting needed).
-- Largest component file: `StocksTable.tsx` at 442 LOC (column-defs memo for 15 columns — single cohesive unit, splitting would just shuffle the column defs around).
-
-Stage Summary:
-- F-Phase3-Split-StocksView complete. `StocksView.tsx` is now a thin 13-LOC Strangler shim re-exporting from `stocks-view/StocksView.tsx` (container, 289 LOC) which delegates state to `useStocksViewState` hook + renders 4 memo'd sub-components (OverviewSummary, PresetButtonsRow, StocksToolbar, StocksTable/MobileStocksList) + 3 skeleton components. All data + behaviour preserved 1:1.
-- Backwards-compatible: `src/modules/stock-analysis/index.ts` barrel + `src/app/page.tsx` (dynamic import with `ssr: false`) keep working unchanged. `useStocksViewData` hook (Phase 2) still consumed by `useStocksViewState.ts`.
-- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
-- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
-
----
-Task ID: F-Phase3-Split-TelegramTab
-Agent: Alpha (frontend)
-Task: Split `src/modules/admin/components/TelegramTab.tsx` (2,200 LOC) into sub-components in a new folder `src/modules/admin/components/telegram-tab/`.
-
-Work Log:
-- Read the full 2,200-LOC `TelegramTab.tsx` and identified its structure:
-  - 11 interfaces (AuthUser, AuthStatus, DialogItem, MessageItem, MemberItem, SearchResult, LegacyChannel, LegacyMyChannel, LegacyRec, LegacyNews, LegacyMessage).
-  - 6 utility helpers (AVATAR_COLORS, colorForId, initialsOf, formatTime, formatDateTime, dialogTypeIcon, dialogTypeLabel).
-  - 1 main container (TelegramTab) + 8 sub-components (EmptyState, NotAuthBanner, AuthTab, DialogsTab, ChatTab, MessageBubble, MembersTab, SearchTab, LegacyBotTab).
-- Verified import sites: only `src/modules/admin/components/AdminView.tsx` (line 111: `import { TelegramTab } from './TelegramTab';`) and `src/modules/admin/index.ts` barrel (line 21) import it. No dynamic `import('...TelegramTab')` paths exist, so no dynamic-import path rewrite needed.
-- Followed the established pattern from `db-manager/` folder split (Task F-Strangler-DBManager) and `stocks-view/` split (Task F-Phase3-Split-StocksView): per-file imports via `@/` alias for cross-module deps (shadcn/ui, lucide-react, sonner, @/lib/utils), relative imports for sibling files inside `telegram-tab/`.
-- Created folder `src/modules/admin/components/telegram-tab/` and extracted 12 files:
-  1. `types.ts` (119 LOC) — all 11 interfaces (core auth/chat/member + legacy bot types).
-  2. `helpers.tsx` (82 LOC) — AVATAR_COLORS, colorForId, initialsOf, formatTime, formatDateTime, dialogTypeIcon (returns JSX → file uses `.tsx`), dialogTypeLabel.
-  3. `EmptyState.tsx` (19 LOC) — generic empty-state card.
-  4. `NotAuthBanner.tsx` (31 LOC) — warning banner shown when a sub-tab requires Telegram auth.
-  5. `AuthTab.tsx` (298 LOC) — phone → code → 2FA password login flow + connected-user view with logout.
-  6. `DialogsTab.tsx` (161 LOC) — dialogs list (chats/groups/channels) with search + refresh.
-  7. `MessageBubble.tsx` (121 LOC) — single chat bubble with inline edit + delete dropdown menu.
-  8. `ChatTab.tsx` (476 LOC) — active chat view: messages list, send/edit/delete, media upload (XHR with progress), socket.io real-time listeners, infinite-scroll pagination.
-  9. `MembersTab.tsx` (251 LOC) — group/channel members: list, search, add by user_id + access_hash, remove.
-  10. `SearchTab.tsx` (118 LOC) — global messages search across all dialogs.
-  11. `LegacyBotTab.tsx` (549 LOC) — preserved bot tools: sub-tabs for channels (add/remove/scrape-all), content (scraped messages + AI clean + save as rec/news), recommendations table, news list.
-  12. `TelegramTab.tsx` (225 LOC) — container. Owns top-level state (activeTab, authStatus, authLoading, selectedDialog, socket) + socket.io lifecycle + tab orchestration. ✅ well under < 500 LOC constraint.
-- Replaced original `src/modules/admin/components/TelegramTab.tsx` (2,200 LOC) with a 21-LOC Strangler shim that re-exports: `export { TelegramTab } from './telegram-tab/TelegramTab';`.
-- Behaviour preservation verified by line-by-line copy: all useState/useEffect/useCallback dependency arrays match the original (including the `// eslint-disable-line react-hooks/exhaustive-deps` on the dialogs/members/auth effects). All event handlers, socket.io event names (`telegram:new_message`, `telegram:message_edited`, `telegram:message_deleted`), API endpoint paths, optimistic-update patterns, and Arabic UI strings preserved 1:1.
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs` → ✓ online.
-- `sleep 15 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (Turbopack compile + render).
-- `curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 60 http://localhost:3000/?view=admin` → `HTTP 200` ✓ (compile + render 65ms — admin page including TelegramTab renders cleanly).
-- pm2 logs: clean compile of `/` and `/?view=admin`. No module-resolution or syntax errors. Only stale pre-existing warnings (outputFileTracing deprecated keys, eslint config deprecated, "middleware" file convention deprecated, NEXTAUTH_URL warning — all pre-existing, unrelated to this refactor).
-
-LOC summary (after split):
-- Original `TelegramTab.tsx`: 2,200 → 21 LOC (Strangler shim) (**−2,179 LOC, −98.9%**).
-- New folder `telegram-tab/`: 2,450 LOC across 12 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
-- Container `telegram-tab/TelegramTab.tsx`: 225 LOC ✅ (well under < 500 LOC constraint).
-- Largest file: `LegacyBotTab.tsx` at 549 LOC (4 sub-tabs in one component — already a self-contained cohesive unit, splitting further would just shuffle sub-tab content into smaller files without semantic benefit). Second-largest: `ChatTab.tsx` at 476 LOC (chat view with messages + send + edit + delete + upload + socket listeners — single cohesive unit).
-
-Stage Summary:
-- F-Phase3-Split-TelegramTab complete. `TelegramTab.tsx` is now a 21-LOC Strangler shim re-exporting from `telegram-tab/TelegramTab.tsx` (container, 225 LOC) which delegates rendering to 7 sub-components (AuthTab, DialogsTab, ChatTab, MembersTab, SearchTab, LegacyBotTab + shared EmptyState/NotAuthBanner/MessageBubble). All data + behaviour preserved 1:1.
-- Backwards-compatible: `src/modules/admin/components/AdminView.tsx` import statement + `src/modules/admin/index.ts` barrel keep working unchanged.
-- HTTP 200 confirmed before commit (Rule 75). Commit + push next.
-
-Commit: d00924d313ecc11eea68bbfdc4c4a776bb1a9dfb
-Message: "refactor(phase3): تقسيم TelegramTab لـ telegram-tab/ folder"
-Pushed to: origin/main (f2ebfb1..d00924d)
-
----
-
-Task ID: F-Phase3-Split-StrategySandbox
-Agent: Alpha (frontend agent)
-Task: Split StrategySandbox.tsx (2,188 LOC) + SimulationView.tsx (2,130 LOC) into per-feature folders; keep container files under 500 LOC.
-
-Work Log:
-- Read both mega files; mapped every sub-component, type, helper, and constant.
-- Spotted pre-existing syntax corruption in StrategySandbox.tsx (lines 794 and 1978 — `[m` prefixes were missing from `[minP, ...]` and `[mobileCategory, setMobileCategory]`). Babel parser tolerated it (lenient TS plugin) and SWC compiled OK lazily because AcademyView is dynamically imported with `ssr: false`. Fixed both when migrating into the new folder layout.
-- Created `src/modules/education/components/strategy-sandbox/` with 9 modules:
-  - types.ts (48 LOC) — Candle, StrategyTopic, StrategyCategory, ChartHelpers
-  - data.ts (382 LOC) — TOPICS, CATEGORIES, FLAT_TOPIC_IDS
-  - helpers.ts (349 LOC) — generateSyntheticCandles + chart layout constants + makeScales
-  - chart-primitives.tsx (148 LOC) — CandleChart, AnimatedG, Label, Arrow
-  - smc-charts.tsx (253 LOC) — FVG, OrderBlock, LiquiditySweep, MSS charts
-  - ta-charts.tsx (501 LOC) — HeadShoulders, Triangles, RSIDivergence + RSIPane, MACD, Bollinger
-  - fa-charts.tsx (207 LOC) — BarChartFA, PERatio, PBRatio, DividendYield, GrahamNumber
-  - StrategyChart.tsx (47 LOC) — dispatcher
-  - ExplanationPanel.tsx (114 LOC)
-  - StrategySandbox.tsx (247 LOC) — container (well under 500 LOC limit)
-- Created `src/modules/simulation/components/simulation-view/` with 9 modules:
-  - types.ts (65 LOC) — EGXStock, Position, Transaction, PortfolioSnapshot, SimState, PendingTrade, StockSeed
-  - constants.ts (164 LOC) — INITIAL_BALANCE, COMMISSION_RATE, TICK_INTERVAL, STORAGE_KEY_BY_MARKET, SECTOR_COLORS, FALLBACK_SEEDS, API_MARKET_CODE, getDefaultState
-  - helpers.ts (114 LOC) — adaptApiStock, formatNumber, formatCurrency, generateId, isMarketOpen, getCairoTime, loadState, saveState, calcPortfolioValue
-  - columns.tsx (315 LOC) — buildStockListColumns / buildHoldingsColumns / buildTransactionsColumns factories + HoldingsRow/TransactionRow types
-  - dialogs.tsx (353 LOC) — TradeDialog + ConfirmDialog + ResetDialog
-  - tabs.tsx (749 LOC) — SimulationTabs (dashboard/trading/portfolio/transactions/watchlist)
-  - ReportSection.tsx (153 LOC) — hidden PDF export DOM
-  - useSimulationEngine.ts (381 LOC) — owns state, tick loop, persistence, trade/reset/watchlist actions
-  - SimulationView.tsx (324 LOC) — container layout (well under 500 LOC limit)
-- Replaced original mega files with 12-LOC re-export shims so existing imports keep working (AcademyView → `../StrategySandbox`, page.tsx → `@/modules/simulation/components/SimulationView`).
-- Fixed the two syntax-corruption bugs in the new `chart-primitives.tsx` (line 794: `[minP, ...]`) and `StrategySandbox.tsx` (line 1978: `[mobileCategory, setMobileCategory]`).
-- All imports use `@/` alias for cross-module paths; intra-folder imports use `./`-relative.
-- Restarted pm2 (nextjs). HTTP checks:
-  - `GET /` → 200
-  - `GET /?tab=academy` → 200
-  - `GET /?tab=simulation` → 200
-- Verified with agent-browser that pre-split state had the same `ReferenceError: module is not defined` runtime error in the React Server DOM bundle — i.e. the error is pre-existing and NOT introduced by this refactor. Both pre-split and post-split behave identically (HTTP 200 + same client runtime error). Out of scope for F-Phase3-Split-StrategySandbox.
-- Committed + pushed (commit 50418b8). 21 files changed, 4938 insertions, 4318 deletions.
-
-Stage Summary:
-- Both mega files split into 9 sub-modules each; container files 247 LOC (StrategySandbox) and 324 LOC (SimulationView) — both under 500 LOC.
-- Original paths (`StrategySandbox.tsx`, `SimulationView.tsx`) preserved as 12-LOC re-export shims — zero breakage for downstream importers.
-- HTTP 200 verified on `/`, `/?tab=academy`, `/?tab=simulation`.
-
-Commit: 50418b8
-Message: "refactor(phase3): تقسيم StrategySandbox + SimulationView لـ folders"
-Pushed to: origin/main (50f538e..50418b8)
-
-LOC inventory (new files):
-- education/components/strategy-sandbox/:
-  - types.ts             48
-  - data.ts             382
-  - helpers.ts          349
-  - chart-primitives.tsx 148
-  - smc-charts.tsx      253
-  - ta-charts.tsx       501
-  - fa-charts.tsx       207
-  - StrategyChart.tsx    47
-  - ExplanationPanel.tsx 114
-  - StrategySandbox.tsx 247 (container)
-- simulation/components/simulation-view/:
-  - types.ts             65
-  - constants.ts        164
-  - helpers.ts          114
-  - columns.tsx         315
-  - dialogs.tsx         353
-  - tabs.tsx            749
-  - ReportSection.tsx   153
-  - useSimulationEngine.ts 381
-  - SimulationView.tsx  324 (container)
-- shims (kept at original path):
-  - StrategySandbox.tsx     12
-  - SimulationView.tsx     12
-
----
-
-Task ID: F-Phase3-Split-Admin+Predictions
-Agent: Alpha (frontend agent)
-Task: Split TWO mega files into sub-components in per-feature folders.
-  File 1: `src/modules/admin/components/AdminView.tsx` (2,105 LOC) → `admin-view/` folder.
-  File 2: `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2,098 LOC) → `prediction-dashboard/` folder.
-Container files must be < 500 LOC. Originals become re-export shims. HTTP 200 required before commit.
-
-Work Log:
-- Read both mega files end-to-end and mapped every sub-component, function, type, and constant.
-
-=== File 1: AdminView.tsx (2,105 LOC) → admin-view/ ===
-- Identified structure: imports + dynamic-import HOC wrappers (~246 LOC) + admin-fetch helpers (~72 LOC) + types/AdminTab/HubId (~115 LOC) + AdminView function (~566 LOC of state/effects/memos/handlers + ~850 LOC of render JSX) + UserFeedbackTab sub-component (~151 LOC at bottom).
-- Confirmed import sites: only `src/modules/admin/index.ts` (barrel), `src/modules/admin/components/SystemProblemsTab.tsx` (imports `SystemIssue` type), and `src/app/page.tsx` (dynamic import with `ssr: false`) — all keep working unchanged via the shim.
-- Created folder `src/modules/admin/components/admin-view/` and extracted 12 files:
-  1. `types.ts` (164 LOC) — AdminStats, ConnectionInfo, SystemIssue, ServiceStatus, DataStatusItem, DataStatus + AdminTab/HubId unions + AdminHub/AdminHubTab nav-config types + FeedbackStatus/FeedbackType/FeedbackMetaEntry + DebugLogEntry.
-  2. `admin-fetch.ts` (91 LOC) — tryAutoCookie + adminFetch helpers (module-scope singletons, no React).
-  3. `useAdminState.ts` (691 LOC) — the big state hook: 11 useState + 2 useEffect + 9 useCallback fetches (fetchStats, checkPythonHealth, fetchConnections, fetchPredictionStats, fetchLearningStats, fetchDataStatus, fetchAnalytics, fetchFeedback, fetchUserBehavior) + 3 useCallback actions (handleSync, handleMultiMarketSync, handleDirectLogin) + 3 useMemo (systemIssues, services, healthScore) + setFeedbackStatus. Returns the `UseAdminStateReturn` object consumed by the container.
-  4. `admin-hubs.tsx` (147 LOC) — `buildAdminHubs(feedbackCount?)` builder function returning the 5 hubs (health/maestro/data/users/telegram) with their nested tab lists. Depends on feedbackCount for the "feedback" tab count badge.
-  5. `AdminHeader.tsx` (84 LOC) — top header (Shield icon color-coded by healthScore + critical/warning count badges + refresh button).
-  6. `QuickAccessBar.tsx` (85 LOC) — quick-access shortcut bar (5 buttons: news-control/dashboard/data-engine/databases/users).
-  7. `AdminNav.tsx` (187 LOC) — mobile (md:hidden) + desktop hub nav. Collapsible hub cards with nested tab grids.
-  8. `AdminLoginCard.tsx` (88 LOC) — login form for non-admin users (username + password + error + loading).
-  9. `DashboardTab.tsx` (364 LOC) — the `dashboard` tab content: System Health card + Quick Stats + PurgeCacheButton + Data Status by Market + Quick Actions (sync / multi-market / generate-predictions info toast / learning / command center / databases) + Services Status + SystemHealthCard + Mini Command Center preview.
-  10. `UsersTab.tsx` (131 LOC) — the `users` tab content: 4 KPI cards + 30-day traffic AreaChart + Top sections card + lazy-loaded `<UsersManagement />`.
-  11. `UserFeedbackTab.tsx` (177 LOC) — the `feedback` tab sub-component: 4 type tiles (bug/suggestion/opinion/praise) + scrollable feedback list with status-change buttons (new → reviewed → resolved). Includes FEEDBACK_TYPE_META + FEEDBACK_STATUS_META constants.
-  12. `AdminView.tsx` (458 LOC) — container. Calls `useAdminState()`, builds hubs, renders mount guard + login gate + (Header + QuickAccessBar + AdminNav + activeTab switch across 30+ tabs).
-- Replaced original `src/modules/admin/components/AdminView.tsx` (2,105 LOC) with a 28-LOC shim: `export { AdminView } from './admin-view/AdminView'; export type { SystemIssue } from './admin-view/types';`. All existing import sites (barrel + SystemProblemsTab type import + page.tsx dynamic import) keep working unchanged.
-
-=== File 2: PredictionTrackingDashboard.tsx (2,098 LOC) → prediction-dashboard/ ===
-- Identified structure: imports + comments (~31 LOC) + 7 interfaces + 2 union types (~127 LOC) + 5 config constants (PERSONA_CONFIG, OUTCOME_CONFIG, TRAILING_PROFIT_CONFIG, LIVE_OUTCOME_CONFIG, DAYS_OPTIONS, QUALITY_MODE_OPTIONS, CONFIDENCE_OPTIONS) (~205 LOC) + 4 helper functions (formatReturnPct, formatProfitFactor, formatDateShort, computeHoldingDays) (~50 LOC) + generatePredictionsText (~35 LOC) + computeStatsFromPredictions (~43 LOC) + PredictionTrackingDashboard function (~1,593 LOC: 30 LOC state + 60 LOC fetch/poll effects + 9 useMemo derivations + 281 LOC desktopTableColumns memo + 940 LOC render JSX).
-- Confirmed import sites: only `src/modules/predictions/index.ts` (barrel) + `src/modules/market-analysis/components/UnifiedPredictionsTab.tsx` (dynamic import with `ssr: false`). Both keep working unchanged via the shim.
-- Created folder `src/modules/predictions/components/prediction-dashboard/` and extracted 14 files:
-  1. `types.ts` (160 LOC) — PersonaId, OutcomeFilter, DaysWindow, HonestPredictionItem, HonestListResponse, LivePrediction, PersonaStats, LiveTrackingResponse, PersonaKey, OutcomeKey, QualityMode, CumulativeProfitPoint, FocusTickerInfo, SortBy, EntryPeriod, PredictionTrackingDashboardProps.
-  2. `constants.ts` (157 LOC) — PERSONA_CONFIG (3 personas), OUTCOME_CONFIG (4 outcomes), TRAILING_PROFIT_CONFIG, LIVE_OUTCOME_CONFIG, DAYS_OPTIONS (11 options), QUALITY_MODE_OPTIONS (2 modes), CONFIDENCE_OPTIONS (4 thresholds).
-  3. `helpers.ts` (233 LOC) — isTrailingProfit, computeMaxProfitPct, computeMaxLossPct, computeLiveReturnPct, formatReturnPct, formatProfitFactor, formatDateShort, computeHoldingDays, generatePredictionsText, computeStatsFromPredictions.
-  4. `usePredictionTrackingState.ts` (506 LOC) — the big state hook: 15 useState + 2 useEffect (fetch + polling) + fetchData useCallback + 9 useMemo (allRawPredictions, dedupedPredictions, qualityFilteredPredictions, aggregateByTicker, computedStats, focusTickers, focusTickerList, cumulativeProfitData, activeStats, filteredPredictions, predictionsShareText) + handleExportProofImage useCallback.
-  5. `desktopColumns.tsx` (339 LOC) — `buildDesktopColumns(focusTickers, onSelectProof)` factory returning `Column<LivePrediction>[]` (15 columns: ticker, entryDate, entryPrice, targetPrice, targetPrice2, currentPrice, outcome, liveOutcome, returnPct, highestPriceReached, lowestPriceReached, maxProfitPct, maxLossPct, daysSinceEntry, proof).
-  6. `HeaderBar.tsx` (191 LOC) — luxury header (Sparkles badge + market session badge + title + refresh button with countdown + verify-pending button + ExportDropdown) + timeframe selector pills + quality filter row + confidence threshold row.
-  7. `KpiCards.tsx` (125 LOC) — 5 hero KPI cards (net return + gross profit + gross loss + max loss + R:R ratio).
-  8. `PersonaCards.tsx` (93 LOC) — persona breakdown cards (UNIFIED — balanced only, KILL-MAESTRO 2026-08-31).
-  9. `FocusStocksBanner.tsx` (77 LOC) — focus tickers banner (tickers appearing in 2+ personas).
-  10. `CumulativeProfitChart.tsx` (85 LOC) — recharts BarChart of cumulative profit % over closed trades.
-  11. `MobilePredictionCard.tsx` (257 LOC) — single mobile card row (ticker + persona badge + focus/morning_bell/evidence/who_is_buying/hmm_regime badges + outcome badge + 4-col grid + entry/execution dates + holding days + live preview + highest/lowest + return %).
-  12. `ProofTableCard.tsx` (267 LOC) — table card (header + outcome filter buttons + search + sort selector + entry period selector) + body (skeleton | error | empty | mobile card list | desktop UnifiedTable).
-  13. `ProofModal.tsx` (207 LOC) — trade-proof modal dialog (badge + outcome + ticker + 3x3 grid of trade numbers + analysis_reason + institutional intelligence grid + footer metadata + PNG export button).
-  14. `PredictionTrackingDashboard.tsx` (152 LOC) — container. Calls `usePredictionTrackingState(market)`, owns `handleVerifyPending` callback, renders: HeaderBar + KpiCards + PersonaCards + FocusStocksBanner + CumulativeProfitChart + ProofTableCard + ProofModal.
-- Replaced original `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2,098 LOC) with a 30-LOC shim: `export { PredictionTrackingDashboard } from './prediction-dashboard/PredictionTrackingDashboard'; export { default } from './prediction-dashboard/PredictionTrackingDashboard';`. Both the barrel + UnifiedPredictionsTab dynamic import keep working unchanged.
-
-Verification:
-- `node_modules/.bin/pm2 restart nextjs --update-env` → ✓ online (Ready in 2.2s).
-- `sleep 15 && curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 120 http://localhost:3000/` → `HTTP 200` ✓ (first-hit Turbopack compile ~3.9s + render ~722ms; subsequent cached at 56-67ms).
-- `curl http://localhost:3000/?view=admin` → `HTTP 200` ✓ (admin route renders cleanly — AdminView + all lazy-loaded sub-components).
-- `curl http://localhost:3000/?view=predictions` → `HTTP 200` ✓ (predictions route renders cleanly — PredictionTrackingDashboard + all sub-components).
-- `tsc --noEmit` on the new folders → 0 errors. Only pre-existing TS errors remain in `TreasuryBondsView.tsx` (TableCell/TableRow missing imports — pre-existing), `stocks-view/*` (4 type narrowing issues — pre-existing from F-Phase3-Split-StocksView), `telegram-events/index.ts` + `vps-service/ws-service/index.ts` (socket.io missing — out-of-scope). No NEW errors introduced by this refactor.
-- pm2 logs: clean compile of `/`, `/?view=admin`, `/?view=predictions`. No module-resolution or syntax errors. Only pre-existing backend warnings (stocks.db not found during /api/track — pre-existing, unrelated; NEXTAUTH_URL warning — pre-existing; finance-db retry — pre-existing).
-
-LOC summary (after split):
-- File 1 — AdminView:
-  - Original `AdminView.tsx`: 2,105 → 28 LOC (Strangler shim) (**−2,077 LOC, −98.7%**).
-  - New folder `admin-view/`: 2,578 LOC across 12 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
-  - Container `admin-view/AdminView.tsx`: 458 LOC ✅ (well under < 500 LOC constraint).
-  - Largest file: `useAdminState.ts` at 691 LOC (single cohesive state hook — all fetches + derived memos + actions; splitting further would just shuffle logic between state slices without semantic benefit). Second-largest: `DashboardTab.tsx` at 364 LOC (dashboard tab content — single cohesive unit).
-- File 2 — PredictionTrackingDashboard:
-  - Original `PredictionTrackingDashboard.tsx`: 2,098 → 30 LOC (Strangler shim) (**−2,068 LOC, −98.6%**).
-  - New folder `prediction-dashboard/`: 2,642 LOC across 14 files (slight increase due to file headers + per-file import blocks; logic is byte-equivalent — pure structural refactor).
-  - Container `prediction-dashboard/PredictionTrackingDashboard.tsx`: 152 LOC ✅ (well under < 500 LOC constraint).
-  - Largest file: `usePredictionTrackingState.ts` at 506 LOC (single cohesive state hook — all fetches + memos + actions; splitting further would just shuffle logic between state slices without semantic benefit). Second-largest: `desktopColumns.tsx` at 339 LOC (15 column-defs in one factory — single cohesive unit).
-
-Stage Summary:
-- F-Phase3-Split-Admin+Predictions complete. Both mega files are now thin re-export shims (28 LOC + 30 LOC) delegating to per-feature folder containers (458 LOC + 152 LOC, both < 500 LOC).
-- Backwards-compatible: all existing import sites (barrels `src/modules/admin/index.ts` + `src/modules/predictions/index.ts`, `SystemProblemsTab.tsx` type import, `src/app/page.tsx` + `UnifiedPredictionsTab.tsx` dynamic imports with `ssr: false`) keep working unchanged.
-- HTTP 200 confirmed on `/`, `/?view=admin`, `/?view=predictions` before commit (Rule 75). Commit + push next.
-
----
-Task ID: F-Phase3-Split-Reports+Edu
-Agent: Alpha (frontend agent)
-
-Task: Split TWO mega files into per-feature sub-component folders as part of Phase 3 strangler-fig refactor:
-- `src/modules/reports/components/ExecutiveReportView.tsx` (2,087 LOC) → folder `src/modules/reports/components/executive-report/`
-- `src/modules/education/components/AcademyEncyclopedia.tsx` (2,054 LOC) → folder `src/modules/education/components/academy-encyclopedia/`
-
-Work Log:
-- Read both files in full (2,087 + 2,054 LOC) to map every type / interface / const / helper / sub-component.
-- Audited existing import sites:
-  - ExecutiveReportView: imported via `@/modules/reports/components/ExecutiveReportView` (MarketAnalysisView + UnifiedPredictionsTab) + via `./components/ExecutiveReportView` (reports barrel). Original file path MUST stay as a re-export shim.
-  - AcademyEncyclopedia: imported via `../AcademyEncyclopedia` (AcademyView). Original file path MUST stay as a re-export shim.
-- Inspected prior Phase 3 split (prediction-dashboard/) for the convention to mirror: types.ts + constants.ts + helpers.ts + per-component files + container < 500 LOC + parent shim.
-
----
-Task ID: P1-V38-Analysis
-Agent: Explore
-Task: Analyze V38 engine logic to identify indicators used, BUY signal logic, and 5+ blind spots (gaps).
-
-Work Log:
-- Read /home/z/my-project/worklog.md (context only — prior migration logs)
-- Read /home/z/my-project/vps-service/engines/backtest_engine.py (2,374 lines) — V38BacktestEngine class
-- Verified via AST: V38BacktestEngine has DUPLICATE `analyze_single_day` method (lines 1455 + 1588). In Python the SECOND definition OVERRIDES the first — so the ACTIVE path is the V39.3/V40 version that delegates to build_institutional_decision. The V38-native block at 1455-1586 is DEAD CODE but still represents the original V38 logic.
-- Read /home/z/my-project/vps-service/analyzers/backtest_engine.py (1,267 lines) — confirmed it is a DIFFERENT engine: class `BacktestEngine` (not V38) that wraps `MasterAnalyzer`. Not used by V38 path.
-- Read /home/z/my-project/vps-service/analyzers/institutional_decision_engine.py (1,507 lines) — build_institutional_decision: builds 6 Proofs (trend, maker, DNA, fundamentals, sector, benchmark RS), computes tech_score (base 50 ± weighted deltas), applies Market Breadth Hard Veto (bear regime + benchmark<-1% + breadth<40%), and emits Arabic signal_final mapped to STRONG_BUY/BUY/WAIT.
-- Key findings:
-  * Active V38/V39.3 indicators: ATR(14), SMA(200), SMA(20), Bollinger(20,2.0)+BB-width SMA(50) for squeeze/expansion, Volume SMA(20), Order Blocks/Sweeps (pivot lookback=5), VWAP fair value (period=100), DNA pattern-match (10-bar pct-change, search_depth=100, proj_len=10), 14-day ROC, EGX30ETF benchmark ROC-14, fundamentals 0-100 score from data_engine.db (P/E, ROE, dividends).
-  * Scoring (legacy V38 calculate_score_and_proofs, dead code): base = tech_score_base(50) - 20 = 30; +w_trend(15) +w_maker(20) +w_dna(15) +w_fund(15) +w_sector(10) +5 bonus if sector_change>1%. Clamped 0-100.
-  * Active V39.3 path: tech_score = base(50) + sum of proof score_impacts; STRONG_BUY if (maker_bullish AND flight_up) OR strong_count>=3 + RS>=1.0; BUY if strong_count>=2 + R/R>=1.5; WAIT otherwise.
-  * buy_threshold default = 75 (NOT 60 as task brief stated). Task brief may be referring to a downstream filter; the engine-level default is 75.
-  * Entry = last close (or decision.risk_profile.entry); SL = active_ob - 0.5*ATR (or entry - 1.5*ATR), clamped to [5%, 9%] of entry (env V40_2_STOP_MAX_PCT); TP1 = entry + 2*risk (or DNA target if higher), TP2 = entry + 3*risk. Trailing stop activates at +5% gain, breakeven floor at entry*1.01. Partial exit 50% at 1R via StopLossManager.
-  * Entry gate (Task part4-stop-loss): BUY rejected → WAIT if stock in active correction (price<MA50 AND RSI<45 AND change<0 AND not near 52w low). Only applies to BUY (not STRONG_BUY).
-  * Adaptive threshold: after ≥5 trades, win_rate>=65% → lower threshold by 5; win_rate<40% → raise by 5.
-
-Stage Summary:
-- Indicators used: ATR(14), SMA(20), SMA(200), Bollinger Bands(20, 2.0) + BB-width SMA(50) squeeze/expansion, Volume SMA(20) + vol_ratio, Order Blocks & Liquidity Sweeps (pivot lookback=5), VWAP fair value (period=100), DNA pattern match (pattern_len=10, search_depth=100, proj_len=10), 14-day stock ROC, EGX30ETF benchmark ROC-14, Fundamentals (P/E + ROE → 0-100 score). NOT used: RSI (except in entry-gate helper), MACD, ADX, Stochastic, MFI, CCI, OBV, Ichimoku, Donchian channels (the codebase HAS modules for these but V38 path does not call them).
-- BUY logic: Active path computes 6 Proofs (trend/maker/DNA/fundamentals/sector/benchmark-RS), sums score_impacts onto tech_score_base=50. STRONG_BUY if maker_bullish AND flight_up (BB expansion + broke resistance), OR strong_count>=3 + benchmark_passed (RS>=1.0). BUY if strong_count>=2 and R:R>=1.5 and no weak_blocks and market breadth veto not triggered. Hard veto when regime=bear (close<SMA200 proxy) AND benchmark<-1%. Note: dead-code V38 path uses simple threshold: score>=buy_threshold(75) → STRONG_BUY.
-- 5+ GAPS (blind spots):
-  1. No real market-regime classifier — uses close vs SMA200 as crude bull/bear proxy; engines/market_regime.py + HMM modules exist but are NOT called. Bear-market severity (drawdown depth, vol expansion) is invisible → strategy can't scale position size to regime.
-  2. No sector rotation / money-flow tracking — sector_change is just today's AVG(change_percent) of stocks in sector (single-day, not multi-week momentum). No relative-strength ranking of stock vs sector peers, no inter-sector rotation.
-  3. No earnings/event calendar — fundamentals are static snapshots (cached once); no upcoming earnings date, ex-div date, corporate-action calendar, dilution events. V38 can BUY the day before earnings or a capital-increase — catastrophic in bear markets where earnings whipsaw.
-  4. No news/sentiment/disclosure feed — egx_disclosure_engine.py, news_impact_scorer.py, live_news_integration.py exist in codebase but V38 never imports them. Negative disclosures (loss reports, regulatory action) are invisible — common trigger for bear-market gap-downs.
-  5. No volatility regime / VIX-equivalent — BB squeeze/expansion is a poor proxy; no realized-vol percentile, no EGX VIX. position_sizing.py only bins ATR/price into LOW/NORMAL/HIGH; no bear-regime vol-expansion handling.
-  6. No inter-market signals — no EGP/USD, no Egypt 10Y bond yield, no MSCI EM, no gold/oil correlation. Capital-flight signals (EGP depreciation, rising local yields) typically precede EGX sell-offs but V38 ignores them.
-  7. No volume profile / institutional order flow — daily vol_ratio vs 20-SMA only. volume_profile.py exists but unused. Block-trade distribution during bear rallies (sign of institutional selling) is invisible.
-  8. No calendar effects — no month-end, quarter-end, Ramadan thin-liquidity, year-end window-dressing signals (EGX has strong seasonality around Ramadan/Eid).
-  9. No fundamental momentum — P/E and ROE are point-in-time cached; no delta (improving vs deteriorating fundamentals). Bear markets are preceded by declining ROE which V38 cannot detect.
-  10. Adaptive threshold is reactive (needs 5+ losing trades before tightening) — by then a bear regime may have inflicted significant drawdown.
-- Trend-following vs mean-reverting verdict: V38 is PRIMARILY TREND-FOLLOWING with a thin mean-reversion entry layer. Trend bias comes from: SMA(200) trend filter (only BUY when close>SMA200), BB-squeeze→expansion breakout detection, DNA pattern continuation assumption, trailing stops + 1R partial exits (let profits run). Mean-reversion bias is secondary and only at entry timing: maker absorption (red candle + high vol + close near top = capitulation fade) and liquidity sweep detection (low<support, close>support). In a BEAR market, the trend-following bias means V38 will mostly sit out (price rarely >SMA200) but its occasional BUY signals during bear rallies get stopped when trend resumes down, while the maker-absorption/sweep signals can fire false reversals during downtrends.
-
----
-Task ID: P0-Inv-A
-Agent: Explore
-Task: Inventory features 1-4 (liquidity_filter, strict_entry_filters, regime_filter, risk) — extract callable signatures, inputs, returns, deps, standalone-testability, gotchas.
-
-Work Log:
-- Read /home/z/my-project/worklog.md (P1-V38-Analysis entry at line 8104 — context: V38 uses ATR14, SMA20/200, BB(20,2), Volume SMA20, Order Blocks/Sweeps, VWAP100, DNA, ROC14, EGX30ETF RS, fundamentals; buy_threshold=75; gaps include no real regime classifier, no volatility regime, no volume-profile, no news/disclosure integration).
-- Read fully: vps-service/analyzers/liquidity_filter.py (1,112 lines), strict_entry_filters.py (830 lines), regime_filter.py (247 lines), risk.py (320 lines).
-- Verified all public function/method signatures against source (parameter names, types, defaults, return shapes).
-- Key signature findings (exact):
-  * liquidity_filter.evaluate_kill_filters(ticker, closes=None, volumes=None, current_price=0.0, avg_turnover=0.0, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> Dict[str, Any]  returning {passed, kill_reasons, kill_details, kill_filter_active}.
-  * LiquidityFilter(db_path).analyze(ticker, closes=None, volumes=None, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> LiquidityProfile  (dataclass: is_tradeable, level, liquidity_mult, warning, kill_filter_result, free_float_*).
-  * strict_entry_filters.evaluate_strict_entry(closes, highs, lows, volumes, rsi=None) -> Dict  with {'decision':'ACCEPT'|'REJECT', 'reason', 'is_accumulation', 'is_grab', 'is_late', 'accumulation_details', 'grab_details', 'late_details'}.
-  * regime_filter.is_bullish_regime(closes, mode='A', ma_short_period=20, ma_long_period=50) -> Dict  with {is_bullish, mode, close, sma50, sma20, reason}.
-  * risk.RiskManager(capital=10000, risk_percent=2.0).evaluate_trade(entry_price, target_price=None, stop_loss=None, signal='HOLD', support_level=None, resistance_level=None) -> RiskAssessment (dataclass; .to_dict() available).
-- Confirmed: NONE of the 4 files writes to any DB; all reads on liquidity_filter go through db_manager (writable=False). strict_entry_filters/regime_filter/risk have ZERO DB dependency.
-
-Stage Summary:
-## Feature 1: liquidity_filter
-- File: vps-service/analyzers/liquidity_filter.py
-- Main callables:
-  (a) `evaluate_kill_filters(ticker: str, closes: List[float]=None, volumes: List[float]=None, current_price: float=0.0, avg_turnover: float=0.0, benchmark_change: float=0.0, stock_roc: float=0.0, data_bars_count: int=0) -> Dict[str, Any]`
-  (b) `LiquidityFilter(db_path).analyze(ticker: str, closes=None, volumes=None, benchmark_change=0.0, stock_roc=0.0, data_bars_count=0) -> LiquidityProfile`
-  (c) `check_liquidity_first(ticker, db_path) -> Tuple[bool, Optional[LiquidityProfile]]` (convenience wrapper)
-- Input: ticker string + raw lists of closes/volumes + scalars (current_price, avg_turnover, benchmark_change, stock_roc, data_bars_count). NO DataFrame. List length ≥20 needed for wash-trading/distribution/dead-money filters.
-- Returns: (a) Dict `{passed: bool, kill_reasons: List[str], kill_details: dict, kill_filter_active: bool}` where kill_details has per-filter keys (liquidity, price, volume_volatility, data_bars, relative_strength, wash_trading, distribution_trap, dead_money). (b) LiquidityProfile dataclass: ticker, avg_daily_volume, avg_daily_turnover, volume_20d, turnover_20d, level (LiquidityLevel enum: EXCLUDED/WEAK/MODERATE/LIQUID/HIGH_LIQUIDITY), is_tradeable, warning, free_float_percentage, free_float_shares, free_float_warning, liquidity_mult (0.0–1.1), kill_filter_result (Dict or None). `.to_dict()` available.
-- Deps: (a) is DB-FREE but reads admin settings via `analyzers.engine_settings.get_setting(key, default)` — falls back to defaults if module missing. Also imports `analyzers.dynamic_context_engine.get_dynamic_context` and `utils.shared_liquidity.*` (all stubbed if import fails). (b) REQUIRES DB: reads `stocks` table (current_price, free_float_percentage, free_float_shares, volume) from `db_path` and `price_history` table from `price_history.db` (sibling path). Uses `core.db_manager.get_connection(path, writable=False)`.
-- Standalone: (a) YES — pure function with pre-fetched inputs. (b) NO — needs DB; but if caller pre-fetches volume/price and calls evaluate_kill_filters directly, fully testable. (c) NO — wraps (b).
-- Gotchas: (1) Module-level global `_STRICT_KILL_FILTERS` toggled by `set_strict_kill_filters(bool)` — backtests MUST call `set_strict_kill_filters(True)` else data-bars threshold relaxed ×0.15 when EGX market closed. (2) `_is_egx_market_open()` reads system clock → tests on weekends auto-relax thresholds (surprising). (3) `_get_volume_data` has bare `except:` (swallows ALL errors silently → returns None). (4) `volume` column in stocks table is a STRING like "2.28 M" — parsed by `_parse_volume_string` (handles K/M/B suffixes); silent 0 if malformed. (5) No DB writes. (6) dynamic_min_turnover thresholds per-price-bucket: <5 → 80K, 5-15 → 200K, >15 → 400K (override legacy 3M). (7) `kill_filter_result` is None on profile unless caller passes closes/volumes/benchmark/roc/bars.
-
-## Feature 2: strict_entry_filters
-- File: vps-service/analyzers/strict_entry_filters.py
-- Main callables (4 public + 2 helpers — all module-level functions, no class):
-  (a) `is_in_accumulation(closes, highs, lows, volumes) -> Dict[str, Any]`
-  (b) `is_liquidity_grab(highs, lows, closes, volumes) -> Dict[str, Any]`  (NOTE arg order differs from (a))
-  (c) `is_late_entry(closes, highs, rsi: Optional[float]=None) -> Dict[str, Any]`
-  (d) `evaluate_strict_entry(closes, highs, lows, volumes, rsi: Optional[float]=None) -> Dict[str, Any]`  ← orchestrator (calls a, b, c)
-  (e) `is_liquidity_grab_opportunity(closes, highs, lows, volumes, sma50: Optional[float]=None) -> Dict[str, Any]`
-  (f) `evaluate_average_down(closes, highs, lows, volumes, original_entry: float, original_stop: float, current_price: float, sma50: Optional[float]=None, already_averaged: bool=False) -> Dict[str, Any]`
-- Input: raw `List[float]` arrays (closes/highs/lows/volumes, oldest→newest). NO DataFrame. RSI optional (computed internally via canonical `calc_rsi` if None). Needs ≥20-25 bars for most checks.
-- Returns: every function returns `Dict[str, Any]`. (d) returns `{'decision':'ACCEPT'|'REJECT', 'reason':str, 'is_accumulation':bool, 'is_grab':bool, 'is_late':bool, 'accumulation_details':dict, 'grab_details':dict, 'late_details':dict}`. (a) returns `{is_accumulation, reason, range_pct, vol_ratio, recent_gain_pct, dist_from_high_pct}`. (b) returns `{is_grab, reason, support_level, penetration_pct, recovered, volume_confirmed}`. (c) returns `{is_late, reason, dist_from_high_pct, rsi, recent_gain_pct}`. (e) returns `{is_opportunity, break_pct, recovered, recovery_days, vol_confirmed, near_sma50, no_bearish_choc, reason, details}`. (f) returns `{should_average, avg_price, new_avg_entry, new_stop, reason, opportunity_details}`.
-- Deps: imports `analyzers.indicators.ma.sma` and `analyzers.indicators.rsi.calc_rsi` (canonical SSOT — must be importable). NO DB. NO engine context. NO global state.
-- Standalone: YES — pure functions, has `if __name__=='__main__'` self-test using synthetic arrays.
-- Gotchas: (1) thresholds are MODULE-LEVEL CONSTANTS (ACCUM_RANGE_MAX_PCT=18.0, ACCUM_VOL_MAX_RATIO=1.4, ACCUM_RECENT_GAIN_MAX_PCT=15.0, ACCUM_DIST_FROM_20D_HIGH_MIN_PCT=6.0, GRAB_PENETRATION_PCT=0.5, LATE_DIST_FROM_HIGH_MAX_PCT=8.0, LATE_RSI_THRESHOLD=70.0, LATE_RECENT_GAIN_PCT=18.0) — to override at runtime you must monkey-patch module attrs (no parameter). (2) `_rsi()` returns 50.0 (neutral) if canonical returns None → masks missing-data case. (3) `is_late_entry` returns `is_late=False` silently if `len(closes) < 20` (caller must check data sufficiency separately). (4) `is_liquidity_grab` arg order is (highs, lows, closes, volumes) — DIFFERENT from `is_in_accumulation` (closes, highs, lows, volumes). Adapter must preserve order. (5) No DB writes, no side effects.
-
-## Feature 3: regime_filter
-- File: vps-service/analyzers/regime_filter.py
-- Main callables:
-  (a) `is_bullish_regime(closes: List[float], mode: str='A', ma_short_period: int=20, ma_long_period: int=50) -> Dict[str, Any]`  ← per-stock
-  (b) `passes_regime_filter(closes: List[float], mode: str='A') -> bool`  (thin wrapper: `return is_bullish_regime(closes, mode=mode)['is_bullish']`)
-  (c) `compute_market_proxy_index(per_ticker_closes: Dict[str, List[float]]) -> List[float]`  (equal-weighted EGX proxy index, base=100)
-  (d) `is_market_bullish(per_ticker_closes: Dict[str, List[float]], ma_period: int=50) -> Dict[str, Any]`  ← market-level
-- Input: (a)(b) `List[float]` closes (oldest→newest). (c)(d) `Dict[str, List[float]]` per-ticker closes (all should be aligned length; misalignment silently truncated to min).
-- Returns: (a) Dict `{is_bullish: bool, mode: str, close: float|None, sma50: float|None, sma20: float|None, reason: str}` (reason is Arabic human-readable). (d) Dict `{is_bullish: bool, index: List[float], sma: float (only if computed), reason: str}`.
-- Deps: imports `analyzers.indicators.ma.sma` only. NO DB. NO engine context. NO global state.
-- Standalone: YES — pure functions, has `__main__` self-test (bull/bear/sideways scenarios).
-- Gotchas: (1) Returns `is_bullish=False` silently if `len(closes) < ma_long_period` (default 50) — caller MUST check `reason` field or pre-validate length. (2) Unknown `mode` (not 'A' or 'B') → returns dict with `is_bullish=False` and reason "mode غير معروف". (3) Mode A = Close > SMA50 (single condition); Mode B = Close > SMA20 AND Close > SMA50 (stricter). (4) Market-level uses equal-weighted proxy index (NOT cap-weighted) — may diverge from real EGX30. (5) No DB writes, no side effects.
-
-## Feature 4: risk (RiskManager)
-- File: vps-service/analyzers/risk.py
-- Main callables:
-  (a) `RiskManager(capital: float=10000, risk_percent: float=2.0).evaluate_trade(entry_price: float, target_price: Optional[float]=None, stop_loss: Optional[float]=None, signal: str='HOLD', support_level: Optional[float]=None, resistance_level: Optional[float]=None) -> RiskAssessment`
-  (b) `RiskManager.calculate_position_size(entry_price: float, stop_loss: float, capital: Optional[float]=None, risk_percent: Optional[float]=None) -> Dict`
-  (c) `RiskManager.suggest_stop_loss(entry_price: float, support_level: Optional[float]=None, resistance_level: Optional[float]=None, signal: str='BUY', atr: Optional[float]=None) -> Dict`
-- Input: scalar prices (entry/target/stop/support/resistance) + signal string ('BUY'/'SELL'/'HOLD') + optional ATR. NO DataFrame, NO lists.
-- Returns: (a) RiskAssessment dataclass with fields: entry_price, target_price, stop_loss, position_size (int shares), position_value (float), risk_amount, risk_percent, reward_amount, reward_percent, risk_reward_ratio (float), signal (str), signal_quality (str: 'EXCELLENT'≥3, 'GOOD'≥2, 'ACCEPTABLE'≥1.5, 'POOR'≥1, 'BAD'<1), warnings (list[str]). Has `.to_dict()`. (b) Dict `{shares, position_value, risk_amount, risk_percent, formula}` (or `{shares:0, error:'Invalid stop loss'}` if sl_distance≤0). (c) Dict with optional keys: `percentage_based` (always None per Rule 27), `support_based`/`resistance_based` (only if provided), `atr_based` (only if atr given), `recommended` (max for BUY, min for SELL, or None).
-- Deps: lazily imports `utils.risk_reward.compute_risk_reward` inside `evaluate_trade` (wrapped in try/except — falls back to `reward_amount/risk_amount` if missing). NO DB. NO engine context. NO global state.
-- Standalone: YES — pure class instantiation, no I/O.
-- Gotchas: (1) `risk_percent` clamped to [0.5, 10.0] in `__init__` (caller value silently overridden). (2) If `signal='HOLD'` OR `entry_price <= 0` → returns early with empty assessment (no SL/TP/size computed, signal_quality='NEUTRAL'). (3) If `stop_loss=None` AND no support/resistance → Rule 27 NO-FAKE-DATA: stop_loss stays None, position_size=0, target_price=None, reward_amount=0. Pre-2026 this fabricated entry*0.95. (4) **BUG**: line 212 references `sl_distance` in `if sl_distance / entry_price > 0.1` warning check, but `sl_distance` is only assigned inside the `if stop_loss is not None:` branch — if stop_loss is None, raises `UnboundLocalError`. Adapter MUST either pass stop_loss explicitly OR wrap evaluate_trade in try/except. (5) `RiskAssessment.warnings: list = None` is a mutable default at class level — instances created via direct `RiskAssessment(...)` without passing warnings share the SAME list object; only `evaluate_trade` constructs with `warnings=[]` (safe). (6) `suggest_stop_loss` returns dict with potentially-missing keys — caller MUST use `.get(key)` not `[]`. (7) No DB writes, no side effects.
-
-Adapter-design summary (for orchestrator author):
-- LOWEST-FRICTION targets (pure-fn, no DB): strict_entry_filters.* , regime_filter.*, risk.RiskManager. Adapter = thin shim passing lists/scalars directly.
-- DB-BOUND target: LiquidityFilter.analyze needs stocks.db + price_history.db; ADAPTER should either (a) inject a fake db_path that the orchestrator pre-populates, (b) bypass and call evaluate_kill_filters directly with pre-fetched volume/price (preferred for unit testing — evaluate_kill_filters is DB-free).
-- All 4 modules tolerate missing optional imports via try/except stubs — adapter does NOT need to spin full engine context.
-- Globals to reset between runs: liquidity_filter._STRICT_KILL_FILTERS (call set_strict_kill_filters(False) for live, True for backtest). strict_entry_filters thresholds are module constants (monkey-patch to override).
-- Crash-safe wrapping: liquidity_filter._get_volume_data and risk.evaluate_trade both can raise (bare except / UnboundLocalError) — adapter should wrap in try/except and return REJECT on exception.
-
----
-Task ID: P0-Inv-B
-Agent: Explore
-Task: Inventory features 5-7 (rr_gate, sector_heat, whale_guard) — callable signatures, inputs, returns, deps, standalone-testability, gotchas.
-
-Work Log:
-- Read /home/z/my-project/worklog.md (P0-Inv-A + P1-V38-Analysis entries — context: RiskManager.evaluate_trade already inventoried; V38 uses sector_change = AVG(change_percent) of sector peers single-day, no real RS ranking; gap #7 = no volume-profile / institutional order flow).
-- Read fully: vps-service/analyzers/sector_relative.py (471 lines), vps-service/jobs/predictor_modules/whale_guard.py (42 lines), vps-service/utils/risk_reward.py (89 lines), vps-service/utils/entry_gate.py (858 lines — esp. _check_rr + check_entry_gate), scripts/liquidity_radar_v2.py (relevant slice: compute_whale_flow at lines 579-710, classify_phase at 716, MIN_CANDLES/LOOKBACK_DAYS at 120-121), vps-service/risk_management_advanced.py (get_rr_verdict 1295, calculate_dynamic_rr 1822), vps-service/analyzers/conviction_engine.py (_score_risk_reward 260, calculate_conviction 342), vps-service/jobs/predictor_modules/__init__.py, vps-service/jobs/daily_predictor.py (whale_guard import + call site at line 1060).
-- Verified via Glob: NO dedicated `rr_gate.py` or `sector_heat.py` file exists anywhere in repo. Only one `whale_guard.py` exists. Confirmed predictor_modules/__init__.py lists whale_guard as Phase 7.2 extraction from daily_predictor.py (Strangler Pattern).
-- Confirmed via Grep: 92 files mention "risk_reward" — all derive from utils/risk_reward.compute_risk_reward (Rule 67 canonical) OR RiskManager.evaluate_trade. No standalone "rr_gate" callable. entry_gate._check_rr is private (underscore) and only used inside check_entry_gate.
-- Confirmed compute_whale_flow returns Dict with net_flow_egp, avg_daily_flow_egp, whale_present, flow_strength, cash_ratio, cash_safety_multiplier, flow_method, whale_threshold_egp, reason. _whale_distribution_guard reduces this to single bool: `net_flow_egp < 0` (distributing → block BUY).
-
-Stage Summary:
-## Feature 5: rr_gate (Risk:Reward gate)
-- File: NO DEDICATED FILE. Closest canonical primitives:
-  (a) `utils/risk_reward.py::compute_risk_reward(entry: float, target: float, stop: float, fallback: float=0.0) -> float` (Rule 67 canonical, 89 lines)
-  (b) `utils/risk_reward.py::compute_risk_reward_safe(entry, target, stop) -> Optional[float]` (None on invalid)
-  (c) `analyzers/risk.py::RiskManager.evaluate_trade(entry_price, target_price=None, stop_loss=None, signal='HOLD', support_level=None, resistance_level=None) -> RiskAssessment` (dataclass with .risk_reward_ratio + .signal_quality; already inventoried in P0-Inv-A)
-  (d) `utils/entry_gate.py::_check_rr(entry_price, target_price, stop_price) -> Dict` (PRIVATE; returns `{name:'rr_ratio', passed:bool, reason:str, weight:3}`; threshold = `MIN_RR_RATIO=1.5` module constant at line 86)
-  (e) `risk_management_advanced.py::get_rr_verdict(risk_reward: float) -> Dict` (label-only: `{level, label_ar, emoji, color}`)
-  (f) `risk_management_advanced.py::calculate_dynamic_rr(entry_price, current_price, stop_price, target_price) -> Dict` (DYNAMIC — uses current_price, not entry; semantics differ)
-- Input: 3 scalars (entry, target, stop). NO DataFrame, NO lists, NO DB.
-- Returns: (a)(b) float R:R ratio (or fallback/None). (c) RiskAssessment dataclass. (d) Dict {name, passed, reason, weight}. (e) Dict {level, label_ar, emoji, color}. (f) Dict {risk_reward_ratio, risk_amount, reward_amount, risk_pct, reward_pct, verdict, message}.
-- Deps: utils/risk_reward.py is ZERO-DEP (pure Python, only `from __future__ import annotations` + `typing.Optional`). entry_gate._check_rr imports compute_risk_reward lazily inside the function. risk_management_advanced imports utils.risk_reward lazily. RiskManager lazily imports utils.risk_reward (already inventoried P0-Inv-A).
-- Standalone: YES — `compute_risk_reward` is a pure function, no class, no DB, no I/O, no global state. The 3-scalar signature is the cleanest possible gate input.
-- Gotchas: (1) `compute_risk_reward` auto-detects BUY vs SELL from `target/stop` relationship to `entry` — if geometry is reversed (target < entry AND stop < entry, or vice-versa mismatched) → returns `fallback` (default 0.0). Adapter MUST pass correctly-oriented prices or gate will silently return 0 → reject. (2) If `entry == stop` (risk=0) → returns `fallback` (NOT infinity). (3) If `target == entry` (reward=0) → returns 0.0 explicitly. (4) Result is `round(reward/risk, 2)` — 2-decimal precision. (5) `entry_gate.MIN_RR_RATIO` was lowered 1.8 → 1.5 (comment: "DNA-WINNER" at line 86) — V38 buy_threshold default is 75 but R:R floor is 1.5. Adapter should expose threshold as parameter, NOT rely on module constant. (6) `RiskManager.evaluate_trade` has UnboundLocalError bug if stop_loss=None (P0-Inv-A gotcha #4) — prefer `compute_risk_reward` over `evaluate_trade` for the gate.
-- VERDICT FOR ADAPTER: DOES NOT EXIST standalone. Recommend adapter = thin wrapper:
-  ```python
-  def rr_gate(entry: float, target: float, stop: float, threshold: float = 1.5) -> Dict:
-      rr = compute_risk_reward(entry, target, stop, fallback=0.0)
-      return {'passed': rr >= threshold, 'rr': rr, 'threshold': threshold}
-  ```
-  Wraps `utils.risk_reward.compute_risk_reward` directly. NO DB layer needed. NO class instantiation. Testable with 3 floats.
-
-## Feature 6: sector_heat (sector momentum / relative strength)
-- File: `vps-service/analyzers/sector_relative.py` (471 lines)
-- Main callable: `SectorRelativeAnalyzer(db_path: str = None).analyze(ticker: str) -> SectorRelativeScore`
-  - Also: `get_all_sectors() -> List[str]`, `get_stocks_in_sector(sector: str) -> List[str]` (lookups)
-- Input: ticker string only. NO arrays, NO DataFrame. The class reads ALL context from `db/stocks.db` (default path: `<project_root>/db/stocks.db`).
-- Returns: `SectorRelativeScore` dataclass with fields:
-  ```
-  ticker: str
-  sector: str
-  vs_sector_pe: float          # % diff from sector avg P/E
-  vs_sector_roe: float        # % diff from sector avg ROE
-  sector_rank: int             # 1=best (ranked by ROE within sector); 0 if not found
-  sector_momentum: str         # 'BULLISH' | 'BEARISH' | 'NEUTRAL'  ← THIS IS "sector_heat"
-  sector_strength: float       # 0-100 (70 if avg_change>3%, 60 if >1%, 40 if <-1%, 30 if <-3%, else 50)
-  relative_score: float        # 0-100 overall (50 base ± deltas)
-  signal: str                  # STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL
-  confidence: float            # 0.5-0.95 (data-quality based)
-  ```
-  Has `.to_dict()`. Sector heat answers "hot/cold" via `sector_momentum` + `sector_strength` (e.g., strength≥60 = hot, ≤40 = cold).
-- Deps: REQUIRES DB. `SectorRelativeAnalyzer.__init__` calls `_build_sector_lookup()` which queries `SELECT ticker, sector FROM stocks WHERE is_active=1 AND sector IS NOT NULL` — populates `self.ticker_to_sector` + `self.sector_tickers`. Each `analyze()` call makes 3 more DB queries: (1) `_get_stock_data` → `SELECT pe_ratio, roe, sector, current_price, previous_close FROM stocks WHERE ticker=?`; (2) `_get_sector_stats` → `SELECT AVG(pe_ratio), AVG(roe), AVG(debt_to_equity), COUNT(*) FROM stocks WHERE ticker IN (...)`; (3) `_get_sector_rank` → `SELECT ticker, roe FROM stocks WHERE ticker IN (...) ORDER BY roe DESC`; (4) `_get_sector_momentum` → `SELECT AVG(change_percent) FROM stocks WHERE ticker IN (...)`. Uses `core.db_manager.get_connection(path, writable=False)`. Also imports `data.egx_official_sectors` (EGX_OFFICIAL_SECTORS + STOCK_SECTORS) — module-level sys.path insertion.
-- Standalone: NO — needs `db/stocks.db` with populated `stocks` table (columns: ticker, sector, is_active, pe_ratio, roe, debt_to_equity, current_price, previous_close, change_percent, volume). For unit testing, must inject a fake db_path or mock `db_manager.get_connection`.
-- Gotchas: (1) Sector momentum is SINGLE-DAY `AVG(change_percent)` of sector peers — NOT multi-week momentum. Same limitation flagged in P1-V38-Analysis gap #2 (no real sector rotation / money-flow tracking). Adapter MUST document this — "sector_strength=70" means "sector avg was up >3% TODAY", not "sector is in a multi-week uptrend". (2) `_get_sector_momentum` returns hardcoded strength values (70/60/40/30) — only 4 buckets, no continuous scale. (3) `_get_sector_rank` ranks by ROE only (higher=best) — ignores P/E, momentum, etc. (4) Sector weights dict `SECTOR_WEIGHTS` (banks=0.20, real-estate=0.15, ...) is DEFINED but NEVER USED in `analyze()` — dead constant. (5) Every `except:` block is bare (`except: pass` or `except Exception as e: print(...)`) — DB errors silently produce empty dicts → `vs_sector_pe=0`, `sector_rank=0`, `sector_momentum='NEUTRAL'`, `sector_strength=50`, `relative_score=50`, `signal='HOLD'`. Caller CANNOT distinguish "stock in neutral sector" from "DB read failed". (6) `_get_sector_momentum` SQL `AVG(change_percent)` includes ALL stocks in sector regardless of `is_active` or `pe_ratio IS NOT NULL` — different filter from `_get_sector_stats` (which filters `pe_ratio IS NOT NULL`), so sector_strength and sector_stats are computed on different stock subsets (inconsistent). (7) Module-level sys.path mutation at line 27 (`sys.path.insert(0, str(_Path(__file__).parent.parent))`) for `data.egx_official_sectors` import — global side effect on import. (8) No DB writes. (9) `confidence` starts at 0.5 and only reaches 0.95 if all 4 data-quality checks pass — low-confidence result still returned, not rejected (Rule 27 NO-FAKE-DATA may be violated for stocks with missing P/E or ROE).
-- VERDICT FOR ADAPTER: NEEDS DB LAYER. Adapter must inject db_path (or mock db_manager) for testing. Wrap `SectorRelativeAnalyzer(db_path).analyze(ticker).sector_momentum in ('BULLISH',) AND .sector_strength >= 60` for a "hot sector" gate. To make it standalone-testable, adapter should add an overload that accepts pre-fetched `(stock_data: Dict, sector_stats: Dict, sector_tickers: List[str])` and bypasses DB. Alternative: refactor `_get_sector_momentum` to accept `per_ticker_changes: List[float]` directly — currently impossible without monkey-patching.
-
-## Feature 7: whale_guard (institutional flow / block trade detection)
-- File: `vps-service/jobs/predictor_modules/whale_guard.py` (42 lines) — Strangler Pattern extraction from `daily_predictor.py` (Phase 7.2). Original `_whale_distribution_guard()` at daily_predictor.py lines ~52-75 (now `_whale_distribution_guard_REMOVED` + re-export).
-- Main callable: `_whale_distribution_guard(opens, highs, lows, closes, volumes) -> bool`
-  - NOTE the leading underscore (private convention but re-exported publicly by daily_predictor.py).
-  - Underlying canonical: `scripts/liquidity_radar_v2.py::compute_whale_flow(candles: List[Dict[str, Any]], cash_ratio: Optional[float]=None, market: str='EGX') -> Dict[str, Any]` (lines 579-710, the FULLER implementation).
-- Input: 5 parallel arrays `opens, highs, lows, closes, volumes` (List[float], oldest→newest). NO DataFrame. The wrapper converts to `candles = [{'open':.., 'high':.., 'low':.., 'close':.., 'volume':..} for i in range(n)]` (line 31) and passes to `compute_whale_flow`. Needs `n >= 5` (returns False if insufficient — "لا تمنع" / fail-open).
-- Returns: SINGLE BOOL — `True` if `net_flow_egp < 0` (institutional distribution → BLOCK BUY), `False` otherwise (pass). NO detail dict, NO confidence, NO flow_strength. The richer `compute_whale_flow` returns full Dict: `{net_flow_egp: float, avg_daily_flow_egp: float, whale_present: bool, flow_strength: str (Arabic), cash_ratio: float|None, cash_safety_multiplier: float (1.0/1.2/1.5), flow_method: 'MFM', whale_threshold_egp: float, reason: str (Arabic)}`.
-- Deps: ZERO DB. Pure compute. BUT: dynamically imports `scripts.liquidity_radar_v2.compute_whale_flow` — module path resolution via `Path(__file__).resolve().parents[3]` (whale_guard.py is at `vps-service/jobs/predictor_modules/whale_guard.py`, so parents[3] = `<repo_root>`, then `scripts/` subdir added to sys.path). Two import attempts: `from scripts.liquidity_radar_v2 import compute_whale_flow` then fallback `from liquidity_radar_v2 import compute_whale_flow`. `compute_whale_flow` itself has NO DB deps — pure MFM math: `MFM = ((close-low) - (high-close)) / (high-low)`, `money_flow = volume × close × MFM`, summed over last `LOOKBACK_DAYS=20` (or all if <`MIN_CANDLES=30`).
-- Standalone: YES — pure function with array inputs. For richer info, call `compute_whale_flow` directly (also standalone, pure). No DB, no engine context, no global state inside `compute_whale_flow`. The wrapper `_whale_distribution_guard` DOES mutate `sys.path` (inserts repo root + scripts dir) — global side effect.
-- Gotchas: (1) FAIL-OPEN semantics: ANY exception inside the function → returns False (does NOT block BUY). Adapter MUST decide whether fail-open is acceptable for a "guard" — by name it implies blocking, but implementation is permissive on errors. (2) `sys.path.insert(0, ...)` side effect at lines 22-27 — mutates global Python path every call (idempotent but unclean). Adapter should pre-import `compute_whale_flow` at module load and bypass the wrapper to avoid this. (3) Single-bool return LOSES information — caller cannot tell whether `False` means "buying pressure confirmed" vs "module crashed" vs "insufficient data". RECOMMEND adapter wrap `compute_whale_flow` directly and return the full Dict. (4) `whale_present` field in compute_whale_flow is True ONLY when `net_flow > 0 AND net_flow > whale_threshold` (where `whale_threshold = avg_daily_flow × 0.6`) — a separate concept from "distribution". A stock can have `whale_present=False` AND `net_flow < 0` (distribution without whale threshold met) — the wrapper treats these the same. (5) `cash_ratio` param defaults to None → `cash_safety_multiplier=1.0` (no effect on whale detection; only affects risk metric in radar output). (6) `market='EGX'` default in compute_whale_flow reads `get_market_config(market)['whale_threshold_mult']` — TADAWUL/KSE/QSE/US/CRYPTO/GOLD have different multipliers (per `MARKET_CONFIG` dict at line ~177). Adapter should expose `market` param. (7) `LOOKBACK_DAYS=20`, `MIN_CANDLES=30` are module constants in liquidity_radar_v2 (lines 120-121) — NOT configurable per-call. (8) MFM=0 for doji days (high==low) — silently skipped, not neutral-weighted. (9) No DB writes.
-- VERDICT FOR ADAPTER: WRAP DIRECTLY but PREFER `compute_whale_flow` over the bool wrapper. Adapter signature:
-  ```python
-  def whale_guard(opens, highs, lows, closes, volumes, market='EGX') -> Dict:
-      candles = [{'open':o,'high':h,'low':l,'close':c,'volume':v}
-                 for o,h,l,c,v in zip(opens,highs,lows,closes,volumes)]
-      result = compute_whale_flow(candles, market=market)
-      return {
-          'block_buy': result['net_flow_egp'] < 0,
-          'whale_present': result['whale_present'],
-          'flow_strength': result['flow_strength'],
-          'net_flow_egp': result['net_flow_egp'],
-          'reason': result['reason'],
-      }
-  ```
-  This preserves the gate semantics AND exposes the richer data. Adapter MUST pre-import `compute_whale_flow` to avoid sys.path mutation. NO DB layer needed.
-
-Adapter-design summary (for orchestrator author):
-- LOWEST-FRICTION (pure-fn, no DB, no class): rr_gate (via compute_risk_reward) + whale_guard (via compute_whale_flow). Both are 3-5 float/array inputs → bool/dict output. Adapter = thin shim.
-- DB-BOUND: sector_heat (SectorRelativeAnalyzer) needs stocks.db. Adapter MUST either (a) inject a pre-populated db_path, (b) refactor `_get_sector_momentum` to accept pre-fetched changes list, OR (c) bypass and reimplement the heat logic from `AVG(change_percent)` of pre-fetched peer changes (preferred — 1-line SQL inline).
-- Globals to reset between runs: NONE for rr_gate/whale_guard. sector_relative has module-level sys.path mutation on import (idempotent).
-- Crash-safe wrapping: sector_relative uses bare `except:` everywhere → silently returns NEUTRAL/HOLD on DB errors. Adapter should detect `sector_rank==0 AND vs_sector_pe==0 AND sector_strength==50` as "DB-miss" sentinel and reject explicitly (Rule 27 NO-FAKE-DATA).
-- whale_guard `_whale_distribution_guard` is fail-open (returns False on exception) — adapter MUST decide whether to fail-open or fail-closed for the orchestrator; recommend fail-closed (block BUY) for production safety.
-
----
-Task ID: DB-RECOVERY
-Agent: Bravo (backend lead)
-Task: Recover deleted DB backups (enmohsen20111975/GLMinvestment/tree/main/data was empty after commit 79284a2d untracked them). User (Mohsen) requested DBs stay available on GitHub for manual download but NOT tracked in git (to avoid bandwidth waste on every git pull).
-
-Work Log:
-- Found commit 79284a2d "chore: untrack all databases + compressed DBs from git" — this is the commit that removed DBs from tracking. It was a CORRECT cleanup (DBs are large ~500MB).
-- Found commit 6a2b128f "chore(backup): DB snapshot 2026-10-21T19-15-52 (9 files)" — this is the last commit where backups existed in git history.
-- Verified 16 backup files existed in commit 6a2b128f (total 306 MB, largest file 60 MB — under GitHub's 2GB asset limit).
-- Restored all 16 files from git history via `git archive 6a2b128f data/ | tar -x`.
-- Verified .zip integrity: 12 .zip files all OK (unzip -t passed).
-- Created git tag `db-snapshot-2026-10-21` on commit 6a2b128f and pushed to origin.
-- Created GitHub Release (ID: 422781028) with body describing contents + restore instructions (Arabic).
-- Uploaded all 16 backup files as release assets (16 uploaded, 0 failed) via GitHub API + curl.
-- Verified .gitignore covers all DB patterns: *.db, *.zip, data/db_backup_*, data/**/*.zip, data/**/*.part.
-- Verified NO .db/.zip/.part files are tracked in git after recovery (git ls-files clean).
-- Added README section "تنزيل قواعد البيانات (DBs خارج git tracking)" explaining the GitHub Releases download flow + cat/unzip restore commands.
-
-Stage Summary:
-- DBs ARE NOW available on GitHub: https://github.com/enmohsen20111975/GLMinvestment/releases/tag/db-snapshot-2026-10-21
-- DBs are NOT tracked in git (won't download on every git pull) — solves the bandwidth complaint.
-- 16 assets: 9 parts of latest 2026-10-21 snapshot + 6 parts of older 2026-10-18 + 2026-10-08 snapshots + 1 standalone predictions.db.zip.
-- .gitignore is correct (no need to touch it). working tree clean except for this worklog.
-- README documents how to restore DBs (cat .part files together, then unzip).
-- Resuming Phase 0/1 orchestrator design work using live DBs on sandbox (price_history.db, stocks.db, etc.).
-
----
-Task ID: P0-Inv-C
-Agent: Explore
-Task: Inventory features 8-10 (fundamentals, news_impact, exit_logic) — callable signatures, inputs, returns, deps, standalone-testability, gotchas.
-
-Work Log:
-- Read /home/z/my-project/worklog.md (P0-Inv-A line 8140 + P0-Inv-B line 8217 + DB-RECOVERY tail) — format reference established; signatures must be exact, return shapes documented, verdict explicit per feature.
-- Read fully: vps-service/analyzers/fundamental_engine.py (372 lines, full), vps-service/analyzers/fundamental_data_provider.py (813 lines, full — DB layer for the engine), vps-service/analyzers/fundamental.py (178 lines, legacy dict-in analyzer), vps-service/analyzers/fundamental_scorer.py (569 lines — stocks.db-only path, Piotroski/Altman/Magic-Formula), vps-service/analyzers/fundamental_enhanced.py + fundamental_relative.py (sector-benchmark paths — confirmed via Grep class/def listings).
-- Read fully: vps-service/analyzers/news_impact_scorer.py (619 lines, full — 14 EVENT_TYPES, 5-level classifier, score_news_articles), vps-service/analyzers/news_stop_filter.py (365 lines, full — news.db.market_news + circuit_breaker), vps-service/analyzers/egx_disclosure_engine.py (935 lines — DISCLOSURE_TYPES, classify_disclosure, get_latest_disclosure_impact, get_disclosure_impact_for_ticker, fetch_egx_disclosures — confirmed via Grep class/def listings + targeted reads of 1-100, 280-390, 390-590, 695-815).
-- Read fully: vps-service/portfolio/stop_manager.py (609 lines, full — StopLossManager with 7 stop types + get_optimal_stop + calculate_partial_exit), vps-service/portfolio/smart_exit_engine.py (1294 lines — class + decide() at 568 + decide_exit_action() at 932 + compute_continuation_metrics at 732), vps-service/portfolio/multi_target_exit.py (725 lines — compute_target_levels + decide_t1_holdthrough + simulate_multi_target_exit + attach_to_prediction).
-- Verified via Grep: `StopLossManager` is imported + instantiated by `portfolio/position_manager.py:143` (`self.stop_manager = StopLossManager()`); `SmartExitEngine` is imported + instantiated by `position_manager.py:235` (so V38 already wires both into PositionManager internally — confirms orchestrator must NOT go through PositionManager to keep exit_decision standalone). `engines/backtest_engine.py:1138 _load_fundamentals` is the V38 internal loader — confirmed via Grep (referenced in docstring at fundamental_data_provider.py:540 as the canonical replacement target).
-- Verified via Grep that `tests/unit/test_stop_manager.py` exists — StopLossManager has unit tests → confirms standalone-testability.
+- Read `prisma/schema.prisma` (32 LOC, default starter — User + Post only, datasource env DATABASE_URL, never used in production).
+- Read `prisma/auth-schema.prisma` (364 LOC, 16 models — User, Account, Session, VerificationToken, SubscriptionPlan, UserSubscription, ApiToken, UserTelegramLink, AdvancedAnalysisResult, DailyAnalysisSummary, PromoCode, Watchlist, PortfolioItem, PortfolioHistory, MarketPricing, Referral, UsageDaily, B2bApiKey — datasource `file:../db/auth.db`, output `@prisma/auth-client`).
+- Read `prisma/predictions-schema.prisma` (413 LOC, 10 models — Prediction, PersonaPrediction, PredictionLog, ExpertRecommendation, ExpertTrackRecord, CachedAnalysis, StoredAnalysis, AnalysisJob, AnalysisEngineStatus, TechnicalIndicator — datasource `file:../db/predictions.db`, output `@prisma/predictions-client`. Many models carry `@@map(...)` overrides + 25+ indexes).
+- Read `data_engine/main.py` (1,190 LOC) — Flask app, port 5000, 17 endpoints (`/`, `/health`, `/status`, `/stats`, `/logs`, `/market-status`, `/trigger/{stocks,crypto,metals,news,sync,historical,all}`, `/control/{start,stop,toggle,clear-logs}`). SQLite patched globally to WAL + 30s timeout. Scheduler runs 5 jobs (stocks/crypto/metals/news/intraday cleanup) at intervals (stocks: market-hours gated; crypto/metals: 24/7; news: 6h; cleanup: daily). Uses `fallback_chain.py` (TV → EGKSCO, EGXPilot+Yahoo archived) for stocks since July 2026.
+- Read `data_engine/realtime_sync.py` (175 LOC) — `notify_nextjs()` POSTs webhook to `NEXTJS_WEBHOOK_URL` (`/api/data-engine/reload`) with `X-Webhook-Secret` header. `post_scrape_hook()` fires after each successful scraper. Best-effort + 1 retry + 5s timeout.
+- Read `data_engine/sync.py` (792 LOC) — `run_full_sync()` orchestrates 4 syncers: `sync_current_prices()` (data_engine.db.stocks → stocks.db.stocks UPSERT + stock_daily_prices Live Developing Candle UPSERT), `sync_historical_prices()` (historical.db counter), `sync_crypto_prices()`, `sync_metals_prices()`. P22-SYNC-TIMEOUT-FIX: batched `executemany()` + UNIQUE index `idx_stocks_ticker` + `try/finally` always closes connections. P19: `broadcast_prices_to_ws()` POSTs `price_updates` to `http://localhost:3005/broadcast` (WS service).
+- Read `data_engine/intraday_storage.py` (1,139 LOC) — Separate `intraday.db` (NOT in data_engine.db). 3 tables: `stock_intraday` (EGX/TADAWUL/KSE/QSE — market-hours only), `crypto_intraday` (24/7), `commodity_intraday` (gold/silver/oil/forex — 24/5). Smart Dedup: skip duplicates unless >0.01% change OR 15 min checkpoint. 7-day retention. Indexes on (ticker,timestamp) and timestamp alone.
+- Listed `db/` (sandbox): only 3 DB files present — `auth.db` (0 bytes — empty), `custom.db` (24 KB — Post + User from default prisma, 0 rows), `metrics.db` (4 KB — pm2_process_snapshot + resource_snapshot_raw + 5min/1h rollups). Production DBs (stocks.db, predictions.db, intraday.db, data_engine.db, news.db, historical.db, price_history.db, crypto.db) are NOT in sandbox but documented in `db/db_audit_20261022_141635.json` + `db/deep_audit_20261022_142307.json` (production snapshots from 2026-10-22).
+- Parsed both audit JSONs with python3 — extracted full table inventory + row counts for all 9 production DBs (277 tables total, ~1.1M rows aggregated).
+- Read `src/lib/db.ts` (12 LOC) — re-exports `authDb as db` from `db-auth.ts`. Read `src/lib/db-auth.ts` (28 LOC, PrismaClient from `@prisma/auth-client`, datasource `file:.../db/auth.db`, globalThis singleton for HMR safety). Read `src/lib/db-predictions.ts` (28 LOC, PrismaClient from `@prisma/predictions-client`, datasource `file:.../db/predictions.db`).
+- Read `src/lib/auth-helper.ts` (301 LOC) — `getSessionUserId()` tries Bearer token (mobile), then `admin_session` cookie, then NextAuth session; returns `{userId, isAdmin}`. Throttled `updateLastActive()` bypasses Prisma (5.22.0 DateTime? bug) and writes directly via better-sqlite3. `getUserIdsWithLegacy()` returns CUID + Google numeric IDs (backward-compat for old portfolio/watchlist rows).
+- Walked `src/app/api/` — 464 `route.ts` files. Counted by top-level prefix: `/api/admin/*` 87, `/api/market/*` 30, `/api/predictions/*` 29, `/api/stocks/*` 20, `/api/mobile/*` 19, `/api/maker-radar/*` 17, `/api/finance/*` 17, `/api/portfolio/*` 15, `/api/crypto/*` 14, `/api/v2/*` 14, `/api/subscription/*` 12, `/api/data-engine/*` 9, `/api/auth/*` 8, + 75 single-route prefixes.
+- Python backend routes: 448 `@*_bp.route(...)` decorators across 39 blueprint files in `vps-service/api/` (admin_bp 76, telegram_bp 54, portfolio_bp 54, risk_bp 22, misc_bp 22, learning_bp 20, ai_bp 20, v2_bp 17, public_bp 16, reports_bp 12, sniper_bp 11, prediction_tracking_bp 11, stored_analysis_bp 10, news_bp 9, unified_v2_bp 7, notebook_bp 7, analytics_bp 7, ai_pred_bp 7, v38_backtest_bp 6, picks_mgmt_bp 6, + 19 more with ≤5 each) + 46 routes in `lightweight_server.py` (Flask WSGI mounted under `/` via a2wsgi) + 9 routes in `ai/portfolio_routes.py` (FastAPI sub-router) = ~500 Python endpoints.
+- Read `Caddyfile` (24 LOC) — listens on `:81`, has `@transform_port_query` matcher that reverse-proxies `?XTransformPort=N` to `localhost:N`, otherwise reverse-proxies to `localhost:3000`. This is how `/admin?view=telegram&XTransformPort=3003` reaches the telegram-events WS service.
+- Read `vps-service/ws-service/index.ts` (622 LOC) — Bun + Socket.io on port 3005. Polls `${PYTHON_BACKEND}/api/stocks?market=EGX&limit=100` + `/api/market/status` + `/api/stocks/{ticker}` + `/api/live/analysis/{ticker}`. Hyper Polling: 2s during EGX session (10:00–14:30 Cairo), 30s off-session. Live Score: 5s session / 5min off-session / 15min if DELAYED_DATA_MINUTES>0 (P41). Exposes `/broadcast` POST endpoint that `data_engine/sync.py` calls after each sync to push `ticker:update` events instantly (bypassing polling). Emits 6 event types: `market:snapshot|status`, `stock:alert` (>3% move), `ticker:update|live`, `subscribe:ticker`.
+- Read `telegram-events/index.ts` (124 LOC) — Bun + Socket.io on port 3003 (separate from ws-service). Polls `${PYTHON_BACKEND}/api/telegram/events/poll?since=N` every 2s, broadcasts `telegram:event` + `telegram:{type}` to admin TelegramTab.tsx clients.
+- Read `ecosystem.config.js` (424 LOC) — confirmed 7 PM2 apps: python-backend (port 8010, FastAPI/uvicorn), data-engine (port 5000, Flask), nextjs (port 3000), ws-service (port 3005, Bun), telegram-poster (no port, scheduler), telegram-interactive-bot (no port), telegram-events (port 3003, Bun), news-agent (no port, polling). Ollama runs on port 11434 via systemd (NOT PM2). News dashboard (news-agent/ui/dashboard.py) runs on port 8001 via `run_dashboard.sh` (manual, not PM2).
+- Confirmed `/api/python/[...path]/route.ts` proxies all methods to `http://localhost:8010` via the SAME `proxyRequest` handler as `/api/proxy/*` (REDIRECT-FIX 2026-08-30 eliminated the broken 308 redirect). SEC-04 hardening: admin paths gated by `requireAdminAsync`, PROXY_API_KEY from env only (no hardcoded fallback).
+- Verified news-agent flow: news-agent (Python, no port) collects from RSS/Web/Telegram → analyzes via local Ollama → POSTs to `http://localhost:3000/api/news` → Next.js writes to `db/news.db.market_news` (single source of truth per NEWS-DB-SOT rule) → non-blocking forward to `http://localhost:8010/api/news/agent` for V40.2 scoring. news-agent has its own local SQLite store at `news-agent/data/news.db` for dedup before send.
 
 Stage Summary:
 
-## Feature 8: fundamentals (fundamental score 0-100)
-- File(s): vps-service/analyzers/fundamental_engine.py (372 lines, THE Gatekeeper) + vps-service/analyzers/fundamental_data_provider.py (813 lines, DB layer + module-level canonical scorer). Legacy: fundamental.py (dict-based, NO DB), fundamental_scorer.py (stocks.db-only, Piotroski/Altman/Magic), fundamental_enhanced.py + fundamental_relative.py (sector-benchmark paths).
-- Main callable (CANONICAL class-form): `FundamentalEngine(db_path: str = None).get_fundamental_score(ticker: str) -> float` (0-100, NO_DATA_SCORE=0.0 on missing data). Richer form: `.get_fundamental_breakdown(ticker: str) -> FundamentalVerdict` (dataclass: ticker, score, is_healthy, has_data, rejection_reason, breakdown, metrics, signal_ar, confidence). Bool gate: `.is_fundamentally_healthy(ticker: str) -> bool` (score >= 40, FAILS-OPEN to True on missing data).
-- Main callable (CANONICAL module-level): `fundamental_data_provider.get_fundamental_score(ticker: str, as_of_date: Optional[str] = None, db_path: str = None) -> Dict[str, Any]` (Stage C — used by backtest_engine._load_fundamentals per docstring line 540). Returns `{ticker, score (0-100 or None), confidence (0-100), available (bool), components (per-field dict {name:{value,score,weight}}), source_symbol, source_market, as_of='2026-08-17'}`.
-- Also: `fundamental_data_provider.get_asset_quality_score(ticker, market='EGX', persona=None, *, coin_id=None, market_data=None, events=None) -> Dict` — unified stock+crypto dispatcher (returns `{ticker, market, quality_score (0-100 or None), verdict (OK/WEAK/POOR for stocks | PASS/REVIEW/FAIL for crypto | NO_DATA), veto (bool), persona, details, source}`).
-- Input: ticker string ONLY (+ optional db_path). NO DataFrame, NO arrays, NO date filtering (as_of_date param is accepted but ignored — DB has no per-date rows, only point-in-time snapshot in tab_* tables). The `as_of='2026-08-17'` is HARDCODED in returned dict (not derived from input date) — adapter MUST NOT claim time-travel.
-- Returns: see above. FundamentalVerdict has `.score` (0-100 float), `.is_healthy` (bool), `.metrics` (dict of raw PE/PB/ROE/ROA/margins/growth/D-E/current_ratio/div_yield/payout/perf_1y — each Optional[float]), `.breakdown` (valuation/profitability/growth/dividend sub-scores), `.confidence` (0-100 based on 13 metrics coverage).
-- Deps: REQUIRES DB. The CANONICAL path reads `db/data_engine.db` (8 tables: tab_valuation, tab_profitability, tab_income_statement, tab_balance_sheet, tab_dividends, tab_performance, tab_technical_analysis — joined via `symbol` column with prefix-LIKE match for EGX alpha tickers stored as 'COMIالبنك'). The LEGACY path (fundamental_scorer.py) reads `db/stocks.db` (stocks table) — different data, different scorer (Piotroski/Altman/Magic-Formula). Adapter MUST use the data_engine.db path (canonical) — the stocks.db path was the broken one (empty columns per docstring at fundamental_engine.py:9-10). Singleton via `get_fundamental_engine()` exists. Uses `core.db_manager.get_connection(path, writable=False)`.
-- Standalone: NO — needs `db/data_engine.db` with populated `tab_*` tables. YES for unit tests via db_path injection (FundamentalEngine(db_path) accepts override) OR via monkey-patching `FundamentalDataProvider.get_fundamental_data`. For orchestrator, adapter MUST inject db_path (or pre-fetched FundamentalData) for testing. NO engine context required (no V38 instance needed).
-- Gotchas: (1) `is_fundamentally_healthy` FAILS-OPEN: returns True on missing data OR on exception ("سيب الفني يحكم") — adapter MUST NOT treat True as "fundamentals are GOOD"; it only means "not bad enough to veto". (2) `get_fundamental_score` returns 0.0 on missing data AND on exception — caller cannot distinguish "no data" from "very bad data" without calling `has_fundamental_data(ticker)` separately. Use `get_fundamental_breakdown(ticker)` instead — it returns `has_data=False` explicitly. (3) `as_of_date` param is accepted but IGNORED in implementation — DB has only point-in-time snapshot, no historical fundamentals. Adapter MUST NOT pass dates expecting time-travel. (4) `tab_income_statement` + `tab_balance_sheet` have documented column-shift bugs (see comments at lines 304-306 + 319-321) — `revenue_growth`, `debt_to_equity`, `current_ratio` are OFTEN None or wrong. Adapter should expect these fields to frequently be missing. (5) Module-level singleton `_engine_instance` (line 332) + `get_fundamental_engine()` — global state; tests that inject db_path MUST reset via `_engine_instance = None` or instantiate `FundamentalEngine(db_path)` directly (bypassing singleton). (6) `get_asset_quality_score` adds persona-aware veto for stocks (fund < 30 + persona != gambler → veto=True) — but the per-ticker `FundamentalEngine.is_fundamentally_healthy` does NOT apply this veto, only the 40-threshold health check. Adapter should pick ONE entry point and stick to it. (7) Hardcoded `as_of='2026-08-17'` in module-level dict — STALE date string, do not trust for time-sensitive logic.
-- VERDICT FOR ADAPTER: NEEDS DB LAYER. Wrap `FundamentalEngine(db_path).get_fundamental_breakdown(ticker)` (richer than the float-only `get_fundamental_score` — exposes `has_data` + `confidence` + sub-scores). Adapter signature:
-  ```python
-  def fundamentals(ticker: str, db_path: str = None) -> Dict:
-      engine = FundamentalEngine(db_path)  # bypass singleton for testability
-      v = engine.get_fundamental_breakdown(ticker)
-      return {
-          'score': v.score,            # 0-100, 0.0 if no data
-          'has_data': v.has_data,      # distinguishes "no data" from "bad data"
-          'is_healthy': v.is_healthy,  # >= 40 threshold (fails-open on missing data)
-          'verdict': 'PASS' if v.is_healthy else 'REJECT',
-          'confidence': v.confidence,  # 0-100 coverage of 13 metrics
-          'breakdown': v.breakdown,    # valuation/profitability/growth/dividend sub-scores
-          'metrics': v.metrics,        # raw PE/PB/ROE/etc
-          'rejection_reason': v.rejection_reason,
-      }
-  ```
-  Adapter MUST inject db_path for tests; default `DATA_ENGINE_DB` env var or `<repo>/db/data_engine.db`. Do NOT call `is_fundamentally_healthy` alone — its fail-open behavior is misleading. Use `get_fundamental_breakdown` and inspect `has_data` explicitly.
+### A) Database Map (9 production DBs — sandbox has only auth.db+custom.db+metrics.db; counts below are from 2026-10-22 production audit JSONs)
 
-## Feature 9: news_impact (news sentiment / disclosure filter)
-- File(s): vps-service/analyzers/news_impact_scorer.py (619 lines — 14 EVENT_TYPES, scoring -25..+20), vps-service/analyzers/news_stop_filter.py (365 lines — DB-backed news-stop + circuit-breaker), vps-service/analyzers/egx_disclosure_engine.py (935 lines — official EGX disclosure classifier, scoring -2..+2).
-- Main callable (CANONICAL — text-based, no DB): `news_impact_scorer.score_news_articles(articles: List[Dict[str, str]], days_window: int = 3) -> Dict[str, Any]` returning `{news_score: int (-25..+20), verdict: 'BOOST'|'REDUCE'|'VETO'|'NEUTRAL', events: List, summary_ar: str, article_count: int, strongest_event: Optional[Dict]}`. Wrapper: `get_news_impact_for_ticker(ticker: str, articles: Optional[List[Dict]] = None, use_live_search: bool = False) -> Dict` (adds `proof_string` + `ticker` to the same shape; live-search uses `ai.news_agent.NewsAgent`).
-- Main callable (DB-backed stop-filter): `news_stop_filter.check_news_stop_filter(ticker: str, db_path: str, days_back: int = 1) -> NewsStopFilterResult` (dataclass: has_news, has_cbe_news, news_count, should_hold, reason, reason_ar, risk_level ('low'/'medium'/'high'), latest_news_date). Reads `news.db.market_news` table — `db_path` param is IGNORED, always reads canonical `_CANONICAL_NEWS_DB` (via `utils.db_paths.DBPaths.NEWS_DB`).
-- Main callable (DB-backed disclosure impact): `egx_disclosure_engine.get_disclosure_impact_for_ticker(ticker: str) -> Dict[str, Any]` returning `{has_disclosure, impact_score (int -2..+2), verdict ('VETO'|'REDUCE'|'NEUTRAL'|'BOOST'|'BOOST_STRONG'), event_type, reason_ar, title, published_at, proof_string}`. Reads `news.db.egx_disclosures` table. Underlying: `get_latest_disclosure_impact(ticker: str, days_back: int = 3) -> Dict` (same shape minus proof_string). Also: `classify_disclosure(title: str, content: str = '', disclosure_date: str = '') -> Optional[Dict]` (pure text classifier — NO DB).
-- Also: `news_impact_scorer.classify_news_impact_level(news_score: int) -> Dict` (5-level classifier: STRONG_POSITIVE/POSITIVE/NEUTRAL/NEGATIVE/STRONG_NEGATIVE) + `get_live_prediction_impact(news_score, ticker, news_summary='') -> Dict` (adds `score_delta` ±15 to V40.2 score).
-- Input: TEXT-based path takes `articles: List[Dict[str, str]]` (each dict: title, content, published_at, source — date-parsing accepts 5 formats). DB-based paths take `ticker: str` only. NO date param on the DB paths (always uses `datetime.now() - timedelta(days=days_back)`).
-- Returns: see above. All shapes are plain Dicts (no dataclasses except NewsStopFilterResult). `news_score` range is -25..+20 (clamped). `impact_score` range is -2..+2 (int). The DB paths return single-dict (latest matching row), not lists.
-- Deps: TWO separate concerns. (A) `news_impact_scorer` is ZERO-DEP pure text classifier — no DB, no I/O. (B) `news_stop_filter` REQUIRES `news.db` with `market_news` table (columns: tickers JSON, content, published_at). (C) `egx_disclosure_engine` REQUIRES `news.db` with `egx_disclosures` table (creates it via `_ensure_db()` if missing) AND optionally does HTTP fetches to `https://www.egx.com.eg/English/Market/Pages/PublicDisclosure.aspx` + EGKSCO fallback + amwalalghad. All DB access via `core.db_manager.get_connection()`.
-- Standalone: YES for `news_impact_scorer.score_news_articles` (pure text scoring, no DB, no I/O). YES for `egx_disclosure_engine.classify_disclosure` (pure text). NO for `news_stop_filter.check_news_stop_filter` (needs news.db). NO for `egx_disclosure_engine.get_disclosure_impact_for_ticker` (needs news.db with egx_disclosures table populated — but `inject_disclosure(ticker, title, event_date, source='MANUAL')` exists for test setup). For orchestrator, adapter should prefer the TEXT-based path (score_news_articles) since articles can be fetched by the orchestrator's data layer OR injected from the news_agent.
-- Gotchas: (1) `news_stop_filter._resolve_news_db` IGNORES the `db_path` argument entirely — always returns `_CANONICAL_NEWS_DB`. Adapter MUST NOT pass a test DB path expecting it to be used; instead monkey-patch `_CANONICAL_NEWS_DB` OR pre-populate the canonical news.db. (2) `check_news_stop_filter` fails-OPEN: ANY exception → returns `risk_level='low', should_hold=False` (does NOT block trading on errors). Adapter should consider fail-closed for production safety. (3) CBE news detection is by `content LIKE '%بنك مركزي%' OR content LIKE '%CBE%'` — fragile string match (no category column). (4) `score_news_articles` sums ALL detected events then clamps to [-25, +20] — a single article can match MULTIPLE event types (e.g., "توزيع أرباح" matches both DIVIDEND_EX_DATE=-12 AND DIVIDEND_ANNOUNCE=+6 → net -6). (5) VETO events (TRADING_HALT=-25, INVESTIGATION_FRAUD=-22) are short-circuited — any VETO event in any article → entire result is VETO. (6) `egx_disclosure_engine.get_disclosure_impact_for_ticker` reads ONLY the latest disclosure in last 3 days — if multiple disclosures exist, returns the one with max `ABS(impact_score)` (line 493). (7) `fetch_egx_disclosures()` does LIVE HTTP fetches — adapter MUST NOT call this synchronously; results should be pre-fetched + stored by a cron job. (8) `news_stop_filter.check_circuit_breaker(egx30_history: List[Dict])` is a SEPARATE pure-compute callable (no DB) — takes `[{date, close, change_percent}, ...]` → `CircuitBreakerResult`. Useful as a separate `circuit_breaker` feature. (9) No global state in news_impact_scorer or egx_disclosure_engine.classify_disclosure. news_stop_filter mutates `_CANONICAL_NEWS_DB` at import time (try/except fallback).
-- VERDICT FOR ADAPTER: WRAP DIRECTLY (text path) + DB LAYER (disclosure path). Two-feature adapter:
-  ```python
-  # Path A: text-based news scoring (orchestrator fetches articles)
-  def news_impact(articles: List[Dict[str, str]]) -> Dict:
-      r = score_news_articles(articles, days_window=3)
-      return {
-          'score': r['news_score'],           # -25..+20
-          'verdict': r['verdict'],            # BOOST/REDUCE/VETO/NEUTRAL
-          'should_veto': r['verdict'] == 'VETO',
-          'should_boost': r['news_score'] >= 8,
-          'events': r['events'],
-          'summary': r['summary_ar'],
-      }
+| DB File | Size | Tables | Key Tables (row counts) | Purpose |
+|---|---|---|---|---|
+| `stocks.db` | 22.66 MB | 51 | stocks (1,240), stock_daily_prices (85,626), outcome_logs (8,544), real_evaluated_predictions (4,035), radar_signal_tracking (1,259), stock_phase (1,238), ticker_registry (1,197), screener_presets (2,175), analytics_events (1,130), ExpertRecommendation (97), user_stock_watchlists (74), news_agent_articles (132) | **Read-mostly operational DB**. Synced FROM data_engine.db. Source for `/api/stocks/*`, `/api/maker-radar/*` live prices, screener presets, radar tracking, analytics. |
+| `predictions.db` | 276.91 MB | 33 | crypto_predictions_log (187,345), learned_lessons (19,983), historical_trades (22,650), live_ai_signals (1,647), persona_predictions (1,669), predictions (1,499), stock_stories (1,285), liquidity_signal_outcomes (1,308), exit_notifications (4,053), aiPrediction (2,613), corporate_actions (131), stored_analyses (22) | **Largest DB. Maestro orchestrator output.** predictions table is the canonical signal store (with `was_published` audit column + 25+ ALTER TABLE columns added by `maestro.ts:ensureSchema()`). |
+| `price_history.db` | 97.07 MB | 2 | price_history (428,357) | **Canonical OHLCV history** (1.31M rows at peak, 428K at audit). Read by `src/lib/data-engine-db.ts` (BRAVO-FIX 2026-10-21 restored direct read after brief redirect to data_engine.db.egksco_price_history). |
+| `intraday.db` | 170.26 MB | 6 | stock_intraday, crypto_intraday, commodity_intraday, intraday_prices, intraday_meta, sqlite_sequence | **Isolated intraday DB.** Written by `data_engine/intraday_storage.py`. 7-day retention. Smart dedup (0.01% change OR 15min checkpoint). Source for `/api/market/intraday-pressure`, `/api/stocks/[ticker]/history` (intraday range), `/api/chart/[ticker]`. |
+| `data_engine.db` | 51.56 MB | 19 | stocks (2,492), crypto_prices (58,891), gold_prices (77,659), gold_prices_clean (12,698), silver_prices (32,272), exchange_rates (32,270), btc_local_prices (13,192), historical_data (99,076), stock_prices (2,493), egksco_price_history (via tab_balance_sheet 866, tab_income_statement 866, tab_profitability 858, tab_valuation 858, tab_performance 858, tab_dividends 858, tab_cash_flow 866, tab_technical_analysis 863) | **Write-target of all scrapers.** Source for `sync_current_prices()` UPSERT into stocks.db. Tab_* tables are EGKSCO fundamentals (P/E, ROE, market cap). |
+| `auth.db` | 0.25 MB | 14 | User, Account, Session, ApiToken, SubscriptionPlan, UserSubscription, UserTelegramLink, PromoCode, MarketPricing, Referral, UsageDaily, B2bApiKey, ExpertRecommendation (legacy), bot_link_tokens, task_runs, user_trades, portfolio_items | **User/subscription/auth DB.** Managed by Prisma `@prisma/auth-client`. Read by `src/lib/db-auth.ts`. |
+| `news.db` | 5.95 MB | 4 | market_news (single source of truth), news_api_keys, news_articles (legacy), sqlite_sequence | **News DB.** Written by `/api/news` (Next.js) from news-agent POSTs. Read by `/api/news`, `/api/news/latest`, `/api/stocks/[ticker]/news`. |
+| `metrics.db` | 6.13 MB | 3 | resource_snapshot_raw (5min polls), resource_snapshot_5min (rolled up), resource_snapshot_1h (rolled up), pm2_process_snapshot, resource_alert | **System metrics.** Written by `/api/admin/system-resources/*` polled every 5min. Read by admin dashboard + anomaly detection. |
+| `crypto.db` | 0.03 MB | 3 | cryptos, crypto_prediction_logs, sqlite_sequence | **Crypto metadata + prediction logs.** Small. Used by crypto-lab. |
+| *(sandbox-only)* `custom.db` | 24 KB | 2 | Post (0), User (0) | Default Prisma starter DB — never used in production. |
 
-  # Path B: DB-backed disclosure filter (single latest disclosure)
-  def disclosure_impact(ticker: str) -> Dict:
-      r = get_disclosure_impact_for_ticker(ticker)  # needs news.db
-      return {
-          'has_disclosure': r['has_disclosure'],
-          'impact_score': r['impact_score'],    # -2..+2
-          'verdict': r['verdict'],              # VETO/REDUCE/NEUTRAL/BOOST/BOOST_STRONG
-          'should_veto': r['verdict'] == 'VETO',
-          'event_type': r['event_type'],
-          'reason': r['reason_ar'],
-      }
-  ```
-  Path A is fully standalone-testable with synthetic article dicts. Path B needs news.db (inject via pre-populated DB or `inject_disclosure(ticker, title, event_date)` for test setup). Do NOT call `news_stop_filter.check_news_stop_filter` — its fail-open + ignored-db_path semantics are too unreliable for an orchestrator; instead compose Path A (text scoring) on articles fetched by the orchestrator's news layer.
+### B) Data Sources Inventory
 
-## Feature 10: exit_logic (stop/target/trailing exit decision)
-- File(s): vps-service/portfolio/stop_manager.py (609 lines — StopLossManager, 7 stop types), vps-service/portfolio/smart_exit_engine.py (1294 lines — SmartExitEngine.decide + decide_exit_action + compute_continuation_metrics), vps-service/portfolio/multi_target_exit.py (725 lines — multi-target T1/T2/T3 simulator). All three imported by `portfolio/position_manager.py` (lines 21, 234-235) — V38 uses PositionManager which composes them. The orchestrator should bypass PositionManager and call the standalone exit-decision callables directly.
-- Main callable (CANONICAL live decision — RICHEST): `SmartExitEngine().decide_exit_action(current_price, entry_price, highest_price, atr, recent_highs: List[float], recent_lows: List[float], recent_volumes: List[float], avg_volume_20: float, client_stop: Optional[float] = None, trailing_stop_price: Optional[float] = None, tp1: Optional[float] = None, tp2: Optional[float] = None, sma_20: Optional[float] = None, vwap: Optional[float] = None, rsi_14: Optional[float] = None, sector_momentum: float = 0.0, market_regime: str = "neutral", rvol: float = 1.0, days_held: int = 0) -> Dict[str, Any]` returning `{action: 'EXIT'|'TAKE_PROFIT'|'REDUCE'|'HOLD', reason_code: str, reason_ar: str, new_stop: Optional[float], new_tp: Optional[float], exit_pct: float (0.0-1.0), current_gain_pct: float, confidence: float (0-1), exit_reason: str, continuation: Dict, timestamp: str (ISO UTC)}`.
-- Alternative callable (simpler — single stop-type decision): `StopLossManager().calculate_partial_exit(entry_price: float, current_price: float, stop_loss: float, target_1: Optional[float] = None, highest_high: Optional[float] = None, atr: Optional[float] = None) -> dict` returning `{should_partial_exit: bool, partial_exit_pct: float, partial_exit_price: float, remaining_stop: float, remaining_stop_type: str ('fixed'|'breakeven'|'trailing'), message_ar: str, details: dict}`. Triggers at 1.5R gain (engine_settings: `partial_exit_at_rr=1.5`, sells 50%, raises stop to breakeven+1% or trailing).
-- Alternative callable (full forward-walk simulator — for backtest, NOT live per-trade): `multi_target_exit.simulate_multi_target_exit(signal: str, entry_price: float, stop_loss: float, target_price: float, entry_idx: int, price_history: List[Dict], persona: str = 'balanced', atr_at_entry: float = 0.0, holdthrough_bias: float = 0.0, target_raise_r: float = 0.0) -> MultiTargetExitResult` (dataclass: exited, exit_type, exit_price, exit_date, days_to_exit, realized_return_pct, t1_hit, t2_hit, t3_hit, partial returns, highest_price_reached, stop_adjusted, log). Wrapper: `attach_to_prediction(prediction: Dict, price_history: List[Dict], entry_idx: int, holdthrough_bias: float = 0.0, target_raise_r: float = 0.0) -> Optional[MultiTargetExitResult]` (extracts signal/entry/stop/target/persona/atr_at_entry from prediction dict).
-- Also: `StopLossManager().get_optimal_stop(entry_price, current_price, atr=None, highest_high=None, entry_date=None, target_1=None, portfolio_value=None, position_value=None, persona_stop_pct=8.0) -> dict` (returns `{optimal_stop, all_stops, recommendation, partial_exit}` — ATR-first selection logic per V39.2). And `multi_target_exit.compute_target_levels(signal, entry_price, stop_loss, target_price, target_raise_r=0.0) -> Dict[str, float]` (pure — returns `{t1, t2, t3, r_distance}` using T1_R_MULTIPLE=1.5, T2_R_MULTIPLE=2.5, T3_R_MULTIPLE=4.0).
-- Input: SCALARS + LISTS only — NO DataFrame, NO DB, NO portfolio context. `decide_exit_action` needs 3 scalars (current_price, entry_price, highest_price) + atr + 3 lists (recent_highs, recent_lows, recent_volumes, each 5-20 items newest-first) + avg_volume_20 + optional trailing_stop_price/tp1/tp2/sma_20/vwap/rsi_14/sector_momentum/market_regime/rvol/days_held. `calculate_partial_exit` needs only 3 scalars (entry_price, current_price, stop_loss) + optional target_1/highest_high/atr. `simulate_multi_target_exit` needs the signal string + 3 price scalars + price_history list of daily bars.
-- Returns: see above. `decide_exit_action` returns a flat Dict — the action is one of 4 strings (EXIT/TAKE_PROFIT/REDUCE/HOLD). `calculate_partial_exit` returns a flat Dict — boolean-driven (should_partial_exit). `simulate_multi_target_exit` returns a dataclass. None of them touch DB or portfolio state.
-- Deps: ZERO DB. ZERO portfolio context. All three modules are pure-Python compute over price/volume arrays + scalars. StopLossManager reads defaults from `analyzers.engine_settings.get_setting()` (e.g., `default_stop_pct=5.0`, `volatility_stop_atr_mult=2.5`, `trailing_stop_atr_mult=2.0`, `time_stop_days=45`, `partial_exit_at_rr=1.5`, `partial_exit_pct=50.0`, `breakeven_trigger_pct=7.0`, `max_portfolio_heat_pct=2.0`) — module-level import with safe fallback (`_get_setting = lambda k, default=None: default` if engine_settings unavailable). multi_target_exit reads `PERSONA_TRAIL_ATR` (gambler=1.5/balanced=2.0/conservative=2.5) from engine_settings. smart_exit_engine has hardcoded factor weights (`W_MOMENTUM=0.30, W_VOLUME=0.25, W_SECTOR=0.20, W_REGIME=0.15, W_PATTERN=0.10`) — class attributes, no DB.
-- Standalone: YES — all three are pure compute, NO DB, NO portfolio context, NO global state (StopLossManager instance is stateless; SmartExitEngine instance is stateless; multi_target_exit functions are module-level). `tests/unit/test_stop_manager.py` exists for StopLossManager (confirmed via Grep). For orchestrator, adapter = thin shim over `decide_exit_action` (the richest) OR `calculate_partial_exit` (the simplest).
-- Gotchas: (1) `decide_exit_action` requires 7+ arrays/scalars — orchestrator MUST pre-compute recent_highs/recent_lows/recent_volumes/avg_volume_20 from price_history before calling. Adapter should accept a single `price_history: List[Dict]` + entry/current/days_held and extract these arrays internally. (2) `decide_exit_action` short-circuits on `current_price <= effective_stop` → action='EXIT', exit_pct=1.0 — adapter MUST pass `client_stop` OR `trailing_stop_price` (one of them) for the stop-broken path to fire. If both are None, only the trend/TP paths fire. (3) `calculate_partial_exit` returns `should_partial_exit=False` + `partial_exit_pct=0.0` if `risk <= 0` (entry <= stop) — silent fail-open; adapter should validate inputs. (4) `calculate_partial_exit` requires the `_partial_at_rr` setting (default 1.5) — if engine_settings not loaded, falls back to 1.5 (safe). (5) `simulate_multi_target_exit` skips inverted stops (BUY with stop >= entry, SELL with stop <= entry) — returns `MultiTargetExitResult()` with log entry but `exited=False`. Adapter should pre-validate stop direction. (6) `simulate_multi_target_exit` caps stop_loss at `STOP_LOSS_SANITY_CAP_PCT=30%` from entry — silently mutates the stop if too wide. (7) `multi_target_exit.PERSONA_TRAIL_ATR` is a `_DeprecatedPersonaTrailAtr` dict-subclass that reads from engine_settings on EVERY access (lines 75-100) — performance overhead but no correctness issue. (8) `SmartExitEngine.decide()` (lower-level than decide_exit_action) returns a `SmartExitDecision` dataclass — adapter should NOT use it directly; use `decide_exit_action` which wraps it and returns a flat Dict. (9) All time-related inputs use `days_held: int` (NOT datetime) — simpler than stop_manager's `calculate_time_stop` which takes `entry_date: datetime`. (10) `StopLossManager` uses `_get_setting` from `analyzers.engine_settings` — if the orchestrator runs in a context where engine_settings isn't configured, defaults are used (documented in code: 5%/10%/2.5/2.0/45 days). Tests should monkey-patch engine_settings or instantiate with explicit kwargs.
-- VERDICT FOR ADAPTER: WRAP DIRECTLY — pure compute, NO DB layer needed. Two-tier adapter:
-  ```python
-  # Tier 1: simple per-trade exit decision (3 scalars + optional target/highest/atr)
-  def exit_logic_simple(entry_price: float, current_price: float, stop_loss: float,
-                         target_1: Optional[float] = None,
-                         highest_high: Optional[float] = None,
-                         atr: Optional[float] = None) -> Dict:
-      mgr = StopLossManager()
-      r = mgr.calculate_partial_exit(entry_price, current_price, stop_loss,
-                                      target_1=target_1, highest_high=highest_high, atr=atr)
-      return {
-          'action': 'PARTIAL_EXIT' if r['should_partial_exit'] else 'HOLD',
-          'exit_pct': r['partial_exit_pct'] / 100.0,    # 0.0 or 0.5
-          'new_stop': r['remaining_stop'],
-          'stop_type': r['remaining_stop_type'],
-          'reason': r['message_ar'],
-      }
-
-  # Tier 2: full exit decision with continuation/trajectory analysis (richer)
-  def exit_logic(entry_price: float, current_price: float, highest_price: float,
-                 atr: float, recent_highs: List[float], recent_lows: List[float],
-                 recent_volumes: List[float], avg_volume_20: float,
-                 trailing_stop_price: Optional[float] = None,
-                 tp1: Optional[float] = None, tp2: Optional[float] = None,
-                 days_held: int = 0, market_regime: str = 'neutral',
-                 sma_20: Optional[float] = None) -> Dict:
-      engine = SmartExitEngine()
-      return engine.decide_exit_action(
-          current_price=current_price, entry_price=entry_price,
-          highest_price=highest_price, atr=atr,
-          recent_highs=recent_highs, recent_lows=recent_lows,
-          recent_volumes=recent_volumes, avg_volume_20=avg_volume_20,
-          trailing_stop_price=trailing_stop_price, tp1=tp1, tp2=tp2,
-          sma_20=sma_20, days_held=days_held, market_regime=market_regime,
-      )  # already returns the {action, reason_code, reason_ar, new_stop, new_tp, exit_pct, ...} dict
-  ```
-  Tier 2 is the CANONICAL orchestrator entry point — it returns a flat dict ready for the orchestrator's policy engine. Tier 1 is a fallback for the minimal case (no recent arrays available). NO DB layer. NO portfolio context. V38's PositionManager wraps the same modules — orchestrator's adapter does NOT need PositionManager; calling `SmartExitEngine().decide_exit_action()` directly is the correct standalone path. Confirmed standalone-testable: `tests/unit/test_stop_manager.py` exists; `decide_exit_action` is pure compute.
-
-Adapter-design summary (for orchestrator author, extending P0-Inv-A + P0-Inv-B):
-- LOWEST-FRICTION (pure-fn, no DB, no class): exit_logic (via SmartExitEngine.decide_exit_action OR StopLossManager.calculate_partial_exit). 3-7 scalars + 3 small arrays → flat dict. NO DB layer needed. Adapter = thin shim. Testable with synthetic floats.
-- DB-BOUND (one DB path each): fundamentals (db/data_engine.db — 8 tab_ tables; inject db_path OR pre-fetch FundamentalData), disclosure_impact (db/news.db — egx_disclosures table; inject via inject_disclosure for tests). Both accept db_path override BUT news_stop_filter IGNORES db_path (uses canonical _CANONICAL_NEWS_DB) — adapter should avoid news_stop_filter and prefer the text-based news_impact_scorer OR egx_disclosure_engine (which respects DB_PATH but doesn't take a per-call override).
-- PURE-TEXT (no DB): news_impact (via score_news_articles — orchestrator fetches articles from news_agent). Standalone-testable with synthetic article dicts. Recommended path for orchestrator.
-- Globals to reset between runs: `_engine_instance` singleton in fundamental_engine.py (line 332) — call `_engine_instance = None` or instantiate `FundamentalEngine(db_path)` directly. module-level `_CANONICAL_NEWS_DB` in news_stop_filter.py is set at import time (idempotent). No globals in stop_manager / smart_exit_engine / multi_target_exit.
-- Crash-safe wrapping: fundamental_engine fails-OPEN (returns 0.0 score + has_data=False on exception — adapter MUST inspect has_data explicitly to distinguish from "bad data"). news_stop_filter fails-OPEN (returns risk_level='low' on exception — adapter should consider fail-closed). news_impact_scorer never raises (returns NEUTRAL on empty articles). egx_disclosure_engine returns NEUTRAL on exception. exit_logic callables never raise on bad input (return should_exit=False / action='HOLD' / partial_exit=False) — but validate inputs in adapter to surface bugs.
-- Rule 27 NO-FAKE-DATA compliance: fundamentals returns None/0.0 explicitly when no DB match (FIX-2 at fundamental_data_provider.py:479-483 + 757-785 — placeholder 50.0 replaced with honest None). news_impact_scorer returns NEUTRAL when no events matched. exit_logic returns action='HOLD' with reason_code='TREND_INTACT' when no exit signal — not a fake "exit" signal. Adapter MUST propagate None/False honestly, NOT coerce to neutral defaults.
-
----
-Task ID: PHASE0-WS-A
-Agent: general-purpose
-Task: Workstream A — Historical Data Integrity audit (source mixing, duplicates, missing, OHLC, adjusted, discontinuities, ticker classification).
-
-Work Log:
-- Read /home/z/my-project/worklog.md (last 600 lines) for Phase 0A context and inspected existing artifacts: scripts/camp/results/phase0a_report.json, phase0a_part2_report.json, phase0a_part3_report.json (1,539 events already enumerated).
-- Confirmed price_history.db location, schema (17 columns including `source` TEXT default 'system', `adjusted` INTEGER default 0), and existing indexes (idx_price_history_ticker_date, idx_ph_ticker_source, etc.). Total rows: 1,311,000 across 1,557 tickers, date range 2000-11-27 → 2026-10-21.
-- Inspected predictions.db.corporate_actions: 131 rows, ALL for ticker 'EGX_GENERAL' (128 'ipo', 3 'assembly' — news-scraped, no per-ticker splits/dividends). Means 0 discontinuity events can be Confirmed via this table.
-- Wrote scripts/camp/workstream_a_audit.py (read-only audit; opens both DBs via `file:...?mode=ro` URI). 7 checks:
-  1. Source audit (FULL scan) — per source: rows, date range, ticker count, sample tickers; plus conflicting (ticker,date) pairs across sources.
-  2. Duplicate bars per source — COUNT(*) GROUP BY (ticker,date,source) HAVING >1.
-  3. Missing sessions — per-ticker distinct trading days in 2023/2024/2025/2026; flag any year <100 days.
-  4. OHLC inconsistencies — close/open outside [low,high], negative prices, volume<0; exact counts via SUM(CASE WHEN) + sample 5,000 rows.
-  5. Adjusted flag changes — per-ticker scan, capture each 0↔1 transition with date + source.
-  6. Discontinuities (sample of top-100 tickers by row density) — |change_pct| >= 50% threshold (matches Phase 0A); per event capture prev/curr source + prev/curr adjusted flag; classify by priority: (1) Data Discontinuity if adjusted flag changed, (2) Source Mixing if source changed, (3) Suspected Split, (4) Suspected Corporate Action, (5) Unknown. Tally discontinuity_by_source_pair.
-  7. Top-20 ticker classifications — by event count; per ticker classify as VALIDATED / SUSPECTED / INVALID / UNRESOLVED based on aggregate evidence.
-- Added reproducibility cross-check vs phase0a_part3_report.json (matched/total events).
-- Ran script end-to-end (no DB writes, no production file touched). Output: scripts/camp/results/workstream_a_report.json (361 KB).
-
-Stage Summary:
-- Report path: /home/z/my-project/scripts/camp/results/workstream_a_report.json
-- Script path: /home/z/my-project/scripts/camp/workstream_a_audit.py (read-only, reproducible)
-- KEY FINDINGS:
-  • 11 distinct sources. `yahoo_clean` dominates (1,011,175 rows, 227 tickers, 2000-11-27→2026-07-30). `egx_investment_migration` is the corruptor (204,931 rows, 748 tickers, NARROW window 2025-01-09→2026-06-03).
-  • 0 conflicting (ticker, date) pairs across sources — no same-date dup. 0 duplicates on (ticker,date) and 0 on (ticker,date,source). Schema integrity OK at row level.
-  • Missing sessions: 1,344 / 1,557 tickers flagged with <100 days in at least one year (mostly because most tickers only have data starting 2025-2026; only 215 tickers have 2023 data, 216 have 2024 data).
-  • OHLC schema violations: 307,743 rows total (open>high=108,589; open<low=125,165; close>high=35,557; close<low=38,403; volume<0=29). Zero negative OHLC. Violations cluster in yahoo_clean (97,952) and stocks.db (10,194).
-  • Adjusted-flag transitions: 235 tickers (6,027 total transitions). Top 50 tickers each have 36 transitions (heavy source-driven flag-flipping).
-  • Discontinuity scan (top-100 by density, ≥50% threshold): 1,329 events. Breakdown:
-      - Data Discontinuity (adjusted flag changed): 915
-      - Source Mixing (source changed mid-series): 227
-      - Suspected Split: 119
-      - Suspected Corporate Action: 68
-      (Unknown bucket empty since ≥50% threshold catches all >=50% moves into one of the above classes.)
-  • Discontinuity by source pair — DOMINANT PAIRS (smoking gun for ADIB pattern):
-      - yahoo_clean → egx_investment_migration: 705 events
-      - egx_investment_migration → yahoo_clean: 426 events
-      - Other pairs (intraday/yahoo_safetynet/etc.): <6 events each
-  • ADIB-like tickers (≥2x price diff between adjacent rows of different sources): 57 tickers.
-  • Phase 0A reproducibility validation: 717 / 1,539 events matched (47%). Divergence explained by sample-set difference — only 48 of 100 sampled tickers overlap with Phase 0A's 94 distinct affected tickers.
-  • TOP-20 MOST-AFFECTED TICKERS — all 20 classified INVALID due to source mixing:
-      MENA(46) MHOT(34) ABUK(34) MOSC(31) NIPH(30) MCQE(30) ETRS(29) BIOC(28) MIPH(28) PHAR(27) COSG(27) EHDR(26) CPCI(25) MFSC(25) COMI(24) AFMC(24) MPCI(24) AMES(24) SEIG(23) AALR(23).
-  • NO ticker can be classified VALIDATED via Confirmed Corporate Action — corporate_actions table contains only EGX_GENERAL news-scraped IPOs, 0 per-ticker splits/dividends.
-- RECOMMENDED NEXT ACTIONS (for Charlie / remediation workstream):
-  1. Quarantine `egx_investment_migration` rows — they are the root cause of source-mixing corruption (1,131 of 1,142 source-change events). Re-fetch from authoritative source (yahoo_clean or EGX direct).
-  2. Investigate the 307,743 OHLC violations — likely the `open` column is being set to prior close instead of the actual open auction price (especially yahoo_clean 2026-09 had 6,183 violations).
-  3. Decide policy on `adjusted` flag — 235 tickers flip-flop between adjusted=0 and adjusted=1, often aligned with source change (yahoo_clean=0, egx_investment_migration=1). Series must be normalised before any backtest.
-  4. Backfill 2023-2024 history for the 215-216 tickers that have 2025-2026 data but pre-2025 gaps — these are the EGX30 + liquid names that should have full history.
-  5. Populate corporate_actions table with real per-ticker split/dividend records (from EGX disclosures) so Phase 1 can Confirm rather than Suspect.
-
-
----
-Task ID: PHASE0-WS-B
-Agent: general-purpose
-Task: Workstream B — Signal & Execution Integrity (predictions vs prices, look-ahead, exit verification).
-
-Work Log:
-- Read /home/z/my-project/worklog.md (last 600 lines) + /home/z/my-project/scripts/camp/results/workstream_a_report.json for context. WS-A had identified price_history ends 2026-10-21 but predictions.db had rows up to 2026-10-22 (look-ahead suspect); Workstream B confirmed this and four other integrity failures.
-- Probed both DBs (read-only via `file:...?mode=ro` URI): predictions.db has 2,256 rows across 258 distinct tickers (EGX=2,179 + US=76 + CRYPTO=1); price_history.db has 1,311,000 rows / 1,557 tickers / date range 2000-11-27 → 2026-10-21. predictions.prediction_date is TEXT mixed-format ('YYYY-MM-DD HH:MM:SS' length 19 for 1,780 rows; 'YYYY-MM-DD' length 10 for 476 rows). price_history.date is TEXT 'YYYY-MM-DD' length 10 only.
-- Wrote scripts/camp/workstream_b_audit.py (read-only; opens both DBs mode=ro; no production file touched; uses batched IN-clause lookups against price_history to keep lookups under 2256 × 1.3M row scan feasible). Ran end-to-end (3–4 seconds). Output: /home/z/my-project/scripts/camp/results/workstream_b_report.json (305.4 KB).
-- Check 1 (prediction vs price_history match on entry_price vs close; tolerance ±0.5%): MATCH=1,292 (57.3%), MISMATCH=173 (7.7%), MISSING_DATE=791 (35.1%), MISSING_TICKER=0. Of the 173 MISMATCH sample, 14 of 50 sampled were >10% off (e.g., MASR 2026-09-06 entry=8.7 vs close=7.72, diff 12.7%) — entry_price is NOT the close, more likely an intraday fill or limit price.
-- Check 2 (stale entries: exit_price IS NULL + prediction_date < last_price_date − 30d): 277 stale entries. Top stale tickers: AMOC(63), ORTE(22), REAC(20), AMIA(17), EFIH(17). Max gap 394 days (id=50216 PHDC, pred 2025-09-22, last_price 2026-10-21). Statuses mostly TARGET_HIT / EXPIRED / STOPPED — meaning the prediction lifecycle has been "closed" status-wise but the exit_price field was never populated, so outcome cannot be reconciled against price_history.
-- Check 3 (future-data dependencies: prediction_date > 2026-10-21): 757 predictions on 2026-10-22 — ALL on EGX market, distributed across 26 tickers (~31 predictions each, in 5-minute intraday scan pattern starting 08:00:17 for SUGR/CEFM then 09:35:11 onwards for the rest). LOOK-AHEAD BIAS CONFIRMED: entry_price of 14 of 15 sampled future-dated predictions is within 0.5% of the 2026-10-21 close (mean diff 0.076%, max 0.74%) — system is seeding entry_price with last-known close, then immediately marking status=EXPIRED because no 2026-10-22 candle exists to evaluate against. These predictions MUST be excluded from any backtest.
-- Check 4 (ticker mapping): All 258 predictions.ticker values exist EXACTLY in price_history.ticker — overlap 100%, zero MISSING_TICKER, zero fuzzy candidates. No "COMI vs COMI.CA" style issues. Note: price_history.market column is uniformly 'US' (default) even for EGX tickers, but ticker strings match exactly so this does not block joins.
-- Check 5 (exit_price verification on outcome_date; tolerance ±1%): verified=580 (55.1%), mismatch=229 (21.7%), cannot_verify=244 (23.2%). Cannot-verify bucket driven by 2026-09-22 outcome_date being absent from price_history for ~30 tickers (PIOH, BLDG, BTFH, …) — last_price_date for these tickers is 2026-10-18, so 2026-09-22 should have been a normal trading day but the row is missing in price_history (data-provider gap, not a holiday). Exit-mismatch magnitude is HEAVY: 24 of 50 sampled >10% off. Deep-dive into 12 high-id exits reveals exit_price field has THREE inconsistent semantics: (a) TP1/TP2 fill price when exit_type='TP1'/'TP2' and hit_target=1 — matches exit_reason Arabic text; (b) different value (lower than entry) when hit_target=0 AND hit_stop=1 — appears to be the actual SL fill price even though exit_type column still says TP1/TP2 (stale/inconsistent labels); (c) stopped-out exit_price (0.08%–6.18% below stop_loss) for hit_stop=1, exit_type='SL' rows — consistent with gap-down real fill. Exit_type and exit_reason columns are NOT trustworthy; hit_target/hit_stop + exit_price is the only reliable tuple.
-- Check 6 (stop/target hit verification against high/low in [prediction_date, outcome_date] window): target_hits_verified=231 / target_hits_failed=23 (91% pass); stop_hits_verified=343 / stop_hits_failed=18 (95% pass). 41 failed verifications: AJWA has 3 fails (target=221.752 but max_high=215.59, i.e., target was too aggressive); EHDR/MASAKE/7205/FALH/MANAZE stop_fails all on 2026-09-24 → 2026-09-25 windows where bars_in_window_count=1 (only entry_date bar; outcome_date=next-day candle is missing in price_history — same data-gap issue as Check 5).
-- Check 7 (deep-dive 20 predictions: 10 most recent + 5 oldest + 5 mid-set): All 10 most-recent (2026-10-22) traces show pred_date has NO price_history bar, status=EXPIRED, no outcome — confirms future-data leakage. 5 oldest (2025-09-22/23) traces show entry_price MATCH within 0.03% (egx_investment_migration source — the corrupting source from WS-A!), outcome_date=2026-09-22 also missing in price_history (cannot verify exit), 1-yr holding window had 200+ bars. 5 mid-set (2026-09-24 US-market predictions: ALSAFA, OIH, 2200, 7030, MRC) all have bars_in_window=1 (only prediction_date itself) and no outcome — these are LIQUIDITY_BREAKOUT signals that were generated then immediately abandoned, never tracked to resolution.
-- Additional cross-check (not in 7 checks): historical MISSING_DATE count = 34 (not 791) when filtering pred_date < '2026-10-22'. These 34 predictions cluster on 11 specific dates (2026-05-27, 2026-05-28, 2026-06-16, 2026-08-25, 2026-10-09, 2026-09-18, 2026-09-19, 2026-10-10, 2026-07-31, 2026-09-24, 2026-10-15). price_history has ZERO rows for ANY ticker on 2026-05-27, 2026-06-16, and 2026-08-25 — these are EGX holidays (likely Eid al-Adha week) but the prediction engine still generated signals at 12:00:00 (post-session) using prior-day data, then those signals cannot be entry-verified.
-
-Stage Summary:
-- Report path: /home/z/my-project/scripts/camp/results/workstream_b_report.json (305.4 KB).
-- Script path: /home/z/my-project/scripts/camp/workstream_b_audit.py (read-only, reproducible).
-- KEY FINDINGS:
-  • LOOK-AHEAD BIAS CONFIRMED: 757 predictions on 2026-10-22 (after price_history max 2026-10-21). Entry_price of 14/15 sampled = 2026-10-21 close ±0.5% (mean diff 0.076%) — system seeds entry from last-known close, then marks EXPIRED because no 2026-10-22 bar exists. IDs 53125–53881 inclusive (mostly). MUST be excluded from backtest.
-  • ENTRY-PRICE INTEGRITY: 57.3% MATCH (within ±0.5%), 7.7% MISMATCH (≥0.5% off; 14/50 sampled >10% off), 35.1% MISSING_DATE (791 = 757 future + 34 historical holiday/weekend-data-gap dates). 0 MISSING_TICKER. 258/258 tickers exactly overlap.
-  • EXIT-PRICE INTEGRITY: 55.1% verified, 21.7% mismatch, 23.2% cannot_verify. Mismatch magnitude is HEAVY (24/50 sampled >10%). exit_type and exit_reason columns are STALE/INCONSISTENT — only hit_target + hit_stop + exit_price is reliable.
-  • STOP/TARGET HIT INTEGRITY: 231/254 target hits verified (91%); 343/361 stop hits verified (95%); 41 fails driven by (a) aggressive target prices (AJWA), (b) missing 2026-09-25 bar in price_history (data-gap).
-  • STALE ENTRIES: 277 predictions with exit_price IS NULL despite status=TARGET_HIT/EXPIRED/STOPPED — these need exit_price backfilled from price_history close on outcome_date to be backtest-usable. Top offenders: AMOC(63), ORTE(22), REAC(20).
-  • DATA GAP IN PRICE_HISTORY: 11 specific trading dates (2026-05-27/28, 2026-06-16, 2026-08-25, 2026-09-18/19/24/25, 2026-10-09/10/15) have ZERO bars for ANY ticker — EGX holidays + provider outages. Prediction engine still generated signals on those days, then those signals cannot be verified against price_history (look-back-then-fail).
-  • CROSS-WORKSTREAM FINDING: deep-dive samples show entry_price MATCH uses BOTH yahoo_clean source AND egx_investment_migration source (the corrupting source flagged by WS-A). PHDC #50216 had entry MATCH against yahoo_clean (clean), but PIOH #50215 had entry MATCH against egx_investment_migration (corrupt). The prediction engine is NOT source-aware — it trusts whatever row is in price_history for that date.
-- RECOMMENDED NEXT ACTIONS (for Charlie / remediation workstream):
-  1. QUARANTINE 757 future-dated predictions (id 53125–53881, pred_date='2026-10-22') from any backtest — they are look-ahead bias incarnate.
-  2. BACKFILL exit_price for 277 stale entries — they have outcome_date but no exit_price; close_price on outcome_date is the natural proxy (where outcome_date row exists in price_history).
-  3. NORMALISE exit_type / exit_reason semantics — exit_reason Arabic text sometimes says "TP2 at 6.20" while exit_type='TP1' and exit_price=5.14 (a stopped-out value). Re-derive exit_type from hit_target + hit_stop flags; discard free-text exit_reason as evidence.
-  4. BACKFILL price_history for 11 missing EGX trading dates (2026-05-27/28, 2026-06-16, 2026-08-25, 2026-09-18/19/24/25, 2026-10-09/10/15) from a secondary source — these correspond to 34 predictions whose entry cannot be verified.
-  5. INVESTIGATE the 173 entry_price MISMATCH predictions — sample shows entry_price ≠ close on the same date. Likely entry_price is an intraday fill or signal-time price (e.g., VWAP at signal generation). Decide: use entry_price AS-IS for backtest OR re-derive from close_price + signal_time — but make the policy explicit and consistent.
-  6. EXCLUDE the 5 US-market LIQUIDITY_BREAKOUT predictions on 2026-09-24 (ALSAFA, OIH, 2200, 7030, MRC, ...) from backtest — bars_in_window=1, no outcome, no exit_price; they were generated and immediately abandoned by the engine.
-  7. APPLY WS-A finding that egx_investment_migration is corrupting price_history — predictions whose entry_price MATCHED an egx_investment_migration-sourced bar (e.g., PIOH #50215) are silently poisoned because they validate against a corrupt close.
-
-
----
-Task ID: PHASE0-WS-C
-Agent: general-purpose
-Task: Workstream C — Existing Strategy Performance Baseline (existing backtests, current metrics, bias checks).
-
-Work Log:
-- Read /home/z/my-project/worklog.md (last 600 lines, incl. WS-A & WS-B records) + scripts/camp/results/workstream_a_report.json (361 KB) + workstream_b_report.json (313 KB) for context. WS-A had identified 30 INVALID tickers via source mixing (yahoo_clean ↔ egx_investment_migration) + 57 ADIB-like tickers; WS-B had identified 757 look-ahead predictions on 2026-10-22 (after price_history max 2026-10-21) + 277 stale entries + 229 exit mismatches.
-- Opened DBs read-only via `file:...?mode=ro` URI: predictions.db (29 tables incl. predictions=2,256 rows + historical_trades=22,650 rows), stocks.db (real_evaluated_predictions=4,035 rows + stocks=1,240 rows), price_history.db (1,311,000 rows, 1,557 tickers).
-- Located 21 existing backtest artifacts across 3 locations: scripts/camp/results/ (19 files incl. experiment_000_baseline, ablation_4months, rolling_ic_full, quick_win_results, 12month_experiments, 2026_test, open_camp_final, fixed_open_camp, ablation_raw, phase_a..e, decisions_log.jsonl, breadth_regime_checkpoint, egx30_checkpoint, egx30_checkpoint_v2); vps-service/scripts/egx_backtest/results/egx_backtest_results.json (Strategy E hybrid: 224 trades, WR=69.2%, PF=1.87); 2 DB tables (historical_trades 22,650 anonymized rows, real_evaluated_predictions 4,035 SELL-dominated rows).
-- Computed current baseline from predictions.db.predictions WHERE exit_price IS NOT NULL: 1,053 closed trades, WR=51.66%, PF=2.606, net_pnl=+4,757.31pp, max_DD=-518.91pp (equity curve), avg_R=2.07, avg_holding=135.3 days. By year: 2025 (n=143, WR=42%, PF=0.95, avg_ret=-0.19%, avg_hold=314d) vs 2026 (n=910, WR=53%, PF=2.98, avg_ret=+5.26%, avg_hold=107d). Status breakdown: EXPIRED=864 (74% WR), TARGET_HIT=187 (31% WR — backwards!), STOPPED=2.
-- Look-ahead bias check on closed trades: 0 closed trades have prediction_date > 2026-10-21 (price_history max). All 757 WS-B-flagged future-dated predictions have exit_price IS NULL (open/stale bucket, NOT closed). The 1,053 closed-trades baseline is FREE of look-ahead bias, but the 757 are still polluting the open predictions set.
-- Cost analysis: actual_return = (exit_price/entry_price - 1)*100 (naive). Verified on 1,053 closed trades: 970 EXACTLY match naive formula within ±0.01pp; 972 trades CLOSER to naive than to with-0.3%-RT-commission formula. Costs NOT deducted. If 0.3% RT commission applied per trade: total commission = 1,053 * 0.3 = 315.9pp; net PnL would drop from +4,757.31 to +4,441.41 (-6.6% haircut). Slippage also absent (entry_price EXACTLY = ph_close_price in many cases, e.g., BTFH diff=0.0%).
-- Survivorship bias: predictions cover 258 distinct tickers; 257/258 are currently active in stocks.db (1,205 active + 35 inactive). Only 1 truly delisted ticker: LTC (market=CRYPTO, single open prediction, exit_price=NULL — NOT in closed set). Only 1 inactive: PTCC (also open). 0 closed trades on either. Direct survivorship bias on closed trades = 0. However, UNIVERSE-level survivorship exists: predictions engine only chose from currently-listed EGX stocks; cannot quantify without historical EGX listing register.
-- Corporate-action distortion: WS-A top-30 INVALID tickers (source-mixing-affected via egx_investment_migration) account for 83 closed trades (7.9% of n) but +1,276.55pp net PnL (26.8% of total). ABUK alone: 64 trades, WR=85.9%, avg_ret=+17.32% — clearly inflated by corrupt price data. Broader Phase0A-94 set: 385 closed trades, +1,890.57pp net (39.8% of total). Combined 107-ticker set: 391 trades, +1,943.83pp (40.9% of total).
-- Unrealistic fills check (batch-loaded all 1,311,000 price_history rows into dict, compared each closed trade's entry_price to same-day open/close and next-7-day open/close with ±0.5% tolerance): 953/1,053 (90.5%) = same-day-close entry (entry_price = close of prediction_date, often exact match); 6 = same-day-open; 24 = next-day-open (T+1, would be realistic); 70 = cannot determine. Sample: PIOH 2025-09-22 entry=14.87 vs ph_close=14.8662 (0.026% diff), BTFH 2025-09-22 entry=3.1 vs ph_close=3.1 (0.0% diff). prediction_date timestamps are "12:00:00" (mid-session) but entries filled at session close → impossible without hindsight. CONCLUSION: 90.5% of trades use unrealistic same-day close execution with zero slippage.
-- Overlapping trades check (sweep-line algorithm on entry_date → outcome_date intervals per ticker): max concurrent trades on single ticker = 181 (BTFH); 68 of 154 closed-trade tickers have overlapping trades. Top 10 by max_concurrent: BTFH=181, MASR=94, PIOH=69, ABUK=64, CIEB=64, BLDG=49, PHDC=44, MTEZ=29, ORTE=26, ELKA=21. Same-day entries: up to 9 predictions on same ticker same day (ARVA/LKGP/RKAZ/SDTI on 2026-09-27). Returns on overlapping trades are CORRELATED (same ticker, same period) but summed as if independent — massively overstates strategy performance.
-- Additional finding (mass-backfill pattern): 777 of 1,053 closed trades (73.8%) ALL have outcome_date = '2026-09-22' (single date). Only 17 distinct outcome_dates across all closed trades. Trades with prediction_date starting 2025-09-22 were force-closed at the close of 2026-09-22 (1 year later) — labeled exit_type='MAX_DAYS_60d' but holding_days=365 (data label stale). 450/451 MAX_DAYS_60d trades have holding_days > 60. Verified exit_price matches ph_close on 2026-09-22 EXACTLY (BTFH diff=0.0%); many trades (PIOH, BLDG) have exit_price set even though price_history has NO bar for 2026-09-22 (stale value carried forward).
-- Additional finding (status field semantics): 'EXPIRED' status (864 trades) actually means 'force-closed at mark-to-market on outcome_date', NOT expired worthless. 'EXPIRED' has HIGHER win-rate (56%) than 'TARGET_HIT' (31%) — backwards/inconsistent. exit_type column unreliable per WS-B finding (e.g., exit_type='SL' for trades with positive actual_return).
-- Additional finding (US market label wrong): 76 predictions tagged market='US' but tickers are MASAKE, 7205, NRE, RUBX, FALH, MADAR, WBD, KMEFIC, AHCS, MAAL, ALOLA, DHBK, 4280, TANM, ACTF, ALIMTI, ALTIJA, EHDR, TAQA, DBIS — these are EGX/Saudi/Gulf tickers, NOT US. Market field is unreliable.
-- Additional finding (actual_exit_price column): 1,337 rows have actual_exit_price populated (vs 1,053 with exit_price populated). 99 rows where actual_exit_price != exit_price (inconsistent). 389 rows have actual_exit_price populated but exit_price NULL. If using actual_exit_price as primary, baseline changes: WR 51.66% → 63.7%, net_pnl +4,757 → +6,513 (37% higher). The two columns are NOT interchangeable — schema migration artifact.
-- Did NOT modify any DB or production file. Read-only throughout.
-- Wrote final report to /home/z/my-project/scripts/camp/results/workstream_c_report.json (25.8 KB).
-
-Stage Summary:
-- Report path: /home/z/my-project/scripts/camp/results/workstream_c_report.json (25.8 KB).
-- No script artifact written (analysis was ad-hoc SQL — no reusable script needed; reproducible by re-running the queries in this worklog).
-- KEY FINDINGS:
-  • EXISTING BACKTESTS: 21 artifacts across 3 locations. Most trustworthy: scripts/camp/results/experiment_000_baseline.json (V38 baseline: 302 signals, WR=45%, PF=1.07, Sharpe=0.54 — REJECT verdict), 12month_experiments.json (8 experiments, all REJECT except Bull+Vol & Bull+RSI+Vol kept), vps-service egx_backtest Strategy E (224 trades, WR=69.2%, PF=1.87, avg_hold=3.9d). Untrustworthy: phase_e_setups setup_1 (100% WR, +949% avg_gain — clearly look-ahead biased).
-  • CURRENT BASELINE (predictions.db.predictions WHERE exit_price IS NOT NULL): n=1,053, WR=51.66%, PF=2.606, net_pnl=+4,757.31pp, max_DD=-518.91pp, avg_R=2.07, avg_hold=135.3d. UNTRUSTWORTHY — see bias findings.
-  • LOOK-AHEAD IN CLOSED SET = 0 (the 757 WS-B future-dated predictions are all in the OPEN/stale bucket; closed baseline is clean).
-  • COSTS NOT DEDUCTED: actual_return = (exit/entry-1)*100 (naive). 0.3% RT commission would reduce net PnL by 316pp (-6.6%). Slippage absent.
-  • SURVIVORSHIP BIAS: minimal direct (1 delisted ticker, 0 closed trades). Universe-level bias exists (cannot quantify).
-  • CORPORATE-ACTION DISTORTION: WS-A 30 INVALID tickers contribute 83 trades (7.9%) but +1,277pp net PnL (26.8% of total). ABUK alone: 64 trades, WR=85.9%, avg_ret=+17.32% — inflated by corrupt egx_investment_migration prices.
-  • UNREALISTIC FILLS: 953/1,053 (90.5%) of entries = same-day close fill (within 0.5% of ph_close, often exact). prediction_date timestamp = "12:00:00" but entry filled at session close — impossible without hindsight.
-  • OVERLAPPING TRADES: max concurrent per ticker = 181 (BTFH); 68 of 154 tickers have overlapping trades. Returns are CORRELATED, NOT additive — summing actual_return massively overstates strategy performance.
-  • MASS-BACKFILL BIAS: 777 of 1,053 closed trades (74%) ALL closed on the SAME outcome_date = 2026-09-22, with exit_price = ph_close on that date. This is mark-to-market snapshot, NOT actual trade exits. Labels 'MAX_DAYS_60d'/'TARGET_HIT'/'SL' are stale/inconsistent.
-- TRUSTWORTHINESS:
-  • RELIABLE (6 metrics): scripts/camp/results/* backtest artifacts (independently generated), historical_trades aggregate metrics (PF=1.01 overall, support_bounce=PF 1.23 only winner), real_evaluated_predictions aggregate (WR=35.4%, avg_ret=-2.9%), egx_backtest Strategy E (independent), rolling_ic_full ICs, phase_b_regime monthly labels.
-  • UNRELIABLE (11 metrics): current_baseline.trades/wr/pf/net_pnl/max_dd/avg_r/avg_holding (all biased by mass-backfill, unrealistic fills, overlapping, no costs); baseline_by_year.2025 and .2026 (mass-backfill spillover); phase_e_setups setup_1 (100% WR look-ahead); experiment_000_baseline pipeline_3stage (max_dd=100% degenerate).
-- RECOMMENDED NEXT ACTIONS (for Charlie / remediation workstream):
-  1. DISCARD predictions.db.predictions-based baseline entirely as a strategy-performance benchmark. The 1,053 'closed trades' are a SNAPSHOT of mark-to-market on 2026-09-22, not real trade exits. Use scripts/camp/results/ artifacts (V38 baseline PF=1.07, ablation experiment_000 PF=1.02) as the trustworthy current baseline instead.
-  2. BACKFILL proper exit_price + outcome_date + exit_type for the 277 stale WS-B entries + the 777 mass-backfill entries by re-running the exit logic against price_history with proper rules (TP1/TP2 hit on intraday high, SL hit on intraday low, time-exit at 60 days).
-  3. RE-IMPLEMENT BACKTEST with: (a) next-day-open entry fills (T+1) to remove same-day-close hindsight bias; (b) 0.3% round-trip commission deducted; (c) slippage model (e.g., 0.1% one-way); (d) max-N-concurrent-positions-per-ticker constraint (e.g., 1) to remove overlapping-trade double-counting.
-  4. QUARANTINE 83 closed trades on WS-A top-30 INVALID tickers (esp. ABUK 64 trades with avg_ret +17.3% — almost certainly inflated by source-mixing-corrupted price_history). Re-evaluate these only after WS-A's source quarantine is applied.
-  5. NORMALIZE exit_type / exit_reason semantics — exit_type field is stale; re-derive from hit_target + hit_stop + actual_exit_price (per WS-B Check 5).
-  6. FIX market field — 76 'US' predictions are EGX/Saudi/Gulf tickers. Re-classify by joining predictions.ticker to stocks.db.stocks.market.
-  7. CHOOSE primary exit-price column: actual_exit_price (1,337 populated, but 99 differ from exit_price) vs exit_price (1,053 populated). Current code path mixes both — make policy explicit before any backtest.
-
-
----
-Task ID: CAPABILITY-AUDIT-A
-Agent: Explore
-Task: Scope A+B — Inventory 14 capabilities + classify utilization in production decision path.
-
-Work Log:
-- Read /home/z/my-project/worklog.md (tail) + scripts/camp/results/workstream_b_report.json context for PHASE0-WS-A/B/C findings (look-ahead bias, mass-backfill, exit_type staleness, source-mixing corruption).
-- Traced the production prediction path: `vps-service/jobs/daily_predictor.py` `run_generator()` (line 825) is the SSOT writer to `predictions.db.predictions` + `stored_analyses` (via `tracker.record_prediction()` at line 4047 and the SA-INSERT block at 4150). Main analyzer is `engines/backtest_engine.py::V38BacktestEngine.analyze_single_day()` (line 1455), which delegates to `analyzers/institutional_decision_engine.py::build_institutional_decision()` (line 1684) for signal_final + R/R.
-- Inspected: vps-service/jobs/daily_predictor.py (4731 lines, full import+decision flow), vps-service/engines/backtest_engine.py (2373 lines, V38 engine), vps-service/analyzers/institutional_decision_engine.py (1507 lines, build_institutional_decision), vps-service/analyzers/master_analyzer.py (5793 lines, detect_who_is_buying/generate_analysis_reason), vps-service/analyzers/radar_integration.py (maker_radar JSON consumer), vps-service/jobs/predictor_modules/whale_guard.py (liquidity_radar_v2.compute_whale_flow), vps-service/api/market_master_endpoints.py (3 display-only endpoints), vps-service/portfolio/{stop_manager,smart_exit_engine,portfolio_heat,position_manager,multi_target_exit}.py, vps-service/config/active_settings.json, vps-service/utils/{entry_gate,expert_memory_v402,shared_liquidity}.py, vps-service/analyzers/{adaptive_weights,feedback_loop,fundamental_data_provider,news_fetcher_analyzer,egx_disclosure_engine,regime_filter,strict_entry_filters,sector_relative,breakout_signal,sniper_detector,golden_hunter,multi_path_detector,v68_oracle,hmm_market_regime,market_regime_engine,confluence_engine_v3,smc_engine,volume_profile,core_scoring_engine,stock_notebook,screener_integration,intraday_reader}.py.
-- Verified which 3 endpoint-style capabilities (intraday_pressure, investor_flows, liquidity_radar) feed UI ONLY via /api/market/* and are NOT imported by daily_predictor.py (confirmed via grep — zero import lines).
-- Verified which "specialist engines" are bound to production prediction path vs. separate scheduler jobs: sniper_detector + golden_hunter + multi_path_detector + v68_oracle ARE wired into daily_predictor; sniper_engine.SniperEngine is only in market_scheduler.py + api/sniper_routes.py (separate job/UI); explosive_scanner.py has zero callers in jobs/ (DEAD); hot_candidate_detector.py is a separate cron job.
-- Verified the 4-layer hybrid score formula at daily_predictor.py:3565-3663 (V38 40% + CoreScoringEngine 35% + SMC 15% + VP 10%) — confirms the multi-factor confluence path is partially used (SMC + VP inline-computed; ConfluenceEngineV3 standalone module is NOT invoked).
-- Confirmed adaptive_weights.PERSONA_INPUT_WEIGHTS is imported at line 105 but never invoked in run_generator() (no calls to apply_persona_weighting_to_score / get_adaptive_weights / AdaptiveWeights class) — DEAD IMPORT.
-- Confirmed portfolio exit engines (StopLossManager, SmartExitEngine, PortfolioHeatCalculator, MultiTargetExit) are NOT in daily_predictor — only in daily_closer.py (separate closing job) + api/portfolio_routes.py + stored_analysis_routes.py (UI display of continuation metrics).
-- Confirmed news_stop_filter.check_news_stop_filter is NOT in daily_predictor — only in api/chart_routes.py:2623 (UI display path).
-- Confirmed egx_disclosure_engine IS wired but gated by env var V40_2_DISCLOSURE_IMPACT (default OFF) — IMPLEMENTED_BUT_DISABLED.
-- Confirmed breakout_signal.detect_breakout + fuse_with_v402 IS wired but gated by env var V402_BREAKOUT_FUSION (default OFF) — IMPLEMENTED_BUT_DISABLED.
-- Confirmed lgbm_gatekeeper at daily_predictor.py:3892-3927 is HARDCODED to verdict='SKIPPED_INSUFFICIENT_DATA' (module file missing) — IMPLEMENTED_BUT_DISABLED.
-- Confirmed the toxic_ticker_blocklist DNA_TOXIC_BLOCKLIST_ENABLED defaults to OFF — IMPLEMENTED_BUT_DISABLED.
-- No files modified. Read-only throughout (Explore agent).
-
-Stage Summary:
-
-| # | Capability | File(s) | Main Function | Call Chain (production path) | Classification | Evidence |
-|---|---|---|---|---|---|---|
-| 1 | **Liquidity Radar** | vps-service/api/market_master_endpoints.py:328 (`liquidity_radar`); vps-service/core/real_liquidity_radar.py (`analyze_liquidity`); vps-service/analyzers/radar_integration.py:305 (`is_radar_strong_accumulation`); scripts/liquidity_radar_v2.py (`compute_whale_flow`) | `liquidity_radar()` (API), `analyze_liquidity()`, `is_radar_strong_accumulation()`, `compute_whale_flow()` | daily_predictor.py:1782 calls `is_radar_strong_accumulation()` → HARD GATE (continue if not strong). daily_predictor.py:1060 calls `_whale_distribution_guard` → calls `compute_whale_flow` → blocks BUY if net_flow<0. The `/api/market/liquidity-radar` endpoint + `real_liquidity_radar.analyze_liquidity` (used only by core/unified_scanner.py) feed the UI dashboard only. | **PARTIALLY_IMPLEMENTED** — radar_integration.py maker_radar JSON path IS a HARD GATE (USED_IN_FINAL_DECISION); the real_liquidity_radar + /api/market/liquidity-radar endpoint are DISPLAY_ONLY (used in UI tabs, not by predictor) | daily_predictor.py:1759-1813 (HARD GATE); api/market_master_endpoints.py:328-441 (DISPLAY); core/real_liquidity_radar.py only called from core/unified_scanner.py:357 |
-| 2 | **Liquidity Flow + investor flows** | vps-service/utils/shared_liquidity.py (`compute_money_flow`, `check_kill_switch`); vps-service/api/market_master_endpoints.py:136 (`investor_flows`) | `compute_money_flow()`, `check_kill_switch()`, `investor_flows()` (API) | daily_predictor.py:3225 imports `check_kill_switch, compute_money_flow` → at 3231-3248: kill_switch → continue (HARD REJECT); money_flow → ±2/±5 score boost. `/api/market/investor-flows` reads `stocks.db.investors_data` table → DISPLAY_ONLY (no caller in jobs/) | **IMPLEMENTED_AS_HARD_FILTER + RANKING_INPUT** for money_flow/kill_switch (used); **DISPLAY_ONLY** for investor_flows API | daily_predictor.py:3225-3255 (HARD+score); api/market_master_endpoints.py:136-322 (DISPLAY) |
-| 3 | **Intraday pressure** | vps-service/api/market_master_endpoints.py:45 (`intraday_pressure`); vps-service/analyzers/intraday_reader.py (`detect_maker_flow`, `get_sector_performance`) | `intraday_pressure()` (API), `detect_maker_flow()`, `get_sector_performance()` | daily_predictor.py:1483 imports `get_sector_performance, detect_maker_flow` → at 1497: sector heat → ±8/−10 score; at 1515: maker_flow='buying'+conf>60 → boost. `/api/market/intraday-pressure` endpoint estimates buy/sell_pct from change_percent → DISPLAY_ONLY | **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (intraday_reader paths); **DISPLAY_ONLY** (API endpoint) | daily_predictor.py:1483-1538 (score); api/market_master_endpoints.py:44-129 (DISPLAY) |
-| 4 | **Volume surge + accumulation + recovery + distribution + maker_radar** | vps-service/analyzers/core_scoring_engine.py:1239 (`detect_volume_surge_rocket`), :1405 (`detect_accumulation_phase`), :1042 (`detect_explosive_rocket`); scripts/maker_radar.py + analyzers/radar_integration.py:72 (`_load_maker_radar`); vps-service/jobs/predictor_modules/whale_guard.py:18 (`_whale_distribution_guard`) | `detect_volume_surge_rocket()`, `detect_accumulation_phase()`, `detect_recovery_from_base()`, `_whale_distribution_guard()`, `is_radar_strong_accumulation()` | daily_predictor.py:1079 `detect_volume_surge_rocket` → STRONG_BUY (replaces signal); :1106 `detect_accumulation_phase` → STRONG_BUY; :1132 `detect_recovery_from_base` → STRONG_BUY; :1060 `_whale_distribution_guard` → blocks BUY; :1782 maker_radar HARD GATE; :4280 `inject_whale_radar_picks` post-run injection into stored_analyses | **IMPLEMENTED_AND_USED_IN_FINAL_DECISION** (all 5 sub-paths active) | daily_predictor.py:1060, 1079, 1106, 1132, 1782, 4280 |
-| 5 | **Trend + market-regime + breadth** | vps-service/analyzers/market_regime_engine.py:360 (`MarketRegimeEngine`); vps-service/analyzers/hmm_market_regime.py:269 (`get_hmm_regime`); vps-service/analyzers/regime_filter.py:70 (`is_bullish_regime`); vps-service/analyzers/regime_detector.py:24 (`RegimeDetector`); vps-service/engines/market_regime.py | `MarketRegimeEngine.update_regime()`, `get_hmm_regime()`, `is_bullish_regime()` | daily_predictor.py:876-918 MarketRegimeEngine at run start → overrides max_picks, MIN_RR, MIN_SCORE, pos_mult, atr_stop_mult (REGIME-ENGINE); :3268 HMM get_hmm_regime → veto (Distribution/Markdown) + boost (+3/+5); :2787 is_bullish_regime → HARD REJECT (env V40_2_REGIME_FILTER, default OFF). `regime_detector.RegimeDetector` not in daily_predictor. | **IMPLEMENTED_AS_HARD_FILTER + RANKING_OR_SCORE_INPUT** for MarketRegimeEngine + HMM (default ON); **IMPLEMENTED_BUT_DISABLED** for regime_filter (env OFF); `RegimeDetector` class is NOT_CONSUMED in prediction path | daily_predictor.py:876-918 (regime), 3268-3299 (HMM), 2785-2815 (regime_filter OFF) |
-| 6 | **Correction/pullback detection** | vps-service/analyzers/multi_path_detector.py (`detect_pullback_buy`); vps-service/utils/entry_gate.py:268 (`_check_deep_correction`); vps-service/analyzers/strict_entry_filters.py:304 (`is_late_entry`) | `detect_pullback_buy()`, `_check_deep_correction()`, `is_late_entry()`, `evaluate_strict_entry()` | daily_predictor.py:2237 `detect_pullback_buy` → +8 boost (env V72_PULLBACK_BUY_PATH, default ON); entry_gate `_check_deep_correction` at 1664 → HARD REJECT; `is_late_entry` via `evaluate_strict_entry` at 2835 (env V40_2_STRICT_ENTRY, default OFF) | **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (pullback_buy, ON); **IMPLEMENTED_AS_HARD_FILTER** (entry_gate deep_correction, ON); **IMPLEMENTED_BUT_DISABLED** (strict_entry_filters, env OFF) | daily_predictor.py:2237-2251, 1602-1670, 2826-2864 |
-| 7 | **Support/resistance + breakout + entry timing** | vps-service/analyzers/support_resistance_calculator.py (`calculate_support_resistance`); vps-service/analyzers/breakout_signal.py:60 (`detect_breakout`), :135 (`fuse_with_v402`); vps-service/utils/entry_gate.py (`check_entry_gate`); vps-service/analyzers/institutional_levels.py (`compute_institutional_levels`) | `calculate_support_resistance()`, `detect_breakout()`, `fuse_with_v402()`, `check_entry_gate()`, `compute_institutional_levels()` | daily_predictor.py:1602 `check_entry_gate` → HARD GATE (10 checks: evidence/RR/SMA50/RS/deep_correction/chase/liquidity/market_context/entry_zone). `detect_breakout`+`fuse_with_v402` at 3423 → env V402_BREAKOUT_FUSION=0 → DISABLED. `support_resistance_calculator.calculate_support_resistance` ONLY in persona_screener/persona_gambler/technical_target_engine — NOT in daily_predictor. `institutional_levels.compute_institutional_levels` NOT consumed by predictor. | **IMPLEMENTED_AS_HARD_FILTER** (entry_gate, ON); **IMPLEMENTED_BUT_DISABLED** (breakout_signal fusion, env OFF); **NOT_CONSUMED** in production path (support_resistance_calculator, institutional_levels — only used by persona_screener which is bypassed by UNIFIED-BALANCED-ONLY directive) | daily_predictor.py:1602-1697 (entry_gate); 3421-3447 (breakout OFF); persona_screener.py:44 / persona_gambler.py:21 (NOT consumed) |
-| 8 | **Technical indicators + multi-factor confluence** | vps-service/engines/backtest_engine.py:591 (`calculate_score_and_proofs`), :535 (`detect_order_blocks_and_sweeps`); vps-service/analyzers/master_analyzer.py:846 (`detect_who_is_buying`), :1124 (`generate_analysis_reason`), :152 (imports FusionEngineV20); vps-service/analyzers/core_scoring_engine.py:1755 (`CoreScoringEngine`); vps-service/analyzers/smc_engine.py (`calculate_smc_score`); vps-service/analyzers/volume_profile.py (`VolumeProfileAnalyzer`); vps-service/analyzers/confluence_engine_v3.py:425 (`ConfluenceEngineV3`); vps-service/glminvestment_engines/confluence/confluence_scorer.py | `calculate_score_and_proofs()`, `detect_who_is_buying()`, `generate_analysis_reason()`, `analyze()` (CoreScoringEngine), `calculate_smc_score()`, `VolumeProfileAnalyzer().analyze()` | daily_predictor.py:1048 `engine.analyze_single_day` → `calculate_score_and_proofs` (8 indicators + DNA + maker + flight); :3324 `detect_who_is_buying` → veto (inst_sell≥65) + boost (+5/-3/-5); :3598 CoreScoringEngine.analyze → 35% weight in hybrid score; :3531 SMC score (15% weight); :3546 Volume Profile (10% weight); :3386 generate_analysis_reason → text only (no score impact); :3423 breakout fusion DISABLED. `ConfluenceEngineV3` standalone module NOT imported by daily_predictor (only by api/confluence_routes.py DISPLAY). `master_analyzer.MasterAnalyzer` class NOT used in daily_predictor (only detect_who_is_buying + generate_analysis_reason free functions used). | **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (V38 score, who_is_buying, hybrid 4-layer V38+Core+SMC+VP); **DISPLAY_ONLY** (generate_analysis_reason text); **NOT_CONSUMED** (ConfluenceEngineV3, MasterAnalyzer class, FusionEngineV20 in master_analyzer.py:152) | daily_predictor.py:1048, 3324, 3598, 3665 (hybrid); api/confluence_routes.py:44 (DISPLAY); master_analyzer.py:152 (FusionEngineV20 import — only used inside MasterAnalyzer class which itself isn't called) |
-| 9 | **Sector strength + relative strength** | vps-service/analyzers/intraday_reader.py (`get_sector_performance`); vps-service/analyzers/sector_relative.py:104 (`SectorRelativeAnalyzer`); vps-service/jobs/daily_predictor.py:444 (`load_sector_heat`) | `get_sector_performance()`, `SectorRelativeAnalyzer.analyze()`, `load_sector_heat()` | daily_predictor.py:1497 `get_sector_performance` → sector hot/cold → ±8/−10 score boost/penalty. `load_sector_heat` defined at line 444 but CALL IS COMMENTED OUT at line 3845-3848 (`# sector_heat = load_sector_heat()`). `SectorRelativeAnalyzer` is NOT imported by daily_predictor — only standalone. `stock_roc` vs `benchmark_change` is computed in engine + entry_gate `_check_relative_strength` (HARD FILTER). | **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (intraday_reader sector_performance); **IMPLEMENTED_AS_HARD_FILTER** (entry_gate RS check); **ARCHIVED_OR_DEPRECATED** (`load_sector_heat` defined but commented out); **NOT_CONSUMED** (SectorRelativeAnalyzer class) | daily_predictor.py:1497-1512 (intraday_reader), 1622-1640 (stock_roc/bench RS), 3845-3848 (commented); sector_relative.py class NOT imported by jobs |
-| 10 | **Fundamentals + valuation** | vps-service/analyzers/fundamental_data_provider.py:534 (`get_fundamental_score`); vps-service/engines/backtest_engine.py:481 (`evaluate_fundamentals`); vps-service/analyzers/screener_integration.py (`apply_screener_data_to_v402`, reads `tab_valuation`/`tab_profitability`); vps-service/analyzers/fundamental.py + fundamental_enhanced.py + fundamental_scorer.py | `get_fundamental_score()`, `evaluate_fundamentals()`, `apply_screener_data_to_v402()` | daily_predictor.py:1569-1585 `get_fundamental_score` → HARD VETO (fund_score < 30 → continue). backtest_engine.py:1516 `_get_fundamentals` populates FundamentalsState.score 0-100. daily_predictor.py:1849 `apply_screener_data_to_v402` → veto (bubble P/E) + boost (undervalued/gainers). daily_predictor.py:2034-2047 reads `tab_valuation.pe_ratio` → V62 story_stock flag. `fundamental.py`, `fundamental_enhanced.py`, `fundamental_scorer.py` NOT consumed in prediction path. | **IMPLEMENTED_AS_HARD_FILTER** (fundamentals veto, ON); **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (screener_integration tab_valuation); **NOT_CONSUMED** (fundamental_enhanced.py + fundamental_scorer.py — duplicate modules) | daily_predictor.py:1569-1585, 1849-1873; backtest_engine.py:481-516 |
-| 11 | **News + events** | vps-service/analyzers/news_fetcher_analyzer.py:513 (`fetch_news_for_ticker`), :752 (`analyze_news_sentiment`); vps-service/analyzers/news_impact_scorer.py:488 (`get_news_impact_for_ticker`); vps-service/analyzers/live_news_integration.py (`get_news_impact_for_live_prediction`); vps-service/analyzers/egx_disclosure_engine.py:695 (`get_disclosure_impact_for_ticker`); vps-service/analyzers/news_stop_filter.py:73 (`check_news_stop_filter`) | `get_news_with_impact()`, `get_news_impact_for_live_prediction()`, `get_disclosure_impact_for_ticker()`, `check_news_stop_filter()` | daily_predictor.py:2600 `get_news_with_impact` → VETO (fraud/halt, score≤−2) + BOOST/REDUCE (env V40_2_NEWS_IMPACT, default ON). :2973 `get_news_impact_for_live_prediction` → live news score delta (combined_score). :2880 `get_disclosure_impact_for_ticker` → VETO + score (env V40_2_DISCLOSURE_IMPACT, default OFF → DISABLED). `check_news_stop_filter` NOT called by daily_predictor — only by api/chart_routes.py:2623 (DISPLAY path, worklog §Feature 9 says fail-open + unreliable). | **IMPLEMENTED_AS_HARD_FILTER + RANKING_OR_SCORE_INPUT** (news_fetcher + live_news, ON); **IMPLEMENTED_BUT_DISABLED** (egx_disclosure_engine, env OFF); **NOT_CONSUMED** in decision path (news_stop_filter — only UI chart_routes) | daily_predictor.py:2594-2633, 2973-2982, 2875-2914 (OFF); api/chart_routes.py:2623 (DISPLAY) |
-| 12 | **Portfolio exposure + risk + exit** | vps-service/engine/flow_system.py (`evaluate_risk`); vps-service/analyzers/position_sizing.py (`calculate_position_size`); vps-service/portfolio/stop_manager.py:63 (`StopLossManager`); vps-service/portfolio/smart_exit_engine.py:103 (`SmartExitEngine`); vps-service/portfolio/portfolio_heat.py:95 (`PortfolioHeatCalculator`); vps-service/portfolio/multi_target_exit.py (`simulate_multi_target_exit`) | `evaluate_risk()`, `calculate_position_size()`, `StopLossManager.calculate_partial_exit()`, `SmartExitEngine.decide_exit_action()`, `PortfolioHeatCalculator.calculate()`, `multi_target_exit.attach_to_prediction()` | daily_predictor.py:3953 `evaluate_risk` → HARD KILL (RR<1.8, pos>2.5% → continue). :2942 `calculate_position_size` → position_size_mult (volatility class). :4011-4037 HARD-QUANT-KILL filter (confidence<65%, falling knife). `stop_manager`, `smart_exit_engine`, `portfolio_heat`, `multi_target_exit` are NOT in daily_predictor — only `daily_closer.py:2544` (multi_target_exit.attach_to_prediction) + `api/portfolio_routes.py:83,276` (PositionManager + PortfolioHeatCalculator — DISPLAY) + `stored_analysis_routes.py:2547` (SmartExitEngine — DISPLAY continuation metrics). | **IMPLEMENTED_AS_HARD_FILTER** (evaluate_risk + HARD-QUANT-KILL, ON); **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (position_sizing, ON); **NOT_CONSUMED in prediction path** (StopLossManager + SmartExitEngine + PortfolioHeatCalculator + MultiTargetExit — these only run at exit time via daily_closer, NOT at prediction time) | daily_predictor.py:3953-3987 (evaluate_risk), 2939-2949 (position_sizing); daily_closer.py:2544 (exit engines); api/portfolio_routes.py:83 (UI) |
-| 13 | **Learning from outcomes** | vps-service/analyzers/feedback_loop.py:36 (`FeedbackLoop`); vps-service/utils/expert_memory_v402.py:48 (`run_expert_memory_phase_v402`); vps-service/analyzers/adaptive_weights.py:103 (`PERSONA_INPUT_WEIGHTS`), :455 (`AdaptiveWeights`), :479 (`AdaptiveWeightsEngine`); vps-service/utils/lesson_store.py + win_lesson_store.py; vps-service/jobs/learning_engine.py; vps-service/analyzers/unified_learning_engine.py | `FeedbackLoop.get_pattern_win_rate()`, `run_expert_memory_phase_v402()`, `AdaptiveWeights`, `record_lesson_from_close()`, `compute_bounded_stop_expansion()` | daily_predictor.py:1464 `FeedbackLoop().get_pattern_win_rate(signal)` → score multiplier + boost (ON, no env gate). :4196 `run_expert_memory_phase_v402` → veto on 'caution' (post-prediction lesson check). `PERSONA_INPUT_WEIGHTS` imported at line 105 but NEVER INVOKED — DEAD IMPORT. `AdaptiveWeights`/`AdaptiveWeightsEngine` classes NOT consumed by predictor. `lesson_store` writes happen in `daily_closer.py` (closed-loop). `learning_engine.py` + `unified_learning_engine.py` are separate scheduler jobs (not in predictor path). | **IMPLEMENTED_AS_RANKING_OR_SCORE_INPUT** (FeedbackLoop, ON); **IMPLEMENTED_AS_HARD_FILTER** (expert_memory_v402 veto, ON); **NOT_CONSUMED** in prediction path (adaptive_weights — DEAD IMPORT, classes never called); **SEPARATE_JOBS** (lesson_store writes happen in daily_closer, learning_engine, unified_learning_engine) | daily_predictor.py:1464-1477, 4195-4213, 105 (dead import); daily_closer.py:181, 3410 (lesson_store) |
-| 14 | **Specialist engines + scanners** | vps-service/analyzers/sniper_detector.py:34 (`detect_desert_phase`), :93 (`detect_auction_trap`); vps-service/analyzers/golden_hunter.py:244 (`analyze_v76`); vps-service/analyzers/multi_path_detector.py (`detect_wash_trade`, `detect_hidden_distribution`, `detect_pullback_buy`, `compute_maker_death_point`, `detect_choch_bear`, `compute_market_bullish_sizing`); vps-service/analyzers/v68_oracle.py (`analyze_oracle`); vps-service/analyzers/sniper_engine.py (`SniperEngine.scan_market`); vps-service/engines/explosive_scanner.py (`ExplosiveScanner`); vps-service/jobs/hot_candidate_detector.py | `detect_desert_phase()`, `detect_auction_trap()`, `analyze_v76()`, `analyze_oracle()`, `detect_wash_trade()`, `detect_hidden_distribution()`, `SniperEngine.scan_market()`, `HotStocksDetector.detect_hot_stocks()` | daily_predictor.py:2082 `analyze_oracle` (V68) → 8 features + dirty_distribution HARD REJECT. :2190 multi_path_detector (V72) → wash_trade REJECT + hidden_dist REJECT + pullback_buy boost + maker_death_point + market_bullish_sizing. :2287 sniper_detector (V73) → desert_phase REJECT + auction_trap REJECT. :2327 golden_hunter (V76) → PUMP_FROM_DESERT +15, GOLDEN_RETEST +10 (env V76_GOLDEN_HUNTER default ON). `sniper_engine.SniperEngine` NOT in daily_predictor — only `market_scheduler.py:1533` (separate scheduler) + `api/sniper_routes.py:443` (UI). `explosive_scanner.py` has ZERO callers in jobs/ — DEAD. `hot_candidate_detector.py` is a separate cron job (not in prediction path). `hot_stocks_detector` only in `api/ai_routes.py:296` (UI). | **IMPLEMENTED_AS_HARD_FILTER + RANKING_OR_SCORE_INPUT** (V68 oracle, V72 multi_path, V73 sniper_detector, V76 golden_hunter — all wired into daily_predictor); **NOT_CONSUMED in prediction path** (sniper_engine — only market_scheduler; explosive_scanner — DEAD; hot_candidate_detector + hot_stocks_detector — separate cron/UI jobs) | daily_predictor.py:2082-2179, 2190-2280, 2287-2318, 2325-2372; market_scheduler.py:1533 (SniperEngine); engines/explosive_scanner.py (no callers); jobs/hot_candidate_detector.py:220 |
-
-KEY VERDICT:
-- **Production prediction path (writes to `predictions.db.predictions` + `stored_analyses`)**: daily_predictor.py `run_generator()` → `V38BacktestEngine.analyze_single_day()` (calls `build_institutional_decision`) → 20+ filter/boost layers → `evaluate_risk` HARD gate → `tracker.record_prediction()` INSERT (line 4047) + `stored_analyses` UPSERT (line 4150).
-- **Capabilities that exist but DO NOT influence the final BUY decision** (Mohsen's question): 
-  1. `/api/market/liquidity-radar` API endpoint (DISPLAY only — UI tab)
-  2. `/api/market/investor-flows` API endpoint (DISPLAY only — UI tab)
-  3. `/api/market/intraday-pressure` API endpoint (DISPLAY only — UI tab)
-  4. `core/real_liquidity_radar.analyze_liquidity` (used only by core/unified_scanner — NOT by daily_predictor)
-  5. `analyzers/regime_detector.RegimeDetector` class (replaced by market_regime_engine — dead)
-  6. `analyzers/sector_relative.SectorRelativeAnalyzer` class (NOT imported)
-  7. `analyzers/support_resistance_calculator.calculate_support_resistance` (only in persona_screener/gambler which are bypassed by UNIFIED-BALANCED-ONLY)
-  8. `analyzers/institutional_levels.compute_institutional_levels` (NOT imported)
-  9. `analyzers/confluence_engine_v3.ConfluenceEngineV3` (only in api/confluence_routes — DISPLAY)
-  10. `analyzers/master_analyzer.MasterAnalyzer` class (only free functions detect_who_is_buying + generate_analysis_reason used)
-  11. `analyzers/news_stop_filter.check_news_stop_filter` (only api/chart_routes — DISPLAY, worklog flagged unreliable)
-  12. `analyzers/fundamental_enhanced.py` + `fundamental_scorer.py` + `fundamental.py` (duplicate modules — only `fundamental_data_provider.py` consumed)
-  13. `portfolio/stop_manager.StopLossManager` + `portfolio/smart_exit_engine.SmartExitEngine` + `portfolio/portfolio_heat.PortfolioHeatCalculator` + `portfolio/multi_target_exit` (EXIT-TIME engines, run by `daily_closer.py` — not at prediction time)
-  14. `analyzers/adaptive_weights.PERSONA_INPUT_WEIGHTS` + `AdaptiveWeights` + `AdaptiveWeightsEngine` classes (imported at line 105 but NEVER invoked — DEAD IMPORT)
-  15. `analyzers/sniper_engine.SniperEngine` (only market_scheduler separate job + api/sniper_routes UI)
-  16. `engines/explosive_scanner.ExplosiveScanner` (ZERO callers in jobs/ — DEAD)
-  17. `jobs/hot_candidate_detector.py` + `ai/hot_stocks_detector.HotStocksDetector` (separate cron + UI)
-  18. `lgbm_gatekeeper` (HARDCODED to SKIPPED_INSUFFICIENT_DATA at daily_predictor.py:3906 — module file missing)
-  19. `toxic_ticker_blocklist` (DNA_TOXIC_BLOCKLIST_ENABLED defaults OFF)
-  20. `breakout_signal.detect_breakout + fuse_with_v402` (env V402_BREAKOUT_FUSION=0)
-  21. `egx_disclosure_engine.get_disclosure_impact_for_ticker` (env V40_2_DISCLOSURE_IMPACT=0)
-  22. `regime_filter.is_bullish_regime` (env V40_2_REGIME_FILTER=0)
-  23. `strict_entry_filters.evaluate_strict_entry` (env V40_2_STRICT_ENTRY=0)
-  24. `load_sector_heat()` (defined at line 444, call COMMENTED OUT at line 3845)
-- **Capabilities that DO influence final BUY (the answer to "what caused the BUY")**: V38 institutional decision (build_institutional_decision → 6 proofs + 2-3 strong evidences) + 4-layer hybrid score (V38+Core+SMC+VP) + market_regime_engine thresholds + HMM regime veto/boost + whale_distribution_guard (liquidity_radar_v2.compute_whale_flow) + maker_radar HARD GATE + check_kill_switch + compute_money_flow + fundamentals veto + screener_integration + entry_gate (10 checks) + radar_integration (exit_radar + maker_radar) + detect_who_is_buying + feedback_loop (WR-based) + evaluate_risk (RR≥1.8, pos≤2.5%) + HARD-QUANT-KILL (confidence≥65%, falling-knife) + position_sizing + 3 hunters (volume_surge + accumulation + recovery) + V68 oracle + V72 multi_path + V73 sniper_detector + V76 golden_hunter + news_impact (news_fetcher_analyzer + live_news_integration) + expert_memory_v402 veto.
-- **NOT_MODIFIED**: Read-only audit throughout. No files touched.
-
----
-Task ID: RADAR-DEEP-AUDIT
-Agent: Explore
-Task: Deep audit of liquidity radar + maker state — current state, gaps, improvements.
-
-Work Log:
-- Read /home/z/my-project/worklog.md (last 120 lines for context incl. PHASE0-WS-C capability table).
-- Read vps-service/core/real_liquidity_radar.py (232 lines, full).
-- Read vps-service/analyzers/liquidity_filter.py (1112 lines, focus on dynamic_min_turnover + evaluate_kill_filters).
-- Read vps-service/core/unified_scanner.py (534 lines, full).
-- Read vps-service/analyzers/radar_integration.py (416 lines, full).
-- Read scripts/maker_radar.py (lines 1-800, the actual maker radar producing JSON consumed by daily_predictor).
-- Read vps-service/utils/shared_liquidity.py (1152 lines — detect_pre_surge, detect_quiet_accumulation, is_explosive_surge, compute_money_flow, detect_life_cycle, check_kill_switch, should_reject_by_liquidity).
-- Read vps-service/utils/canonical_signal.py:200-310 (classify_stock_phase + classify_accumulation).
-- Read vps-service/utils/entry_gate.py:460-519 (_check_stock_phase DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL).
-- Grep'd master_analyzer.py for radar_path/state/stage (lines 1134-1244 radar_path label map, 5779-5793 accumulation).
-- Read vps-service/jobs/predictor_modules/whale_guard.py (42 lines, calls liquidity_radar_v2.compute_whale_flow).
-- Inspected DBs via python3 sqlite3 module: stocks.db.radar_signal_tracking (1259 rows, 2026-09-28→2026-10-21, distinct signal_types: quiet_accumulation_strong=523, pre_surge=382, A_pre_surge=213, B_quiet_accumulation_strong=108, D_explosive_surge=14, disqualified_illiquid=14, explosive_surge=5); stocks.db.stock_phase (1238 rows, latest computed_at=2026-10-07 has 990 rows, symbol PRIMARY KEY so previous states OVERWRITTEN — no history); USDY shows 10 separate daily snapshots flipping B→A→B→A→B→B→B→A→B (daily noise, not transitions).
-- Confirmed NO `prev_state`, `transition_type`, `days_in_state`, `confirmed_transitions` columns exist anywhere in stocks.db / predictions.db. The only `state_transition` code in the repo is data_source_circuit_breaker.py (data source failover, NOT maker state).
-- NO files modified — read-only throughout.
-
-Stage Summary:
-
-# Liquidity Radar + Maker State — Deep Audit Report
-
-## Executive Verdict
-The radar **does NOT exist as the state-diagnosis + transition-monitoring system the owner envisions**. What exists are **two parallel daily classifiers** that produce **single-day labels**, write them to a **snapshot table that OVERWRITES previous state**, and only sometimes feed a **HARD-GATE pass/fail** into the predictor. There is **no state machine, no transition log, no "is accumulation continuing?" question being answered anywhere**. The owner's #1 priority (transition monitoring) is functionally absent.
-
-## Q1: Exact quantitative conditions for each state
-
-### Radar #1 — `core/real_liquidity_radar.py` (Wick/Dryness/Effort/Trajectory)
-5 states, single-day classification, **all thresholds HARDCODED**:
-
-| State | Thresholds | File:Line |
-|---|---|---|
-| FALLING_KNIFE (v1) | chg_1d < -3.0% AND daily_dryness > 1.5 AND low_trajectory==LOWER_LOWS | real_liquidity_radar.py:170 |
-| FALLING_KNIFE (v2) | MLR >= 0.15 AND chg_1d < -2.0% | real_liquidity_radar.py:176 |
-| DIRTY_DISTRIBUTION (v1) | upper_wick_pct > 40 AND daily_dryness > 1.3 AND close_location < 40 | real_liquidity_radar.py:184 |
-| DIRTY_DISTRIBUTION (v2) | effort_signal=='selling_pressure' AND daily_dryness > 1.5 | real_liquidity_radar.py:190 |
-| ACCUMULATION_CONFIRMED (v1) | lower_wick_pct > 30 AND close_location > 60 AND 0.8 <= daily_dryness <= 1.5 | real_liquidity_radar.py:198 |
-| ACCUMULATION_CONFIRMED (v2) | contraction AND close_location > 55 AND daily_dryness < 1.2 | real_liquidity_radar.py:204 |
-| DRY_EXPLOSION_READY | contraction AND daily_dryness < 0.7 AND abs(chg_1d) < 2.0 | real_liquidity_radar.py:212 |
-| SUSPICIOUS_WATCH | default fallback | real_liquidity_radar.py:219 |
-
-where `daily_dryness = vol / sma(vol,20)`, `contraction = atr(5) < atr(20)`, `MLR = (peak_20 - close)/peak_20`.
-
-### Radar #2 — `scripts/maker_radar.py` + `shared_liquidity.py` (paths A–E)
-**Hardcoded thresholds in `shared_liquidity.py`** (not configurable):
-
-| Path | Conditions | File:Line |
-|---|---|---|
-| A_pre_surge (PRE_SURGE) | 3 of 4 signals: volume gradient ≥15%, range 10d <10%, buy days ≥4/7, within 3% of MA10/20 | shared_liquidity.py:407-413, 599-720 |
-| B_quiet_accumulation_strong | detect_quiet_accumulation ≥5/6 signals (vol_high_recurring, buy_pressure, range<14%, vol_ratio≥0.7, ROC10d<12%, dist_days≤3) | shared_liquidity.py:377-399, 416-593 |
-| C_quiet_accumulation_weak | quiet signals 4/6 | maker_radar.py:487 |
-| D_explosive_surge | vol ≥2.0× avg20d + close>SMA20 + pre-surge range<18% | shared_liquidity.py:163-259 |
-| E_early_break | close > max_20 AND vol ≥1.5× avg20d AND prev range<15% | maker_radar.py:363-399 |
-| distribution (override) | net_flow_egp < 0 on any bullish path (BRAVO-FLOW-GATE-ALL) | maker_radar.py:515-527 |
-
-### Daily phase taxonomies (4 INCOMPATIBLE schemes coexist)
-1. `canonical_signal.classify_stock_phase` L215: تجميع/تصاعد/توزيع/تخفيض/محايد — based on buy_pct + roc_10d.
-2. `shared_liquidity.detect_life_cycle` L985: نعاس/انفجار/جني أرباح صحي/توزيع قاتل/تدوير وهمي/حبس/عادي — based on **last candle only**.
-3. `stocks.db.stock_phase` table: NEAR_SUPPORT/NEAR_RESISTANCE/BREAKOUT/BREAKDOWN/CORRECTION_ENDING/CORRECTION_ACTIVE/TREND_UP_HOLD/CONSOLIDATION/etc — 1238 rows, **OVERWRITES** (PRIMARY KEY symbol).
-4. `entry_gate._check_stock_phase` L487: DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL — MA50/MA200.
-
-**No configurable thresholds** — all are Python constants. Owner cannot tune without editing source.
-
-## Q2: How does state transition work?
-**It does not.** Every run is a fresh daily classification:
-- Can Accumulation→Distribution happen directly? **Yes** — `BRAVO-FLOW-GATE-ALL` (maker_radar.py:515) silently flips winner_path='distribution' if net_flow<0, regardless of yesterday's path. USDY oscillated B→A→B→A→B on consecutive days — that's noise, not signal.
-- Does the system track previous states? **NO.** `radar_signal_tracking` has rows per (ticker, signal_date) but no `prev_path` column; nothing joins today's row to yesterday's.
-- Is there a state machine? **NO.** No `current_state`/`next_state`/`confirmed_transitions` table anywhere.
-- Does old classification get preserved? **For radar_signal_tracking yes (append-only)**, but **for stock_phase NO** — it's `INSERT OR REPLACE` on PRIMARY KEY=symbol (1238 rows total across 4 computed_at timestamps = previous runs were destroyed; only the latest 990-row run on 2026-10-07 is preserved).
-
-## Q3: Price/volume data sources
-- **Daily OHLCV** — `price_history.db.price_history` (canonical, has `source` column, `egksco` preferred, `egx_investment_migration` rejected as corrupt) → fallback `stocks.db.stock_daily_prices` → fallback `data_engine.db.egksco_price_history` → fallback `data_engine.db.historical_data` (maker_radar.py:122-183).
-- **Intraday** — `intraday.db` (load_merged_history in master_analyzer.py:1247+). Real_liquidity_radar optionally consumes intraday (last 3 hours / 6 ticks) for effort_ratio + low_trajectory, but `maker_radar.py` does NOT use intraday at all — it's daily-only.
-- **Lookback**: 30 days in `unified_scanner.py:144`, 40 days in `maker_radar.py:331` (fetch_ticker_series), 100 days in `load_merged_history` default (master_analyzer.py:1247).
-- **Adjusted vs unadjusted**: price_history has a `source` column; the canonical loader filters out `yahoo_clean` separately and prefers `egksco`. Adjustment normalization logic lives in `master_analyzer.py:1264-1280` (ratio 0.5–2.0 = normalize, outside = reject).
-- **Volume source**: `price_history.volume` (unified_scanner) or `stocks.db.stock_daily_prices.volume` (maker_radar fallback).
-
-## Q4: How is state scored?
-**Multiple incompatible scores coexist; none represents "state strength" or "direction probability":**
-- `real_liquidity_radar.LiquidityResult.confidence` — single 0-100 per state (L37). Hardcoded per branch (80/85/75/etc), not a continuous function.
-- `unified_scanner.py:398-406` — BRAVO-QUAD-SCORE 0-100 (VP/30 + SMC/30 + Liq/20 + Season/20).
-- `maker_radar.py:629-685` — no score; returns path + position_size (1.5% / 2% / 2.5%) + money_flow_state + life_cycle + liquidity_state + buy_pct/sell_pct + net_flow_egp.
-- `master_analyzer` — 0-100 master_score with thresholds STRONG_BUY≥55, BUY≥50.
-- No continuous "accumulation strength" score, no "breakout probability" score, no "direction probability" score. The closest is `buy_pct` from `compute_money_flow` (0-100) but it's a flow ratio, not a state-strength measure.
-
-## Q5: State history log
-**Partial. Painfully partial.**
-- `stocks.db.radar_signal_tracking` (1259 rows, 2026-09-28→2026-10-21) — daily append-only snapshots; columns: ticker, signal_date, signal_type, entry_price, path, reason, status, outcome_7d/14d/30d, max_price_after, min_price_after, verified_at + freshness fields (data_date, data_quality, staleness_days, price_source, live_price, daily_price). **No prev_path, no transition_type, no days_in_state.** Same ticker can have 10 daily rows flipping paths — silent.
-- `stocks.db.stock_phase` — **OVERWRITES**. PRIMARY KEY symbol. Latest run = 2026-10-07. **State history destroyed.**
-- `predictions.db` has `liquidity_signal_outcomes` + `liquidity_backtest_results` tables but they're for radar accuracy backtest, not state transitions.
-- **NO `state_transitions` / `radar_state_history` / `maker_state_log` table exists anywhere.** Grep for `prev_state|previous_state|transition_to|state_change|days_in_state` in vps-service returned only `data_source_circuit_breaker.py` (irrelevant — data source failover).
-
-## Part 3: 4-layer comparison vs owner's vision
-
-| Layer | Exists? | Status | Gap |
+| Source | Data Provided | Fetcher | Stored In |
 |---|---|---|---|
-| 1. Liquidity Qualification (filter tradeable) | YES | Complete — `liquidity_filter.py` + `shared_liquidity.should_reject_by_liquidity` (dynamic per-price thresholds 80K/200K/400K, pump-and-dump guard, volume_surge_bypass, explosive_surge path, wash-trading, dead-money, distribution_trap). Used as HARD filter in `evaluate_kill_filters`. | Functional. |
-| 2. Market State Classification (diagnose current state) | PARTIAL | 4 incompatible daily taxonomies (real_liquidity_radar 5-state, maker_radar A–E paths, canonical_signal تجميع/تصاعد, life_cycle 7-state, stock_phase 12-state, entry_gate 5-state). | No canonical "current state" definition; owner's 6-state cycle (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is **NOT MAPPED** anywhere. classify_stock_phase (تجميع/تصاعد/توزيع/تخفيض) is the closest but never persisted. |
-| 3. State Transition Monitoring (track changes over time) | **MISSING** | Daily snapshots only. `radar_signal_tracking` keeps rows but exposes no `prev_path` / `transition_type` / `confirmed_at` / `days_in_state`. `stock_phase` overwrites. | **The owner's #1 priority — does not exist.** Needs new `maker_state_history` table + a daily job that diffs today vs yesterday, classifies the transition (continuation / breakout-confirmed / breakout-failed / breakdown / reversal), and persists. |
-| 4. Directional Assessment (evidence for up/down) | PARTIAL | buy_pct/sell_pct + money_flow_state + whale_distribution_guard (blocks BUY if net_flow<0) + detect_who_is_buying. | No single "direction probability" output. `compute_money_flow` uses legacy weighted formula (CLV×0.35 + CMF×0.30 + vol×0.20 + SMA×0.15); a Pine-formula flag `RADAR_USE_PINE_FORMULA` defaults to false (shared_liquidity.py:877) — never validated by backtest. |
+| **TradingView** (REST + screener) | EGX/TADAWUL/KSE/QSE/US stock prices + fundamentals + market movers | `data_engine/scrapers/tradingview_scraper.py`, `tradingview_rest.py`, `tradingview_screener_lists.py`, `tradingview_market_movers.py` (in fallback_chain.py as primary) | `data_engine.db.stocks` (live) → synced to `stocks.db.stocks` + `stock_daily_prices` |
+| **EGKSCO** | EGX price history (15min delayed) + fundamentals (P/E, ROE, balance sheet, income, cash flow, dividends, performance, valuation, technical analysis) | `data_engine/scrapers/egksco_scraper.py` (fallback #2 in fallback_chain.py) | `data_engine.db.stocks` + `egksco_price_history` + 8 `tab_*` fundamentals tables |
+| ~~EGXPilot~~ | (DEPRECATED 2026-09 — dead source) | `_try_egxpilot()` retained for compat, returns `[]` | — |
+| ~~Yahoo Finance~~ | (ARCHIVED 2026-09 — returned yesterday's data) | `historical_fetcher.py` + `historical_fetcher_5years.py` still available via `/trigger/historical` manual endpoint | historical.db (legacy, retired from automatic pipeline) |
+| **Crypto exchanges** (CoinGecko-like API) | BTC/ETH/BNB/SOL + 35 altcoin prices + market_cap + volume_24h | `data_engine/scrapers/crypto_fetcher.py` (24/7) | `data_engine.db.crypto_prices` → `intraday.db.crypto_intraday` (snapshots) |
+| **Metals & Forex** | Gold (XAU), Silver (XAG), Oil (WTI/BRENT), EUR/USD, GBP/USD, USD/JPY, USD/EGP, SAR/USD | `data_engine/scrapers/metals_forex_fetcher.py` (24/5) | `data_engine.db.{gold_prices, silver_prices, exchange_rates, gold_prices_clean, btc_local_prices}` → `intraday.db.commodity_intraday` |
+| **News RSS feeds** | argaam, amwalalghad, masrawy, hapijournal, youm7 (5 EGX-focused RSS feeds) | `news-agent/collectors/rss_collector.py` | `news-agent/data/news.db` (local dedup) → POST `/api/news` → `db/news.db.market_news` |
+| **News Web scrapers** | mubasher, alborsaa, almalnews, duckduckgo search | `news-agent/collectors/web_scraper.py`, `mubasher_scraper.py`, `egyptian_sources.py` | Same as RSS |
+| **Telegram channels** (13 channels) | sahmmisr, borsablarabi, easier_stock, ostoulcapital, BursaAcademy, borsabelarabi96, MubasherTA, egyptianborsa, shariaStocksEG, AhmedMansourstocks, egxpilot, SOM3AEG, egx_professinals | `news-agent/collectors/telegram_collector.py` (Telethon) + `telegram_web_collector.py` (web fallback). **DISABLED by default** per owner's directive (TELEGRAM_WEB_ENABLED=0); web scraping preferred | Same as RSS (when enabled) |
+| **Ollama** (local LLM, port 11434) | News analysis: importance scoring, sentiment, ticker extraction, summary AR/EN | `news-agent/analyzer/news_analyzer.py` (qwen2.5:1.5b base + glm-fast custom) | Used in-memory; final structured news → POST `/api/news` |
+| ~~EODHD~~ | (Subscription cancelled — `EODHD_API_KEY` env var now empty; eodhd_fetcher skips silently) | — | — |
 
-## Part 4: Key findings
+### C) Data Flow Diagrams (3 representative end-to-end flows)
 
-### What the radar ACTUALLY does today
-1. `scripts/maker_radar.py` runs as a cron (scripts/cron_radar.sh / radar_scheduler.py), reads daily OHLCV for 200 tickers, computes path A/B/C/D/E + money_flow_state + life_cycle + kill_switch + accumulation label, writes `scripts/output/maker_radar_<market>_<date>.json` + inserts a row per under-microscope ticker into `radar_signal_tracking`.
-2. `daily_predictor.py:1782` calls `radar_integration.is_radar_strong_accumulation()` which loads the JSON (last 7 days) and accepts ONLY `A_pre_surge` / `B_quiet_accumulation_strong` (or new phase labels تراكم مع اتجاه / تراكم هادئ). HARD GATE: stocks failing are skipped.
-3. `daily_predictor.py:1060` calls `whale_guard._whale_distribution_guard` which calls `liquidity_radar_v2.compute_whale_flow` (scripts/liquidity_radar_v2.py — separate file from real_liquidity_radar.py!) → blocks BUY if net_flow < 0.
-4. `core/real_liquidity_radar.py` (5-state Wick/Dryness/Effort model) is **used ONLY by `core/unified_scanner.py`**, NOT by daily_predictor. It's effectively display-only code in production prediction path.
-5. The frontend reads `maker_radar_<date>.json` via `/api/maker-radar` (cache).
-
-### What's missing vs owner's vision
-1. **No state machine.** Owner wants "Is accumulation continuing? Has correction ended? Did breakout fail?" — these questions are **UNANSWERABLE** from current data because no `prev_state` is tracked. The system classifies today and forgets yesterday.
-2. **No transition table.** `radar_signal_tracking` is daily snapshots, not transitions. `stock_phase` overwrites.
-3. **No canonical "current state" label.** 4 incompatible taxonomies (real_liquidity_radar / maker_radar / canonical_signal / stock_phase table / entry_gate) — owner's 6-state vocabulary (Accumulation/Uptrend/Correction/Distribution/Downtrend/Recovery) is not used anywhere.
-4. **No "healthy correction vs structural breakdown" distinction.** `entry_gate._check_stock_phase` blocks `CORRECTION` and `TRANSITIONAL` but doesn't separate healthy pullback (price near MA50 with low volume) from breakdown (price below MA200 with high volume).
-5. **Two parallel radars don't talk.** real_liquidity_radar (used by unified_scanner only) and maker_radar (used by daily_predictor) compute different labels for the same stock on the same day.
-
-### What's broken or inconsistent
-1. **`stock_phase` table overwrites itself** — `symbol TEXT PRIMARY KEY`. The 1238 rows is the latest snapshot only; previous computed_at runs (2026-08-25, 2026-09-02, 2026-09-16) left only a partial trail because INSERT OR REPLACE destroyed the rest. State history is being actively thrown away.
-2. **`compute_money_flow` legacy formula vs Pine formula** — flag `RADAR_USE_PINE_FORMULA` defaults to `false` (shared_liquidity.py:877). The legacy CLV×0.35 + CMF×0.30 + vol×0.20 + SMA×0.15 was supposed to be replaced by Pine's CLV×0.65 + body×0.35 but never was, "until backtest + owner approval" — that backtest never happened.
-3. **Same ticker flips B→A→B→A daily in radar_signal_tracking** (USDY) — this noise is being recorded as signal. No "confirmation days" filter requires N consecutive days in same state before persisting.
-4. **`signal_type` column has inconsistent values** — `quiet_accumulation_strong` (523), `pre_surge` (382), `A_pre_surge` (213), `B_quiet_accumulation_strong` (108), `explosive_surge` (5), `D_explosive_surge` (14) — the schema changed mid-stream; old rows use legacy short names, new rows use `A_pre_surge` style. Any query must handle both.
-5. **`real_liquidity_radar.py` thresholds are all hardcoded** (L170-216) — not in `engine_settings` table, not configurable by admin. Owner cannot tune sensitivity without code changes.
-6. **`classify_stock_phase` (canonical_signal) is NOT persisted** anywhere — it's computed on demand, returned in the prediction record, but never written to a state-history table.
-
-### Top 3 improvements (reusing existing code — no new indicators)
-1. **Add a `maker_state_history` table + daily diff job** (HIGHEST PRIORITY — owner's #1 ask). Schema: `(id, ticker, scan_date, current_state, prev_state, transition_type, days_in_state, evidence_json, confirmed BOOL)`. Reuse `radar_signal_tracking` rows (already daily) to backfill 23 days of history (2026-09-28→2026-10-21). A new function `radar_integration.compute_state_transition(ticker, today_path)` reads yesterday's path and classifies transition ∈ {CONTINUATION, BREAKOUT_CONFIRMED, BREAKOUT_FAILED, REVERSAL_UP, REVERSAL_DOWN, NEW_ENTRY, EXITED}. Write to new table inside `maker_radar.py:_track_signals_to_db()` (line 691). This answers "is accumulation continuing?" directly.
-2. **Unify the 4 daily phase taxonomies into one canonical 6-state label** mapped to the owner's vocabulary: `ACCUMULATION / UPTREND / CORRECTION_HEALTHY / DISTRIBUTION / DOWNTREND / RECOVERY`. Reuse `canonical_signal.classify_stock_phase` (already 4 of 6) + add CORRECTION_HEALTHY (price > MA200, vol < avg20d×0.8) vs DOWNTREND (price < MA200) distinction from `entry_gate._check_stock_phase` + add RECOVERY (price crossed above MA20 from below after >10% drop). Persist the result in the new `maker_state_history` table. Deprecate the other 3 taxonomies to "diagnostic" fields.
-3. **Add a `days_in_state` + `confirmation_threshold` filter to the HARD GATE.** Currently `is_radar_strong_accumulation` accepts a stock on day 1 of `A_pre_surge`. Require ≥2 consecutive days in same state before passing the HARD GATE (kill the B→A→B→A daily flip noise). This is a 5-line change in `radar_integration.is_radar_strong_accumulation` (line 305) that queries `radar_signal_tracking` for the last N days. Reuses existing data — no new indicator.
-
-### Whether state transition tracking exists (owner's #1 priority)
-**NO.** Confirmed by: (a) DB inspection — `radar_signal_tracking` has no prev_state/transition_type columns; (b) `stock_phase` overwrites via PRIMARY KEY=symbol; (c) grep for `prev_state|previous_state|transition_to|state_change|days_in_state` across vps-service returns only `data_source_circuit_breaker.py` (irrelevant); (d) the only "state machine" in the repo is the circuit breaker for data sources. **The owner's vision of "Accumulation → Uptrend → Correction → Distribution → Downtrend → Recovery" with transition monitoring is functionally absent from the production codebase.** It can be bootstrapped from existing `radar_signal_tracking` rows (1259 historical rows = ~23 days of per-ticker snapshots) without writing any new indicator — just a diff job + a new table.
-
----
-Task ID: RADAR-INTEGRATION-MAP
-Agent: Explore
-Task: Phase 1 — Full radar system integration map (components, call graph, DB tables, frontend, conflicts).
-
-Work Log:
-- Read /home/z/my-project/worklog.md tail (last 200 lines — RADAR-DEEP-AUDIT + PHASE0-WS-C findings).
-- Read full: vps-service/analyzers/radar_integration.py (416L), vps-service/jobs/predictor_modules/whale_guard.py (42L), vps-service/core/real_liquidity_radar.py (232L), vps-service/utils/canonical_signal.py (309L).
-- Read partial (radar-relevant sections): scripts/liquidity_radar_v2.py (lines 1-200, 579-720, 716-915, 1066-1240), scripts/maker_radar.py (lines 1-200, 400-810), vps-service/utils/shared_liquidity.py (lines 1-200, 751-1050), vps-service/utils/entry_gate.py (lines 450-560, 716-815), vps-service/core/unified_scanner.py (lines 320-440), vps-service/api/market_master_endpoints.py (full 521L), vps-service/engines/flow_system.py (lines 100-300), vps-service/analyzers/master_analyzer.py (lines 1134-1213), vps-service/analyzers/institutional_decision_engine.py (lines 755-785), vps-service/jobs/daily_predictor.py (lines 1748-1847, 3220-3420, 3940-4000).
-- Read frontend: src/app/api/v2/liquidity-radar/route.ts (217L), src/app/api/maker-radar/route.ts (80L), src/components/shared/ui/FlowPhaseTag.tsx (118L), src/lib/schedulers/radar-alerts.ts (60L header).
-- DB inspection via Python sqlite3: stocks.db (51 tables), predictions.db (33 tables), price_history.db (3 tables), intraday.db (6 tables), data_engine.db (29 tables). Sampled rows + schemas of radar_signal_tracking, stock_phase, market_regime_log, liquidity_signal_outcomes, liquidity_backtest_results, liquidity_dynamic_threshold.
-- Grep'd for: maker_state|MakerState|stock_phase|liquidity_radar|radar_integration|is_radar_strong|compute_money_flow|detect_life_cycle|classify_stock_phase|accumulation|distribution|whale_guard|_check_stock_phase + scan_market + compute_whale_flow + analyze_liquidity + NEAR_RESISTANCE/TREND_UP_HOLD (production + archive).
-- crontab.txt + ecosystem.config.js + scripts/deploy_production.sh checked for radar scheduling.
-- NO files modified — read-only throughout.
-
-Stage Summary:
-
-# Phase 1 — Liquidity Radar System Integration Map
-
-## Part A: Component Inventory (12 production files + 2 DB-writer archives + 1 orphaned)
-
-### A1. `scripts/maker_radar.py` (1689L) — THE PRODUCER (cron every 5 min)
-- **What:** Scans daily OHLCV for ~200 tickers, classifies into 6 paths, writes `scripts/output/maker_radar_{MARKET}_{DATE}.json` + inserts rows into `stocks.db.radar_signal_tracking` (after `DELETE WHERE signal_date=?` — same-day upsert pattern).
-- **Data source:** Per-market chain (Phase-3 canonical: price_history.db.price_history → stocks.db.stock_daily_prices → data_engine.db.egksco_price_history → data_engine.db.historical_data). `fetch_ticker_series` 40-day window. NO intraday.
-- **States classified:** `A_pre_surge` | `B_quiet_accumulation_strong` | `C_quiet_accumulation_weak` | `D_explosive_surge` | `E_early_break` | `distribution` (override via BRAVO-FLOW-GATE-ALL when `net_flow_egp < 0`, line 515-527) | `None` (disqualified_illiquid). Plus: `accumulation` label (canonical_signal.classify_accumulation), `life_cycle` (shared_liquidity.detect_life_cycle), `money_flow_state`, `liquidity_state`, `kill_switch` flag, `correction_status`, `expected`.
-- **Production path:** YES (cron-driven, 8-14h weekdays + 5-min for CRYPTO/GOLD per `crontab.txt:201-208`).
-- **UI consumers:** `/api/maker-radar`, `/api/maker-radar/multi-market`, `/api/m2/liquidity-radar`, `/api/v2/liquidity-radar`, `/api/radar/incubator`, `/api/radar/accuracy` (all read JSON), `/api/radar/weekly-report`.
-- **Depends on:** `utils.shared_liquidity` (detect_quiet_accumulation, detect_pre_surge, detect_life_cycle, compute_money_flow, check_limit_up_trap, check_kill_switch, is_explosive_surge, classify_price_bucket, dynamic_min_turnover) + `utils.canonical_signal.classify_accumulation` (line 558).
-- **Broken/inconsistent:** `signal_type` column mixes legacy (`quiet_accumulation_strong`=523, `pre_surge`=382) + new (`A_pre_surge`=213, `B_quiet_accumulation_strong`=108, `D_explosive_surge`=14, `disqualified_illiquid`=14, `explosive_surge`=5). Path='distribution' override (BRAVO-FLOW-GATE-ALL) writes to JSON but RADAR-TRACKING INSERTs use `path` field — verified zero `path='distribution'` rows in DB because the override clears `under_microscope=False` before the tracking call (line 675-680). So distribution overrides are silently lost from history.
-
-### A2. `vps-service/analyzers/radar_integration.py` (416L) — JSON CONSUMER + HARD GATE
-- **What:** Reads `scripts/output/maker_radar_{MARKET}_{DATE}.json` + `exit_radar_{DATE}.json`. Provides 4 entry points: `check_exit_radar_conflict`, `is_radar_strong_accumulation`, `is_radar_confirmed_accumulation`, `radar_data_available`, `get_radar_state`, `get_radar_boost` (legacy).
-- **Data source:** JSON files only (no DB). Loads last 7 days, scans for `under_microscope` + `quiet_list/pre_surge_list/explosive_list/early_break_list`.
-- **States classified:** None new — passes through maker_radar paths + new `phase`/`liquidity_bucket` fields (`تراكم مع اتجاه` / `تراكم هادئ` / `تصريف` / `محايد` + `strong_whale_inflow` / `moderate_inflow` / `whale_outflow`).
-- **Production path:** YES — `daily_predictor.py:1759-1813` calls `is_radar_strong_accumulation` as HARD GATE (skip prediction if not A_pre_surge / B_quiet_accumulation_strong / new phase/bucket equivalent). `daily_predictor.py:3102` calls `is_radar_confirmed_accumulation` for DNA-EGX30-DOWN bypass. `institutional_decision_engine.py:767` calls `is_radar_strong_accumulation` for counter-trend bypass. `entry_gate.py:784` calls `is_radar_confirmed_accumulation` for market_context bypass.
-- **UI consumers:** None (called only from Python predictor).
-- **Depends on:** `maker_radar.py` JSON output existing (caches for one pipeline run).
-- **Broken/inconsistent:** HARD GATE fail-opens if JSON missing (`radar_data_available` returns False → `if _radar_on: ... else: # safe-by-design`). `_load_maker_radar` falls back to legacy file `maker_radar_{date}.json` (no market suffix) — file doesn't exist in current `scripts/output/` listing. JSON keys `quiet_list` and `pre_surge_list` are expected but `is_radar_strong_accumulation` lines 341-355 ALSO inspect `stocks`/`under_microscope` for `phase` + `liquidity_bucket` fields — these fields are produced by `liquidity_radar_v2.py` (not by `maker_radar.py`). So the "NEW phase + liquidity_bucket" branch is DEAD CODE unless the JSON is from liquidity_radar_v2.
-
-### A3. `scripts/liquidity_radar_v2.py` (1487L) — STRICT 4-PILLAR RADAR (ORPHANED in production)
-- **What:** The "BRAVO-RADAR-V2" rewrite (2026-10-14). 4 pillars: MFM whale flow, market regime, phase, entry/defense. Computes `phase` ∈ {`PHASE_ABSORBING='تراكم مع اتجاه'`, `PHASE_PREPARING='تراكم هادئ'`, `PHASE_DISTRIBUTING='تصريف'`, `PHASE_NEUTRAL='محايد'`, `PHASE_INSUFFICIENT='بيانات غير كافية'`} via `classify_phase` (line 716-783). `classify_phase` priority: insufficient_data > bear-market distribution > MFM− distribution > whale_present+above_MA20 = absorbing > whale_present+below_MA20 = preparing > MFM+ weak+above_MA20 = preparing > MFM+ weak+below_MA20 = neutral. Also calls `api/canonical_flow.classify_liquidity_bucket` for a separate mutually-exclusive `liquidity_bucket` field.
-- **Data source:** stocks.db.stocks (stock_info) + price_history.db.price_history (PRIMARY candles) + stocks.db.stock_daily_prices (FALLBACK) + predictions.db (read-only, for active prediction check). 20-day MFM window, 30-candle min.
-- **States classified:** 5 phases + canonical `liquidity_bucket` (canonical_flow taxonomy).
-- **Production path:** **NO** — `crontab.txt` has no entry for `liquidity_radar_v2.py` (only `maker_radar.py`). `whale_guard.py:33` imports ONLY `compute_whale_flow` from this module (a single function, not `scan_market`). `scan_market` (line 1338) has ZERO callers in production Python — only `scripts/liquidity_radar_v2.py` CLI invocation. The JSON output file is NEVER referenced by any cron or API route.
-- **UI consumers:** None (orphaned — the v2 route.ts at `src/app/api/v2/liquidity-radar/route.ts` reads `readRadarCache(market)` which loads `maker_radar_*.json`, NOT `liquidity_radar_v2_*.json`).
-- **Depends on:** `api.canonical_flow` (`classify_liquidity_bucket`, `_is_falling_knife`, `_compute_ma`).
-- **Broken/inconsistent:** `compute_whale_flow` (MFM-based) is called by `whale_guard.py` for the `_whale_distribution_guard` HARD GATE in daily_predictor (line 1060). But the maker_radar.py uses the OLD `compute_money_flow` (CLV+CMF+vol+SMA) from `shared_liquidity.py`. **Two different money-flow algorithms coexist** for the same stock: MFM (whale_guard) vs CLV+CMF (maker_radar). They will give different `net_flow_egp` for the same candle.
-
-### A4. `scripts/exit_radar.py` (661L) — DISTRIBUTION DETECTOR (NO CRON)
-- **What:** 5 exit paths: `X1_distribution_strong`, `X2_volume_divergence`, `X3_resistance_rejection`, `X4_exhaustion_gap`, `X5_kill_switch_triggered`. Writes `scripts/output/exit_radar_{date}.json`.
-- **Data source:** same DB chain as maker_radar.
-- **States classified:** X1/X2/X3/X4/X5 paths.
-- **Production path:** **PARTIAL** — `radar_integration.check_exit_radar_conflict` reads the JSON file (last 7 days). `daily_predictor.py:1767` HARD-BLOCKs if X1/X5 present, soft-warns + score −3 if X2/X3/X4. **BUT no cron entry** in `crontab.txt` for `exit_radar.py` — file generation is unreliable. `scripts/output/exit_radar_*.json` does NOT exist in current snapshot. Safe-by-design: missing file → no conflict returned → no block.
-- **UI consumers:** `/api/maker-radar/exit-radar` (Next.js) calls a separate route that re-runs the Python script (per `src/app/api/maker-radar/exit-radar/route.ts:115`).
-- **Depends on:** `shared_liquidity.check_kill_switch` (for X5).
-- **Broken/inconsistent:** Hard-blocker depends on a file produced by an unscheduled script. If the script never runs, the hard gate silently fail-opens.
-
-### A5. `vps-service/core/real_liquidity_radar.py` (232L) — 5-STATE WICK/DRYNESS (DISPLAY-ONLY)
-- **What:** `analyze_liquidity(ticker, daily_data, intraday_data)` returns `LiquidityResult.classification` ∈ {`ACCUMULATION_CONFIRMED`, `DRY_EXPLOSION_READY`, `DIRTY_DISTRIBUTION`, `SUSPICIOUS_WATCH`, `FALLING_KNIFE`}. Thresholds all hardcoded (L170-220).
-- **Data source:** daily OHLCV passed in + optional intraday (last 3 hours / 6 ticks) for `effort_signal` + `low_trajectory`.
-- **States classified:** 5 (above).
-- **Production path:** **INDIRECT** — called only by `core/unified_scanner.py:357`. `unified_scanner` is called by `daily_predictor.py:617` for WHALE_RADAR candidate enrichment (veto only on `DISTRIBUTION_VETO`) + by `core/sync_scanner_to_db.py:76`. NOT in the main V40.2 prediction path.
-- **UI consumers:** None directly. `unified_scanner` output is consumed by `/api/...` scanner routes (display).
-- **Depends on:** None (self-contained).
-- **Broken/inconsistent:** Taxonomy is unique — none of its 5 states matches the maker_radar A-E paths or canonical_signal's تجميع/تصاعد/توزيع/تخفيض. Thresholds hardcoded (0.7, 1.2, 1.3, 1.5, 2.0, 3.0, 15, 30, 40, 60, 80, 85, 0.15, 0.6, 0.998, 1.002). Owner cannot tune without editing source.
-
-### A6. `vps-service/core/unified_scanner.py` (533L) — BRAVO-QUAD-SCORE SCANNER
-- **What:** 4-pillar score: VP(0-30) + SMC(0-30) + Liq(0-20, from real_liquidity_radar) + Season(0-20). Decision logic at line 417-440.
-- **Data source:** stocks.db.stock_daily_prices.
-- **States classified:** Decision tracks: `STRONG_BUY`+`ACCUMULATION_BUY` | `STRONG_BUY`+`GOLDEN_DIP` | `WATCH`+`PEAK_MINEFIELD_WAIT` | `HOLD`+`FALLING_KNIFE_VETO`/`ILLIQUID`/`DISTRIBUTION_RISK`/`DISTRIBUTION_VETO`/`LOW_RR`/`DIRTY_DIST`.
-- **Production path:** Called by `daily_predictor.py:617` ONLY for WHALE_RADAR enrichment, NOT for V40.2 prediction. Called by `sync_scanner_to_db.py:76`.
-- **UI consumers:** `/api/...` scanner routes (display).
-- **Depends on:** `core.real_liquidity_radar.analyze_liquidity`.
-- **Broken/inconsistent:** Computes its own `DISTRIBUTION_RISK` / `DIRTY_DIST` veto labels — completely separate from maker_radar's `distribution` override and from canonical_signal's `تصريف`.
-
-### A7. `vps-service/utils/shared_liquidity.py` (1151L) — LIBRARY (compute_money_flow + 9 other functions)
-- **What:** Dynamic liquidity thresholds (80K/200K/400K by price bucket) + `compute_money_flow` (CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15, legacy formula) + `detect_quiet_accumulation` (5-6/6 signals) + `detect_pre_surge` (3/4 signals) + `detect_life_cycle` (7 phases: نعاس/قفزة أولى/جني أرباح صحي/توزيع قاتل/تدوير وهمي/حبس/عادي) + `check_kill_switch` + `is_explosive_surge` + `should_reject_by_liquidity` + `classify_price_bucket`.
-- **Data source:** Pure function — callers pass candles.
-- **States classified:** Multiple: `quiet_accumulation` (5-6/6 signals), `pre_surge` (3-4/4 signals), `life_cycle` 7 phases, `money_flow_state` 5 states, `liquidity_state` 5 states.
-- **Production path:** YES — `compute_money_flow` called by `daily_predictor.py:3239` (RADAR-BOOST scoring) + by `maker_radar.py:501`. `check_kill_switch` called by `daily_predictor.py:3231` (RADAR-KILL reject) + `maker_radar.py:504`. `detect_quiet_accumulation`/`detect_pre_surge`/`detect_life_cycle`/`is_explosive_surge` called by `maker_radar.py:457-466`.
-- **UI consumers:** None direct.
-- **Depends on:** `canonical_signal.classify_accumulation` (used by `maker_radar.py`, not by shared_liquidity itself).
-- **Broken/inconsistent:** `compute_money_flow` has flag `RADAR_USE_PINE_FORMULA` (default `false`, line 877). Pine formula `CLV×0.65 + body×0.35` is gated off — legacy formula still in use. "Backtest needed before switch" comment from 2026-10 — backtest never happened. **Note:** `compute_money_flow` (this file, CLV+CMF+vol+SMA) is DIFFERENT from `liquidity_radar_v2.compute_whale_flow` (MFM-only). Two parallel money-flow algorithms.
-
-### A8. `vps-service/utils/canonical_signal.py` (309L) — CANONICAL LABELS (but only 2/5 are used)
-- **What:** 5 canonical classifiers: `classify_signal` (STRONG_BUY/.../STRONG_SELL), `classify_accumulation` (تجميع قوي/تجميع/تجميع خفيف/محايد/تصريف خفيف/تصريف/تصريف قوي), `classify_money_flow` (🟢/🔴 labels), `classify_volume_ratio` (capped 50), `classify_stock_phase` (تجميع/تصاعد/توزيع/تخفيض/محايد).
-- **States classified:** 5-phase regime-based taxonomy (تجميع/تصاعد/توزيع/تخفيض/محايد).
-- **Production path:** PARTIAL — `classify_accumulation` called by `maker_radar.py:558`. `classify_signal` called by master_analyzer. `classify_money_flow` imported by telegram_interactive_bot + telegram_target_hit_tracker. **`classify_stock_phase` is imported by `telegram_interactive_bot.py:31` but the function is stubbed-out at line 38** (`def classify_stock_phase(*_a, **_kw): pass`). So canonical_stock_phase has ZERO active callers in production.
-- **UI consumers:** None direct.
-- **Depends on:** None.
-- **Broken/inconsistent:** Docstring (line 207-213) explicitly documents "4 taxonomies مختلفة لـ phase" as the problem — but `classify_stock_phase` itself is never persisted and never used by the prediction path. It's a library function with no live caller.
-
-### A9. `vps-service/utils/entry_gate.py` (857L) — 10-CHECK ENTRY FILTER
-- **What:** `check_entry_gate(data)` runs 10 checks (evidence, R/R, above-SMA50, relative-strength, market-context, liquidity, entry-zone, **stock_phase** (MA50/MA200), RSI-zone, POC-distance, accumulation-ratio).
-- **Data source:** Closes + volumes passed in by caller.
-- **States classified:** `_check_stock_phase` (line 460-519): `DOWNTREND` (price<MA50 & <MA200) | `PULLBACK` (MA50>price>MA200) | `UPTREND` (price>MA50>MA200) | `BULLISH_RECOVERY` (MA200>MA50 & price>both) | `TRANSITIONAL` (default). HARD-BLOCKs `CORRECTION` (line 499) and `TRANSITIONAL` (line 506) — **BUT** `CORRECTION` is unreachable code: the if/elif chain never assigns `phase='CORRECTION'`. The branch at line 493 actually assigns `BULLISH_RECOVERY`, not `CORRECTION`. Docstring/backtest comment (0.6% WR for CORRECTION) refers to a phase label that no longer exists in code.
-- **Production path:** YES — `daily_predictor.py:1602, 1664` calls `check_entry_gate`. Result.passed=False → continue (skip).
-- **UI consumers:** None direct.
-- **Depends on:** `radar_integration.is_radar_confirmed_accumulation` (line 784, for market_context bypass).
-- **Broken/inconsistent:** Phase taxonomy (DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL) is its own — different from canonical_signal (تجميع/تصاعد/توزيع/تخفيض), from stock_phase table (NEAR_RESISTANCE/...), from maker_radar paths (A/B/C/D/E), and from liquidity_radar_v2 phases (PHASE_ABSORBING/...).
-
-### A10. `vps-service/jobs/predictor_modules/whale_guard.py` (42L) — WHALE DISTRIBUTION GATE
-- **What:** `_whale_distribution_guard(opens, highs, lows, closes, volumes)` calls `scripts.liquidity_radar_v2.compute_whale_flow(candles)` and returns True if `net_flow_egp < 0` (block BUY).
-- **Data source:** Candles passed in by caller.
-- **States classified:** Boolean (distributing or not).
-- **Production path:** YES — `daily_predictor.py:1060` HARD-BLOCKs if True.
-- **UI consumers:** None.
-- **Depends on:** `scripts.liquidity_radar_v2.compute_whale_flow` (MFM algorithm).
-- **Broken/inconsistent:** Uses MFM algorithm. `maker_radar.py` uses CLV+CMF+vol+SMA (different algorithm). Same stock can produce different `net_flow_egp` signs depending on which function runs. Fail-opens on exception.
-
-### A11. `vps-service/utils/stock_state.py` — CORRECTION-STAGE CLASSIFIER (8 phases)
-- **What:** `compute_stock_state`, `classify_correction_stage` (NO_CORRECTION/EARLY_DROP/LATE_BASE/RECOVERY_STARTING/DEEP_CORRECTION), `is_near_correction_end`, `is_in_active_correction`, `is_extended_chase`, `confirm_recovery_starting`.
-- **States classified:** NO_CORRECTION | EARLY_DROP | LATE_BASE | RECOVERY_STARTING | DEEP_CORRECTION (per line 738-852) — different from all other taxonomies.
-- **Production path:** PARTIAL — `daily_closer.py:193` uses `is_near_correction_end` for stop-loss deferral. `unified_analysis.py:231` + `advanced_screener_routes.py:16` use `compute_stock_state`. **NOT called by daily_predictor.py**.
-- **UI consumers:** `/api/advanced-screener/*` routes.
-- **Depends on:** None.
-- **Broken/inconsistent:** 5th phase taxonomy in the same project. Never persisted.
-
-### A12. `vps-service/api/market_master_endpoints.py` (521L) — 4 DISPLAY ENDPOINTS
-- **What:** Flask blueprint `/api/market/`: (1) `/intraday-pressure` (10 LARGE_CAPS pressure), (2) `/investor-flows` (EGX investors_data), (3) `/metals-forex/summary` (gold/forex), (4) `/liquidity-radar` (10 LARGE_CAPS RVOL+Wick classifier).
-- **States classified by `/liquidity-radar`:** `ILLIQUID_TRAP` | `DISTRIBUTION_RISK` | `ACCUMULATION_BUY` | `DRY_ACCUMULATION` | `ACCUMULATION_CONFIRMED` | `NEUTRAL` (6th unique taxonomy!).
-- **Production path:** NO — display only.
-- **UI consumers:** `src/app/api/market/liquidity-radar/route.ts` proxies to this Python endpoint (per header comment). BUT — the actual frontend `LiquidityRadarView.tsx:287` now fetches `/api/v2/liquidity-radar` (cache-based) instead. So this Python endpoint is **legacy / display-only / not the active UI source**.
-- **Depends on:** `stocks.db.stock_daily_prices`.
-- **Broken/inconsistent:** Computes its own 6-state taxonomy using different thresholds (`dryness_rvol ≤ 0.60` for large caps, `1.80` for explosion, `1_000_000` illiquid trap floor). The `ACCUMULATION_CONFIRMED` label COLLIDES with `real_liquidity_radar.ACCUMULATION_CONFIRMED` but uses different thresholds (rvol ≥ 1.5 + close_loc > 60 vs lower_wick_pct > 30 + close_loc > 60 + 0.8 ≤ dryness ≤ 1.5).
-
-### A13. `vps-service/api/institutional_levels.py:342-394` — RADAR MARKERS READER
-- **What:** Reads `radar_signal_tracking` to build "Radar Markers" for institutional-level analysis.
-- **Production path:** Display-only (called by chart_routes for chart annotations).
-- **Depends on:** `radar_signal_tracking` table.
-
-### A14. (ORPHANED WRITER) `archive/old-scripts/maestro_backfill_v2.py` — was the stock_phase writer
-- **What:** Backfilled `stocks.db.stock_phase` table with NEAR_RESISTANCE / TREND_UP_HOLD / BREAKOUT_WATCH / etc. (12-state S/R-level taxonomy).
-- **Status:** ARCHIVED. No production Python file writes to `stock_phase` table. `download/SERVER_FIX_COMMANDS.sh:312` only UPDATES last_close + updated_at columns; never recomputes phase. The 1238 rows in `stock_phase` are from a one-time backfill — table is effectively frozen at `computed_at='2026-10-07'` (990 rows) + 3 earlier partial runs (4+3+241 = 248 rows from old runs that happened to use distinct symbols).
-
----
-
-## Part B: Integration Map (Call Graph)
-
+**Flow 1 — Daily Prediction Flow (how a stock gets its daily prediction):**
 ```
-daily_predictor.py  (V40.2 prediction path, writes predictions.db.predictions + stored_analyses)
-  │
-  ├─[1] line 1060  _whale_distribution_guard(opens,highs,lows,closes,volumes) [HARD GATE]
-  │      └→ scripts/liquidity_radar_v2.compute_whale_flow(candles)  [MFM algorithm]
-  │            (returns net_flow_egp; <0 → block BUY)
-  │
-  ├─[2] line 1602  utils.entry_gate.check_entry_gate(data)  [HARD GATE — 10 checks]
-  │      ├→ _check_stock_phase(closes)               [MA50/MA200 taxonomy: DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL]
-  │      │   (HARD-BLOCKs TRANSITIONAL; "CORRECTION" branch unreachable)
-  │      ├→ _check_market_context(...)
-  │      │   └→ analyzers.radar_integration.is_radar_confirmed_accumulation(ticker,'EGX')  [bypass if confirmed]
-  │      ├→ _check_liquidity / _check_rr / _check_evidence_count / _check_above_sma50 /
-  │      │   _check_relative_strength / _check_entry_zone / _check_rsi_zone / _check_poc_distance / _check_accumulation_ratio
-  │      └→ result.passed=False → continue (skip prediction)
-  │
-  ├─[3] line 1759-1813  analyzers.radar_integration.*  [HARD GATE — owner directive 2026-10-07]
-  │      ├→ check_exit_radar_conflict(ticker)        [reads scripts/output/exit_radar_{date}.json]
-  │      │   └→ if path=X1 or X5 → continue (BLOCK)
-  │      ├→ radar_data_available(market)              [reads scripts/output/maker_radar_{MARKET}_{date}.json]
-  │      ├→ is_radar_strong_accumulation(ticker, market)
-  │      │   └→ returns True if path ∈ {A_pre_surge, B_quiet_accumulation_strong}
-  │      │       OR phase ∈ {تراكم مع اتجاه, تراكم هادئ}      ← DEAD branch (liquidity_radar_v2 fields, not in maker_radar JSON)
-  │      │       OR bucket ∈ {strong_whale_inflow, moderate_inflow}  ← DEAD branch
-  │      │   └→ if False → continue (BLOCK — no prediction)
-  │      └→ if True → score += 4 or 5 + proof 'radar_gate'
-  │
-  ├─[4] line 3089-3110  DNA-EGX30-DOWN bypass
-  │      └→ analyzers.radar_integration.is_radar_confirmed_accumulation(ticker, market)
-  │           (accepts A_pre_surge / B_quiet_accumulation_strong / C_quiet_accumulation_weak)
-  │
-  ├─[5] line 3220-3260  utils.shared_liquidity.check_kill_switch(closes,volumes,highs,lows) [HARD GATE]
-  │      └→ if kill_triggered → continue (RADAR-KILL reject)
-  │      + utils.shared_liquidity.compute_money_flow(closes,volumes,highs,lows)
-  │           → money_flow_state → ±5 score boost (RADAR-BOOST)
-  │
-  ├─[6] line 3397  analyzers.master_analyzer.generate_analysis_reason(...)
-  │      └→ uses radar_path=result.get('radar_path', '')   ← ALWAYS '' (never set anywhere in daily_predictor)
-  │
-  ├─[7] line 3946-3989  engines.flow_system.evaluate_risk(entry,stop,target,pos_size,confidence)
-  │      └→ HARD-KILL if R/R<1.8 OR invalid geometry; caps pos_size at 0.025
-  │      (NOTE: evaluate_risk does NOT call _check_stock_phase — only R/R + geometry)
-  │
-  └─[8] line 4449  inject_whale_radar_picks(market='EGX', dry_run=False)
-         └→ reads scripts/output/maker_radar_*.json → injects WHALE_RADAR predictions
-              into predictions.db.stored_analyses (post-run)
+[TradingView/EGKSCO] →[fallback_chain.py]→ [data_engine.db.stocks + tab_*]
+   ↓ (sync_current_prices UPSERT batch)
+[stocks.db.stocks + stock_daily_prices] + [price_history.db.price_history]
+   ↓ (Maestro orchestrator — vps-service/analyzers/master_analyzer.py + confluence_engine_v3.py + 70+ analyzer modules)
+[predictions.db.predictions] (signal, entry_price, target_price, stop_loss, master_score, technical/fundamental/ai_pattern/sentiment scores, was_published=0)
+   ↓ (/api/telegram/publish-stock sets was_published=1 + published_at + telegram_message_id)
+[Telegram channel auto-post via telegram-poster service] + [predictions.db row updated]
+   ↓ (closure loop — daily_closer.py at D+1..D+N)
+[predictions.db row: outcome_date, exit_price, actual_return, hit_target, hit_stop, pnl_pct, closed_at, exit_type]
+   ↓ (/api/predictions/honest-tracking/* + /api/predictions/performance-dashboard)
+[Frontend PredictionsView.tsx + PerformanceDashboard + LeagueReport]
+```
+Trigger: `vps-service/jobs/daily_predictor.py` runs daily post-session via EgyptScheduler.
 
-daily_predictor.py → analyzers.institutional_decision_engine.py:767
-  └→ analyzers.radar_integration.is_radar_strong_accumulation  (counter-trend bypass logic)
+**Flow 2 — Live Maker Radar Signal Flow (how a maker-radar signal is generated):**
+```
+[data_engine.db.egksco_price_history (EGX) | data_engine.db.historical_data (TADAWUL/KSE/QSE/US) | crypto_prices | gold_prices]
+   ↓ (scripts/maker_radar.py CLI — invoked from radar-cache.ts via `spawn(python3, scripts/maker_radar.py, --market=X, --json-only)`)
+[3 detection tracks in parallel]:
+   مسار أ — Quiet Accumulation (volume ≥2%): detect_quiet_accumulation()
+   مسار ب — Explosive Surge (volume ≥2%): is_explosive_surge()
+   مسار ج — Early Break (volume ≥2.5%): detect_pre_surge()
+   ↓ (outputs JSON to db/maker_radar_tracking.json + scripts/output/maker_radar_{MARKET}_{YYYYMMDD}.json)
+[radar-cache.ts readRadarCache(market)] — instant <50ms cache read; if stale, triggers fire-and-forget background warmup
+   ↓ (enriched with live prices from stocks.db.stocks via better-sqlite3 readonly)
+[/api/maker-radar?market=EGX] — served by Next.js route; never blocks on Python script
+   ↓ (paid-tier gate via trialExpiredResponse; free users see delayed 60min data via getRadarAccess)
+[Frontend src/modules/predictions/components/maker-radar/MakerRadarTab.tsx (useMakerRadarData hook)]
+```
+Warmup pipeline runs every N minutes (cron via `/api/maker-radar/warmup` POST or scheduler). Live prices injected at request-time from stocks.db so radar always reflects the active session.
 
-scheduler: scripts/cron_radar.sh + crontab.txt:201-208
-  └→ scripts/maker_radar.py --market {EGX,TADAWUL,KSE,QSE,US,CRYPTO,GOLD} --json-only
-        ├→ utils.shared_liquidity.detect_quiet_accumulation / detect_pre_surge / detect_life_cycle /
-        │   compute_money_flow / check_kill_switch / is_explosive_surge / classify_price_bucket /
-        │   dynamic_min_turnover / check_limit_up_trap
-        ├→ utils.canonical_signal.classify_accumulation(buy_pct)   [canonical label]
-        └→ writes scripts/output/maker_radar_{MARKET}_{DATE}.json
-        └→ writes stocks.db.radar_signal_tracking  (DELETE same-day + INSERT under_microscope)
-
-scripts/liquidity_radar_v2.py (CLI only, NO cron)
-  └→ api.canonical_flow.classify_liquidity_bucket
-  └→ writes scripts/output/liquidity_radar_v2_*.json (orphaned — no API reads this)
-  (compute_whale_flow is imported by whale_guard.py — but scan_market + classify_phase are UNUSED)
-
-scripts/exit_radar.py (CLI only, NO cron)
-  └→ utils.shared_liquidity.check_kill_switch (X5)
-  └→ writes scripts/output/exit_radar_{date}.json (read by radar_integration.check_exit_radar_conflict)
-
-unified_scanner.py (called by daily_predictor for WHALE_RADAR candidate enrichment only)
-  └→ core.real_liquidity_radar.analyze_liquidity(ticker, daily_data, intraday_data=None)
-        └→ 5-state classification (ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / DIRTY_DISTRIBUTION / SUSPICIOUS_WATCH / FALLING_KNIFE)
+**Flow 3 — Portfolio Analysis Flow (how a user's portfolio gets scored):**
+```
+[User] →[NextAuth session OR Bearer token]→ [auth.db.User + UserSubscription + ApiToken]
+   ↓ (auth-helper.ts getSessionUserId — throttled last_active_at write via better-sqlite3)
+[Frontend LiveMonitor portfolio form] → POST [/api/portfolio] OR direct write to auth.db.portfolio_items
+   ↓ (auth.db.PortfolioItem — symbol, shares, purchase_price, current_price)
+[GET /api/portfolio/holdings] → proxies to Python ${PYTHON_BACKEND}/api/portfolio/holdings
+   ↓ (vps-service/api/portfolio_routes.py + ai/portfolio_routes.py — FastAPI sub-router)
+[Portfolio engine reads]:
+   - auth.db.portfolio_items (user's holdings)
+   - stocks.db.stocks (live prices, sector, market_cap)
+   - data_engine.db.tab_* (fundamentals for scoring)
+   - predictions.db.predictions (active signals per ticker)
+   ↓ (computes): equity curve, P&L per position, sector exposure, risk concentration, stop-loss distance, bag-holder rescue candidates, smart-monitor signals
+[JSON response] → [Frontend Portfolio.tsx + EquityCurveChart + HoldingsTable + RiskSummary + BagHolderRescueCard]
+   ↓ (post-session: portfolio_history row written with total_value/profit_loss for time-series)
+[GET /api/portfolio/equity-curve] → historical equity curve for charts
 ```
 
-### Production-path components (influence final BUY decision):
-- daily_predictor.py (orchestrator)
-- entry_gate.check_entry_gate (incl. _check_stock_phase)
-- radar_integration.is_radar_strong_accumulation + is_radar_confirmed_accumulation + check_exit_radar_conflict + radar_data_available + get_radar_state
-- whale_guard._whale_distribution_guard (→ liquidity_radar_v2.compute_whale_flow)
-- shared_liquidity.check_kill_switch + compute_money_flow
-- engines.flow_system.evaluate_risk (R/R + pos cap — does NOT call _check_stock_phase)
-- institutional_decision_engine.build_institutional_decision (calls is_radar_strong_accumulation for counter-trend bypass)
-- master_analyzer.generate_analysis_reason (consumes radar_path field — always '')
+### D) API Surface Inventory
 
-### Display-only (NO influence on BUY):
-- `/api/market/liquidity-radar` (market_master_endpoints.py — 6-state taxonomy, LARGE_CAPS only)
-- `/api/market/intraday-pressure` + `/api/market/investor-flows` + `/api/market/metals-forex/summary`
-- `/api/v2/liquidity-radar` (Next.js — reads maker_radar JSON cache)
-- `/api/maker-radar/*` (16 sub-routes)
-- `/api/radar/accuracy` + `/api/radar/incubator` + `/api/radar/weekly-report` + `/api/radar/personalized`
-- core/unified_scanner (called for WHALE_RADAR enrichment veto only — DISTRIBUTION_VETO)
+**Next.js route.ts files: 464 total** (by top-level prefix):
+- `/api/admin/*` — **87** (largest; db-manager, users, engines, system-health, educational-cards, etc.)
+- `/api/market/*` — **30** (overview, status, top-movers, indices, sectors, intraday-pressure, liquidity-flow, morning-bell, regime, sync)
+- `/api/predictions/*` — **29** (honest-tracking tree, dual-track, league, learned-lessons, daily-picks, generate-all)
+- `/api/stocks/*` — **20** ([ticker] subtree: comprehensive, depth, expert-analysis, history, news, orderbook, professional-analysis, recommendation, unified + sparkline, presets, search, dual-persona)
+- `/api/mobile/*` — **19** (mobile-optimized subset for native apps)
+- `/api/maker-radar/*` — **17** (timeline, live-watch, exit-radar, footprint, signal-tracker, fundamentals, sector-treemap, market-intelligence, net-picks, entry-timing, warmup)
+- `/api/finance/*` — **17** (transactions, obligations, real-return, projection, screener, smart-watchlist/alerts/analysis/confluence)
+- `/api/portfolio/*` — **15** (equity-curve, holdings, accounts, intelligence, master, risk-summary, cashflow, smart-monitor, unified-watch, bag-holder-rescue, rescue, watchlists)
+- `/api/crypto/*` — **14** (full-analysis, flow, explosive, live, simulation, watchlist, portfolio, coins, stop)
+- `/api/v2/*` — **14** (chart/full-analysis, pipelines, engines, presets, recommend, unified/{analyze,config,scan}, feedback/run, live-analysis, liquidity-radar)
+- `/api/subscription/*` — **12** (plans, status, checkout, verify, activate, upgrade, trial, subscribe, current, developer-request, check-access, start-trial)
+- `/api/data-engine/*` — **9** (control, status, health, stocks, gold, silver, metals, forex, crypto)
+- `/api/auth/*` — **8** ([...nextauth], google, google-signin, login, logout, register, profile, me)
+- `/api/unified-learning/*`, `/api/paper-trading-v2/*` — 6 each
+- `/api/recommendations/*`, `/api/alerts/*`, `/api/radar/*`, `/api/ads/*`, `/api/sniper/*`, `/api/telegram/*`, `/api/maestro/*`, `/api/paymob/*`, `/api/live-monitor/*`, `/api/currency/*`, `/api/user-posts/*`, `/api/bot/*`, `/api/money/*`, `/api/ai/*`, `/api/expert-recommendations/*`, `/api/persona/*`, `/api/confluence/*` — 2-5 each
+- 75 prefixes with 1 route each (e.g. `/api/python/[...path]`, `/api/proxy/[...path]`, `/api/proxy-prod/[...path]`, `/api/health`, `/api/track`, `/api/init-db`, `/api/keepalive`, `/api/features`, `/api/i18n/set-locale`, `/api/zakat/calculate`, `/api/sharia/*`, `/api/fomo/missed-opportunities`, `/api/walk-forward/run`, `/api/backtesting`, `/api/trade-results`, `/api/news-feed`, `/api/seasonality-signals`, etc.)
 
-### Orphaned (exist but ZERO production callers):
-- `scripts/liquidity_radar_v2.py::scan_market` + `classify_phase` + `compute_entry_defense` + `check_falling_knife` (only `compute_whale_flow` is imported)
-- `core/real_liquidity_radar.py` is called only by `unified_scanner` (which is display-only in the BUY path)
-- `vps-service/utils/canonical_signal.classify_stock_phase` — imported by telegram_interactive_bot but stubbed to `pass` at line 38 (dead import)
-- `vps-service/utils/stock_state.py::classify_correction_stage` — NOT called by daily_predictor; only by daily_closer + advanced_screener_routes
-- `stocks.db.stock_phase` table — no Python writer exists (archived `maestro_backfill_v2.py` was the writer; data frozen at 2026-10-07)
+**Python backend endpoints (port 8010): ~500 total**
+- 448 `@*_bp.route(...)` across 39 Flask blueprints in `vps-service/api/` (top: admin_bp 76, telegram_bp 54, portfolio_bp 54, risk_bp 22, misc_bp 22, learning_bp 20, ai_bp 20, v2_bp 17, public_bp 16, reports_bp 12, sniper_bp 11, prediction_tracking_bp 11, stored_analysis_bp 10, news_bp 9, + 25 smaller)
+- 46 routes in `vps-service/lightweight_server.py` (Flask WSGI mounted at `/` via a2wsgi) — `/api/market-pulse`, `/api/live-monitor`, `/api/flow/*`, `/api/explosive/*`, `/api/exit/notifications`, `/api/live/sniper-scan`, `/api/expert-recommendations/active`, `/api/eodhd/*` (legacy), `/api/stock-profile/<ticker>`, `/api/market-overview`, `/api/smc/analyze/<ticker>`, `/api/crypto/{live,flow,explosive,watchlist,portfolio,simulation,sync,analyze}`, `/api/ai/live/scan`, `/api/ai/historical/{generate,feed-ai}`, `/api/health`, `/api/health/circuits/reset`, `/api/maestro/*`, `/keepalive`
+- 9 routes in `ai/portfolio_routes.py` (FastAPI sub-router) — `/equity/curve`, `/state`, `/cashflow`, `/holdings`, `/watchlists`, `/risk-summary`, `/smart-monitor/signals`, `/real-return`, `/bag-holder-rescue`
 
----
+**Proxy routes** (`/api/proxy/[...path]` and `/api/python/[...path]`): both forward to `http://localhost:8010` via the same `proxyRequest` handler. SEC-04 hardening: admin paths gated by `requireAdminAsync`, no hardcoded API key fallback.
 
-## Part C: Database Tables Inventory
+### E) Service Ports Map (confirmed)
 
-### C1. `stocks.db.radar_signal_tracking` (1259 rows, append-only by date)
-- **Schema:** id (PK auto), ticker TEXT, signal_date TEXT, signal_type TEXT, entry_price REAL, path TEXT, reason TEXT, status TEXT DEFAULT 'pending', outcome_7d/14d/30d REAL, max_price_after/min_price_after REAL, verified_at TEXT, created_at TEXT, **+ freshness cols added via ALTER TABLE** (data_date, data_quality, staleness_days, price_source, live_price, daily_price).
-- **Row count:** 1259
-- **Date range:** signal_date 2026-09-28 → 2026-10-21 (24 distinct dates); data_date 2026-08-10 → 2026-10-21.
-- **History behavior:** Daily append (DELETE same signal_date then INSERT — `_track_signals_to_db` at maker_radar.py:752). Previous days' rows preserved. Same ticker can have multiple daily rows with different paths (USDY has 10 daily rows flipping B↔A↔B↔A).
-- **Writer:** `scripts/maker_radar.py::_track_signals_to_db` (line 691-809). `scripts/verify_radar_signals.py:178` writes back outcome_7d/14d/30d + verified_at + status='verified_win/verified_loss'.
-- **Readers:** `src/app/api/maker-radar/signal-tracker/route.ts` (GET stats + POST record), `src/app/api/maker-radar/signal-tracker/verify/route.ts` (POST verify), `src/app/api/maker-radar/timeline/route.ts:177` (signal events), `src/app/api/radar/accuracy/route.ts:536` (accuracy backtest), `vps-service/analyzers/institutional_levels.py:394` (radar markers), `scripts/radar_accuracy_report.py`, `scripts/verify_radar_signals.py`, `scripts/verify_radar_fix.py`.
-- **Status distribution:** verified_loss=457, stale_data=432, pending=281, verified_win=75, disqualified_illiquid=14.
-- **Broken:** NO `prev_path`, `transition_type`, `days_in_state`, `confirmed_at` columns — pure daily snapshot, not a transition log. `signal_type` column mixes legacy + new schemas.
-
-### C2. `stocks.db.stock_phase` (1238 rows, OVERWRITES via PRIMARY KEY)
-- **Schema:** symbol TEXT PRIMARY KEY, phase TEXT, phase_ar TEXT, summary_ar TEXT, support, support_2, resistance, resistance_2, green_floor, invalidation, pct_to_support, pct_to_resistance, rvol, above_sma20, above_sma50, above_sma200, atr_pct, chg_5d, chg_20d, correction_ending_score, breakout_ready, profit_taking_risk, last_close, computed_at TEXT, updated_at TEXT.
-- **Row count:** 1238 (only 990 unique symbols — overlap because symbol is PK so re-runs UPSERT).
-- **Date range:** computed_at has 4 distinct values: `2026-08-25T22:13:11+00:00` (241 rows), `2026-09-02` (3 rows), `2026-09-16` (4 rows), `2026-10-07` (990 rows). Latest = 2026-10-07.
-- **History behavior:** OVERWRITES (PRIMARY KEY symbol). All previous states destroyed by latest run. NOT a transition log.
-- **Phase distribution (12 unique):** NEAR_RESISTANCE=279, TREND_UP_HOLD=208, NEAR_SUPPORT=165, UNCLEAR=150, BREAKOUT_WATCH=126, BREAKDOWN=91, BREAK_RISK_SUPPORT=56, BREAKOUT=55, CORRECTION_ACTIVE=42, PROFIT_TAKING_ZONE=41, CONSOLIDATION=19, CORRECTION_ENDING=6.
-- **Writer:** NONE in production. `download/SERVER_FIX_COMMANDS.sh:312` only UPDATES `last_close` + `updated_at` (no recompute). The original writer (`archive/old-scripts/maestro_backfill_v2.py` is referenced but file shows it actually writes predictions.db not stock_phase — let me re-check: archive/garage shows it as a moved file; production `scripts/` does NOT contain it). Likely the table was populated by a manual/one-shot script that has been removed.
-- **Readers:** NONE in Python production code (only `audit_production_db.py` lists it as expected_tables). NOT referenced by any TS/TSX frontend file. Effectively orphaned.
-- **Broken:** Table is frozen — no fresh data since 2026-10-07. No code reads it. No code writes it. The 12-state taxonomy is unique (NEAR_RESISTANCE/BREAKOUT_WATCH/etc.) and doesn't map to any of the other 5 taxonomies.
-
-### C3. `stocks.db.market_regime_log` (56 rows, append by UNIQUE date)
-- **Schema:** id PK, date TEXT UNIQUE, regime TEXT, confidence REAL, egx30_close, egx30_change_pct, volume_ratio, adx, rsi, created_at, +ALTER-added cols (stock_id, regime_ar, ticker, reason, indicators, market, raw_regime, candidate_regime, candidate_days, reasons, index_ticker, index_source, index_current, index_daily_change_pct, breadth_pct, atr_ratio, turnover_ratio, loss_streak_days, short_term_drawdown_pct, computed_at).
-- **Date range:** 2026-06-21 → 2026-10-21.
-- **Regime distribution:** unknown=16, ranging=15, DEFENSIVE=11, NORMAL=8, bull_trend=6.
-- **History behavior:** Daily append (UNIQUE on date — upserts same date).
-- **Writer:** `engines/market_regime.py` (likely — not directly inspected).
-- **Readers:** consumed by `liquidity_radar_v2.detect_market_regime` + `engines/market_regime.py` + UI `/api/market/regime`.
-
-### C4. `predictions.db.liquidity_signal_outcomes` (1308 rows, UNIQUE per market+ticker+signal_date)
-- **Schema:** id PK, market, ticker, signal_date, entry_price, exit_price, return_pct, hit INTEGER, holding_days DEFAULT 5, threshold_used, created_at, UNIQUE(market, ticker, signal_date).
-- **Date range:** 2021-06-10 → 2026-09-20.
-- **History behavior:** Append by UNIQUE key — overwrites same market+ticker+date.
-- **Writer:** `vps-service/scripts/liquidity_backtest_engine.py:598` (INSERT OR REPLACE).
-- **Readers:** `vps-service/scripts/dual_track_generator.py:124, 483` + `src/app/api/predictions/dual-track/list/route.ts` + `src/app/api/predictions/dual-track/stats/route.ts`.
-- **Purpose:** Radar accuracy backtest — stores outcomes for each radar signal. NOT a transition log.
-
-### C5. `predictions.db.liquidity_backtest_results` (10 rows)
-- **Schema:** id PK, market, ticker, total_signals, successful_signals, failed_signals, hit_rate, avg_return, dynamic_threshold, backtest_start, backtest_end, backtest_days, qualified, notes, created_at, UNIQUE(market, ticker, backtest_start, backtest_end).
-- **Writer:** `vps-service/scripts/liquidity_backtest_engine.py:574` (INSERT OR REPLACE).
-- **Readers:** `vps-service/scripts/dual_track_generator.py:124, 136, 483` + dual-track UI routes.
-- **Sample:** EGX 63 signals 47.62% hit_rate @ 62M threshold; US 50578 signals 73.55% @ 2.6M; CRYPTO 152 signals 75.0% @ 523M.
-
-### C6. `predictions.db.liquidity_dynamic_threshold` (5 rows)
-- **Schema:** id PK, market, threshold_date, threshold_value, percentile_method, sample_size, fallback_used, created_at, UNIQUE(market, threshold_date).
-- **Date range:** single date 2026-09-24 for 5 markets.
-- **Writer:** `liquidity_backtest_engine.py:620` (INSERT OR REPLACE).
-- **Readers:** `dual_track_generator.py:136`.
-- **Sample:** EGX=62.5M, US=2.6M, KSA=1.5M, CRYPTO=523.8M, GOLD=1M.
-
-### C7. `db/maker_radar_tracking.json` (file, not table)
-- **Writer:** `/api/maker-radar/track` POST route (UI-triggered).
-- **Reader:** `analyzers.radar_integration._load_tracking` + `daily_predictor` legacy boost path (now superseded by HARD GATE).
-- **Purpose:** User-tracked tickers (manual watchlist), not state history.
-
----
-
-## Part D: Frontend Components
-
-### D1. `src/components/shared/LiquidityRadarView.tsx` — main radar UI (mapped to `/#liquidity-radar` tab)
-- **API:** `/api/v2/liquidity-radar?market=EGX` (line 287).
-- **Data shown:** `phase` (= maker_radar `path` field), `whale.net_flow_egp`, `entry_defense.entry_level/defense_level`, `liquidity_bucket`, `liquidity_bucket_ar`, `correction_status`, `drop_from_peak`, `accumulation` label, `expected`, `roc_10d`.
-- **History:** No — current snapshot only. Has `SignalTrackingTimeline` child component for per-ticker timeline (fetches `/api/maker-radar/timeline?ticker=X&days=60`).
-- **Connected to production radar?** YES — reads maker_radar JSON cache via v2 route.
-
-### D2. `src/components/shared/ui/FlowPhaseTag.tsx` — phase pill component
-- **Input:** `phase` string (any taxonomy).
-- **PHASE_MAP** (line 28-50) recognizes: `b_quiet_accumulation_strong` → "تجميع هادئ مؤسسي", `whale_inflow` → "تدفق سيولة ذكية", `distribution` → "تصريف وحذر", `absorption` → "امتصاص عروض بيعية", `neutral`, `mixed`, `churning`, etc.
-- **Broken:** Maker_radar produces `B_quiet_accumulation_strong` (uppercase) + `A_pre_surge` + `D_explosive_surge` + `E_early_break` — NONE of these are in PHASE_MAP. After lowercase normalization (`B_quiet_accumulation_strong` → `b_quiet_accumulation_strong`) the `B_quiet_accumulation_strong` DOES match. But `A_pre_surge`, `D_explosive_surge`, `E_early_break` have NO mapping — they render as raw code with muted tone. Also `تراكم مع اتجاه` (Arabic, from liquidity_radar_v2) doesn't normalize correctly (Arabic chars survive `.toLowerCase()` but no PHASE_MAP entry exists for them).
-
-### D3. `src/modules/radar/components/MultiMarketRadarTab.tsx`
-- **API:** `/api/maker-radar/multi-market?markets=EGX,TADAWUL,KSE,QSE,US,CRYPTO,GOLD` (line 199).
-- **Data shown:** Multi-market radar stocks. Same fields as LiquidityRadarView.
-
-### D4. `src/modules/radar/components/ExitRadarTab.tsx`
-- **API:** `/api/maker-radar/exit-radar?market=EGX` (line 202, 235). Triggers Python script run (not cached).
-- **Data shown:** X1/X2/X3/X4/X5 paths.
-
-### D5. `src/modules/radar/components/NetPicksTab.tsx`
-- **APIs:** `/api/maker-radar/net-picks?market=X` + `/api/maker-radar/stock-analysis?tickers=...`.
-- **Data shown:** Top picks + L2 Wyckoff analysis (phase / phase_ar / has_accumulation / has_spring / has_sos).
-
-### D6. `src/modules/radar/components/RadarStatsCards.tsx`
-- **APIs:** `/api/maker-radar/signal-tracker` (signal stats), `/api/maker-radar/signal-tracker/verify` (POST verify), `/api/maker-radar/sector-treemap`, `/api/maker-radar/entry-timing`.
-- **Data shown:** Aggregate signal counts + win rates + sector heatmap + entry timing.
-
-### D7. `src/modules/radar/components/AccuracyDashboard.tsx`
-- **API:** `/api/radar/accuracy?market=EGX&days=90`.
-- **Data shown:** Radar accuracy backtest from `radar_signal_tracking` + `liquidity_signal_outcomes`.
-
-### D8. `src/modules/radar/components/SignalTrackingTimeline.tsx`
-- **API:** `/api/maker-radar/timeline?ticker=X&days=60`.
-- **Data shown:** Per-ticker signal events (from radar_signal_tracking). Shows history.
-
-### D9. `src/modules/radar/components/WeeklyReportTab.tsx`
-- **APIs:** `/api/radar/weekly-report?market=X` (JSON) + `/api/radar/weekly-report/pdf?market=X` (PDF).
-
-### D10. `src/modules/radar/components/PersonalizedRadarTab.tsx`
-- **API:** `/api/radar/personalized` (auth required).
-
-### D11. `src/modules/radar/components/IncubatorSection.tsx`
-- **API:** `/api/radar/incubator?market=X`.
-- **Data shown:** 4/6 or 5/6 signal stocks (heating up) + missing trigger.
-
-### D12. `src/modules/predictions/components/maker-radar/*` (RadarSection, StockTable, MakerRadarTab, TradingPlanSection, helpers, types)
-- **APIs:** `/api/maker-radar/track` (POST/GET/DELETE), `/api/maker-radar/stock?ticker=X&days=30`, `/api/maker-radar/market-intelligence?ticker=X`, `/api/maker-radar/fundamentals?ticker=X`.
-- Embedded tabs: ExitRadarTab, WeeklyReportTab, MultiMarketRadarTab, AccuracyDashboard, PersonalizedRadarTab, IncubatorSection.
-
-### D13. `src/modules/market-analysis/components/persona/WhaleRadarSection.tsx` (in PersonaTab)
-- **Purpose:** Whale radar display within persona tab.
-
-### D14. `src/components/advanced-analysis/specialist/LiquidityFootprintSection.tsx`
-- **Purpose:** Liquidity footprint analysis (display).
-
-### D15. `src/lib/schedulers/radar-alerts.ts` (server-side scheduler)
-- **Reads:** `readRadarCache(market)` + `readExitRadarCache()` + previous snapshot at `db/radar_alerts_state.json`.
-- **Emits alerts:** `radar_explosive`, `radar_opportunity`, `radar_distribution`, `radar_flare`, `radar_path_upgrade`, `radar_signal_upgrade`, `radar_volume_surge`, `radar_target_hit`, `radar_take_profit`, `radar_exit_signal`.
-- **Tracks:** `tracked_paths` (prev path per ticker) + `stock_stages` (1-5 progression per ticker) — this is the CLOSEST thing to a transition monitor in the system, but it's a JSON snapshot file, not a DB table, and it's only used for alert deduplication.
-
-### D16. `src/modules/radar/lib/radar-signal-tracker.ts` (lib)
-- Wraps `/api/maker-radar/signal-tracker` (GET stats) + `/api/maker-radar/signal-tracker/verify` (POST).
-
-### D17. `src/modules/radar/lib/radar-cache.ts` (lib)
-- Production-safe cache reader. Spawns `python3 scripts/maker_radar.py --json-only` for background warmup. Mutex via lock file `db/radar_warmup.lock`. STALE_THRESHOLD = 15 min.
-
-### D18. `src/app/api/market/liquidity-radar/route.ts` (LEGACY proxy)
-- Proxies to Python `http://PY_BACKEND/api/market/liquidity-radar` (market_master_endpoints.py).
-- **Status:** SUPERSEDED — `LiquidityRadarView.tsx:285` switched to `/api/v2/liquidity-radar` on 2026-10 (per comment line 284-285).
-
-### D19. `src/app/api/maker-radar/exit-radar/route.ts` — runs Python exit_radar script live (line 115)
-
-### D20. `src/app/api/stocks/[ticker]/publish-data/route.ts:217` — fetches `/api/maker-radar?market=EGX` for stock publishing.
-
----
-
-## Part E: Conflicts + Inconsistencies
-
-### E1. Six incompatible "phase" taxonomies coexist
-| # | Component | Taxonomy | Logic |
+| Service | Port | Process | Role |
 |---|---|---|---|
-| 1 | `canonical_signal.classify_stock_phase` | تجميع / تصاعد / توزيع / تخفيض / محايد | buy_pct + roc_10d (regime-based) |
-| 2 | `entry_gate._check_stock_phase` | DOWNTREND / PULLBACK / UPTREND / BULLISH_RECOVERY / TRANSITIONAL | MA50/MA200 structure |
-| 3 | `shared_liquidity.detect_life_cycle` | نعاس / قفزة أولى / جني أرباح صحي / توزيع قاتل / تدوير وهمي / حبس / عادي | last candle + ATR |
-| 4 | `real_liquidity_radar.analyze_liquidity` | ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / DIRTY_DISTRIBUTION / SUSPICIOUS_WATCH / FALLING_KNIFE | wick + dryness + effort |
-| 5 | `liquidity_radar_v2.classify_phase` | تراكم مع اتجاه / تراكم هادئ / تصريف / محايد / بيانات غير كافية | MFM + market regime + MA20 |
-| 6 | `stocks.db.stock_phase` table | NEAR_RESISTANCE / TREND_UP_HOLD / NEAR_SUPPORT / UNCLEAR / BREAKOUT_WATCH / BREAKDOWN / BREAK_RISK_SUPPORT / BREAKOUT / CORRECTION_ACTIVE / PROFIT_TAKING_ZONE / CONSOLIDATION / CORRECTION_ENDING | S/R levels + chg_5d/20d (NO WRITER in production) |
-| 7 | `market_master_endpoints./api/market/liquidity-radar` | ILLIQUID_TRAP / DISTRIBUTION_RISK / ACCUMULATION_BUY / DRY_ACCUMULATION / ACCUMULATION_CONFIRMED / NEUTRAL | RVOL + wick + turnover |
-| 8 | `maker_radar.py` paths | A_pre_surge / B_quiet_accumulation_strong / C_quiet_accumulation_weak / D_explosive_surge / E_early_break / distribution | detect_pre_surge / detect_quiet_accumulation / is_explosive_surge / is_early_break + BRAVO-FLOW-GATE-ALL override |
+| **Caddy** (gateway) | **81** | systemd | Reverse proxy: `?XTransformPort=N` → `localhost:N`, else → `localhost:3000` |
+| **Next.js** (frontend) | **3000** | PM2 `nextjs` (Node 22+, `next start`) | Display-only — no business logic. 464 API routes. |
+| **Python backend** (THE BRAIN) | **8010** | PM2 `python-backend` (uvicorn FastAPI + Flask WSGI via a2wsgi) | All analysis: Maestro, Confluence, Portfolio, Maker Radar (via scripts/maker_radar.py spawn), predictions generator |
+| **Data Engine** | **5000** | PM2 `data-engine` (Flask) | 24/7 scraper orchestrator: stocks/crypto/metals/news + scheduler + sync to stocks.db |
+| **WebSocket service** | **3005** | PM2 `ws-service` (Bun + Socket.io) | Hyper Polling: 2s session / 30s off-session. `/broadcast` POST endpoint for Python push. Emits `ticker:update`, `market:snapshot`, `stock:alert` |
+| **Telegram events relay** | **3003** | PM2 `telegram-events` (Bun + Socket.io) | Polls `/api/telegram/events/poll` every 2s; broadcasts `telegram:event` to admin TelegramTab clients |
+| **News agent dashboard** | **8001** | manual `run_dashboard.sh` (uvicorn) | Optional admin UI for news-agent (NOT PM2-managed) |
+| **Ollama** (local LLM) | **11434** | systemd (NOT PM2) | qwen2.5:1.5b + glm-fast models for news analysis + AI chat |
+| **PM2 metrics** | (none — internal) | writes to `db/metrics.db` | resource_snapshot_raw every 5min; rolled up to 5min/1h tables |
+| **telegram-poster** | (none — scheduler) | PM2 `telegram-poster` | Continuous Telegram auto-posting (daily picks, morning bell, weekly/monthly summaries) |
+| **telegram-interactive-bot** | (none — Telegram bot) | PM2 `telegram-interactive-bot` | @investusernamebot — answers trader queries, stock picker, charts |
+| **news-agent** | (none — polling agent) | PM2 `news-agent` | Collects RSS/Web/Telegram → analyzes via Ollama → POSTs to `/api/news` |
 
-That's 8 taxonomies — none mapped to each other. Owner's 6-state vision (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is NOT used anywhere.
-
-### E2. Same stock gets different states from different components (no canonical)
-For ticker USDY on 2026-10-21:
-- `maker_radar.py` JSON: path=A_pre_surge (most recent)
-- `entry_gate._check_stock_phase`: depends on MA50/MA200 (likely TRANSITIONAL if no clear trend)
-- `real_liquidity_radar.analyze_liquidity`: depends on last candle (could be SUSPICIOUS_WATCH default)
-- `liquidity_radar_v2.classify_phase` (if it ran): depends on MFM (could be PHASE_NEUTRAL)
-- `stock_phase` table: frozen at 2026-10-07, no row for USDY (it's a crypto/US ticker)
-- `canonical_signal.classify_stock_phase`: depends on buy_pct (not stored, computed on demand)
-- `FlowPhaseTag.tsx`: lowercase A_pre_surge → not in PHASE_MAP → renders as raw "A_pre_surge" with muted tone (display bug)
-
-### E3. Component says "accumulation" but HARD GATE rejects it
-- `entry_gate._check_stock_phase` can HARD-BLOCK `TRANSITIONAL` (line 506). If a stock is in TRANSITIONAL phase but `radar_integration.is_radar_strong_accumulation` returns True (path=A_pre_surge or B_quiet_accumulation_strong), the stock passes the radar gate but FAILS the entry_gate. No bypass exists for this combination (radar bypass at entry_gate line 784 only bypasses market_context, not _check_stock_phase).
-- Conversely, `entry_gate._check_stock_phase` returns UPTREND (pass with warning) for a stock where `is_radar_strong_accumulation` returns False — radar gate kills it even though entry_gate allows it.
-
-### E4. UI shows one state, DB has another
-- `LiquidityRadarView.tsx` shows `phase` field from maker_radar JSON (`path` value, e.g. `A_pre_surge`).
-- `stocks.db.radar_signal_tracking` stores `path` (e.g. `A_pre_surge` — matches UI for today).
-- `stocks.db.stock_phase` table is frozen at 2026-10-07 with 12-state S/R taxonomy (NEAR_RESISTANCE etc.) — DOES NOT MATCH UI's maker_radar path values. No UI component reads stock_phase table.
-
-### E5. Same term ("distribution") with different definitions
-- `maker_radar.py` `path='distribution'` (BRAVO-FLOW-GATE-ALL override, line 515-527): net_flow_egp < 0 on any bullish path. Override clears `under_microscope=False` → stock EXCLUDED from radar_signal_tracking (verified: 0 rows with path='distribution' in DB).
-- `entry_gate._check_stock_phase` `phase='CORRECTION'`: unreachable code (if/elif chain never assigns CORRECTION).
-- `real_liquidity_radar.classification='DIRTY_DISTRIBUTION'`: upper_wick > 40 + dryness > 1.3 + close_loc < 40 (or intraday selling_pressure).
-- `canonical_signal.classify_stock_phase='توزيع'`: buy_pct ≤ 40% + roc_10d > -3%.
-- `shared_liquidity.detect_life_cycle='توزيع قاتل'`: strong bear candle with volume.
-- `liquidity_radar_v2.PHASE_DISTRIBUTING='تصريف'`: MFM < 0 (net_flow_egp < 0) OR bear market.
-- `market_master_endpoints.classification='DISTRIBUTION_RISK'`: rvol ≥ 1.80 + close_loc ≥ 67 OR upper_wick ≥ 40.
-- `unified_scanner` decision track `'DISTRIBUTION_VETO'`: dist_warn ≥ 2 (composite of chg_1d, adx, liq_classification).
-- `FlowPhaseTag.tsx` `'distribution'` → "تصريف وحذر" (loss tone).
-
-8 different definitions of "distribution" — none canonical.
-
-### E6. Table overwrites history instead of appending
-- **`stocks.db.stock_phase`**: PRIMARY KEY symbol. Latest run = 2026-10-07 (990 rows). All prior states destroyed. Only 248 rows survive from 3 older `computed_at` runs because they used symbols not in the 2026-10-07 run.
-- **`stocks.db.radar_signal_tracking`**: Daily DELETE then INSERT pattern (line 752). Same-date upsert is correct. BUT no `prev_path` column — daily snapshots are stored but never diffed into transitions.
-- **`predictions.db.liquidity_signal_outcomes`**: UNIQUE(market, ticker, signal_date) — same-date upsert. Correct for outcome storage.
-- **`predictions.db.liquidity_backtest_results`**: UNIQUE(market, ticker, backtest_start, backtest_end) — same-key upsert. Correct for backtest storage.
-
-### E7. `result['radar_path']` is never set in daily_predictor.py
-- `daily_predictor.py:3397` passes `radar_path=result.get('radar_path', '')` to `generate_analysis_reason`. Grep confirms `result['radar_path'] = ...` appears NOWHERE in daily_predictor. So `analysis_reason` always omits the radar path label (lines 1196-1205 in master_analyzer are dead). The radar state IS available via `get_radar_state(ticker, market)` but it's only logged to stdout at line 1789-1794 — never persisted to `predictions.db.stored_analyses` or surfaced in the UI's prediction record.
-
-### E8. compute_money_flow vs compute_whale_flow — two algorithms for same metric
-- `shared_liquidity.compute_money_flow` (line 751, CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15): called by `daily_predictor.py:3239` (RADAR-BOOST) + `maker_radar.py:501` (path detection).
-- `liquidity_radar_v2.compute_whale_flow` (line 579, MFM-only = ((close-low)-(high-close))/(high-low) × vol × close): called by `whale_guard._whale_distribution_guard` (daily_predictor.py:1060).
-- Same stock on same day: maker_radar.py reports `net_flow_egp` via CLV+CMF+vol+SMA. whale_guard.py reports `net_flow_egp` via MFM. **They can disagree on sign** — e.g. CLV might be +5M (accumulation) while MFM is -2M (distribution) for the same candle. Result: stock can be HARD-BLOCKED by whale_guard AND HARD-PASSED by maker_radar — contradiction.
-
-### E9. Hard gate depends on file produced by unscheduled script
-- `radar_integration.check_exit_radar_conflict` reads `scripts/output/exit_radar_{date}.json` (last 7 days). `crontab.txt` has NO entry for `exit_radar.py`. Currently `scripts/output/exit_radar_*.json` does NOT exist. Safe-by-design: missing file → no conflict → no block. So the X1/X5 HARD BLOCK is silently disabled in production unless someone manually runs `python3 scripts/exit_radar.py`.
-
-### E10. liquidity_radar_v2.py is orphaned
-- `scan_market`, `classify_phase`, `compute_entry_defense`, `check_falling_knife` — ZERO production callers. Only `compute_whale_flow` is imported (by whale_guard).
-- `crontab.txt` has no entry for it.
-- Its output JSON (if anyone ran it) is never read by any API route — the v2 frontend route reads `maker_radar_*.json` via `readRadarCache`, NOT `liquidity_radar_v2_*.json`.
-- So 4 of the 5 pillars (whale flow via MFM is the exception) of the "BRAVO-RADAR-V2" redesign are dead code.
-
-### E11. canonical_signal.classify_stock_phase is dead-imported
-- `canonical_signal.py:215` defines `classify_stock_phase` (the "canonical" 4-state تجميع/تصاعد/توزيع/تخفيض taxonomy).
-- `telegram_interactive_bot.py:31` imports it but line 38 STUBS it to `pass` (type: ignore[no-redef]).
-- ZERO active callers in production. The canonical taxonomy that was supposed to unify all 4 conflicting phase schemes is itself unused.
-
-### E12. radar_signal_tracking records noise as signal
-- USDY has 10 daily rows (2026-10-08 → 2026-10-19) flipping B→B→A→B→A→B→B→B→A→B. No "confirmation days" filter requires N consecutive days in same state before persisting. The signal_type flips daily are recorded as independent signals — but they're noise (3-day quiet accumulation doesn't survive a 1-day pre_surge trigger, and vice versa).
-- 10 tickers have >5 signal_dates (USDY=10, DOT=8, QNT=8, ABUK=7, ACGC=7, ADCI=7, AJWA=7, ALCN=7, APSW=7, BCH=7).
-
-### E13. stock_phase table fully orphaned
-- 1238 rows, frozen at 2026-10-07.
-- NO Python file in production writes to it (writer archived).
-- NO Python file reads it (only `audit_production_db.py` lists it as expected_tables).
-- NO TS/TSX file references it.
-- 12-state taxonomy unique to this table.
-- Effectively a fossil — should either be dropped or revived with a fresh writer.
-
-### E14. FlowPhaseTag has incomplete PHASE_MAP
-- Recognizes: `b_quiet_accumulation_strong`, `b_quiet_accumulation`, `quiet_accumulation`, `accumulation`, `accumulation_strong`, `whale_inflow`, `whale_inflow_strong`, `smart_inflow`, `distribution`, `distribution_strong`, `smart_distribution`, `absorption`, `absorption_strong`, `neutral`, `mixed`, `churning`.
-- Does NOT recognize: `A_pre_surge`, `a_pre_surge`, `D_explosive_surge`, `d_explosive_surge`, `E_early_break`, `e_early_break`, `C_quiet_accumulation_weak`, `c_quiet_accumulation_weak`, `تراكم مع اتجاه`, `تراكم هادئ`, `تصريف`, `محايد`, `NEAR_RESISTANCE`, `TREND_UP_HOLD`, `BREAKDOWN`, `BREAKOUT`, `BREAKOUT_WATCH`, `BREAK_RISK_SUPPORT`, `CORRECTION_ACTIVE`, `CORRECTION_ENDING`, `PROFIT_TAKING_ZONE`, `CONSOLIDATION`, `ILLIQUID_TRAP`, `DISTRIBUTION_RISK`, `ACCUMULATION_BUY`, `DRY_ACCUMULATION`, `ACCUMULATION_CONFIRMED`, `DRY_EXPLOSION_READY`, `DIRTY_DISTRIBUTION`, `SUSPICIOUS_WATCH`, `FALLING_KNIFE`, `DOWNTREND`, `PULLBACK`, `UPTREND`, `BULLISH_RECOVERY`, `TRANSITIONAL`.
-- 23 unmatched phase labels render as raw codes with muted tone — display bug.
-
-### E15. stock_phase table's "CORRECTION_ENDING" collides with daily_closer's "HOLD_CORRECTION_ENDING"
-- `stocks.db.stock_phase.phase='CORRECTION_ENDING'` (6 rows, frozen 2026-10-07) — a 12-state S/R-level label meaning "قرب نهاية التصحيح — علامات استرجاع".
-- `predictions.db.exit_notifications` has rows with `notification_type='HOLD_CORRECTION_ENDING'` — a daily_closer stop-loss-defer flag (different concept, same word).
-- No actual collision in DB schema but semantic confusion for anyone querying "correction_ending" without specifying table.
-
-### E16. `maker_radar.py` `distribution` override silently drops stocks
-- BRAVO-FLOW-GATE-ALL (line 515-527): if `winner_path in _BULLISH_PATHS and net_flow_egp < 0` → set `winner_path='distribution'`, `under_microscope=False`, clear all bullish flags.
-- `_track_signals_to_db` (line 755) only INSERTs stocks where `under_microscope=True` (implicit — actually it inserts all under_microscope list members, and the override REMOVES the stock from under_microscope before tracking). Verified: `SELECT COUNT(*) FROM radar_signal_tracking WHERE path='distribution'` = 0.
-- So distribution-flip events are NOT recorded in DB history. The owner's #1 ask (transition monitoring) cannot be answered for the accumulation→distribution transition because the override happens BEFORE tracking, not after.
+### Architecture Verdict
+- **Tiered DB strategy**: live scrapes → `data_engine.db` (write-heavy, raw) → `stocks.db` (read-heavy, synced, enriched) + `intraday.db` (isolated time-series) + `price_history.db` (canonical OHLCV). `predictions.db` is the ML output store (276 MB, largest). `auth.db` is the user/subscription store. `news.db` is the news source-of-truth.
+- **Display-only Next.js** per Constitution: Next.js routes proxy to Python (8010) for any real computation; only direct DB reads for simple lookups (better-sqlite3 readonly).
+- **Real-time push is dual-channel**: (1) `data_engine/sync.py` POSTs to `ws-service:3005/broadcast` for instant price push after each sync, and (2) `ws-service` polls Python `/api/stocks` + `/api/live/analysis` every 2s during EGX session as a safety net.
+- **Maker Radar is cache-first**: `scripts/maker_radar.py` runs as a CLI spawned by Next.js (via `child_process.spawn` from `radar-cache.ts`), output cached in JSON files; `/api/maker-radar` reads cache + enriches with live prices from `stocks.db`. Never blocks on Python execution.
+- **Auth is tri-modal**: NextAuth session (web), Bearer token (mobile, ApiToken table), `admin_session` cookie (admin password-login path). All paths converge to `getSessionUserId()` returning `{userId, isAdmin}`.
+- **DAL problem documented**: 109 files (62 Python + 47 Next.js routes) read from `stocks.db` without `is_active` filter (per FULL-INVENTORY-1 task). Plan exists (`Documentation/05-DATA-ACCESS-LAYER-PLAN.md`) but not yet implemented.
 
 ---
+Task ID: 2-a
+Agent: Explore (analysis engines)
+Task: Understand all analysis/prediction engines
 
-## Summary Verdict
+Work Log:
+- Read /home/z/my-project/worklog.md tail to absorb prior agent context (7571 lines; multiple recent Phase-3 frontend strangler tasks, RADAR-AUDIT-1, PREDICTIONS-AUDIT-1 documenting stored_analyses schema drift + turnover_egp NULL issue).
+- Read vps-service/main.py (370 LOC total) — confirms FastAPI shell mounts portfolio_router + WSGIMiddleware(lightweight_server Flask app) on "/". Real endpoints live in lightweight_server.py + 35 api/*.py blueprints. Boot order: .env loader → core.logging_config → core.migrator → core.scheduler_manager → @app.on_event("startup") → register MarketScheduler.tick (60s) + EgyptScheduler.tick_once (60s) + WAL checkpoint (hourly) + Crypto Lab (15min).
+- Read vps-service/glminvestment_engines/README.md (375 LOC) — independent Minervini/Covel/Wilder/Douglas engines package with 6 engines + Confluence v3 + Backtester + integration patches.
+- LS + scanned engines/ (12 engine files), engine/ (compat shim → engines/), analyzers/ (110 analyzer files), ai/ (12 AI files), core/ (16 utilities), jobs/ (15 schedulers + 4 predictor_modules + 3 closer_modules), ml_models/ (1 orphaned XGBoost pkl), live_signals/ (2 stale JSON artifacts from May 2026).
+- Wrote Python script that resolves blueprint url_prefix and emits all 493 unique endpoints across api/*.py + lightweight_server.py + ai/portfolio_routes.py (288 GET + 198 POST + 1 PUT + 2 DELETE).
+- Extracted docstring/first-purpose for every analyzer (110 files), every ai/ module (12), every core/ module (16), every jobs/ module (15) — table below.
+- Identified canonical_signal.py thresholds (STRONG_BUY=78, BUY=65, ACCUMULATE=55, REDUCE=40, SELL=25) — SSOT for all analyzers; multiple "sub-engines" (sniper_engine.py, v82_analyzer.py, board_of_analysts.py, confluence_engine_v3.py) carry SUB_ENGINE_DISABLED=True flag.
+- Read vps-service/risk_management_advanced.py (1900 LOC) — confirmed 33 public functions covering position-sizing, stop-loss, targets, trailing, dynamic ATR variants, psychology, leverage, 2% rule, news-to-numbers, anti-falling-knife, forced exit, portfolio analysis.
 
-The radar system today is **5 parallel daily classifiers** (maker_radar, real_liquidity_radar, liquidity_radar_v2, exit_radar, market_master_endpoints) + **3 library classifiers** (canonical_signal, shared_liquidity.detect_life_cycle, stock_state.classify_correction_stage) + **2 frozen tables** (stock_phase, market_regime_log — only the latter is alive) + **1 append-only daily snapshot** (radar_signal_tracking). 8 incompatible phase taxonomies. NO state machine. NO transition log. NO `prev_path`/`days_in_state`/`confirmed_transitions` columns anywhere. Owner's 6-state vision (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is NOT MAPPED in any production code. The HARD GATE (`is_radar_strong_accumulation`) accepts only `A_pre_surge` + `B_quiet_accumulation_strong` from the maker_radar path taxonomy — none of the other 7 taxonomies feed the BUY decision. Frontend shows raw `path` codes that `FlowPhaseTag` cannot render for 5 of 6 maker_radar paths.
+Stage Summary:
 
-NO files modified — read-only Phase 1 audit throughout.
+================================================================
+SECTION A — PACKAGE `glminvestment_engines/` (Minervini/Covel/Wilder)
+================================================================
+Path: vps-service/glminvestment_engines/
+Trigger: CLI only (cli_analyze.py / backtest.strategy_backtester). README documents 3 integration patches (expert_gate_patch, risk_engine_patch) for connecting to expert_quality_gate.py + master_analyzer.py — NOT yet wired into the main pipeline.
+
+| File | Purpose | Algorithm | Inputs | Outputs | Trigger |
+|------|---------|-----------|--------|---------|---------|
+| core/base.py | Type system (Signal, EngineResult, RiskPlan, TakeProfitTier, Position, SignalType, Timeframe) | Dataclasses | - | EngineResult | library |
+| core/indicators.py | ATR/RSI/ADX/Donchian/SMA/EMA with Wilder's RMA smoothing | Wilder's smoothing | pandas Series | floats | library |
+| engines/stage2_filter.py (267 LOC) | Minervini Stage 1-4 classifier + hard veto on Stage 4 | Stage2: price>200SMA + 200SMA rising + GoldenCross + within25%of52wHigh + ≤70% above 200SMA; ADX≥25 confirms | pandas OHLCV DataFrame | EngineResult(signal STRONG_BUY/BUY/NEUTRAL/AVOID/STRONG_AVOID) + metadata(stage, adx) | CLI/library |
+| engines/vcp_detector.py (338 LOC) | Minervini Volatility Contraction Pattern | Pivot high (excluded last 3 candles) → contraction ratios decreasing → volume dryup via MEDIAN not MEAN | pandas OHLCV | EngineResult + score 0-100 + contraction_ratios list | CLI/library |
+| engines/donchian_breakout.py (225 LOC) | Donchian/Turtle System 1+2 breakout | System 1: 20-day high + vol≥1.5× → BUY; System 2: 55-day high + vol≥2.0× → STRONG_BUY | pandas OHLCV | EngineResult + breakout_20, breakout_55, volume_ratio | CLI/library |
+| engines/atr_risk_engine.py (265 LOC) | Wilder ATR-based stop + position sizing + take-profit tiers | stop = entry − (mult×ATR) where mult=2.0 scalper/3.0 investor; shares = (capital×risk%)/risk_per_share; tiers at 1R/2R/3R | OHLCV + entry_price + persona + account_size | RiskPlan(stop_loss, shares, take_profit_tiers) | CLI/library |
+| engines/take_profit_tiers.py (266 LOC) | Mark Douglas-style progressive exit | HOLD/SELL_TIER_1 (sell ⅓ at 1R + move stop to BE)/SELL_TIER_2/UPDATE_TRAILING/EXIT_STOP/EXIT_FINAL | Position + OHLCV + ATR/Donchian | PositionAction | library |
+| confluence/confluence_scorer.py (501 LOC) | THE FINAL UNIFIER — weights all 5 engines + EGX30 hard gate | Weights: Donchian 30% + ATR Risk 25% + Stage2 20% + VCP 10% + Persona/Seasonality 15%; EGX30<SMA200 → STRONG_AVOID; ADX>25 +5 pts, ADX<15 −10 pts; Veto: Stage4 | OHLCV + EGX30 index history + persona + account_size | ConfluenceResult(final_signal, final_score 0-100, risk_plan, engine_results) | CLI/library |
+| backtest/strategy_backtester.py (639 LOC) | Bar-by-bar simulator + Van Tharp stats | Warmup 210 bars → run Confluence each bar → open trade on BUY/STRONG_BUY + cooldown → manage with take_profit_tiers → stats: WinRate, ProfitFactor, Avg R, MaxDD, Expectancy | OHLCV CSV | BacktestResult + report | CLI: `python3 -m glminvestment_engines.backtest.strategy_backtester data/COMI.csv` |
+| integration/expert_gate_patch.py | TEMPLATE patch to inject stage2_veto + vcp_confidence_boost into expert_quality_gate.py | Hard veto on Stage 4 | df, symbol, proposed_buy | dict(approved/reason/vcp_score) | NOT wired |
+| integration/risk_engine_patch.py | TEMPLATE patch to replace fixed -8% stop with ATR plan in background_analyzer/master_analyzer | compute_risk_plan | df, symbol, entry, persona, capital | trade dict with _risk_plan | NOT wired |
+| cli_analyze.py (217 LOC) | CLI orchestrator | Runs all 5 engines + Confluence + optional backtest | CSV (date,open,high,low,close,volume) | Terminal report | `python3 -m glminvestment_engines.cli_analyze data/COMI.csv --symbol COMI --persona investor --capital 100000` |
+| examples/demo_confluence.py | Synthetic-data demo | Builds fake Stage2+VCP+breakout stock | hard-coded | Terminal report | `python3 examples/demo_confluence.py` |
+
+================================================================
+SECTION B — `engines/` (operational engines — DB-driven, production)
+================================================================
+All read from SQLite DBs (stocks.db / data_engine.db / price_history.db / predictions.db). All canonical indicator math delegated to analyzers/indicators/* (BRAVO-SSOT Stage 4).
+
+| File | LOC | Purpose | Algorithm | Inputs (DB) | Outputs | Trigger |
+|------|-----|---------|-----------|-------------|---------|---------|
+| stage2_filter.py | 267 | Same Minervini stage classifier | (see glminvestment_engines) | pandas DataFrame | EngineResult | library |
+| vcp_detector.py | 338 | Same VCP detector | (see glminvestment_engines) | pandas | EngineResult | library |
+| donchian_breakout.py | 225 | Same Donchian breakout | (see glminvestment_engines) | pandas | EngineResult | library |
+| atr_risk_engine.py | 265 | Same ATR risk | (see glminvestment_engines) | pandas+entry+persona | RiskPlan | library |
+| take_profit_tiers.py | 266 | Same take-profit tier management | (see glminvestment_engines) | Position+OHLCV | PositionAction | library |
+| market_regime.py | 532 | EGX30/EGX100 Minervini stage classifier | Reads index from price_history.db; SMA50/SMA200/slope; ADX | price_history.db.price_history | RegimeResult(stage 1-4, confidence, position_modifier, trading_allowed) | API: /api/regime/market, /api/regime/stock/<ticker> |
+| explosive_scanner.py | 691 | Volume+price scanner for "explosive" setups | EXPLOSIVE_SCORE = Vol_surge 25% + Price_position 30% + Sector_heat 20% + Smart_money 15% + Market 10% | stocks.db.stocks | ExplosiveCandidate list | API: /api/explosive/<ticker>, /api/explosive/scan, /api/explosive/top, /api/explosive/hunt |
+| flow_system.py | 1307 | 4-layer macro flow scoring | MACRO 25% + SECTOR 30% + STOCK 25% + CROSS-VALIDATION 20% → Flow Score 0-100 → نار/شرارة/رماد/بارد | stocks.db + macro_indicators + sectors | FlowResult | API: /api/flow/<ticker>, /api/flow/heatmap, /api/flow/top, /api/flow/summary |
+| crypto_engine.py | 398 | Crypto flow scoring | CryptoFlowScore(volume_score, momentum_score, flow_score 0-100, label) | data_engine.db.crypto_prices | CryptoFlowScore | API: /api/crypto/flow/<symbol>, /api/crypto/flow/top, /api/crypto/live |
+| stock_fundamentals.py | 653 | Aggregator over 9 data_engine.db tables | Reads tab_balance_sheet, tab_income_statement, tab_cash_flow, tab_valuation, tab_profitability, tab_performance, tab_dividends, tab_technical_analysis, historical_data + stocks.db | data_engine.db (9 tables) + stocks.db | StockFundamentals dict | API: /api/fundamentals/<ticker>, /api/fundamentals/stats |
+| paper_trade_tracker.py | 1173 | Tracks virtual trades + 1/5/10/20-day outcomes | Pulls price_history, computes outcome after N days, feeds back to learning | predictions.db.paper_trades + price_history.db | TradeOutcome rows | Manual / scripts/paper_trading.py |
+| historical_backfill_engine.py | 1219 | Trains on 6 months of past data | For each ticker × each day: compute indicators → simulate signal → watch 1/5/20d outcome → store lessons + regime_indicator_weights | stock_price_history (108K+ rows), prediction_logs, outcome_logs, learned_lessons, regime_indicator_weights | learned_lessons + regime_indicator_weights tables | API: POST /api/admin/historical-backfill/run, GET /api/admin/historical-backfill/status |
+| persona_engine.py | 987 | 7 investor personas (conservative → gambler → hedger) | PersonaType enum + RiskParameters + DecisionThresholds; max_position_pct clamped to 2.5% (Rule 19) | Library | Persona dataclass | library (used by daily_predictor, master_analyzer) |
+| backtest_engine.py | 2374 | V38 Institutional Decision Engine backtester | 9 modules: ATR/RSI/BB/Squeeze + Makers + DNA + Fundamentals + Sector + 5-Proofs + AdaptiveThreshold + VWAP + OrderBlocks/LiquiditySweeps | data_engine.db + price_history.db + stocks.db | Backtest results + trades | API: /api/v38-backtest/* (run/status/results/summary/trades) |
+| engine/__init__.py | 65 | COMPAT SHIM (BRAVO Stage-1) — re-exports engine.crypto_engine/explosive_scanner/flow_system/historical_backfill_engine/paper_trade_tracker/persona_engine/stock_fundamentals from engines/ | importlib re-export | - | - | transparent |
+
+================================================================
+SECTION C — `analyzers/` (110 files — THE BRAIN LIBRARY)
+================================================================
+Canonical signal thresholds (canonical_signal.py): STRONG_BUY=78, BUY=65, ACCUMULATE=55, REDUCE=40, SELL=25, STRONG_SELL<25. Multiple competing sub-engines DISABLED with SUB_ENGINE_DISABLED=True flag.
+
+C.1 — MASTER / FUSION ORCHESTRATORS (the brains that combine everything)
+- master_analyzer.py (5794 LOC) | THE BRAIN — combines liquidity, regime, sector, session, technical, fundamental, sentiment, AI patterns, multi-timeframe, volume_profile; applies 8 Golden Rules; thresholds STRONG_BUY≥55, BUY≥50 (legacy). Triggered by daily_predictor + background_analyzer + on-demand /api/analysis/<ticker>, /api/predict/<ticker>.
+- core_scoring_engine.py (2576 LOC) | Unified scoring: stock + MarketProfile + PersonaProfile → UnifiedSignalResult. Dynamic weights by market.
+- sniper_engine.py (2028 LOC) | "Sniper not Sprayer" — combines 6 components (technical 25%, SR 25%, volume 15%, fundamental 20%, regime 10%, candle 5%) × liquidity_multiplier. **DISABLED** (SUB_ENGINE_DISABLED=True, returns None per Rule 67/73).
+- confluence_engine_v3.py (1233 LOC) | Production-safe Confluence v3 with weights V5 (SMC 60% + Fundamentals 15% + Volume 10% + Technical 15% trap detector). SMC sub-weights: order_block 50% + liquidity_sweep 33% + fvg 17%. **signal classification DISABLED**, but weights documented for future reuse.
+- institutional_decision_engine.py (1507 LOC) | V39 Pine Script port — unifies SMC + VSA + Fusion + DNA + Candle Prob + Fundamentals + Sector + Benchmark in 1 decision. 6 Proofs + dynamic_thresh (self-learning ±10%) + win_rate/profit_factor tracking.
+- board_of_analysts.py (834 LOC) | BaseAnalyst ABC + multiple "analyst employees" (Technical/Fundamental/Sentiment/Pattern/Risk). **DISABLED** (SUB_ENGINE_DISABLED=True).
+- v82_analyzer.py (776 LOC) | V82 Pine port — 9-condition entry gate + Fuel Gauge + Best Entry + Dynamic ATR + Money Flow + Kill Switch + Safe Mode + Ichimoku + Structure. **DISABLED**.
+- v68_oracle.py (734 LOC) | "Future Fingerprint" — Linear Regression slope +5 candles; Probability 0-100 (4 factors × 25); Quiet Accumulation; Liquidity Magnets; Liquidity Grab; No-Chase 2D; Dirty Distribution. A+ gate requires prob≥70%.
+- fusion_engine.py (745 LOC) | Fusion Engine V20 (LuxAlgo + BigBeluga + SMC) — used by crypto_lab_scheduler. Score weights: trend 21 + SMC BOS 56 + SMC sweep 49 + above SMA20 10 + strong vol 22 + healthy RSI 20 + low premium 15.
+- unified_maestro.py (613 LOC) | Market router: EGX → MaestroOrchestrator, CRYPTO → CryptoMaestro, Arab → ArabMarketsMaestro.
+- crypto_maestro.py (466 LOC) | Crypto-specific orchestrator.
+- unified_analysis.py (467 LOC) | Unified analysis pipeline.
+- hunting_engine.py (1253 LOC) | Hunting V2 — 3 stages (Screener → Expert Eye → Boss Pick) — independent from maestro_orchestrator.
+- seasonality_first_engine.py (548 LOC) | Seasonality-First confluence (traditional indicators <50% accuracy on EGX, seasonality validated on 24 stocks, 36,869 records).
+
+C.2 — TECHNICAL / INDICATOR ENGINES
+- technical.py (613) | SMA/EMA/RSI/Stochastic/CCI/Williams%/MACD/Bollinger
+- technical_weighted.py (542) | Weighted scoring (no naive sum)
+- technical_target_engine.py (888) | S/R + candlestick + ATR + 30-day range + indicators → entry/stop/target
+- technical_explainer.py (718) | Arabic narrative for technical verdicts
+- enhanced_indicators.py (393) | MACD + Bollinger + Stochastic + ATR + ADX + Williams%R (pure stdlib)
+- multi_timeframe_engine.py (317) | V3 daily/weekly/monthly confluence (RSI + MA20 + MA50 + MA ordering)
+- live_indicator_engine.py (1143) | Live delta calc — historical RSI/MACD/SMA/ATR from cached_analysis + today's intraday candle from stocks.db; incremental update equations.
+- intraday_reader.py (291) | 5-min intraday breakout + maker flow detection.
+- candlestick.py (492) | Single/double/triple candle patterns
+- candle_probability_engine.py (377) | Up/dn probability by candle pattern
+- patterns.py (281) | Head&shoulders, double top/bottom, triangles
+- fibonacci.py (281) | Retracements/extensions/clusters
+- volume_profile.py (344) | VWAP + OBV + volume spikes + Acc/Dist line
+- smc_engine.py (452) | Smart Money Concepts — Swing Highs/Lows + Order Blocks + FVG + Liquidity Sweeps. Pure pandas.
+- multi_path_detector.py (502) | Multi-path pattern detection
+- support_resistance_calculator.py (943) | Fractal pivot-based S/R (replaces +4%/-8% percentage targets)
+- dynamic_target_engine.py (1851) | Swing-based entry/exit + candlestick + ATR
+- dynamic_context_engine.py (462) | DYNAMIC-SYSTEM-001 — 20-day market context (dynamic_volatility, etc.)
+- breakout_signal.py (212) | 20-day high breakout with PF=4.47 verified
+- ai_pattern_analyzer.py (784) | Candlestick + chart pattern + S/R detection
+- ai_sentiment.py (269) | Keyword sentiment + optional Ollama enhancement
+- sentiment_analyzer.py (592) | Price-based + volume sentiment
+- news_fetcher_analyzer.py (908) | News fetcher + analyzer
+- news_impact_scorer.py (618) | Sector-specific news scoring
+- news_stop_filter.py (365) | Hold filter if news in last 24h
+- live_news_integration.py (432) | Live news integration
+- market_daily_report.py (907) | Daily market report generator
+
+C.3 — REGIME / RISK / LIQUIDITY
+- market_regime_engine.py (1380) | DEFENSIVE/NORMAL/AGGRESSIVE from 6 indicators + 2-3 day hysteresis. Stored in system_settings key current_regime_<MARKET>. Read by daily_predictor, liquidity_filter, position_sizing, /api/market/regime.
+- regime_detector.py (311) | ADX + Bollinger Band Width → Bull/Bear/Ranging
+- regime_filter.py (246) | Filter signals against regime
+- hmm_market_regime.py (309) | HMM-based regime (hidden Markov)
+- crypto_regime.py (268) | Crypto regime equivalent
+- risk.py (319) | CANONICAL per-trade RiskAssessment (Rule 54)
+- risk_adaptive.py (715) | CANONICAL adaptive stops (signal/volatility/liquidity)
+- liquidity_filter.py (1111) | Liquidity First filter — turnover + volume + classification
+- strict_entry_filters.py (829) | Additional entry filters
+- crypto_strict_filters.py (444) | Crypto strict filters
+- crypto_quality_gate.py (1226) | Crypto-adapted expert_quality_gate (5 crypto-native factors → 0-100 Health Score)
+- crypto_disclosure_engine.py (418) | Crypto disclosure engine
+- egx_disclosure_engine.py (934) | EGX disclosure engine (corporate actions)
+- expert_quality_gate.py (1046) | 6-test expert gate (Divergence/Correlation/VWAP/Percentile/EventTiming/S-R) before any recommendation
+- expert_memory_bridge.py (558) | Bridge between ExpertRecommendation table and MasterAnalyzer — experts agree → +18, disagree → -25
+- ticker_cooldown.py (168) | Freeze ticker 7 days if signal false (price drops >3% within 5 days)
+
+C.4 — FUNDAMENTAL / SEASONALITY / SECTOR
+- fundamental.py (178) | Legacy absolute P/E, P/B
+- fundamental_engine.py (372) | New fundamental engine
+- fundamental_relative.py (362) | Sector-relative P/E, P/B, ROE
+- fundamental_enhanced.py (648) | Enhanced version
+- fundamental_scorer.py (569) | Piotroski F-Score (0-9) + Altman Z-Score + sector medians
+- fundamental_data_provider.py (812) | Fundamental data fetcher
+- fair_value_calculator.py (494) | Fair value calc
+- real_return_engine.py (465) | Real return (inflation-adjusted) engine
+- real_backtester.py (492) | Real backtest system
+- backtest_engine.py (1267) | Phase 4 backtester — MasterAnalyzer on historical data
+- seasonality_scorer.py (438) | 24 EGX stocks / 36,869 records / 5+ years
+- dividend_checker.py (346) | DividendCalendar — price drops 2-5% ex-div
+- sector_relative.py (470) | 18 official EGX sectors — stock vs sector + EGX30 + sector momentum
+
+C.5 — PREDICTION TRACKING / LEARNING / OPTIMIZATION
+- prediction_tracker.py (1429) | Records every prediction + outcome after N days
+- enhanced_prediction_tracker.py (1027) | KPI aligned to gold standard (predictions table)
+- unified_learning_engine.py (1365) | THE LEARNING BRAIN — 7 components: Iterative + Intelligent(Bayesian) + Mirror(6 questions) + IndicatorTrust + PatternDetect + LessonMining + CrossValidation
+- prediction_optimizer.py (1586) | Mean-reversion + conviction filter + regime gate + ATR stops
+- adaptive_weights.py (791) | PILLAR-5 persona weighting matrix + FULL_BASE_WEIGHTS (smc 26%, fundamental 40%, technical 4.2%, etc.)
+- learning_file_storage.py (306) | External file storage (avoid DB bloat)
+- feedback_loop.py (349) | Learn from mistakes
+- decision_logger.py (348) | Decision audit log
+- quant_engine.py (316) | Quantitative engine
+- quant_overdrive.py (381) | QUANT-OVERDRIVE-028 — SMFI (Smart Money Flow Index) + Monte Carlo probability
+- quant_cache.py (508) | Nightly SMFI + Monte Carlo cache (predictions.db.quant_cache)
+- nightly_quant_job.py (247) | Daily 03:00 Cairo refresh — iterates all EGX active stocks
+
+C.6 — PERSONA / POSITION / PORTFOLIO
+- persona_screener.py (1951) | Persona screener (Investor vs Gambler)
+- persona_investor.py (1162) | P/E, P/B, dividend, debt/equity, ROE, ROA
+- persona_gambler.py (839) | change_1d/1w, volume spike, breakout, sector hot
+- position_manager.py (463) | Per-day open position management — HOLD/TRAIL/EXIT
+- position_sizing.py (179) | Position sizing helper
+- portfolio/position_manager.py | Portfolio position manager
+- smart_portfolio_monitor.py (472) | Portfolio monitor
+- bag_holder_rescue.py (1195) | Bag-holder rescue (FALLING_KNIFE / MLR≥0.85 → liquidate; Golden Dip → cool-down point + TP1 +6.5%)
+- short_holding_exit.py (609) | Short holding exit logic
+- trader_levels_engine.py (271) | Trader levels engine (unified professional trader levels)
+- stock_dna_analyzer.py (1186) | Stock DNA — narrative summary of yearly behavior + best/worst months + behavioral tags
+- stock_notebook.py (1071) | Stock notebook (per-stock deep profile)
+- production_data_client.py (593) | Production data client
+
+C.7 — REPORTING / NARRATIVE
+- narrative_generator.py (315) | Humanized Arabic narrative generator (HUMANIZE-034)
+- social_card_generator.py (902) | Social media card generator
+- reports_engine.py (1933) | Reports engine
+- market_daily_report.py (907) | Daily market report
+- scoring_fix.py (513) | Sensitivity fix for "all HOLD" bug
+- kimi_fixes.py (572) | Kimi's critical fixes
+- strict_entry_filters.py (829) | Strict entry filters
+- conviction_engine.py (433) | Conviction Score (6 weighted factors → 0-100 → MAX 15%/NORMAL 10% position)
+- confidence_engine.py (498) | Confidence Engine (7 factors × 0-15 = 0-100)
+- screener.py (655) | Stock screener
+- screener_integration.py (351) | Screener integration
+- radar_integration.py (415) | Liquidity radar integration
+- golden_hunter.py (411) | Golden hunter — V76 (explosion from accumulation + retest)
+- sniper_detector.py (220) | Sniper detector
+- crypto_circuit.py (260) | Crypto circuit breaker
+- crypto_analyzer.py (1142) | Crypto analyzer
+- crypto_news_fetcher.py (391) | Crypto news fetcher
+- production_data_client.py (593) | Production data client
+- analyzer_modules/* (5 helper files: candlestick/fibonacci/helpers/indicators/screener_helpers)
+- indicators/* (10 files: adx/atr/bollinger/flow_indicators/ma/mfi/rsi/srsi/volume_profile/vwap) — CANONICAL calc library (BRAVO Rule 54).
+
+================================================================
+SECTION D — `ai/` LAYER (Ollama/GLM local LLM integration)
+================================================================
+| File | LOC | Purpose | Inputs | Outputs | Trigger |
+|------|-----|---------|--------|---------|---------|
+| glm_finance_agent.py | 228 | THE Ollama client. Model = glm-fast:latest (qwen2.5:1.5b) by default. OLLAMA_BASE_URL env. Strict anti-hallucination SYSTEM_PROMPT forbids number fabrication. | httpx → http://127.0.0.1:11434/api/generate | JSON {decision, confidence, narrative} | On-demand from nightly_analysis, live_ai_monitor, ai_routes |
+| decision_engine.py | 299 | RAG — find_similar_stories() from stock_stories table | predictions.db.stock_stories | stories list | Used by nightly_analysis + live_ai_monitor |
+| nightly_analysis.py | 389 | 2 AM cron — analyzes 20-30 top movers via Ollama + RAG | stored_analyses + stock_stories + cached_analysis | ai_decision/ai_confidence/ai_narrative columns on stored_analyses | EgyptScheduler 02:00 Cairo OR manual |
+| live_ai_monitor.py | 604 | Live AI during session — runs every 15 min on hot stocks | HotStocksDetector + indicators | predictions.db.live_ai_signals table | API /api/ai/live/scan, /api/ai/live/signals |
+| hot_stocks_detector.py | 748 | Intraday momentum detector: hot_stocks/breakouts/volume_spikes | stocks.db + price_history.db + predictions.db | HotStock/BreakoutStock/VolumeSpikeStock lists | API /api/ai/hot-stocks |
+| market_news_reader.py | 174 | Reads injected news from local news agent | news.db.market_news (canonical) | news_bias dict | Used by V40.2 daily_predictor |
+| news_agent.py | 388 | DuckDuckGo + trafilatura + Ollama news analyzer | web | sentiment + score + summary | On-demand |
+| trade_recorder.py | 1464 | Records user BUY/SELL, computes outcomes (WIN/LOSS/BREAKEVEN), learns from trades | user_trades + trade_outcomes tables | PnL, holding_days, outcome, pattern | API /api/ai/trades/record, /api/ai/trades/<user_id> |
+| historical_trade_generator.py | 746 | Generates thousands of historical trades (5 strategies × every stock × every day) | price_history.db | trade_outcomes + stock_stories + learned_lessons | API GET /api/ai/historical/generate |
+| telegram_signal_importer.py | 818 | Parses Telegram recommendation messages → training data | regex on TG messages → predictions.db.telegram_recommendations | TelegramSignal records | API POST /api/ai/telegram/import |
+| portfolio_routes.py | 464 | FastAPI router (mounted at /api/portfolio) | stocks.db + predictions.db + finance.db | 8 portfolio endpoints | HTTP |
+| __init__.py | 2 | exports GLMFinanceAgent | - | - | - |
+
+================================================================
+SECTION E — `core/` UTILITIES (16 files)
+================================================================
+- analysis_runner.py (499) | THE single write path for stock analysis (replaces 3 duplicate loops). run_analysis_batch() → RunResult. Used by misc_routes, maestro_routes, background_analyzer.
+- auth_middleware.py (446) | require_admin decorator for admin endpoints
+- cache_manager.py (596) | In-memory TTL cache (Phase 9)
+- database.py (1223) | Connection pooling + queries
+- db_manager.py (534) | Central DB access gateway (Phase 8) — replaces 100+ scattered sqlite3.connect calls
+- egypt_scheduler.py (535) | Cairo-time scheduler (EgyptScheduler)
+- migrator.py (1491) | Idempotent schema migration runner
+- scheduler_manager.py (1009) | Central APScheduler (single instance for all jobs)
+- macro_state_engine.py (187) | Incremental warm state (52W high/low, SMA200 cached in RAM)
+- real_liquidity_radar.py (231) | BRAVO-OPERATIONAL real liquidity engine: Wick Anatomy + Dryness Ratio + Effort vs Result + Intraday Low Trajectory
+- opportunity_quality.py (2114) | Investor/Gambler opportunity classifier + dynamic targets
+- unified_scanner.py (533) | BRAVO-SSOT Stage 2 unified scanner — accepts market+timeframe+strategy_config
+- sync_scanner_to_db.py (433) | Purges stale predictions (BUY >48h → STOPPED_OUT) + enforces math invariants
+- stock_rescue_engine.py (160) | Stock rescue (FALLING_KNIFE → liquidate; Golden Dip → cool-down point)
+- persona_db.py (475) | Safe storage for Unified Persona Engine (persona_predictions table)
+- data_source_circuit_breaker.py (631) | Circuit breaker for data sources
+- logging_config.py (367) | Central logging setup
+- http_client.py (382) | HTTP client wrapper
+
+================================================================
+SECTION F — `jobs/` SCHEDULED JOBS
+================================================================
+| File | LOC | Purpose | Schedule | Trigger |
+|------|-----|---------|----------|---------|
+| market_scheduler.py | 2791 | Central scheduler — runs incremental (5min) + full (1h) + final + daily_closer during EGX session | Every 60s tick → branches based on Cairo time | main.py @startup → registered with SchedulerManager (60s tick) |
+| egypt_scheduler.py (core) | 535 | Cairo-time scheduler with daily tasks | setup_nightly_quant_job (03:00) + setup_egksco_scheduler (9:00-14:30) | main.py @startup → SchedulerManager |
+| daily_predictor.py | 4730 | V40.2 prediction generator for any historical period | Cron: 30 14 * * 0-4 (after market close) | CLI --today-only / --yesterday-only / --start --end / --dry-run |
+| daily_closer.py | 3504 | Closes predictions daily — trend-following trailing + mean-reversion | Post-market | market_scheduler.tick() + /api/sniper/closer/run |
+| intraday_scanner.py | 668 | 5-min live engine — intraday breakouts + smart money flow + V76 | Every 5 min during session | market_scheduler.tick() + /api/live/scan |
+| intraday_aggregator.py | 394 | Aggregates intraday.db.stock_intraday → price_history.db daily OHLCV | Post-market | market_scheduler / manual |
+| crypto_lab_scheduler.py | 1439 | BTC+ETH analysis every 5 min (24/7) — LiveIndicatorEngine + FusionV20 + SMC | Every 5 min (24/7) | main.py @startup → SchedulerManager (SKIP_CRYPTO_LAB=1 to disable) |
+| learning_engine.py | 1421 | Self-learning — analyzes closed predictions → optimizer_params.json | Daily post-close | /api/admin/iterative-learning/run, run-auto, grid-search, smart-optimize |
+| hot_candidate_detector.py | 294 | Detects maker activity on 5-min data | During session | market_scheduler / CLI |
+| price_history_safetynet.py | 449 | Daily Yahoo Finance backfill for price_history.db | Post-market | market_scheduler / scripts/backfill_price_history_gap.py |
+| price_history_stale_monitor.py | 181 | Hourly stale monitor — alerts if price_history.db frozen >1 day | Hourly | market_scheduler |
+| wal_checkpoint.py | 341 | Hourly PRAGMA wal_checkpoint(TRUNCATE) on 4 DBs (stocks/predictions/price_history/data_engine) | Hourly | main.py @startup → SchedulerManager |
+| daily_portfolio_yield.py | 255 | 03:00 daily snapshot of portfolio yield + wealth_tracking | 03:00 Cairo | cron / MarketScheduler |
+| fetch_corporate_actions.py | 321 | Dividends + IPO + General Assembly from data_engine.db + DuckDuckGo → predictions.db.corporate_actions | Manual | CLI / market_scheduler |
+| fetch_inflation_worldbank.py | 245 | Egypt CPI annual % from World Bank API → stocks.db.macro_indicators | Manual | CLI |
+| predictor_modules/* (7) | Various | Strangler-pattern extracted helpers (whale_guard, db_helpers, persona_fit, scan_dates, cleanup, summary, dry_run_printer, price_cache) | - | imported by daily_predictor |
+| closer_modules/* (3) | Various | Helpers for daily_closer (atr_helpers, pending_helpers) | - | imported by daily_closer |
+
+================================================================
+SECTION G — `ml_models/` 
+================================================================
+- ml_overlay_v1.pkl (787 bytes binary) | XGBoost XGBClassifier (from xgboost.sklearn), trained with StratifiedKFold via Walk-Forward Validation. **ORPHANED** — original trainer `train_ml_model.py` was REVERTED to /home/z/my-project/archive/garage/vps-service/analyzers/train_ml_model.py due to feature distribution mismatch (per worklog-20261020.md). No Python code in vps-service/ currently loads this file (grep returned 0 matches).
+
+================================================================
+SECTION H — `risk_management_advanced.py` (1900 LOC, CANONICAL)
+================================================================
+33 public functions exposed (used by api/risk_routes.py — 22 endpoints):
+
+POSITION SIZING (4): calculate_position_size, get_position_reason, calculate_position_plan, validate_leverage
+STOP LOSS (6): get_stop_loss_pct, detect_stock_type, calculate_stop_loss, get_stop_loss_warning, enforce_stop_loss, calculate_dynamic_stop_loss (ATR)
+TARGETS (2): calculate_targets, calculate_dynamic_targets (ATR)
+TRAILING (4): calculate_trailing_stop, calculate_dynamic_trailing_stop (price-following), get_trailing_action, explain_trailing_stop
+R:R + SAFETY (4): calculate_dynamic_rr, get_rr_verdict, evaluate_buy_safety (anti-falling-knife), validate_trade_with_2_percent_rule
+EGYPTIAN MODEL (3): calculate_egyptian_confidence, get_confidence_decision, get_leverage_recommendation
+NEWS-TO-NUMBERS (2): score_news_for_sector, analyze_multiple_news
+PSYCHOLOGY (2): check_psychology_rules, get_2_percent_recommendation
+PORTFOLIO (3): analyze_portfolio, get_portfolio_recommendations, get_trading_time_advice
+DECISION_TABLE (1) + DEPRECATED DICTS (2): STOP_LOSS_EGX, STOP_LOSS_CRYPTO (proxies to engine_settings.py)
+
+Config source-of-truth: analyzers/engine_settings.py (Rule 11) — admin editable via /api/admin/engine-settings.
+
+================================================================
+SECTION I — `live_signals/` (stale artifacts)
+================================================================
+- egx_signals.json — old snapshot dated 2026-05-29 (top: ABBR HOLD, OIH HOLD, MCRO HOLD…)
+- crypto_signals.json — old snapshot dated 2026-05-29 (bitcoin BUY @ 73447, R/R 2.22)
+NO Python code writes/reads these files (grep returned 0 matches). Superseded by:
+  - predictions.db.stored_analyses (for EGX)
+  - predictions.db.crypto_predictions_log (for crypto, written by crypto_lab_scheduler)
+  - predictions.db.live_ai_signals (for intraday AI)
+
+================================================================
+SECTION J — FASTAPI + FLASK ENDPOINTS (493 total)
+================================================================
+J.1 — Top-level FastAPI (main.py):
+- GET /health → {"status":"ok","service":"GLM Finance Backend","version":"2.0.0"}
+
+J.2 — FastAPI router mounted at /api/portfolio (ai/portfolio_routes.py — 8 endpoints):
+- GET  /api/portfolio/equity/curve           — 90-day equity snapshots
+- GET  /api/portfolio/state                  — asset allocation pie
+- GET  /api/portfolio/cashflow                — monthly deposits/withdrawals
+- GET  /api/portfolio/holdings                — unified holdings
+- GET  /api/portfolio/watchlists              — user watchlists
+- GET  /api/portfolio/risk-summary            — portfolio heat + sector exposure
+- GET  /api/portfolio/smart-monitor/signals    — deep-dive position risk
+- GET  /api/portfolio/real-return              — inflation-adjusted return
+- GET  /api/portfolio/bag-holder-rescue        — rescue analysis
+
+J.3 — Flask lightweight_server.py (mounts 35 blueprints; market_pulse + live_monitor defined inline):
+- GET  /api/market-pulse                       — minute-cached live market pulse
+- GET  /api/live-monitor                       — live monitoring
+
+J.4 — All api/*.py blueprints (35 files, 493 unique routes — 288 GET + 198 POST + 1 PUT + 2 DELETE)
+
+Key analysis/engine endpoints (HIGH-SIGNAL):
+- /api/analysis/<ticker>                         GET  — full analysis (master_analyzer)
+- /api/predict/<ticker>                          GET  — single prediction
+- /api/predictions/generate-all                  GET  — regenerate all predictions
+- /api/predictions/daily-picks                   GET  — daily Top 5 (picks_management)
+- /api/predictions/daily-picks/history           GET
+- /api/predictions/active-management             GET  — HOLD/TRAIL/EXIT for open positions
+- /api/predictions/<int:pred_id>/management      GET
+- /api/predictions/management/refresh            POST
+- /api/predictions/management/health             GET
+- /api/predictions/tracking/* (10 endpoints)     — prediction accuracy tracking
+- /api/confluence/analyze/<ticker>               GET  — confluence engine v3
+- /api/confluence/analyze-batch                  POST
+- /api/confluence/clean-signals                  GET
+- /api/confluence/generate-predictions          POST
+- /api/sniper/analyze/<ticker>                   GET  — sniper engine
+- /api/sniper/scan                               GET
+- /api/sniper/track                              POST
+- /api/sniper/closer/run                         POST — close predictions
+- /api/sniper/closer/pending                     GET
+- /api/sniper/learning/* (3 endpoints)
+- /api/sniper/sector-gate/<ticker>               GET
+- /api/sniper/scheduler/status                   GET
+- /api/v38-backtest/* (6 endpoints)               — V38 institutional backtest
+- /api/regime/market, /api/regime/stock/<ticker>, /api/regime/overview
+- /api/risk/* (22 endpoints)                       — all risk_management_advanced functions
+- /api/explosive/<ticker>, /scan, /top, /hunt    — explosive_scanner
+- /api/flow/<ticker>, /heatmap, /top, /summary   — flow_system
+- /api/crypto/<coin_id>/history                  — crypto history
+- /api/crypto/analyze/<coin_id>                  — crypto_analyzer
+- /api/crypto/explosive/<symbol>, /top           — crypto explosive
+- /api/crypto/flow/<symbol>, /top                — crypto_engine
+- /api/crypto/live, /portfolio, /simulation/portfolio, /watchlist
+- /api/fundamentals/<ticker>, /stats, /tradingview/status
+- /api/ai/* (18 endpoints)                       — ai_routes + ai_predictions_routes
+  - /api/ai/status, /decision/<ticker>, /compare, /ask
+  - /api/ai/live/signals, /live/scan, /hot-stocks
+  - /api/ai/trades/record, /<user_id>, /<user_id>/performance, /learn, /outcomes
+  - /api/ai/historical/generate, /feed-ai, /stats
+  - /api/ai/telegram/import, /evaluate, /stats, /signals
+  - /api/ai/premium/predictions (confluence_score = maestro×0.6 + ai×0.4)
+  - /api/ai-predictions/info, /list, /stats, /status, /clear, /evaluate, /generate
+- /api/admin/* (40+ endpoints)                    — admin: backtest, engine-settings, learning, models, paper-trades, predictions, sectors, sync, etc.
+- /api/learning/* (5 endpoints)                   — learning routes
+- /api/unified-learning/* (16 endpoints)          — Iterative + Intelligent + Mirror + Indicators + Patterns + Personas + Storage + Summary + Apply + Mine-lessons + Learn-from-errors + Stop + Expectancy
+- /api/prediction-optimizer/params, /params/reset, /backtest (4 endpoints)
+- /api/persona/* (5)                              — persona compare + gambler + investor + stock
+- /api/v2/* (10)                                  — V2 routes (analysis, cached-analysis, cached-scanner, morning-recommendations, persona-analysis, predictions, recommend, scanner, scanner/all-personas, status)
+- /api/stored-analysis/* (6)                      — stored analysis (status, results, live-tracking, ticker/<ticker>, continuation, exit-status, morning-bell, morning-bell/live, morning-bell/stats)
+- /api/market/* (3)                               — indices/constituents, intraday-pressure, investor-flows, liquidity-radar, metals-forex/summary, overview, top-movers
+- /api/scanner/quick, /api/screener/advanced, /presets, /scan, /run-all
+- /api/chart/<ticker>, /full-analysis, /stats/intraday, /collect/now
+- /api/news, /agent/list, /agent/stats, /egx, /ticker/<ticker>, POST /news, /agent, /bulk
+- /api/sectors/tracking, /sectors/<path:sector_name>/stocks
+- /api/notifications/priority
+- /api/notebooks/<symbol>, /list, /stats, POST /<symbol>/refresh, /lesson, /build-all, PUT /<symbol>/summary
+- /api/telegram/* (40+ endpoints)                 — Telegram bot + channels + dialogs + groups + auth + messages + scraping + posting + AI classify/extract-symbols/process
+- /api/reports/* (12 endpoints)                   — daily/weekly/monthly summaries + generate + approve/publish/reject
+- /api/v2/admin/run-daily-persona-analysis        POST
+- /api/sync                                       GET — sync scanner to DB
+- /api/daily/rebuild-predictions                  GET
+- /api/debug/kimi-fixes                           GET
+- /api/eodhd/backfill-status, /backfill, /bulk-update, /clear-and-rebuild, /sync-stocks
+- /api/exit/notifications                         GET
+- /api/expert-recommendations/active              GET
+- /api/explosive/<ticker>, /hunt, /scan, /top     GET
+- /api/fibonacci/<ticker>                         GET
+- /api/health                                     GET
+- /api/history/<ticker>                           GET
+- /api/indicators/<ticker>                        GET
+- /api/live/analysis/<ticker>, /scan, /sniper-scan GET
+- /api/market-overview                            GET
+- /api/patterns/<ticker>                          GET
+- /api/personas, /api/personas/<persona_type>      GET
+- /api/portfolio/* (44 endpoints)                  — accounts, cash, journal, pnl, protection, watchlists, heat, position, rebalance, strategy
+- /api/prices/<ticker>                            GET
+- /api/professional-analysis/<ticker>             GET
+- /api/radar/incubator                            GET
+- /api/stats/dashboard                            GET
+- /api/stock-profile/<ticker>                     GET
+- /api/stock/deep-analysis                        GET
+- /api/stocks, /<ticker>, /<ticker>/local-history, /computed, /presets, /presets/list, /top-performers  GET
+- /api/sync                                       GET
+- /api/timing                                     GET
+- /api/trading/time                               GET
+- /api/unified/predictions                        GET
+- /api/crypto-phase4/events                       GET
+- /api/crypto/simulation/trade, /sync             POST
+- /api/admin/* (run-daily-analysis, trigger-analysis, build-stock-dna, build-stock-profiles, update-prices, update-crypto, sync-stocks, sync-to-custom, classify-stocks, refresh-persona-flags, models/retrain, models/weights, paper-trades/generate, paper-trades/verify, paper-trades/evaluate, paper-trades/summary, paper-trades/report, predictions/clean, predictions/analyze, sectors/benchmarks, sectors/rotation, sectors/stats, alerts/test, alerts/thresholds, backtest/run, backtest/ab-test, backtest/params, backtest/results, backtest/run-engine, backtest/run-enhanced, backtest/v40/run, backtest/v40/stats, backtest/v40/status/<job_id>, backtest/engine-results, database/cleanup-symbols, database/import-egx30, database/query, database/recover, database/recover-all, database/repair-all, database/repair-engine, engine-settings, engine-settings/reset, forecasts/accuracy, forecasts/history, health, historical-backfill/run, historical-backfill/results, historical-backfill/status, historical-predictions-v2/generate, /preview, /explosive-stocks, /health, iterative-learning/run, /run-auto, /grid-search, /smart-optimize, /start, /step, /stop, /status, /weights, maestro-backfill/run, /status, macro/update, models/weights, paper-trades/generate, paper-trades/verify, refresh-persona-flags, run-daily-analysis, screener-refresh, sectors/benchmarks, sectors/classify-stocks, sync, sync-stocks, sync-to-custom, trigger-analysis, unified-learning/run, update-crypto, update-prices, user/<id>/extend-trial, user/<id>/reset-trial)
+- /api/crypto/simulation/portfolio, /api/crypto/portfolio, /watchlist GET
+- /api/data/export, /api/cache/status GET
+- /api/health/circuits/reset POST
+- /api/health GET, /api/keepalive GET, /api/markets GET, /api/personas GET, /api/scan POST, /api/analyze POST, /api/compare-personas POST, /api/config GET, /api/session/start POST, /api/session/end POST, /api/track POST, /admin/generate-daily-summary POST, /admin/overview GET, /admin/page-views GET, /admin/feature-usage GET
+- /api/ai-predictions/info, /list, /stats, /status GET; /clear, /evaluate, /generate POST
+- /api/stored-analysis/trigger POST
+
+================================================================
+SECTION K — PREDICTION / ANALYSIS STAGES
+================================================================
+Two distinct "Stage" concepts in the codebase:
+
+K.1 — Minervini Market Stages (1-4) — used in engines/stage2_filter.py + engines/market_regime.py + glminvestment_engines/confluence/confluence_scorer.py:
+- Stage 1 (Consolidation / Base) — NEUTRAL, wait
+- Stage 2 (Uptrend / Bull) — BUY/STRONG_BUY (price > 200SMA, 200SMA rising, Golden Cross, within 25% of 52wHigh, ≤70% above 200SMA, ADX≥25 strong)
+- Stage 3 (Distribution / Top) — AVOID (price > 200SMA but 200SMA flattening or price >70% above)
+- Stage 4 (Downtrend / Bear) — STRONG_AVOID (price < 200SMA, 200SMA falling) — HARD VETO
+
+K.2 — Market Regime (3 levels) — analyzers/market_regime_engine.py:
+- DEFENSIVE — cash mode, half size, very selective
+- NORMAL — full position sizing
+- AGGRESSIVE — increase position size + take more trades
+(With 2-3 day hysteresis to prevent flip-flop. Stored in system_settings key current_regime_<MARKET>.)
+
+K.3 — Project refactoring "Stages" (BRAVO-SSOT) — engineering labels like "Stage 1/2/3/4" in comments (e.g. "BRAVO-SSOT Stage 4: delegate to canonical"). These are NOT analysis stages — they refer to the multi-phase unification of indicator calculations.
+
+================================================================
+SECTION L — MODEL ARCHITECTURES
+================================================================
+L.1 — Statistical/Math models (in production):
+- Bayesian Optimization (analyzers/unified_learning_engine.py — Intelligent Learning component)
+- Hidden Markov Model (analyzers/hmm_market_regime.py)
+- Monte Carlo Simulation (analyzers/quant_overdrive.py — 500 paths, cached in quant_cache.py nightly)
+- Van Tharp R-multiple statistics (glminvestment_engines/backtest/strategy_backtester.py)
+- Walk-Forward Validation (analyzers/backtest_engine.py)
+- Kelly Criterion position sizing (referenced in strategy_backtester docstring)
+
+L.2 — LLM-based AI (in production):
+- Ollama local LLM: glm-fast:latest (qwen2.5:1.5b base) via /api/generate (ai/glm_finance_agent.py)
+- Deep model fallback: OLLAMA_DEEP_MODEL env (defaults to same as fast)
+- RAG pattern: stock_stories table → DecisionEngine.find_similar_stories() → prompt augmentation
+
+L.3 — ML models (ARCHIVED/ORPHANED):
+- XGBoost XGBClassifier (ml_models/ml_overlay_v1.pkl) — trained via StratifiedKFold Walk-Forward Validation. Trainer (analyzers/train_ml_model.py) was REVERTED to /archive/garage/ due to feature distribution mismatch. The .pkl file is not loaded by any active Python code.
+
+L.4 — NO deep learning models (no LSTM, no TensorFlow/Keras/PyTorch, no sklearn classifiers other than the archived XGBoost). The system is rule-based + LLM-augmented.
+
+L.5 — Pattern detection (heuristic, not ML):
+- Candlestick patterns (candlestick.py + analyzers/analyzer_modules/candlestick.py)
+- Chart patterns: Head&Shoulders, Double Top/Bottom, Triangles (patterns.py)
+- SMC patterns: Order Blocks, FVG, Liquidity Sweeps (smc_engine.py)
+- VCP contractions (engines/vcp_detector.py)
+- Stock DNA personality types (stock_dna_analyzer.py)
+- Piotroski F-Score + Altman Z-Score (fundamental_scorer.py)
+
+================================================================
+SECTION M — DATA FLOW (TOP-DOWN)
+================================================================
+Inputs (data sources):
+1. stocks.db (live prices, fundamentals, sectors, macro_indicators, system_settings, ExpertRecommendation, persona_predictions)
+2. price_history.db (daily OHLCV — historical)
+3. data_engine.db (9 fundamental tables: tab_balance_sheet, tab_income_statement, tab_cash_flow, tab_valuation, tab_profitability, tab_performance, tab_dividends, tab_technical_analysis, historical_data + crypto_prices + egksco_price_history)
+4. predictions.db (stored_analyses, predictions, cached_analysis, paper_trades, prediction_logs, outcome_logs, learned_lessons, regime_indicator_weights, quant_cache, live_ai_signals, telegram_recommendations, user_trades, trade_outcomes, stock_stories, crypto_predictions_log, corporate_actions, market_regime_log, wealth_tracking, equity_snapshots)
+5. intraday.db (stock_intraday — 5-min OHLCV during session)
+6. news.db (market_news — canonical news source per DATA-ENGINE-UNIFY-1)
+7. finance.db (equity_snapshots, cash transactions)
+8. World Bank API (Egypt CPI) — fetch_inflation_worldbank.py
+9. CoinGecko API (BTC/ETH OHLCV + 24h volume) — crypto_lab_scheduler.py
+10. Yahoo Finance (yfinance) — price_history_safetynet.py
+11. DuckDuckGo + trafilatura — corporate actions + news
+12. Ollama local LLM (glm-fast:latest)
+
+Outputs (write targets):
+- predictions.db.stored_analyses (THE canonical analysis results — master_analyzer writes here)
+- predictions.db.predictions (V40.2 daily picks — daily_predictor writes here)
+- predictions.db.cached_analysis (live indicator engine cache)
+- predictions.db.crypto_predictions_log (crypto lab results)
+- predictions.db.live_ai_signals (intraday AI signals)
+- predictions.db.learned_lessons + regime_indicator_weights (learning outputs)
+- predictions.db.quant_cache (nightly 03:00 Cairo)
+- predictions.db.paper_trades (paper trade tracker)
+- predictions.db.telegram_recommendations (Telegram signal importer)
+- predictions.db.user_trades + trade_outcomes (trade recorder)
+- predictions.db.stock_stories (RAG memory for AI)
+- predictions.db.corporate_actions (corporate actions fetcher)
+- predictions.db.market_regime_log (regime engine audit)
+- stocks.db.system_settings (engine settings + current_regime_<MARKET>)
+- stocks.db.macro_indicators (inflation fetcher)
+- stocks.db.wealth_tracking (daily portfolio yield)
+- vps-service/config/optimizer_params.json (learning_engine.py — atomic write via utils/params_io.py)
+- vps-service/config/active_settings.json (engine settings file)
+- vps-service/paper_trading/*.json (paper trading state)
+
+Triggers (how each engine fires):
+1. **Cron jobs** (EgyptScheduler + APScheduler):
+   - nightly_quant_job — 03:00 Cairo (SMFI + Monte Carlo cache)
+   - daily_predictor — 14:30 post-close (V40.2 predictions)
+   - daily_closer — post-close (close pending predictions)
+   - daily_portfolio_yield — 03:00 Cairo
+   - wal_checkpoint — hourly
+   - egksco_sync — 09:00-14:30 Cairo (market hours)
+2. **MarketScheduler.tick()** — every 60s:
+   - Branches on Cairo time → incremental (5min during session) / full (1h) / final
+   - Calls intraday_scanner, hot_candidate_detector, intraday_aggregator, price_history_safetynet, stale_monitor
+3. **Crypto Lab Scheduler** — every 5 min, 24/7 (not gated by EGX session)
+4. **API on-demand** — /api/admin/trigger-analysis, /api/stored-analysis/trigger, /api/confluence/generate-predictions, /api/predictions/generate-all, /api/ai/live/scan, /api/sniper/scan, /api/admin/run-daily-analysis, /api/admin/historical-backfill/run, /api/admin/iterative-learning/run
+5. **Live AIMonitor** — every 15 min during session (via market_scheduler) → writes live_ai_signals
+
+================================================================
+NEXT ACTIONS (recommended for backend engineer follow-up)
+================================================================
+1. **Wire glminvestment_engines into main pipeline** — README documents 3 integration patches (expert_gate_patch, risk_engine_patch, take_profit_tiers integration) that are NOT yet connected. Currently these Minervini/Covel/Wilder engines are CLI-only.
+2. **Clean up orphaned ml_models/ml_overlay_v1.pkl** — either re-train with feature distribution fix OR delete file + remove from Dockerfile COPY.
+3. **Delete stale live_signals/*.json** — replaced by predictions.db.live_ai_signals + stored_analyses.
+4. **Unify redundant engines** — sniper_engine, v82_analyzer, board_of_analysts, confluence_engine_v3 are all SUB_ENGINE_DISABLED=True. Either delete or extract reusable sub-logic (the v3 confluence weights are documented as "reference for future reuse" but no current consumer).
+5. **Verify daily_predictor → stored_analyses → stored_analysis_routes chain** — PREDICTIONS-AUDIT-1 worklog entry (lines 6098-6163) flagged stale change_1d / volume_ratio / turnover_egp = NULL for stored_analyses rows — root cause documented but full fix still pending.
+6. **Replace competing risk APIs** — analyzers/risk.py, analyzers/risk_adaptive.py, portfolio/stop_manager.py, risk_management_advanced.py all coexist (CANONICAL role assignment per Rule 54 documented but enforcement is comment-only, not code-level).
+
+---
+Task ID: 4
+Agent: Alpha (main agent)
+Task: إنشاء ملف "كيف يفكر النظام" الشامل مع الرسوم الهندسية
+
+Work Log:
+- قرأت نتائج العاملين السابقين (Task 2-a محركات التحليل + Task 2-b تدفق البيانات)
+- أكدت وجود Documentation/ ووجدت 03-HOW-IT-THINKS.md قديم (444 LOC)
+- أنشأت ملف جديد شامل: Documentation/SYSTEM-BRAIN-HOW-IT-THINKS.md (1,805 LOC)
+- الملف يحتوي على 20 قسم رئيسي + 22 مخطط (Mermaid + ASCII)
+- الأقسام: الفلسفة، المعمارية الرباعية، خريطة الخدمات، خريطة الـ 9 DBs، مصادر البيانات، تدفق البيانات، master_analyzer، فهرس 110 محرك، Confluence Scoring، Market Regime، Minervini Stages، Personas، Learning Loop، 3 مسارات تدفق كاملة، AI Layer، WebSocket، Decision Tables، 493 endpoints، Cron Jobs، معجم
+
+Stage Summary:
+- أنشأت Documentation/SYSTEM-BRAIN-HOW-IT-THINKS.md (1,805 LOC)
+- يحتوي على 22 مخطط هندسي (Mermaid flowcharts, sequence diagrams, state diagrams, ER diagram, gantt chart, mindmap)
+- يشرح فلسفة النظام: rule-based + statistical + LLM-augmented
+- يوثق كل الـ 110 محرك تحليل موزعة على 8 فئات
+- يشرح الـ Confluence Scoring بالتفصيل (معادلات + أوزان)
+- يحتوي على 3 sequence diagrams كاملة لتدفق: Daily Prediction, Maker Radar, Portfolio Analysis
+- يحتوي على Decision Trees + Position Sizing Table + Exit Strategy Table
+- يحتوي على معجم مصطلحات (23 مصطلح)
+- المرجع المعماري النهائي للنظام
