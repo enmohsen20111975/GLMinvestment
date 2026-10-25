@@ -1891,6 +1891,73 @@ def crypto_events():
 # blocks, so it MUST come AFTER every route definition. (Previously located
 # at line ~1126, which silently disabled all routes defined after it.)
 # ============================================================================
+# ═══════════════════════════════════════════════════════════════════════════
+# CANONICAL STOCK STATE ENDPOINT (Phase 5 — Liquidity Radar)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/v2/stock-state/<ticker>', methods=['GET'])
+def get_stock_state(ticker):
+    """Get canonical stock state + timeline."""
+    try:
+        import json
+        _conn = sqlite3.connect(str(DATABASE_PATH), timeout=30)
+        _cur = _conn.cursor()
+        row = _cur.execute("""
+            SELECT ticker, signal_date, canonical_state, prev_state, transition_type,
+                   days_in_state, confidence, direction_up, direction_down,
+                   data_freshness, evidence_json, invalidation_json
+            FROM radar_signal_tracking
+            WHERE ticker=? AND canonical_state != ''
+            ORDER BY signal_date DESC LIMIT 1
+        """, (ticker,)).fetchone()
+
+        if not row:
+            _conn.close()
+            return jsonify({"success": False, "error": f"No state for {ticker}"}), 404
+
+        timeline = _cur.execute("""
+            SELECT signal_date, canonical_state, transition_type, days_in_state,
+                   confidence, direction_up, direction_down
+            FROM radar_signal_tracking
+            WHERE ticker=? AND canonical_state != ''
+            ORDER BY signal_date DESC LIMIT 30
+        """, (ticker,)).fetchall()
+        _conn.close()
+
+        STATE_AR = {
+            'ACCUMULATION': 'تجميع محتمل', 'UPTREND': 'اتجاه صاعد',
+            'CORRECTION_HEALTHY': 'تصحيح صحي', 'DISTRIBUTION': 'توزيع محتمل',
+            'DOWNTREND': 'اتجاه هابط', 'RECOVERY': 'تعافٍ محتمل',
+            'STATE_UNCONFIRMED': 'حالة غير محسومة',
+            'DATA_STALE': 'بيانات قديمة', 'DATA_INCOMPLETE': 'بيانات ناقصة',
+        }
+
+        evidence = json.loads(row[10]) if row[10] else None
+        invalidation = json.loads(row[11]) if row[11] else []
+
+        return jsonify({
+            "success": True,
+            "ticker": ticker,
+            "state": {
+                "current": row[2],
+                "label_ar": STATE_AR.get(row[2], row[2]),
+                "confidence": row[7],
+                "direction": {"up": row[8], "down": row[9]},
+                "days_in_state": row[6],
+                "transition": row[4],
+                "prev_state": row[3],
+                "data_freshness": row[9],
+                "evidence": evidence,
+                "invalidation_conditions": invalidation,
+                "assessment_date": row[1],
+            },
+            "timeline": [{"date": t[0], "state": t[1], "label_ar": STATE_AR.get(t[1], t[1]),
+                          "transition": t[2], "days": t[3], "confidence": t[4],
+                          "up": t[5], "down": t[6]} for t in timeline],
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == '__main__':
     print("=" * 50)
     print("Market Pulse Server (Lightweight)")
@@ -1923,3 +1990,5 @@ def maestro_gone(dummy=None):
         'deprecated_at': '2026-10-18',
         'reason': 'MAESTRO-CANCER-1: maestro_orchestrator removed. V40.2 is sole engine (Rule 21).'
     }), 410
+
+
