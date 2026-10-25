@@ -8527,3 +8527,72 @@ Stage Summary:
 - لا تعديل على DBs الإنتاجية (كل الاختبارات على نسخ temp).
 - لا commit — sandbox auto-commit شغّال، شغلي محفوظ في HEAD=a1d63e1.
 - المرحلة 2 من الناحية الفنية اكتملت، بس الـ final approval + commit + schema migration ينتظر قرار المالك.
+
+---
+Task ID: RADAR-OWNERSHIP-AND-UNIQUE-KEY-INVESTIGATION
+Agent: Bravo (Z.ai sandbox)
+Task: تنفيذ توجيه المالك: تدقيق auto-commit + تصميم ملكية سجلات الرادار (بدون قائمة ثابتة) + إثبات مفتاح التفرّد الصحيح.
+
+Work Log:
+- المهمة A: تدقيق commit a1d63e1:
+  * 5 ملفات فقط (canonical_stock_state.py + state_history_tracker.py + اختبارين + worklog).
+  * Author=Committer="Z User <z@container>" (sandbox bot), message=UUID.
+  * Parent=f7eca70. لا أسرار في أي ملف. paths مطلقة `/home/z/my-project` في الاختبارات بس.
+  * auto-commit ميكانيزم خارجي (لا git hooks شغّالة، لا zscripts بتعمل commit). إنشاء branch `review/radar-tracking-ownership` لعزل أي تعديلات قادمة عن main.
+- المهمة B.1: تتبع دورة الحذف والإدراج في scripts/maker_radar.py:
+  * سطر 691: `_track_signals_to_db(under_microscope, scan_date, market_code)` entry point.
+  * سطر 752: `DELETE FROM radar_signal_tracking WHERE signal_date=?` (global، يمسح كل صفوف اليوم).
+  * سطر 765: `signal_type = path or 'unknown'`.
+  * سطر 798-803: INSERT لكل stock في under_microscope.
+- المهمة B.2: فحص كل signal_types الفعلية في DB (8 أنواع):
+  * radar paths قديمة (بدون prefix): pre_surge, quiet_accumulation_strong, explosive_surge (2026-09-28 → 2026-10-07).
+  * radar paths جديدة (A/B/D prefix): A_pre_surge, B_quiet_accumulation_strong, D_explosive_surge (2026-10-07 → 2026-10-21).
+  * canonical_state: 42 صف، كلها 2026-10-21.
+  * disqualified_illiquid: 14 صف.
+  * اكتشاف: signal_type غير stable (rename حدث في 2026-10-07)، بس path هو الـ stable identifier.
+- المهمة B.3: تحليل تمييز الملكية:
+  * canonical_state rows: signal_type='canonical_state', path=NULL, status='assessed', canonical_state column مش فاضي.
+  * radar rows: signal_type=path (8 values), path set, status='pending', canonical_state column فاضي.
+  * 3 طرق للتمييز ممكنة: (1) signal_type='canonical_state' (literal)، (2) path IS NOT NULL، (3) status='assessed'.
+- المهمة B.4: اختبار ملكية معزول (scripts/test_radar_ownership_phase2.py): 9/9 ✅
+  * TEST 1: DELETE WHERE signal_type != 'canonical_state' بيحافظ على canonical_state + بيشيل radar.
+  * TEST 2: FINDING — DELETE ده بيشيل كمان manual_user_pick (frontend picks) — مش آمن 100%.
+  * TEST 3: ALTERNATIVE — DELETE WHERE path IS NOT NULL بيحافظ على canonical_state (path=NULL) + بيشيل radar (path set).
+  * TEST 4: إعادة تشغيل maker_radar مرتين مع DELETE WHERE path IS NOT NULL = مفيش duplicates + canonical_state لسه موجودة.
+- المهمة B.5: التحقق من frontend TS (src/modules/radar/lib/radar-signal-tracker.ts):
+  * بيعمل dedup يدوي (SELECT قبل INSERT) سطر 143.
+  * بياخد `input.path ?? null` (سطر 156) — يعني path ممكن يكون set.
+  * لو frontend إدخل path، DELETE WHERE path IS NOT NULL هيتلمه — مش آمن 100%.
+  * التوصية: إضافة column `source` صريح ('maker_radar'|'canonical_state'|'frontend'|...) — schema change يحتاج موافقة.
+- المهمة C.1: مراجعة الكُتّاب على radar_signal_tracking:
+  * INSERT: scripts/maker_radar.py:799, vps-service/camp/state_history_tracker.py:138, src/modules/radar/lib/radar-signal-tracker.ts:152.
+  * UPDATE: scripts/backfill_stale_radar_signals.py, radar_accuracy_report.py, verify_radar_signals.py, src/app/api/maker-radar/signal-tracker/verify/route.ts.
+  * DELETE: scripts/maker_radar.py:752 (global WHERE signal_date=?).
+  * schema: لا UNIQUE constraint؛ PK = id AUTOINCREMENT؛ 5 indexes عادية.
+- المهمة C.2: فحص التكرارات بـ id + created_at:
+  * 10 triples مكررة، كلها canonical_state، كلها بتاريخ 2026-10-21.
+  * ABUK/COMI: 4 copies لكل واحد (06:45:28, 06:45:33, 06:58:02/25, 06:58:59, 06:59:06).
+  * ETEL/TMGH: 3 copies لكل واحد.
+  * AALR/AAPL/ABBV/ABT/ACAMD/ACAP: 2 copies لكل واحد.
+  * السبب: state_history_tracker اشتغل 4 مرات في نفس اليوم، INSERT OR REPLACE بدون UNIQUE = duplicate فعلي.
+- المهمة C.3: اختبار المفتاح المقترح (scripts/test_unique_key_phase2.py): 6/7 ✅ + 1 finding
+  * TEST 1 ✅: UNIQUE(ticker, signal_date, signal_type) يسمح بالتعايش الشرعي radar + canonical_state.
+  * TEST 2 ✅: INSERT OR REPLACE تحت UNIQUE بيستبدل فعليًا.
+  * TEST 3 ✅ FINDING: UNIQUE(ticker, signal_date, signal_type) **لا يمنع** duplicates الـ rename (pre_surge + A_pre_surge) — لأن signal_type مختلف.
+  * TEST 4 ✅: frontend TS dedup logic لسه شغّال + UNIQUE بيمنع duplicate INSERTs.
+  * TEST 5 ❌ FINDING: production 1301 صف فيهم 10 triples مكررة (26 صف) بتمنع إضافة UNIQUE.
+- المهمة C.4: خطة ترحيل مفصلة:
+  * 16 صف للتنظيف (keep MIN(id) per triple, delete الباقي).
+  * كلهم canonical_state rows بتاريخ 2026-10-21.
+  * كل IDs محفوظة في التقرير (247371, 247372, 247373, 247374, 247375, 247376, 247377, 247396, 247398, 247399, 247400, 247401, 247402, 247403, 247404, 247405).
+  * خطة الترحيل: backup → delete 16 rows → CREATE UNIQUE INDEX → verify.
+
+Stage Summary:
+- الـ auto-commit ميكانيزم خارجي (sandbox daemon). أنشأت branch `review/radar-tracking-ownership` لعزل التعديلات القادمة عن main.
+- تصميم ملكية السجلات: `path IS NOT NULL` هو الأنسب مؤقتًا (يحافظ على canonical_state، يشيل radar، لكن ممسش manual picks لو path set).
+- التوصية الأنسب طويلة المدى: إضافة column `source` صريح — schema change يحتاج موافقة المالك.
+- UNIQUE(ticker, signal_date, signal_type) متوافق مع كل الكُتّاب + بيسمح بالتعايش الشرعي، بس مش بمنع duplicates الـ rename (acceptable — دي data quality issue مش schema issue).
+- production 1301 صف فيهم 16 صف canonical_state مكررة — لازم تنظيف قبل migration.
+- كل الاختبارات على نسخ temp، لم ألمس DB الإنتاجي.
+- لم أنشئ UNIQUE INDEX، لم أحذف صفوف، لم أعدّل schema.
+- لا commit يدوي — sandbox auto-commit شغّال على branch مراجعة.
