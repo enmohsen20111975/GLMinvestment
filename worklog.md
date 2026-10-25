@@ -8678,3 +8678,139 @@ KEY VERDICT:
   24. `load_sector_heat()` (defined at line 444, call COMMENTED OUT at line 3845)
 - **Capabilities that DO influence final BUY (the answer to "what caused the BUY")**: V38 institutional decision (build_institutional_decision → 6 proofs + 2-3 strong evidences) + 4-layer hybrid score (V38+Core+SMC+VP) + market_regime_engine thresholds + HMM regime veto/boost + whale_distribution_guard (liquidity_radar_v2.compute_whale_flow) + maker_radar HARD GATE + check_kill_switch + compute_money_flow + fundamentals veto + screener_integration + entry_gate (10 checks) + radar_integration (exit_radar + maker_radar) + detect_who_is_buying + feedback_loop (WR-based) + evaluate_risk (RR≥1.8, pos≤2.5%) + HARD-QUANT-KILL (confidence≥65%, falling-knife) + position_sizing + 3 hunters (volume_surge + accumulation + recovery) + V68 oracle + V72 multi_path + V73 sniper_detector + V76 golden_hunter + news_impact (news_fetcher_analyzer + live_news_integration) + expert_memory_v402 veto.
 - **NOT_MODIFIED**: Read-only audit throughout. No files touched.
+
+---
+Task ID: RADAR-DEEP-AUDIT
+Agent: Explore
+Task: Deep audit of liquidity radar + maker state — current state, gaps, improvements.
+
+Work Log:
+- Read /home/z/my-project/worklog.md (last 120 lines for context incl. PHASE0-WS-C capability table).
+- Read vps-service/core/real_liquidity_radar.py (232 lines, full).
+- Read vps-service/analyzers/liquidity_filter.py (1112 lines, focus on dynamic_min_turnover + evaluate_kill_filters).
+- Read vps-service/core/unified_scanner.py (534 lines, full).
+- Read vps-service/analyzers/radar_integration.py (416 lines, full).
+- Read scripts/maker_radar.py (lines 1-800, the actual maker radar producing JSON consumed by daily_predictor).
+- Read vps-service/utils/shared_liquidity.py (1152 lines — detect_pre_surge, detect_quiet_accumulation, is_explosive_surge, compute_money_flow, detect_life_cycle, check_kill_switch, should_reject_by_liquidity).
+- Read vps-service/utils/canonical_signal.py:200-310 (classify_stock_phase + classify_accumulation).
+- Read vps-service/utils/entry_gate.py:460-519 (_check_stock_phase DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL).
+- Grep'd master_analyzer.py for radar_path/state/stage (lines 1134-1244 radar_path label map, 5779-5793 accumulation).
+- Read vps-service/jobs/predictor_modules/whale_guard.py (42 lines, calls liquidity_radar_v2.compute_whale_flow).
+- Inspected DBs via python3 sqlite3 module: stocks.db.radar_signal_tracking (1259 rows, 2026-09-28→2026-10-21, distinct signal_types: quiet_accumulation_strong=523, pre_surge=382, A_pre_surge=213, B_quiet_accumulation_strong=108, D_explosive_surge=14, disqualified_illiquid=14, explosive_surge=5); stocks.db.stock_phase (1238 rows, latest computed_at=2026-10-07 has 990 rows, symbol PRIMARY KEY so previous states OVERWRITTEN — no history); USDY shows 10 separate daily snapshots flipping B→A→B→A→B→B→B→A→B (daily noise, not transitions).
+- Confirmed NO `prev_state`, `transition_type`, `days_in_state`, `confirmed_transitions` columns exist anywhere in stocks.db / predictions.db. The only `state_transition` code in the repo is data_source_circuit_breaker.py (data source failover, NOT maker state).
+- NO files modified — read-only throughout.
+
+Stage Summary:
+
+# Liquidity Radar + Maker State — Deep Audit Report
+
+## Executive Verdict
+The radar **does NOT exist as the state-diagnosis + transition-monitoring system the owner envisions**. What exists are **two parallel daily classifiers** that produce **single-day labels**, write them to a **snapshot table that OVERWRITES previous state**, and only sometimes feed a **HARD-GATE pass/fail** into the predictor. There is **no state machine, no transition log, no "is accumulation continuing?" question being answered anywhere**. The owner's #1 priority (transition monitoring) is functionally absent.
+
+## Q1: Exact quantitative conditions for each state
+
+### Radar #1 — `core/real_liquidity_radar.py` (Wick/Dryness/Effort/Trajectory)
+5 states, single-day classification, **all thresholds HARDCODED**:
+
+| State | Thresholds | File:Line |
+|---|---|---|
+| FALLING_KNIFE (v1) | chg_1d < -3.0% AND daily_dryness > 1.5 AND low_trajectory==LOWER_LOWS | real_liquidity_radar.py:170 |
+| FALLING_KNIFE (v2) | MLR >= 0.15 AND chg_1d < -2.0% | real_liquidity_radar.py:176 |
+| DIRTY_DISTRIBUTION (v1) | upper_wick_pct > 40 AND daily_dryness > 1.3 AND close_location < 40 | real_liquidity_radar.py:184 |
+| DIRTY_DISTRIBUTION (v2) | effort_signal=='selling_pressure' AND daily_dryness > 1.5 | real_liquidity_radar.py:190 |
+| ACCUMULATION_CONFIRMED (v1) | lower_wick_pct > 30 AND close_location > 60 AND 0.8 <= daily_dryness <= 1.5 | real_liquidity_radar.py:198 |
+| ACCUMULATION_CONFIRMED (v2) | contraction AND close_location > 55 AND daily_dryness < 1.2 | real_liquidity_radar.py:204 |
+| DRY_EXPLOSION_READY | contraction AND daily_dryness < 0.7 AND abs(chg_1d) < 2.0 | real_liquidity_radar.py:212 |
+| SUSPICIOUS_WATCH | default fallback | real_liquidity_radar.py:219 |
+
+where `daily_dryness = vol / sma(vol,20)`, `contraction = atr(5) < atr(20)`, `MLR = (peak_20 - close)/peak_20`.
+
+### Radar #2 — `scripts/maker_radar.py` + `shared_liquidity.py` (paths A–E)
+**Hardcoded thresholds in `shared_liquidity.py`** (not configurable):
+
+| Path | Conditions | File:Line |
+|---|---|---|
+| A_pre_surge (PRE_SURGE) | 3 of 4 signals: volume gradient ≥15%, range 10d <10%, buy days ≥4/7, within 3% of MA10/20 | shared_liquidity.py:407-413, 599-720 |
+| B_quiet_accumulation_strong | detect_quiet_accumulation ≥5/6 signals (vol_high_recurring, buy_pressure, range<14%, vol_ratio≥0.7, ROC10d<12%, dist_days≤3) | shared_liquidity.py:377-399, 416-593 |
+| C_quiet_accumulation_weak | quiet signals 4/6 | maker_radar.py:487 |
+| D_explosive_surge | vol ≥2.0× avg20d + close>SMA20 + pre-surge range<18% | shared_liquidity.py:163-259 |
+| E_early_break | close > max_20 AND vol ≥1.5× avg20d AND prev range<15% | maker_radar.py:363-399 |
+| distribution (override) | net_flow_egp < 0 on any bullish path (BRAVO-FLOW-GATE-ALL) | maker_radar.py:515-527 |
+
+### Daily phase taxonomies (4 INCOMPATIBLE schemes coexist)
+1. `canonical_signal.classify_stock_phase` L215: تجميع/تصاعد/توزيع/تخفيض/محايد — based on buy_pct + roc_10d.
+2. `shared_liquidity.detect_life_cycle` L985: نعاس/انفجار/جني أرباح صحي/توزيع قاتل/تدوير وهمي/حبس/عادي — based on **last candle only**.
+3. `stocks.db.stock_phase` table: NEAR_SUPPORT/NEAR_RESISTANCE/BREAKOUT/BREAKDOWN/CORRECTION_ENDING/CORRECTION_ACTIVE/TREND_UP_HOLD/CONSOLIDATION/etc — 1238 rows, **OVERWRITES** (PRIMARY KEY symbol).
+4. `entry_gate._check_stock_phase` L487: DOWNTREND/PULLBACK/UPTREND/BULLISH_RECOVERY/TRANSITIONAL — MA50/MA200.
+
+**No configurable thresholds** — all are Python constants. Owner cannot tune without editing source.
+
+## Q2: How does state transition work?
+**It does not.** Every run is a fresh daily classification:
+- Can Accumulation→Distribution happen directly? **Yes** — `BRAVO-FLOW-GATE-ALL` (maker_radar.py:515) silently flips winner_path='distribution' if net_flow<0, regardless of yesterday's path. USDY oscillated B→A→B→A→B on consecutive days — that's noise, not signal.
+- Does the system track previous states? **NO.** `radar_signal_tracking` has rows per (ticker, signal_date) but no `prev_path` column; nothing joins today's row to yesterday's.
+- Is there a state machine? **NO.** No `current_state`/`next_state`/`confirmed_transitions` table anywhere.
+- Does old classification get preserved? **For radar_signal_tracking yes (append-only)**, but **for stock_phase NO** — it's `INSERT OR REPLACE` on PRIMARY KEY=symbol (1238 rows total across 4 computed_at timestamps = previous runs were destroyed; only the latest 990-row run on 2026-10-07 is preserved).
+
+## Q3: Price/volume data sources
+- **Daily OHLCV** — `price_history.db.price_history` (canonical, has `source` column, `egksco` preferred, `egx_investment_migration` rejected as corrupt) → fallback `stocks.db.stock_daily_prices` → fallback `data_engine.db.egksco_price_history` → fallback `data_engine.db.historical_data` (maker_radar.py:122-183).
+- **Intraday** — `intraday.db` (load_merged_history in master_analyzer.py:1247+). Real_liquidity_radar optionally consumes intraday (last 3 hours / 6 ticks) for effort_ratio + low_trajectory, but `maker_radar.py` does NOT use intraday at all — it's daily-only.
+- **Lookback**: 30 days in `unified_scanner.py:144`, 40 days in `maker_radar.py:331` (fetch_ticker_series), 100 days in `load_merged_history` default (master_analyzer.py:1247).
+- **Adjusted vs unadjusted**: price_history has a `source` column; the canonical loader filters out `yahoo_clean` separately and prefers `egksco`. Adjustment normalization logic lives in `master_analyzer.py:1264-1280` (ratio 0.5–2.0 = normalize, outside = reject).
+- **Volume source**: `price_history.volume` (unified_scanner) or `stocks.db.stock_daily_prices.volume` (maker_radar fallback).
+
+## Q4: How is state scored?
+**Multiple incompatible scores coexist; none represents "state strength" or "direction probability":**
+- `real_liquidity_radar.LiquidityResult.confidence` — single 0-100 per state (L37). Hardcoded per branch (80/85/75/etc), not a continuous function.
+- `unified_scanner.py:398-406` — BRAVO-QUAD-SCORE 0-100 (VP/30 + SMC/30 + Liq/20 + Season/20).
+- `maker_radar.py:629-685` — no score; returns path + position_size (1.5% / 2% / 2.5%) + money_flow_state + life_cycle + liquidity_state + buy_pct/sell_pct + net_flow_egp.
+- `master_analyzer` — 0-100 master_score with thresholds STRONG_BUY≥55, BUY≥50.
+- No continuous "accumulation strength" score, no "breakout probability" score, no "direction probability" score. The closest is `buy_pct` from `compute_money_flow` (0-100) but it's a flow ratio, not a state-strength measure.
+
+## Q5: State history log
+**Partial. Painfully partial.**
+- `stocks.db.radar_signal_tracking` (1259 rows, 2026-09-28→2026-10-21) — daily append-only snapshots; columns: ticker, signal_date, signal_type, entry_price, path, reason, status, outcome_7d/14d/30d, max_price_after, min_price_after, verified_at + freshness fields (data_date, data_quality, staleness_days, price_source, live_price, daily_price). **No prev_path, no transition_type, no days_in_state.** Same ticker can have 10 daily rows flipping paths — silent.
+- `stocks.db.stock_phase` — **OVERWRITES**. PRIMARY KEY symbol. Latest run = 2026-10-07. **State history destroyed.**
+- `predictions.db` has `liquidity_signal_outcomes` + `liquidity_backtest_results` tables but they're for radar accuracy backtest, not state transitions.
+- **NO `state_transitions` / `radar_state_history` / `maker_state_log` table exists anywhere.** Grep for `prev_state|previous_state|transition_to|state_change|days_in_state` in vps-service returned only `data_source_circuit_breaker.py` (irrelevant — data source failover).
+
+## Part 3: 4-layer comparison vs owner's vision
+
+| Layer | Exists? | Status | Gap |
+|---|---|---|---|
+| 1. Liquidity Qualification (filter tradeable) | YES | Complete — `liquidity_filter.py` + `shared_liquidity.should_reject_by_liquidity` (dynamic per-price thresholds 80K/200K/400K, pump-and-dump guard, volume_surge_bypass, explosive_surge path, wash-trading, dead-money, distribution_trap). Used as HARD filter in `evaluate_kill_filters`. | Functional. |
+| 2. Market State Classification (diagnose current state) | PARTIAL | 4 incompatible daily taxonomies (real_liquidity_radar 5-state, maker_radar A–E paths, canonical_signal تجميع/تصاعد, life_cycle 7-state, stock_phase 12-state, entry_gate 5-state). | No canonical "current state" definition; owner's 6-state cycle (Accumulation→Uptrend→Correction→Distribution→Downtrend→Recovery) is **NOT MAPPED** anywhere. classify_stock_phase (تجميع/تصاعد/توزيع/تخفيض) is the closest but never persisted. |
+| 3. State Transition Monitoring (track changes over time) | **MISSING** | Daily snapshots only. `radar_signal_tracking` keeps rows but exposes no `prev_path` / `transition_type` / `confirmed_at` / `days_in_state`. `stock_phase` overwrites. | **The owner's #1 priority — does not exist.** Needs new `maker_state_history` table + a daily job that diffs today vs yesterday, classifies the transition (continuation / breakout-confirmed / breakout-failed / breakdown / reversal), and persists. |
+| 4. Directional Assessment (evidence for up/down) | PARTIAL | buy_pct/sell_pct + money_flow_state + whale_distribution_guard (blocks BUY if net_flow<0) + detect_who_is_buying. | No single "direction probability" output. `compute_money_flow` uses legacy weighted formula (CLV×0.35 + CMF×0.30 + vol×0.20 + SMA×0.15); a Pine-formula flag `RADAR_USE_PINE_FORMULA` defaults to false (shared_liquidity.py:877) — never validated by backtest. |
+
+## Part 4: Key findings
+
+### What the radar ACTUALLY does today
+1. `scripts/maker_radar.py` runs as a cron (scripts/cron_radar.sh / radar_scheduler.py), reads daily OHLCV for 200 tickers, computes path A/B/C/D/E + money_flow_state + life_cycle + kill_switch + accumulation label, writes `scripts/output/maker_radar_<market>_<date>.json` + inserts a row per under-microscope ticker into `radar_signal_tracking`.
+2. `daily_predictor.py:1782` calls `radar_integration.is_radar_strong_accumulation()` which loads the JSON (last 7 days) and accepts ONLY `A_pre_surge` / `B_quiet_accumulation_strong` (or new phase labels تراكم مع اتجاه / تراكم هادئ). HARD GATE: stocks failing are skipped.
+3. `daily_predictor.py:1060` calls `whale_guard._whale_distribution_guard` which calls `liquidity_radar_v2.compute_whale_flow` (scripts/liquidity_radar_v2.py — separate file from real_liquidity_radar.py!) → blocks BUY if net_flow < 0.
+4. `core/real_liquidity_radar.py` (5-state Wick/Dryness/Effort model) is **used ONLY by `core/unified_scanner.py`**, NOT by daily_predictor. It's effectively display-only code in production prediction path.
+5. The frontend reads `maker_radar_<date>.json` via `/api/maker-radar` (cache).
+
+### What's missing vs owner's vision
+1. **No state machine.** Owner wants "Is accumulation continuing? Has correction ended? Did breakout fail?" — these questions are **UNANSWERABLE** from current data because no `prev_state` is tracked. The system classifies today and forgets yesterday.
+2. **No transition table.** `radar_signal_tracking` is daily snapshots, not transitions. `stock_phase` overwrites.
+3. **No canonical "current state" label.** 4 incompatible taxonomies (real_liquidity_radar / maker_radar / canonical_signal / stock_phase table / entry_gate) — owner's 6-state vocabulary (Accumulation/Uptrend/Correction/Distribution/Downtrend/Recovery) is not used anywhere.
+4. **No "healthy correction vs structural breakdown" distinction.** `entry_gate._check_stock_phase` blocks `CORRECTION` and `TRANSITIONAL` but doesn't separate healthy pullback (price near MA50 with low volume) from breakdown (price below MA200 with high volume).
+5. **Two parallel radars don't talk.** real_liquidity_radar (used by unified_scanner only) and maker_radar (used by daily_predictor) compute different labels for the same stock on the same day.
+
+### What's broken or inconsistent
+1. **`stock_phase` table overwrites itself** — `symbol TEXT PRIMARY KEY`. The 1238 rows is the latest snapshot only; previous computed_at runs (2026-08-25, 2026-09-02, 2026-09-16) left only a partial trail because INSERT OR REPLACE destroyed the rest. State history is being actively thrown away.
+2. **`compute_money_flow` legacy formula vs Pine formula** — flag `RADAR_USE_PINE_FORMULA` defaults to `false` (shared_liquidity.py:877). The legacy CLV×0.35 + CMF×0.30 + vol×0.20 + SMA×0.15 was supposed to be replaced by Pine's CLV×0.65 + body×0.35 but never was, "until backtest + owner approval" — that backtest never happened.
+3. **Same ticker flips B→A→B→A daily in radar_signal_tracking** (USDY) — this noise is being recorded as signal. No "confirmation days" filter requires N consecutive days in same state before persisting.
+4. **`signal_type` column has inconsistent values** — `quiet_accumulation_strong` (523), `pre_surge` (382), `A_pre_surge` (213), `B_quiet_accumulation_strong` (108), `explosive_surge` (5), `D_explosive_surge` (14) — the schema changed mid-stream; old rows use legacy short names, new rows use `A_pre_surge` style. Any query must handle both.
+5. **`real_liquidity_radar.py` thresholds are all hardcoded** (L170-216) — not in `engine_settings` table, not configurable by admin. Owner cannot tune sensitivity without code changes.
+6. **`classify_stock_phase` (canonical_signal) is NOT persisted** anywhere — it's computed on demand, returned in the prediction record, but never written to a state-history table.
+
+### Top 3 improvements (reusing existing code — no new indicators)
+1. **Add a `maker_state_history` table + daily diff job** (HIGHEST PRIORITY — owner's #1 ask). Schema: `(id, ticker, scan_date, current_state, prev_state, transition_type, days_in_state, evidence_json, confirmed BOOL)`. Reuse `radar_signal_tracking` rows (already daily) to backfill 23 days of history (2026-09-28→2026-10-21). A new function `radar_integration.compute_state_transition(ticker, today_path)` reads yesterday's path and classifies transition ∈ {CONTINUATION, BREAKOUT_CONFIRMED, BREAKOUT_FAILED, REVERSAL_UP, REVERSAL_DOWN, NEW_ENTRY, EXITED}. Write to new table inside `maker_radar.py:_track_signals_to_db()` (line 691). This answers "is accumulation continuing?" directly.
+2. **Unify the 4 daily phase taxonomies into one canonical 6-state label** mapped to the owner's vocabulary: `ACCUMULATION / UPTREND / CORRECTION_HEALTHY / DISTRIBUTION / DOWNTREND / RECOVERY`. Reuse `canonical_signal.classify_stock_phase` (already 4 of 6) + add CORRECTION_HEALTHY (price > MA200, vol < avg20d×0.8) vs DOWNTREND (price < MA200) distinction from `entry_gate._check_stock_phase` + add RECOVERY (price crossed above MA20 from below after >10% drop). Persist the result in the new `maker_state_history` table. Deprecate the other 3 taxonomies to "diagnostic" fields.
+3. **Add a `days_in_state` + `confirmation_threshold` filter to the HARD GATE.** Currently `is_radar_strong_accumulation` accepts a stock on day 1 of `A_pre_surge`. Require ≥2 consecutive days in same state before passing the HARD GATE (kill the B→A→B→A daily flip noise). This is a 5-line change in `radar_integration.is_radar_strong_accumulation` (line 305) that queries `radar_signal_tracking` for the last N days. Reuses existing data — no new indicator.
+
+### Whether state transition tracking exists (owner's #1 priority)
+**NO.** Confirmed by: (a) DB inspection — `radar_signal_tracking` has no prev_state/transition_type columns; (b) `stock_phase` overwrites via PRIMARY KEY=symbol; (c) grep for `prev_state|previous_state|transition_to|state_change|days_in_state` across vps-service returns only `data_source_circuit_breaker.py` (irrelevant); (d) the only "state machine" in the repo is the circuit breaker for data sources. **The owner's vision of "Accumulation → Uptrend → Correction → Distribution → Downtrend → Recovery" with transition monitoring is functionally absent from the production codebase.** It can be bootstrapped from existing `radar_signal_tracking` rows (1259 historical rows = ~23 days of per-ticker snapshots) without writing any new indicator — just a diff job + a new table.
