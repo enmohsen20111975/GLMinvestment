@@ -8610,3 +8610,47 @@ LOWER PRIORITY:
 6. Replace `window.location.reload()` in TradingViewChart error UI with chart-local reset.
 7. Replace `key={stock.ticker || Math.random()}` in StockAnalysisReport with pre-filter.
 8. Move `columns={[...]}` arrays out of component bodies into module scope OR wrap in `useMemo` with stable deps.
+
+---
+Task ID: 2-c (admin live console + smooth UX)
+Agent: Alpha (main agent)
+Task: كونسول حي لرفع قواعد البيانات + إصلاح إعادة بناء الشاشات
+
+Work Log:
+Task 1 — DB Backup Live Console:
+- استكشفت DbBackupPanel.tsx (1310 LOC) و route.ts (846 LOC) — وجدت إن الـ POST كان blocking 180s بدون أي live feedback
+- أنشأت src/components/shared/GenericLiveLogConsole.tsx (نسخة عامة من engine-control/LiveLogConsole)
+  - يدعم أي logsUrl + statusUrl
+  - progress bar + phase indicator + per-archive checklist
+  - full errors/warnings (غير مبتورة) + copy/download + abort button
+- أنشأت src/lib/db-backup-jobs.ts (job tracker بـ Map + file persistence)
+- أنشأت /api/admin/db-backup/logs/route.ts (GET — tail of job log)
+- أنشأت /api/admin/db-backup/status/route.ts (GET — current state)
+- عدّلت POST /api/admin/db-backup:
+  - يولّد job_id فوراً
+  - يبدأ runBackupJob() كـ fire-and-forget promise
+  - يرجّع فوراً بـ {job_id, status:'running', logs_url, status_url}
+  - runBackupJob يكتب structured logs عند كل phase:
+    init → compress → split → commit → fetch → rebase/merge → push → done
+- عدّلت DbBackupPanel.tsx:
+  - لما POST يرجّع job_id، بيفتح GenericLiveLogConsole تلقائياً
+  - الـ console بيعمل poll كل 2s لـ /logs و /status
+  - بعد الإغلاق، بيعمل fetchData() + fetchGitStatus()
+
+Task 2 — Smooth data updates:
+- store.ts: أضفت isRefreshing state + عدّلت 6 actions:
+  loadDashboard, loadStocks, loadStockDetail, loadPortfolio, loadAiInsights
+  كلهم دلوقتي بيفضلوا البيانات القديمة ظاهرة أثناء refetch
+- TradingViewChart.tsx: استبدلت window.location.reload() بـ retryKey state محلي
+- StockAnalysisReport.tsx: أصلحت key={stock.ticker || Math.random()} → filter + key={stock.ticker}
+- InstitutionalDecisionPanel.tsx: لُفّ بـ React.memo
+- CanonicalWhoIsBuyingBanner.tsx: لُفّ بـ React.memo
+- MarketAnalysisView.tsx: عزلت عداد 1Hz في مكون LiveCountdownBadge منفصل
+- TradingChartView.tsx: ثبّت tradePlan prop بـ useMemo
+
+Stage Summary:
+- 13 ملف تغيّروا (10 modified + 3 new)
+- +1274 insertions, -116 deletions
+- lint: clean (لا أخطاء)
+- server: HTTP 200
+- تم الرفع على GitHub: commit be3d6d8
