@@ -1,12 +1,27 @@
 # Conflicts & Violations Report — GLMinvestment
-> **Status:** Based on static code analysis of sandbox HEAD `280d47b` + verified against production audit script.
+> **Status:** Based on STATIC CODE ANALYSIS of sandbox HEAD `c270eb5`.
 > **Method:** Grep + Read across `vps-service/`, `src/`, `scripts/`, `news-agent/`.
-> **Scope:** Confirmed violations with file:line evidence. Unconfirmed hypotheses are marked as such.
+> **Scope:** Violations documented here are CONFIRMED IN CODE only. Whether they manifest on production is UNVERIFIED — the production audit script (`scripts/production_db_audit.py`) has been created and pushed to GitHub but NOT YET EXECUTED on the VPS.
+> **Evidence classification:** Each violation below states explicitly whether its impact is (a) proven in code, (b) proven in sandbox test, or (c) requires production verification.
 
 ## Severity scale
 - 🔴 **HIGH** — data integrity risk, potential data loss, multi-writer without coordination.
 - 🟠 **MEDIUM** — bypasses sanctioned interface, env override ignored, schema gap.
 - 🟡 **LOW** — dead/orphaned data, documentation drift, non-blocking but should clean up.
+
+## Evidence classification per violation
+
+| # | Proven in code | Proven in sandbox test | Requires production verification |
+|---|---|---|---|
+| V1 | ✅ (file:line) | ✅ (test_radar_delete_impact_phase2.py) | Does `maker_radar` actually run after `state_history_tracker` on same day? |
+| V2 | ✅ (file:line + schema) | ✅ (16 dup rows in sandbox) | Actual duplicate count on production DB |
+| V3 | ✅ (file:line) | ❌ (not testable without VPS env config) | Does production use `STOCKS_DB` env override? |
+| V4 | ✅ (file:line both writers) | ❌ (no concurrent test) | Actual race conditions, DELETE-all execution |
+| V5 | ✅ (file:line, 5 UPDATEs) | ❌ | None — bypass is certain, impact on business logic only |
+| V6 | ✅ (table exists, no writer) | ✅ (1238 rows in sandbox) | Whether production still has the table |
+| V7 | ✅ (file:line, logic flow) | ✅ (0 rows path='distribution' in sandbox) | None — code flow is certain |
+| V8 | ✅ (5 tables, 0 rows) | ✅ (sandbox) | Whether production has same empty tables |
+| V9 | ✅ (db_paths.py comment) | ✅ (3 stale rows in sandbox stocks.db) | Whether P0-8-DB-UNIFY cleaned it on production |
 
 ---
 

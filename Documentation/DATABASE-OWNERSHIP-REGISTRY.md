@@ -1,6 +1,7 @@
 # Database & Table Ownership Registry — GLMinvestment
-> **Status:** Living document. Last updated: 2026-10-25 (Sandbox HEAD `8b0a870`).
-> **Scope:** This registry covers the *actual* write/read paths found in the codebase.
+> **Status:** Living document. Last updated: 2026-10-25 (Sandbox HEAD `c270eb5`).
+> **Scope:** This registry covers write/read paths found in the CODEBASE via static analysis.
+> **Evidence basis:** Sandbox DB inspection + Grep/Read across `vps-service/`, `src/`, `scripts/`, `news-agent/`. **Production DB has NOT been audited** — `scripts/production_db_audit.py` exists but has not been executed on the VPS.
 > Anything not in this registry is "unowned" and must not be written to without owner approval.
 
 ## Reading guide

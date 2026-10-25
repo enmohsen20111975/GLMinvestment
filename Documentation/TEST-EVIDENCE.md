@@ -1,7 +1,8 @@
 # Test Evidence — Phase 1 Forensic Audit
-> **Environment:** Z.ai Sandbox, HEAD `280d47b`, branch `main`.
+> **Environment:** Z.ai Sandbox, HEAD `c270eb5`, branch `main`.
 > **Date:** 2026-10-25.
 > **Scope:** All tests are sandbox-only. They prove code behavior in isolation, NOT production correctness.
+> **Important:** Test counts in this document total 77 cases (75 pass + 2 documented findings). Any reference to "75 tests" elsewhere should be read as "75 passing tests out of 77 total."
 
 ## Test results summary
 
@@ -15,6 +16,8 @@
 | 6 | `scripts/test_shadow_mode_phase2.py` | 24 | 0 | 24 | Shadow Mode lifecycle + audit |
 | **Total** | | **75** | **2** | **77** | 2 "failures" are intentional findings, not bugs |
 
+**Counting clarification:** 77 total test cases → 75 pass + 2 documented findings (the findings are NOT bugs in tests; they document real violations V2).
+
 ---
 
 ## What each test proves (and what it does NOT prove)
@@ -24,14 +27,14 @@
 - MA200 fix: 100-day data does NOT force DATA_INCOMPLETE (E2/E3 skipped gracefully).
 - MA200 present: ≥200-day data generates E2/E3 evidence.
 - Data freshness: `as_of_date` parameter works (no more `datetime.now()`).
-- Market calendar: EGX (Sun-Thu), US (Mon-Fri), CRYPTO (24/7) all correct.
+- Market calendar: EGX (Sun-Thu), US (Mon-Fri), CRYPTO (24/7) all correct **IN ISOLATED UNIT TESTS** that pass `market=` explicitly.
 - buy_pct=None: E6 evidence skipped, no fabricated default.
 - Transition tracking: NEW → CONTINUE works correctly.
 - Real data classification: 5 tickers classified with confidence 0.40-0.72.
 
 **Does NOT prove:**
 - canonical_state is useful for predictions (no historical comparison done).
-- The market parameter actually reaches `assess_state()` from the production call path (it's a parameter, but the caller `state_history_tracker.py` does NOT pass it — it uses default 'EGX').
+- **The market parameter actually reaches `assess_state()` from the production call path.** `state_history_tracker.py:109-115` calls `assess_state()` WITHOUT passing `market=`, so it uses the default `'EGX'`. All stocks are classified using the EGX calendar in the actual call path, regardless of their real market. US/CRYPTO calendar correctness is proven only in isolated unit tests, NOT in the production data flow. **This is a known limitation that must be fixed before any market-aware freshness claim is trusted.**
 
 ### Test 2: `test_canonical_transitions_phase2.py` (11/12, 1 FINDING)
 **Proves:**

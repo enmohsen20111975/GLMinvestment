@@ -61,7 +61,31 @@
            pass  # fail-safe — don't break predictions
    ```
 
-2. **Lookahead bias fix:** change `fetch_canonical_state_for_ticker` to use `signal_date < prediction_date` (strictly less than) instead of `<=`. This ensures the canonical_state was computed BEFORE the prediction.
+2. **Lookahead bias fix — REQUIRES PRECISION, not just `<=` → `<`:**
+
+   The current code (`canonical_state_shadow.py:212`) uses `signal_date <= prediction_date`. This is unsafe because:
+   - `daily_predictor.py` generates prediction P at time T1 on date D.
+   - `state_history_tracker.py` may compute canonical_state CS for date D at time T2 on date D, where T2 > T1.
+   - If the audit fetches CS after both have run, it finds `signal_date = D` (same day) and matches via `<=`. But CS was NOT available at T1 when P was generated.
+   - Changing `<=` to `<` (strictly before) prevents same-day matches, but is **overly conservative** — it would also reject legitimate CS from earlier in the same trading day if both run on D.
+
+   **Proper fix requires timestamp-level availability, not date-level:**
+   - Record the **generation timestamp** of canonical_state (when `state_history_tracker` finished computing it).
+   - Record the **prediction timestamp** (when `daily_predictor` generated P).
+   - Audit rule: `cs.generation_timestamp < prediction.timestamp`.
+   - This requires either (a) a new `generated_at` column on `radar_signal_tracking` (schema change), or (b) using the existing `created_at` column if it accurately reflects computation time (it does — `DEFAULT (datetime('now'))`).
+
+   **Recommended approach:**
+   - Use existing `created_at` column on `radar_signal_tracking`.
+   - Audit query: `WHERE ticker = ? AND created_at < ?` (where `?` = prediction timestamp).
+   - This ensures the CS row was INSERTed into the DB BEFORE the prediction was generated.
+
+   **Do NOT apply a blind `<=` → `<` change on `signal_date`.** That would break same-day-but-earlier CS (legitimate) without proving the lookahead is actually fixed.
+
+   **Test required before activation:**
+   - Construct a scenario where CS is computed AFTER prediction on the same date.
+   - Verify the audit does NOT pick up that CS row (because `created_at > prediction.timestamp`).
+   - Verify the audit DOES pick up CS rows from previous days (where `created_at < prediction.timestamp` is true).
 
 3. **Retention policy:** add a cron job to delete audit rows older than N days (e.g., 90 days).
 

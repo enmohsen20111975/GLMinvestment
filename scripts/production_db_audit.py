@@ -696,6 +696,18 @@ def main():
     db_dir = find_db_dir()
     print(f'\nDetected DB directory: {db_dir}')
 
+    # CRITICAL: warn if running on sandbox fallback path
+    # (production VPS should be /root/GLMinvestment/db)
+    db_dir_str = str(db_dir)
+    if '/home/z/my-project' in db_dir_str or 'sandbox' in db_dir_str.lower():
+        print('\n⚠️  WARNING: This appears to be a SANDBOX environment, not production VPS.')
+        print('   Results below reflect SANDBOX sample data, NOT production state.')
+        print('   For production audit, run this script on the VPS at /root/GLMinvestment/')
+        print('   with: cd /root/GLMinvestment && python3 scripts/production_db_audit.py')
+    elif '/root/GLMinvestment' in db_dir_str:
+        print('\n✅ Production VPS path detected (/root/GLMinvestment/db).')
+        print('   Results below reflect PRODUCTION data.')
+
     # Section 1-5: System
     audit_system_info()
     audit_git_state()

@@ -1,6 +1,8 @@
 # Phased Remediation Plan — GLMinvestment Database Governance
 > **Status:** Plan only. No execution without owner approval per phase.
 > **Dependency graph:** Each phase lists what it unblocks.
+> **Evidence basis:** All violations are proven in CODE + sandbox. Production evidence requires Phase 0 first (run `scripts/production_db_audit.py` on VPS).
+> **Test counts:** 77 total test cases (75 pass + 2 documented findings). See `TEST-EVIDENCE.md`.
 
 ## Principles
 1. **Backup before any schema change.** Use `sqlite3 db/X.db ".backup '/path/X.db.bak-TIMESTAMP'"`.
