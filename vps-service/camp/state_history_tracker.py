@@ -48,6 +48,12 @@ def ensure_state_columns(conn: sqlite3.Connection):
         additions.append("ADD COLUMN invalidation_json TEXT DEFAULT ''")
     if 'data_freshness' not in cols:
         additions.append("ADD COLUMN data_freshness TEXT DEFAULT ''")
+    # P0-DELETE-OWNERSHIP-FIX: ensure source column exists for ownership scoping.
+    # maker_radar also adds this column, but state_history_tracker may run first
+    # on a fresh DB, so we ensure it here too (idempotent — ALTER TABLE ADD COLUMN
+    # is a no-op if the column already exists).
+    if 'source' not in cols:
+        additions.append("ADD COLUMN source TEXT DEFAULT 'maker_radar'")
 
     for add in additions:
         try:
@@ -134,13 +140,15 @@ def assess_and_record(conn_ph: sqlite3.Connection, conn_st: sqlite3.Connection,
     # FIX (Phase 2): the original SQL had 9 blank lines inside VALUES(...).
     # SQLite ignores them but it's a code-quality hazard + signals un-reviewed
     # SQL. Cleaned up to a single, well-formed statement.
+    # P0-DELETE-OWNERSHIP-FIX: set source='state_history_tracker' so maker_radar's
+    # scoped DELETE (WHERE source='maker_radar') does not wipe these rows.
     conn_st.execute("""
         INSERT OR REPLACE INTO radar_signal_tracking
             (ticker, signal_date, signal_type, entry_price, status,
              canonical_state, prev_state, transition_type, days_in_state,
              confidence, direction_up, direction_down,
-             evidence_json, invalidation_json, data_freshness)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             evidence_json, invalidation_json, data_freshness, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'state_history_tracker')
     """, (
         ticker, assessment_date, 'canonical_state', result.last_price, 'assessed',
         result.state, prev_state, result.transition_type, days_in_state,

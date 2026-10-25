@@ -9098,3 +9098,40 @@ Stage Summary:
 - الاختبارات: 75 test، 73 pass + 2 findings موثقة (V2).
 - القرارات المطلوبة من المالك: 9 violations محتاجة موافقة + VPS audit output.
 - الخطوة التالية: المالك يشغّل production_db_audit.py على VPS → نحدّث الـ Registry ببيانات الإنتاج الفعلية.
+
+---
+Task ID: P0-DELETE-OWNERSHIP-FIX-IMPLEMENTATION
+Agent: Bravo (Z.ai sandbox)
+Task: تنفيذ إصلاح P0 — scoped DELETE في maker_radar.py + source column للملكية الصريحة.
+
+Work Log:
+- استعادة الـ sandbox من GitHub (كان اتwipe): git reset --hard origin/main (HEAD=f8c54c8).
+- مراجعة كاملة لكل writers على radar_signal_tracking: 3 INSERT + 4 UPDATE + 1 DELETE.
+- تنفيذ الإصلاح (Option 2: source column):
+  * scripts/maker_radar.py:
+    - إضافة 'source': "TEXT DEFAULT 'maker_radar'" للـ new_cols.
+    - إضافة CREATE INDEX idx_radar_sig_source.
+    - تحديث DELETE: WHERE signal_date=? AND source='maker_radar' (بدلاً من WHERE signal_date=? فقط).
+    - تحديث INSERT: إضافة source column + value='maker_radar'.
+  * vps-service/camp/state_history_tracker.py:
+    - إضافة source column لـ ensure_state_columns().
+    - تحديث INSERT OR REPLACE: إضافة source='state_history_tracker'.
+  * src/modules/radar/lib/radar-signal-tracker.ts:
+    - تحديث ensureSchema: إضافة source TEXT DEFAULT 'maker_radar' + idx_radar_sig_source.
+    - تحديث INSERT: إضافة source column + value='frontend'.
+- كتابة اختبارات (scripts/test_p0_delete_ownership_fix.py): 10/10 ✅.
+  * TEST A: scoped DELETE يحافظ على canonical_state + frontend rows.
+  * TEST B: إعادة تشغيل maker_radar لا يسبب duplicates (verification loss موثّق كـ KNOWN LIMITATION).
+  * TEST C: 3 re-runs لا تخلق duplicates + other owners يبقوا.
+  * TEST D: intraday evolution (KNOWN LIMITATION — only latest signal kept).
+- syntax check: ✅ maker_radar.py + ✅ state_history_tracker.py + ✅ radar-signal-tracker.ts.
+
+Stage Summary:
+- الإصلاح متكامل: source column + 3 writers updated + scoped DELETE.
+- 10/10 tests pass.
+- KNOWN LIMITATIONS (موثّقة، مش regressions):
+  1. verification updates بتضيع على re-run (نفس السلوك القديم — DELETE+INSERT).
+  2. intraday evolution history بتضيع (نفس السلوك القديم — only latest signal).
+- الـ fix بيحمي rows بتاعة owners تانيين (canonical_state + frontend) من المسح.
+- لا تعديل على الإنتاج ولا migration — كل الاختبارات على نسخة temp.
+- يحتاج موافقة المالك قبل: (1) deployment على VPS، (2) الـ schema migration على production DB.
