@@ -1,0 +1,1013 @@
+{
+  "date": "2026-10-21",
+  "results": [
+    {
+      "ticker": "AALR",
+      "date": "2026-10-21",
+      "state": "DATA_INCOMPLETE",
+      "state_ar": "\u0628\u064a\u0627\u0646\u0627\u062a \u0646\u0627\u0642\u0635\u0629",
+      "confidence": 0.0,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 0.0,
+        "neutral": 1.0
+      },
+      "data_freshness": "incomplete",
+      "evidence_supporting": [],
+      "evidence_opposing": [],
+      "invalidation_conditions": [],
+      "last_price": 23.333332061767578,
+      "last_volume": 0
+    },
+    {
+      "ticker": "AAPL",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.725,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 1.0,
+        "down": 0.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 13.953110604492167,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (329.67)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 52.43287398901367,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (291.19)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 38.479763384521505,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_up",
+          "value": 0.9400098593593587,
+          "description": "\u0632\u062e\u0645 \u0645\u0648\u062c\u0628 (+0.9%)",
+          "direction": "bullish"
+        },
+        {
+          "name": "low_volatility",
+          "value": 1.7443952458684016,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0646\u062e\u0641\u0636 (1.7%) \u2014 \u0646\u0637\u0627\u0642 \u062a\u062c\u0645\u064a\u0639",
+          "direction": "neutral"
+        }
+      ],
+      "evidence_opposing": [],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 343.6199951171875,
+      "last_volume": 19892444
+    },
+    {
+      "ticker": "ABBV",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.725,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 1.0,
+        "down": 0.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 18.16958901367184,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (265.13)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 48.631888098144515,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (234.67)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 30.462299084472676,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_up",
+          "value": 3.9938234450313415,
+          "description": "\u0632\u062e\u0645 \u0645\u0648\u062c\u0628 (+4.0%)",
+          "direction": "bullish"
+        },
+        {
+          "name": "volume_quiet",
+          "value": 0.4641063325681096,
+          "description": "\u062d\u062c\u0645 \u0647\u0627\u062f\u0626 (0.5\u00d7) \u2014 \u062a\u062c\u0645\u064a\u0639 \u0645\u062d\u062a\u0645\u0644",
+          "direction": "neutral"
+        }
+      ],
+      "evidence_opposing": [],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 283.29998779296875,
+      "last_volume": 2255999
+    },
+    {
+      "ticker": "ABT",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.625,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.138,
+        "down": 0.862,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "roc_10d_up",
+          "value": 0.43659286679096354,
+          "description": "\u0632\u062e\u0645 \u0645\u0648\u062c\u0628 (+0.4%)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 5.780601904296873,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (104.70)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 6.307851849365235,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (105.23)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.5272499450683625,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 98.91999816894531,
+      "last_volume": 16426073
+    },
+    {
+      "ticker": "ABUK",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.75,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.854,
+        "down": 0.146,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 0.2633164238929748,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (1.39)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 0.3828325188159942,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (1.27)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 0.1195160949230194,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "volume_surge_bullish",
+          "value": 2.6495726495726495,
+          "description": "\u062d\u062c\u0645 \u0645\u0631\u062a\u0641\u0639 (2.6\u00d7) \u0645\u0639 \u0635\u0639\u0648\u062f",
+          "direction": "bullish"
+        },
+        {
+          "name": "recovery_cross_ma50",
+          "value": 0.2633164238929748,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0627\u0633\u062a\u0639\u0627\u062f MA50 \u2014 \u062a\u0639\u0627\u0641\u064d \u0645\u062d\u062a\u0645\u0644",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "roc_10d_weak_down",
+          "value": -2.4217277644349,
+          "description": "\u062a\u0631\u0627\u062c\u0639 \u062e\u0641\u064a\u0641 (-2.4%)",
+          "direction": "bearish"
+        },
+        {
+          "name": "high_volatility",
+          "value": 8.146909408586733,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0631\u062a\u0641\u0639 (8.1%) \u2014 \u0639\u062f\u0645 \u0627\u0633\u062a\u0642\u0631\u0627\u0631",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 1.6556329727172852,
+      "last_volume": 85250
+    },
+    {
+      "ticker": "ACAMD",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.775,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 1.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 0.026960012316703807,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (0.46)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 0.08595701605081563,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (0.52)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.05899700373411182,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        },
+        {
+          "name": "roc_10d_strong_down",
+          "value": -7.2649593332023255,
+          "description": "\u0632\u062e\u0645 \u0633\u0644\u0628\u064a \u0642\u0648\u064a (-7.3%)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 0.4339999854564667,
+      "last_volume": 2309365
+    },
+    {
+      "ticker": "ACAP",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.775,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 1.0,
+        "down": 0.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 1.5304839999999995,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (5.93)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 2.0566794999999995,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (5.40)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 0.5261955,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_strong_up",
+          "value": 18.88543410667305,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+18.9% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 7.4559,
+      "last_volume": 127
+    },
+    {
+      "ticker": "ACGC",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.6,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.774,
+        "down": 0.226,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 0.6277999019622804,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (2.24)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 0.010499897003173775,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (2.86)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_strong_up",
+          "value": 22.127659660812537,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+22.1% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        },
+        {
+          "name": "volume_quiet",
+          "value": 0.3402251989904873,
+          "description": "\u062d\u062c\u0645 \u0647\u0627\u062f\u0626 (0.3\u00d7) \u2014 \u062a\u062c\u0645\u064a\u0639 \u0645\u062d\u062a\u0645\u0644",
+          "direction": "neutral"
+        },
+        {
+          "name": "low_volatility",
+          "value": 1.8168238172313718,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0646\u062e\u0641\u0636 (1.8%) \u2014 \u0646\u0637\u0627\u0642 \u062a\u062c\u0645\u064a\u0639",
+          "direction": "neutral"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "ma_death_cross",
+          "value": 0.6173000049591066,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 2.869999885559082,
+      "last_volume": 70100
+    },
+    {
+      "ticker": "ACRO",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.775,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.939,
+        "down": 0.061,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 5.124966067138658,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (99.40)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 22.98397901678466,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (81.54)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 17.859012949646,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_strong_up",
+          "value": 10.096569100415852,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+10.1% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "high_volatility",
+          "value": 6.734879527289274,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0631\u062a\u0641\u0639 (6.7%) \u2014 \u0639\u062f\u0645 \u0627\u0633\u062a\u0642\u0631\u0627\u0631",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 104.5226,
+      "last_volume": 107
+    },
+    {
+      "ticker": "ACTF",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.375,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.483,
+        "down": 0.517,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 0.24366399999999988,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (2.55)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_up",
+          "value": 2.939877842372507,
+          "description": "\u0632\u062e\u0645 \u0645\u0648\u062c\u0628 (+2.9%)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma200",
+          "value": 0.6141669999999997,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (3.41)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.8578309999999996,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 2.7977,
+      "last_volume": 76
+    },
+    {
+      "ticker": "ADBE",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.4,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.516,
+        "down": 0.484,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 1.4717954101562611,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (253.01)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_strong_up",
+          "value": 5.571455094691524,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+5.6% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma200",
+          "value": 7.971454351806642,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (262.45)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 9.443249761962903,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 254.47999572753906,
+      "last_volume": 2058625
+    },
+    {
+      "ticker": "ADCI",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.625,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.862,
+        "down": 0.138,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 17.696129999999982,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (283.99)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 20.158541500000013,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (281.53)",
+          "direction": "bullish"
+        },
+        {
+          "name": "ma_golden_cross",
+          "value": 2.46241150000003,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "roc_10d_weak_down",
+          "value": -1.3109773251561485,
+          "description": "\u062a\u0631\u0627\u062c\u0639 \u062e\u0641\u064a\u0641 (-1.3%)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 301.688,
+      "last_volume": 110
+    },
+    {
+      "ticker": "ADIB",
+      "date": "2026-10-21",
+      "state": "DATA_INCOMPLETE",
+      "state_ar": "\u0628\u064a\u0627\u0646\u0627\u062a \u0646\u0627\u0642\u0635\u0629",
+      "confidence": 0.0,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 0.0,
+        "neutral": 1.0
+      },
+      "data_freshness": "incomplete",
+      "evidence_supporting": [],
+      "evidence_opposing": [],
+      "invalidation_conditions": [],
+      "last_price": 6.969042778015137,
+      "last_volume": 0
+    },
+    {
+      "ticker": "ADPC",
+      "date": "2026-10-21",
+      "state": "DATA_INCOMPLETE",
+      "state_ar": "\u0628\u064a\u0627\u0646\u0627\u062a \u0646\u0627\u0642\u0635\u0629",
+      "confidence": 0.0,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 0.0,
+        "neutral": 1.0
+      },
+      "data_freshness": "incomplete",
+      "evidence_supporting": [],
+      "evidence_opposing": [],
+      "invalidation_conditions": [],
+      "last_price": 1.6849360466003418,
+      "last_volume": 0
+    },
+    {
+      "ticker": "ADRI",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.775,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 1.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 1.0671219999999995,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (10.63)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 1.5411370000000009,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (11.10)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.4740150000000014,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        },
+        {
+          "name": "roc_10d_strong_down",
+          "value": -8.38746143971183,
+          "description": "\u0632\u062e\u0645 \u0633\u0644\u0628\u064a \u0642\u0648\u064a (-8.4%)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 9.5627,
+      "last_volume": 126
+    },
+    {
+      "ticker": "AFDI",
+      "date": "2026-10-21",
+      "state": "DATA_INCOMPLETE",
+      "state_ar": "\u0628\u064a\u0627\u0646\u0627\u062a \u0646\u0627\u0642\u0635\u0629",
+      "confidence": 0.0,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 0.0,
+        "neutral": 1.0
+      },
+      "data_freshness": "incomplete",
+      "evidence_supporting": [],
+      "evidence_opposing": [],
+      "invalidation_conditions": [],
+      "last_price": 3.7100000381469727,
+      "last_volume": 0
+    },
+    {
+      "ticker": "AFMC",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.6,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.212,
+        "down": 0.788,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "ma_golden_cross",
+          "value": 0.0057418516278266996,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 0.03218157052993775,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (0.97)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 0.026439718902111053,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (0.97)",
+          "direction": "bearish"
+        },
+        {
+          "name": "roc_10d_strong_down",
+          "value": -6.1328478422472905,
+          "description": "\u0632\u062e\u0645 \u0633\u0644\u0628\u064a \u0642\u0648\u064a (-6.1%)",
+          "direction": "bearish"
+        },
+        {
+          "name": "high_volatility",
+          "value": 6.948401795790872,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0631\u062a\u0641\u0639 (6.9%) \u2014 \u0639\u062f\u0645 \u0627\u0633\u062a\u0642\u0631\u0627\u0631",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 0.9401940107345581,
+      "last_volume": 9376
+    },
+    {
+      "ticker": "AIDC",
+      "date": "2026-10-21",
+      "state": "UPTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0635\u0627\u0639\u062f",
+      "confidence": 0.6,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.774,
+        "down": 0.226,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "price_above_ma50",
+          "value": 0.09046200000000004,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA50 (0.50)",
+          "direction": "bullish"
+        },
+        {
+          "name": "price_above_ma200",
+          "value": 0.07186150000000002,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u0641\u0648\u0642 MA200 (0.52)",
+          "direction": "bullish"
+        },
+        {
+          "name": "roc_10d_strong_up",
+          "value": 11.7613743628469,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+11.8% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "ma_death_cross",
+          "value": 0.01860050000000002,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0643\u0633\u0631 MA50 \u0644\u0644\u0623\u0633\u0641\u0644",
+        "MA50 \u064a\u0643\u0633\u0631 MA200 \u0644\u0644\u0623\u0633\u0641\u0644 (\u062a\u0642\u0627\u0637\u0639 \u0645\u0648\u062a)",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0646\u062e\u0641\u0636 \u0628\u0634\u0643\u0644 \u062d\u0627\u062f \u0645\u0639 \u0627\u0633\u062a\u0645\u0631\u0627\u0631 \u0627\u0644\u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 0.592,
+      "last_volume": 97
+    },
+    {
+      "ticker": "AIFI",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.625,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.194,
+        "down": 0.806,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "roc_10d_strong_up",
+          "value": 5.90142385773158,
+          "description": "\u0632\u062e\u0645 \u0642\u0648\u064a (+5.9% \u0641\u064a 10 \u0623\u064a\u0627\u0645)",
+          "direction": "bullish"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 0.001782466173171987,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (0.18)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 0.009898971319198618,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (0.19)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.008116505146026631,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 0.17993499338626862,
+      "last_volume": 3066255
+    },
+    {
+      "ticker": "AIH",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.775,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.0,
+        "down": 1.0,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 0.015494000000000008,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (0.59)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 0.13397400000000004,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (0.71)",
+          "direction": "bearish"
+        },
+        {
+          "name": "ma_death_cross",
+          "value": 0.11848000000000003,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0441\u043c\u0435\u0440\u0442\u0438 (MA200 > MA50)",
+          "direction": "bearish"
+        },
+        {
+          "name": "roc_10d_strong_down",
+          "value": -6.84865126796963,
+          "description": "\u0632\u062e\u0645 \u0633\u0644\u0628\u064a \u0642\u0648\u064a (-6.8%)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 0.5767,
+      "last_volume": 122
+    },
+    {
+      "ticker": "AJWA",
+      "date": "2026-10-21",
+      "state": "DOWNTREND",
+      "state_ar": "\u0627\u062a\u062c\u0627\u0647 \u0647\u0627\u0628\u0637",
+      "confidence": 0.45,
+      "days_in_state": 0,
+      "prev_state": "",
+      "transition_type": "NEW",
+      "direction_probability": {
+        "up": 0.241,
+        "down": 0.759,
+        "neutral": 0.0
+      },
+      "data_freshness": "fresh",
+      "evidence_supporting": [
+        {
+          "name": "ma_golden_cross",
+          "value": 0.6235999321937555,
+          "description": "\u062a\u0642\u0627\u0637\u0639 \u0630\u0647\u0628\u064a (MA50 > MA200)",
+          "direction": "bullish"
+        },
+        {
+          "name": "volume_quiet",
+          "value": 0.4,
+          "description": "\u062d\u062c\u0645 \u0647\u0627\u062f\u0626 (0.4\u00d7) \u2014 \u062a\u062c\u0645\u064a\u0639 \u0645\u062d\u062a\u0645\u0644",
+          "direction": "neutral"
+        },
+        {
+          "name": "low_volatility",
+          "value": 1.236263257612725,
+          "description": "\u062a\u0642\u0644\u0628 \u0645\u0646\u062e\u0641\u0636 (1.2%) \u2014 \u0646\u0637\u0627\u0642 \u062a\u062c\u0645\u064a\u0639",
+          "direction": "neutral"
+        }
+      ],
+      "evidence_opposing": [
+        {
+          "name": "price_below_ma50",
+          "value": 1.2324003601074214,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA50 (11.63)",
+          "direction": "bearish"
+        },
+        {
+          "name": "price_below_ma200",
+          "value": 0.6088004279136658,
+          "description": "\u0627\u0644\u0633\u0639\u0631 \u062a\u062d\u062a MA200 (11.01)",
+          "direction": "bearish"
+        },
+        {
+          "name": "roc_10d_weak_down",
+          "value": -0.9523845854259694,
+          "description": "\u062a\u0631\u0627\u062c\u0639 \u062e\u0641\u064a\u0641 (-1.0%)",
+          "direction": "bearish"
+        }
+      ],
+      "invalidation_conditions": [
+        "\u0627\u0644\u0633\u0639\u0631 \u064a\u0633\u062a\u0639\u064a\u062f MA50",
+        "\u062d\u062c\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u064a\u0642\u0641\u0632 \u0645\u0639 \u0635\u0639\u0648\u062f"
+      ],
+      "last_price": 10.399999618530273,
+      "last_volume": 100
+    }
+  ],
+  "summary": {
+    "DATA_INCOMPLETE": 4,
+    "UPTREND": 9,
+    "DOWNTREND": 8
+  }
+}
