@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -411,14 +412,13 @@ export function BacktestTab() {
 
  {/* Trades table */}
  {trades.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Database className="w-4 h-4 text-profit" />
- آخر {trades.length} صفقة (تفصيلي)
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`آخر ${trades.length} صفقة (تفصيلي)`}
+ icon={Database}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <table className="w-full text-sm">
  <thead className="sticky top-0 bg-background">
@@ -465,17 +465,15 @@ export function BacktestTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Out-of-sample */}
  {data?.out_of_sample && (data.out_of_sample.last_30d || data.out_of_sample.last_45d) && (
- <Card>
- <CardHeader>
- <CardTitle className="text-base">Out-of-Sample (آخر فترة)</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="Out-of-Sample (آخر فترة)"
+ hideRefresh
+ >
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {data.out_of_sample.last_30d && (
  <OosCard title="آخر 30 يوم" stats={data.out_of_sample.last_30d} />
@@ -484,17 +482,15 @@ export function BacktestTab() {
  <OosCard title="آخر 45 يوم" stats={data.out_of_sample.last_45d} />
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* By Month */}
  {data?.by_month && data.by_month.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-base">الأداء الشهري</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="الأداء الشهري"
+ hideRefresh
+ >
  <div className="max-h-72 overflow-y-auto">
  <table className="w-full text-sm">
  <thead className="sticky top-0 bg-background">
@@ -521,20 +517,17 @@ export function BacktestTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Explosive stocks */}
  {data?.explosive_stocks && data.explosive_stocks.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-base flex items-center gap-2">
- <Zap className="w-4 h-4 text-warning" />
- الأسهم الانفجارية والقيادية المُصطادة
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="الأسهم الانفجارية والقيادية المُصطادة"
+ icon={Zap}
+ iconColor="text-warning"
+ hideRefresh
+ >
  <div className="max-h-72 overflow-y-auto">
  <table className="w-full text-sm">
  <thead className="sticky top-0 bg-background">
@@ -561,17 +554,15 @@ export function BacktestTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Top tickers */}
  {data?.by_ticker && data.by_ticker.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-base">أعلى 15 سهم ربحاً</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="أعلى 15 سهم ربحاً"
+ hideRefresh
+ >
  <div className="max-h-72 overflow-y-auto">
  <table className="w-full text-sm">
  <thead className="sticky top-0 bg-background">
@@ -598,8 +589,7 @@ export function BacktestTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </>
  ) : (

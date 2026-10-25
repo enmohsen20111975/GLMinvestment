@@ -57,7 +57,9 @@ def find_corrupted_tickers(conn):
     ph_db = PROJECT_ROOT / 'db' / 'price_history.db'
     ph_counts = {}
     if ph_db.exists():
-        ph_conn = _sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        ph_conn = db_manager.connection(str(ph_db, writable=False).__enter__())
         ph_cur = ph_conn.cursor()
         ph_cur.execute("SELECT ticker, COUNT(*) FROM price_history GROUP BY ticker")
         ph_counts = dict(ph_cur.fetchall())
@@ -126,7 +128,9 @@ def purge(dry_run=True, reactivate=False):
         print(f"❌ stocks.db not found: {STOCKS_DB}")
         return 1
 
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -187,7 +191,9 @@ def purge(dry_run=True, reactivate=False):
     if not reactivate:
         all_bad = [c['corrupted_ticker'] for c in corrupted] + [i['ticker'] for i in isins]
         if all_bad:
-            conn_pred = sqlite3.connect(str(PREDICTIONS_DB))
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn_pred = db_manager.connection(str(PREDICTIONS_DB), writable=True).__enter__()
             cur_pred = conn_pred.cursor()
             placeholders = ",".join("?" for _ in all_bad)
             cur_pred.execute(

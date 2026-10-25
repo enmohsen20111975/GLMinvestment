@@ -39,7 +39,9 @@ def parse_volume(vol_str):
         return 0.0
 
 def load_price_history(ticker, before_date, max_days=300):
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     cur = conn.cursor()
     date_str = str(before_date)[:10]
     cur.execute("""
@@ -154,7 +156,9 @@ def evaluate_dataset(dataset, name=""):
     }
 
 def main():
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     cur = conn.cursor()
     cur.execute("""
         SELECT ticker, signal, prediction_date, entry_price, target_price,

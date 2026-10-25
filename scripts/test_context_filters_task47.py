@@ -59,7 +59,9 @@ def parse_volume(vol_str):
 
 def load_price_history(ticker, before_date, max_days=300):
     """حمّل price history لـ ticker قبل before_date."""
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     cur = conn.cursor()
     # before_date ممكن يكون datetime string; ناخد التاريخ بس
     date_str = str(before_date)[:10]
@@ -103,7 +105,9 @@ def run_backtest():
     print('Task 47 — Context-Aware Filters Backtest Validation')
     print('=' * 70)
 
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     cur = conn.cursor()
 
     # حمّل التوقعات المغلقة

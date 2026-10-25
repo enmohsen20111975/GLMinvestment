@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 // ---------------------------------------------------------------------------
 // Types — mirror the API response shape (src/app/api/admin/data-health/route.ts)
@@ -388,76 +389,68 @@ export function DataHealthTab() {
           )}
 
           {/* ─── Per-market × per-source health matrix ─── */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Database className="w-4 h-4 text-profit" />
-                مصفوفة الصحة لكل سوق × كل مصدر
-              </CardTitle>
-              <CardDescription className="text-xs">
-                كل خلية تعرض آخر تاريخ للبيانات + مؤشر اللون (🟢 طازج ≤3 أيام / 🟡 متأخر قليلاً ≤7 / 🔴 متجمد &gt;7)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
-                <Table className="min-w-[820px]">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right sticky right-0 bg-card z-10 min-w-[140px]">السوق</TableHead>
-                      {SOURCE_COLUMNS.map(col => (
-                        <TableHead key={col.key} className="text-center min-w-[150px]">
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="font-semibold text-xs">{col.label}</span>
-                            <span className="text-[10px] text-muted-foreground" dir="ltr">{col.desc}</span>
+          <WidgetCard
+            title="مصفوفة الصحة لكل سوق × كل مصدر"
+            icon={Database}
+            iconColor="text-profit"
+            hideRefresh
+            headerClassName="pb-2"
+          >
+            <div className="overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+              <Table className="min-w-[820px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right sticky right-0 bg-card z-10 min-w-[140px]">السوق</TableHead>
+                    {SOURCE_COLUMNS.map(col => (
+                      <TableHead key={col.key} className="text-center min-w-[150px]">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="font-semibold text-xs">{col.label}</span>
+                          <span className="text-[10px] text-muted-foreground" dir="ltr">{col.desc}</span>
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {marketKeys.map(market => {
+                    const m = data.markets[market];
+                    if (!m) return null;
+                    return (
+                      <TableRow key={market}>
+                        <TableCell className="sticky right-0 bg-card z-10">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm" dir="ltr">{market}</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {MARKET_LABELS_AR[market] || market}
+                            </span>
                           </div>
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {marketKeys.map(market => {
-                      const m = data.markets[market];
-                      if (!m) return null;
-                      return (
-                        <TableRow key={market}>
-                          <TableCell className="sticky right-0 bg-card z-10">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-sm" dir="ltr">{market}</span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {MARKET_LABELS_AR[market] || market}
-                              </span>
-                            </div>
-                          </TableCell>
-                          {SOURCE_COLUMNS.map(col => (
-                            <HealthCell
-                              key={col.key}
-                              sourceKey={col.key}
-                              market={m}
-                            />
-                          ))}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                        </TableCell>
+                        {SOURCE_COLUMNS.map(col => (
+                          <HealthCell
+                            key={col.key}
+                            sourceKey={col.key}
+                            market={m}
+                          />
+                        ))}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </WidgetCard>
 
           {/* ─── Bottom row: egksco_stocks + summary ─── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* egksco_stocks status */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-profit" />
-                  حالة egksco_stocks
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  الجدول الموحّد لبيانات الأسهم المصرية (المتوقع ~{egksco?.expected ?? 1205} سجل)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <WidgetCard
+              title="حالة egksco_stocks"
+              icon={Activity}
+              iconColor="text-profit"
+              hideRefresh
+              headerClassName="pb-2"
+            >
+              <div className="space-y-3">
                 {egksco ? (
                   <>
                     <div className="flex items-center justify-between">
@@ -488,21 +481,18 @@ export function DataHealthTab() {
                 ) : (
                   <p className="text-xs text-muted-foreground">لا توجد بيانات</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </WidgetCard>
 
             {/* Summary card */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-profit" />
-                  ملخص الصحة الإجمالي
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  إحصاءات شاملة لكل الأسهم النشطة في كل الأسواق
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <WidgetCard
+              title="ملخص الصحة الإجمالي"
+              icon={CheckCircle2}
+              iconColor="text-profit"
+              hideRefresh
+              headerClassName="pb-2"
+            >
+              <div className="space-y-3">
                 {summary && (
                   <>
                     <div className="grid grid-cols-3 gap-2">
@@ -550,8 +540,8 @@ export function DataHealthTab() {
                     )}
                   </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </WidgetCard>
           </div>
 
           {/* ─── Last-updated footer ─── */}

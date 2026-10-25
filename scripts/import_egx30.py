@@ -48,7 +48,9 @@ for ext in ["-wal", "-shm"]:
     f = DB_PATH + ext
     if os.path.exists(f): os.remove(f)
 
-conn = sqlite3.connect(DB_PATH)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(DB_PATH, writable=False).__enter__()
 conn.execute("PRAGMA journal_mode=DELETE")
 cur = conn.cursor()
 

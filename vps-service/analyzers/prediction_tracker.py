@@ -48,8 +48,7 @@ def _open_db(db_path: str, writable: bool = False):
     conn = None
     try:
         if _PRED_TRACKER_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = _dbm.get_connection(db_path, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -582,7 +581,9 @@ class PredictionTracker:
                         try:
                             _ph_db_path = os.path.join(os.path.dirname(self.db_path), 'price_history.db')
                             if os.path.exists(_ph_db_path):
-                                _ph_c = sqlite3.connect(_ph_db_path)
+                                # Phase 7.1: migrated to db_manager (writable=False)
+                                from core.db_manager import db_manager
+                                _ph_c = db_manager.get_connection(_ph_db_path, writable=False)
                                 _ph_c.row_factory = sqlite3.Row
                                 _now = datetime.now()
                                 _month_start = _now.strftime('%Y-%m-01')
@@ -705,8 +706,7 @@ class PredictionTracker:
         _rec_pred_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _rec_pred_ctx = _dbm.connection(self.db_path, writable=True)
-                conn = _rec_pred_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -843,8 +843,7 @@ class PredictionTracker:
         _uo_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _uo_ctx = _dbm.connection(self.db_path, writable=True)
-                conn = _uo_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -953,8 +952,7 @@ class PredictionTracker:
             _svo_ctx = None
             try:
                 if _PRED_TRACKER_DBM_AVAILABLE:
-                    _svo_ctx = _dbm.connection(self.db_path, writable=True)
-                    conn = _svo_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1010,8 +1008,7 @@ class PredictionTracker:
         _gop_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _gop_ctx = _dbm.connection(self.db_path)
-                conn = _gop_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1065,8 +1062,7 @@ class PredictionTracker:
         _tm_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _tm_ctx = _dbm.connection(self.db_path, writable=True)
-                conn = _tm_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1179,8 +1175,7 @@ class PredictionTracker:
         _lff_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _lff_ctx = _dbm.connection(self.db_path)
-                conn = _lff_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1255,8 +1250,7 @@ class PredictionTracker:
         _gas_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _gas_ctx = _dbm.connection(self.db_path)
-                conn = _gas_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1331,8 +1325,7 @@ class PredictionTracker:
         _gpp_ctx = None
         try:
             if _PRED_TRACKER_DBM_AVAILABLE:
-                _gpp_ctx = _dbm.connection(self.db_path)
-                conn = _gpp_ctx.__enter__()
+                conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:

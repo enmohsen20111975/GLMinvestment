@@ -44,7 +44,9 @@ def get_price_after(ticker: str, signal_date: str, days_after: int) -> tuple:
         signal_dt = datetime.strptime(signal_date[:10], '%Y-%m-%d')
         target_date = signal_dt + timedelta(days=days_after)
 
-        conn = sqlite3.connect(PRICE_HISTORY_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
 
         # السعر بعد N يوم (أقرب يوم تداول)
@@ -82,7 +84,9 @@ def verify_signals(dry_run: bool = False):
     log("═══ Radar Signal Verification ═══")
     log(f"Time: {datetime.now().isoformat()}")
 
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # كل الإشارات pending

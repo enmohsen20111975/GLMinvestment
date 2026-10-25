@@ -25,7 +25,9 @@ DB_PATH = str(Path(__file__).resolve().parents[2] / "db" / "stocks.db")
 
 def get_all_active_stocks() -> List[Dict]:
     """Get all active stocks with sectors"""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -54,7 +56,9 @@ def get_all_active_stocks() -> List[Dict]:
 
 def get_available_dates() -> List[str]:
     """Get available test dates in May 2026"""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -80,7 +84,9 @@ def get_price_history(stock_id: int, end_date: str, limit: int = 100) -> List[Di
     # 1) Resolve stock_id → ticker via stocks metadata (not a price table).
     ticker = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(DB_PATH, writable=False)
         cursor = conn.cursor()
         cursor.execute("SELECT ticker FROM stocks WHERE id = ?", (stock_id,))
         row = cursor.fetchone()
@@ -101,7 +107,9 @@ def get_price_history(stock_id: int, end_date: str, limit: int = 100) -> List[Di
 
 def get_next_price(stock_id: int, after_date: str, days: int = 10) -> Tuple[float, str]:
     """Get price after X days"""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     target = datetime.fromisoformat(after_date) + timedelta(days=days)

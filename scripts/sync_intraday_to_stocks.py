@@ -1,8 +1,12 @@
 import sqlite3
 
 def sync_intraday_extremes():
-    conn_intra = sqlite3.connect('db/intraday.db', timeout=30.0)
-    conn_st = sqlite3.connect('db/stocks.db', timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_intra = db_manager.connection('db/intraday.db', writable=True).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_st = db_manager.connection('db/stocks.db', writable=True).__enter__()
 
     conn_intra.execute("PRAGMA journal_mode=WAL")
     conn_st.execute("PRAGMA journal_mode=WAL")

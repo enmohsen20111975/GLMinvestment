@@ -54,7 +54,9 @@ def scan_database(db_file):
     print("=" * 80)
 
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         c = conn.cursor()
         c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
         tables = [r[0] for r in c.fetchall() if not r[0].startswith('sqlite_')]

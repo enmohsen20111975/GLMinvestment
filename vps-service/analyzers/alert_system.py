@@ -72,7 +72,9 @@ class AlertSystem:
             return result
 
         try:
-            conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=5)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.stocks_db, writable=False)
             cursor = conn.cursor()
 
             # فحص آخر تحديث لأسعار الأسهم

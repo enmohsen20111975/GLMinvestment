@@ -61,7 +61,9 @@ def _resolve_news_db(db_path: str) -> str:
 
 def get_db_connection(db_path: str):
     """الحصول على اتصال قاعدة البيانات (يفتح دايماً news.db الكنسي)."""
-    conn = sqlite3.connect(_resolve_news_db(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(_resolve_news_db(db_path), writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

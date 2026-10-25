@@ -25,6 +25,7 @@ Author: GLMinvestment Platform
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 from datetime import datetime
@@ -153,6 +154,7 @@ def generate_monthly_summary():
 # GENERIC GENERATE ENDPOINT - توليد يدوي لأي نوع
 # ============================================================================
 
+@require_admin
 @reports_bp.route('/generate', methods=['POST'])
 def generate_report():
     """
@@ -310,6 +312,7 @@ def get_report_image(report_id: str):
 # TELEGRAM PUBLISHING
 # ============================================================================
 
+@require_admin
 @reports_bp.route('/<report_id>/publish', methods=['POST'])
 def publish_report(report_id: str):
     """نشر تقرير محدد على قناة التليجرام.
@@ -354,6 +357,7 @@ def publish_report(report_id: str):
 # V2.3: APPROVE / REJECT — موافقة الأدمن قبل النشر
 # ============================================================================
 
+@require_admin
 @reports_bp.route('/<report_id>/approve', methods=['POST'])
 def approve_report(report_id: str):
     """V2.3: موافقة الأدمن على التقرير (status: pending → approved)."""
@@ -373,6 +377,7 @@ def approve_report(report_id: str):
         return _err(f'Failed to approve report: {e}', status=500)
 
 
+@require_admin
 @reports_bp.route('/<report_id>/reject', methods=['POST'])
 def reject_report(report_id: str):
     """V2.3: رفض الأدمن للتقرير (status: pending → rejected)."""

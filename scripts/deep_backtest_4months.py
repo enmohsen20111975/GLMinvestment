@@ -74,7 +74,9 @@ def load_closed_predictions() -> List[Dict[str, Any]]:
     `compute_win_rate` / `compute_profit_factor` functions so we can compare
     old (raw) vs new (capped) honestly.
     """
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("""
@@ -95,7 +97,9 @@ def load_price_history(ticker: str, before_date: str, days: int = 250) -> List[D
 
     Returns rows in chronological order (oldest → newest).
     """
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     date_str = str(before_date)[:10]

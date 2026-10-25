@@ -76,7 +76,9 @@ def _load_market_tickers(market: str, limit: int) -> list[str]:
     price_history.db, capped at `limit`.
     """
     # 1. Pull tickers for this market from stocks.db
-    conn_s = sqlite3.connect(STOCKS_DB, timeout=10.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_s = db_manager.get_connection(STOCKS_DB, writable=False)
     cur_s = conn_s.cursor()
     cur_s.execute("SELECT ticker FROM stocks WHERE market = ?", (market,))
     stocks_tickers = sorted({str(r[0]) for r in cur_s.fetchall()})
@@ -86,7 +88,9 @@ def _load_market_tickers(market: str, limit: int) -> list[str]:
         return []
 
     # 2. Find which ones have >= 200 days in price_history (data_engine.db.egksco_price_history)
-    conn_p = sqlite3.connect(PRICE_HISTORY_DB, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_p = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
     cur_p = conn_p.cursor()
     placeholders = ','.join('?' * len(stocks_tickers))
     cur_p.execute(
@@ -132,7 +136,9 @@ def _load_crypto_tickers_synthetic(limit: int = 5) -> tuple[list[str], str]:
     # Build a temp DB with the price_history schema
     tmp_fd, tmp_path = tempfile.mkstemp(suffix='.db', prefix='crypto_synth_')
     os.close(tmp_fd)
-    conn = sqlite3.connect(tmp_path)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(tmp_path, writable=True)
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE price_history (

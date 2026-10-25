@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -282,14 +283,15 @@ export function SmartAssistantPanel() {
 
  {/* Alerts Section */}
  {allAlerts.length > 0 && (
- <Card className="border-orange-200 bg-warning/20">
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <AlertCircle className="h-4 w-4 text-warning" />
- تنبيهات هامة
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title="تنبيهات هامة"
+        icon={AlertCircle}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        className="border-orange-200 bg-warning/20"
+ >
+
  <div className="space-y-2">
  {allAlerts.slice(0, 5).map((item, i) => (
  <div key={i} className="text-sm p-2 bg-white rounded border">
@@ -298,20 +300,20 @@ export function SmartAssistantPanel() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Stocks Analysis */}
  {data.stocks.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <TrendingUp className="h-4 w-4 text-primary" />
- تحليل الأسهم ({data.stocks.length})
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard
+        title={`تحليل الأسهم (${data.stocks.length})`}
+        icon={TrendingUp}
+        iconColor="text-primary"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
+ >
+
  {data.stocks.map((stock, i) => {
  const actionInfo = getActionBadge(stock.recommendation.action);
  const isExpanded = expandedStock === stock.asset.id;
@@ -446,20 +448,20 @@ export function SmartAssistantPanel() {
  </Card>
  );
  })}
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Bank Deposits */}
  {data.banks.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Landmark className="h-4 w-4 text-primary" />
- الشهادات البنكية ({data.banks.length})
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard
+        title={`الشهادات البنكية (${data.banks.length})`}
+        icon={Landmark}
+        iconColor="text-primary"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
+ >
+
  {data.banks.map((bank, i) => (
  <Card key={i} className="bg-muted/30">
  <CardContent className="p-4">
@@ -489,20 +491,20 @@ export function SmartAssistantPanel() {
  </CardContent>
  </Card>
  ))}
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Gold */}
  {data.gold.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Gem className="h-4 w-4 text-warning" />
- الذهب ({data.gold.length})
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard
+        title={`الذهب (${data.gold.length})`}
+        icon={Gem}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
+ >
+
  {data.gold.map((gold, i) => (
  <Card key={i} className="bg-warning/20">
  <CardContent className="p-4">
@@ -537,8 +539,7 @@ export function SmartAssistantPanel() {
  </CardContent>
  </Card>
  ))}
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Info Card */}

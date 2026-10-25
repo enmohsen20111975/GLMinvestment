@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  TrendingUp,
  TrendingDown,
  AlertCircle,
@@ -19,7 +18,8 @@ import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
 } from 'lucide-react';
 import { ShareButton } from '@/modules/publishing/components/ShareButton';
 import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -129,7 +129,8 @@ const SIGNAL_CONFIG = {
 /* Helper Functions */
 /* ------------------------------------------------------------------ */
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */`;
+function formatPrice(price: number | null | undefined, currency: string = 'ج.م'): string {
+ if (price == null) return `-- ${currency}`;
  return `${(price ?? 0).toFixed(2)} ${currency}`;
 }
 
@@ -470,11 +471,12 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  {/* Main Grid */}
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {/* Score Breakdown */}
- <Card className="md:col-span-1">
- <CardHeader className="pb-2">
- <CardTitle className="text-base">تفصيل الدرجة</CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+ 	title="تفصيل الدرجة"
+ 	titleClassName="text-base"
+ 	className="md:col-span-1"
+ 	contentClassName="space-y-4"
+ >
  {updatedAnalysis ? (
  <>
  <ScoreCircle score={updatedAnalysis.master_score} label="الدرجة الإجمالية" />
@@ -517,8 +519,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  </Button>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Chart */}
  <Card className="md:col-span-2">
@@ -536,14 +537,12 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
 
  {/* Risk Profile - Use updatedAnalysis with current price */}
  {updatedAnalysis?.risk_profile && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Shield className="w-4 h-4" />
- ملف المخاطر
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="ملف المخاطر"
+ 	icon={Shield}
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ >
  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
  <div className="text-center p-3 bg-muted/50 rounded-lg">
  <span className="text-xs text-muted-foreground block">منطقة الدخول</span>
@@ -578,20 +577,17 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  </span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Market Regime & Sector Overview - wired July 2026 */}
  {updatedAnalysis && (updatedAnalysis.market_regime_ar || updatedAnalysis.sector_relative_score != null) && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Globe className="w-4 h-4" />
- نظرة عامة على السوق والقطاع
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="نظرة عامة على السوق والقطاع"
+ 	icon={Globe}
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-base"
+ >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
  <div className="text-center p-3 bg-muted/50 rounded-lg">
  <span className="text-xs text-muted-foreground block">حالة السوق</span>
@@ -610,19 +606,14 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  </span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Reasons & Warnings - Use updatedAnalysis */}
  {(updatedAnalysis?.reasons?.length || updatedAnalysis?.warnings?.length) && (
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {updatedAnalysis.reasons && updatedAnalysis.reasons.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base text-profit">أسباب الإشارة</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="أسباب الإشارة" titleClassName="text-base text-profit">
  <ul className="space-y-2">
  {updatedAnalysis.reasons.map((reason, i) => (
  <li key={i} className="flex items-start gap-2 text-sm">
@@ -631,16 +622,11 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  </li>
  ))}
  </ul>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  
  {updatedAnalysis.warnings && updatedAnalysis.warnings.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base text-warning">تحذيرات</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="تحذيرات" titleClassName="text-base text-warning">
  <ul className="space-y-2">
  {updatedAnalysis.warnings.map((warning, i) => (
  <li key={i} className="flex items-start gap-2 text-sm">
@@ -649,8 +635,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  </li>
  ))}
  </ul>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </div>
  )}

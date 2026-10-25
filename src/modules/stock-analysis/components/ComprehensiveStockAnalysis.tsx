@@ -19,7 +19,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
  Shield, Target, Newspaper, Brain, Zap, Award, AlertTriangle,
  RefreshCw, Clock, ChevronRight, Gauge, PieChart, LineChart as LineChartIcon,
@@ -30,6 +29,7 @@ import {
  RadialBar, RadialBarChart, PolarAngleAxis,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,7 +70,9 @@ interface ComprehensiveData {
 // Helpers
 // ============================================================================
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(v: number | null | undefined, digits = 2): string {
+ if (v === null || v === undefined || isNaN(Number(v))) return '—';
+ return Number(v).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 function formatPct(v: number | null | undefined, digits = 2): string {
@@ -685,14 +687,13 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  {/* Indicators Grid */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* RSI */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Activity className="w-4 h-4" />
- RSI (14)
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-2">
+ <WidgetCard
+        title="RSI (14)"
+        icon={Activity}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2"
+ >
  <div className="flex items-center justify-between mb-2">
  <span className="text-3xl font-bold tabular-nums">{(rsi ?? 0).toFixed(1)}</span>
  <span className={cn('text-sm font-semibold', rsiColor)}>{rsiStatus}</span>
@@ -710,18 +711,16 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <span>70</span>
  <span>100 (تشبع شرائي)</span>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Moving Averages */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <LineChartIcon className="w-4 h-4" />
- المتوسطات المتحركة
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-2 space-y-2">
+ <WidgetCard
+        title="المتوسطات المتحركة"
+        icon={LineChartIcon}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
+ >
  <div className="flex items-center justify-between">
  <span className="text-sm">السعر الحالي</span>
  <span className="font-bold tabular-nums">{formatPrice(current)}</span>
@@ -743,18 +742,16 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <span className="text-sm font-semibold">الاتجاه</span>
  <span className={cn('font-bold', trendColor)}>{trend}</span>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Support / Resistance */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Shield className="w-4 h-4" />
- الدعم والمقاومة
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-2 space-y-2">
+ <WidgetCard
+        title="الدعم والمقاومة"
+        icon={Shield}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
+ >
  <div className="flex items-center justify-between">
  <span className="text-sm text-loss">المقاومة</span>
  <span className="font-bold tabular-nums text-loss">{formatPrice(numVal(t.resistance))}</span>
@@ -773,18 +770,16 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  المدى: {formatPct(((numOr(t.resistance, 0) - numOr(t.support, 0)) / numOr(t.support, 1)) * 100)} من الدعم للمقاومة
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* 52-Week Range */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Gauge className="w-4 h-4" />
- مدى 52 أسبوع
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-2 space-y-2">
+ <WidgetCard
+        title="مدى 52 أسبوع"
+        icon={Gauge}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2 space-y-2"
+ >
  <div className="flex items-center justify-between">
  <span className="text-sm">أعلى 52 أسبوع</span>
  <span className="font-bold tabular-nums text-profit">{formatPrice(numVal(t.high_52w))}</span>
@@ -808,20 +803,14 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  </div>
  </>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
 
  {/* Price + MA Chart */}
  {priceHistory && priceHistory.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm">السعر مع المتوسطات (آخر 90 يوم)</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="السعر مع المتوسطات (آخر 90 يوم)" titleClassName="text-sm">
  <PriceWithMAChart history={priceHistory} ma50={ma50} ma200={ma200} support={numOr(t.support, 0)} resistance={numOr(t.resistance, 0)} />
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </div>
  );
@@ -852,14 +841,12 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
 
  return (
  <div className="space-y-4">
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <BarChart3 className="w-4 h-4" />
- المؤشرات المالية
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title="المؤشرات المالية"
+        icon={BarChart3}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+ >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
  {items.map((item, i) => (
  <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
@@ -871,15 +858,14 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Valuation Assessment */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm">تقييم التقييم</CardTitle>
- </CardHeader>
- <CardContent className="space-y-2">
+ <WidgetCard
+        title="تقييم التقييم"
+        titleClassName="text-sm"
+        contentClassName="space-y-2"
+ >
  {m.pe_ratio && (
  <ValuationRow
  label="P/E"
@@ -922,8 +908,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  reverse
  />
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  );
 }
@@ -958,14 +943,13 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  return (
  <div className="space-y-4">
  {/* Maestro Score + Recommendation */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Brain className="w-4 h-4" />
- تحليل المايسترو
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-2">
+ <WidgetCard
+        title="تحليل المايسترو"
+        icon={Brain}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="pt-2"
+ >
  {(m.maestroScore != null ? Number(m.maestroScore) : 0) !== undefined ? (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {/* Score Gauge */}
@@ -1039,16 +1023,11 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  </ul>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Phases */}
  {m.phases && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm">مراحل التحليل (Phases)</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="مراحل التحليل (Phases)" titleClassName="text-sm">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  {m.phases.regime && (
  <PhaseCard title="النظام" phase={m.phases.regime} />
@@ -1063,20 +1042,17 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  <PhaseCard title="الأخبار" phase={m.phases.news} />
  )}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Board Opinions */}
  {board?.available && board.opinions && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Award className="w-4 h-4" />
- آراء المحللين
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title="آراء المحللين"
+        icon={Award}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+ >
  <div className="space-y-2">
  {Object.entries(board.opinions).map(([analyst, opinion]: [string, any]) => (
  <div key={analyst} className="flex items-start justify-between p-2 rounded-lg bg-muted/30">
@@ -1092,8 +1068,7 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </div>
  );
@@ -1130,11 +1105,7 @@ function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, 
  return (
  <div className="space-y-4">
  {/* Price Chart with S/R */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm">السعر مع الدعم والمقاومة</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="السعر مع الدعم والمقاومة" titleClassName="text-sm">
  <PriceWithMAChart
  history={priceHistory}
  ma50={tech.ma_50}
@@ -1142,18 +1113,12 @@ function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, 
  support={tech.support}
  resistance={tech.resistance}
  />
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Volume Chart */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm">أحجام التداول</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="أحجام التداول" titleClassName="text-sm">
  <VolumeChart history={priceHistory} />
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  );
 }
@@ -1311,14 +1276,12 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
  }
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Target className="w-4 h-4" />
- التوقعات السابقة ({predictions.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title={`التوقعات السابقة (${predictions.length})`}
+        icon={Target}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+ >
  <ScrollArea className="max-h-96">
  <div className="space-y-2">
  {predictions.map((pred, i) => {
@@ -1364,8 +1327,7 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
  })}
  </div>
  </ScrollArea>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
@@ -1386,14 +1348,12 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
 
  return (
  <div className="space-y-4">
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <Brain className="w-4 h-4" />
- التحليل الاحترافي بالـ AI
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title="التحليل الاحترافي بالـ AI"
+        icon={Brain}
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+ >
  {typeof professional === 'string' ? (
  <p className="text-sm whitespace-pre-wrap">{professional}</p>
  ) : (
@@ -1432,8 +1392,7 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
  )}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  );
 }

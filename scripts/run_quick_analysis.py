@@ -77,7 +77,9 @@ def _parse_volume(v: Any) -> int:
 
 def get_top_active_stocks(market: str, limit: int = 50) -> List[Dict[str, Any]]:
     """Get top active stocks by turnover (price * volume) — must have price history."""
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     # JOIN with stock_daily_prices to ensure we only get stocks WITH price history.
@@ -120,7 +122,9 @@ def count_stored() -> Dict[str, int]:
     """Count rows in stored_analyses, cached_analysis, persona_predictions."""
     out = {'stored_analyses': 0, 'cached_analysis': 0, 'persona_predictions': 0}
     try:
-        c = sqlite3.connect(PREDICTIONS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         cur = c.cursor()
         cur.execute('SELECT COUNT(*) FROM stored_analyses')
         out['stored_analyses'] = cur.fetchone()[0]
@@ -130,7 +134,9 @@ def count_stored() -> Dict[str, int]:
     except Exception as e:
         print(f'[count] predictions.db error: {e}')
     try:
-        c = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cur = c.cursor()
         cur.execute('SELECT COUNT(*) FROM cached_analysis')
         out['cached_analysis'] = cur.fetchone()[0]
@@ -157,7 +163,9 @@ def _load_history(ticker: str) -> List[Dict[str, Any]]:
     # Fallback: read from stock_daily_prices directly
     hist = []
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute('''
@@ -335,7 +343,9 @@ def _store_result(
 
     # ── 1. stored_analyses (predictions.db) ──
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
         _ensure_stored_analyses_columns(conn)
         cur = conn.cursor()
         # Compute turnover from last candle
@@ -390,7 +400,9 @@ def _store_result(
 
     # ── 2. cached_analysis (stocks.db) ──
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         _ensure_cached_analysis_columns(conn)
         cur = conn.cursor()
         # Ensure table exists (legacy)
@@ -541,7 +553,9 @@ def main():
 
     if args.ticker:
         # Single ticker mode — fetch from DB
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute('SELECT * FROM stocks WHERE ticker = ?', (args.ticker.upper(),))

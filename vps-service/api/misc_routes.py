@@ -10,6 +10,7 @@ Version: 1.0.0
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 import time
 import sys
@@ -102,8 +103,7 @@ def _open_db(db_alias: str, db_path: str, writable: bool = False):
     conn = None
     try:
         if _DBM_AVAILABLE:
-            ctx = _dbm.connection(db_alias, writable=writable)
-            conn = ctx.__enter__()
+            conn = _dbm.get_connection(db_alias, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -287,7 +287,9 @@ def _get_testing_candidates() -> list:
         _db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'db', 'predictions.db')
         if not os.path.exists(_db_path):
             return []
-        _con = _sqlite3.connect(_db_path, timeout=5.0)
+        # Phase 7.1: migrated to db_manager
+        from core.db_manager import db_manager
+        _con = db_manager.get_connection(_db_path, writable=False)
         _con.row_factory = _sqlite3.Row
         # check columns exist
         _cols = {r[1] for r in _con.execute("PRAGMA table_info(predictions)").fetchall()}
@@ -520,6 +522,7 @@ def seasonality_signals():
 # ADMIN DAILY ANALYSIS ENDPOINT
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/admin/run-daily-analysis', methods=['POST'])
 def run_daily_analysis():
     """
@@ -692,7 +695,9 @@ def radar_incubator():
         import sqlite3
         data_engine_db = project_root / 'db' / 'data_engine.db'
         if data_engine_db.exists():
-            logo_conn = sqlite3.connect(str(data_engine_db), timeout=3.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            logo_conn = db_manager.get_connection(str(data_engine_db), writable=False)
             for cand in candidates:
                 ticker = (cand.get('ticker') or '').upper()
                 if ticker and not cand.get('logo_url'):
@@ -1007,6 +1012,7 @@ def get_trading_time():
 # ده بيسبب 502/503/405 errors. أضفناها هنا عشان الـ proxy يشتغل.
 # ============================================================
 
+@require_admin
 @misc_bp.route('/api/fundamentals/fetch', methods=['POST'])
 def fetch_egx_fundamentals():
     """يجيب fundamentals لأسهم EGX من EGXPilot (مجاني) ويخزنها في data_engine.db.
@@ -1233,6 +1239,7 @@ def fundamentals_stats():
         }), 200
 
 
+@require_admin
 @misc_bp.route('/api/admin/trigger-analysis', methods=['POST'])
 def trigger_analysis_manual():
     """تحليل فوري لـ N أسهم — بغضّ النظر عن حالة السوق.
@@ -1435,6 +1442,7 @@ def trigger_analysis_manual():
         }), 200
 
 
+@require_admin
 @misc_bp.route('/api/admin/refresh-persona-flags', methods=['POST'])
 def refresh_persona_flags():
     """أعد حساب persona flags لكل صف في stored_analyses — بدون إعادة Maestro كاملة.
@@ -1650,6 +1658,7 @@ def refresh_persona_flags():
 
 
 @misc_bp.route('/api/daily/rebuild-predictions', methods=['GET', 'POST'])
+@require_admin
 @misc_bp.route('/api/predictions/generate-all', methods=['GET', 'POST'])
 def rebuild_predictions():
     """Rebuild predictions — للـ /api/prediction-performance في الـ frontend.
@@ -2542,6 +2551,7 @@ _CASCADE_TIER_LABELS_AR = {
 }
 
 
+@require_admin
 @misc_bp.route('/api/unified/predictions', methods=['GET', 'POST'])
 def unified_predictions():
     """Unified predictions — للـ MaestroDashboard.
@@ -2574,8 +2584,7 @@ def unified_predictions():
         _unified_ctx = None
         try:
             if _DBM_AVAILABLE:
-                _unified_ctx = _dbm.connection('predictions')
-                conn = _unified_ctx.__enter__()
+                conn = _dbm.get_connection('predictions')
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -3704,6 +3713,7 @@ def unified_predictions():
 #   3. التوصية الديناميكية: تقرير مفصل بأسلوب بشري
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/portfolio/bag-holder-rescue', methods=['GET'])
 def bag_holder_rescue():
     """محرك إنقاذ الأسهم المزنوقة.
@@ -3902,6 +3912,7 @@ def bag_holder_rescue():
 
 _refresh_running = False
 
+@require_admin
 @misc_bp.route('/api/daily/live-refresh-analyses', methods=['POST'])
 def live_refresh_analyses():
     """
@@ -4143,6 +4154,7 @@ def live_refresh_analyses():
 # REALITY-CHECK-023: Health Check & Alert System (نظام الإنذارات)
 # ============================================================================
 
+@require_admin
 @misc_bp.route('/api/admin/health', methods=['GET'])
 def admin_health_check():
     """فحص صحة المنصة — للوحة الأدمن.
@@ -4174,6 +4186,7 @@ def admin_health_check():
         }), 500
 
 
+@require_admin
 @misc_bp.route('/api/admin/alerts/test', methods=['POST'])
 def test_alert():
     """اختبار نظام الإنذارات — بيably إرسال إنذار للتليجرام."""

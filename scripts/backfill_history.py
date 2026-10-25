@@ -34,10 +34,14 @@ def parse_vol(v):
 def backfill_predictions():
     print("🚀 Starting Historical Backfill (Last 90 Trading Days)...")
     
-    conn_ph = sqlite3.connect(DB_DIR / 'price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(DB_DIR / 'price_history.db', writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
     
-    conn_pred = sqlite3.connect(DB_DIR / 'predictions.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(DB_DIR / 'predictions.db', writable=False).__enter__()
     conn_pred.row_factory = sqlite3.Row
     
     # 1. Get last 90 trading days

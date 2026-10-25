@@ -11,7 +11,9 @@ print("  Verification of data_engine.db fix")
 print("=" * 60)
 
 try:
-    conn = sqlite3.connect(str(DB_PATH))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
     cur = conn.cursor()
     
     # Test 1: Read sqlite_master

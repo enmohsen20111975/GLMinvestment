@@ -27,7 +27,9 @@ def init_tables():
     print("=" * 60)
     print(f"Database: {DB_PATH}")
     
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     # outcome_logs table
@@ -163,7 +165,9 @@ def init_tables():
 
 def check_tables():
     """Check existing tables."""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")

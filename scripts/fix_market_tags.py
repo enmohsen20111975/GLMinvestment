@@ -37,7 +37,9 @@ def fix_db(db_path: Path):
         return
         
     print(f"\n🛠️ Fixing market tags in: {db_path.name}")
-    conn = sqlite3.connect(str(db_path), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=True).__enter__()
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
     conn.row_factory = sqlite3.Row

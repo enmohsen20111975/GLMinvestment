@@ -75,7 +75,9 @@ def _load_price_history(ticker: str) -> list:
     if ticker in _price_cache:
         return _price_cache[ticker]
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute('''

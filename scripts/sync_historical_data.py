@@ -45,14 +45,18 @@ def main():
     print(f"  will sync last {args.days} days from stock_daily_prices + price_history → historical_data")
 
     # 1. اقرا ticker → market map
-    sconn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     ticker_market = {r[0]: r[1] for r in sconn.execute("SELECT ticker, market FROM stocks WHERE is_active=1")}
     ticker_names = {r[0]: r[1] for r in sconn.execute("SELECT ticker, name_ar FROM stocks")}
     sconn.close()
     print(f"  ✓ loaded {len(ticker_market)} active tickers")
 
     # 2. تحديد التاريخ الأقصى الموجود في historical_data
-    deconn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    deconn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
     cur = deconn.cursor()
 
     # schema: historical_data(id, symbol, name, market, date, open, high, low, close, volume, ...)
@@ -69,7 +73,9 @@ def main():
     cutoff_date = (datetime.now() - timedelta(days=args.days)).strftime('%Y-%m-%d')
     print(f"\n  fetching rows from stock_daily_prices (since {cutoff_date})...")
 
-    sconn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     sdp_rows = sconn.execute("""
         SELECT ticker, price_date,
                COALESCE(open, open_price), COALESCE(high, high_price),
@@ -85,7 +91,9 @@ def main():
     ph_rows = []
     if PRICE_HISTORY_DB.exists():
         print(f"  fetching from price_history.db (since {cutoff_date})...")
-        pconn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pconn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         # بس tickers مش موجودة في stock_daily_prices
         sdp_tickers = set(r[0] for r in sdp_rows)
         ph_rows = pconn.execute("""

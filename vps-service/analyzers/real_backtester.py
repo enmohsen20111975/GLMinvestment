@@ -75,8 +75,12 @@ class RealBacktester:
     
     def _identify_broken_stocks(self):
         """Identify stocks with broken price data (ratio > 5x or < 0.2x)."""
-        conn_stocks = sqlite3.connect(self.db_path)
-        conn_history = sqlite3.connect(self.history_db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn_stocks = db_manager.get_connection(self.db_path, writable=False)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn_history = db_manager.get_connection(self.history_db_path, writable=False)
         
         cursor_stocks = conn_stocks.cursor()
         cursor_history = conn_history.cursor()
@@ -124,7 +128,9 @@ class RealBacktester:
         Returns:
             Tuple: (prices, volumes, dates)
         """
-        conn = sqlite3.connect(self.history_db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.history_db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -157,7 +163,9 @@ class RealBacktester:
         days_ahead: int
     ) -> Optional[float]:
         """Get price N days after a date."""
-        conn = sqlite3.connect(self.history_db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.history_db_path, writable=False)
         cursor = conn.cursor()
         
         # Calculate target date
@@ -201,7 +209,9 @@ class RealBacktester:
         print(f"{'='*60}")
         
         # Get tradeable stocks at that date
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''

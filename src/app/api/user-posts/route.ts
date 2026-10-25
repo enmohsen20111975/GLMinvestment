@@ -16,14 +16,19 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get('ticker');
-    const user_id = searchParams.get('user_id');
+    const queryUserId = searchParams.get('user_id');
     const status = searchParams.get('status') || 'active';
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: Record<string, unknown> = {};
     if (ticker) where.ticker = ticker;
-    if (user_id) where.user_id = user_id;
+    if (queryUserId) {
+      if (queryUserId !== sessionUserId) {
+        return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
+      }
+      where.user_id = queryUserId;
+    }
     if (status !== 'all') where.status = status;
 
     const posts = await db.userPost.findMany({
@@ -96,9 +101,9 @@ export async function POST(request: NextRequest) {
     const user_id = sessionUserId;
 
     const body = await request.json();
-    const { user_id, ticker, direction, entry_price, target_price, stop_loss, timeframe, reasoning, confidence } = body;
+    const { ticker, direction, entry_price, target_price, stop_loss, timeframe, reasoning, confidence } = body;
 
-    if (!user_id || !ticker || !direction) {
+    if (!ticker || !direction) {
       return NextResponse.json({ error: 'البيانات غير مكتملة' }, { status: 400 });
     }
 

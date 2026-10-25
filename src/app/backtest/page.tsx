@@ -2,6 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -246,11 +247,8 @@ export default function Home() {
  </CardContent>
  </Card>
 
- <Card>
- <CardHeader>
- <CardTitle>فلسفة رسالة المدة — ثقة العميل</CardTitle>
- </CardHeader>
- <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
+ <WidgetCard title="فلسفة رسالة المدة — ثقة العميل" contentClassName="text-sm space-y-3 text-muted-foreground leading-relaxed">
+
  <p>
  توجيه المالك: "العميل يحتاج شخصاً ذا خبرة يطمئنه، وهذا مهم جداً".
  عندما يرى العميل توقّعًا فيه: <span className="font-mono font-semibold">"التصحيح المتوقع: ~7 يوم (بين 3 و 12 يوم)"</span>،
@@ -269,8 +267,7 @@ export default function Home() {
  <li><span className="font-mono">Chase</span>: متوسط 8 يوم (3-11 يوم) — momentum rides</li>
  </ul>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </TabsContent>
 
  {/* PHASE 1 RESULTS */}
@@ -334,11 +331,13 @@ export default function Home() {
  </Tabs>
 
  {/* FINAL VERDICT */}
- <Card className="border-profit/20 bg-profit/5 dark:bg-profit/5">
- <CardHeader>
- <CardTitle className="text-profit">الحُكم النهائي — Integration جاهز + أرقام صادقة</CardTitle>
- </CardHeader>
- <CardContent className="text-sm leading-relaxed text-profit dark:text-profit/90 space-y-2">
+ <WidgetCard
+ 	title="الحُكم النهائي — Integration جاهز + أرقام صادقة"
+ 	titleClassName="text-profit"
+ 	className="border-profit/20 bg-profit/5 dark:bg-profit/5"
+ 	contentClassName="text-sm leading-relaxed text-profit dark:text-profit/90 space-y-2"
+ >
+
  <p>
  <span className="font-semibold">تم الدمج:</span> <span className="font-mono">regime_filter.py</span> مربوط في
  <span className="font-mono"> daily_predictor.py</span> خلف flag <span className="font-mono">REGIME_FILTER</span> (default OFF).
@@ -362,8 +361,7 @@ export default function Home() {
  <li>Walk-forward أطول (multi-year) لـ تأكيد الثبات.</li>
  <li>إضافة <span className="font-mono">expected_holding_days</span> لـ UI العميل.</li>
  </ol>
- </CardContent>
- </Card>
+ </WidgetCard>
  </>
  )}
  </main>

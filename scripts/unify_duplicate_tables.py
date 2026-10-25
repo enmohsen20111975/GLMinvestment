@@ -127,7 +127,9 @@ def dump_table_to_json(db_path: Path, table: str, out_path: Path) -> int:
 
     Returns: number of rows dumped.
     """
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(f"SELECT * FROM {table}").fetchall()
@@ -159,7 +161,9 @@ def drop_table(db_name: str, table: str, canonical_db: str,
         result["action"] = "SKIPPED_DB_MISSING"
         return result
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     try:
         # Check table exists
         cur = conn.execute(

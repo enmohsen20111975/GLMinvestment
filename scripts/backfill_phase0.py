@@ -100,14 +100,18 @@ def backfill(pred_db, ph_db, extended_window_days, dry_run, no_backup, out_path)
     print()
 
     # 0. Schema sanity — price_history must have the columns we read.
-    ph = sqlite3.connect(ph_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph = db_manager.connection(ph_db, writable=False).__enter__()
     ph.row_factory = sqlite3.Row
     for col in ('ticker', 'date', 'high_price', 'low_price'):
         if not table_has_column(ph, 'price_history', col):
             print(f"  [FATAL] price_history missing column: {col}")
             return 2
 
-    pred = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pred = db_manager.connection(pred_db, writable=False).__enter__()
     pred.row_factory = sqlite3.Row
     for col in ('id', 'ticker', 'prediction_date', 'created_at', 'outcome_date',
                 'entry_price', 'highest_price_reached', 'lowest_price_reached',

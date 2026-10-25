@@ -40,8 +40,12 @@ test_assets = [
     ('BTC', 'BTC-USD', 'CRYPTO'),
 ]
 
-conn_stocks = sqlite3.connect('db/stocks.db')
-conn_crypto = sqlite3.connect('db/data_engine.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn_stocks = db_manager.connection('db/stocks.db', writable=False).__enter__()
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn_crypto = db_manager.connection('db/data_engine.db', writable=False).__enter__()
 
 for ticker, yf_symbol, market in test_assets:
     yf_data = fetch_yahoo_quote(yf_symbol)

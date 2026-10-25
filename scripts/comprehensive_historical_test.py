@@ -95,7 +95,9 @@ def select_active_stocks(limit=None, market='EGX'):
 
     Returns: list of dicts: [{ticker, sector, volume, change_pct, history_days}, ...]
     """
-    conn1 = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn1 = db_manager.connection(DB_PATH, writable=False).__enter__()
     conn1.row_factory = sqlite3.Row
     cur1 = conn1.cursor()
     cur1.execute(
@@ -118,7 +120,9 @@ def select_active_stocks(limit=None, market='EGX'):
         return []
 
     # Filter by price_history availability
-    conn2 = sqlite3.connect(PRICE_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn2 = db_manager.connection(PRICE_DB_PATH, writable=False).__enter__()
     cur2 = conn2.cursor()
     tickers_to_check = [r['ticker'] for r in active_rows]
     placeholders = ','.join(['?'] * len(tickers_to_check))
@@ -154,7 +158,9 @@ def load_history_direct(ticker):
 
     Returns: list of dicts: {date, open, high, low, close, volume}
     """
-    conn = sqlite3.connect(PRICE_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_DB_PATH, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute(
@@ -660,7 +666,9 @@ def main():
     if args.tickers:
         tickers_list = [t.strip().upper() for t in args.tickers.split(',') if t.strip()]
         # Build candidate list with sector lookup
-        conn = sqlite3.connect(DB_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(DB_PATH, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         candidates = []

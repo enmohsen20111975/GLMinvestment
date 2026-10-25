@@ -62,7 +62,9 @@ def verify_db(db_name: str, key_tables: list | None) -> None:
 
     # 3. Can open + query
     try:
-        conn = sqlite3.connect(str(db_path))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(db_path), writable=False)
         conn.row_factory = sqlite3.Row
     except sqlite3.Error as e:
         check(f"{db_name} opens", False, f"sqlite error: {e}")

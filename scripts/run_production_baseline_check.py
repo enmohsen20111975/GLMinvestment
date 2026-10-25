@@ -44,7 +44,9 @@ def find_price_db():
     for db_path in [DB_DIR / "data_engine.db", DB_DIR / "price_history.db", DB_DIR / "market.db"]:
         if not db_path.exists(): continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             r = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='egksco_price_history'").fetchone()
             if r:
                 cnt = conn.execute("SELECT COUNT(*) FROM egksco_price_history").fetchone()[0]
@@ -233,7 +235,9 @@ def main():
         log("─"*80)
         log(f"اكتشفت DB الأسعار: {db_path}")
         log("─"*80)
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
 
         # ─── 3. إلغاء WATCH ───
         log("\n" + "═"*80)

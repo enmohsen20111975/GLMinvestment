@@ -12,6 +12,7 @@ Analytics Tracking API
 """
 
 import os
+from core.auth_middleware import require_admin
 import json
 import hashlib
 from datetime import datetime, timedelta
@@ -42,7 +43,9 @@ def get_db_connection():
     import sqlite3
     # Ensure directory exists
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=True)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
@@ -246,6 +249,7 @@ except Exception as _init_err:
 
 # ==================== API Routes ====================
 
+@require_admin
 @analytics_bp.route('/track', methods=['POST'])
 def track_event():
     """
@@ -351,6 +355,7 @@ def track_event():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/session/start', methods=['POST'])
 def start_session():
     """Start a new user session."""
@@ -395,6 +400,7 @@ def start_session():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/session/end', methods=['POST'])
 def end_session():
     """End a user session."""
@@ -432,6 +438,7 @@ def end_session():
 
 # ==================== Admin Analytics API ====================
 
+@require_admin
 @analytics_bp.route('/admin/overview', methods=['GET'])
 def get_overview():
     """Get analytics overview for admin dashboard."""
@@ -528,6 +535,7 @@ def get_overview():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/page-views', methods=['GET'])
 def get_page_views():
     """Get detailed page views."""
@@ -569,6 +577,7 @@ def get_page_views():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/feature-usage', methods=['GET'])
 def get_feature_usage():
     """Get detailed feature usage."""
@@ -610,6 +619,7 @@ def get_feature_usage():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @analytics_bp.route('/admin/generate-daily-summary', methods=['POST'])
 def generate_daily_summary():
     """Generate daily analytics summary."""

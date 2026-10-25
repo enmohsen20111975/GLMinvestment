@@ -245,7 +245,9 @@ class TradeJournal:
         if self._schema_ready:
             return
         try:
-            conn = sqlite3.connect(self.storage_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.storage_path, writable=False)
             conn.executescript(self._SCHEMA_SQL)
             conn.executescript(self._SCHEMA_REFLECTIONS_SQL)
             conn.commit()
@@ -255,7 +257,9 @@ class TradeJournal:
             logger.error("فشل إنشاء schema trade_journal: %s", e)
 
     def _get_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.storage_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.storage_path, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 

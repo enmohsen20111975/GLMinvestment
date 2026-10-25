@@ -98,6 +98,10 @@ sqlite3.connect = _patched_connect
 
 logger = logging.getLogger(__name__)
 
+# ─── Phase 9.1 (Strangler Pattern V2): extracted to closer_modules/ ───
+from closer_modules.atr_helpers import compute_atr_at_entry as _compute_atr_at_entry_extracted
+from closer_modules.pending_helpers import get_pending_predictions as _get_pending_predictions_extracted
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(_PROJECT_ROOT / 'db' / 'predictions.db'))
 PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
@@ -268,7 +272,7 @@ class DailyCloser:
     def _conn(self, db_path: str) -> sqlite3.Connection:
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection(db_path, writable=True).__enter__()
+            conn = db_manager.get_connection(db_path, writable=True)
         except Exception:
             conn = sqlite3.connect(db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
@@ -653,7 +657,7 @@ class DailyCloser:
             if os.path.exists(_intraday_db):
                 try:
                     from core.db_manager import db_manager
-                    _idb_conn = db_manager.connection('intraday', writable=False).__enter__()
+                    _idb_conn = db_manager.get_connection('intraday', writable=False)
                 except Exception:
                     _idb_conn = sqlite3.connect(_intraday_db, timeout=10.0)
                 _idb_conn.row_factory = sqlite3.Row
@@ -766,7 +770,7 @@ class DailyCloser:
                 if os.path.exists(_div_db):
                     try:
                         from core.db_manager import db_manager
-                        _div_conn = db_manager.connection('data_engine', writable=False).__enter__()
+                        _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
                         _div_conn = sqlite3.connect(_div_db, timeout=5.0)
                     _div_row = _div_conn.execute('''
@@ -1910,7 +1914,7 @@ class DailyCloser:
                 if os.path.exists(_div_db):
                     try:
                         from core.db_manager import db_manager
-                        _div_conn = db_manager.connection('data_engine', writable=False).__enter__()
+                        _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
                         _div_conn = sqlite3.connect(_div_db, timeout=5.0)
                     _div_row = _div_conn.execute('''
@@ -3083,8 +3087,7 @@ class DailyCloser:
                     exit_type = ?,
                     highest_price_reached = ?,
                     lowest_price_reached = ?,
-                    status = ?,
-                    lifecycle_status = 'closed'
+                    status = ?
                 WHERE id = ?
             """, (
                 close_date,

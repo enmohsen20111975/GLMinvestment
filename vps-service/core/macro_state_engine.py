@@ -63,7 +63,9 @@ class MacroStateEngine:
             return cls._cold_boot_from_stocks_db()
 
         try:
-            conn = sqlite3.connect(f"file:{ph_path}?mode=ro", uri=True, timeout=10.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(ph_path, writable=False)
             cursor = conn.cursor()
             
             # استخراج أعلى وأدنى سعر 52 أسبوع ومتوسط الحجم في استعلام تجميعي سريع
@@ -117,7 +119,9 @@ class MacroStateEngine:
         if not sdb_path.exists():
             return 0
         try:
-            conn = sqlite3.connect(f"file:{sdb_path}?mode=ro", uri=True, timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(sdb_path, writable=False)
             rows = conn.execute("""
                 SELECT ticker, high_52w, low_52w, last_price
                 FROM stocks WHERE is_active = 1

@@ -21,7 +21,9 @@ for db, table, col in checks:
         print(f"  {db}.{table}: FILE NOT FOUND")
         continue
     try:
-        conn = sqlite3.connect(db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db, writable=False).__enter__()
         row = conn.execute(f"SELECT MAX({col}) FROM {table}").fetchone()
         print(f"  {db}.{table}: latest = {row[0] if row else 'NULL'}")
         conn.close()
@@ -31,7 +33,9 @@ for db, table, col in checks:
 # 1.4 Multi-source problem in price_history.db
 print("\n--- 1.4 Multi-Source Problem Check (price_history.db) ---")
 if os.path.exists('db/price_history.db'):
-    conn = sqlite3.connect('db/price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection('db/price_history.db', writable=False).__enter__()
     try:
         sources = conn.execute("SELECT source, COUNT(*), COUNT(DISTINCT ticker) FROM price_history GROUP BY source").fetchall()
         print("  Sources distribution:")
@@ -51,7 +55,9 @@ if os.path.exists('db/price_history.db'):
 # 1.5 Close column NULL check in stocks.db
 print("\n--- 1.5 Close Column NULL Check (stocks.db) ---")
 if os.path.exists('db/stocks.db'):
-    conn = sqlite3.connect('db/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection('db/stocks.db', writable=False).__enter__()
     try:
         # Check columns of stocks
         cols = [r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()]
@@ -71,7 +77,9 @@ if os.path.exists('db/stocks.db'):
 
 print("\n--- 1.6 Price Sample (stocks.db / price_history.db) ---")
 if os.path.exists('db/stocks.db'):
-    conn = sqlite3.connect('db/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection('db/stocks.db', writable=True).__enter__()
     try:
         sample_tickers = ['COMI', 'SWDY', 'ETEL', 'AMOC', 'FWRY']
         for t in sample_tickers:

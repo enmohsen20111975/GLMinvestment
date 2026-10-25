@@ -46,9 +46,13 @@ def build_pit_clean_sample():
     4. يستبعد أي prediction ليس له سعر قبل تاريخه (impossible prediction)
     5. يحسب dataset_hash للعينة النظيفة
     """
-    conn_pred = sqlite3.connect(f"file:{PREDICTIONS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn_pred.row_factory = sqlite3.Row
-    conn_ph = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
 
     # قرأ كل predictions
@@ -322,7 +326,9 @@ def main():
     print(f"Channels: balanced={len(balanced)}, morning_bell={len(morning_bell)}")
     print()
 
-    conn_ph = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
 
     # Step 2: GLM returns (TP/SL method)

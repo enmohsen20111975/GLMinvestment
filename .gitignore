@@ -370,3 +370,19 @@ server.log
 /skills/
 >>>>>>> 99d0ec1 (docs: CLEANUP-PLAN-1 — full cleanup plan for Alpha + Bravo)
 db/archive_storage/
+
+# ─── Phase 9: Untrack all databases + backups ───
+# DBs are now untracked — each environment has its own data.
+# Test/sample DBs were removed from git to avoid overwriting real production data.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.zip
+*.zip.part
+*.part
+db_backup_*
+backtest_results/*.json
+# Phase 3: untrack ALL data/ and db/ files (databases + data files + scripts)
+/data/
+/db/

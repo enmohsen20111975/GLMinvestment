@@ -106,7 +106,9 @@ def get_sample_tickers():
     db = os.path.realpath("db/stocks.db")
     if not os.path.exists(db): return DEFAULT_TICKERS_FALLBACK
     try:
-        c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c = db_manager.connection(db, writable=False).__enter__()
         cur = c.cursor()
         cur.execute("SELECT ticker FROM stocks WHERE market='EGX' AND current_price > 0 ORDER BY turnover_egp DESC LIMIT 5")
         rows = cur.fetchall(); c.close()

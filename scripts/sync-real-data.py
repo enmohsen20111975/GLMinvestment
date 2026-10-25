@@ -18,19 +18,29 @@ def log(msg):
 def main():
     log("=== مزامنة البيانات الحقيقية ===\n")
     
-    stocks_db = sqlite3.connect(f'{DB_DIR}/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_db = db_manager.connection(f'{DB_DIR}/stocks.db', writable=False).__enter__()
     stocks_db.row_factory = sqlite3.Row
     
-    predictions_db = sqlite3.connect(f'{DB_DIR}/predictions.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    predictions_db = db_manager.connection(f'{DB_DIR}/predictions.db', writable=False).__enter__()
     predictions_db.row_factory = sqlite3.Row
     
-    price_db = sqlite3.connect(f'{DB_DIR}/price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_db = db_manager.connection(f'{DB_DIR}/price_history.db', writable=False).__enter__()
     price_db.row_factory = sqlite3.Row
     
-    learned_db = sqlite3.connect(f'{DB_DIR}/learned.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    learned_db = db_manager.connection(f'{DB_DIR}/learned.db', writable=False).__enter__()
     learned_db.row_factory = sqlite3.Row
     
-    custom_db = sqlite3.connect(f'{UPLOAD_DIR}/stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    custom_db = db_manager.connection(f'{UPLOAD_DIR}/stocks.db', writable=False).__enter__()
     custom_db.row_factory = sqlite3.Row
     
     # ===========================================================================

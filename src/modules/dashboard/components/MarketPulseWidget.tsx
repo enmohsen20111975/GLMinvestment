@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useAppStore } from '@/lib/store';
+import { Label, NumText, ChangeText, PriceValue } from '@/components/shared/ui';
 
 // ============================================================
 // Types — مطابقة لـ /api/market-pulse
@@ -786,9 +787,9 @@ export function MarketPulseWidget() {
  >
  {pulse ? (pulse.score >= 0 ? `+${(pulse.score ?? 0).toFixed(1)}` : (pulse.score ?? 0).toFixed(1)) : '—'}
  </span>
- <span className="text-xs text-muted-foreground">
+ <Label>
  من +5
- </span>
+ </Label>
  </div>
  </div>
 
@@ -843,9 +844,9 @@ export function MarketPulseWidget() {
  اتساع السوق
  </span>
  {bread && (
- <span className="text-xs text-muted-foreground">
+ <Label>
  السيولة: {fmtVolume(bread.total_turnover)} ج.م
- </span>
+ </Label>
  )}
  </div>
  {bread ? (

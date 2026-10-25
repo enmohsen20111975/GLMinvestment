@@ -508,7 +508,9 @@ def main():
         print(f"[OPT] ERROR: {PRICE_DB} not found", file=sys.stderr)
         sys.exit(1)
 
-    conn = sqlite3.connect(f"file:{PRICE_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_DB, writable=False).__enter__()
     all_candles = load_all_candles(conn)
     conn.close()
     print(f"[OPT] Loaded {len(all_candles)} tickers", flush=True)

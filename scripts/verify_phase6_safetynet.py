@@ -107,7 +107,9 @@ def run_checks():
             checks.append(('db_recent', 'FAIL', 'db missing'))
             print(f'  ❌ Check 5: price_history.db not found')
         else:
-            conn = sqlite3.connect(str(PRICE_HISTORY_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
             cur = conn.cursor()
             cur.execute('SELECT MAX(date) FROM price_history')
             max_date_str = cur.fetchone()[0]
@@ -136,7 +138,9 @@ def run_checks():
     # Check 6: price_history.db row count > 10K
     try:
         if PRICE_HISTORY_DB.exists():
-            conn = sqlite3.connect(str(PRICE_HISTORY_DB))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
             cur = conn.cursor()
             cur.execute('SELECT COUNT(*) FROM price_history')
             row_count = cur.fetchone()[0]

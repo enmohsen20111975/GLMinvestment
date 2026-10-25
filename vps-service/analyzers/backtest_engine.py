@@ -52,8 +52,7 @@ def _open_db(db_path: str, writable: bool = False):
     conn = None
     try:
         if _BT_ENGINE_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = _dbm.get_connection(db_path, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -208,8 +207,7 @@ class BacktestEngine:
             _bt_init_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_init_ctx = _dbm.connection(self.predictions_db_path, writable=True)
-                    conn = _bt_init_ctx.__enter__()
+                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -293,8 +291,7 @@ class BacktestEngine:
                 _bt_ph1_ctx = None
                 try:
                     if _BT_ENGINE_DBM_AVAILABLE:
-                        _bt_ph1_ctx = _dbm.connection(self.price_history_db_path, writable=False)
-                        conn = _bt_ph1_ctx.__enter__()
+                        conn = _dbm.get_connection(self.price_history_db_path, writable=False)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:
@@ -341,8 +338,7 @@ class BacktestEngine:
                 _bt_ph2_ctx = None
                 try:
                     if _BT_ENGINE_DBM_AVAILABLE:
-                        _bt_ph2_ctx = _dbm.connection(self.db_path, writable=False)
-                        conn = _bt_ph2_ctx.__enter__()
+                        conn = _dbm.get_connection(self.db_path, writable=False)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:
@@ -542,8 +538,7 @@ class BacktestEngine:
             _bt_store_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_store_ctx = _dbm.connection(self.predictions_db_path, writable=True)
-                    conn = _bt_store_ctx.__enter__()
+                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -599,8 +594,7 @@ class BacktestEngine:
                 _bt_tlt1_ctx = None
                 try:
                     if _BT_ENGINE_DBM_AVAILABLE:
-                        _bt_tlt1_ctx = _dbm.connection(self.price_history_db_path, writable=False)
-                        conn = _bt_tlt1_ctx.__enter__()
+                        conn = _dbm.get_connection(self.price_history_db_path, writable=False)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:
@@ -633,8 +627,7 @@ class BacktestEngine:
             _bt_tlt2_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_tlt2_ctx = _dbm.connection(self.db_path, writable=False)
-                    conn = _bt_tlt2_ctx.__enter__()
+                    conn = _dbm.get_connection(self.db_path, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -964,8 +957,7 @@ class BacktestEngine:
             _bt_clear_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_clear_ctx = _dbm.connection(self.predictions_db_path, writable=True)
-                    conn = _bt_clear_ctx.__enter__()
+                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1141,8 +1133,7 @@ class BacktestEngine:
             _bt_gr_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_gr_ctx = _dbm.connection(self.predictions_db_path, writable=False)
-                    conn = _bt_gr_ctx.__enter__()
+                    conn = _dbm.get_connection(self.predictions_db_path, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1175,8 +1166,7 @@ class BacktestEngine:
             _bt_gs_ctx = None
             try:
                 if _BT_ENGINE_DBM_AVAILABLE:
-                    _bt_gs_ctx = _dbm.connection(self.predictions_db_path, writable=False)
-                    conn = _bt_gs_ctx.__enter__()
+                    conn = _dbm.get_connection(self.predictions_db_path, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:

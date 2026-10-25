@@ -23,7 +23,9 @@ print("="*60)
 print("\n1. Active stocks with zero/NULL price:")
 stocks_db = str(PROJECT_ROOT / 'db/stocks.db')
 if os.path.exists(stocks_db):
-    c = sqlite3.connect(stocks_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(stocks_db, writable=False)
     # check if stocks table exists
     has_stocks = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='stocks'").fetchone()[0]
     if has_stocks:
@@ -38,7 +40,9 @@ else:
 # 2. stock_daily_prices: 0 bad close_price
 print("\n2. Bad historical prices (close_price <= 0 or NULL):")
 if os.path.exists(stocks_db):
-    c = sqlite3.connect(stocks_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(stocks_db, writable=False)
     has_sdp = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='stock_daily_prices'").fetchone()[0]
     if has_sdp:
         n = c.execute("SELECT COUNT(*) FROM stock_daily_prices WHERE close_price <= 0 OR close_price IS NULL OR close <= 0 OR close IS NULL").fetchone()[0]
@@ -53,7 +57,9 @@ else:
 print("\n3. stored_analyses required columns:")
 pred_db = str(PROJECT_ROOT / 'db/predictions.db')
 if os.path.exists(pred_db):
-    c = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(pred_db, writable=False)
     cols = [r[1] for r in c.execute('PRAGMA table_info(stored_analyses)').fetchall()]
     for req in ['market', 'signal', 'confidence', 'persona', 'master_score']:
         check(f"{req} present", req in cols)
@@ -65,7 +71,9 @@ else:
 # 4. aiPrediction: 0 bad geometry (BRAVO RADAR-CLEANUP)
 print("\n4. aiPrediction geometry (entry/stop/target valid):")
 if os.path.exists(pred_db):
-    c = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(pred_db, writable=False)
     v1 = c.execute("SELECT COUNT(*) FROM aiPrediction WHERE signal_type IN ('BUY','STRONG_BUY','ACCUMULATE') AND entry_price >= target_price").fetchone()[0]
     check(f"0 BUY with entry >= target (got {v1})", v1 == 0)
     v2 = c.execute("SELECT COUNT(*) FROM aiPrediction WHERE signal_type IN ('BUY','STRONG_BUY','ACCUMULATE') AND stop_loss >= entry_price").fetchone()[0]
@@ -80,7 +88,9 @@ else:
 print("\n5. market_news table:")
 news_db = str(PROJECT_ROOT / 'db/news.db')
 if os.path.exists(news_db):
-    c = sqlite3.connect(news_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(news_db, writable=False)
     tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')").fetchall()]
     check("market_news exists", 'market_news' in tables)
     if 'market_news' in tables:
@@ -95,7 +105,9 @@ print("\n6. DB integrity:")
 for db in ['stocks.db', 'predictions.db', 'news.db', 'data_engine.db']:
     db_path = str(PROJECT_ROOT / f'db/{db}')
     if os.path.exists(db_path):
-        c = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        c = db_manager.get_connection(db_path, writable=False)
         row = c.execute('PRAGMA integrity_check').fetchone()
         check(f"{db} integrity OK", row[0] == 'ok')
         c.close()

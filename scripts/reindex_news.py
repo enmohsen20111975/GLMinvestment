@@ -25,7 +25,9 @@ DB_PATH = ROOT / 'db' / 'news.db'
 
 def reindex():
     print(f"Connecting to database: {DB_PATH}")
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cur = conn.cursor()
 
     # Ensure is_catalyst column exists

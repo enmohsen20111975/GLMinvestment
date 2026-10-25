@@ -181,7 +181,9 @@ class FundamentalAnalyst(BaseAnalyst):
 
     def analyze(self, ticker: str, db_path: str = STOCKS_DB) -> Dict[str, Any]:
         try:
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT pe_ratio, pb_ratio, roe, dividend_yield, book_value_per_share, sector
@@ -374,7 +376,9 @@ class MacroAnalyst(BaseAnalyst):
 
     def analyze(self, ticker: str, db_path: str = STOCKS_DB) -> Dict[str, Any]:
         try:
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT value FROM app_state WHERE key = 'market_regime'

@@ -42,14 +42,20 @@ def main():
     log(f"✅ قاعدة البيانات الكبيرة: {EGX_DB_PATH} ({get_db_size(EGX_DB_PATH):.1f} MB)")
     
     # فتح القاعدة الكبيرة
-    egx_db = sqlite3.connect(EGX_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    egx_db = db_manager.connection(EGX_DB_PATH, writable=False).__enter__()
     egx_db.row_factory = sqlite3.Row
     
     # فتح/إنشاء القواعد الصغيرة
-    stocks_db = sqlite3.connect(os.path.join(DB_DIR, 'stocks.db'))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_db = db_manager.connection(os.path.join(DB_DIR, 'stocks.db'), writable=False).__enter__()
     stocks_db.row_factory = sqlite3.Row
     
-    predictions_db = sqlite3.connect(os.path.join(DB_DIR, 'predictions.db'))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    predictions_db = db_manager.connection(os.path.join(DB_DIR, 'predictions.db'), writable=False).__enter__()
     predictions_db.row_factory = sqlite3.Row
     
     # فحص الجداول في القاعدة الكبيرة

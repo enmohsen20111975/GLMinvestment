@@ -89,7 +89,9 @@ def init_db_safety(db_path):
         # FIX (P20-Bug1): أصلح الصلاحيات الأول، قبل ما نفتح الاتصال
         perm_result = fix_file_permissions(Path(db_path))
 
-        conn = sqlite3.connect(str(db_path), timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         conn.execute('PRAGMA journal_mode = WAL')
         conn.execute('PRAGMA synchronous = NORMAL')
         conn.execute('PRAGMA busy_timeout = 30000')

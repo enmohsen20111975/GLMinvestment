@@ -11,18 +11,24 @@
  *
  * مصدر البيانات: /api/market/liquidity-flow (stocks.db.stock_daily_prices JOIN stocks)
  * - مفيش أي mock data — كل الأرقام من SQLite.
+ *
+ * Phase 3 (WidgetCard adoption): الـ 3 branches (loading + error + main) اتدمجوا
+ * في WidgetCard واحد مع `loading` prop + badge slot للـ market + period buttons،
+ * والـ error state بقا WidgetError مع onRetry=refetch.
  */
 
 import React, { useState, useMemo } from 'react';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Building2, User, TrendingUp, TrendingDown, Layers, Globe2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedEmptyState } from '@/components/shared/ui';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetError } from '@/components/shared/WidgetError';
+import { Label, NumText, ChangeText, PriceValue } from '@/components/shared/ui';
 
 // ─── ALPHA-FIX: Data freshness + holiday filtering ──────────────────────────
 // EGX weekend = Friday (5) + Saturday (6). Trading days = Sunday→Thursday.
@@ -254,7 +260,12 @@ export function InvestorsFlowPanel() {
  // Each query cached + retried independently.
 
  // 1) Liquidity flow data
- const { data: flowRaw, isLoading: loadingFlow, error: flowError } = useApiQuery<LiquidityFlowData>('/api/market/liquidity-flow', {
+ const {
+ data: flowRaw,
+ isLoading: loadingFlow,
+ error: flowError,
+ refetch,
+ } = useApiQuery<LiquidityFlowData>('/api/market/liquidity-flow', {
    params: { market: currentMarket, days },
    queryOptions: { refetchOnWindowFocus: false },
  });
@@ -274,33 +285,16 @@ export function InvestorsFlowPanel() {
 
  const marketNameAr = MARKET_NAMES_AR[currentMarket];
 
- if (loading) {
- return (
- <Card dir="rtl" className="p-4">
- <div className="flex items-center gap-2 text-sm text-muted-foreground">
- <Loader2 className="w-4 h-4 animate-spin" />
- جاري تحميل بيانات تدفّق السيولة...
- </div>
- </Card>
- );
- }
-
  if (error || !data || (data.sector_flow.length === 0 && data.summary.total_turnover === 0)) {
  return (
- <Card dir="rtl" className="p-4">
- <div className="text-center text-xs text-muted-foreground py-4 space-y-1">
- <div className="flex items-center justify-center gap-1.5 text-warning ">
- <Users className="w-3.5 h-3.5" />
- <span className="font-semibold">تدفّق السيولة — {marketNameAr}</span>
- </div>
- <p>لا توجد بيانات سيولة متاحة لهذا السوق حالياً</p>
- <p className="text-xs">
- {error
- ? `سبب التعطّل: ${error}`
- : 'بانتظار تحديث بيانات الجلسة — جرّب «تحديث» بعد دقيقة'}
- </p>
- </div>
- </Card>
+ <WidgetError
+ title="حركة السيولة وتدفّق المستثمرين"
+ message={error
+ ? 'تعذّر تحميل بيانات تدفّق السيولة. يرجى المحاولة مرة أخرى.'
+ : 'لا توجد بيانات سيولة متاحة لهذا السوق حالياً (بانتظار تحديث بيانات الجلسة).'}
+ onRetry={() => refetch()}
+ className="border-border"
+ />
  );
  }
 
@@ -309,15 +303,21 @@ export function InvestorsFlowPanel() {
  const retailPct = Math.round(inst.retail_pct || 0);
 
  return (
- <Card dir="rtl">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
- <Users className="w-4 h-4 text-warning" />
- حركة السيولة وتدفّق المستثمرين
+ <WidgetCard
+ title="حركة السيولة وتدفّق المستثمرين"
+ icon={Users}
+ iconColor="text-warning"
+ loading={loading}
+ hideRefresh
+ className="border-border w-full"
+ headerClassName="pb-2"
+ titleClassName="text-sm flex-wrap"
+ badge={
+ <>
  <Badge variant="outline" className="text-xs text-warning border-warning/20">
  {marketNameAr}
  </Badge>
- <div className="flex gap-1 mr-auto">
+ <div className="flex gap-1">
  {PERIOD_OPTIONS.map((opt) => (
  <Button
  key={opt.value}
@@ -330,9 +330,10 @@ export function InvestorsFlowPanel() {
  </Button>
  ))}
  </div>
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ </>
+ }
+ contentClassName="space-y-3"
+ >
  {/* Investor Type Split — مؤسسات vs أفراد */}
  <div className="space-y-1.5">
  <div className="flex items-center justify-between text-xs">
@@ -460,8 +461,7 @@ export function InvestorsFlowPanel() {
  <span className="font-bold text-loss">{data.summary.declining_sectors}</span> هابطة
  </span>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 

@@ -100,7 +100,9 @@ class LiveAIMonitor:
         if self._schema_ready:
             return
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=True)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS live_ai_signals (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -462,7 +464,9 @@ class LiveAIMonitor:
     def _store_signal(self, row: dict) -> bool:
         """تخزين signal واحد في live_ai_signals table."""
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=True)
             conn.execute("""
                 INSERT INTO live_ai_signals
                     (ticker, decision, confidence, reason, narrative,
@@ -509,7 +513,9 @@ class LiveAIMonitor:
         self._ensure_schema()
         try:
             cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """SELECT * FROM live_ai_signals

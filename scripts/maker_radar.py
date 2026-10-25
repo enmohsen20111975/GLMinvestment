@@ -191,7 +191,9 @@ def _find_radar_db(market: str = 'EGX'):
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             # تحقق إن الـ table موجود
             cur = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -698,7 +700,9 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
         return
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=True).__enter__()
 
     # تأكد إن الجدول موجود
     conn.execute("""
@@ -729,6 +733,9 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
         'price_source': 'TEXT',        # live / daily
         'live_price': 'REAL',          # السعر الحي إن وجد
         'daily_price': 'REAL',         # السعر التاريخي الأصلي قبل override
+        # P0-DELETE-OWNERSHIP-FIX: source column for explicit record ownership.
+        # Allows scoped DELETE (maker_radar only deletes its own rows).
+        'source': "TEXT DEFAULT 'maker_radar'",
     }
     cur = conn.execute("PRAGMA table_info(radar_signal_tracking)")
     existing_cols = {row[1] for row in cur.fetchall()}
@@ -743,9 +750,18 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
     conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_date ON radar_signal_tracking(signal_date)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_status ON radar_signal_tracking(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_quality ON radar_signal_tracking(data_quality)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_radar_sig_source ON radar_signal_tracking(source)")
 
-    # حذف الإشارات القديمة لنفس اليوم (عشان ما تتكررش)
-    conn.execute("DELETE FROM radar_signal_tracking WHERE signal_date = ?", (scan_date,))
+    # P0-DELETE-OWNERSHIP-FIX: scoped DELETE — maker_radar only deletes its OWN rows.
+    # Previously: DELETE WHERE signal_date=? (wiped ALL rows for the date, including
+    # rows owned by state_history_tracker (canonical_state) and frontend picks).
+    # Now: only rows with source='maker_radar' are deleted. Other writers' rows survive.
+    # Backward compat: existing rows (before this fix) have source='maker_radar' (DEFAULT),
+    # so they are still cleaned up correctly.
+    conn.execute(
+        "DELETE FROM radar_signal_tracking WHERE signal_date = ? AND source = 'maker_radar'",
+        (scan_date,)
+    )
 
     inserted = 0
     for stock in under_microscope:
@@ -794,8 +810,9 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
         conn.execute("""
             INSERT INTO radar_signal_tracking
                 (ticker, signal_date, signal_type, entry_price, path, reason, status,
-                 data_date, data_quality, staleness_days, price_source, live_price, daily_price)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 data_date, data_quality, staleness_days, price_source, live_price, daily_price,
+                 source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'maker_radar')
         """, (ticker, scan_date, signal_type, entry_price, path, full_reason[:500], initial_status,
               data_date, data_quality, staleness_days, price_source, live_price, daily_price))
         inserted += 1
@@ -1102,7 +1119,9 @@ def main():
     log(f"  DB: {PROD_DB.name} (table: {PROD_TABLE})")
     log(f"  DB source id: {DB_SOURCE_ID}")
 
-    conn = sqlite3.connect(str(PROD_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROD_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     # Rule 67 (Task 35-A): تحقق إن الجدول المطلوب موجود فعلاً. ممكن الـ DB
@@ -1183,7 +1202,9 @@ def main():
         if not stocks_db_path.exists():
             return []
         try:
-            sconn = sqlite3.connect(str(stocks_db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            sconn = db_manager.connection(str(stocks_db_path), writable=False).__enter__()
             sconn.row_factory = sqlite3.Row
             # اكتشف ticker col (ticker أو symbol)
             cols = [r[1] for r in sconn.execute("PRAGMA table_info(stocks)").fetchall()]
@@ -1336,7 +1357,9 @@ def main():
     # الرادار كان بيشوف أمس بس → دلوقتي بيجيب current_price + change_percent + last_update
     live_prices = {}
     try:
-        live_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        live_conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
         live_conn.row_factory = sqlite3.Row
         # PURGE-FIX (2026-10-22): filter is_active=1 — skip corrupted/deactivated tickers
         live_rows = live_conn.execute("""
@@ -1359,7 +1382,9 @@ def main():
     # Task IMPROVEMENT-26: آخر تاريخ في daily prices
     last_daily_date = ''
     try:
-        date_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        date_conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
         r = date_conn.execute("SELECT MAX(price_date) FROM stock_daily_prices").fetchone()
         last_daily_date = r[0] if r and r[0] else ''
         date_conn.close()

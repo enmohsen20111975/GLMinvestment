@@ -47,7 +47,9 @@ def get_latest_prices():
     prices = {}
 
     # 1. اقرا من stocks.db
-    conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         rows = conn.execute("""
             SELECT ticker, market, current_price, previous_close, change_percent,
@@ -71,7 +73,9 @@ def get_latest_prices():
     # 2. لو فيه intraday أحدث من النهاردة، استخدمه
     if INTRADAY_DB.exists():
         try:
-            iconn = sqlite3.connect(f"file:{INTRADAY_DB}?mode=ro", uri=True)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            iconn = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
             try:
                 intra_rows = iconn.execute("""
                     SELECT ticker, price, timestamp
@@ -108,7 +112,9 @@ def get_latest_index_close(db_path, symbol):
     try:
         from datetime import datetime as _dt
         today = _dt.now().strftime('%Y-%m-%d')
-        conn = sqlite3.connect(str(db_path))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         row = conn.execute(
             "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
             "AND price_date < ? ORDER BY price_date DESC LIMIT 1", (symbol, today)
@@ -396,7 +402,9 @@ def main():
     if not args.dry_run:
         now_iso = datetime.now().isoformat()
         today = datetime.now().strftime('%Y-%m-%d')
-        conn = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
         try:
             # 4a. تأكد إن index_daily_prices موجود
             conn.execute("""

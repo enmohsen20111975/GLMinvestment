@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
- Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -228,14 +227,14 @@ function WalkForwardComparison({ data, title }: { data: WalkForwardData; title: 
  <XCircle className="w-5 h-5 text-loss" />;
 
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <BarChart2 className="w-4 h-4" />
- {title}
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-3">
+ <WidgetCard
+        title={title}
+        icon={BarChart2}
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3"
+ >
+
  <div className="grid grid-cols-3 gap-2 text-xs font-medium text-muted-foreground mb-1 px-1">
  <span>Metric</span>
  <span className="text-center">In-Sample</span>
@@ -261,21 +260,20 @@ function WalkForwardComparison({ data, title }: { data: WalkForwardData; title: 
  {verdictIcon}
  <span className="text-sm">{data.verdict}</span>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 
 function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_vs_old'] }) {
  return (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Zap className="w-4 h-4" />
- {comparison.title}
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+        title={comparison.title}
+        icon={Zap}
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        contentClassName="space-y-4"
+ >
+
  <div className="grid grid-cols-2 gap-4">
  {/* Old system */}
  <div className="space-y-2 p-3 rounded-lg bg-loss/10 border border-loss/20">
@@ -327,8 +325,7 @@ function ComparisonCard({ comparison }: { comparison: BacktestData['comparison_v
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 

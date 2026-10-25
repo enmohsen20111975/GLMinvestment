@@ -79,7 +79,9 @@ def _open_ro(path: Path) -> Optional[sqlite3.Connection]:
     if not path.exists():
         return None
     try:
-        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=3.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(path, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error:

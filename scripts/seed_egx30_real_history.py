@@ -55,7 +55,9 @@ def main():
         print(f"✗ stocks.db not found at {STOCKS_DB}")
         sys.exit(1)
 
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
 
     # Ensure table exists
     conn.execute("""

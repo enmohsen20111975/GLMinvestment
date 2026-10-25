@@ -48,7 +48,9 @@ def fetch_historical_data(coin_id: str, vs_currency: str = 'usd', days: int = 90
 
 def save_to_database(coin_symbol: str, data: dict) -> int:
     """Save historical data to crypto_prices table."""
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     prices = data.get('prices', [])
@@ -133,7 +135,9 @@ def main():
     print("=" * 60)
     
     # Verify data
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
     
     print("\nData verification:")

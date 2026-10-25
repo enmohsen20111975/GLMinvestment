@@ -1,0 +1,202 @@
+{
+  "timestamp": "2026-10-24T09:55:00.720917",
+  "period": "2025-07-01 → 2026-03-31",
+  "tickers_tested": 100,
+  "trading_days": 196,
+  "total_signals": 422,
+  "signals_per_day": 2.2,
+  "win_rate": 0.0,
+  "wins": 0,
+  "losses": 243,
+  "closed": 243,
+  "rejection_reasons": {
+    "below_sma50": 0,
+    "low_volume": 0,
+    "low_momentum": 0,
+    "low_score": 0,
+    "other": 0
+  },
+  "processing_time_s": 294.3,
+  "signals_sample": [
+    {
+      "date": "2025-08-14",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 12.269,
+      "target": null,
+      "stop": 11.16479
+    },
+    {
+      "date": "2025-11-13",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 11.521,
+      "target": null,
+      "stop": 10.7879
+    },
+    {
+      "date": "2025-11-27",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 12.411,
+      "target": null,
+      "stop": 11.3423
+    },
+    {
+      "date": "2025-12-04",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 12.46,
+      "target": null,
+      "stop": 11.5669
+    },
+    {
+      "date": "2025-12-07",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 12.485,
+      "target": null,
+      "stop": 11.5935
+    },
+    {
+      "date": "2025-12-08",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 12.745,
+      "target": null,
+      "stop": 11.8438
+    },
+    {
+      "date": "2026-01-01",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 14.104,
+      "target": null,
+      "stop": 13.1979
+    },
+    {
+      "date": "2026-02-16",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "entry": 13.697,
+      "target": null,
+      "stop": 12.7659
+    },
+    {
+      "date": "2026-02-18",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.57,
+      "target": null,
+      "stop": 12.6669
+    },
+    {
+      "date": "2026-02-19",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.463,
+      "target": null,
+      "stop": 12.6006
+    },
+    {
+      "date": "2026-02-23",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.623,
+      "target": null,
+      "stop": 12.738
+    },
+    {
+      "date": "2026-02-24",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.901,
+      "target": null,
+      "stop": 13.0285
+    },
+    {
+      "date": "2026-02-25",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 14.284,
+      "target": null,
+      "stop": 13.3399
+    },
+    {
+      "date": "2026-02-26",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 14.05,
+      "target": null,
+      "stop": 13.0991
+    },
+    {
+      "date": "2026-03-02",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 14.799,
+      "target": null,
+      "stop": 13.7118
+    },
+    {
+      "date": "2026-03-03",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 14.653,
+      "target": null,
+      "stop": 13.5799
+    },
+    {
+      "date": "2026-03-04",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.874,
+      "target": null,
+      "stop": 12.625340000000001
+    },
+    {
+      "date": "2026-03-25",
+      "ticker": "1010",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 13.06,
+      "target": null,
+      "stop": 12.1615
+    },
+    {
+      "date": "2025-08-28",
+      "ticker": "1030",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 3.256,
+      "target": null,
+      "stop": 3.0254
+    },
+    {
+      "date": "2025-08-31",
+      "ticker": "1030",
+      "signal": "STRONG_BUY",
+      "score": 90,
+      "entry": 3.225,
+      "target": null,
+      "stop": 2.9975
+    }
+  ]
+}

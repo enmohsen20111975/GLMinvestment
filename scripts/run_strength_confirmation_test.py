@@ -71,7 +71,9 @@ def find_daily_price_db():
         if not db_path.exists():
             continue
         try:
-            conn = sqlite3.connect(str(db_path))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(db_path), writable=False).__enter__()
             r = conn.execute("""
                 SELECT name FROM sqlite_master
                 WHERE type='table' AND name=?
@@ -619,7 +621,9 @@ def main():
     log(f"  ✅ Columns: {cols}")
     log("")
 
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
 
     log("─"*80)
     log("إعداد الاختبار:")

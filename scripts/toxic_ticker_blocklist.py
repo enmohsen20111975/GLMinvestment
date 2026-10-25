@@ -51,7 +51,9 @@ def analyze_toxic_tickers():
     if not PREDICTIONS_DB.exists():
         return [], {}
 
-    conn = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     rows = conn.execute(
         'SELECT ticker, actual_return, status FROM predictions WHERE actual_return IS NOT NULL'
     ).fetchall()

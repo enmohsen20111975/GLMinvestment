@@ -15,8 +15,12 @@ shutil.copy2(stocks_db_path, backup_path)
 print("Backup complete.")
 
 # 2. Connect to databases
-stocks_conn = sqlite3.connect(str(stocks_db_path))
-ph_conn = sqlite3.connect(str(ph_db_path))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+stocks_conn = db_manager.connection(str(stocks_db_path), writable=False).__enter__()
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+ph_conn = db_manager.connection(str(ph_db_path), writable=False).__enter__()
 
 stocks_cursor = stocks_conn.cursor()
 ph_cursor = ph_conn.cursor()
@@ -77,7 +81,9 @@ stocks_conn.close()
 ph_conn.close()
 
 print("\nVacuuming stocks.db to recover space...")
-conn = sqlite3.connect(str(stocks_db_path))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(str(stocks_db_path), writable=False).__enter__()
 try:
     conn.execute("VACUUM")
     print("Vacuum complete.")

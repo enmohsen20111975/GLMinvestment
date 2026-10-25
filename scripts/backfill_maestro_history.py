@@ -36,7 +36,9 @@ def parse_vol(v):
         return 100000.0
 
 def load_history_for_ticker(ticker):
-    conn = sqlite3.connect(DB_DIR / 'price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_DIR / 'price_history.db', writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("""
@@ -53,10 +55,14 @@ def load_history_for_ticker(ticker):
 def backfill_maestro_predictions():
     print("🚀 Starting Maestro 8-Layer Historical Backfill (Top Liquid EGX Stocks)...")
     
-    conn_ph = sqlite3.connect(DB_DIR / 'price_history.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(DB_DIR / 'price_history.db', writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
     
-    conn_pred = sqlite3.connect(DB_DIR / 'predictions.db')
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(DB_DIR / 'predictions.db', writable=True).__enter__()
     conn_pred.row_factory = sqlite3.Row
     
     conn_pred.execute("DELETE FROM predictions")
@@ -74,7 +80,9 @@ def backfill_maestro_predictions():
     all_tickers = [r['ticker'] for r in top_ticker_rows]
     
     # Sector map
-    conn_s = sqlite3.connect(DB_DIR / 'stocks.db')
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_s = db_manager.connection(DB_DIR / 'stocks.db', writable=False).__enter__()
     conn_s.row_factory = sqlite3.Row
     stock_sectors = {r['ticker']: (r['sector'] or 'Finance') for r in conn_s.execute("SELECT ticker, sector FROM stocks").fetchall()}
     conn_s.close()

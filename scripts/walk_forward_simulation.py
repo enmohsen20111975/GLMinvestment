@@ -92,9 +92,13 @@ def simulate_walk_forward(channel="balanced", holding_days=MAX_HOLDING_DAYS):
     3. اغلق عند TP / SL / انتهاء مدة
     4. سجل MFE/MAE
     """
-    conn_pred = sqlite3.connect(f"file:{PREDICTIONS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn_pred.row_factory = sqlite3.Row
-    conn_ph = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
 
     # اقرأ التوصيات (balanced فقط)
@@ -310,7 +314,9 @@ def main():
         })
     # For BH: use the close price at holding_days (not TP/SL)
     # Actually we need to recompute: for BH, exit at day 20 close regardless
-    conn_ph = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
     bh_returns_clean = []
     for t in balanced_results:

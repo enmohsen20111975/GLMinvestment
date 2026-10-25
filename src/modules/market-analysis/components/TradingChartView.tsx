@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 // TradingChartView owns the per-ticker data fetch + tooling header.
 // InteractiveChart REMOVED — TradingViewChart is the sole chart.
 import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
+// ALPHA-PREMIUM-CHART: استبدال/إضافة الشارت المتميز بقدرات رسم وتحليل
+import { PremiumChart } from '@/components/premium-chart';
 import { AlertPanel } from './AlertPanel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,8 @@ import {
  AlertTriangle,
  Activity,
  Gauge,
+ PenTool,
+ LineChart,
 } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -48,6 +52,32 @@ import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 // ALPHA-CHART-MERGE-1: canonical decision source (Rule 73 — single display source)
 import type { UnifiedStockData } from '@/lib/unified-stock-data';
+// ALPHA-CHART-FIX-1: restore analysis UI — data was fetched but never rendered
+import { CanonicalWhoIsBuyingBanner } from './CanonicalWhoIsBuyingBanner';
+import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+import { Shield, Target, Crosshair, Scale, Sparkles } from 'lucide-react';
+
+// ─── signal color helper (mirrors ChangeText logic) ──────────────────────────
+function signalColor(sig: string): string {
+  const s = (sig || '').toUpperCase();
+  if (s.includes('STRONG_BUY')) return 'bg-profit text-white border-profit';
+  if (s.includes('BUY')) return 'bg-profit/15 text-profit border-profit/30';
+  if (s.includes('ACCUMULATE')) return 'bg-info/15 text-info border-info/30';
+  if (s.includes('STRONG_SELL') || s.includes('AVOID')) return 'bg-loss text-white border-loss';
+  if (s.includes('SELL')) return 'bg-loss/15 text-loss border-loss/30';
+  return 'bg-muted text-muted-foreground border-border';
+}
+
+function signalArabic(sig: string): string {
+  const s = (sig || '').toUpperCase();
+  if (s.includes('STRONG_BUY')) return 'شراء قوي';
+  if (s.includes('BUY')) return 'شراء';
+  if (s.includes('ACCUMULATE')) return 'تجميع';
+  if (s.includes('STRONG_SELL') || s.includes('STRONG_AVOID')) return 'تجنب قوي';
+  if (s.includes('SELL') || s.includes('AVOID')) return 'بيع/تجنب';
+  if (s.includes('HOLD')) return 'انتظار';
+  return 'محايد';
+}
 
 interface TradingChartViewProps {
  initialTicker?: string;
@@ -458,6 +488,22 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  const [extraIndicators, setExtraIndicators] = useState(false); // RSI/MACD
  const [quickAdding, setQuickAdding] = useState(false);
  const [quickAdded, setQuickAdded] = useState(false);
+ // ALPHA-PREMIUM-CHART: state للتبديل بين الشارت التفاعلي والشارت البسيط
+ // محفوظ في localStorage عشان يفضل بين الجلسات (default: PremiumChart)
+ const [usePremiumChart, setUsePremiumChart] = useState(() => {
+  try {
+   const saved = localStorage.getItem('trading-chart-preference');
+   return saved === null ? true : saved === 'premium';
+  } catch {
+   return true;
+  }
+ });
+ // حفظ التغيير في localStorage كل ما يتغير
+ useEffect(() => {
+  try {
+   localStorage.setItem('trading-chart-preference', usePremiumChart ? 'premium' : 'simple');
+  } catch { /* ignore */ }
+ }, [usePremiumChart]);
 
  const cardRef = useRef<HTMLDivElement>(null);
  const [screenshotting, setScreenshotting] = useState(false);
@@ -574,6 +620,14 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  const target1 = isBuySignal ? rawTarget1 : null;
  const target2 = isBuySignal ? rawTarget2 : null;
  const rr = isBuySignal ? rawRr : null;
+ // ALPHA-SMOOTH-UX: تثبيت tradePlan object بـ useMemo لمنع re-render الـ PremiumChart
+ const stableTradePlan = useMemo(() => ({
+  entry,
+  stop,
+  target1,
+  target2,
+  riskReward: rr,
+ }), [entry, stop, target1, target2, rr]);
  const techScore = masterScore;
 
  // السعر الحالي
@@ -791,8 +845,106 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  <Gauge className="w-3 h-3 ml-1" />
  مؤشرات
  </Button>
+ {/* ALPHA-PREMIUM-CHART: زر التبديل بين الشارت المتميز والبسيط
+     محفوظ في localStorage — يفضل بين الجلسات */}
+ <div className="flex bg-muted border border-border rounded-xl p-0.5 text-xs font-semibold gap-0.5">
+  <button
+   type="button"
+   onClick={() => setUsePremiumChart(true)}
+   className={cn(
+    'px-2 py-1 rounded-lg transition-colors flex items-center gap-1',
+    usePremiumChart
+     ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+     : 'text-muted-foreground hover:text-foreground'
+   )}
+   title="شارت متميز — مع أدوات رسم تفاعلية ومؤشرات"
+  >
+   <PenTool className="w-3 h-3" />
+   متميز
+  </button>
+  <button
+   type="button"
+   onClick={() => setUsePremiumChart(false)}
+   className={cn(
+    'px-2 py-1 rounded-lg transition-colors flex items-center gap-1',
+    !usePremiumChart
+     ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+     : 'text-muted-foreground hover:text-foreground'
+   )}
+   title="شارت بسيط — شارت TradingView العادي"
+  >
+   <LineChart className="w-3 h-3" />
+   بسيط
+  </button>
  </div>
  </div>
+ </div>
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ ALPHA-CHART-FIX-2: Compact Decision Badge Bar (signal + score + entry/stop/target)
+ البيانات كانت محسوبة بس مش معروضة — دلوقتي بقت شريط مدمج فوق الشارت
+ ════════════════════════════════════════════════════════════════════════ */}
+ {canonical && (signalFinal || masterScore !== null) && (
+  <div className="px-4 py-2 border-b border-border bg-gradient-to-l from-muted/40 to-transparent">
+   <div className="flex items-center gap-2 flex-wrap text-xs">
+    {/* Signal */}
+    {signalFinal && (
+     <Badge className={cn('font-black px-2.5 py-1 rounded-lg border', signalColor(signalFinal))}>
+      <Sparkles className="w-3 h-3 ml-1" />
+      {canonical.canonical?.signal_ar || signalArabic(signalFinal)}
+     </Badge>
+    )}
+    {/* Master Score */}
+    {masterScore !== null && (
+     <Badge variant="outline" className="font-mono font-bold px-2 py-1 rounded-lg bg-card">
+      <Gauge className="w-3 h-3 ml-1 text-info" />
+      النتيجة: {masterScore}/100
+     </Badge>
+    )}
+    {/* Phase */}
+    {canonical.canonical?.phase && (
+     <Badge variant="outline" className="px-2 py-1 rounded-lg bg-card">
+      <Activity className="w-3 h-3 ml-1 text-muted-foreground" />
+      {canonical.canonical.phase}
+     </Badge>
+    )}
+    {/* Entry */}
+    {entry !== null && entry !== undefined && (
+     <Badge variant="outline" className="font-mono px-2 py-1 rounded-lg bg-profit/5 border-profit/30 text-profit">
+      <Crosshair className="w-3 h-3 ml-1" />
+      دخول: {(entry ?? 0).toFixed(2)}
+     </Badge>
+    )}
+    {/* Stop */}
+    {stop !== null && stop !== undefined && (
+     <Badge variant="outline" className="font-mono px-2 py-1 rounded-lg bg-loss/5 border-loss/30 text-loss">
+      <Shield className="w-3 h-3 ml-1" />
+      وقف: {(stop ?? 0).toFixed(2)}
+     </Badge>
+    )}
+    {/* Target */}
+    {target1 !== null && target1 !== undefined && (
+     <Badge variant="outline" className="font-mono px-2 py-1 rounded-lg bg-profit/5 border-profit/30 text-profit">
+      <Target className="w-3 h-3 ml-1" />
+      هدف: {(target1 ?? 0).toFixed(2)}
+     </Badge>
+    )}
+    {/* R:R */}
+    {rr !== null && rr !== undefined && (
+     <Badge variant="outline" className="font-mono px-2 py-1 rounded-lg bg-card">
+      <Scale className="w-3 h-3 ml-1 text-warning" />
+      R:R {(rr ?? 0).toFixed(2)}
+     </Badge>
+    )}
+    {/* Persona */}
+    {canonical.prediction?.who_is_buying && (
+     <Badge variant="outline" className="px-2 py-1 rounded-lg bg-card text-muted-foreground">
+      {canonical.prediction.who_is_buying}
+     </Badge>
+    )}
+   </div>
+  </div>
+ )}
 
  {/* Body — chart (toggle between InteractiveChart and TradingViewChart) */}
  {/* ALPHA-CHART-TOGGLE-1: user can switch between InteractiveChart and TradingViewChart */}
@@ -815,7 +967,26 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  </Button>
  </div>
  ) : data && data.ohlcv && data.ohlcv.length > 0 ? (
- <TradingViewChart ticker={ticker} stockName={tickerName} />
+  usePremiumChart ? (
+   <PremiumChart
+    ticker={ticker}
+    stockName={tickerName}
+    ohlcv={data.ohlcv}
+    indicators={data.indicators}
+    tradePlan={stableTradePlan}
+    smcData={data.smc_data}
+    livePrice={livePrice}
+    currencyLabel={currencyLabel}
+    height={isMaximized ? 600 : 500}
+    showDrawingToolbar
+    showIndicatorPanel
+    showTradePlanLines
+    showSMCZones={advancedLevels}
+    storageKey={`${ticker}__${timeframe}`}
+   />
+  ) : (
+   <TradingViewChart ticker={ticker} stockName={tickerName} />
+  )
  ) : (
  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
  <div className="text-center space-y-1">
@@ -825,6 +996,30 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  </div>
  )}
  </div>
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ ALPHA-CHART-FIX-3: Institutional Decision Panel — التحليل الكامل تحت الشارت
+ يعرض: الإشارة + خطة التداول + الإثباتات الستة + حالة الطيران + الميكرز
+ ════════════════════════════════════════════════════════════════════════ */}
+ {data?.institutional_decision && !isCrypto && (
+ <div className="border-t border-border">
+ <InstitutionalDecisionPanel
+ decision={data.institutional_decision}
+ ticker={ticker}
+ currencyLabel={currencyLabel}
+ />
+ </div>
+ )}
+
+ {/* ════════════════════════════════════════════════════════════════════════
+ ALPHA-CHART-FIX-4: Canonical Who Is Buying Banner — تحليل سيولة + مرحلة
+ يعرض: WHO IS BUYING + money_flow + accumulation + HMM regime + ATR
+ ════════════════════════════════════════════════════════════════════════ */}
+ {canonical && !isCrypto && (
+ <div className="border-t border-border">
+ <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
+ </div>
+ )}
 
  <AlertPanel ticker={ticker} open={alertPanelOpen} onClose={() => setAlertPanelOpen(false)} />
  </div>

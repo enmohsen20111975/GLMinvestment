@@ -83,7 +83,9 @@ def load_stocks(market: str, limit: int, tickers_req: List[str] = None) -> List[
         log(f"❌ stocks.db not found at {STOCKS_DB}")
         return []
 
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     conn.row_factory = sqlite3.Row
 
     # KSA is stored as 'TADAWUL' in stocks.db
@@ -235,7 +237,9 @@ def verify_predictions_db() -> Dict[str, Any]:
     """Read back predictions.db to confirm writes landed."""
     if not os.path.exists(PREDICTIONS_DB):
         return {"error": "predictions.db not found"}
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     try:
         # Count by persona for today

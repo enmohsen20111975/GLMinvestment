@@ -297,7 +297,9 @@ class TelegramNotifier:
         db_path = str(_DB_DIR / 'predictions.db')
         if not os.path.exists(db_path):
             return []
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(db_path, writable=False)
         conn.row_factory = sqlite3.Row
         today = datetime.now().strftime('%Y-%m-%d')
         if market == 'CRYPTO':
@@ -318,7 +320,9 @@ class TelegramNotifier:
         db_path = str(_DB_DIR / 'predictions.db')
         if not os.path.exists(db_path):
             return []
-        conn = sqlite3.connect(db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(db_path, writable=False)
         conn.row_factory = sqlite3.Row
         week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
         rows = conn.execute(
@@ -404,7 +408,9 @@ class TelegramNotifier:
         if not os.path.exists(db_path):
             return []
         try:
-            conn = sqlite3.connect(db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(db_path, writable=False)
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """SELECT * FROM predictions

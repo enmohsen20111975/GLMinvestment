@@ -34,9 +34,13 @@ def main():
     print("║   📋 SYNC STOCKS METADATA → data_engine.db                ║")
     print("╚════════════════════════════════════════════════════════════╝")
     
-    s_conn = sqlite3.connect(str(STOCKS_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    s_conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     s_conn.row_factory = sqlite3.Row
-    de_conn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    de_conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
     
     # Step 1: Normalize market='مصر' → 'EGX' in data_engine.db
     print("\n━━━ Step 1: Normalize market='مصر' → 'EGX' ━━━")

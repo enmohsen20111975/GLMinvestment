@@ -69,7 +69,9 @@ def fetch_top_liquid_tickers(count: int = 20,
     # ---- Source 1: price_history.db (preferred) ----
     try:
         if os.path.exists(price_history_db):
-            conn = sqlite3.connect(price_history_db)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.connection(price_history_db, writable=False).__enter__()
             try:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -94,7 +96,9 @@ def fetch_top_liquid_tickers(count: int = 20,
 
     # ---- Source 2 (fallback): stocks.db / stocks ----
     try:
-        conn = sqlite3.connect(stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(stocks_db, writable=False).__enter__()
         cursor = conn.cursor()
         cursor.execute(
             """

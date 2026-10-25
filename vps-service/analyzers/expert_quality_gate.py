@@ -105,7 +105,9 @@ class ExpertVerdict:
 # ==================== HELPERS ====================
 
 def _get_db(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -45,6 +45,36 @@ cd vps-service/ws-service && bun run dev       # WebSocket → port 3005
 pm2 start ecosystem.config.js                  # 8 خدمات
 ```
 
+### 📦 تنزيل قواعد البيانات (DBs خارج git tracking)
+
+الـ DBs مش متتبعة في git (كبيرة ~500MB — استنزاف bandwidth مع كل `git pull`).
+نزّلها يدوي من **GitHub Releases**:
+
+**أحدث snapshot:**
+> 🔗 https://github.com/enmohsen20111975/GLMinvestment/releases/tag/db-snapshot-2026-10-24
+>
+> فيه: `predictions.db` (محدّث 2026-10-22، 2256 توقع) + ملفات `data/` (JSON + Pine scripts).
+
+**snapshot كامل (كل الـ DBs):**
+> 🔗 https://github.com/enmohsen20111975/GLMinvestment/releases/tag/db-snapshot-2026-10-21
+>
+> فيه: `price_history.db` (حتى 2026-06-10), `stocks.db`, `predictions.db` (قديم), `data_engine.db`, `intraday.db` — 16 جزء (306MB).
+
+```bash
+# للـ snapshot الكامل (2026-10-21):
+# 1. نزّل كل أجزاء الـ snapshot المطلوب (9 أجزاء)
+# 2. ادمج الـ .part files:
+cat db_backup_2026-10-21T19-15-52_part2_split_00.zip.part \
+    db_backup_2026-10-21T19-15-52_part2_split_01.zip.part \
+    > db_backup_2026-10-21T19-15-52_part2.zip
+
+# 3. فك ضغط كل الـ .zip في فولدر db/
+unzip 'db_backup_2026-10-21T19-15-52_part*.zip' -d db/
+
+# للـ snapshot المحدّث (2026-10-24 — predictions.db فقط):
+unzip predictions.db.zip -d db/
+```
+
 ---
 
 ## 📊 الـ Stack (من `package.json` + الكود)

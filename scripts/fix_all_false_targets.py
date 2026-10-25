@@ -32,7 +32,9 @@ def main() -> int:
         print(f"ERROR: {DB_PATH} not found", file=sys.stderr)
         return 1
 
-    conn = sqlite3.connect(str(DB_PATH))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
 

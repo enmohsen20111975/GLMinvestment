@@ -84,7 +84,9 @@ def compute_egx30_with_real_weights():
     if not STOCKS_DB.exists():
         return None, "stocks.db not found"
     
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     
     # Get current prices + change_percent for each constituent
     total_weight = 0
@@ -127,7 +129,9 @@ def compute_egx30_with_real_weights():
     # Read the base (latest close from index_daily_prices, or use hardcoded as fallback)
     base = 52855  # approximate yesterday's close (open was 52854.95)
     try:
-        conn2 = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn2 = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         row = conn2.execute(
             "SELECT close FROM index_daily_prices WHERE symbol='EGX30' ORDER BY price_date DESC LIMIT 1"
         ).fetchone()

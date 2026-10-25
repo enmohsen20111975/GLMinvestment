@@ -95,7 +95,9 @@ class SmartPortfolioMonitor:
 
     def analyze_user_portfolio(self, user_id: str) -> Dict:
         """تحليل شامل لمحفظة العميل."""
-        conn = sqlite3.connect(self.stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.stocks_db, writable=False)
         conn.row_factory = sqlite3.Row
 
         # 1. جلب أصول المحفظة
@@ -431,7 +433,9 @@ if __name__ == '__main__':
     monitor = SmartPortfolioMonitor()
     
     # Test with real user
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     user = conn.execute("SELECT DISTINCT user_id FROM portfolio_assets LIMIT 1").fetchone()
     conn.close()
     

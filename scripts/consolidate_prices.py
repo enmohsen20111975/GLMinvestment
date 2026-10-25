@@ -51,9 +51,13 @@ def main():
     # ═══ STEP 1: Sync stock_daily_prices → egksco_price_history ═══
     head("Step 1: Sync stock_daily_prices → egksco_price_history")
     
-    sdp_conn = sqlite3.connect(str(STOCKS_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    sdp_conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     sdp_conn.row_factory = sqlite3.Row
-    de_conn = sqlite3.connect(str(DATA_ENGINE_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    de_conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
     
     # Get all rows from stock_daily_prices
     sdp_rows = sdp_conn.execute('''

@@ -13,6 +13,13 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+# Phase 8.4: ApiResponseCache — endpoint-level response caching
+try:
+    from core.cache_manager import api_cache
+    _API_CACHE_AVAILABLE = True
+except Exception:
+    _API_CACHE_AVAILABLE = False
+
 market_master_bp = Blueprint('market_master', __name__, url_prefix='/api/market')
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +33,9 @@ LARGE_CAPS = ['COMI', 'TMGH', 'ETEL', 'SWDY', 'HRHO', 'CIEB', 'HDBK', 'FWRY', 'A
 def _open_stocks_db():
     if not _STOCKS_DB.exists():
         return None
-    return sqlite3.connect(f"file:{_STOCKS_DB}?mode=ro", uri=True, timeout=5.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    return db_manager.get_connection(_STOCKS_DB, writable=False)
 
 
 # ============================================================================
@@ -35,6 +44,14 @@ def _open_stocks_db():
 @market_master_bp.route('/intraday-pressure', methods=['GET'])
 def intraday_pressure():
     """ضغط الجلسة التراكمي للمؤشر EGX30 + أعلى 10 أسهم قيادية."""
+    # ── Phase 8.4: ApiResponseCache check (TTL=60s — intraday data changes fast) ──
+    if _API_CACHE_AVAILABLE:
+        _cached = api_cache.get('intraday_pressure', params=None)
+        if _cached is not None:
+            _cached['cached'] = True
+            _cached['cache_ttl'] = 60
+            return jsonify(_cached)
+
     conn = None
     try:
         conn = _open_stocks_db()
@@ -90,13 +107,19 @@ def intraday_pressure():
 
         conn.close()
         conn = None  # mark as closed
-        return jsonify({
+        _response_data = {
             'success': True,
             'market': 'EGX',
             'timestamp': datetime.now().isoformat(),
             'cumulative_pressure': cumulative,
             'top_stocks': stocks[:10],
-        })
+        }
+        # ── Phase 8.4: cache + return fresh response (TTL=60s) ──────────────
+        _response_data['cached'] = False
+        _response_data['cache_ttl'] = 60
+        if _API_CACHE_AVAILABLE:
+            api_cache.set('intraday_pressure', _response_data, ttl=60, params=None)
+        return jsonify(_response_data)
     except Exception as e:
         if conn:
             try:
@@ -113,6 +136,14 @@ def intraday_pressure():
 def investor_flows():
     """تدفقات المستثمرين الرسمية — EGX فقط. باقي الأسواق: available=false."""
     market = (request.args.get('market') or 'EGX').upper()
+
+    # ── Phase 8.4: ApiResponseCache check (TTL=300s, params=market) ─────────
+    if _API_CACHE_AVAILABLE:
+        _cached = api_cache.get('investor_flows', params={'market': market})
+        if _cached is not None:
+            _cached['cached'] = True
+            _cached['cache_ttl'] = 300
+            return jsonify(_cached)
 
     # لو مش EGX → available=false بدون أرقام وهمية
     if market != 'EGX':
@@ -172,7 +203,7 @@ def investor_flows():
 
         conn.close()
         conn = None  # mark as closed
-        return jsonify({
+        _response_data = {
             'success': True,
             'market': 'EGX',
             'available': True,
@@ -212,7 +243,13 @@ def investor_flows():
                 },
             },
             'source': 'investors_data table (official EGX disclosure)',
-        })
+        }
+        # ── Phase 8.4: cache + return fresh response (TTL=300s, params=market) ──
+        _response_data['cached'] = False
+        _response_data['cache_ttl'] = 300
+        if _API_CACHE_AVAILABLE:
+            api_cache.set('investor_flows', _response_data, ttl=300, params={'market': market})
+        return jsonify(_response_data)
     except Exception as e:
         if conn:
             try:

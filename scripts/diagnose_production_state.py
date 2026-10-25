@@ -22,7 +22,9 @@ def connect(db_name):
     if not path.exists():
         return None
     try:
-        conn = sqlite3.connect(f'file:{path}?mode=ro', uri=True, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(path, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn

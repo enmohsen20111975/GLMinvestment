@@ -17,7 +17,9 @@ db_path = sys.argv[1] if len(sys.argv) > 1 else str(project_root / 'db' / 'stock
 
 print(f"Fixing tables in: {db_path}")
 
-conn = sqlite3.connect(db_path)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.get_connection(db_path, writable=False)
 cursor = conn.cursor()
 
 # Get existing tables

@@ -63,7 +63,9 @@ def get_news_bias(ticker: str, hours_back: int = 12) -> dict:
         return default
 
     try:
-        conn = sqlite3.connect(str(NEWS_DB), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(NEWS_DB), writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

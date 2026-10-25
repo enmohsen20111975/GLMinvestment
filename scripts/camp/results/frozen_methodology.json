@@ -1,0 +1,15 @@
+{
+  "dev_period": "2023-01-01 \u2192 2025-12-31",
+  "holdout_period": "2026-01-01 \u2192 2026-10-21",
+  "data_source": "yahoo_clean only (227 tickers max)",
+  "entry_rule": "Same-day close (as stored in predictions.entry_price)",
+  "exit_rule": "As stored in predictions.exit_price (stop/target/time)",
+  "costs": "0.3% per side (0.6% round trip) \u2014 documented separately",
+  "position_size": "20% per trade (no overlapping positions per ticker)",
+  "backfill_exclusion": "outcome_date = 2026-09-22 cohort (916 trades)",
+  "lookahead_exclusion": "prediction_date > 2026-10-21 (0 closed trades affected)",
+  "metrics": "PF, WR, Net PnL (sum of returns), Max DD (equity curve), Avg R, Expectancy",
+  "pnl_definition": "Sum of individual trade returns (%) \u2014 NOT compounded portfolio return",
+  "dd_definition": "Peak-to-trough on equity curve with 20% position size per trade",
+  "overlap_handling": "Trades counted individually (not portfolio-level) \u2014 identified as limitation"
+}

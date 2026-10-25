@@ -356,9 +356,13 @@ def load_clean_trades(pred_db, ph_db, include_buy_only=True, include_window=Fals
         'n_total'      : total closed EGX predictions scanned
         'databases'    : {predictions, price_history}
     """
-    pred = sqlite3.connect(pred_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pred = db_manager.connection(pred_db, writable=False).__enter__()
     pred.row_factory = sqlite3.Row
-    ph = sqlite3.connect(ph_db)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph = db_manager.connection(ph_db, writable=False).__enter__()
     ph.row_factory = sqlite3.Row
 
     # Graceful: include lowest_price_reached only if the column exists.

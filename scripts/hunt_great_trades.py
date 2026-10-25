@@ -7,7 +7,9 @@ print("\n🦅 HUNTING GREAT TRADES — Top 15 Opportunities (Post-Restore)\n")
 print(f"{'Ticker':8s} | {'Signal':12s} | {'Entry':>8s} | {'Target':>8s} | {'Stop':>8s} | {'R/R':>5s} | {'Score':>5s} | {'Turnover':>12s}")
 print("-" * 90)
 
-conn = sqlite3.connect(DB_DIR / 'predictions.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(DB_DIR / 'predictions.db', writable=False).__enter__()
 conn.row_factory = sqlite3.Row
 
 # check columns to use risk_reward column

@@ -6,6 +6,7 @@ API endpoints for the Sniper Engine, Daily Closer, and Learning Engine.
 """
 
 import os
+from core.auth_middleware import require_admin
 import sqlite3
 import logging
 from datetime import datetime
@@ -64,7 +65,7 @@ def _is_ath_breakout(ticker: str) -> bool:
     try:
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('price_history', writable=False).__enter__()
+            conn = db_manager.get_connection('price_history', writable=False)
         except Exception:
             conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
         cur = conn.cursor()
@@ -78,7 +79,7 @@ def _is_ath_breakout(ticker: str) -> bool:
         tbl = tabs[0]
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('price_history', writable=False).__enter__()
+            conn = db_manager.get_connection('price_history', writable=False)
         except Exception:
             conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
         cur = conn.cursor()
@@ -353,7 +354,7 @@ def _load_fundamentals_for_gate(ticker: str) -> dict:
             return fundamentals
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('data_engine', writable=False).__enter__()
+            conn = db_manager.get_connection('data_engine', writable=False)
         except Exception:
             conn = sqlite3.connect(de_db, timeout=5.0)
         conn.row_factory = sqlite3.Row
@@ -380,7 +381,7 @@ def _ensure_predictions_table():
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('predictions', writable=True).__enter__()
+        conn = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn = sqlite3.connect(db_path, timeout=15.0)
     conn.row_factory = sqlite3.Row
@@ -680,6 +681,7 @@ def scan_market():
 # TRACK (SAVE PREDICTION) ROUTE
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/track', methods=['POST'])
 def track_ticker():
     """Track a ticker — run SniperEngine analysis and save as PENDING prediction."""
@@ -856,6 +858,7 @@ def track_ticker():
 # DAILY CLOSER ROUTES
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/closer/run', methods=['POST'])
 def run_daily_closer():
     """Manually trigger the daily closer"""
@@ -899,6 +902,7 @@ def get_pending_predictions():
 # LEARNING ENGINE ROUTES
 # ═══════════════════════════════════════════════════════
 
+@require_admin
 @sniper_bp.route('/learning/run', methods=['POST'])
 def run_learning_engine():
     """Manually trigger the learning engine"""
@@ -932,7 +936,7 @@ def get_lessons():
         import sqlite3
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('predictions', writable=False).__enter__()
+            conn = db_manager.get_connection('predictions', writable=False)
         except Exception:
             conn = sqlite3.connect(engine.predictions_db, timeout=15.0)
         conn.row_factory = sqlite3.Row
@@ -978,7 +982,7 @@ def get_performance():
     try:
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('predictions', writable=False).__enter__()
+            conn = db_manager.get_connection('predictions', writable=False)
         except Exception:
             conn = sqlite3.connect(PREDICTIONS_DB, timeout=15.0)
         conn.row_factory = sqlite3.Row

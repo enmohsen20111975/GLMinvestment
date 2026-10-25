@@ -159,7 +159,9 @@ class EGXIndicesUpdater:
         if not data:
             return 0
 
-        conn = sqlite3.connect(self.price_history_db)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.price_history_db, writable=True)
         inserted = 0
         try:
             conn.execute("""
@@ -209,7 +211,9 @@ class EGXIndicesUpdater:
     def _update_indices_table(self, ticker: str, total_records: int):
         """تحديث جدول egx_indices في stocks.db."""
         try:
-            conn = sqlite3.connect(self.stocks_db)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.stocks_db, writable=True)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS egx_indices (
                     ticker TEXT PRIMARY KEY,
@@ -234,7 +238,9 @@ class EGXIndicesUpdater:
     def get_status(self) -> Dict:
         """حالة المؤشرات."""
         status = {}
-        conn = sqlite3.connect(self.price_history_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.price_history_db, writable=False)
         for ticker in self.INDICES:
             try:
                 count = conn.execute(

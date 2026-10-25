@@ -30,7 +30,9 @@ def main():
         print(f'❌ DB not found: {DB_PATH}')
         sys.exit(1)
 
-    conn = sqlite3.connect(f'file:{DB_PATH}?mode=ro', uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=False).__enter__()
     cur = conn.cursor()
 
     # تحديد الأسهم

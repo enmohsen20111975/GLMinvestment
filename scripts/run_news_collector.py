@@ -235,7 +235,9 @@ def main():
         print(f'📰 News Collector — {datetime.now().strftime("%Y-%m-%d %H:%M")}')
         print(f'{"="*60}')
         
-        conn = sqlite3.connect(str(DB_PATH))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         
         print('\n📡 Web scraping:')
         web_count = collect_from_web(conn)

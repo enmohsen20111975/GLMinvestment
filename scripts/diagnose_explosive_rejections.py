@@ -259,7 +259,9 @@ def main():
 
     log("═══ المرحلة 1ج: تصنيف أسباب رفض الـ explosive movers ═══\n")
 
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     egx_tickers = [r[0] for r in conn.execute("SELECT ticker FROM stocks WHERE market='EGX'").fetchall()]

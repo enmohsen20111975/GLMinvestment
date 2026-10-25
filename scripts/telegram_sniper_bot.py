@@ -57,7 +57,9 @@ def send_telegram(message: str):
 def get_stock_name(ticker: str) -> str:
     """يجيب اسم السهم بالعربي."""
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         row = conn.execute('SELECT name_ar, name FROM stocks WHERE ticker=? LIMIT 1', (ticker,)).fetchone()
         conn.close()

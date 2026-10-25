@@ -154,7 +154,9 @@ def import_historical_data(symbol: str, csv_file: Path, db_path: Path):
     print(f"📉 أدنى سعر: {min(r['low'] for r in rows):.2f}")
 
     # حفظ في data_engine.db
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     cursor = conn.cursor()
 
     # إنشاء الجدول لو مش موجود
@@ -192,7 +194,9 @@ def import_historical_data(symbol: str, csv_file: Path, db_path: Path):
     change = latest["close"] - prev["close"]
     change_pct = (change / prev["close"] * 100) if prev["close"] > 0 else 0
 
-    stocks_conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     stocks_cursor = stocks_conn.cursor()
 
     # إنشاء الجدول لو مش موجود
@@ -263,7 +267,9 @@ def import_constituents(csv_file: Path, db_path: Path):
     print(f"📊 عدد المكونات: {len(constituents)}")
 
     # تحديث is_egx30 = 1 للأسهم المطابقة بالاسم
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     cursor = conn.cursor()
 
     # أولاً: تصفير كل is_egx30
@@ -334,7 +340,9 @@ def main():
     print(f"{'='*60}")
 
     # عرض النتيجة النهائية
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
     cursor = conn.cursor()
     print("\n📊 المؤشرات بعد التحديث:")
     cursor.execute("SELECT symbol, current_value, previous_close, change, change_percent, last_update FROM market_indices ORDER BY symbol")

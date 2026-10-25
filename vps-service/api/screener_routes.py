@@ -10,6 +10,7 @@ Endpoints:
 """
 
 import json
+from core.auth_middleware import require_admin
 import time
 from datetime import datetime
 from flask import Blueprint, request, jsonify
@@ -68,7 +69,9 @@ PRESETS = {
 def _get_stocks_conn():
     """Get a connection to stocks.db."""
     import sqlite3
-    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DBPaths.STOCKS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -179,6 +182,7 @@ def scan_preset():
         conn.close()
 
 
+@require_admin
 @screener_bp.route('/api/screener/run-all', methods=['POST'])
 def run_all_presets():
     """

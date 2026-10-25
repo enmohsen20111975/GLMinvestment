@@ -1,0 +1,778 @@
+{
+  "meta": {
+    "task_id": "PHASE0-WS-C",
+    "agent": "general-purpose",
+    "task": "Workstream C \u2014 Existing Strategy Performance Baseline (existing backtests, current metrics, bias checks)",
+    "generated_at": "2026-10-24T21:18:42.575748",
+    "databases_queried": [
+      "file:/home/z/my-project/db/predictions.db?mode=ro",
+      "file:/home/z/my-project/db/stocks.db?mode=ro",
+      "file:/home/z/my-project/db/price_history.db?mode=ro"
+    ],
+    "read_only": true,
+    "no_production_files_modified": true
+  },
+  "existing_backtests_found": [
+    {
+      "path": "scripts/camp/results/experiment_000_baseline.json",
+      "type": "summary_metrics",
+      "key_metrics": {
+        "v38": {
+          "signals": 302,
+          "wr": 45.0,
+          "pf": 1.07,
+          "max_dd": 34.0,
+          "avg_ret": 0.28,
+          "sharpe": 0.54,
+          "expectancy": 0.06
+        },
+        "pipeline_3stage": {
+          "signals": 5245,
+          "wr": 27.2,
+          "pf": 0.8,
+          "max_dd": 100.0,
+          "avg_ret": -0.76,
+          "sharpe": -7.52
+        }
+      },
+      "timestamp": "2026-10-24T11:31:15"
+    },
+    {
+      "path": "scripts/camp/results/ablation_4months.json",
+      "type": "ablation_backtest",
+      "key_metrics": {
+        "period": "2026-07 to 2026-10",
+        "universe_size": 15,
+        "breadth_trend_total": {
+          "signals": 1056,
+          "wr": 27.5,
+          "pf": 0.63,
+          "max_dd": 91.4,
+          "sharpe": -6.42,
+          "avg_ret": -1.04
+        }
+      }
+    },
+    {
+      "path": "scripts/camp/results/rolling_ic_full.json",
+      "type": "information_coefficient",
+      "key_metrics": {
+        "n_observations": 3989,
+        "best_feature_ic": {
+          "volume_price_div_h20": 0.0847,
+          "distance_52w_h1": 0.0113,
+          "breadth_trend_h1": -0.0072
+        },
+        "negative_ic_features": [
+          "momentum_20",
+          "momentum_60",
+          "breadth_trend",
+          "distance_52w (5d-20d)"
+        ]
+      }
+    },
+    {
+      "path": "scripts/camp/results/quick_win_results.json",
+      "type": "quick_win_strategy",
+      "key_metrics": {
+        "dev": {
+          "signals": 495,
+          "wr": 42.6,
+          "pf": 1.96,
+          "max_dd": 20.2,
+          "sharpe": 4.16,
+          "avg_ret": 2.12,
+          "period": "2023-2024"
+        },
+        "yearly": {
+          "2023": {
+            "n": 256,
+            "wr": 46.5,
+            "avg_ret": 3.4
+          },
+          "2024": {
+            "n": 239,
+            "wr": 38.5,
+            "avg_ret": 0.74
+          }
+        }
+      }
+    },
+    {
+      "path": "scripts/camp/results/12month_experiments.json",
+      "type": "train_test_backtest",
+      "key_metrics": {
+        "train_period": "2025-01 to 2025-08",
+        "test_period": "2025-09 to 2025-12",
+        "v38_baseline_test": {
+          "signals": 482,
+          "wr": 47.1,
+          "pf": 1.15,
+          "max_dd": 37.8,
+          "sharpe": 1.47,
+          "verdict": "REJECT"
+        },
+        "best_keep": "Bull+Vol: test PF=2.13, DD=-5.2%, Sharpe=2.41 (n=42)"
+      }
+    },
+    {
+      "path": "scripts/camp/results/2026_test.json",
+      "type": "quarterly_backtest",
+      "key_metrics": {
+        "TOTAL_2026_baseline": {
+          "signals": 309,
+          "wr": 38.5,
+          "pf": 1.0,
+          "max_dd": 47.1,
+          "sharpe": 0.03,
+          "verdict": "WEAK"
+        },
+        "Bull+Vol_2026": "FEW SIG (0 signals generated)",
+        "Bull+RSI+Vol_2026": "FEW SIG (0 signals generated)"
+      }
+    },
+    {
+      "path": "scripts/camp/results/open_camp_final.json",
+      "type": "ablation_camp",
+      "key_metrics": {
+        "v38_baseline": {
+          "signals": 302,
+          "wr": 45.0,
+          "pf": 1.07,
+          "max_dd": 34.0,
+          "sharpe": 0.54
+        },
+        "all_filters_REJECT": true
+      }
+    },
+    {
+      "path": "scripts/camp/results/fixed_open_camp.json",
+      "type": "ablation_camp_v2",
+      "key_metrics": {
+        "v38_baseline": {
+          "signals": 302,
+          "wr": 45.0,
+          "pf": 1.07,
+          "max_dd": 34.0,
+          "avg_win": 10.0,
+          "avg_loss": 8.29
+        },
+        "all_filters_REJECT": true
+      }
+    },
+    {
+      "path": "scripts/camp/results/ablation_raw.json",
+      "type": "ablation_dev_holdout",
+      "key_metrics": {
+        "Exp_0_baseline": {
+          "signals": 2050,
+          "wr": 33.3,
+          "pf": 1.02,
+          "max_dd": 83.4,
+          "sharpe": 0.4
+        },
+        "Exp_1_liquidity_risk": {
+          "signals": 184,
+          "wr": 43.5,
+          "pf": 1.02
+        }
+      }
+    },
+    {
+      "path": "scripts/camp/results/phase_b_regime.json",
+      "type": "regime_classification",
+      "key_metrics": {
+        "total_months": 45,
+        "bull_months": 16,
+        "bear_months": 0,
+        "sideways_months": 29,
+        "period": "2023-01 to 2026-09"
+      }
+    },
+    {
+      "path": "scripts/camp/results/phase_c_ic.json",
+      "type": "feature_ic",
+      "key_metrics": {
+        "liquidity_h20_ic": 0.0156,
+        "whale_guard_h10_ic": 0.031,
+        "regime_h20_ic": 0.0231,
+        "all_features_pval_gt_0.1": true,
+        "n_obs": "~2800"
+      }
+    },
+    {
+      "path": "scripts/camp/results/phase_d_combos.json",
+      "type": "feature_combinations",
+      "key_metrics": {
+        "n_pairs_tested": "8x8 correlation matrix",
+        "note": "news_stop has null correlation with all features"
+      }
+    },
+    {
+      "path": "scripts/camp/results/phase_e_setups.json",
+      "type": "setup_discovery",
+      "key_metrics": {
+        "n_setups": "2+ with 100% win rate (suspicious - likely look-ahead)",
+        "setup_1_high_vol_spike": {
+          "n": 6594,
+          "wr": 100.0,
+          "avg_gain": 949.41
+        }
+      }
+    },
+    {
+      "path": "scripts/camp/results/decisions_log.jsonl",
+      "type": "decision_log",
+      "key_metrics": {
+        "n_decisions": 26200,
+        "n_tickers": 50,
+        "n_experiments": 10,
+        "buy_decisions": 2858,
+        "wait_decisions": 23342
+      }
+    },
+    {
+      "path": "scripts/camp/results/breadth_regime_checkpoint.json",
+      "type": "regime_checkpoint",
+      "key_metrics": {
+        "method": "breadth-only (no EGX30)",
+        "period": "2023-01 to 2026-09"
+      }
+    },
+    {
+      "path": "scripts/camp/results/egx30_checkpoint.json",
+      "type": "regime_checkpoint_egx30",
+      "key_metrics": {
+        "verification_verdict": "PASS",
+        "days_tested": 21,
+        "days_matched": 8
+      }
+    },
+    {
+      "path": "scripts/camp/results/egx30_checkpoint_v2.json",
+      "type": "regime_checkpoint_egx30_v2",
+      "key_metrics": {
+        "verification_verdict": "PASS",
+        "matched": 6,
+        "total": 21
+      }
+    },
+    {
+      "path": "scripts/camp/results/phase_a_clustering.json",
+      "type": "ticker_clustering",
+      "key_metrics": {
+        "n_tickers": 250,
+        "n_clusters": 6,
+        "silhouette": 0.295
+      }
+    },
+    {
+      "path": "vps-service/scripts/egx_backtest/results/egx_backtest_results.json",
+      "type": "egx_sniper_backtest",
+      "key_metrics": {
+        "strategy_E_hybrid": {
+          "total_trades": 224,
+          "winners": 155,
+          "losers": 68,
+          "win_rate": 69.2,
+          "avg_winner_pct": 3.28,
+          "avg_loser_pct": -4.03,
+          "profit_factor": 1.87,
+          "avg_return_pct": 1.06,
+          "max_drawdown_pct": 29.39,
+          "sharpe_ratio": 0.77,
+          "avg_holding_days": 3.9
+        }
+      }
+    },
+    {
+      "path": "predictions.db.historical_trades",
+      "type": "db_table_anonymized",
+      "key_metrics": {
+        "total_rows": 22650,
+        "all_tickers_empty_string": true,
+        "strategies": {
+          "pullback_buy": {
+            "n": 9718,
+            "wr": 31.6,
+            "pf": 0.97,
+            "net_pnl": -501.22
+          },
+          "support_bounce": {
+            "n": 5343,
+            "wr": 37.2,
+            "pf": 1.23,
+            "net_pnl": 1683.76
+          },
+          "value_dip": {
+            "n": 3486,
+            "wr": 36.4,
+            "pf": 0.97,
+            "net_pnl": -291.25
+          },
+          "breakout_play": {
+            "n": 3320,
+            "wr": 27.6,
+            "pf": 0.88,
+            "net_pnl": -632.03
+          },
+          "momentum_ride": {
+            "n": 783,
+            "wr": 40.0,
+            "pf": 1.0,
+            "net_pnl": 6.47
+          }
+        },
+        "overall": {
+          "wr": 33.36,
+          "pf": 1.007,
+          "net_pnl": 265.73,
+          "avg_hold": 5.21,
+          "max_dd": -4873.47
+        }
+      }
+    },
+    {
+      "path": "stocks.db.real_evaluated_predictions",
+      "type": "db_table_evaluated_predictions",
+      "key_metrics": {
+        "total_rows": 4035,
+        "all_evaluated_at": "2026-07-23 13:11:09 (single batch)",
+        "by_signal": {
+          "SELL": 3823,
+          "BUY": 212
+        },
+        "overall": {
+          "wr": 35.4,
+          "avg_return_pct": -2.9,
+          "avg_holding_days": 0.085,
+          "target_hits": 2553,
+          "stop_hits": 1369
+        },
+        "distinct_tickers": 167,
+        "market": "EGX (despite signal mix)"
+      }
+    }
+  ],
+  "current_baseline": {
+    "trades": 1053,
+    "wr": 51.66,
+    "pf": 2.606,
+    "net_pnl": 4757.31,
+    "max_dd": -518.91,
+    "avg_r": 2.07,
+    "avg_holding": 135.3,
+    "gross_profit": 7719.27,
+    "gross_loss": -2961.96,
+    "avg_win": 14.19,
+    "avg_loss_abs": 6.86,
+    "source_table": "predictions.db.predictions WHERE exit_price IS NOT NULL",
+    "note": "1,053 of 2,256 predictions closed; 1,203 (53%) open or stale. 777/1053 (74%) closed on 2026-09-22 mass-backfill date \u2014 NOT real trade exits"
+  },
+  "baseline_by_year": {
+    "2025": {
+      "trades": 143,
+      "wr": 41.96,
+      "pf": 0.951,
+      "net_pnl": -26.88,
+      "avg_ret": -0.19,
+      "avg_holding": 313.9,
+      "note": "2025 trades dominated by force-close on 2026-09-22 (avg_hold=314 days); 2026 has more proper exits"
+    },
+    "2026": {
+      "trades": 910,
+      "wr": 53.19,
+      "pf": 2.983,
+      "net_pnl": 4784.19,
+      "avg_ret": 5.26,
+      "avg_holding": 107.2,
+      "note": "2025 trades dominated by force-close on 2026-09-22 (avg_hold=314 days); 2026 has more proper exits"
+    }
+  },
+  "look_ahead_trades": 0,
+  "look_ahead_trades_detail": {
+    "closed_trades_with_look_ahead": 0,
+    "all_look_ahead_predictions": 757,
+    "max_price_history_date": "2026-10-21",
+    "explanation": "All 757 look-ahead predictions from WS-B (2026-10-22) are NOT in closed-trades set (exit_price IS NULL). The current baseline of 1,053 closed trades is FREE of look-ahead bias. However, the 757 look-ahead predictions ARE in the open/stale bucket."
+  },
+  "cost_analysis": {
+    "costs_deducted": false,
+    "commission_pct": 0.0,
+    "evidence": "actual_return = (exit_price / entry_price - 1) * 100 (naive return, NO commission deducted). Verified on 1,053 closed trades: 970 match naive formula within \u00b10.01pp; 972 trades are CLOSER to naive than to with-0.3%-commission formula. If 0.3% round-trip commission applied per trade: total commission = 1,053 * 0.3 = 315.9pp; net PnL would drop from +4,757.31 to +4,441.41 (-6.6% haircut). Slippage also absent \u2014 entry_price = same-day close (no bid-ask spread, no market impact).",
+    "actual_return_formula": "(exit_price / entry_price - 1) * 100",
+    "trades_exact_naive_match": 970,
+    "trades_naive_closer_than_commission": 972,
+    "total_commission_pct_if_applied": 315.9,
+    "net_pnl_after_hypothetical_commission": 4441.41,
+    "pct_reduction": -6.64
+  },
+  "survivorship_bias": {
+    "delisted_in_predictions": 1,
+    "sample": [
+      "LTC"
+    ],
+    "details": [
+      {
+        "ticker": "LTC",
+        "market_in_predictions": "CRYPTO",
+        "in_stocks_db": false,
+        "in_price_history": true,
+        "ph_date_range": "2025-01-09 to 2026-06-03",
+        "ph_rows": 363,
+        "closed_trades_on_this_ticker": 0
+      },
+      {
+        "ticker": "PTCC",
+        "market_in_predictions": "EGX",
+        "in_stocks_db": true,
+        "is_active_in_stocks_db": false,
+        "in_price_history": true,
+        "ph_date_range": "2025-01-09 to 2026-10-13",
+        "ph_rows": 369,
+        "closed_trades_on_this_ticker": 0
+      }
+    ],
+    "active_stocks_in_db": 1205,
+    "inactive_stocks_in_db": 35,
+    "distinct_tickers_in_predictions": 258,
+    "distinct_tickers_in_closed_trades": 154,
+    "tickers_in_predictions_active_in_stocks": 257,
+    "verdict": "Direct survivorship bias is small (only 1 truly delisted ticker, 0 closed trades affected). HOWEVER, survivorship bias exists at the UNIVERSE level: the prediction engine only chose from currently-listed EGX stocks, so any EGX stock that died BEFORE today is absent from predictions. Cannot quantify without historical EGX listing register."
+  },
+  "corporate_action_distortion": {
+    "ws_a_top_30_affected_tickers": {
+      "trades_on_affected_tickers": 83,
+      "tickers_with_closed_trades": 11,
+      "tickers": [
+        {
+          "ticker": "ABUK",
+          "closed_trades": 64,
+          "wins": 55,
+          "avg_ret": 17.32
+        },
+        {
+          "ticker": "CERA",
+          "closed_trades": 5,
+          "wins": 5,
+          "avg_ret": 13.46
+        },
+        {
+          "ticker": "MHOT",
+          "closed_trades": 3,
+          "wins": 0,
+          "avg_ret": 0.0
+        },
+        {
+          "ticker": "CPCI",
+          "closed_trades": 2,
+          "wins": 2,
+          "avg_ret": 5.05
+        },
+        {
+          "ticker": "MENA",
+          "closed_trades": 2,
+          "wins": 1,
+          "avg_ret": 2.83
+        },
+        {
+          "ticker": "SEIG",
+          "closed_trades": 2,
+          "wins": 2,
+          "avg_ret": 5.52
+        },
+        {
+          "ticker": "CCRS",
+          "closed_trades": 1,
+          "wins": 1,
+          "avg_ret": 40.44
+        },
+        {
+          "ticker": "CEFM",
+          "closed_trades": 1,
+          "wins": 1,
+          "avg_ret": 1.69
+        },
+        {
+          "ticker": "EHDR",
+          "closed_trades": 1,
+          "wins": 0,
+          "avg_ret": -4.96
+        },
+        {
+          "ticker": "PHAR",
+          "closed_trades": 1,
+          "wins": 1,
+          "avg_ret": 36.56
+        },
+        {
+          "ticker": "UNIT",
+          "closed_trades": 1,
+          "wins": 0,
+          "avg_ret": 0.0
+        }
+      ],
+      "wins": 68,
+      "avg_ret": 15.38,
+      "net_pnl": 1276.55,
+      "pct_of_total_net_pnl": 26.83,
+      "avg_holding": 107.3
+    },
+    "phase0a_94_affected_tickers": {
+      "trades_on_affected_tickers": 385,
+      "wins": 194,
+      "avg_ret": 4.91,
+      "net_pnl": 1890.57,
+      "pct_of_total_net_pnl": 39.74
+    },
+    "combined_107_affected_tickers": {
+      "trades_on_affected_tickers": 391,
+      "wins": 198,
+      "avg_ret": 4.97,
+      "net_pnl": 1943.83,
+      "pct_of_total_net_pnl": 40.86
+    },
+    "verdict": "WS-A's 30 INVALID tickers (source-mixing-affected) account for 83 closed trades = 7.9% of all closed trades, but contributed net_pnl +1,276.55pp = 26.8% of total +4,757.31pp. ABUK alone: 64 trades, WR=85.9%, avg_ret=+17.32% \u2014 clearly inflated by source-mixing data corruption (egx_investment_migration feeding wrong prices)."
+  },
+  "unrealistic_fills": {
+    "same_day_close_entry": 953,
+    "same_day_open_entry": 6,
+    "next_day_open_entry": 24,
+    "cannot_determine": 70,
+    "total_closed": 1053,
+    "pct_same_day_close": 90.5,
+    "tolerance_pct": 0.5,
+    "samples_same_day_close": [
+      {
+        "id": 50215,
+        "ticker": "PIOH",
+        "prediction_date": "2025-09-22",
+        "entry_price": 14.87,
+        "ph_close": 14.8662,
+        "diff_pct": 0.026
+      },
+      {
+        "id": 50217,
+        "ticker": "BTFH",
+        "prediction_date": "2025-09-22",
+        "entry_price": 3.1,
+        "ph_close": 3.1,
+        "diff_pct": 0.0
+      },
+      {
+        "id": 50219,
+        "ticker": "PIOH",
+        "prediction_date": "2025-09-23",
+        "entry_price": 14.47,
+        "ph_close": 14.4684,
+        "diff_pct": 0.011
+      }
+    ],
+    "samples_next_day_open": [
+      {
+        "id": 51100,
+        "ticker": "CAPE",
+        "prediction_date": "2026-05-27",
+        "entry_price": 30.54,
+        "next_open_date": "2026-05-31",
+        "next_open": 30.5208
+      },
+      {
+        "id": 51102,
+        "ticker": "MTEZ",
+        "prediction_date": "2026-05-27",
+        "entry_price": 84.71,
+        "next_open_date": "2026-05-31",
+        "next_open": 85.097
+      },
+      {
+        "id": 51104,
+        "ticker": "ORTE",
+        "prediction_date": "2026-05-28",
+        "entry_price": 48.8,
+        "next_open_date": "2026-05-31",
+        "next_open": 48.7244
+      }
+    ],
+    "verdict": "90.5% of closed trades have entry_price = same-day close (within 0.5%). prediction_date has time component '12:00:00' (mid-session) but entry fill = same-day close \u2014 impossible in real life (would require perfect same-session execution at the closing auction). No slippage modeled (entry_price EXACTLY = ph_close_price in many cases, e.g., BTFH diff=0.0%). Treated as same-day-close execution with hindsight."
+  },
+  "overlapping_trades": {
+    "max_concurrent_per_ticker": 181,
+    "tickers_with_overlaps": 68,
+    "tickers_total_with_closed_trades": 154,
+    "top_10_by_max_concurrent": [
+      {
+        "ticker": "BTFH",
+        "max_concurrent": 181,
+        "total_trades": 181,
+        "trade_ids_sample": [
+          50217,
+          50223,
+          50233,
+          50243,
+          50253
+        ]
+      },
+      {
+        "ticker": "MASR",
+        "max_concurrent": 94,
+        "total_trades": 94,
+        "trade_ids_sample": [
+          50682,
+          50690,
+          50694,
+          50699,
+          50705
+        ]
+      },
+      {
+        "ticker": "PIOH",
+        "max_concurrent": 69,
+        "total_trades": 69,
+        "trade_ids_sample": [
+          50215,
+          50219,
+          50226,
+          50231,
+          50236
+        ]
+      },
+      {
+        "ticker": "ABUK",
+        "max_concurrent": 64,
+        "total_trades": 64,
+        "trade_ids_sample": [
+          50676,
+          50763,
+          50778,
+          50788,
+          50835
+        ]
+      },
+      {
+        "ticker": "CIEB",
+        "max_concurrent": 64,
+        "total_trades": 64,
+        "trade_ids_sample": [
+          50508,
+          50541,
+          50622,
+          50627,
+          50677
+        ]
+      },
+      {
+        "ticker": "BLDG",
+        "max_concurrent": 49,
+        "total_trades": 49,
+        "trade_ids_sample": [
+          50221,
+          50225,
+          50230,
+          50235,
+          50240
+        ]
+      },
+      {
+        "ticker": "PHDC",
+        "max_concurrent": 44,
+        "total_trades": 44,
+        "trade_ids_sample": [
+          50728,
+          50737,
+          50740,
+          50762,
+          50768
+        ]
+      },
+      {
+        "ticker": "MTEZ",
+        "max_concurrent": 29,
+        "total_trades": 29,
+        "trade_ids_sample": [
+          50460,
+          50468,
+          50472,
+          50478,
+          50480
+        ]
+      },
+      {
+        "ticker": "ORTE",
+        "max_concurrent": 26,
+        "total_trades": 26,
+        "trade_ids_sample": [
+          50602,
+          50713,
+          50718,
+          50856,
+          50862
+        ]
+      },
+      {
+        "ticker": "ELKA",
+        "max_concurrent": 21,
+        "total_trades": 21,
+        "trade_ids_sample": [
+          50282,
+          50582,
+          50673,
+          50693,
+          50698
+        ]
+      }
+    ],
+    "same_day_entries_top": [
+      {
+        "ticker": "ARVA",
+        "date": "2026-09-27",
+        "n_predictions_same_day": 9
+      },
+      {
+        "ticker": "LKGP",
+        "date": "2026-09-27",
+        "n_predictions_same_day": 9
+      },
+      {
+        "ticker": "RKAZ",
+        "date": "2026-09-27",
+        "n_predictions_same_day": 9
+      },
+      {
+        "ticker": "SDTI",
+        "date": "2026-09-27",
+        "n_predictions_same_day": 9
+      },
+      {
+        "ticker": "ALIMTI",
+        "date": "2026-09-24",
+        "n_predictions_same_day": 7
+      }
+    ],
+    "verdict": "Max concurrent trades on a single ticker = 181 (BTFH). 68 of 154 closed-trade tickers have overlapping trades. Top-10 tickers each have 21+ simultaneous open positions \u2014 impossible to execute in reality (single-name concentration limits would block these). Returns on overlapping trades are CORRELATED, NOT additive \u2014 summing actual_return across overlapping trades on the same ticker massively overstates strategy performance."
+  },
+  "trustworthiness": {
+    "metrics_reliable": [
+      "existing_backtests_found (independently generated by scripts/camp/orchestrator.py)",
+      "historical_trades strategy aggregate metrics (PF=1.01 overall, support_bounce=PF 1.23 only winner) \u2014 anonymized but internally consistent",
+      "real_evaluated_predictions aggregate (4,035 trades, WR=35.4%, avg_ret=-2.9%) \u2014 batch-evaluated single point-in-time, internally consistent",
+      "egx_backtest Strategy E (224 trades, WR=69.2%, PF=1.87, avg_hold=3.9d) \u2014 independent sniper backtest, looks trustworthy",
+      "rolling_ic_full feature ICs \u2014 feature-level research, internally consistent",
+      "phase_b_regime monthly regime labels \u2014 externally verifiable against EGX30 index"
+    ],
+    "metrics_unreliable": [
+      "current_baseline.trades = 1,053 \u2014 INFLATED by 777/1053 (74%) mass-backfill trades force-closed on 2026-09-22 (NOT real exits)",
+      "current_baseline.wr = 51.7% \u2014 biased by mass-backfill (proper-exit subset has WR=44.6%)",
+      "current_baseline.pf = 2.61 \u2014 inflated by same-day-close entry fills + no slippage + no commission + overlapping non-additive returns",
+      "current_baseline.net_pnl = +4,757pp \u2014 wildly unrealistic (no real strategy returns 4,757% over 1 year)",
+      "current_baseline.max_dd = -519pp \u2014 distorted by overlapping trades on same tickers (BTFH 181 concurrent positions treated as 181 independent trades)",
+      "current_baseline.avg_r = 2.07 \u2014 biased by no-slippage same-day-close entries and no-commission exits",
+      "current_baseline.avg_holding = 135 days \u2014 ARTIFICIAL (mass-backfill forces 1-year holding on stale 2025 trades)",
+      "baseline_by_year.2025 (PF=0.95) \u2014 143 trades only, mostly force-closed a year later",
+      "baseline_by_year.2026 (PF=2.98) \u2014 910 trades, includes mass-backfill spillover",
+      "phase_e_setups setup_1 (100% WR, +949% avg_gain) \u2014 clearly look-ahead biased (no 100% WR strategy exists)",
+      "experiment_000_baseline pipeline_3stage (5,245 signals, max_dd=100%) \u2014 clearly degenerate"
+    ],
+    "reasons": "Multiple severe biases found in the predictions.db.predictions 'closed trades' dataset:\n1. MASS-BACKFILL BIAS: 777 of 1,053 closed trades (74%) were force-closed on the SAME outcome_date (2026-09-22) regardless of original strategy exit rules \u2014 this is mark-to-market snapshot, not actual trade exits. The 'MAX_DAYS_60d' exit_type label is stale: 450/451 such trades have holding_days > 60 (up to 365 days). exit_price was snapshotted from price_history close on 2026-09-22 (verified 0.0% diff for BTFH; many PIOH/BLDG trades have exit_price set even though price_history has NO bar for 2026-09-22 for those tickers \u2014 exit_price is stale).\n2. UNREALISTIC FILLS: 953/1053 (90.5%) of entries use entry_price = same-day close price (within 0.5% tolerance, often EXACT match). prediction_date timestamps are 12:00:00 (mid-session) but entries are filled at session CLOSE \u2014 impossible without hindsight. Zero slippage, zero bid-ask spread, zero market impact modeled.\n3. NO TRANSACTION COSTS: actual_return = (exit_price/entry_price - 1)*100 (naive). Verified: 972 trades closer to naive than to with-0.3%-commission formula. Net PnL overstates by ~316pp (1,053 * 0.3% round-trip).\n4. OVERLAPPING / NON-ADDITIVE TRADES: 181 concurrent open positions on BTFH, 94 on MASR, 69 on PIOH \u2014 these returns are CORRELATED (same ticker, same period) but summed as if independent. Real capital constraint: max ~5-10 concurrent positions per ticker. Adjusting for this would reduce effective n by ~80%.\n5. EXIT_TYPE INCONSISTENCY (per WS-B): exit_type and exit_reason columns are STALE/INCONSISTENT. Only hit_target + hit_stop + exit_price tuple is reliable. Same outcome_date+exit_price shared across TP1/TP2/SL/MAX_DAYS labels.\n6. CORPORATE-ACTION DISTORTION: WS-A's 30 most-affected tickers (source-mixing-corrupted via egx_investment_migration) contribute 83 closed trades = 7.9% of n but 26.8% of net_pnl (+1,277pp). ABUK alone: 64 trades, WR=85.9%, avg_ret=+17.3% \u2014 almost certainly inflated by corrupt price data (entry/exit prices sourced from poisoned price_history rows).\n7. STATUS FIELD MISLEADING: 'EXPIRED' status (864 trades) actually means 'force-closed at mark-to-market on outcome_date', NOT expired worthless. 'TARGET_HIT' status has LOWER win-rate (31%) than 'EXPIRED' (56%) \u2014 backwards!\n8. UNIVERSE SURVIVORSHIP: predictions cover 258 tickers chosen from currently-listed stocks; cannot back-test on tickers that delisted before today. No EGX historical listing register available to quantify this.\n9. 'US' MARKET LABEL WRONG: 76 predictions labeled market='US' but tickers are MASAKE, 7205, NRE, RUBX, FALH, MADAR, WBD, KMEFIC, AHCS, MAAL, ALOLA, DHBK, 4280, TANM, ACTF, ALIMTI, ALTIJA, EHDR, TAQA, DBIS \u2014 these are NOT US-market tickers, they are EGX/Saudi/Gulf. Market field is unreliable."
+  }
+}

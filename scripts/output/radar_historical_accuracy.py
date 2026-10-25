@@ -157,7 +157,9 @@ def classify_path(rows, regime='NORMAL'):
 
 def fetch_ticker_history(db_path, ticker, end_date=None):
     """جلب كل تاريخ الأسعار لسهم حتى end_date (شامل)."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path, writable=False).__enter__())
     conn.row_factory = sqlite3.Row
     query = """
         SELECT date, open_price as open, high_price as high, low_price as low,
@@ -177,7 +179,9 @@ def fetch_ticker_history(db_path, ticker, end_date=None):
 
 def fetch_all_tickers(db_path, min_rows=60):
     """رجّع قائمة tickers اللي عندها ≥ min_rows يوم تداول."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path, writable=False).__enter__())
     rows = conn.execute("""
         SELECT ticker, COUNT(*) as n, MIN(date) as first_d, MAX(date) as last_d
         FROM price_history
@@ -192,7 +196,9 @@ def fetch_all_tickers(db_path, min_rows=60):
 
 def get_all_trading_dates(db_path, start=None, end=None):
     """كل أيام التداول المتاحة في النطاق."""
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path, writable=False).__enter__())
     query = "SELECT DISTINCT date FROM price_history WHERE 1=1"
     params = []
     if start:
@@ -212,7 +218,9 @@ def find_future_price(db_path, ticker, start_date, days_forward):
 
     نأخذ كل البيانات بعد start_date ونرجّع سعر اليوم رقم N (trading-day index).
     """
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path, writable=False).__enter__())
     conn.row_factory = sqlite3.Row
     rows = conn.execute("""
         SELECT date, close_price as close, high_price as high, low_price as low

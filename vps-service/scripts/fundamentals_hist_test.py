@@ -44,7 +44,9 @@ HARD_CAP = 50.0  # ABS(actual_return) <= 50
 
 def load_closed_predictions():
     """Load all closed predictions from predictions.db (READ-ONLY)."""
-    conn = sqlite3.connect(f'file:{PREDICTIONS_DB}?mode=ro', uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     rows = conn.execute("""
         SELECT ticker, persona, prediction_date, signal, entry_price, target_price, stop_loss,

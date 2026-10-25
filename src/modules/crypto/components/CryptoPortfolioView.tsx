@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  RefreshCw,
  TrendingUp,
  TrendingDown,
@@ -17,7 +16,8 @@ import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  BarChart3,
  Search,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,9 @@ interface PortfolioSummary {
 /* Helpers */
 /* ------------------------------------------------------------------ */
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(price: number | null | undefined): string {
+ if (price == null || Number.isNaN(price)) return '$0.00';
+ if (price >= 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
  if (price >= 0.01) return '$' + (price ?? 0).toFixed(4);
  return '$' + (price ?? 0).toFixed(8);
 }
@@ -438,28 +440,26 @@ export function CryptoPortfolioView() {
 
  {/* Allocation Pie Chart */}
  {livePositions.length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle className="text-base flex items-center gap-2">
- <PieChart className="w-5 h-5" />
- توزيع المحفظة
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title="توزيع المحفظة"
+        icon={PieChart}
+        iconSize="w-5 h-5"
+        titleClassName="text-base"
+ >
+
  <AllocationPieChart positions={livePositions} />
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Positions List */}
- <Card>
- <CardHeader>
- <CardTitle className="text-base flex items-center gap-2">
- <Bitcoin className="w-5 h-5 text-warning" />
- العملات في المحفظة ({positions.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+        title={`العملات في المحفظة (${positions.length})`}
+        icon={Bitcoin}
+        iconColor="text-warning"
+        iconSize="w-5 h-5"
+        titleClassName="text-base"
+ >
+
  {positions.length === 0 ? (
  <div className="text-center py-12 text-muted-foreground">
  <Bitcoin className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -524,8 +524,7 @@ export function CryptoPortfolioView() {
  })}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Disclaimer */}
  <div className="p-4 rounded-lg bg-warning/20 border border-warning ">

@@ -56,7 +56,9 @@ class Trade:
 # ==================== HELPER FUNCTIONS ====================
 
 def get_db():
-    conn = sqlite3.connect(DATABASE_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DATABASE_PATH, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

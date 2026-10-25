@@ -243,7 +243,9 @@ def close_persona_predictions(expire_days: int, dry_run: bool,
         log(f"  ERROR: {PREDICTIONS_DB} not found")
         return {'error': 'predictions.db not found'}
 
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -333,7 +335,9 @@ def close_master_predictions(expire_days: int, dry_run: bool,
     if not os.path.exists(PREDICTIONS_DB):
         return {'error': 'predictions.db not found'}
 
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -494,7 +498,9 @@ def close_ai_predictions(expire_days: int, dry_run: bool,
         log(f"  ERROR: {PREDICTIONS_DB} not found")
         return {'error': 'predictions.db not found'}
 
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 

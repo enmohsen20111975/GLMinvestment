@@ -1,0 +1,17 @@
+# regimes.yaml — Regime classification rules
+# Used by orchestrator.detect_regime()
+
+regimes:
+  Bull:
+    description: "EGX30 > SMA200 AND breadth > 55%"
+    egx30_vs_sma200: ">"
+    breadth_min: 0.55
+
+  Bear:
+    description: "EGX30 < SMA200 AND breadth < 45%"
+    egx30_vs_sma200: "<"
+    breadth_max: 0.45
+
+  Sideways:
+    description: "غير كده (neither Bull nor Bear)"
+    else: true

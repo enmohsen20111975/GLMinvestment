@@ -27,7 +27,9 @@ DB_PRED = '/home/z/my-project/db/predictions.db'
 # Task 1 + Task 5: auth.db — market_pricing table + fresh admin token
 # ---------------------------------------------------------------------------
 def fix_auth_db():
-    conn = sqlite3.connect(DB_AUTH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_AUTH, writable=False).__enter__()
     cur = conn.cursor()
 
     # --- Task 1: CREATE market_pricing table (Prisma @@map("market_pricing")) ---
@@ -119,7 +121,9 @@ def fix_auth_db():
 # Task 2: stocks.db — currency normalization + market_regime_log NULL fill
 # ---------------------------------------------------------------------------
 def fix_stocks_db():
-    conn = sqlite3.connect(DB_STOCKS)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_STOCKS, writable=True).__enter__()
     cur = conn.cursor()
 
     updates = [
@@ -155,7 +159,9 @@ def fix_stocks_db():
 #                            published_at + related columns
 # ---------------------------------------------------------------------------
 def fix_predictions_db():
-    conn = sqlite3.connect(DB_PRED)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PRED, writable=False).__enter__()
     cur = conn.cursor()
 
     # --- Task 4: ADD missing columns (idempotent) ---

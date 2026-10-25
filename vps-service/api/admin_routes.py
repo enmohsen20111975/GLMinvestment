@@ -85,8 +85,7 @@ def _open_db(db_alias: str, db_path: str, writable: bool = False):
     conn = None
     try:
         if _ADMIN_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_alias, writable=writable)
-            conn = ctx.__enter__()
+            conn = _dbm.get_connection(db_alias, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -4739,7 +4738,9 @@ def admin_recover_database():
         
         # Step 1: Check integrity
         try:
-            conn = sqlite3.connect(str(db_path), timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(str(db_path), writable=False)
             result = conn.execute('PRAGMA integrity_check').fetchone()[0]
             conn.close()
             
@@ -4773,7 +4774,9 @@ def admin_recover_database():
         for backup in backup_files[:5]:  # Try last 5 backups
             try:
                 # Validate backup integrity
-                conn = sqlite3.connect(str(backup), timeout=10)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(str(backup), writable=False)
                 backup_result = conn.execute('PRAGMA integrity_check').fetchone()[0]
                 conn.close()
                 
@@ -4811,7 +4814,9 @@ def admin_recover_database():
         
         # Step 3: No valid backup — attempt WAL checkpoint + VACUUM
         try:
-            conn = sqlite3.connect(str(db_path), timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(str(db_path), writable=True)
             conn.execute('PRAGMA journal_mode=WAL')
             conn.execute('PRAGMA busy_timeout=30000')
             conn.execute('PRAGMA wal_checkpoint(TRUNCATE)')
@@ -4819,7 +4824,9 @@ def admin_recover_database():
             conn.close()
             
             # Re-check integrity
-            conn = sqlite3.connect(str(db_path), timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(str(db_path), writable=False)
             result = conn.execute('PRAGMA integrity_check').fetchone()[0]
             conn.close()
             
@@ -4876,7 +4883,9 @@ def admin_recover_all_databases():
             
             # Check integrity
             try:
-                conn = sqlite3.connect(str(db_file), timeout=10)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(str(db_file), writable=False)
                 result = conn.execute('PRAGMA integrity_check').fetchone()[0]
                 conn.close()
                 
@@ -4886,7 +4895,9 @@ def admin_recover_all_databases():
                     
                     # Try WAL checkpoint + VACUUM
                     try:
-                        conn = sqlite3.connect(str(db_file), timeout=30)
+                        # Phase 7.1: migrated to db_manager (writable=True)
+                        from core.db_manager import db_manager
+                        conn = db_manager.get_connection(str(db_file), writable=True)
                         conn.execute('PRAGMA journal_mode=WAL')
                         conn.execute('PRAGMA busy_timeout=30000')
                         conn.execute('PRAGMA wal_checkpoint(TRUNCATE)')
@@ -4894,7 +4905,9 @@ def admin_recover_all_databases():
                         conn.close()
                         
                         # Re-check
-                        conn = sqlite3.connect(str(db_file), timeout=10)
+                        # Phase 7.1: migrated to db_manager (writable=False)
+                        from core.db_manager import db_manager
+                        conn = db_manager.get_connection(str(db_file), writable=False)
                         result2 = conn.execute('PRAGMA integrity_check').fetchone()[0]
                         conn.close()
                         
@@ -5034,7 +5047,9 @@ def admin_reset_user_trial(user_id):
         if not _auth_db.exists():
             return jsonify(admin_response(False, error='auth.db not found')), 500
 
-        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(_auth_db), writable=False)
         try:
             # Check user exists
             row = conn.execute("SELECT id, subscription_tier, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
@@ -5092,7 +5107,9 @@ def admin_extend_user_trial(user_id):
         if not _auth_db.exists():
             return jsonify(admin_response(False, error='auth.db not found')), 500
 
-        conn = sqlite3.connect(str(_auth_db), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(_auth_db), writable=False)
         try:
             row = conn.execute("SELECT id, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
             if not row:

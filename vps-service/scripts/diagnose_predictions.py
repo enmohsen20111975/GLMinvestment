@@ -38,7 +38,9 @@ if not Path(DB_PATH).exists():
 print(f"DB size: {Path(DB_PATH).stat().st_size / 1024 / 1024:.2f} MB")
 print()
 
-conn = sqlite3.connect(DB_PATH)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.get_connection(DB_PATH, writable=False)
 conn.row_factory = sqlite3.Row
 cur = conn.cursor()
 

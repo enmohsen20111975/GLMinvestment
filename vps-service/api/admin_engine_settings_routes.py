@@ -21,6 +21,7 @@ Version: 1.0.0
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import logging
 from datetime import datetime
@@ -236,6 +237,7 @@ def update_engine_settings():
 # يرجّع كل الإعدادات للافتراضي — Resets all settings to defaults
 # ============================================================================
 
+@require_admin
 @admin_engine_settings_bp.route('/reset', methods=['POST'])
 def reset_engine_settings():
     """

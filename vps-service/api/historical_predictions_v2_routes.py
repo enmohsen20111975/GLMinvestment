@@ -22,6 +22,7 @@ Author: GLMinvestment v3.4.42
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import sqlite3
@@ -60,7 +61,9 @@ historical_preds_v2_bp = Blueprint('historical_predictions_v2', __name__)
 def _get_price_history(ticker: str, up_to_date: str, limit: int = 200) -> List[Dict]:
     """Load price history for a ticker up to (and including) up_to_date."""
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT date, open_price, high_price, low_price, close_price, volume "
@@ -80,7 +83,9 @@ def _get_price_history(ticker: str, up_to_date: str, limit: int = 200) -> List[D
 def _get_stock_info(ticker: str) -> Dict:
     """Get stock metadata from stocks.db."""
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT * FROM stocks WHERE ticker = ? LIMIT 1",
@@ -476,7 +481,9 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
         if _persona not in ('gambler', 'balanced', 'conservative'):
             _persona = 'balanced'
 
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         try:
@@ -528,7 +535,9 @@ def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
     if not tickers:
         return 0
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         cur = conn.cursor()
         placeholders = ','.join(['?'] * len(tickers))
         upper_tickers = [t.upper() for t in tickers]
@@ -581,6 +590,7 @@ def _format_sse(event: str, data: Dict) -> str:
 # Endpoints
 # ----------------------------------------------------------------------------
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/explosive-stocks', methods=['GET'])
 def get_explosive_stocks():
     """
@@ -594,7 +604,9 @@ def get_explosive_stocks():
         max_swing = float(request.args.get('max_swing', '400'))
 
         cutoff = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=15.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT ticker, MIN(close_price), MAX(close_price), COUNT(*), MIN(date), MAX(date) "
@@ -628,6 +640,7 @@ def get_explosive_stocks():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/preview', methods=['POST'])
 def preview_generation():
     """
@@ -662,6 +675,7 @@ def preview_generation():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/generate', methods=['POST'])
 def generate_historical_predictions_v2():
     """
@@ -1010,6 +1024,7 @@ def generate_historical_predictions_v2():
 # Health
 # ----------------------------------------------------------------------------
 
+@require_admin
 @historical_preds_v2_bp.route('/api/admin/historical-predictions-v2/health', methods=['GET'])
 def health():
     return jsonify({

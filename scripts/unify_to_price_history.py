@@ -46,7 +46,9 @@ DATA_ENGINE_DB = DB_DIR / 'data_engine.db'
 
 def get_row_count(db_path, table, ticker_col=None, date_col=None):
     """row count مع optional filter"""
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     try:
         return conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
     finally:
@@ -55,7 +57,9 @@ def get_row_count(db_path, table, ticker_col=None, date_col=None):
 
 def get_ticker_market_map():
     """ticker → market من stocks.db"""
-    conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     try:
         return {r[0]: r[1] for r in conn.execute(
             "SELECT ticker, market FROM stocks"
@@ -66,7 +70,9 @@ def get_ticker_market_map():
 
 def ensure_price_history_schema():
     """تأكد إن price_history عندها UNIQUE constraint على (ticker, date) + market column"""
-    conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
     try:
         # تحقق من الـ schema
         cols = [c[1] for c in conn.execute("PRAGMA table_info(price_history)").fetchall()]
@@ -109,7 +115,9 @@ def migrate_egksco(dry_run=False):
         return 0, 0
 
     # تحقق إن الجدول موجود
-    src_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    src_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     exists = src_conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='egksco_price_history'"
     ).fetchone()
@@ -128,7 +136,9 @@ def migrate_egksco(dry_run=False):
         return 0, 0
 
     # اقرا البيانات
-    src_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    src_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     rows = src_conn.execute("""
         SELECT symbol, price_date, open_price, high_price, low_price, close_price, volume, market
         FROM egksco_price_history
@@ -138,7 +148,9 @@ def migrate_egksco(dry_run=False):
 
     # اكتب في price_history.db
     if not dry_run:
-        dst_conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        dst_conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
         inserted = 0
         skipped = 0
         batch = []
@@ -181,7 +193,9 @@ def migrate_historical(dry_run=False, ticker_market=None):
         print(f"    ⚠️ data_engine.db not found — skipping")
         return 0, 0
 
-    src_conn = sqlite3.connect(f"file:{DATA_ENGINE_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    src_conn = db_manager.connection(DATA_ENGINE_DB, writable=False).__enter__()
     exists = src_conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='historical_data'"
     ).fetchone()
@@ -207,7 +221,9 @@ def migrate_historical(dry_run=False, ticker_market=None):
 
     # اكتب
     if not dry_run:
-        dst_conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        dst_conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
         inserted = 0
         batch = []
         BATCH_SIZE = 5000
@@ -248,7 +264,9 @@ def migrate_stock_daily(dry_run=False, ticker_market=None):
     """دمج stock_daily_prices → price_history"""
     print(f"\n  📦 migrating stock_daily_prices...")
 
-    src_conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    src_conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     src_count = src_conn.execute("SELECT COUNT(*) FROM stock_daily_prices").fetchone()[0]
     print(f"    source: {src_count:,} rows")
 
@@ -262,7 +280,9 @@ def migrate_stock_daily(dry_run=False, ticker_market=None):
     src_conn.close()
 
     if not dry_run:
-        dst_conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        dst_conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
         inserted = 0
         batch = []
         BATCH_SIZE = 5000
@@ -301,7 +321,9 @@ def verify_migration(counts_before):
     """اختبارات صارمة بعد التوحيد"""
     print(f"\n  🔍 verification checks...")
 
-    conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     checks = []
 
     # Check 1: row count زاد
@@ -351,7 +373,9 @@ def verify_migration(counts_before):
         db_path = DB_DIR / dbn
         if db_path.exists():
             try:
-                c = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                c = db_manager.connection(db_path, writable=False).__enter__()
                 cnt = c.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 c.close()
                 checks.append((f'original_{table}_intact', 'PASS', f'{cnt:,} rows'))

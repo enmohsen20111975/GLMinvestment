@@ -53,11 +53,15 @@ def sync_persona_predictions(refresh_active: bool = True):
     return
     mode_label = "REFRESH (clear+reinsert)" if refresh_active else "INSERT-only (skip existing)"
     log(f"Starting persona predictions sync... [{mode_label}]")
-    pconn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pconn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     pconn.row_factory = sqlite3.Row
     pcur = pconn.cursor()
 
-    sconn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    sconn = db_manager.get_connection(STOCKS_DB, writable=False)
     sconn.row_factory = sqlite3.Row
     scur = sconn.cursor()
 

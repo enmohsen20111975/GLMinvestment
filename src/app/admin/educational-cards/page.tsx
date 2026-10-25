@@ -23,6 +23,7 @@ export const dynamic = "force-dynamic";
  * Colors: amber/emerald/teal/orange (no indigo/blue)
  */
 
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
  GraduationCap,
@@ -1028,14 +1029,16 @@ export default function AdminEducationalCardsPage() {
  AVAILABLE LESSONS + GENERATION SETTINGS
  ==================================================================== */}
  <section>
- <Card className="border-warning/20 from-warning/5 to-profit/5 dark:from-warning/5 dark:to-profit/5">
- <CardHeader>
- <CardTitle className="flex items-center gap-2 text-base">
- <Sparkles className="w-5 h-5 text-warning" />
- إنشاء كروت تعليمية جديدة
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-6">
+ <WidgetCard
+ 	title="إنشاء كروت تعليمية جديدة"
+ 	icon={Sparkles}
+ 	iconColor="text-warning"
+ 	iconSize="w-5 h-5"
+ 	titleClassName="text-base"
+ 	className="border-warning/20 from-warning/5 to-profit/5 dark:from-warning/5 dark:to-profit/5"
+ 	contentClassName="space-y-6"
+ >
+
 {/* Category filter */}
  <div className="space-y-1.5">
  <label className="text-xs font-medium text-muted-foreground">
@@ -1333,8 +1336,7 @@ export default function AdminEducationalCardsPage() {
  )}
  </Button>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </section>
 
  {/* ====================================================================

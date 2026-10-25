@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -390,14 +391,14 @@ export function UserPublishingView() {
 
  {/* Create Post Tab */}
  <TabsContent value="create">
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <Zap className="w-5 h-5 text-warning" />
- نشر توقع جديد
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+ 	title="نشر توقع جديد"
+ 	icon={Zap}
+ 	iconColor="text-warning"
+ 	iconSize="w-5 h-5"
+ 	contentClassName="space-y-4"
+ >
+
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div>
  <label className="text-sm font-medium mb-1 block">رمز السهم *</label>
@@ -532,20 +533,18 @@ export function UserPublishingView() {
  >
  {submitting ? 'جاري النشر...' : 'نشر التوقع'}
  </Button>
- </CardContent>
- </Card>
+ </WidgetCard>
  </TabsContent>
 
  {/* Points Tab */}
  <TabsContent value="points" className="space-y-4">
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <Coins className="w-5 h-5 text-warning" />
- شراء النقاط
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ 	title="شراء النقاط"
+ 	icon={Coins}
+ 	iconColor="text-warning"
+ 	iconSize="w-5 h-5"
+ >
+
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {packages.map((pkg) => (
  <Card key={pkg.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
@@ -590,16 +589,12 @@ export function UserPublishingView() {
  <li>سيتم إضافة النقاط خلال دقائق</li>
  </ol>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Points History */}
  {userPoints && (
- <Card>
- <CardHeader>
- <CardTitle>سجل النقاط</CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard title="سجل النقاط">
+
  <div className="space-y-3">
  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
  <span>نقاط من التوقعات</span>
@@ -614,8 +609,7 @@ export function UserPublishingView() {
  <span className="font-bold text-xl text-warning">{userPoints.available_points.toLocaleString()}</span>
  </div>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </TabsContent>
 

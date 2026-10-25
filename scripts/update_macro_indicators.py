@@ -19,7 +19,9 @@ DATA_ENGINE_DB = PROJECT_ROOT / 'db' / 'data_engine.db'
 def get_usd_from_data_engine():
     """يجلب سعر الدولار من data_engine.db لو متاح."""
     try:
-        conn = sqlite3.connect(str(DATA_ENGINE_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
         cur = conn.cursor()
         cur.execute("""
             SELECT rate, date FROM exchange_rates
@@ -38,7 +40,9 @@ def get_usd_from_data_engine():
 def calculate_usd_change_3d():
     """يحسب نسبة تغير الدولار خلال 3 أيام."""
     try:
-        conn = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         cur = conn.cursor()
         cur.execute("""
             SELECT usd_to_egp, date FROM macro_indicators
@@ -88,7 +92,9 @@ def main():
     print("═══ تحديث بيانات الاقتصاد الكلي ═══")
 
     # 1. تأكد من وجود الجدول
-    conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
     conn.execute('''CREATE TABLE IF NOT EXISTS macro_indicators (
         date TEXT PRIMARY KEY,
         usd_to_egp REAL,

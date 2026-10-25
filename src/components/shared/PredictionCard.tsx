@@ -29,7 +29,6 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Collapsible,
  CollapsibleContent,
  CollapsibleTrigger,
@@ -153,7 +152,12 @@ const SIGNAL_STYLES: Record<
  },
 };
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(v: number | null | undefined, digits = 2): string {
+ if (v === null || v === undefined || Number.isNaN(v)) return '—';
+ return Number(v).toLocaleString('en-US', {
+ minimumFractionDigits: digits,
+ maximumFractionDigits: digits,
+ });
 }
 
 function formatPct(v: number | null | undefined, withSign = false, digits = 1): string {

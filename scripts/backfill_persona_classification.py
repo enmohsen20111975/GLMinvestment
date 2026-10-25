@@ -243,7 +243,9 @@ def main():
         print(f"❌ predictions.db not found: {args.pred_db}")
         sys.exit(1)
 
-    conn = sqlite3.connect(args.pred_db, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(args.pred_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA busy_timeout = 30000')
 
@@ -284,7 +286,9 @@ def main():
     stocks_map = {}
     if os.path.exists(args.stocks_db):
         try:
-            sconn = sqlite3.connect(args.stocks_db, timeout=30)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            sconn = db_manager.connection(args.stocks_db, writable=False).__enter__()
             sconn.row_factory = sqlite3.Row
             scur = sconn.cursor()
             # فحص أعمدة stocks.db (schema-aware)

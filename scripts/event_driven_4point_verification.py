@@ -110,7 +110,9 @@ def load_comi_regime(start_date='2023-01-01', end_date='2026-10-18'):
     رجّع dict: {date: regime} عشان نـ filter الإشارات.
     """
     ph_db = DB_DIR / 'price_history.db'
-    con = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(str(ph_db), writable=False).__enter__()
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT date, close_price FROM price_history

@@ -190,9 +190,13 @@ def main() -> int:
     # Connect to DBs read-only
     pred_uri = f"file:{PRED_DB}?mode=ro"
     price_uri = f"file:{PRICE_DB}?mode=ro"
-    pred_conn = sqlite3.connect(pred_uri, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pred_conn = db_manager.connection(pred_uri, writable=False).__enter__()
     pred_conn.row_factory = sqlite3.Row
-    price_conn = sqlite3.connect(price_uri, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_conn = db_manager.connection(price_uri, writable=False).__enter__()
     price_conn.row_factory = sqlite3.Row
 
     # Fetch full prediction rows for each mismatch id (so we can also

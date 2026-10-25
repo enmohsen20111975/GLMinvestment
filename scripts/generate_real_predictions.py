@@ -29,7 +29,9 @@ MAX_DAILY_PREDICTIONS = 6
 
 def ensure_predictions_table():
     """إنشاء جدول التوقعات - إسقاط القديم وإنشاء جديد مع عمود market"""
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     cursor = conn.cursor()
     
     # إسقاط الجدول القديم لضمان وجود عمود market
@@ -78,7 +80,9 @@ def ensure_predictions_table():
 
 def get_all_stocks() -> List[Dict]:
     """جلب كل الأسهم من كل الأسواق"""
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -108,7 +112,9 @@ def get_all_stocks() -> List[Dict]:
 
 def get_price_history(ticker: str, end_date: str, days: int = 100) -> List[Dict]:
     """جلب تاريخ الأسعار"""
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
@@ -134,7 +140,9 @@ def get_price_history(ticker: str, end_date: str, days: int = 100) -> List[Dict]
 
 def get_price_at_date(ticker: str, target_date: str) -> Optional[float]:
     """جلب سعر السهم في تاريخ معين"""
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     cursor = conn.cursor()
     
     try:
@@ -269,7 +277,9 @@ def calculate_simple_analysis(prices: List[float], volumes: List[float] = None) 
 
 def insert_prediction(pred: Dict):
     """إدخال توقع في قاعدة البيانات"""
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''
@@ -409,7 +419,9 @@ def main():
     print(f"   أيام التداول: {len(trading_days)}")
     
     # مسح التوقعات القديمة
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM aiPrediction')
     conn.commit()
@@ -525,7 +537,9 @@ def main():
         print(f"   {market}: {count}")
     
     # حساب الدقة
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     cursor = conn.cursor()
     
     cursor.execute('''

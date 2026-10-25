@@ -82,14 +82,18 @@ def _ensure_pending_settlements_schema(conn: sqlite3.Connection):
 
 def _get_stocks_conn() -> sqlite3.Connection:
     """فتح اتصال بـ stocks.db"""
-    conn = sqlite3.connect(STOCKS_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(STOCKS_DB_PATH, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def _get_predictions_conn() -> sqlite3.Connection:
     """فتح اتصال بـ predictions.db (يحتوي portfolio_state.cash)"""
-    conn = sqlite3.connect(PREDICTIONS_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB_PATH, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

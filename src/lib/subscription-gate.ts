@@ -218,9 +218,13 @@ async function isPaidSubscriptionActive(userId: string): Promise<boolean> {
 
   let active = true; // fail-open default — see docstring.
   try {
-    // Lazy import — keeps the auth Prisma client out of any code path
-    // that doesn't actually need it (and out of edge-runtime bundling).
-    const { authDb } = await import('@/lib/db-auth');
+    // ALPHA-FIX: skip db-auth import in browser (CJS leak in Turbopack).
+    // This function is server-only; in browser it returns the fail-open default.
+    if (typeof window !== 'undefined') return { ok: true, tier: 'free', isPaid: false, trialEndsAt: null };
+    // Use variable to hide the import path from Turbopack static analysis
+    // so db-auth is NOT bundled into the client chunk.
+    const dbAuthModule = (await import(/* @vite-ignore */('@/l' + 'ib/db-auth'))) as typeof import('@/lib/db-auth');
+    const authDb = dbAuthModule.authDb;
     // UserSubscription has a UNIQUE constraint on user_id (per
     // prisma/auth-schema.prisma) so findFirst by user_id returns at most
     // one row. We don't filter by status='active' because we want to
@@ -304,9 +308,11 @@ export async function checkTrialNotExpired(userId: string | null): Promise<Trial
   let trialEndsAt: Date | null = null;
 
   try {
-    // Lazy import — keeps the auth Prisma client out of any code path that
-    // doesn't actually need it (and out of any edge-runtime bundling).
-    const { authDb } = await import('@/lib/db-auth');
+    // ALPHA-FIX: skip db-auth import in browser (CJS leak in Turbopack).
+    if (typeof window !== 'undefined') return { ok: true, tier: 'free', isPaid: false, trialEndsAt: null };
+    // Use variable to hide the import path from Turbopack static analysis.
+    const dbAuthModule = (await import(/* @vite-ignore */('@/l' + 'ib/db-auth'))) as typeof import('@/lib/db-auth');
+    const authDb = dbAuthModule.authDb;
     const user = await authDb.user.findUnique({
       where: { id: userId },
       select: {

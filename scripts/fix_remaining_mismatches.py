@@ -239,8 +239,12 @@ def main() -> int:
     # ── 3. Open connections ───────────────────────────────────────────────
     pred_uri = f"file:{PRED_DB}?mode={'ro' if DRY_RUN else 'rw'}"
     price_uri = f"file:{PRICE_DB}?mode=ro"
-    pred_conn = sqlite3.connect(pred_uri, uri=True)
-    price_conn = sqlite3.connect(price_uri, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    pred_conn = db_manager.connection(pred_uri, writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_conn = db_manager.connection(price_uri, writable=False).__enter__()
     pred_conn.row_factory = sqlite3.Row
     price_conn.row_factory = sqlite3.Row
 

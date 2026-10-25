@@ -258,7 +258,9 @@ def generate_daily_signals(date_str: str = None) -> dict:
         print(f"❌ Database not found")
         return None
     
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
     cursor = conn.cursor()
     
     # Get tickers

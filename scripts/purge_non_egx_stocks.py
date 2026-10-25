@@ -232,7 +232,9 @@ def process_database(db_path: Path, apply: bool) -> Dict[str, int]:
     print(f"DATABASE: {db_name}  ({db_path})")
     print(f"{'=' * 70}")
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     conn.isolation_level = None  # manual BEGIN/COMMIT
     try:
         conn.execute("PRAGMA foreign_keys=OFF")

@@ -92,7 +92,9 @@ def main():
     if not os.path.exists(args.ph_db):
         print(f"❌ price_history.db NOT FOUND: {args.ph_db}")
     else:
-        conn = sqlite3.connect(args.ph_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(args.ph_db, writable=False).__enter__()
         try:
             row = conn.execute(
                 "SELECT MAX(date), COUNT(*) FROM price_history"
@@ -111,7 +113,9 @@ def main():
     # ── 2. price_history.db for ticker ──
     print(f"\n─── 2) price_history.db for {ticker} ───")
     if os.path.exists(args.ph_db):
-        conn = sqlite3.connect(args.ph_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(args.ph_db, writable=False).__enter__()
         try:
             row = conn.execute(
                 "SELECT MAX(date), COUNT(*), MIN(date) FROM price_history WHERE ticker = ?",
@@ -140,7 +144,9 @@ def main():
     if not os.path.exists(args.stocks_db):
         print(f"❌ stocks.db NOT FOUND: {args.stocks_db}")
     else:
-        conn = sqlite3.connect(args.stocks_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(args.stocks_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         try:
             scols = _get_columns(conn, 'stocks')
@@ -178,7 +184,9 @@ def main():
     if not os.path.exists(args.pred_db):
         print(f"❌ predictions.db NOT FOUND: {args.pred_db}")
     else:
-        conn = sqlite3.connect(args.pred_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(args.pred_db, writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         try:
             pcols = _get_columns(conn, 'predictions')
@@ -225,9 +233,13 @@ def main():
     # ── 5. MISMATCH analysis (schema-aware) ──
     print(f"\n─── 5) STALE/MISMATCH analysis for {ticker} ───")
     if os.path.exists(args.pred_db) and os.path.exists(args.stocks_db):
-        pconn = sqlite3.connect(args.pred_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pconn = db_manager.connection(args.pred_db, writable=False).__enter__()
         pconn.row_factory = sqlite3.Row
-        sconn = sqlite3.connect(args.stocks_db, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        sconn = db_manager.connection(args.stocks_db, writable=False).__enter__()
         sconn.row_factory = sqlite3.Row
         try:
             pcols = _get_columns(pconn, 'predictions')

@@ -55,12 +55,16 @@ def _parse_price(val, default=0.0) -> float:
         return default
 
 def _get_de_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DATA_ENGINE_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DATA_ENGINE_DB, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 
 def _get_stocks_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     return conn
 

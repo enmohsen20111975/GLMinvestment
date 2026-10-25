@@ -129,9 +129,13 @@ def main():
     print("MD5: ✅\n")
 
     # Read predictions (balanced only, clean)
-    conn_pred = sqlite3.connect(f"file:{PREDICTIONS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_pred = db_manager.connection(PREDICTIONS_DB, writable=False).__enter__()
     conn_pred.row_factory = sqlite3.Row
-    conn_ph = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn_ph = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn_ph.row_factory = sqlite3.Row
 
     rows = conn_pred.execute("""

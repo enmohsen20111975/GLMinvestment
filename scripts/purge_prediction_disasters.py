@@ -77,7 +77,9 @@ def _f(v, default=0.0):
 
 def _connect(db_path: str) -> sqlite3.Connection:
     """اتصال WAL + busy_timeout (نفس patch الـ daily_closer)."""
-    conn = sqlite3.connect(db_path, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=True).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         conn.execute('PRAGMA journal_mode=WAL')

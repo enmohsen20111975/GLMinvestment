@@ -82,7 +82,9 @@ PAPER_DB = DB_DIR / 'paper_trading.db'
 
 def init_paper_db():
     """Initialize Paper Trading database."""
-    conn = sqlite3.connect(str(PAPER_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PAPER_DB), writable=True).__enter__()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS paper_trades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -156,7 +158,9 @@ def scan_breakout_signals(scan_date):
     Returns list of signal dicts.
     """
     ph_db = DB_DIR / 'price_history.db'
-    ph_conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     ph_conn.row_factory = sqlite3.Row
     
     # Get all tickers with data up to scan_date
@@ -217,7 +221,9 @@ def scan_breakout_signals(scan_date):
         # Get sector
         sector = 'UNKNOWN'
         try:
-            s_conn = sqlite3.connect(str(DB_DIR / 'stocks.db'))
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            s_conn = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
             s_conn.row_factory = sqlite3.Row
             s_row = s_conn.execute("SELECT sector FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
             if s_row:
@@ -251,7 +257,9 @@ def check_limit_fill(ticker, signal_date, limit_price):
     Returns: (filled, entry_price, entry_date) or (False, None, None)
     """
     ph_db = DB_DIR / 'price_history.db'
-    ph_conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     ph_conn.row_factory = sqlite3.Row
     
     # Get next day's data
@@ -284,7 +292,9 @@ def check_exits(scan_date):
     Check all open positions for exits on scan_date.
     Returns list of (trade_id, exit_price, exit_date, exit_reason, gross_return, net_return, pnl).
     """
-    conn = sqlite3.connect(str(PAPER_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PAPER_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     
     open_trades = conn.execute("""
@@ -292,7 +302,9 @@ def check_exits(scan_date):
     """).fetchall()
     
     ph_db = DB_DIR / 'price_history.db'
-    ph_conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     ph_conn.row_factory = sqlite3.Row
     
     exits = []
@@ -379,7 +391,9 @@ def run_paper_trading_day(scan_date, equity, peak, max_dd, open_positions, secto
     
     Returns: updated state + new trades + exits
     """
-    conn = sqlite3.connect(str(PAPER_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PAPER_DB), writable=False).__enter__()
     
     new_trades = []
     new_exits = []
@@ -526,7 +540,9 @@ def run_paper_trading_day(scan_date, equity, peak, max_dd, open_positions, secto
             try:
                 ph_db = DB_DIR / 'price_history.db'
                 if ph_db.exists():
-                    ph_c = sqlite3.connect(str(ph_db))
+                    # Phase 7.1: migrated to db_manager (writable=False)
+                    from core.db_manager import db_manager
+                    ph_c = db_manager.connection(str(ph_db), writable=False).__enter__()
                     ph_c.row_factory = sqlite3.Row
                     _now = datetime.now()
                     month_start = _now.strftime('%Y-%m-01')
@@ -600,7 +616,9 @@ def run_backtest_mode(start_date, end_date):
     
     # Get all trading dates
     ph_db = DB_DIR / 'price_history.db'
-    ph_conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     dates = [r[0] for r in ph_conn.execute("""
         SELECT DISTINCT date FROM price_history 
         WHERE date >= ? AND date <= ?
@@ -637,7 +655,9 @@ def run_backtest_mode(start_date, end_date):
             break
     
     # Final summary
-    conn = sqlite3.connect(str(PAPER_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PAPER_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     
     total = conn.execute("SELECT COUNT(*) FROM paper_trades").fetchone()[0]

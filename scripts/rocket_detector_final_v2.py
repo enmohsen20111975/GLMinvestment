@@ -392,7 +392,9 @@ def run_precision_test(conn, detector_fn, market='مصر', max_stocks=80, scan_w
 # التقرير
 # ═══════════════════════════════════════════════════════════════════
 def main():
-    conn = sqlite3.connect(DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB, writable=False).__enter__()
 
     print("╔" + "═"*78 + "╗")
     print("║" + " مرحلة 1 محسّنة — التقرير النهائي (4 كاشفات + Precision واقعي) ".center(78) + "║")
@@ -514,7 +516,9 @@ def main():
 
 
 def compare_markets(eg_results, eg_precision):
-    conn = sqlite3.connect(DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB, writable=False).__enter__()
 
     print("\n\n╔" + "═"*78 + "╗")
     print("║" + " مقارنة: المحلى (مصر) vs النتاجى (السعودية) ".center(78) + "║")

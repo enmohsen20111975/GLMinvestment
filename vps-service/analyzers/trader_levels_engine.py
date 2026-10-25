@@ -211,7 +211,9 @@ def get_unified_trader_levels(
             try:
                 import json
                 from datetime import datetime
-                conn = sqlite3.connect(str(pred_db_path))
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(str(pred_db_path), writable=False)
                 cur = conn.cursor()
                 # التحقق من وجود توقع نشط لتحديثه بنفس القيم الموحدة
                 row = cur.execute(

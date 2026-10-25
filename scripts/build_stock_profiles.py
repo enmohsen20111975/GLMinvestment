@@ -56,7 +56,9 @@ def get_all_active_tickers(db_path: str = STOCKS_DB, market: str = 'EGX') -> lis
     """كل الأسهم النشطة من stocks.db."""
     tickers = []
     try:
-        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True, timeout=15)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(db_path, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute(
             "SELECT ticker FROM stocks WHERE is_active = 1 "
@@ -166,7 +168,9 @@ def main() -> int:
 
     # ملخص الـ personalities
     try:
-        conn = sqlite3.connect(f'file:{STOCKS_DB}?mode=ro', uri=True, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
         cur = conn.cursor()
         cur.execute(
             "SELECT personality_type_en, COUNT(*) FROM stock_adaptive_profiles "

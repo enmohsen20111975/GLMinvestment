@@ -231,7 +231,9 @@ class FundamentalDataProvider:
             return fd
 
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             conn.row_factory = sqlite3.Row
 
             # The tab_ tables store symbol as "TICKER+ArabicName" (e.g. "COMIالبنك")
@@ -504,7 +506,9 @@ def resolve_ticker(ticker: str, db_path: str = None) -> Optional[sqlite3.Row]:
         return None
     ticker = str(ticker).strip()
     try:
-        conn = sqlite3.connect(f'file:{path}?mode=ro', uri=True, timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(path, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         row = cur.execute("""

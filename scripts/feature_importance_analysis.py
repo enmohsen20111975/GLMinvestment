@@ -37,7 +37,9 @@ print("=" * 90)
 print("\n[1/5] تحميل التوقعات + فلتر fabricated returns...")
 
 pred_db = DB_DIR / 'predictions.db'
-conn = sqlite3.connect(str(pred_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(str(pred_db), writable=False).__enter__()
 conn.row_factory = sqlite3.Row
 
 # فلتر: نـشيل الـ actual_return = 50.0 (fabricated/capped)
@@ -79,7 +81,9 @@ if returns_clean:
 
 # تحميل بيانات الأسعار
 ph_db = DB_DIR / 'price_history.db'
-ph_conn = sqlite3.connect(str(ph_db))
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
 ph_conn.row_factory = sqlite3.Row
 
 ticker_date_cache = {}

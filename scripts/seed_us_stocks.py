@@ -150,7 +150,9 @@ def seed_us_stocks(db_path: Path = None, dry_run: bool = False) -> int:
     print(f"  Stocks to seed: {len(US_STOCKS)}")
     print(f"  Mode: {'DRY-RUN' if dry_run else 'LIVE'}")
 
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     cur = conn.cursor()
 
     # Ensure schema exists (idempotent)
@@ -191,7 +193,9 @@ def seed_us_stocks(db_path: Path = None, dry_run: bool = False) -> int:
     conn.close()
 
     # Count US stocks in DB after seeding
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM stocks WHERE market = 'US'")
     total_us = cur.fetchone()[0]

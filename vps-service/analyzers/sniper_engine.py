@@ -218,7 +218,9 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
 
 def _conn(db_path: str) -> sqlite3.Connection:
     """Create a SQLite connection with row factory."""
-    c = sqlite3.connect(db_path, timeout=15.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.get_connection(db_path, writable=False)
     c.row_factory = sqlite3.Row
     return c
 

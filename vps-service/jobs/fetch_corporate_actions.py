@@ -34,7 +34,7 @@ def init_corporate_actions_table():
     """أنشئ جدول corporate_actions لو مش موجود."""
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('predictions', writable=True).__enter__()
+        conn = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn = sqlite3.connect(PREDICTIONS_DB)
     conn.execute("""
@@ -64,7 +64,7 @@ def fetch_dividends():
     conn_de = None
     try:
         from core.db_manager import db_manager
-        conn_de = db_manager.connection('data_engine', writable=False).__enter__()
+        conn_de = db_manager.get_connection('data_engine', writable=False)
     except Exception:
         conn_de = sqlite3.connect(DATA_ENGINE_DB)
     # فحص الـ schema
@@ -84,7 +84,7 @@ def fetch_dividends():
     # خزن في corporate_actions
     try:
         from core.db_manager import db_manager
-        conn_pred = db_manager.connection('predictions', writable=True).__enter__()
+        conn_pred = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn_pred = sqlite3.connect(PREDICTIONS_DB)
     count = 0
@@ -136,7 +136,7 @@ def fetch_ipo_news():
 
     try:
         from core.db_manager import db_manager
-        conn_pred = db_manager.connection('predictions', writable=True).__enter__()
+        conn_pred = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn_pred = sqlite3.connect(PREDICTIONS_DB)
     count = 0
@@ -194,7 +194,7 @@ def fetch_assembly_news():
 
     try:
         from core.db_manager import db_manager
-        conn_pred = db_manager.connection('predictions', writable=True).__enter__()
+        conn_pred = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn_pred = sqlite3.connect(PREDICTIONS_DB)
     count = 0
@@ -246,7 +246,7 @@ def get_upcoming_actions(ticker: str, days_ahead: int = 7) -> list:
     """ارجع Corporate Actions قادمة لسهم معين."""
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('predictions', writable=False).__enter__()
+        conn = db_manager.get_connection('predictions', writable=False)
     except Exception:
         conn = sqlite3.connect(PREDICTIONS_DB)
     today = datetime.now().strftime('%Y-%m-%d')
@@ -293,7 +293,7 @@ def main():
     # ملخص
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('predictions', writable=False).__enter__()
+        conn = db_manager.get_connection('predictions', writable=False)
     except Exception:
         conn = sqlite3.connect(PREDICTIONS_DB)
     total = conn.execute("SELECT COUNT(*) FROM corporate_actions").fetchone()[0]

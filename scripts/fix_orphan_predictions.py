@@ -70,7 +70,9 @@ def main():
     print("=" * 60)
 
     # 1. Get all valid tickers from stocks.db
-    sconn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    sconn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     valid_tickers = set(r[0] for r in sconn.execute("SELECT ticker FROM stocks").fetchall())
     sconn.close()
     print(f"  Valid tickers in stocks.db: {len(valid_tickers)}")
@@ -84,7 +86,9 @@ def main():
         print(f"  ✅ Backup: {backup_path}")
 
     # 3. Find orphans
-    conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     total_fixed = 0

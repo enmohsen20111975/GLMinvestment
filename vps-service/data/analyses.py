@@ -129,7 +129,7 @@ def get_predictions_db():
     """Get predictions database connection."""
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('predictions', writable=True).__enter__()
+        conn = db_manager.get_connection('predictions', writable=True)
     except Exception:
         conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
     conn.row_factory = sqlite3.Row
@@ -142,7 +142,7 @@ def get_stocks_db():
     """Get stocks database connection."""
     try:
         from core.db_manager import db_manager
-        conn = db_manager.connection('stocks', writable=True).__enter__()
+        conn = db_manager.get_connection('stocks', writable=True)
     except Exception:
         conn = sqlite3.connect(STOCKS_DB, timeout=30.0)
     conn.row_factory = sqlite3.Row
@@ -188,7 +188,7 @@ def load_market_overrides() -> Dict[str, str]:
         if os.path.exists(_DATA_ENGINE_DB):
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('data_engine', writable=False).__enter__()
+                conn = db_manager.get_connection('data_engine', writable=False)
             except Exception:
                 conn = sqlite3.connect(f'file:{_DATA_ENGINE_DB}?mode=ro', uri=True, timeout=10)
             conn.row_factory = sqlite3.Row
@@ -290,7 +290,7 @@ def _load_stocks_fundamentals_for_persona() -> dict:
             return result
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('stocks', writable=False).__enter__()
+            conn = db_manager.get_connection('stocks', writable=False)
         except Exception:
             conn = sqlite3.connect(_STOCKS_DB_PATH)
         conn.row_factory = sqlite3.Row

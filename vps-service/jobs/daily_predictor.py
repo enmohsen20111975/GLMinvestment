@@ -48,79 +48,55 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from contextlib import contextmanager
 
-
-def _whale_distribution_guard(opens, highs, lows, closes, volumes):
-    """Phase 2 #1: فحص تصريف الحيتان — لو صافي التدفق سالب (تصريف) → أمنع BUY.
-    يحمي المتداول من مصايد الثيران (bull traps) على أسهم بنزف مؤسسي."""
-    try:
-        _root = Path(__file__).resolve().parents[2]
-        if str(_root) not in sys.path:
-            sys.path.insert(0, str(_root))
-        _scripts = _root / "scripts"
-        if str(_scripts) not in sys.path:
-            sys.path.insert(0, str(_scripts))
-        n = min(len(opens), len(highs), len(lows), len(closes), len(volumes))
-        if n < 5:
-            return False  # بيانات غير كافية للفحص — لا تمنع
-        candles = [{'open': opens[i], 'high': highs[i], 'low': lows[i], 'close': closes[i], 'volume': volumes[i]} for i in range(n)]
-        try:
-            from scripts.liquidity_radar_v2 import compute_whale_flow
-        except ImportError:
-            from liquidity_radar_v2 import compute_whale_flow
-        whale = compute_whale_flow(candles)
-        return (whale.get('net_flow_egp', 0) or 0) < 0  # distributing → block BUY
-    except Exception as e:
-        # لا بلع أخطاء — يُسجّل صراحة + fail-open (لا يمنع BUY لو الفحص فشل).
-        sys.stderr.write(f"[daily_predictor] whale_distribution_guard error: {e}\n")
-        return False
-
-
-# Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
-try:
-    from core.db_manager import db_manager as _dbm
-    _V402_DBM_AVAILABLE = True
-except Exception as _v402_err:
-    _V402_DBM_AVAILABLE = False
-    print(f"[v40_2_daily_generator] db_manager not available ({_v402_err}) — falling back to raw sqlite3")
-
-
-@contextmanager
-def _open_db(db_path: str, writable: bool = False):
-    """Rule 54 / Phase 3: استخدم db_manager.connection() مع fallback sqlite3.connect."""
-    ctx = None
-    conn = None
-    try:
-        if _V402_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        conn = sqlite3.connect(db_path, timeout=30.0)
-        try:
-            conn.execute('PRAGMA busy_timeout=30000')
-            if writable:
-                conn.execute('PRAGMA journal_mode=WAL')
-                conn.execute('PRAGMA synchronous=NORMAL')
-        except Exception:
-            pass
-        ctx = None
-    try:
-        yield conn
-    finally:
-        try:
-            if ctx is not None:
-                ctx.__exit__(None, None, None)
-            else:
-                conn.close()
-        except Exception:
-            pass
-
-# ─── Path setup ───
+# ─── Path setup (MUST come before predictor_modules imports) ──────────────
+# predictor_modules/* import from `core.db_manager` which lives in vps-service/,
+# so vps-service/ must be on sys.path BEFORE we import them.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, 'vps-service'))
 os.chdir(PROJECT_ROOT)
 os.environ['BYPASS_PRED_CAP'] = '1'
+
+# ─── Phase 7.2 Strangler Pattern: import 5 extracted modules ────────────────
+# Each function below was extracted VERBATIM to vps-service/jobs/predictor_modules/
+# and re-imported here. Behavior is 100% equivalent (Strangler Pattern).
+# Original inline definitions have been removed.
+from predictor_modules.whale_guard import _whale_distribution_guard
+from predictor_modules.db_helpers import (
+    _V402_DBM_AVAILABLE,
+    _dbm,
+    _open_db,
+)
+from predictor_modules.persona_fit import compute_persona_fit
+from predictor_modules.scan_dates import get_scan_dates
+from predictor_modules.cleanup import delete_old_v40_predictions
+# Phase 8.2: 3 blocks extracted from run_generator()
+from predictor_modules.summary import compute_and_save_summary
+from predictor_modules.dry_run_printer import print_dry_run_summary
+from predictor_modules.price_cache import pre_cache_price_history
+
+
+def _phase72_extraction_marker():  # pragma: no cover
+    """Placeholder preserving line offsets after Phase 7.2 extraction.
+
+    The following functions were extracted to predictor_modules/ and re-imported
+    above (Strangler Pattern — semantic equivalence preserved):
+      - _whale_distribution_guard  → predictor_modules.whale_guard
+      - _open_db + _dbm + _V402_DBM_AVAILABLE → predictor_modules.db_helpers
+      - compute_persona_fit         → predictor_modules.persona_fit
+      - get_scan_dates              → predictor_modules.scan_dates
+      - delete_old_v40_predictions  → predictor_modules.cleanup
+    """
+    pass
+
+
+def _whale_distribution_guard_REMOVED(opens, highs, lows, closes, volumes):
+    """Phase 7.2: extracted to predictor_modules.whale_guard._whale_distribution_guard."""
+    raise NotImplementedError("Should never be called — see import above.")
+
+
+def _whale_distribution_guard_REMOVED_DO_NOT_CALL(opens, highs, lows, closes, volumes):
+    """REMOVED in Phase 7.2 — see predictor_modules.whale_guard._whale_distribution_guard."""
+    raise NotImplementedError("Phase 7.2 extraction — see predictor_modules.whale_guard")
 
 from engines.backtest_engine import V38BacktestEngine, Trade, simulate_trade, calc_atr
 PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
@@ -297,132 +273,12 @@ def compute_r_multiple(entry, target, stop):
 PERSONA_FIT_MIN_SCORE = 50.0  # أدنى fit score لكتابة persona_predictions
 
 
-def compute_persona_fit(proofs):
-    """احسب persona_fit لكل ترشيح V40.2 من evidence proofs.
-
-    بـ derive 4 category scores من proofs الـ V40.2:
-      trend + dna  → price_action (momentum / candle structure)
-      makers       → smc_vsa (هيكل صناع السوق)
-      sector       → sector_heat (سخونة القطاع)
-      fundamentals → fundamental (P/E + ROE + debt)
-    وبـ weightها بـ PERSONA_INPUT_WEIGHTS عشان نحسب fit score (0-100) لكل شخصية.
-
-    الرجوع:
-        {'persona_fit': 'gambler'|'balanced'|'conservative',
-         'fit_scores': {'gambler': float, 'balanced': float, 'conservative': float}}
-    """
-    proofs = proofs or {}
-
-    def _has_check(key):
-        return '✅' in str(proofs.get(key, ''))
-
-    # trend + dna → price_action (كل واحد 50%، كحد أقصى 100)
-    pa_count = (1 if _has_check('trend') else 0) + (1 if _has_check('dna') else 0)
-    base_scores = {
-        'price_action': min(100.0, (pa_count / 2.0) * 100.0),
-        'smc_vsa':      100.0 if _has_check('makers') else 0.0,
-        'sector_heat':  100.0 if _has_check('sector') else 0.0,
-        'fundamental':  100.0 if _has_check('fundamentals') else 0.0,
-    }
-
-    fit_scores = {}
-    for persona in ('gambler', 'balanced', 'conservative'):
-        w = PERSONA_INPUT_WEIGHTS[persona]
-        fit = sum(base_scores[c] * w[c]
-                  for c in ('price_action', 'smc_vsa', 'sector_heat', 'fundamental'))
-        fit_scores[persona] = round(fit, 1)
-
-    best = max(fit_scores, key=fit_scores.get)
-    return {'persona_fit': best, 'fit_scores': fit_scores}
-
-
-def get_scan_dates(start_date, end_date, scan_interval):
-    """Get trading dates from price history within [start, end].
-    
-    FIX (2026-09-03): data_engine.db هو PRIMARY (طازج أثناء الجلسة).
-    Owner: "لازم تشتغل على data-engine.db لان هى دى الى فيها البيانات اثناء الجلسة"
-    
-    - data_engine.db.egksco_price_history: 162,946 rows (PRIMARY — طازج)
-    - price_history.db.price_history: LEGACY fallback (متجمد)
-    - stocks.db.stock_daily_prices: fallback أخير
-    """
-    _db_dir = Path(__file__).resolve().parents[2] / 'db'
-    
-    # Phase 4 (DATA-UNIFICATION): price_history.db is now PRIMARY (canonical, 1.4M rows)
-    # Legacy: egksco_price_history was PRIMARY — now fallback (was frozen/stale)
-    # 1. PRIMARY: price_history.db.price_history (canonical — 1.4M rows, 2000-2026)
-    try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gsd_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _v402_gsd_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gsd_ctx.__enter__()
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
-            _v402_gsd_ctx = None
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT date AS price_date FROM price_history WHERE date >= ? AND date <= ? ORDER BY date ASC",
-            (start_date, end_date),
-        )
-        dates = [row[0] for row in cur.fetchall()]
-        conn.close()
-        
-        # UNIFY-FIX (2026-10-08): لو egksco_price_history قديمة → fallback لـ price_history.db
-        # كان الكود يرجّع آخر يوم متاح في egksco (2026-09-26) بدل البحث عن بيانات طازجة
-        if dates:
-            print(f"[V40.2] Using price_history.db (PRIMARY) — {len(dates)} dates", flush=True)
-            return dates[::scan_interval]
-    except Exception:
-        pass
-    
-    # Phase 4 FALLBACK 1: data_engine.db.egksco_price_history (legacy — was PRIMARY)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
-            (start_date, end_date),
-        )
-        dates = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if dates:
-            print(f"[V40.2] FALLBACK: egksco_price_history — {len(dates)} dates (price_history.db unavailable)", flush=True)
-            return dates[::scan_interval]
-    except Exception:
-        pass
-    
-    # 3. FALLBACK 2: stocks.db (stock_daily_prices — آخر 30 يوم)
-    try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gsd2_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _v402_gsd2_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gsd2_ctx.__enter__()
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
-            _v402_gsd2_ctx = None
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT price_date FROM stock_daily_prices WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
-            (start_date, end_date),
-        )
-        dates = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if dates:
-            print(f"[V40.2] Using stocks.db (stock_daily_prices) — {len(dates)} dates", flush=True)
-            return dates[::scan_interval]
-    except Exception:
-        pass
-    
-    print(f"⚠️  No trading dates found between {start_date} and {end_date}", flush=True)
-    return []
+# ─── Phase 7.2: compute_persona_fit() + get_scan_dates() extracted ──────────
+# Original definitions removed (Strangler Pattern — see predictor_modules/).
+# Re-imported above. Search "compute_persona_fit" / "get_scan_dates" in
+# predictor_modules/persona_fit.py and predictor_modules/scan_dates.py for source.
+def _phase72_persona_fit_and_scan_dates_removed_marker():  # pragma: no cover
+    pass
 
 
 def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
@@ -459,7 +315,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gt_ctx.__enter__()
+                conn = _v402_gt_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -503,7 +359,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt2_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
-                conn = _v402_gt2_ctx.__enter__()
+                conn = _v402_gt2_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -539,10 +395,11 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         try:
             if _V402_DBM_AVAILABLE:
                 _v402_gt3_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gt3_ctx.__enter__()
+                conn = _v402_gt3_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
+            # CATEGORY A fallback (safety net — per Bravo rule)
             conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
             _v402_gt3_ctx = None
         cur = conn.cursor()
@@ -572,63 +429,12 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
     return []
 
 
-def delete_old_v40_predictions(start_date=None, end_date=None):
-    """Delete previous V40 historical predictions to avoid duplicates.
-
-    If start_date/end_date provided, only delete predictions in that range.
-    Otherwise, delete ALL V40 predictions.
-
-    🔴 DISABLED (2026-10-12 — PRODUCTION-AUDIT):
-    This function DELETES legit V40.2 predictions (WHERE kill_filter_result
-    LIKE 'V40 evidence%') — the ONLY sanctioned predictions! It leaves rogue
-    predictions (evidence=0, kill_filter empty) untouched.
-
-    Production evidence: sanctioned=10 on production (was 38 in sample) →
-    28 legit V40.2 predictions were DELETED by this function.
-
-    Per Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA) + Rule 67
-    (ROOT-CAUSE-FIRST): this function is disabled. V40.2 predictions must
-    NEVER be deleted — they are the canonical truth.
-
-    To re-enable (NOT RECOMMENDED): remove the early-return below.
-    """
-    print(
-        "[RULE35-DISABLED] delete_old_v40_predictions() — BLOCKED. "
-        "This function deletes legit V40.2 predictions (the only sanctioned ones). "
-        "Rule 35 (ENGINE-UNIFY) + Rule 27 (NO-FAKE-DATA).",
-        flush=True,
-    )
-    return  # safe exit — do NOT delete anything
-
-    # ─── ORIGINAL CODE BELOW — preserved for reference (Rule 16 VERIFY-BEFORE-DELETE) ───
-    # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
-    _v402_dov_ctx = None
-    try:
-        if _V402_DBM_AVAILABLE:
-            _v402_dov_ctx = _dbm.connection(PREDICTIONS_DB, writable=True)
-            conn = _v402_dov_ctx.__enter__()
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
-        _v402_dov_ctx = None
-    cur = conn.cursor()
-    if start_date and end_date:
-        cur.execute(
-            "DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%' "  # DEV-06 verified-disabled (dead code — early-return at L548)
-            "AND prediction_date >= ? AND prediction_date <= ?",
-            (start_date, end_date),
-        )
-    else:
-        cur.execute("DELETE FROM predictions WHERE kill_filter_result LIKE 'V40 evidence%'")  # DEV-06 verified-disabled (dead code — early-return at L548)
-    deleted = cur.rowcount
-    conn.commit()
-    conn.close()
-    if deleted > 0:
-        range_str = f" ({start_date} → {end_date})" if start_date else ""
-        print(f"🧹 Deleted {deleted} old V40 predictions{range_str}", flush=True)
-    else:
-        print("ℹ️  No old V40 predictions to delete", flush=True)
+# ─── Phase 7.2: delete_old_v40_predictions() extracted ──────────────────────
+# Original definition removed (Strangler Pattern — see predictor_modules/cleanup.py).
+# Re-imported above. The dead-code path with sqlite3.connect(PREDICTIONS_DB, ...)
+# now lives in predictor_modules/cleanup.py (unreachable after the early-return).
+def _phase72_delete_old_v40_predictions_removed_marker():  # pragma: no cover
+    pass
 
 
 # ─── RECOMMENDATION 1: فلتر حرارة القطاع ─────────────────────────────────────
@@ -644,7 +450,9 @@ def load_sector_heat(market_code='EGX'):
     
     try:
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
-        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(_db_dir / 'stocks.db'), writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT sector, AVG(change_percent) as avg_change, COUNT(*) as cnt
@@ -669,7 +477,9 @@ def get_ticker_sector(ticker):
     """جيب قطاع السهم من stocks.db."""
     try:
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
-        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=5.0)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(_db_dir / 'stocks.db'), writable=False)
         cur = conn.cursor()
         cur.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = ? LIMIT 1", (ticker, market_code))
         row = cur.fetchone()
@@ -840,7 +650,9 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
         sa_db_path = os.path.join(PROJECT_ROOT, 'db', 'predictions.db')
         conn_sa = None
         try:
-            conn_sa = sqlite3.connect(sa_db_path, timeout=30.0)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn_sa = db_manager.get_connection(sa_db_path, writable=True)
             cur_sa = conn_sa.cursor()
             # Ensure stored_analyses table exists (safe — won't fail if it does)
             cur_sa.execute('''CREATE TABLE IF NOT EXISTS stored_analyses (
@@ -1152,40 +964,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     engine._load_fundamentals()
     engine._load_benchmark()  # V40.2: load benchmark per market
 
-    # BRAVO-SPEED-FIX (2026-10-20): pre-cache price_history لكل الـ tickers مرة واحدة
-    # الـ bottleneck كان: get_price_data بـ 0.78s/ticker × 289 = 225s
-    # الـ batch query بـ 1.4s لكل الـ tickers = تحسين 180×
-    try:
-        import time as _cache_time
-        _cache_t0 = _cache_time.time()
-        _ph_db_path = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
-        if os.path.exists(_ph_db_path):
-            _cache_con = sqlite3.connect(f'file:{_ph_db_path}?mode=ro', uri=True, timeout=30.0)
-            _cache_con.row_factory = sqlite3.Row
-            # batch query: كل الـ tickers + آخر 3 سنين (كفاية للـ MA200 + ATR + indicators)
-            _ticker_placeholders = ','.join('?' * len(tickers))
-            _cache_rows = _cache_con.execute(f"""
-                SELECT ticker, date, open_price, high_price, low_price, close_price, volume
-                FROM price_history
-                WHERE UPPER(ticker) IN ({_ticker_placeholders})
-                AND close_price IS NOT NULL AND close_price > 0
-                AND date >= date('now', '-3 years')
-                ORDER BY ticker, date ASC
-            """, [t.upper() for t in tickers]).fetchall()
-            _cache_con.close()
-            # group by ticker
-            _price_cache = defaultdict(list)
-            for r in _cache_rows:
-                _price_cache[r['ticker'].upper()].append(
-                    (r['date'], r['open_price'], r['high_price'], r['low_price'], r['close_price'], r['volume'])
-                )
-            engine._price_cache = dict(_price_cache)
-            _cache_elapsed = _cache_time.time() - _cache_t0
-            print(f"  ⚡ BRAVO-SPEED-FIX: pre-cached {len(_price_cache)} tickers × {len(_cache_rows)} rows in {_cache_elapsed:.2f}s (batch query)", flush=True)
-        else:
-            print(f"  ⚠️  price_history.db not found at {_ph_db_path} — falling back to per-ticker queries", flush=True)
-    except Exception as _cache_err:
-        print(f"  ⚠️  pre-cache failed ({type(_cache_err).__name__}: {_cache_err}) — falling back to per-ticker queries", flush=True)
+    # ── Phase 8.2: BRAVO-SPEED-FIX pre-cache extracted ──────────────────────
+    # Original block extracted to predictor_modules.price_cache.pre_cache_price_history.
+    # Batch-query price_history.db for ALL tickers at once (180x speedup).
+    pre_cache_price_history(tickers, engine)
 
     signals_by_date = defaultdict(list)
     total_tickers = len(tickers)
@@ -3954,15 +3736,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     _backtest_mode = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
 
     if dry_run and not _backtest_mode:
-        total_signals = sum(len(v) for v in signals_by_date.values())
-        print(f"🔍 DRY-RUN: would have generated {total_signals} signals across {len(signals_by_date)} dates.", flush=True)
-        # Still print the summary of what would have been picked
-        for scan_date in sorted(signals_by_date.keys()):
-            day_signals = signals_by_date[scan_date]
-            day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
-            picks = day_signals[:max_picks]
-            mb = picks[0] if picks else None
-            print(f"  📅 {scan_date}: {len(picks)} picks | MB={mb['ticker'] if mb else '-'} (ev={mb['evidence'] if mb else 0})", flush=True)
+        # ── Phase 8.2: dry-run printer extracted ────────────────────────────
+        # Original block extracted to predictor_modules.dry_run_printer.print_dry_run_summary.
+        print_dry_run_summary(signals_by_date, max_picks)
         return
 
     # Store: sort each date's signals, take top N, morning bell = top 1
@@ -4327,7 +4103,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         # in ai_routes.py, misc_routes.py, persona_db.py, intraday_scanner.py,
                         # market_scheduler.py, nightly_analysis.py).
                         try:
-                            conn_sa = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+                            # Phase 7.1: migrated to db_manager (writable=False)
+                            from core.db_manager import db_manager
+                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=False)
                             cur_sa = conn_sa.cursor()
                             # ── TASK-A (2026-10-04): تأكّد إن أعمدة AI موجودة ──
                             # الأعمدة دي declared في ai/nightly_analysis.py بس ممكن تكون
@@ -4474,58 +4252,20 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
               f"avg_ev={daily_summary[-1]['avg_evidence']}", flush=True)
 
 
-    # Compute PF from stored trades
-    wins_pnl = [s['pnl_pct'] for s in all_stored if s['pnl_pct'] > 0]
-    losses_pnl = [abs(s['pnl_pct']) for s in all_stored if s['pnl_pct'] <= 0]
-    gross_profit = sum(wins_pnl)
-    gross_loss = sum(losses_pnl)
-    pf = gross_profit / gross_loss if gross_loss > 0 else 0
-    total_wins = len(wins_pnl)
-    total_picks = len(all_stored)
-    overall_wr = total_wins / total_picks * 100 if total_picks else 0
-    mb_wins = sum(1 for d in daily_summary if d['mb_win'])
-    mb_wr = mb_wins / total_morning_bells * 100 if total_morning_bells else 0
-
-    sig_dist = Counter(s['signal'] for s in all_stored)
-    ev_dist = Counter(s['evidence'] for s in all_stored)
-
-    print("\n" + "=" * 80, flush=True)
-    print("  GENERATION COMPLETE", flush=True)
-    print("=" * 80, flush=True)
-    print(f"  Total predictions: {total_generated}")
-    print(f"  Morning bells: {total_morning_bells} ({mb_wins} wins = {mb_wr:.1f}% WR)")
-    print(f"  Overall win rate: {total_wins}/{total_picks} = {overall_wr:.1f}%")
-    print(f"  Profit Factor (equity-impact): {pf:.3f}")
-    print(f"  Gross profit: {gross_profit:.2f} | Gross loss: {gross_loss:.2f}")
-    print(f"  Signal dist: {dict(sig_dist)}")
-    print(f"  Evidence dist: {dict(sorted(ev_dist.items()))}")
-    print(f"  Scan dates with picks: {len(daily_summary)}")
-
-    summary = {
-        'version': 'V40.2 (CLI-enabled, tightened entry + real benchmark + partial 1.5R)',
-        'generated_at': datetime.now().isoformat(),
-        'period': f'{start_date} → {end_date}',
-        'scan_interval': scan_interval,
-        'total_generated': total_generated,
-        'total_morning_bells': total_morning_bells,
-        'morning_bell_win_rate': round(mb_wr, 1),
-        'overall_win_rate': round(overall_wr, 1),
-        'profit_factor': round(pf, 3),
-        'gross_profit': round(gross_profit, 2),
-        'gross_loss': round(gross_loss, 2),
-        'signal_distribution': dict(sig_dist),
-        'evidence_distribution': {str(k): v for k, v in sorted(ev_dist.items())},
-        'scan_dates_with_picks': len(daily_summary),
-        'daily': daily_summary,
-    }
-    summary_path = os.path.join(
-        PROJECT_ROOT, 'vps-service', 'backtest_results',
-        f'v40_2_generation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
+    # ── Phase 8.2: summary block extracted ──────────────────────────────────
+    # Original block extracted to predictor_modules.summary.compute_and_save_summary.
+    # Computes PF + win rate + signal/evidence distributions + saves JSON summary.
+    compute_and_save_summary(
+        all_stored=all_stored,
+        daily_summary=daily_summary,
+        total_generated=total_generated,
+        total_morning_bells=total_morning_bells,
+        start_date=start_date,
+        end_date=end_date,
+        scan_interval=scan_interval,
+        predictions_db=PREDICTIONS_DB,
+        project_root=PROJECT_ROOT,
     )
-    with open(summary_path, 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False, default=str)
-    print(f"\n💾 Summary saved: {summary_path}")
-    print(f"📊 Predictions in: {PREDICTIONS_DB}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -4646,7 +4386,9 @@ def main():
         _pred_db_path = str(_db_dir_inc / 'predictions.db')
         if os.path.exists(_pred_db_path):
             try:
-                _inc_conn = sqlite3.connect(_pred_db_path, timeout=10.0)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                _inc_conn = db_manager.get_connection(_pred_db_path, writable=False)
                 _inc_row = _inc_conn.execute("""
                     SELECT MAX(max_d) FROM (
                         SELECT MAX(prediction_date) AS max_d FROM predictions WHERE prediction_date IS NOT NULL
@@ -4729,7 +4471,9 @@ def get_crypto_tickers(min_days=30):
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     tickers = []
     try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(_db_dir / 'data_engine.db'), writable=False)
         cur = conn.cursor()
         # شوف عدد snapshots المختلفة لكل symbol
         cur.execute("""

@@ -48,7 +48,9 @@ MAX_STOCKS = 30  # مش 260 — بس اللي يستاهل
 
 def ensure_ai_columns():
     """Ensure stored_analyses has AI columns"""
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     columns = [
         ("ai_decision", "TEXT"),
         ("ai_confidence", "INTEGER"),
@@ -76,7 +78,9 @@ def get_candidates() -> list:
     2. فيه حركة: change > ±2% أو volume_ratio > 1.5x
     3. سعر > 1 EGP (مش penny)
     """
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(STOCKS_DB, writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -245,7 +249,9 @@ def save_ai_result(ticker: str, result: dict, raw: str = ""):
     if SKIP_STORED_ANALYSES_WRITE:
         logger.info('[SINGLE-WRITER] Skipping stored_analyses write in nightly_analysis.save_ai_result — use daily_predictor.py')
         return
-    conn = sqlite3.connect(PREDICTIONS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
     try:
         # Check if ticker exists
         exists = conn.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,)).fetchone()

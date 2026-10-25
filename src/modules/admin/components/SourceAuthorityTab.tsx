@@ -20,18 +20,16 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
- Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
- ShieldCheck, RefreshCw, AlertTriangle, CheckCircle2, XCircle,
+ ShieldCheck, AlertTriangle, CheckCircle2, XCircle,
  Database, Layers, Ban, TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 /* ------------------------------------------------------------------ */
 /* Mirror of vps-service/data/source_authority.py CANONICAL_SOURCES */
@@ -112,20 +110,16 @@ export function SourceAuthorityTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit/20">
- <CardHeader className="pb-3">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <CardTitle className="flex items-center gap-2 text-lg">
- <ShieldCheck className="w-5 h-5 text-profit" />
- سلطة المصادر — Rule 66
- </CardTitle>
- <CardDescription className="mt-1 text-xs">
- المصدر الواحد الموثوق لكل سوق + المصادر المحظورة + كشف التعارضات متعددة المصادر.
- </CardDescription>
- </div>
- <div className="flex items-center gap-2">
- {isLive ? (
+ <WidgetCard
+ title="سلطة المصادر — Rule 66"
+ icon={ShieldCheck}
+ iconColor="text-profit"
+ onRefresh={fetchSources}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ badge={
+ isLive ? (
  <Badge className="bg-profit text-xs gap-1">
  <CheckCircle2 className="w-3 h-3" /> Endpoint حيّ
  </Badge>
@@ -133,15 +127,9 @@ export function SourceAuthorityTab() {
  <Badge variant="outline" className="text-xs gap-1 border-warning text-warning">
  <AlertTriangle className="w-3 h-3" /> بيانات محلية (endpoint غير مفعّل)
  </Badge>
- )}
- <Button onClick={fetchSources} disabled={loading} variant="ghost" size="sm" className="gap-2">
- <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
- تحديث
- </Button>
- </div>
- </div>
- </CardHeader>
- </Card>
+ )
+ }
+ />
 
  {/* Conflict alert */}
  {conflicts && conflicts.total_tickers_with_multi_sources > 0 && (
@@ -212,17 +200,13 @@ export function SourceAuthorityTab() {
  )}
 
  {/* Canonical sources per market */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <ShieldCheck className="w-4 h-4 text-profit" />
- المصادر الكنسية حسب السوق
- </CardTitle>
- <CardDescription className="text-xs">
- الترتيب = الأولوية. المصدر الأول هو الأساسي، والباقي احتياطي يستخدم فقط عند جفاف الأساسي (&gt; 7 أيام).
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="المصادر الكنسية حسب السوق"
+ icon={ShieldCheck}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {Object.entries(canonical).map(([market, sources]) => (
  <div
@@ -268,21 +252,16 @@ export function SourceAuthorityTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Banned sources */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Ban className="w-4 h-4 text-loss" />
- المصادر المحظورة ({banned.length})
- </CardTitle>
- <CardDescription className="text-xs">
- هذه المصادر لن تُكتب أبداً حتى كاحتياطي — أضيفت بسبب مشاكل جودة بيانات مكتشفة.
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`المصادر المحظورة (${banned.length})`}
+ icon={Ban}
+ iconColor="text-loss"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="space-y-2">
  {banned.map((b) => (
  <div
@@ -297,19 +276,17 @@ export function SourceAuthorityTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Conflicts by market */}
  {conflicts?.by_market && conflicts.by_market.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <TrendingUp className="w-4 h-4 text-warning" />
- توزيع التعارضات حسب السوق
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="توزيع التعارضات حسب السوق"
+ icon={TrendingUp}
+ iconColor="text-warning"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
  {conflicts.by_market.map((m) => (
  <div
@@ -331,8 +308,7 @@ export function SourceAuthorityTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
  </div>
  );

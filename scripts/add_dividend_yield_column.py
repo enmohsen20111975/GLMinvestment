@@ -21,7 +21,9 @@ def migrate():
         print(f"❌ stocks.db not found at {STOCKS_DB}")
         return
 
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     cursor = conn.cursor()
 
     # Check and add dividend_yield column

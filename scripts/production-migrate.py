@@ -78,7 +78,9 @@ def migrate_auth_db():
         return False
 
     log('═══ Migrating auth.db ═══')
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     changes = 0
 
     # 1. User.last_active_at
@@ -214,7 +216,9 @@ def verify_stocks_db():
         return False
 
     log('═══ Verifying stocks.db ═══')
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
 
     # Market/currency breakdown
     log('  Market / currency / count:')
@@ -248,7 +252,9 @@ def migrate_stocks_db():
         return False
 
     log('═══ Migrating stocks.db ═══')
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     changes = 0
 
     # 1. user_notifications.title column
@@ -345,7 +351,9 @@ def migrate_predictions_db():
         return False
 
     log('═══ Migrating predictions.db ═══')
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=False).__enter__()
     changes = 0
 
     # 1. Add 5 new columns
@@ -395,7 +403,9 @@ def migrate_news_db():
     db_path = DB_DIR / 'news.db'
 
     log('═══ Migrating news.db ═══')
-    conn = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(db_path), writable=True).__enter__()
 
     news_schema = '''
     CREATE TABLE IF NOT EXISTS market_news (

@@ -72,7 +72,9 @@ def build_report():
     regime_label = 'عادي'
     regime_reasons = []
     try:
-        pred_db = sqlite3.connect(str(DB_DIR / 'predictions.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_db = db_manager.connection(str(DB_DIR / 'predictions.db'), writable=False).__enter__()
         row = pred_db.execute("SELECT value FROM engine_settings WHERE key = 'current_regime'").fetchone()
         if row:
             data = json.loads(row[0])
@@ -96,7 +98,9 @@ def build_report():
     # 2. MARKET SUMMARY
     # ═══════════════════════════════════════════════════════════════════
     try:
-        stocks_db = sqlite3.connect(str(DB_DIR / 'stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        stocks_db = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
         stocks_db.row_factory = sqlite3.Row
         total = stocks_db.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
         advancers = stocks_db.execute("SELECT COUNT(*) FROM stocks WHERE change_percent > 0").fetchone()[0]
@@ -198,7 +202,9 @@ def build_report():
     # 5. ACTIVE PREDICTIONS
     # ═══════════════════════════════════════════════════════════════════
     try:
-        pred_db = sqlite3.connect(str(DB_DIR / 'predictions.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_db = db_manager.connection(str(DB_DIR / 'predictions.db'), writable=False).__enter__()
         pred_db.row_factory = sqlite3.Row
         active = pred_db.execute(
             "SELECT ticker, prediction_date, entry_price, target_price, target_price_2, stop_loss, "
@@ -266,7 +272,9 @@ def build_report():
         top_ticker = all_picks[0].get('ticker', '')
         if top_ticker:
             try:
-                de_db = sqlite3.connect(str(DB_DIR / 'data_engine.db'))
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                de_db = db_manager.connection(str(DB_DIR / 'data_engine.db'), writable=False).__enter__()
                 de_db.row_factory = sqlite3.Row
 
                 # Valuation
@@ -324,7 +332,9 @@ def build_report():
     # النص بيشمل: WHO IS BUYING + Money Flow + Radar Path + Targets + R:R
     # ═══════════════════════════════════════════════════════════════════
     try:
-        pred_db = sqlite3.connect(str(DB_DIR / 'predictions.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        pred_db = db_manager.connection(str(DB_DIR / 'predictions.db'), writable=False).__enter__()
         pred_db.row_factory = sqlite3.Row
         # آخر 3 توقعات فيها analysis_reason (في notes column أو analysis_json)
         recent = pred_db.execute('''

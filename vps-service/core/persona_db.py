@@ -26,7 +26,9 @@ try:
     from core.database import safe_connect as _safe_connect
 except ImportError:
     def _safe_connect(db_path, readonly=False, timeout=30.0):
-        conn = sqlite3.connect(db_path, timeout=timeout)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(db_path, writable=True)
         try:
             conn.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
             if not readonly:

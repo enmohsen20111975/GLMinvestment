@@ -692,7 +692,9 @@ def scan_all_stocks(market='EGX', min_days=200, top_n=20, limit=None):
         print(f'❌ price_history.db not found')
         return []
 
-    conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     tickers = conn.execute("""
@@ -813,7 +815,9 @@ if __name__ == '__main__':
 
     if args.ticker:
         ph_db = DB_DIR / 'price_history.db'
-        conn = sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(ph_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT date, open_price, high_price, low_price, close_price, volume

@@ -154,7 +154,9 @@ def open_predictions_conn(
     Returns:
         sqlite3.Connection with stocks.db attached as schema `stocks_db`.
     """
-    conn = sqlite3.connect(str(predictions_db), timeout=30.0, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(predictions_db), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     # Critical: enable FK enforcement on THIS connection (DATA-02 fix).
     conn.execute("PRAGMA foreign_keys=ON")

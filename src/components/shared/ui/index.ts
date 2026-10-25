@@ -41,3 +41,14 @@ export { StockCard, type StockCardProps, type StockTrack, isWarningOrVeto, isBuy
 export { MarketTable, type MarketTableColumn, type MarketTableProps } from './MarketTable';
 export { WickLiquidityBar, type WickLiquidityBarProps } from './WickLiquidityBar';
 export { StockRescueModal, type StockRescueModalProps } from './StockRescueModal';
+
+// Phase 3 — new unified components (2026-10-24)
+export { WidgetCard, type WidgetCardProps } from '../WidgetCard';
+export { WidgetStat, WidgetStatGrid, type WidgetStatProps } from '../WidgetStat';
+export { WidgetError, type WidgetErrorProps } from '../WidgetError';
+export { Label, type LabelProps } from './Label';
+export { NumText, type NumTextProps } from './NumText';
+export { ChangeText, type ChangeTextProps } from './ChangeText';
+export { PriceValue, type PriceValueProps } from './PriceValue';
+export { DateText, type DateTextProps } from './DateText';
+export { SectionTitle, type SectionTitleProps } from './SectionTitle';

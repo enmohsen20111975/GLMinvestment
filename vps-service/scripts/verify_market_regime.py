@@ -6,7 +6,9 @@ from pathlib import Path
 _DB_PATH = str(Path(__file__).resolve().parents[2] / "db" / "price_history.db")
 
 def check_schema():
-    conn = sqlite3.connect(_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(_DB_PATH, writable=False)
     cursor = conn.cursor()
     cursor.execute("SELECT sql FROM sqlite_master WHERE name='price_history'")
     print("price_history schema:", cursor.fetchone())

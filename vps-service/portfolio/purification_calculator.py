@@ -100,8 +100,12 @@ class PurificationCalculator:
                  stocks_db: str | None = None):
         self.de_db = data_engine_db or DATA_ENGINE_DB
         self.stocks_db = stocks_db or STOCKS_DB
-        self._de = sqlite3.connect("file:%s?mode=ro" % self.de_db, uri=True, timeout=20)
-        self._st = sqlite3.connect("file:%s?mode=ro" % self.stocks_db, uri=True, timeout=20)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        self._de = db_manager.get_connection(self.de_db, writable=False)
+        # Phase 7.1: migrated
+        from core.db_manager import db_manager
+        self._st = db_manager.get_connection(self.stocks_db, writable=False)
         self._de.row_factory = sqlite3.Row
         self._st.row_factory = sqlite3.Row
 

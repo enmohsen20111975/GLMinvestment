@@ -250,7 +250,9 @@ class ReportsEngine:
     def _ensure_reports_table(self) -> None:
         """ينشئ جدول reports في predictions.db لو مش موجود"""
         try:
-            conn = sqlite3.connect(self.predictions_db_path)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.predictions_db_path, writable=True)
             cur = conn.cursor()
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS reports (
@@ -308,28 +310,36 @@ class ReportsEngine:
 
     def _connect_data_engine(self) -> Optional[sqlite3.Connection]:
         try:
-            return sqlite3.connect(self.data_engine_db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            return db_manager.get_connection(self.data_engine_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] data_engine.db connect error: {e}")
             return None
 
     def _connect_stocks_db(self) -> Optional[sqlite3.Connection]:
         try:
-            return sqlite3.connect(self.stocks_db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            return db_manager.get_connection(self.stocks_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] stocks.db connect error: {e}")
             return None
 
     def _connect_predictions(self) -> Optional[sqlite3.Connection]:
         try:
-            return sqlite3.connect(self.predictions_db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            return db_manager.get_connection(self.predictions_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] predictions.db connect error: {e}")
             return None
 
     def _connect_price_history(self) -> Optional[sqlite3.Connection]:
         try:
-            return sqlite3.connect(self.price_history_db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            return db_manager.get_connection(self.price_history_db_path, writable=False)
         except Exception as e:
             print(f"[ReportsEngine] price_history.db connect error: {e}")
             return None
@@ -1268,7 +1278,9 @@ class ReportsEngine:
                 candidates.append(s)
         for path in candidates:
             try:
-                conn = sqlite3.connect(path)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(path, writable=False)
                 if required_table:
                     cur = conn.cursor()
                     cur.execute(

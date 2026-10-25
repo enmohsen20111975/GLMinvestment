@@ -120,7 +120,9 @@ def is_clean_ticker(t: str) -> bool:
 # Load predictions (EXPIRED, clean, deduped by (ticker, prediction_date))
 # ──────────────────────────────────────────────────────────────────────────────
 def load_trades():
-    conn = sqlite3.connect(f'file:{PRED_DB}?mode=ro', uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRED_DB, writable=False).__enter__()
     cur = conn.cursor()
     cur.execute("""
         SELECT id, ticker, prediction_date, entry_price, target_price,
@@ -183,7 +185,9 @@ def load_candles(ticker, prediction_date, end_date, pre_window_days=40):
     [prediction_date - pre_window_days, end_date]."""
     start = prediction_date - timedelta(days=pre_window_days + 15)
     end = end_date + timedelta(days=5)
-    conn = sqlite3.connect(f'file:{PH_DB}?mode=ro', uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PH_DB, writable=False).__enter__()
     cur = conn.cursor()
     cur.execute("""
         SELECT date, open_price, high_price, low_price, close_price, volume

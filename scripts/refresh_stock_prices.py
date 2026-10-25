@@ -82,9 +82,13 @@ def refresh_prices(ticker_filter: str | None = None, dry_run: bool = False) -> i
         print(f"✗ price_history.db not found: {PRICE_HISTORY_DB}")
         return 1
 
-    stocks_conn = sqlite3.connect(str(STOCKS_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    stocks_conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     stocks_conn.row_factory = sqlite3.Row
-    price_conn = sqlite3.connect(str(PRICE_HISTORY_DB))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    price_conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
 
     scur = stocks_conn.cursor()
 
@@ -160,7 +164,9 @@ def refresh_prices(ticker_filter: str | None = None, dry_run: bool = False) -> i
 
     if updated > 0:
         # تحقق من الأسهم الـ 39 التي كانت NULL/0
-        vconn = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        vconn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         vcur = vconn.cursor()
         vcur.execute("SELECT COUNT(*) FROM stocks WHERE current_price IS NULL OR current_price = 0")
         remaining_null = vcur.fetchone()[0]

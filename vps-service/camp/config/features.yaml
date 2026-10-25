@@ -1,0 +1,29 @@
+# features.yaml — Block enable/disable control
+# To disable a block: set enabled: false (Rule 16 — no deletion)
+# To add a block: create file in blocks/ + add entry here
+
+blocks:
+  momentum_20:
+    enabled: true
+    description: "زخم 20 يوم — نسبة التغير في آخر 20 يوم"
+  momentum_60:
+    enabled: true
+    description: "زخم 60 يوم — تأكيد الاتجاه"
+  sector_leadership:
+    enabled: true
+    description: "القطاع في top 3 هذا الشهر؟"
+  volume_surge:
+    enabled: true
+    description: "حجم فوق متوسط 20 يوم × 1.5"
+  distance_52w:
+    enabled: true
+    description: "قريب من قمة 52 أسبوع"
+  breadth_trend:
+    enabled: true
+    description: "EGX30 فوق SMA200؟"
+  volume_price_div:
+    enabled: true
+    description: "تباين حجم-سعر (accumulation signal)"
+  buy_sell_pressure:
+    enabled: true
+    description: "صافي شراء/بيع (delta_pct)"

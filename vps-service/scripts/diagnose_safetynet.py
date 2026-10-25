@@ -110,7 +110,9 @@ def check_price_history_db_state() -> dict:
         return info
     info['exists'] = True
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         conn.execute('PRAGMA busy_timeout = 5000')
         # total rows
         row = conn.execute('SELECT COUNT(*), MAX(date), COUNT(DISTINCT ticker) FROM price_history').fetchone()
@@ -181,8 +183,12 @@ def check_safetynet_runs_manually(ticker: str) -> dict:
     try:
         # انسخ الـ schema من الـ production DB
         if os.path.exists(PRICE_HISTORY_DB):
-            src = sqlite3.connect(PRICE_HISTORY_DB, timeout=10)
-            dst = sqlite3.connect(tmp_ph)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            src = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
+            # Phase 7.1: migrated to db_manager (writable=True)
+            from core.db_manager import db_manager
+            dst = db_manager.get_connection(tmp_ph, writable=True)
             src.backup(dst)
             src.close()
             # امسح كل الـ rows لـ COMI بس علشان نـ test من غير data سابقة
@@ -215,7 +221,9 @@ def check_safetynet_runs_manually(ticker: str) -> dict:
 
         # اتشيك الـ temp DB فعلاً فيه rows جديدة بـ source='yahoo_safetynet'
         if os.path.exists(tmp_ph):
-            conn = sqlite3.connect(tmp_ph, timeout=10)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(tmp_ph, writable=False)
             rows = conn.execute(
                 "SELECT date, close_price, source FROM price_history "
                 "WHERE ticker = ? AND source = 'yahoo_safetynet' ORDER BY date DESC LIMIT 5",

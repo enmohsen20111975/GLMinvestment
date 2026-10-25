@@ -52,7 +52,9 @@ def verify_data_integrity(db_path: str) -> Dict:
     print("المرحلة أ: فحص صحة البيانات (Data Integrity)")
     print("="*70)
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     results = {}
@@ -149,7 +151,9 @@ def verify_sanity_checks(db_path: str) -> Dict:
     print("المرحلة ب: فحص منطقي للنتائج (Sanity Checks)")
     print("="*70)
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     results = {}
@@ -250,7 +254,9 @@ def verify_correlation_filter(db_path: str) -> Dict:
     print("فحص الـ Correlation Filter")
     print("="*70)
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     results = {}
@@ -321,7 +327,9 @@ def manual_pnl_check(db_path: str) -> Dict:
     print("فحص يدوي للـ PnL (10 صفقات عشوائية)")
     print("="*70)
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     # اختيار 10 صفقات عشوائية
@@ -386,7 +394,9 @@ def calculate_real_drawdown(db_path: str) -> Dict:
     print("حساب الـ Drawdown الحقيقي")
     print("="*70)
     
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(db_path, writable=False)
     cursor = conn.cursor()
     
     # Get all signals with outcomes, ordered by date

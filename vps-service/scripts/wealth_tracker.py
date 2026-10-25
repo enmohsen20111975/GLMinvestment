@@ -30,7 +30,9 @@ class WealthTracker:
 
     def record_daily_snapshot(self, user_id: str = None) -> dict:
         """تسجيل لقطة يومية لثروة العميل."""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         today = datetime.now().strftime('%Y-%m-%d')
@@ -116,7 +118,9 @@ class WealthTracker:
 
     def get_wealth_history(self, user_id: str, days: int = 90) -> list:
         """جلب تاريخ الثروة للرسوم البيانية."""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         rows = conn.execute("""
@@ -131,7 +135,9 @@ class WealthTracker:
 
     def get_wealth_summary(self, user_id: str) -> dict:
         """ملخص الثروة مع التغيرات."""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         # أحدث لقطة

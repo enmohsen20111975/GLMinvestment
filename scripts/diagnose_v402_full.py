@@ -13,7 +13,9 @@ from collections import Counter
 engine = V38BacktestEngine()
 engine._load_benchmark()
 
-conn = sqlite3.connect('db/price_history.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection('db/price_history.db', writable=False).__enter__()
 cur = conn.cursor()
 
 def parse_volume(val):

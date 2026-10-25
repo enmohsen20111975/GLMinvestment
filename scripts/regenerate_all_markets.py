@@ -10,7 +10,9 @@ from historical_prediction_generator import HistoricalPredictionGenerator, PREDI
 
 # 1. Clear old predictions
 print("=== Clearing old predictions ===")
-conn = sqlite3.connect(PREDICTIONS_DB)
+# Phase 7.1: migrated to db_manager (writable=True)
+from core.db_manager import db_manager
+conn = db_manager.connection(PREDICTIONS_DB, writable=True).__enter__()
 try:
     count = conn.execute("SELECT COUNT(*) FROM platform_recommendations").fetchone()[0]
     conn.execute("DELETE FROM platform_recommendations")

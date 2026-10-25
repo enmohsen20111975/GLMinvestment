@@ -3,7 +3,9 @@ import sqlite3
 for db_name in ['stocks.db', 'data_engine.db']:
     path = f"/home/meme/my_apps/GLMinvestment/db/{db_name}"
     print(f"=== DB: {db_name} ===")
-    conn = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(path, writable=False).__enter__()
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = [r[0] for r in cur.fetchall()]

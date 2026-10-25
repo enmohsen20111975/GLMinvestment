@@ -60,6 +60,7 @@ import { PriorityNotificationsWidget } from '@/modules/dashboard/components/Prio
 // السيولة + تدفّق المستثمرين + ضغط الجلسة (عمق السوق من قائمة الأعلى).
 import { AssetPreferenceOnboarding } from '@/modules/dashboard/components/AssetPreferenceOnboarding';
 import { PinnableWidget } from '@/modules/dashboard/components/PinnableWidget';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 function DashboardSkeleton() {
  return (
@@ -352,21 +353,12 @@ export function DashboardView() {
  {/* ALPHA-UX-FIX-2: guest signup enticement (shows only for unauthenticated users) */}
  <GuestSignupBanner />
  <div className="px-3 md:px-4 print:hidden">
- {/* Quick Stock Lookup */}
- <Card className="mb-3 py-0 gap-0">
- <CardContent className="p-3">
- <div className="flex items-center gap-2 mb-1.5">
- <Zap className="w-3.5 h-3.5 text-profit " />
- <span className="text-xs font-semibold">
- {currentMarket === 'CRYPTO' ? t('dashboard.quickLookup') : t('dashboard.quickLookup')}
- </span>
- </div>
- <StockSelector
- placeholder="ابحث بالرمز أو الاسم للانتقال مباشرة..."
- compact
- />
- </CardContent>
- </Card>
+ {/* Quick Stock Lookup — adopted WidgetCard (Phase 3) */}
+ <WidgetCard title={t('dashboard.quickLookup')} icon={Zap} iconColor="text-profit" iconBg="bg-transparent"
+ iconSize="w-3.5 h-3.5" hideRefresh className="mb-3 border-border/60"
+ headerClassName="pb-1.5 pt-3 px-3" titleClassName="text-xs font-semibold" contentClassName="p-3 pt-0 space-y-0">
+ <StockSelector placeholder="ابحث بالرمز أو الاسم للانتقال مباشرة..." compact />
+ </WidgetCard>
 
  <div className="flex items-center gap-2 flex-wrap">
  <Button

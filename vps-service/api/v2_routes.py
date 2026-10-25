@@ -27,6 +27,7 @@ Admin Endpoints:
 """
 
 import time
+from core.auth_middleware import require_admin
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 
@@ -318,6 +319,7 @@ def get_persona(persona_type):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @v2_bp.route('/api/personas/classify', methods=['POST'])
 def classify_persona():
     """تصنيف المستخدم بناءً على إجابات الاستبيان."""
@@ -771,6 +773,7 @@ def scanner_by_persona(persona_type):
 # DAILY PERSONA ANALYSIS ENDPOINTS
 # ============================================================================
 
+@require_admin
 @v2_bp.route('/api/v2/admin/run-daily-persona-analysis', methods=['POST'])
 def run_daily_persona_analysis():
     """
@@ -1770,6 +1773,7 @@ def v2_list_predictions():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@require_admin
 @v2_bp.route('/api/v2/predictions', methods=['POST'])
 def v2_generate_predictions():
     try:

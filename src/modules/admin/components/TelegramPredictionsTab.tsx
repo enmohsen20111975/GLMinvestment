@@ -20,7 +20,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
- Card, CardContent, CardHeader, CardTitle, CardDescription,
+ Card, CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +30,12 @@ import {
  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
- Send, RefreshCw, AlertTriangle, CheckCircle2, XCircle,
+ Send, AlertTriangle, CheckCircle2, XCircle,
  MessageSquare, Clock, Loader2, FileText, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 interface PredictionRow {
  id: number;
@@ -175,25 +176,15 @@ export function TelegramPredictionsTab() {
  return (
  <div className="space-y-5" dir="rtl">
  {/* Header */}
- <Card className="border-profit/20">
- <CardHeader className="pb-3">
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div>
- <CardTitle className="flex items-center gap-2 text-lg">
- <Send className="w-5 h-5 text-profit" />
- تدقيق التوقعات المنشورة على تيليجرام
- </CardTitle>
- <CardDescription className="mt-1 text-xs">
- كل توقعات اليوم مع علم published_at + telegram_message_id + زر نشر يدوي للمعلّقة.
- </CardDescription>
- </div>
- <Button onClick={fetchData} disabled={loading} variant="ghost" size="sm" className="gap-2">
- <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
- تحديث
- </Button>
- </div>
- </CardHeader>
- </Card>
+ <WidgetCard
+ title="تدقيق التوقعات المنشورة على تيليجرام"
+ icon={Send}
+ iconColor="text-profit"
+ onRefresh={fetchData}
+ refreshing={loading}
+ className="border-profit/20"
+ headerClassName="pb-3"
+ />
 
  {/* Audit columns missing alert */}
  {data && !auditOk && (
@@ -262,17 +253,13 @@ export function TelegramPredictionsTab() {
 
  {/* Pending today — with manual publish button */}
  {auditOk && pendingToday.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Clock className="w-4 h-4 text-loss" />
- توقعات اليوم المعلّقة ({pendingToday.length})
- </CardTitle>
- <CardDescription className="text-xs">
- توقعات اليوم اللي لم تُنشر على تيليجرام بعد. اضغط «نشر المعلّق» لنشر كل واحدة على حدة.
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`توقعات اليوم المعلّقة (${pendingToday.length})`}
+ icon={Clock}
+ iconColor="text-loss"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="space-y-2">
  {pendingToday.map((p) => (
  <div
@@ -325,20 +312,18 @@ export function TelegramPredictionsTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Recently published */}
  {auditOk && published.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <CheckCircle2 className="w-4 h-4 text-profit" />
- آخر التوقعات المنشورة ({published.length})
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`آخر التوقعات المنشورة (${published.length})`}
+ icon={CheckCircle2}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-[36rem] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <table className="w-full text-xs">
  <thead className="sticky top-0 bg-background z-10">
@@ -383,8 +368,7 @@ export function TelegramPredictionsTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Empty state */}

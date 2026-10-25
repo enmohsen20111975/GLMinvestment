@@ -41,7 +41,9 @@ def load_all_tickers(market: str = 'EGX', limit: int = 50) -> list:
     if not Path(STOCKS_DB).exists():
         return []
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.execute("""
             SELECT ticker FROM stocks

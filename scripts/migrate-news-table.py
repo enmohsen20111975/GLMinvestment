@@ -18,7 +18,9 @@ print('=' * 70)
 print('News DB Migration — news_articles → market_news')
 print('=' * 70)
 
-conn = sqlite3.connect(DB_PATH, timeout=10)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection(DB_PATH, writable=False).__enter__()
 conn.execute('PRAGMA busy_timeout = 10000')
 
 # Step 1: Check if market_news already exists

@@ -620,6 +620,8 @@ export function TradingViewChart({
 
  const [isLoading, setIsLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
+ // ALPHA-SMOOTH-UX: retryKey لإعادة المحاولة بدون reload الصفحة كاملة
+ const [retryKey, setRetryKey] = useState(0);
  const [allData, setAllData] = useState<OhlcvBar[]>([]);
  const [lastPrice, setLastPrice] = useState<{ price: number; change: number; changePercent: number } | null>(null);
  const [hoveredPrice, setHoveredPrice] = useState<OhlcvBar | null>(null);
@@ -793,7 +795,7 @@ export function TradingViewChart({
  return () => {
  cancelled = true;
  };
- }, [ticker, timeframe, currentRange]);
+ }, [ticker, timeframe, currentRange, retryKey]);
 
  const handleResolutionChange = (resKey: string) => {
  setTimeframe(resKey);
@@ -1545,7 +1547,12 @@ export function TradingViewChart({
  <Button
  variant="outline"
  size="sm"
- onClick={() => window.location.reload()}
+ // ALPHA-SMOOTH-UX: إعادة محاولة محلية بدون reload الصفحة
+ onClick={() => {
+  setError(null);
+  setIsLoading(true);
+  setRetryKey(k => k + 1);
+ }}
  >
  <RotateCcw className="size-3.5 mr-1.5" />
  إعادة المحاولة

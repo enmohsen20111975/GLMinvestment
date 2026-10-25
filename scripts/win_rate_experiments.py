@@ -85,7 +85,9 @@ def simulate(prices_after, entry, target, stop, signal, max_holding=MAX_HOLDING)
 
 def run_experiment(min_conviction, use_adx_filter, use_williams_filter, use_trend_strength, label):
     """تشغيل تجربة واحدة."""
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     stocks = conn.execute("""
         SELECT ticker, COUNT(*) as cnt FROM price_history
         GROUP BY ticker HAVING cnt >= ?

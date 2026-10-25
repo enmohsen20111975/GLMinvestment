@@ -191,7 +191,9 @@ class UnifiedLearningEngine:
         
     def get_connection(self) -> sqlite3.Connection:
         """الحصول على اتصال قاعدة البيانات"""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
     
@@ -1076,7 +1078,9 @@ class UnifiedLearningEngine:
     def _get_simulated_predictions(self, params: LearningParameters) -> List[Dict]:
         """توليد توقعات محاكاة من تاريخ الأسعار الفعلي لملء الفراغ عند البداية الباردة"""
         import sqlite3
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         

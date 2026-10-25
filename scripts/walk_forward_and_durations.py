@@ -28,7 +28,9 @@ HALF2_START, HALF2_END = '2025-09-01', '2026-08-17'   # ~12 months (second half)
 
 
 def load_alpha_tickers():
-    c = sqlite3.connect(str(DB), timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(DB), writable=False).__enter__()
     rows = c.execute('''
         SELECT ticker FROM price_history
         WHERE ticker NOT LIKE '.%' AND ticker NOT LIKE '%.%'
@@ -42,7 +44,9 @@ def load_alpha_tickers():
 
 
 def load_price_df(ticker):
-    c = sqlite3.connect(str(DB), timeout=10)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(DB), writable=False).__enter__()
     rows = c.execute('''
         SELECT date, open_price, high_price, low_price, close_price, volume
         FROM price_history WHERE ticker = ? AND close_price > 0 AND volume > 0

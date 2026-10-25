@@ -15,6 +15,7 @@ NOT just RSI anymore!
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import json
 import sqlite3
@@ -60,7 +61,9 @@ except Exception:
 def get_stock_prices(ticker: str, days: int = 100) -> tuple:
     """Get historical prices for a stock."""
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -96,7 +99,9 @@ def get_stock_prices(ticker: str, days: int = 100) -> tuple:
 def get_stock_fundamentals(ticker: str) -> Dict:
     """Get fundamental data for a stock."""
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -383,6 +388,7 @@ def analyze_ticker(ticker: str):
     return jsonify(result)
 
 
+@require_admin
 @confluence_bp.route('/analyze-batch', methods=['POST'])
 def analyze_batch():
     """
@@ -434,7 +440,9 @@ def get_clean_signals():
     This analyzes stocks that don't have price anomalies.
     """
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         # Get clean stocks with valid RSI
@@ -476,6 +484,7 @@ def get_clean_signals():
         }), 500
 
 
+@require_admin
 @confluence_bp.route('/generate-predictions', methods=['POST'])
 def generate_predictions():
     """
@@ -489,7 +498,9 @@ def generate_predictions():
         limit = data.get('limit', 50)
         
         # Get clean stocks
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''
@@ -551,7 +562,9 @@ def generate_predictions():
             
             # Save to database
             try:
-                conn = sqlite3.connect(PREDICTIONS_DB)
+                # Phase 7.1: migrated to db_manager (writable=True)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
                 cursor = conn.cursor()
                 
                 cursor.execute('''

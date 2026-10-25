@@ -244,7 +244,9 @@ def rebuild_database(entries):
     if NEW_DB_PATH.exists():
         NEW_DB_PATH.unlink()
     
-    new_conn = sqlite3.connect(str(NEW_DB_PATH), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    new_conn = db_manager.connection(str(NEW_DB_PATH), writable=True).__enter__()
     new_conn.execute("PRAGMA journal_mode=WAL")
     new_conn.execute("PRAGMA synchronous=NORMAL")
     new_cur = new_conn.cursor()
@@ -325,7 +327,9 @@ def rebuild_database(entries):
     print("  Copying data from corrupted database...")
     
     try:
-        old_conn = sqlite3.connect(f"file:{DB_PATH}?immutable=1", uri=True, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        old_conn = db_manager.connection(f"file:{DB_PATH}?immutable=1", writable=False).__enter__()
         old_cur = old_conn.cursor()
         
         for name in created_tables:
@@ -385,7 +389,9 @@ def verify_database():
     print("  Verification")
     
     try:
-        conn = sqlite3.connect(str(DB_PATH), timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(DB_PATH), writable=False).__enter__()
         cur = conn.cursor()
         
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")

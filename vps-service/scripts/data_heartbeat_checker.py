@@ -56,7 +56,9 @@ def check_price_history() -> dict:
         result['error'] = 'DB file not found'
         return result
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         # جرّب price_history table
         try:
@@ -86,7 +88,9 @@ def check_stocks_db() -> dict:
         result['error'] = 'DB file not found'
         return result
     try:
-        conn = sqlite3.connect(STOCKS_DB)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=True)
         cur = conn.cursor()
         cur.execute("SELECT MAX(last_update) FROM stocks WHERE last_update IS NOT NULL")
         row = cur.fetchone()

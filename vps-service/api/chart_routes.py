@@ -19,6 +19,7 @@ Features:
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import math
 import sqlite3
@@ -835,6 +836,7 @@ def get_intraday_stats_route():
         }), 500
 
 
+@require_admin
 @chart_bp.route('/collect/now', methods=['POST'])
 def trigger_collection():
     """تشغيل جمع البيانات يدوياً (للاختبار/Admin)"""
@@ -1389,7 +1391,9 @@ def chart_full_analysis():
         news_source = ''
         if vol_z_score_latest > 2.5:
             try:
-                _conn_news = sqlite3.connect(DB_PATH)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                _conn_news = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_news.row_factory = sqlite3.Row
                 from datetime import datetime as _dt_news, timedelta as _td_news
                 _news_cutoff = (_dt_news.now() - _td_news(hours=3)).isoformat()
@@ -2373,7 +2377,9 @@ def chart_full_analysis():
         try:
             _DATA_ENGINE_DB = os.environ.get('DATA_ENGINE_DB', str(Path(__file__).parent.parent.parent / 'db' / 'data_engine.db'))
             if Path(_DATA_ENGINE_DB).exists():
-                fe_conn = sqlite3.connect(_DATA_ENGINE_DB)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                fe_conn = db_manager.get_connection(_DATA_ENGINE_DB, writable=False)
                 fe_cur = fe_conn.cursor()
 
                 def _safe_num(val):
@@ -2648,7 +2654,9 @@ def chart_full_analysis():
             # Build minimal stock dict — fetch from stocks.db for full fields
             _stock_dict = {}
             try:
-                _conn_p = sqlite3.connect(DB_PATH)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                _conn_p = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_p.row_factory = sqlite3.Row
                 _cur_p = _conn_p.cursor()
                 _cur_p.execute('SELECT * FROM stocks WHERE ticker = ? LIMIT 1', (ticker,))
@@ -2724,7 +2732,9 @@ def chart_full_analysis():
             # fallback: نقرأ مباشرة من DB لو _stock_dict مفيهوش القيمة
             if _ff_pct_raw is None:
                 try:
-                    _conn_ff = sqlite3.connect(DB_PATH)
+                    # Phase 7.1: migrated to db_manager (writable=False)
+                    from core.db_manager import db_manager
+                    _conn_ff = db_manager.get_connection(DB_PATH, writable=False)
                     _conn_ff.row_factory = sqlite3.Row
                     _cur_ff = _conn_ff.cursor()
                     _cur_ff.execute(
@@ -2955,7 +2965,9 @@ def chart_full_analysis():
                 _stock_name = _stock_dict.get('name', '') or ''
                 _stock_name_ar = _stock_dict.get('name_ar', '') or ''
             if not _stock_name and not _stock_name_ar:
-                _conn_n = sqlite3.connect(DB_PATH)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                _conn_n = db_manager.get_connection(DB_PATH, writable=False)
                 _conn_n.row_factory = sqlite3.Row
                 _cur_n = _conn_n.cursor()
                 _cur_n.execute('SELECT name, name_ar FROM stocks WHERE ticker = ? LIMIT 1', (ticker,))
@@ -3164,7 +3176,9 @@ def chart_full_analysis():
             try:
                 _pred_db = str(Path(__file__).parent.parent.parent / 'db' / 'predictions.db')
                 if os.path.exists(_pred_db):
-                    _bt_conn = sqlite3.connect(_pred_db, timeout=5)
+                    # Phase 7.1: migrated to db_manager (writable=False)
+                    from core.db_manager import db_manager
+                    _bt_conn = db_manager.get_connection(_pred_db, writable=False)
                     _bt_conn.row_factory = sqlite3.Row
                     _bt_cur = _bt_conn.execute(
                         "SELECT COUNT(*) as total, "

@@ -1,4 +1,5 @@
 import json
+from core.auth_middleware import require_admin
 import logging
 import sqlite3
 from flask import Blueprint, jsonify, request, current_app
@@ -35,7 +36,9 @@ def _get_cached_analysis(ticker: str) -> Optional[dict]:
         # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
         # TODO: Add `AND ai_updated_at >= datetime('now', '-2 days')` to filter stale
         #       AI decisions — currently a decision from 2 weeks ago appears "alive".
-        conn = sqlite3.connect(PREDICTIONS_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
             SELECT ai_decision, ai_confidence, ai_reason, ai_narrative, ai_updated_at
@@ -107,7 +110,9 @@ def _run_live_analysis(ticker: str) -> dict:
         SKIP_STORED_ANALYSES_WRITE = True
         if not SKIP_STORED_ANALYSES_WRITE:
             try:
-                conn = sqlite3.connect(PREDICTIONS_DB)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
                 cur = conn.cursor()
                 cur.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,))
                 exists = cur.fetchone() is not None
@@ -180,6 +185,7 @@ def get_ai_decision(ticker):
         return jsonify({"detail": result["error"]}), result.get("status", 500)
     return jsonify(result)
 
+@require_admin
 @ai_bp.route('/compare', methods=['POST'])
 def compare_stocks():
     data = request.get_json() or {}
@@ -198,6 +204,7 @@ def compare_stocks():
     result = agent.compare_stocks(tickers, indicators_list)
     return jsonify({"comparison": result, "tickers": tickers})
 
+@require_admin
 @ai_bp.route('/ask', methods=['POST'])
 def ask_question():
     data = request.get_json() or {}
@@ -324,6 +331,7 @@ def _get_trade_recorder():
     return _trade_recorder
 
 
+@require_admin
 @ai_bp.route('/trades/record', methods=['POST'])
 def record_trade():
     """تسجيل صفقة مستخدم (شراء/بيع).
@@ -370,6 +378,7 @@ def record_trade():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/<user_id>', methods=['GET'])
 def get_user_trades(user_id):
     """جلب كل صفقات المستخدم."""
@@ -385,6 +394,7 @@ def get_user_trades(user_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/<user_id>/performance', methods=['GET'])
 def get_performance(user_id):
     """إحصائيات أداء المستخدم (win rate, avg pnl, etc)."""
@@ -399,6 +409,7 @@ def get_performance(user_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/trades/learn', methods=['POST'])
 def learn_from_trades():
     """تشغيل الـ learning loop يدوياً (بدون انتظار 15:30).
@@ -485,6 +496,7 @@ def historical_generate():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/historical/feed-ai', methods=['POST'])
 def historical_feed_ai():
     """تغذية الـ AI بالصفقات التاريخية (تخزين في stock_stories)."""
@@ -534,6 +546,7 @@ def _get_tg_importer():
     return _tg_importer
 
 
+@require_admin
 @ai_bp.route('/telegram/import', methods=['POST'])
 def telegram_import():
     """استيراد توصيات من جروب Telegram.
@@ -561,6 +574,7 @@ def telegram_import():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @ai_bp.route('/telegram/evaluate', methods=['POST'])
 def telegram_evaluate():
     """تقييم التوصيات المستوردة (بعد N أيام)."""
@@ -610,7 +624,9 @@ def telegram_signals_list():
         limit = request.args.get('limit', 50, type=int)
         evaluated_only = request.args.get('evaluated', 'false').lower() == 'true'
 
-        conn = sqlite3.connect(_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(_db, writable=False)
         conn.row_factory = sqlite3.Row
 
         if evaluated_only:
@@ -668,7 +684,9 @@ def premium_predictions():
         _root = Path(__file__).resolve().parent.parent.parent
         _db = str(_root / 'db' / 'predictions.db')
 
-        conn = sqlite3.connect(_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(_db, writable=False)
         conn.row_factory = sqlite3.Row
 
         # جلب التوقعات من stored_analyses + aiPrediction

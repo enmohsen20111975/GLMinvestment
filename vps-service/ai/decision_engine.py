@@ -29,7 +29,9 @@ class DecisionEngine:
         current_recommendation: str,
         limit: int = 3
     ) -> List[Dict[str, Any]]:
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -134,7 +136,9 @@ class DecisionEngine:
         
         # محاولة تعبئة النواقص من stocks.db
         try:
-            conn_stocks = sqlite3.connect(STOCKS_DB)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn_stocks = db_manager.get_connection(STOCKS_DB, writable=False)
             conn_stocks.row_factory = sqlite3.Row
             row = conn_stocks.execute(
                 "SELECT current_price, rsi, pe_ratio, roe, profit_margin, pb_ratio, eps, debt_to_equity, dividend_yield, avg_volume, volume FROM stocks WHERE ticker = ?", 
@@ -205,7 +209,9 @@ class DecisionEngine:
         # 3. جلب القواعد والدروس المستفادة آلياً من prediction_lessons
         lessons = []
         try:
-            conn_pred = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn_pred = db_manager.get_connection(self.db_path, writable=False)
             conn_pred.row_factory = sqlite3.Row
             rows = conn_pred.execute("""
                 SELECT category, rule, evidence, failure_rate, recommendation

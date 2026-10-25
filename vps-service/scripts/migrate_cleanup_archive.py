@@ -44,7 +44,9 @@ def cleanup_news(dry_run=False):
         log(f'  ⚠️ {NEWS_DB} غير موجود')
         return
 
-    db = sqlite3.connect(str(NEWS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    db = db_manager.get_connection(str(NEWS_DB), writable=True)
     db.execute("PRAGMA journal_mode=WAL")
 
     # 1. حذف أخبار بدون title
@@ -84,7 +86,9 @@ def archive_old_predictions(dry_run=False):
         log(f'  ⚠️ {PREDICTIONS_DB} غير موجود')
         return
 
-    db = sqlite3.connect(str(PREDICTIONS_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    db = db_manager.get_connection(str(PREDICTIONS_DB), writable=True)
     db.execute("PRAGMA journal_mode=WAL")
 
     # التحقق من وجود الأعمدة المطلوبة

@@ -885,7 +885,9 @@ class LiquidityFilter:
         بدون كسر الـ analyze().
         """
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             # PRAGMA عشان نتأكد إن الأعمدة موجودة قبل الـ SELECT
             cursor.execute("PRAGMA table_info(stocks)")
@@ -954,7 +956,9 @@ class LiquidityFilter:
         # 1. Get current price from stocks table
         current_price = 0.0
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('SELECT current_price FROM stocks WHERE ticker = ?', (ticker,))
             result = cursor.fetchone()
@@ -969,7 +973,9 @@ class LiquidityFilter:
             from pathlib import Path
             price_history_db = str(Path(self.db_path).parent / 'price_history.db')
             if Path(price_history_db).exists():
-                conn = sqlite3.connect(price_history_db)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(price_history_db, writable=False)
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT AVG(volume), AVG(volume * close_price)
@@ -986,7 +992,9 @@ class LiquidityFilter:
                     # If current_price wasn't found, try to use the last close_price from history
                     if current_price <= 0:
                         try:
-                            conn = sqlite3.connect(price_history_db)
+                            # Phase 7.1: migrated to db_manager (writable=False)
+                            from core.db_manager import db_manager
+                            conn = db_manager.get_connection(price_history_db, writable=False)
                             cursor = conn.cursor()
                             cursor.execute('SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1', (ticker,))
                             res_price = cursor.fetchone()
@@ -1010,7 +1018,9 @@ class LiquidityFilter:
         # MARKET-REALITY-SLAP-027: جدول stocks بيخزن الحجم كـ string ("2.28 M").
         # بنستخدم _parse_volume_string عشان نحول الـ K/M/B suffixes لرقم.
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute('SELECT volume, current_price FROM stocks WHERE ticker = ?', (ticker,))
             result = cursor.fetchone()

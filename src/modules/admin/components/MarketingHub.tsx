@@ -25,7 +25,7 @@ import {
  Megaphone, Film, Image as ImageIcon, Calendar, Download, Copy, Check,
  Sparkles, Loader2, Clapperboard, Zap, Hash, Target, ChevronRight, TrendingUp,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { AD_TEMPLATES, getAdTemplate } from '@/lib/ad-templates';
 import { getHashtags, getInstagramHashtags, getTelegramHashtags, MARKET_OPTIONS, type Market } from '@/lib/hashtag-library';
 import { getCTA, getCTAsByGoal, CTA_GOALS, type CTAGoal } from '@/lib/cta-templates';
@@ -155,17 +156,13 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
  {cards.length > 0 && (
  <>
  {/* Image Cards */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <ImageIcon className="w-4 h-4 text-primary" />
- كروت الصور (3 مقاسات)
- </CardTitle>
- <CardDescription className="text-xs">
- مربع (إنستجرام) • عمودي (ستوري/ريلز) • أفقي (فيسبوك)
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="كروت الصور (3 مقاسات)"
+ icon={ImageIcon}
+ iconColor="text-primary"
+ hideRefresh
+ headerClassName="pb-3"
+ >
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  {cards.map((card) => (
  <div key={card.format} className="space-y-2">
@@ -183,50 +180,52 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Text Post */}
- <Card>
- <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
- <CardTitle className="text-base">📝 نص للنشر (تيليجرام/تويتر)</CardTitle>
+ <WidgetCard
+ title="📝 نص للنشر (تيليجرام/تويتر)"
+ hideRefresh
+ headerClassName="pb-3 flex flex-row items-center justify-between space-y-0"
+ badge={
  <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => copyText('post', textPost)}>
  {copied === 'post' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
  {copied === 'post' ? 'اتنسخ' : 'نسخ'}
  </Button>
- </CardHeader>
- <CardContent>
+ }
+ >
  <Textarea value={textPost} readOnly rows={6} className="resize-none text-sm leading-relaxed" dir="rtl" />
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Caption */}
- <Card>
- <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
- <CardTitle className="text-base">📸 كابشن (إنستجرام/فيسبوك)</CardTitle>
+ <WidgetCard
+ title="📸 كابشن (إنستجرام/فيسبوك)"
+ hideRefresh
+ headerClassName="pb-3 flex flex-row items-center justify-between space-y-0"
+ badge={
  <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => copyText('caption', caption)}>
  {copied === 'caption' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
  {copied === 'caption' ? 'اتنسخ' : 'نسخ'}
  </Button>
- </CardHeader>
- <CardContent>
+ }
+ >
  <Textarea value={caption} readOnly rows={4} className="resize-none text-sm" dir="rtl" />
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Hashtags */}
- <Card>
- <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
- <CardTitle className="text-base flex items-center gap-2">
- <Hash className="w-4 h-4 text-primary" />
- هاشتاجات ({hashtags.length})
- </CardTitle>
+ <WidgetCard
+ title={`هاشتاجات (${hashtags.length})`}
+ icon={Hash}
+ iconColor="text-primary"
+ hideRefresh
+ headerClassName="pb-3 flex flex-row items-center justify-between space-y-0"
+ badge={
  <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => copyText('tags', hashtags.join(' '))}>
  {copied === 'tags' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
  نسخ الكل
  </Button>
- </CardHeader>
- <CardContent>
+ }
+ >
  <div className="flex flex-wrap gap-1.5">
  {hashtags.map((h, i) => (
  <Badge key={i} variant="secondary" className="text-xs font-normal cursor-pointer hover:bg-primary/10" onClick={() => copyText(`tag-${i}`, h)}>
@@ -234,8 +233,7 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
  </Badge>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  </>
  )}
 
@@ -363,27 +361,20 @@ export function MarketingHub() {
  return (
  <div className="space-y-6">
  {/* Header */}
- <Card className="border-whale/20 via-cyan-500/5 to-sky-500/5">
- <CardHeader>
- <div className="flex items-start gap-3">
- <div className="w-11 h-11 rounded-xl from-whale to-cyan-500 flex items-center justify-center shrink-0">
- <Megaphone className="w-6 h-6 text-foreground" />
- </div>
- <div className="flex-1 min-w-0">
- <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
- محرّك التسويق المتكامل
+ <WidgetCard
+ title="محرّك التسويق المتكامل"
+ icon={Megaphone}
+ className="border-whale/20 via-cyan-500/5 to-sky-500/5"
+ headerClassName="pb-0"
+ contentClassName="hidden"
+ badge={
  <Badge variant="outline" className="text-xs gap-1">
  <TrendingUp className="w-3 h-3" />
  Marketing Hub
  </Badge>
- </CardTitle>
- <CardDescription className="mt-1">
- ولّد إعلانات احترافية بضغطة زر — كروت صور + فيديو + نصوص + هاشتاجات + تقويم محتوى.
- </CardDescription>
- </div>
- </div>
- </CardHeader>
- </Card>
+ }
+ hideRefresh
+ />
 
  {/* Controls: feature + market + CTA goal */}
  <Card>

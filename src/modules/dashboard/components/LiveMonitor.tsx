@@ -12,7 +12,6 @@
 import React from 'react';
 import { useLiveMonitorData } from '@/hooks/useLiveMonitorData';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Activity,
  AlertCircle,
  ArrowDownRight,
@@ -49,6 +48,7 @@ import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedEmptyState } from '@/components/shared/ui';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { useAppStore } from '@/lib/store';
+import { Label, NumText, ChangeText, PriceValue } from '@/components/shared/ui';
 
 // ============================================================
 // Types
@@ -167,7 +167,11 @@ const numberFmt2 = new Intl.NumberFormat('en-US', {
 });
 const intFmt = new Intl.NumberFormat('en-US');
 
-/* formatNumber moved to @/lib/format (Phase 1 DRY) */
+function formatNumber(value: number | null | undefined, decimals = 2): string {
+ if (value === null || value === undefined || Number.isNaN(value)) return '—';
+ if (decimals === 0) return intFmt.format(Math.round(value));
+ return numberFmt2.format(value);
+}
 
 function formatCurrency(value: number | null | undefined): string {
  if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -541,7 +545,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
  {regime?.stage_name ?? '—'}
  </span>
  {regime && (
- <span className="text-xs text-muted-foreground">#{regime.stage}</span>
+ <Label>#{regime.stage}</Label>
  )}
  </div>
  ),

@@ -109,7 +109,9 @@ def inspect_db(db_path: Path, show_samples: bool = True) -> dict:
         return result
 
     try:
-        conn = sqlite3.connect(str(db_path), timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
 
         # كل الـ tables

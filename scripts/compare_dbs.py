@@ -10,7 +10,9 @@ def stats(path, label):
     print(f"\n========== {label} ==========")
     print(f"Path: {path}")
     print(f"Size: {os.path.getsize(path):,} bytes")
-    con = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    con = db_manager.connection(path, writable=False).__enter__()
     cur = con.cursor()
 
     # Schema

@@ -14,6 +14,7 @@ Author: GLMinvestment v3.4.43 — Confidence + Position Management
 """
 
 import os
+from core.auth_middleware import require_admin
 import sys
 import sqlite3
 from datetime import datetime, timedelta
@@ -44,13 +45,17 @@ picks_mgmt_bp = Blueprint('picks_management', __name__)
 # Helpers
 # ----------------------------------------------------------------------------
 def _get_db_conn():
-    return sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    return db_manager.get_connection(PREDICTIONS_DB, writable=False)
 
 
 def _get_current_price(ticker: str) -> tuple:
     """يجلب السعر الحالي + آخر المؤشرات للسهم."""
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT close_price, high_price, low_price, volume, date "
@@ -484,6 +489,7 @@ def get_single_management(pred_id: int):
 # ----------------------------------------------------------------------------
 # POST /api/predictions/management/refresh
 # ----------------------------------------------------------------------------
+@require_admin
 @picks_mgmt_bp.route('/api/predictions/management/refresh', methods=['POST'])
 def refresh_management():
     """إعادة حساب الإدارة لكل المراكز المفتوحة (يقبل optional persona)."""

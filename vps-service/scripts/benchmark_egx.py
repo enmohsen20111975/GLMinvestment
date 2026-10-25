@@ -102,7 +102,9 @@ def fmt_pct_padded(val, width=7):
 
 def main():
     # Connect to DB
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_PATH, writable=False)
     cursor = conn.cursor()
 
     # ────────── Per-Window Returns ──────────

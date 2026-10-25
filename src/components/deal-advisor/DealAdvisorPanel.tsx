@@ -21,7 +21,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Card,
  CardContent,
  CardHeader,
@@ -166,7 +165,9 @@ interface DealAdvisorData {
 // Helpers
 // ============================================================================
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(n: number | null): string {
+ if (n === null || n === undefined) return '—';
+ return n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatPct(n: number | null): string {

@@ -70,12 +70,16 @@ class StockFundamentals:
         """data-engine.db connection"""
         if not os.path.exists(self.data_engine_db):
             return None
-        conn = sqlite3.connect(self.data_engine_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.data_engine_db, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 
     def _get_stocks_conn(self):
-        conn = sqlite3.connect(self.stocks_db)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.stocks_db, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 

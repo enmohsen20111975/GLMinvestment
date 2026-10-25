@@ -27,6 +27,7 @@ import {
  Target, Shield, ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -394,14 +395,16 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  </Card>
 
  {/* ─── Stock of the Week ─────────────────────────────────────── */}
- <Card className="border-profit ">
- <CardHeader className="pb-3 bg-profit/10 /20">
- <CardTitle className="flex items-center gap-2 text-base">
- <Star className="h-5 w-5 text-warning fill-warning" />
- <span>{t('radar.weekly.stockOfWeek.title')}</span>
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-4">
+ <WidgetCard
+        title={t('radar.weekly.stockOfWeek.title')}
+        icon={Star}
+        iconColor="text-warning fill-warning"
+        iconSize="h-5 w-5"
+        titleClassName="text-base"
+        className="border-profit "
+        contentClassName="pt-4"
+ >
+
  {sow ? (
  <div className="space-y-4">
  {/* Ticker + path */}
@@ -491,18 +494,18 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  {t('radar.weekly.stockOfWeek.empty')}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* ─── Top 5 stocks ───────────────────────────────────────────── */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="flex items-center gap-2 text-base">
- <Target className="h-5 w-5 text-primary " />
- <span>{t('radar.weekly.top5.title')}</span>
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-3">
+ <WidgetCard
+        title={t('radar.weekly.top5.title')}
+        icon={Target}
+        iconColor="text-primary"
+        iconSize="h-5 w-5"
+        titleClassName="text-base"
+        contentClassName="pt-3"
+ >
+
  {top5.length > 0 ? (
  <div className="space-y-2">
  {top5.map((s, i) => (
@@ -542,18 +545,18 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  {t('radar.weekly.top5.empty')}
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* ─── Last week performance ──────────────────────────────────── */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="flex items-center gap-2 text-base">
- <BarChart3 className="h-5 w-5 text-warning " />
- <span>{t('radar.weekly.lastWeek.title')}</span>
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-3">
+ <WidgetCard
+        title={t('radar.weekly.lastWeek.title')}
+        icon={BarChart3}
+        iconColor="text-warning"
+        iconSize="h-5 w-5"
+        titleClassName="text-base"
+        contentClassName="pt-3"
+ >
+
  {perf && perf.stocks && perf.stocks.length > 0 ? (
  <div className="space-y-3">
  {/* Summary stats */}
@@ -622,19 +625,19 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  <span className="text-xs">{t('radar.weekly.lastWeek.emptyHint')}</span>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* ─── Sector heatmap ────────────────────────────────────────── */}
  {sectors.length > 0 && (
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="flex items-center gap-2 text-base">
- <BarChart3 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
- <span>{t('radar.weekly.sectors.title')}</span>
- </CardTitle>
- </CardHeader>
- <CardContent className="pt-3">
+ <WidgetCard
+        title={t('radar.weekly.sectors.title')}
+        icon={BarChart3}
+        iconColor="text-violet-600 dark:text-violet-400"
+        iconSize="h-5 w-5"
+        titleClassName="text-base"
+        contentClassName="pt-3"
+ >
+
  <div className="space-y-1.5">
  {sectors.map((sec, i) => (
  <div
@@ -670,8 +673,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* ─── Subscribe CTA ─────────────────────────────────────────── */}

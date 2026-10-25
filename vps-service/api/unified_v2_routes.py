@@ -15,6 +15,7 @@ Endpoints:
 """
 
 from flask import Blueprint, request, jsonify
+from core.auth_middleware import require_admin
 import sys
 import os
 import sqlite3
@@ -80,7 +81,9 @@ def _load_price_data_from_db(ticker: str, market: str, limit: int = 250) -> Opti
     يدعم جدولي price_history و stocks
     """
     try:
-        conn = sqlite3.connect(PRICE_HISTORY_DB_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
         cur = conn.cursor()
 
         # جرّب price_history أولاً
@@ -129,7 +132,9 @@ def _load_price_data_from_db(ticker: str, market: str, limit: int = 250) -> Opti
 def _load_current_stock_from_db(ticker: str, market: str) -> Optional[dict]:
     """جلب بيانات السهم الحالية"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT ticker, name, current_price, volume,
@@ -162,7 +167,9 @@ def _load_current_stock_from_db(ticker: str, market: str) -> Optional[dict]:
 def _load_all_market_tickers(market: str, limit: int = 200) -> List[str]:
     """جلب كل أسهم سوق معين"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(DATABASE_PATH, writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT DISTINCT ticker FROM stocks
@@ -260,6 +267,7 @@ def get_config():
         return jsonify({"error": str(e)}), 400
 
 
+@require_admin
 @unified_v2_bp.route("/analyze", methods=["POST"])
 def analyze_single():
     """
@@ -330,6 +338,7 @@ def analyze_single():
     })
 
 
+@require_admin
 @unified_v2_bp.route("/scan", methods=["POST"])
 def scan_market():
     """
@@ -395,6 +404,7 @@ def scan_market():
     })
 
 
+@require_admin
 @unified_v2_bp.route("/compare-personas", methods=["POST"])
 def compare_personas():
     """

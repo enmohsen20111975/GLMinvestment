@@ -111,7 +111,9 @@ def _get_market_tickers(market: str) -> List[str]:
         return []
 
     try:
-        conn = sqlite3.connect(f"file:{full_path}?mode=ro", uri=True, timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(full_path, writable=False)
         rows = conn.execute(query).fetchall()
         conn.close()
         tickers = [r[0] for r in rows if r[0]]
@@ -133,7 +135,9 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     rows = None
     if ph_db.exists():
         try:
-            conn = sqlite3.connect(f"file:{ph_db}?mode=ro", uri=True, timeout=5.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(ph_db, writable=False)
             rows = conn.execute("""
                 SELECT date, open_price, high_price, low_price, close_price, volume
                 FROM price_history WHERE ticker = ?
@@ -148,7 +152,9 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
         stocks_db = project_root / 'db' / 'stocks.db'
         if stocks_db.exists():
             try:
-                conn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=5.0)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection(stocks_db, writable=False)
                 rows = conn.execute("""
                     SELECT price_date, open, high, low, close, volume
                     FROM stock_daily_prices WHERE ticker = ?
@@ -265,7 +271,9 @@ def _scan_single_stock(ticker: str, config: ScanConfig) -> Optional[Dict[str, An
     try:
         stocks_db = project_root / 'db' / 'stocks.db'
         if stocks_db.exists():
-            sconn = sqlite3.connect(f"file:{stocks_db}?mode=ro", uri=True, timeout=3.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            sconn = db_manager.get_connection(stocks_db, writable=False)
             srow = sconn.execute(
                 "SELECT high_52w, low_52w FROM stocks WHERE ticker = ?", (ticker,)
             ).fetchone()

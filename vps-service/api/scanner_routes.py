@@ -8,6 +8,7 @@ Endpoints:
 """
 
 import time
+from core.auth_middleware import require_admin
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 
@@ -120,6 +121,7 @@ def advanced_scan_status():
         "duration_ms": _advanced_scan_state['duration_ms']
     })
 
+@require_admin
 @scanner_bp.route('/api/advanced-scanner/run', methods=['POST'])
 def run_advanced_scan():
     """

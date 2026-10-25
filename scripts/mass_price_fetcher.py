@@ -27,7 +27,9 @@ STALE_DATE = '2026-10-20'  # anything before this is stale
 
 def get_stale_tickers():
     """احصل على قائمة الأسهم المتجمدة."""
-    conn = sqlite3.connect(f"file:{STOCKS_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=True).__enter__()
     rows = conn.execute("""
         SELECT ticker, market, current_price, last_update
         FROM stocks
@@ -77,7 +79,9 @@ def fetch_from_price_history(ticker):
     if not PRICE_HISTORY_DB.exists():
         return None
     try:
-        conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
         row = conn.execute("""
             SELECT date, open_price, high_price, low_price, close_price, volume
             FROM price_history
@@ -101,7 +105,9 @@ def fetch_from_price_history(ticker):
 
 def update_stock_price(ticker, price_data):
     """حدث سعر السهم في stocks.db."""
-    conn = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
     cur = conn.cursor()
 
     # update stocks table

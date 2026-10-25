@@ -81,7 +81,9 @@ def run_health_check():
             if not path.exists():
                 log.warning(f'⚠ {db} missing!')
                 continue
-            c = sqlite3.connect(str(path), timeout=3)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            c = db_manager.connection(str(path), writable=False).__enter__()
             r = c.execute('PRAGMA integrity_check').fetchone()[0]
             c.close()
             if r != 'ok':

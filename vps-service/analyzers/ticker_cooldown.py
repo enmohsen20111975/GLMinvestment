@@ -47,7 +47,9 @@ def check_ticker_cooldown(ticker: str) -> Dict:
         return {'is_cooled_down': False, 'reason': 'DB not found', 'cooldown_until': None, 'days_remaining': None}
 
     try:
-        conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(str(PREDICTIONS_DB), writable=False)
         cur = conn.cursor()
         now = datetime.now()
 
@@ -132,7 +134,9 @@ def check_ticker_cooldown(ticker: str) -> Dict:
                 stocks_db = PROJECT_ROOT / 'db' / 'stocks.db'
                 if stocks_db.exists():
                     try:
-                        sconn = sqlite3.connect(str(stocks_db), timeout=5.0)
+                        # Phase 7.1: migrated to db_manager (writable=False)
+                        from core.db_manager import db_manager
+                        sconn = db_manager.get_connection(str(stocks_db), writable=False)
                         scur = sconn.cursor()
                         scur.execute("SELECT current_price FROM stocks WHERE ticker = ?", (ticker,))
                         row = scur.fetchone()

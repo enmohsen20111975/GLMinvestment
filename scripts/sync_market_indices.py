@@ -140,7 +140,9 @@ def sync():
 
     # 2. تحديث stocks.db
     if STOCKS_DB.exists():
-        conn = sqlite3.connect(str(STOCKS_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
         cur = conn.cursor()
         
         # إنشاء جدول index_daily_prices
@@ -246,7 +248,9 @@ def sync():
 
     # 3. تحديث market.db
     if MARKET_DB.exists():
-        conn_m = sqlite3.connect(str(MARKET_DB))
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn_m = db_manager.connection(str(MARKET_DB), writable=True).__enter__()
         cur_m = conn_m.cursor()
         cur_m.execute("""
             CREATE TABLE IF NOT EXISTS market_indices (
@@ -305,7 +309,9 @@ def sync():
 
     # 4. تحديث data_engine.db -> historical_data
     if DATA_ENGINE_DB.exists():
-        conn_d = sqlite3.connect(str(DATA_ENGINE_DB))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn_d = db_manager.connection(str(DATA_ENGINE_DB), writable=False).__enter__()
         cur_d = conn_d.cursor()
         for rows_data in (egx30_rows, egx70_rows):
             for r in rows_data:

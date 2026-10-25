@@ -44,6 +44,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import type { SystemIssue } from './AdminView';
 
 // ==================== PROPS ====================
@@ -371,41 +372,17 @@ export function SystemProblemsTab({
 
  // ---- Main render ----
  return (
- <Card>
- <CardHeader>
- <div className="flex items-center justify-between gap-2 flex-wrap">
- <div>
- <div className="flex items-center gap-2">
- <ShieldAlert
- className={cn(
- 'w-5 h-5',
- criticalCount > 0 ? 'text-loss' : 'text-warning',
- )}
- />
- <CardTitle>مشاكل النظام</CardTitle>
- <Badge variant="secondary">{totalCount} إجمالي</Badge>
- </div>
- <CardDescription className="mt-1">
- قائمة تفصيلية بالمشاكل والتحذيرات النشطة في النظام — مرتّبة حسب
- الخطورة (الحرجة أولاً).
- </CardDescription>
- </div>
- {onRefresh && (
- <Button
- variant="outline"
- size="sm"
- onClick={onRefresh}
- disabled={refreshing}
- className="gap-1"
+ <WidgetCard
+ title="مشاكل النظام"
+ icon={ShieldAlert}
+ iconColor={criticalCount > 0 ? 'text-loss' : 'text-warning'}
+ onRefresh={onRefresh}
+ refreshing={refreshing}
+ hideRefresh={!onRefresh}
+ headerClassName="pb-2"
+ badge={<Badge variant="secondary">{totalCount} إجمالي</Badge>}
+ contentClassName="space-y-5"
  >
- <RefreshCw className={cn('w-4 h-4', refreshing && 'animate-spin')} />
- {refreshing ? 'جاري التحديث...' : 'تحديث'}
- </Button>
- )}
- </div>
- </CardHeader>
-
- <CardContent className="space-y-5">
  {/* Summary stats */}
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  <SummaryStatCard
@@ -480,8 +457,7 @@ export function SystemProblemsTab({
  «تحديث» لإعادة الفحص.
  </span>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  );
 }
 

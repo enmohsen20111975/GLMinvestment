@@ -15,7 +15,6 @@
 
 import type { Column } from '@/components/shared/UnifiedTable';
 
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
 // الأعمدة اللي بتتخطّى في الـ text format (مش مفيدة للنشر)
 const SKIP_KEYS = new Set([
  '_idx',
@@ -51,7 +50,12 @@ function formatPercent(v: unknown): string | null {
 }
 
 /** تنسيق سعر */
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */
+function formatPrice(v: unknown): string | null {
+ if (v == null || v === '') return null;
+ const n = Number(v);
+ if (!isFinite(n)) return null;
+ return n.toFixed(2);
+}
 
 /** تنسيق رقم كبير بصيغة مختصرة (مثلاً 14.2M) */
 function formatLargeNumber(v: unknown): string | null {

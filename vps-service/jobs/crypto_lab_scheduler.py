@@ -153,7 +153,7 @@ def _discover_coins_from_data_engine(data_engine_db: str) -> Dict[str, Dict[str,
     try:
         try:
             from core.db_manager import db_manager
-            conn = db_manager.connection('data_engine', writable=False).__enter__()
+            conn = db_manager.get_connection('data_engine', writable=False)
         except Exception:
             conn = sqlite3.connect(data_engine_db, timeout=10)
         cur = conn.cursor()
@@ -313,7 +313,7 @@ class CryptoLabScheduler:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db, timeout=30)
             conn.execute('PRAGMA busy_timeout = 30000')
@@ -502,7 +502,7 @@ class CryptoLabScheduler:
                 return 0.0, 0.0, 0.0
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('data_engine', writable=False).__enter__()
+                conn = db_manager.get_connection('data_engine', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.data_engine_db, timeout=30)
             conn.row_factory = sqlite3.Row
@@ -904,7 +904,7 @@ class CryptoLabScheduler:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db, timeout=30)
             conn.execute('PRAGMA busy_timeout = 30000')
@@ -971,7 +971,7 @@ class CryptoLabScheduler:
                 return 0.0
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('data_engine', writable=False).__enter__()
+                conn = db_manager.get_connection('data_engine', writable=False)
             except Exception:
                 conn = sqlite3.connect(f'file:{self.data_engine_db}?mode=ro', uri=True, timeout=5)
             rows = conn.execute(
@@ -1017,7 +1017,7 @@ class CryptoLabScheduler:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=False).__enter__()
+                conn = db_manager.get_connection('predictions', writable=False)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db, timeout=30)
             conn.execute('PRAGMA busy_timeout = 30000')
@@ -1174,7 +1174,7 @@ class CryptoLabScheduler:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('predictions', writable=True).__enter__()
+                conn = db_manager.get_connection('predictions', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.predictions_db, timeout=30)
             conn.execute('PRAGMA busy_timeout = 30000')

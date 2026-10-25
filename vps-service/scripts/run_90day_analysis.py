@@ -190,7 +190,9 @@ def run_90_day_analysis():
         print(f"❌ Database not found: {PRICE_HISTORY_DB}")
         return None
     
-    conn = sqlite3.connect(PRICE_HISTORY_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
     cursor = conn.cursor()
     
     # Get date range

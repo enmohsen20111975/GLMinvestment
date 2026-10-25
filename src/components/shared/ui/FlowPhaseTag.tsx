@@ -47,6 +47,28 @@ const PHASE_MAP: Record<string, { label: string; tone: 'whale' | 'profit' | 'los
  'neutral': { label: 'محايد', tone: 'muted' },
  'mixed': { label: 'مختلط', tone: 'warning' },
  'churning': { label: 'دوران سيولة', tone: 'warning' },
+ // Canonical Stock States (Phase 5 — unified taxonomy)
+ 'ACCUMULATION': { label: 'تجميع محتمل', tone: 'whale' },
+ 'UPTREND': { label: 'اتجاه صاعد', tone: 'profit' },
+ 'CORRECTION_HEALTHY': { label: 'تصحيح صحي', tone: 'warning' },
+ 'DISTRIBUTION': { label: 'توزيع محتمل', tone: 'loss' },
+ 'DOWNTREND': { label: 'اتجاه هابط', tone: 'loss' },
+ 'RECOVERY': { label: 'تعافٍ محتمل', tone: 'profit' },
+ 'STATE_UNCONFIRMED': { label: 'حالة غير محسومة', tone: 'muted' },
+ 'DATA_STALE': { label: 'بيانات قديمة', tone: 'muted' },
+ 'DATA_INCOMPLETE': { label: 'بيانات ناقصة', tone: 'muted' },
+ // Legacy maker_radar paths (A/B/C/D/E)
+ 'A_pre_surge': { label: 'ما قبل القفزة', tone: 'whale' },
+ 'B_quiet_accumulation_strong': { label: 'تجميع هادئ قوي', tone: 'whale' },
+ 'C_quiet_accumulation_weak': { label: 'تجميع هادئ ضعيف', tone: 'whale' },
+ 'D_explosive_surge': { label: 'انفجار سيولي', tone: 'profit' },
+ 'E_early_break': { label: 'اختراق مبكر', tone: 'profit' },
+ // entry_gate phases
+ 'DOWNTREND': { label: 'اتجاه هابط', tone: 'loss' },
+ 'PULLBACK': { label: 'ارتداد', tone: 'warning' },
+ 'UPTREND': { label: 'اتجاه صاعد', tone: 'profit' },
+ 'BULLISH_RECOVERY': { label: 'تعافٍ صعودي', tone: 'profit' },
+ 'TRANSITIONAL': { label: 'انتقالي', tone: 'muted' },
 };
 
 const TONE_CLASS: Record<string, string> = {

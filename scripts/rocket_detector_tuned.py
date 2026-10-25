@@ -400,7 +400,9 @@ def run_detector_on_explosion(conn, ticker, day, detector_fn, market='مصر',
 # 5) التقرير الرئيسي
 # ═══════════════════════════════════════════════════════════════════
 def main():
-    conn = sqlite3.connect(DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB, writable=False).__enter__()
 
     print("╔" + "═"*78 + "╗")
     print("║" + " كاشف الصواريخ على بيانات الـ 5 دقائق — مرحلة 1 محسّنة ".center(78) + "║")
@@ -510,7 +512,9 @@ def main():
 
 def compare_markets(eg_results):
     """مقارنة السوق المصري (المحلى) مع السعودي (النتاجى)."""
-    conn = sqlite3.connect(DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB, writable=False).__enter__()
 
     print("\n\n╔" + "═"*78 + "╗")
     print("║" + " مقارنة: السوق المصري (المحلى) vs السعودي (النتاجى) ".center(78) + "║")

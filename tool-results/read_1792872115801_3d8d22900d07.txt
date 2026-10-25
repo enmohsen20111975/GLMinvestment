@@ -1,0 +1,1365 @@
+     1→# الخطة الاستراتيجية الكاملة لتطوير محرك الأرباح — دليل الاستثمار
+     2→
+     3→بص، خلينا نحسم الاتجاه الأول، وبعدها نبني خطة تنفيذ واضحة لبرافو.
+     4→
+     5→إحنا منصة هدفها اكتشاف فرص الربح في الأسهم، مش منصة هدفها تقليل التداول أو الاحتفاظ بالكاش.
+     6→
+     7→لكن الربح مش معناه إننا نشتري أي سهم نازل ونستنى يرتد. الربح معناه إننا نكتشف الأسهم اللي عندها فرصة أفضل من غيرها، ونحدد توقيت دخول مناسب، ونحسب العائد المتوقع مقابل المخاطرة، وننفذ الصفقة بطريقة منضبطة.
+     8→
+     9→الهدف الاستراتيجي:
+    10→
+    11→> نحوّل ضعف السوق إلى ميزة اختيارية للمحرك: بدل ما يشتغل بنفس المنطق على كل الأسهم، يكتشف أين توجد القوة النسبية والفرص القابلة للربح، حتى لو السوق العام ضعيف.
+    12→
+    13→والخطة دي مبنية على:
+    14→
+    15→- فلسفة التداول اللي اتفقنا عليها.
+    16→- نتائج يوليو–أكتوبر اللي أنت قدمتها، باعتبارها نتائج تحتاج تحققًا من بياناتها.
+    17→- وثائق المشروع المتاحة، خصوصًا تدفق البيانات والتحليل والتوصيات والتعلم.&#x20;
+    18→
+    19→  03-HOW-IT-THINKS.md
+    20→
+    21→  03-HOW-IT-THINKS.md
+    22→
+    23→
+    24→
+    25→# 1. الهدف النهائي
+    26→
+    27→## الهدف التجاري
+    28→
+    29→تطوير محرك قادر على:
+    30→
+    31→1. اكتشاف الأسهم المرشحة لتحقيق أرباح في ظروف السوق المختلفة.
+    32→2. اختيار الأسهم الأقوى نسبيًا بدلًا من التعامل مع السوق كأنه كتلة واحدة.
+    33→3. الدخول عندما توجد فرصة قابلة للتنفيذ، وليس لمجرد ارتفاع Score.
+    34→4. تحقيق أرباح في الـ Bear Market عندما تتوافر فرص مناسبة.
+    35→5. تقليل الخسائر الكبيرة، من غير تعطيل فرص الربح الجيدة.
+    36→6. تحسين جودة التوصيات للمستخدم، بحيث تكون التوصية مدعومة بأدلة قابلة للتحقق.
+    37→
+    38→## الهدف المالي
+    39→
+    40→مش هنحدد من البداية إن الـ Bear لازم يحقق PF معين أو إن كل شهر لازم يكون موجب.
+    41→
+    42→هنحدد أهداف أداء قابلة للقياس، ونختبر هل النظام يقدر يحققها.
+    43→
+    44→| الحالة       | الهدف الاستراتيجي                                   |
+    45→| ------------ | --------------------------------------------------- |
+    46→| Bull         | استغلال الاتجاه الصاعد وتحقيق عائد جيد              |
+    47→| Bear         | اكتشاف الأسهم القادرة على تحقيق أرباح رغم ضعف السوق |
+    48→| Sideways     | استغلال الفرص الانتقائية مع تجنب الاختراقات الكاذبة |
+    49→| جميع الحالات | تحقيق صافي عائد موجب مع إدارة Drawdown والتكاليف    |
+    50→
+    51→مهم: النجاح مش إن النظام يطلع توصيات كتير، ولا إنه يحقق PF مرتفع من عدد محدود جدًا من الصفقات. النجاح هو تحقيق أداء قابل للتكرار على عينة كافية، وبعد التكاليف، ومن غير تسريب بيانات مستقبلية.
+    52→
+    53→# 2. فلسفة المحرك الجديدة
+    54→
+    55→هنغيّر طريقة التفكير من:
+    56→
+    57→> السوق صاعد أو هابط، وبالتالي نغير عدد الصفقات فقط.
+    58→
+    59→إلى:
+    60→
+    61→> السوق صاعد أو هابط، ثم نبحث عن الأسهم التي تتصرف بشكل أفضل من السوق، ونحدد هل لديها فرصة دخول حقيقية أم لا.
+    62→
+    63→يعني المحرك هيمر بخمس مراحل منطقية:
+    64→
+    65→\#chatgpt-mermaid-\_r_17u\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(237, 237, 237);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_17u\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_17u\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_17u\_ .error-icon{fill:rgb(48, 48, 48);}#chatgpt-mermaid-\_r_17u\_ .error-text{fill:rgb(237, 237, 237);stroke:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_17u\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_17u\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_17u\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_17u\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_17u\_ .marker{fill:rgb(175, 175, 175);stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_17u\_ .marker.cross{stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_17u\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_17u\_ p{margin:0;}#chatgpt-mermaid-\_r_17u\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .cluster-label text{fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .cluster-label span{color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_17u\_ .label text,#chatgpt-mermaid-\_r_17u\_ span{fill:rgb(237, 237, 237);color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .node rect,#chatgpt-mermaid-\_r_17u\_ .node circle,#chatgpt-mermaid-\_r_17u\_ .node ellipse,#chatgpt-mermaid-\_r_17u\_ .node polygon,#chatgpt-mermaid-\_r_17u\_ .node path{fill:rgb(9, 23, 44);stroke:rgb(31, 78, 148);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .rough-node .label text,#chatgpt-mermaid-\_r_17u\_ .node .label text,#chatgpt-mermaid-\_r_17u\_ .image-shape .label,#chatgpt-mermaid-\_r_17u\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_17u\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .rough-node .label,#chatgpt-mermaid-\_r_17u\_ .node .label,#chatgpt-mermaid-\_r_17u\_ .image-shape .label,#chatgpt-mermaid-\_r_17u\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_17u\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_17u\_ .root .anchor path{fill:rgb(175, 175, 175)!important;stroke-width:0;stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_17u\_ .arrowheadPath{fill:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_17u\_ .edgePath .path{stroke:rgb(175, 175, 175);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .flowchart-link{stroke:rgb(175, 175, 175);fill:none;}#chatgpt-mermaid-\_r_17u\_ .edgeLabel{background-color:rgb(0, 0, 0);text-align:center;}#chatgpt-mermaid-\_r_17u\_ .edgeLabel p{background-color:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_17u\_ .edgeLabel rect{opacity:0.5;background-color:rgb(0, 0, 0);fill:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_17u\_ .labelBkg{background-color:rgba(0, 0, 0, 0.5);}#chatgpt-mermaid-\_r_17u\_ .cluster rect{fill:rgb(48, 48, 48);stroke:rgba(255, 255, 255, 0.15);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .cluster text{fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ .cluster span{color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(48, 48, 48);border:1px solid rgba(255, 255, 255, 0.15);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_17u\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_17u\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_17u\_ .icon-shape,#chatgpt-mermaid-\_r_17u\_ .image-shape{background-color:rgb(0, 0, 0);text-align:center;}#chatgpt-mermaid-\_r_17u\_ .icon-shape p,#chatgpt-mermaid-\_r_17u\_ .image-shape p{background-color:rgb(0, 0, 0);padding:2px;}#chatgpt-mermaid-\_r_17u\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_17u\_ .image-shape .label rect{opacity:0.5;background-color:rgb(0, 0, 0);fill:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_17u\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_17u\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_17u\_ .node .neo-node{stroke:rgb(31, 78, 148);}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_17u\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_17u\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node .neo-line path{stroke:rgb(31, 78, 148);filter:none;}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_17u\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_17u\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_17u\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_17u\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_17u\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(153, 206, 255);}#chatgpt-mermaid-\_r_17u\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(153, 206, 255);}#chatgpt-mermaid-\_r_17u\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_17u\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_17u\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(0, 14, 26);stroke:rgb(26, 62, 95);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .node rect,#chatgpt-mermaid-\_r_17u\_ .node circle,#chatgpt-mermaid-\_r_17u\_ .node ellipse,#chatgpt-mermaid-\_r_17u\_ .node polygon,#chatgpt-mermaid-\_r_17u\_ .node path{fill:rgb(0, 40, 77);stroke:rgba(255, 255, 255, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_17u\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_17u\_ .node.mermaid-decision .label-container{fill:rgb(0, 14, 26);stroke:rgb(26, 62, 95);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_17u\_ .edgePaths .flowchart-link{stroke:rgb(175, 175, 175);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_17u\_ .marker{fill:rgb(175, 175, 175);stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_17u\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}بيانات السوق والأسهمفحص جودة البياناتMarket RegimeRelative Strength & StockSelectionOpportunity Validationفرصة قابلة للتداول؟تحديد الدخول والحجم والمخاطرCash / متابعةإدارة الصفقة والخروجتسجيل النتيجة الفعليةاختبار وتقييم الأداءنعملا
+    66→
+    67→الفرق المهم هنا:
+    68→
+    69→Market Regime مش هو اللي يختار السهم.
+    70→
+    71→هو يحدد ظروف السوق.
+    72→
+    73→أما اختيار السهم فيعتمد على قوته وسلوكه والسيولة وتوقيت الدخول والعائد مقابل المخاطرة.
+    74→
+    75→# 3. الطرق اللي هنستخدمها
+    76→
+    77→مش هنضيف 6 بلوكات جديدة مرة واحدة. هنستخدم الطرق التالية بالتدريج، وكل طريقة لازم تثبت فائدتها.
+    78→
+    79→## الطريقة الأولى: Market Regime Detection
+    80→
+    81→الهدف: تحديد حالة السوق بشكل يومي.
+    82→
+    83→المكونات:
+    84→
+    85→- EGX30 مقابل SMA200.
+    86→- Breadth: نسبة الأسهم فوق SMA50.
+    87→- Breadth مقابل SMA200 إذا كانت البيانات متاحة وموثوقة.
+    88→- اتجاه السوق وتغيره.
+    89→- استمرار الحالة أو تغيرها.
+    90→
+    91→المخرجات:
+    92→
+    93→`BULL / BEAR / SIDEWAYS`
+    94→
+    95→ومع كل يوم نسجل سبب التصنيف، مش مجرد اسم الحالة.
+    96→
+    97→مثال:
+    98→
+    99→| التاريخ      | EGX30 مقابل SMA200 | Breadth SMA50 | Regime                    |
+   100→| ------------ | ------------------ | ------------- | ------------------------- |
+   101→| يوم الاختبار | فوق                | ضعيف          | حسب قواعد التصنيف الفعلية |
+   102→
+   103→ده مثال على شكل التقرير، مش نتيجة سوق حقيقية.
+   104→
+   105→### الاختبار
+   106→
+   107→نراجع التصنيف اليومي ونقارن أداء الأسهم داخل كل حالة.
+   108→
+   109→ونختبر هل التصنيف الحالي بيفصل فعلًا بين ظروف السوق المختلفة، ولا مجرد تغيير اسم الحالة.
+   110→
+   111→## الطريقة الثانية: Relative Strength — القوة النسبية
+   112→
+   113→دي أهم طريقة في الخطة.
+   114→
+   115→بدل ما نسأل هل السهم صاعد فقط، نسأل:
+   116→
+   117→هل السهم أقوى من السوق؟ وهل قوته مستمرة؟
+   118→
+   119→هنفحص:
+   120→
+   121→- أداء السهم مقابل EGX30.
+   122→- أداء السهم مقابل قطاعه.
+   123→- نسبة تغير السعر خلال 20 و60 يومًا.
+   124→- موقع السعر بالنسبة إلى SMA50 وSMA200.
+   125→- ثبات السعر أثناء هبوط السوق.
+   126→- هل السهم بدأ يتحسن قبل السوق أم بعده؟
+   127→
+   128→لكن لازم نفرق بين:
+   129→
+   130→- سهم هبط 5% والسوق هبط 15%.
+   131→- سهم صعد 5% والسوق هبط 15%.
+   132→
+   133→الاتنين أقوى نسبيًا من السوق، لكن الثاني عنده سلوك مختلف تمامًا.
+   134→
+   135→القوة النسبية هتكون أداة ترتيب واكتشاف، مش إشارة شراء منفردة.
+   136→
+   137→### الاختبار
+   138→
+   139→نقسم الأسهم إلى مجموعات حسب القوة النسبية، ثم نختبر أداء كل مجموعة في الـ Bear.
+   140→
+   141→نقيس:
+   142→
+   143→- متوسط العائد بعد 5 و10 و20 جلسة.
+   144→- نسبة الصفقات الرابحة.
+   145→- PF.
+   146→- Max Drawdown.
+   147→- أداء المجموعة مقارنة بالسوق.
+   148→
+   149→لو الأسهم الأعلى في القوة النسبية لم تحقق نتائج أفضل، يبقى لازم نراجع طريقة حساب القوة النسبية قبل استخدامها في التوصيات.
+   150→
+   151→## الطريقة الثالثة: Trend & Momentum
+   152→
+   153→نستخدم المؤشرات الموجودة بالفعل في المشروع، بعد التحقق من طريقة حسابها:
+   154→
+   155→- SMA50 وSMA200.
+   156→- Momentum 20 و60.
+   157→- RSI.
+   158→- MACD عند الحاجة.
+   159→- ATR.
+   160→- بنية القمم والقيعان.
+   161→
+   162→مش هنضيف كل المؤشرات في Score لمجرد إنها متاحة.
+   163→
+   164→هنختبر أي مؤشر بيساعدنا في التمييز بين:
+   165→
+   166→1. سهم قوي مستمر.
+   167→2. سهم بدأ يتعافى.
+   168→3. سهم ضعيف بيعمل ارتداد مؤقت.
+   169→4. سهم بيهبط مع السوق أو أسرع منه.
+   170→
+   171→### الاختبار
+   172→
+   173→نقارن أداء الأسهم حسب حالة الاتجاه والزخم.
+   174→
+   175→ونفحص هل إضافة المؤشر حسنت نتائج اختيار الأسهم، بعد تثبيت بقية النظام.
+   176→
+   177→## الطريقة الرابعة: Liquidity & Execution Quality
+   178→
+   179→مش عايزين النظام يختار سهم ممكن يكون قوي على الورق، لكن صعب تنفيذ الصفقة عليه.
+   180→
+   181→هنفحص:
+   182→
+   183→- متوسط قيمة التداول.
+   184→- حجم التداول بالنسبة إلى متوسطه.
+   185→- اتساع السبريد إن كانت بياناته متاحة.
+   186→- تأثير حجم الصفقة على التنفيذ.
+   187→- جودة السعر المستخدم في Backtest.
+   188→- الانزلاق السعري.
+   189→
+   190→وهنا لازم نوضح نقطة:
+   191→
+   192→Volume Surge مش دليل تلقائي على دخول المؤسسات.
+   193→
+   194→ممكن يكون شراء، بيع، تداول مضاربي، أو تغير في نشاط السوق.
+   195→
+   196→لو عندنا بيانات فعلية عن صافي تدفقات المستثمرين، نستخدمها كبيانات مستقلة.
+   197→
+   198→لو الموجود مجرد Volume أو Buy/Sell Pressure، نسميه باسمه الصحيح.
+   199→
+   200→## الطريقة الخامسة: Entry Validation
+   201→
+   202→دي المرحلة اللي تمنع النظام من شراء سهم قوي لكنه دخل بالفعل في حركة متأخرة.
+   203→
+   204→هنفحص:
+   205→
+   206→- هل السعر اخترق مقاومة فعلًا؟
+   207→- هل الاختراق مدعوم بحجم تداول؟
+   208→- هل السهم رجع يختبر المستوى؟
+   209→- هل السعر بعيد جدًا عن نقطة الدخول المناسبة؟
+   210→- هل ATR يسمح بوقف منطقي؟
+   211→- هل العائد المتوقع يستحق المخاطرة؟
+   212→
+   213→مش كل سهم قوي يستحق الدخول الآن.
+   214→
+   215→ممكن يكون سهم ممتاز، لكن توقيت الدخول سيئ.
+   216→
+   217→### الاختبار
+   218→
+   219→نقارن:
+   220→
+   221→- الدخول الحالي.
+   222→- الدخول بعد تأكيد الاتجاه.
+   223→- الدخول بعد إعادة الاختبار، إذا كانت قواعد النظام تسمح.
+   224→
+   225→ونقيس تأثير كل طريقة على العائد وDrawdown وعدد الصفقات.
+   226→
+   227→## الطريقة السادسة: Expected Return & Risk
+   228→
+   229→قبل التوصية، لازم نعرف:
+   230→
+   231→- سعر الدخول.
+   232→- مستوى إبطال الفرضية.
+   233→- الهدف أو طريقة الخروج.
+   234→- حجم الصفقة.
+   235→- التكاليف.
+   236→- العائد المتوقع مقابل المخاطرة.
+   237→
+   238→لكن مش هنفترض أن كل سهم لازم يكون له Target ثابت.
+   239→
+   240→في بعض الحالات، ATR أو بنية السعر ممكن تكون أكثر ملاءمة.
+   241→
+   242→والـ Stop Loss مش حماية مضمونة؛ ممكن يحصل Gap أو تنفيذ أسوأ من السعر المحدد.
+   243→
+   244→### الاختبار
+   245→
+   246→نقارن قواعد الخروج المختلفة، ونختبر:
+   247→
+   248→- Fixed Stop.
+   249→- ATR-based Stop.
+   250→- Trailing Stop.
+   251→- Score Reversal Exit.
+   252→- Time Exit.
+   253→
+   254→كل واحدة لوحدها أولًا.
+   255→
+   256→# 4. مراحل التنفيذ بالتفصيل
+   257→
+   258→الخطة هتكون 8 مراحل.
+   259→
+   260→مش معنى إننا حددنا 8 مراحل إن برافو ينفذهم كلهم مرة واحدة. كل مرحلة لها هدف، واختبار، وقرار اعتماد.
+   261→
+   262→1. المرحلة 0 — تثبيت خط الأساس
+   263→
+   264→   تحقيق وفحص
+   265→
+   266→   استخراج نتائج النظام الحالي، والتأكد من جودة البيانات، وتحديد الأخطاء التي قد تؤثر على التوصيات.
+   267→
+   268→   المخرج: Baseline موثوق نقدر نقارن عليه.
+   269→2. المرحلة 1 — تحليل سلوك السوق والأسهم
+   270→
+   271→   تحليل تاريخي
+   272→
+   273→   تحديد الأسهم التي حققت أرباحًا في الـ Bear، ومعرفة الخصائص المشتركة بينها، ومقارنتها بالأسهم الخاسرة.
+   274→
+   275→   المخرج: تقرير يحدد أين كانت فرص الربح فعلًا.
+   276→3. المرحلة 2 — اختبار Regime Detection
+   277→
+   278→   مراجعة تصنيف السوق الحالي، وتحديد هل هو مناسب لتغيير سلوك المحرك.
+   279→
+   280→   المخرج: تصنيف يومي موثوق مع أسباب واضحة.
+   281→4. المرحلة 3 — اختبار Stock Selection
+   282→
+   283→   اختبار القوة النسبية والزخم والسيولة والاتجاه، كل عامل على حدة ثم في تركيبات محدودة.
+   284→
+   285→   المخرج: قواعد اختيار الأسهم التي أثبتت تحسنًا.
+   286→5. المرحلة 4 — اختبار Entry Validation
+   287→
+   288→   اختبار توقيت الدخول، ومقارنة الإشارات الحالية بإشارات أكثر انتقائية.
+   289→
+   290→   المخرج: قواعد دخول أفضل، إن أثبت الاختبار ذلك.
+   291→6. المرحلة 5 — اختبار Cash Mode & Position Sizing
+   292→
+   293→   اختبار حجم الصفقة وعدد المراكز والحدود حسب حالة السوق.
+   294→
+   295→   المخرج: إدارة تعرض محسنة دون إلغاء فرص الربح.
+   296→7. المرحلة 6 — اختبار Exit Management
+   297→
+   298→   اختبار Stop Loss وTarget وTrailing وTime Exit.
+   299→
+   300→   المخرج: طريقة خروج محسنة بالأدلة.
+   301→8. المرحلة 7 — دمج واختبار النظام الكامل
+   302→
+   303→   دمج التغييرات التي اجتازت الاختبارات فقط، ثم تشغيل Backtest شامل ومقارنة النسخة الجديدة بالنسخة الأصلية.
+   304→
+   305→   المخرج: نسخة مرشحة للاعتماد، وليست Production تلقائيًا.
+   306→
+   307→# 5. المرحلة صفر: فحص البيانات قبل أي تطوير
+   308→
+   309→دي أهم مرحلة، لأن أي تحليل مبني على أسعار أو إشارات قديمة ممكن يطلع نتائج مضللة.
+   310→
+   311→وثائق المشروع بتوضح وجود Data Engine، وDAL، وDecision Router، وV40.2 Daily Predictor، وV38 Backtest، وLearning Engine.&#x20;
+   312→
+   313→03-HOW-IT-THINKS.md
+   314→
+   315→03-HOW-IT-THINKS.md
+   316→
+   317→
+   318→
+   319→لكن وجود هذه المكونات في الوثائق لا يثبت أن كل مسار بيانات يعمل حاليًا بصورة صحيحة.
+   320→
+   321→## المطلوب من برافو
+   322→
+   323→### أ. فحص البيانات
+   324→
+   325→لكل سهم:
+   326→
+   327→- تاريخ آخر سعر.
+   328→- تاريخ آخر OHLCV.
+   329→- مصدر البيانات.
+   330→- عدد الجلسات المتاحة.
+   331→- Missing Bars.
+   332→- Duplicate Bars.
+   333→- Corporate Actions.
+   334→- Split أو تعديل وحدة السعر.
+   335→- اختلاف السعر بين قاعدة البيانات ومصدر السعر المستخدم في التحليل.
+   336→
+   337→### ب. فحص التوصيات
+   338→
+   339→لكل صفقة تاريخية:
+   340→
+   341→- تاريخ إصدار الإشارة.
+   342→- السعر المستخدم وقت الإشارة.
+   343→- تاريخ التنفيذ الافتراضي.
+   344→- سعر الدخول.
+   345→- تاريخ الخروج.
+   346→- سعر الخروج.
+   347→- سبب الخروج.
+   348→- هل الأسعار كانت متاحة وقت القرار؟
+   349→
+   350→### ج. فحص الحسابات
+   351→
+   352→- هل PF محسوب على صفقات مغلقة؟
+   353→- هل الأرباح والخسائر بعد التكاليف؟
+   354→- هل MaxDD محسوب من Equity Curve؟
+   355→- هل Cash Days محسوبة على أيام السوق الفعلية؟
+   356→- هل الصفقات المتزامنة محسوبة بصورة صحيحة؟
+   357→- هل الأسهم التي لم تدخل الصفقة تُحسب في أي متوسط بشكل غير صحيح؟
+   358→
+   359→## اختبار قبول المرحلة صفر
+   360→
+   361→لا نبدأ تطوير المحرك إذا ظهر أي من التالي:
+   362→
+   363→- Entry Price قديم.
+   364→- بيانات غير متسقة.
+   365→- Split غير معالج.
+   366→- خروج محسوب على سعر غير متاح.
+   367→- بيانات مستقبلية مستخدمة في الإشارة.
+   368→- اختلاف بين السعر المعروض والسعر المستخدم في الحساب.
+   369→- نتائج Backtest لا يمكن إعادة إنتاجها.
+   370→
+   371→المطلوب هنا مش إصلاح كل شيء تلقائيًا؛ المطلوب تحديد السبب، وتوثيق الاختبارات، ثم إصلاح المشكلات بعد تحديد نطاقها.
+   372→
+   373→# 6. المرحلة الأولى: اكتشاف الأسهم التي كسبت في السوق الهابط
+   374→
+   375→دي المرحلة اللي هتحدد الاستراتيجية الفعلية.
+   376→
+   377→بدل ما نبدأ من رأي نظري عن القطاعات الدفاعية، هنبدأ من الصفقات التاريخية.
+   378→
+   379→## السؤال الرئيسي
+   380→
+   381→إيه اللي كان مختلفًا في الأسهم الرابحة عن الأسهم الخاسرة خلال سبتمبر وأكتوبر؟
+   382→
+   383→هنقسم النتائج إلى مجموعات:
+   384→
+   385→| العامل            | المقارنة                                   |
+   386→| ----------------- | ------------------------------------------ |
+   387→| Regime            | Bull / Bear / Sideways                     |
+   388→| Relative Strength | أعلى / متوسط / أقل                         |
+   389→| Trend             | فوق SMA50 / بين SMA50 وSMA200 / تحت SMA200 |
+   390→| Momentum          | موجب / ضعيف / سلبي                         |
+   391→| Liquidity         | مرتفعة / متوسطة / ضعيفة                    |
+   392→| Sector            | حسب التصنيف المتاح                         |
+   393→| Entry             | اختراق / إعادة اختبار / دخول عادي          |
+   394→| Exit              | Stop / Target / Reversal / Time            |
+   395→
+   396→كل مجموعة نطلع منها:
+   397→
+   398→- عدد الصفقات.
+   399→- صافي العائد.
+   400→- PF.
+   401→- Win Rate.
+   402→- Average R.
+   403→- Max Drawdown.
+   404→- متوسط مدة الاحتفاظ.
+   405→
+   406→## أهم اختبار
+   407→
+   408→نقارن الأسهم التي:
+   409→
+   410→1. كانت أقوى من EGX30.
+   411→2. كانت أقوى من قطاعها.
+   412→3. حافظت على اتجاه أفضل من السوق.
+   413→4. دخلت في توقيت مناسب.
+   414→
+   415→ثم نحدد هل اجتماع العوامل دي كان أفضل من استخدام كل عامل منفردًا.
+   416→
+   417→### نتيجة المرحلة
+   418→
+   419→لو اكتشفنا أن الأسهم الأقوى نسبيًا حققت أداء أفضل، نستخدم القوة النسبية في ترتيب الأسهم.
+   420→
+   421→لو اكتشفنا أن القوة النسبية وحدها لا تكفي، نبحث عن العامل الذي يفرق بين الأسهم الرابحة والخاسرة.
+   422→
+   423→مش هنضيف Defensive Sector كقاعدة إجبارية قبل ما نعرف هل القطاع كان بالفعل عاملًا مؤثرًا.
+   424→
+   425→# 7. المرحلة الثانية: Regime Detection
+   426→
+   427→هنراجع قواعد التصنيف الموجودة حاليًا.
+   428→
+   429→مش هنخترع Regime جديد من الصفر.
+   430→
+   431→## المطلوب
+   432→
+   433→لكل يوم في فترة الاختبار:
+   434→
+   435→- EGX30.
+   436→- SMA200.
+   437→- Breadth SMA50.
+   438→- Breadth SMA200 إن أمكن.
+   439→- حالة السوق.
+   440→- سبب التصنيف.
+   441→- هل الحالة تغيرت عن اليوم السابق؟
+   442→
+   443→وبعد كده نختبر هل حالة السوق مرتبطة فعلًا بأداء الأسهم.
+   444→
+   445→## اختبار مهم
+   446→
+   447→نقارن الأداء في:
+   448→
+   449→- Bull.
+   450→- Bear.
+   451→- Sideways.
+   452→
+   453→لكن مش فقط PF.
+   454→
+   455→نقارن أيضًا:
+   456→
+   457→- صافي العائد.
+   458→- Drawdown.
+   459→- عدد الصفقات.
+   460→- متوسط التعرض.
+   461→- نسبة الأسهم الرابحة.
+   462→- أداء القوة النسبية داخل كل Regime.
+   463→
+   464→### نقطة القرار
+   465→
+   466→لو Regime Detection الحالي جيد، نحتفظ به.
+   467→
+   468→لو ضعيف، نختبر تعديلات محدودة عليه.
+   469→
+   470→لو السوق ضعيف لكن الأسهم القوية نسبيًا تحقق فرصًا، يبقى المطلوب تحسين Stock Selection، مش تغيير تصنيف السوق كله.
+   471→
+   472→# 8. المرحلة الثالثة: تطوير Stock Selection
+   473→
+   474→دي المرحلة اللي هتحدد الأسهم اللي المحرك يركز عليها.
+   475→
+   476→هنبدأ بالبلوكات الموجودة حاليًا، مش إضافة مجموعة جديدة من المؤشرات.
+   477→
+   478→## الاختبار الأول: Relative Strength
+   479→
+   480→هل الأسهم الأقوى نسبيًا تحقق نتائج أفضل؟
+   481→
+   482→## الاختبار الثاني: Trend
+   483→
+   484→هل الأسهم فوق SMA50 أو SMA200 تحقق نتائج أفضل في الـ Bear؟
+   485→
+   486→## الاختبار الثالث: Momentum
+   487→
+   488→هل Momentum 20 و60 يساعد في اكتشاف الأسهم التي تستمر في الأداء الأفضل؟
+   489→
+   490→## الاختبار الرابع: Liquidity
+   491→
+   492→هل السيولة بتحسن قابلية التنفيذ، ولا النظام بيختار أسهمًا ذات حجم مرتفع لكن سلوكها ضعيف؟
+   493→
+   494→## الاختبار الخامس: Sector
+   495→
+   496→هل قطاع معين يحقق أداء أفضل فعلًا؟
+   497→
+   498→مش هنعتبر قطاعًا دفاعيًا لمجرد اسمه.
+   499→
+   500→## الاختبار السادس: Combination
+   501→
+   502→بعد اختبار العوامل منفردة، نختبر تركيبات محدودة:
+   503→
+   504→- Relative Strength + Trend.
+   505→- Relative Strength + Liquidity.
+   506→- Trend + Momentum.
+   507→- Relative Strength + Trend + Entry Validation.
+   508→
+   509→### معيار القبول
+   510→
+   511→العامل الجديد لازم يحسن أداء الاختيار مقارنة بالنظام الحالي، بعد التكاليف، وبعدد صفقات كافٍ.
+   512→
+   513→لو عامل معين مش بيضيف قيمة مستقلة، مش هنضيفه.
+   514→
+   515→# 9. المرحلة الرابعة: Entry Validation
+   516→
+   517→بعد اختيار الأسهم، نحدد هل الدخول مناسب.
+   518→
+   519→الهدف هنا مش تقليل عدد الصفقات لمجرد تقليلها.
+   520→
+   521→الهدف هو منع الدخول في أسهم قوية لكن توقيتها سيئ.
+   522→
+   523→## الاختبارات
+   524→
+   525→| الاختبار            | الهدف                                      |
+   526→| ------------------- | ------------------------------------------ |
+   527→| Current Entry       | خط الأساس                                  |
+   528→| Trend Confirmation  | اختبار الدخول بعد تأكيد الاتجاه            |
+   529→| Breakout Validation | اختبار الاختراقات                          |
+   530→| Retest              | اختبار إعادة الدخول بعد إعادة الاختبار     |
+   531→| ATR Distance        | قياس مدى بعد السعر عن نقطة الدخول المناسبة |
+   532→
+   533→هنقارن:
+   534→
+   535→- عدد الإشارات.
+   536→- عدد الصفقات المنفذة.
+   537→- Net PnL.
+   538→- PF.
+   539→- Drawdown.
+   540→- متوسط الربح والخسارة.
+   541→- نسبة الاختراقات الفاشلة.
+   542→
+   543→### النتيجة
+   544→
+   545→نختار قواعد الدخول التي تحسن الأداء.
+   546→
+   547→مش هنفترض إن إعادة الاختبار أفضل دائمًا، أو إن الاختراق أفضل دائمًا.
+   548→
+   549→# 10. المرحلة الخامسة: Cash Mode وحجم الصفقة
+   550→
+   551→هنا نختبر التحديثات اللي اقترحها Grok وDeepSeek وClaude.
+   552→
+   553→لكن بعد ما نعرف هل الـ Score الحالي مناسب للاستخدام في Position Sizing.
+   554→
+   555→## الاختبارات
+   556→
+   557→| النسخة           | حد دخول Bear | نصف الحجم | الحجم الكامل | المراكز |
+   558→| ---------------- | ------------ | --------- | ------------ | ------- |
+   559→| A — Current      | الحالي       | الحالي    | الحالي       | الحالي  |
+   560→| B — Conservative | 0.72         | 0.72–0.82 | ≥0.82        | 3       |
+   561→| C — Updated      | 0.68         | 0.68–0.78 | ≥0.78        | 4       |
+   562→
+   563→دي قيم الاختبار المقترحة، وليست إعدادات معتمدة.
+   564→
+   565→## هنقيس
+   566→
+   567→- PF.
+   568→- Net PnL.
+   569→- MaxDD.
+   570→- Cash Days.
+   571→- Exposure.
+   572→- عدد الصفقات.
+   573→- متوسط حجم الصفقة.
+   574→- نسبة الصفقات الرابحة.
+   575→- أسوأ سلسلة خسائر.
+   576→
+   577→## الاختبار الفاصل
+   578→
+   579→هل النسخة الجديدة:
+   580→
+   581→- زادت الأرباح؟
+   582→- زادت الخسائر؟
+   583→- زادت عدد الصفقات فقط؟
+   584→- قللت Drawdown؟
+   585→- منعت صفقات رابحة؟
+   586→- سمحت بصفقات كانت ضعيفة؟
+   587→
+   588→مش هنختار النسخة التي تحقق Cash Days أعلى؛ هنختار النسخة التي تحقق أفضل أداء متوازن.
+   589→
+   590→# 11. المرحلة السادسة: Exit Management
+   591→
+   592→بعد تحسين اختيار الأسهم والدخول، نختبر الخروج.
+   593→
+   594→مش قبل ذلك.
+   595→
+   596→لأن لو اختيار الأسهم سيئ، ممكن أي Exit يغير شكل النتائج دون معالجة السبب الأساسي.
+   597→
+   598→## الاختبارات
+   599→
+   600→### A. Fixed Stop
+   601→
+   602→اختبار مستويات وقف مختلفة وفقًا للبيانات، مش اعتمادًا على رقم ثابت مسبقًا.
+   603→
+   604→### B. ATR Stop
+   605→
+   606→اختبار وقف يعتمد على تقلب السهم.
+   607→
+   608→### C. Target
+   609→
+   610→اختبار أهداف مختلفة أو قواعد خروج مبنية على حركة السعر.
+   611→
+   612→### D. Trailing Stop
+   613→
+   614→اختبار هل تتبع السعر يحسن العائد أو يخرج مبكرًا.
+   615→
+   616→### E. Score Reversal
+   617→
+   618→اختبار هل ضعف الإشارة يساعد في الخروج، أو يؤدي إلى خروج متكرر غير ضروري.
+   619→
+   620→### F. Time Exit
+   621→
+   622→اختبار مدة الاحتفاظ وتأثيرها على الأرباح والخسائر.
+   623→
+   624→## الاختبارات الأساسية
+   625→
+   626→- Net PnL.
+   627→- PF.
+   628→- MaxDD.
+   629→- Average R.
+   630→- Average Holding Days.
+   631→- Stop-out Rate.
+   632→- نسبة الأرباح التي تم التخلي عنها.
+   633→- نسبة الصفقات التي خرجت قبل استمرار الحركة.
+   634→
+   635→### قرار المرحلة
+   636→
+   637→نختار قواعد الخروج التي تحسن النتائج بشكل قابل للتكرار.
+   638→
+   639→مش هنفترض إن Stop Loss أضيق أفضل في السوق الهابط.
+   640→
+   641→# 12. المرحلة السابعة: دمج النظام واختبار النسخة الجديدة
+   642→
+   643→بعد اجتياز المراحل السابقة، ندمج فقط التعديلات التي أثبتت فائدتها.
+   644→
+   645→النسخة الجديدة هتكون:
+   646→
+   647→- Regime-aware.
+   648→- Relative-strength-aware.
+   649→- Entry-aware.
+   650→- Liquidity-aware.
+   651→- Risk-aware.
+   652→
+   653→لكن من غير إضافة كل العوامل في Score واحد بصورة عشوائية.
+   654→
+   655→## الاختبار النهائي
+   656→
+   657→نقارن:
+   658→
+   659→A — النظام الحالي
+   660→
+   661→مقابل:
+   662→
+   663→B — النظام المحسن
+   664→
+   665→على نفس البيانات، ونفس Universe، ونفس التكاليف، ونفس قواعد التنفيذ.
+   666→
+   667→### التقرير المطلوب
+   668→
+   669→| Metric           | Current | New | Change |
+   670→| ---------------- | ------- | --- | ------ |
+   671→| Total Net PnL    |         |     |        |
+   672→| Profit Factor    |         |     |        |
+   673→| Max Drawdown     |         |     |        |
+   674→| Win Rate         |         |     |        |
+   675→| Number of Trades |         |     |        |
+   676→| Average R        |         |     |        |
+   677→| Average Exposure |         |     |        |
+   678→| Bear Net PnL     |         |     |        |
+   679→| Bull Net PnL     |         |     |        |
+   680→| Sideways Net PnL |         |     |        |
+   681→
+   682→وبعدها تقرير تفصيلي لكل شهر ولكل Regime.
+   683→
+   684→# 13. خطة الاختبارات التاريخية
+   685→
+   686→دي أهم نقطة في الخطة؛ لأننا مش عايزين نختار استراتيجية نجحت في الماضي بسبب إنها اتظبطت على نفس الفترة.
+   687→
+   688→## الاختبار الأول: الفترة الحالية
+   689→
+   690→الفترة المتاحة في نقاشنا:
+   691→
+   692→2026-07-01 إلى 2026-10-31
+   693→
+   694→لكن أكتوبر 2026 لم يكتمل بعد.
+   695→
+   696→لذلك:
+   697→
+   698→- يوليو وأغسطس وسبتمبر: نراجع البيانات الفعلية المتاحة.
+   699→- أكتوبر: نختبر حتى آخر جلسة مكتملة وبياناتها صحيحة.
+   700→- لا نعتبر أكتوبر شهرًا مكتملًا.
+   701→- لا نستخدم أي بيانات مستقبلية.
+   702→- لا نعتبر نتائج 4 أشهر إثباتًا للاستمرارية.
+   703→
+   704→## الاختبار الثاني: تحليل تاريخي أوسع
+   705→
+   706→نحتاج فترة تاريخية أطول تشمل:
+   707→
+   708→- أسواق صاعدة.
+   709→- أسواق هابطة.
+   710→- فترات عرضية.
+   711→- فترات تغير اتجاه.
+   712→- أسهم ذات سيولة مختلفة.
+   713→
+   714→الهدف هو اختبار هل قواعد اختيار الأسهم تعمل في ظروف متعددة.
+   715→
+   716→## الاختبار الثالث: Walk-Forward
+   717→
+   718→بدل ما نختار أفضل الأرقام من كل الفترة:
+   719→
+   720→1. نستخدم فترة تاريخية لتطوير القواعد.
+   721→2. نختبر القواعد على فترة لاحقة لم تدخل في التطوير.
+   722→3. نعيد العملية عبر فترات مختلفة.
+   723→4. نقيس استقرار النتائج.
+   724→
+   725→## الاختبار الرابع: Holdout
+   726→
+   727→نخصص فترة لا يتم استخدامها في تطوير القواعد أو اختيار الأوزان.
+   728→
+   729→نختبر النسخة النهائية عليها مرة واحدة بعد تثبيت إعدادات الاختبار.
+   730→
+   731→لو النتائج ضعيفة، نرجع للتحليل، لكن لا نعيد ضبط الأرقام على نفس الفترة ثم ندعي أنها Holdout.
+   732→
+   733→# 14. معايير قبول النظام
+   734→
+   735→أنا أقترح تقسيم القبول إلى 3 مستويات.
+   736→
+   737→## المستوى الأول: سلامة النظام
+   738→
+   739→لازم يتحقق:
+   740→
+   741→- صحة البيانات.
+   742→- صحة الأسعار.
+   743→- صحة الحسابات.
+   744→- عدم وجود Look-ahead bias.
+   745→- عدم وجود تسريب بين التدريب والاختبار.
+   746→- صحة حساب الصفقات والتكاليف.
+   747→- إمكانية إعادة إنتاج النتائج.
+   748→
+   749→لو فشل أي شرط، لا نعتمد النتائج.
+   750→
+   751→## المستوى الثاني: جودة اختيار الأسهم
+   752→
+   753→لازم نثبت إن النظام الجديد:
+   754→
+   755→- يختار الأسهم التي حققت أداء أفضل مقارنة بالنسخة الحالية.
+   756→- يحقق تحسنًا في صافي العائد.
+   757→- لا يعتمد على عدد قليل من الصفقات.
+   758→- يحسن الأداء داخل الـ Bear.
+   759→- لا يسبب تدهورًا كبيرًا في الـ Bull.
+   760→- يعمل بصورة معقولة في Sideways.
+   761→
+   762→## المستوى الثالث: جودة المخاطر
+   763→
+   764→لازم نثبت:
+   765→
+   766→- Drawdown مقبول.
+   767→- حجم الصفقة مناسب.
+   768→- عدد المراكز مناسب.
+   769→- التكاليف محسوبة.
+   770→- الخسائر المتتالية تحت السيطرة.
+   771→- نتائج النظام لا تعتمد على فرضية ربح مضمون.
+   772→
+   773→### الأهداف الرقمية المقترحة
+   774→
+   775→دي أهداف أولية للنظام، وليست نتائج متوقعة أو مضمونة:
+   776→
+   777→| المقياس        | هدف الاختبار                      |
+   778→| -------------- | --------------------------------- |
+   779→| Total PF       | ≥ 1.25                            |
+   780→| Bear PF        | ≥ 0.80 كحد أولي، مع السعي لتحسينه |
+   781→| Bull PF        | ≥ 1.90 كهدف أولي                  |
+   782→| Max Drawdown   | لا يتجاوز -22% كهدف أولي          |
+   783→| Bear Cash Days | ≥ 55% كمرجع، وليس هدفًا مستقلًا   |
+   784→| Net PnL        | موجب بعد التكاليف                 |
+   785→| Holdout        | أداء قابل للتكرار دون إعادة ضبط   |
+   786→
+   787→لكن فيه شرط مهم:
+   788→
+   789→لو النظام حقق PF = 1.30 على 8 صفقات، مش هنعتبره أفضل من نظام PF = 1.15 على 200 صفقة تلقائيًا.
+   790→
+   791→عدد الصفقات، توزيع النتائج، حجم العينة، واستقرار الأداء جزء من الحكم.
+   792→
+   793→# 15. التقرير النهائي الذي أريده من برافو
+   794→
+   795→مش عايز تقرير تسويقي يقول إن النظام أصبح أكثر ذكاءً.
+   796→
+   797→عايز تقرير يوضح ما الذي تغير، وما الدليل.
+   798→
+   799→## التقرير الأول: Data Quality
+   800→
+   801→- مشاكل البيانات.
+   802→- الأسعار القديمة.
+   803→- Missing Bars.
+   804→- Corporate Actions.
+   805→- اختلافات الأسعار.
+   806→- مشاكل التوقيت.
+   807→- تأثير كل مشكلة على التوصيات.
+   808→
+   809→## التقرير الثاني: Regime Analysis
+   810→
+   811→- عدد أيام كل حالة.
+   812→- أداء الأسهم.
+   813→- أداء النظام.
+   814→- تفسير التصنيف.
+   815→
+   816→## التقرير الثالث: Stock Selection
+   817→
+   818→- أداء القوة النسبية.
+   819→- أداء Trend.
+   820→- أداء Momentum.
+   821→- أداء Liquidity.
+   822→- أداء Sector.
+   823→- أفضل التركيبات التي تم اختبارها.
+   824→
+   825→## التقرير الرابع: Entry Analysis
+   826→
+   827→- مقارنة الدخول الحالي بالدخول البديل.
+   828→- عدد الصفقات.
+   829→- صافي الربح.
+   830→- PF.
+   831→- Drawdown.
+   832→- الاختراقات الفاشلة.
+   833→
+   834→## التقرير الخامس: Risk & Exit
+   835→
+   836→- نتائج Cash Mode.
+   837→- حجم الصفقة.
+   838→- عدد المراكز.
+   839→- Stop Loss.
+   840→- Target.
+   841→- Trailing.
+   842→- Time Exit.
+   843→
+   844→## التقرير السادس: Final Comparison
+   845→
+   846→- النظام الحالي.
+   847→- النظام الجديد.
+   848→- النتائج حسب الشهر.
+   849→- النتائج حسب Regime.
+   850→- نتائج Holdout.
+   851→- قائمة التغييرات التي اجتازت الاختبارات.
+   852→- قائمة التغييرات التي فشلت.
+   853→- التوصية النهائية بالاعتماد أو عدم الاعتماد.
+   854→
+   855→# 16. خطة التنفيذ لبرافو
+   856→
+   857→الترتيب التنفيذي:
+   858→
+   859→\#chatgpt-mermaid-\_r_18n\_{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;fill:rgb(237, 237, 237);}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#chatgpt-mermaid-\_r_18n\_ .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_18n\_ .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#chatgpt-mermaid-\_r_18n\_ .error-icon{fill:rgb(48, 48, 48);}#chatgpt-mermaid-\_r_18n\_ .error-text{fill:rgb(237, 237, 237);stroke:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .edge-thickness-normal{stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .edge-thickness-thick{stroke-width:3.5px;}#chatgpt-mermaid-\_r_18n\_ .edge-pattern-solid{stroke-dasharray:0;}#chatgpt-mermaid-\_r_18n\_ .edge-thickness-invisible{stroke-width:0;fill:none;}#chatgpt-mermaid-\_r_18n\_ .edge-pattern-dashed{stroke-dasharray:3;}#chatgpt-mermaid-\_r_18n\_ .edge-pattern-dotted{stroke-dasharray:2;}#chatgpt-mermaid-\_r_18n\_ .marker{fill:rgb(175, 175, 175);stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_18n\_ .marker.cross{stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_18n\_ svg{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:16px;}#chatgpt-mermaid-\_r_18n\_ p{margin:0;}#chatgpt-mermaid-\_r_18n\_ .label{font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .cluster-label text{fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .cluster-label span{color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .cluster-label span p{background-color:transparent;}#chatgpt-mermaid-\_r_18n\_ .label text,#chatgpt-mermaid-\_r_18n\_ span{fill:rgb(237, 237, 237);color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .node rect,#chatgpt-mermaid-\_r_18n\_ .node circle,#chatgpt-mermaid-\_r_18n\_ .node ellipse,#chatgpt-mermaid-\_r_18n\_ .node polygon,#chatgpt-mermaid-\_r_18n\_ .node path{fill:rgb(9, 23, 44);stroke:rgb(31, 78, 148);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .rough-node .label text,#chatgpt-mermaid-\_r_18n\_ .node .label text,#chatgpt-mermaid-\_r_18n\_ .image-shape .label,#chatgpt-mermaid-\_r_18n\_ .icon-shape .label{text-anchor:middle;}#chatgpt-mermaid-\_r_18n\_ .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .rough-node .label,#chatgpt-mermaid-\_r_18n\_ .node .label,#chatgpt-mermaid-\_r_18n\_ .image-shape .label,#chatgpt-mermaid-\_r_18n\_ .icon-shape .label{text-align:center;}#chatgpt-mermaid-\_r_18n\_ .node.clickable{cursor:pointer;}#chatgpt-mermaid-\_r_18n\_ .root .anchor path{fill:rgb(175, 175, 175)!important;stroke-width:0;stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_18n\_ .arrowheadPath{fill:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_18n\_ .edgePath .path{stroke:rgb(175, 175, 175);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .flowchart-link{stroke:rgb(175, 175, 175);fill:none;}#chatgpt-mermaid-\_r_18n\_ .edgeLabel{background-color:rgb(0, 0, 0);text-align:center;}#chatgpt-mermaid-\_r_18n\_ .edgeLabel p{background-color:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_18n\_ .edgeLabel rect{opacity:0.5;background-color:rgb(0, 0, 0);fill:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_18n\_ .labelBkg{background-color:rgba(0, 0, 0, 0.5);}#chatgpt-mermaid-\_r_18n\_ .cluster rect{fill:rgb(48, 48, 48);stroke:rgba(255, 255, 255, 0.15);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .cluster text{fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ .cluster span{color:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";font-size:12px;background:rgb(48, 48, 48);border:1px solid rgba(255, 255, 255, 0.15);border-radius:2px;pointer-events:none;z-index:100;}#chatgpt-mermaid-\_r_18n\_ .flowchartTitleText{text-anchor:middle;font-size:18px;fill:rgb(237, 237, 237);}#chatgpt-mermaid-\_r_18n\_ rect.text{fill:none;stroke-width:0;}#chatgpt-mermaid-\_r_18n\_ .icon-shape,#chatgpt-mermaid-\_r_18n\_ .image-shape{background-color:rgb(0, 0, 0);text-align:center;}#chatgpt-mermaid-\_r_18n\_ .icon-shape p,#chatgpt-mermaid-\_r_18n\_ .image-shape p{background-color:rgb(0, 0, 0);padding:2px;}#chatgpt-mermaid-\_r_18n\_ .icon-shape .label rect,#chatgpt-mermaid-\_r_18n\_ .image-shape .label rect{opacity:0.5;background-color:rgb(0, 0, 0);fill:rgb(0, 0, 0);}#chatgpt-mermaid-\_r_18n\_ .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#chatgpt-mermaid-\_r_18n\_ .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#chatgpt-mermaid-\_r_18n\_ .node .neo-node{stroke:rgb(31, 78, 148);}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node rect,#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].cluster rect,#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node polygon{stroke:url(#chatgpt-mermaid-\_r_18n\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].swimlane.cluster rect{filter:none;}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node path{stroke:url(#chatgpt-mermaid-\_r_18n\_-gradient);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node .neo-line path{stroke:rgb(31, 78, 148);filter:none;}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node circle{stroke:url(#chatgpt-mermaid-\_r_18n\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].node circle .state-start{fill:#000000;}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].icon-shape .icon{fill:url(#chatgpt-mermaid-\_r_18n\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_18n\_ [data-look="neo"].icon-shape .icon-neo path{stroke:url(#chatgpt-mermaid-\_r_18n\_-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#chatgpt-mermaid-\_r_18n\_ .node text{font-size:14px;font-weight:600;letter-spacing:normal;fill:rgb(153, 206, 255);}#chatgpt-mermaid-\_r_18n\_ .edgeLabels text{font-size:13px;font-weight:600;letter-spacing:-0.08px;fill:rgb(153, 206, 255);}#chatgpt-mermaid-\_r_18n\_ .node tspan[font-weight="normal"],#chatgpt-mermaid-\_r_18n\_ .edgeLabels tspan[font-weight="normal"]{font-weight:600;}#chatgpt-mermaid-\_r_18n\_ .edgeLabel .label rect{opacity:1;rx:13px;ry:13px;fill:rgb(0, 14, 26);stroke:rgb(26, 62, 95);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .node rect,#chatgpt-mermaid-\_r_18n\_ .node circle,#chatgpt-mermaid-\_r_18n\_ .node ellipse,#chatgpt-mermaid-\_r_18n\_ .node polygon,#chatgpt-mermaid-\_r_18n\_ .node path{fill:rgb(0, 40, 77);stroke:rgba(255, 255, 255, 0.1);stroke-width:1px;}#chatgpt-mermaid-\_r_18n\_ .node rect{rx:16px;ry:16px;}#chatgpt-mermaid-\_r_18n\_ .node.mermaid-decision .label-container{fill:rgb(0, 14, 26);stroke:rgb(26, 62, 95);stroke-dasharray:2,2;}#chatgpt-mermaid-\_r_18n\_ .edgePaths .flowchart-link{stroke:rgb(175, 175, 175);stroke-width:1px;stroke-linecap:round;stroke-linejoin:round;}#chatgpt-mermaid-\_r_18n\_ .marker{fill:rgb(175, 175, 175);stroke:rgb(175, 175, 175);}#chatgpt-mermaid-\_r_18n\_ :root{--mermaid-font-family:-apple-system-body,ui-sans-serif,-apple-system,system-ui,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol";}Phase 0: Data AuditData Valid?Root Cause + Fix PlanPhase 1: Bear Winners AnalysisPhase 2: Regime ValidationPhase 3: Stock SelectionPhase 4: Entry ValidationPhase 5: Cash Mode & SizingPhase 6: Exit TestingPhase 7: Integrated BacktestHoldout / Walk ForwardAcceptance Passed?Document Failure / Next TestReview for ProductionApprovalNoYesNoYes
+   860→
+   861→## قواعد التنفيذ
+   862→
+   863→- كل مرحلة تبدأ بتقرير قبل أي تعديل.
+   864→- كل مرحلة لها اختبار واضح.
+   865→- لا نغير أكثر من مجموعة متغيرات في الاختبار الواحد.
+   866→- لا نعتمد أي إعداد لمجرد أنه حقق هدفًا رقميًا.
+   867→- لا نعدل Production قبل اعتماد نتائج الاختبار.
+   868→- لا نحذف ملفات أو قواعد بيانات.
+   869→- لا نعدل `maestro_orchestrator.py` دون إذن.
+   870→- لا نعدل DAL أو قواعد البيانات الأساسية لمجرد إضافة منطق جديد.
+   871→- لا نغير واجهة Next.js لتنفيذ حسابات مالية.
+   872→- لا نضيف بلوكات جديدة قبل إثبات أن الموجود غير كافٍ.
+   873→
+   874→الوثائق الحالية تذكر أن `db_manager.py` هو بوابة الوصول إلى قواعد البيانات، وأن النظام لديه محركات تحليل وتنبؤ وBacktest وتعلم. لذلك أي تعديل لازم يتبع المسار الموجود، لا يبني مسارًا ماليًا موازيًا.&#x20;
+   875→
+   876→01-DATABASES-COMPLETE.md
+   877→
+   878→04-ENGINES-ARCHITECTURE.md
+   879→
+   880→
+   881→
+   882→# 17. إيه اللي مش هنعمله في المرحلة دي؟
+   883→
+   884→عشان نمنع المشروع من التشتت:
+   885→
+   886→| العنصر                 | القرار                                                 |
+   887→| ---------------------- | ------------------------------------------------------ |
+   888→| ML Success Probability | مؤجل حتى وجود Dataset سليمة وOut-of-sample test        |
+   889→| Seasonality            | مؤجل حتى إثبات تأثير تاريخي                            |
+   890→| Macro Block            | مؤجل حتى تحديد مصدر بيانات موثوق وعلاقة قابلة للاختبار |
+   891→| Defensive Sector       | يختبر بعد تحليل أداء القطاعات والأسهم                  |
+   892→| Institutional Flow     | يستخدم فقط إذا كانت بيانات التدفقات فعلية وموثوقة      |
+   893→| تغيير الأوزان          | بعد تحليل مساهمة العوامل                               |
+   894→| تغيير قواعد الخروج     | بعد تحسين الاختيار والدخول                             |
+   895→| تعديل Production       | بعد اجتياز الاختبارات والموافقة                        |
+   896→
+   897→والسبب إن المشروع بالفعل عنده Learning Engine لتحديث الأوزان والثقة في المؤشرات، حسب وثائق الهندسة.&#x20;
+   898→
+   899→04-ENGINES-ARCHITECTURE.md
+   900→
+   901→
+   902→
+   903→قبل ما نضيف تعلم جديد، لازم نراجع هل آلية التعلم الحالية بتستخدم نتائج صحيحة، وهل أوزانها بتتحسن فعلًا، ولا بتتأثر بأخطاء التوصيات المغلقة.
+   904→
+   905→# 18. معايير التحقق من نجاح التطوير
+   906→
+   907→مش هنعتبر التطوير ناجحًا بمجرد:
+   908→
+   909→- انتهاء البرمجة.
+   910→- نجاح Build.
+   911→- نجاح API.
+   912→- ظهور Score أعلى.
+   913→- زيادة عدد التوصيات.
+   914→- ارتفاع Cash Days.
+   915→- تحقيق PF مرتفع في فترة واحدة.
+   916→
+   917→هنعتبره ناجحًا عندما:
+   918→
+   919→1. البيانات صحيحة.
+   920→2. الاختبار قابل لإعادة الإنتاج.
+   921→3. الأداء يتحسن بعد التكاليف.
+   922→4. اختيار الأسهم يتحسن بصورة قابلة للقياس.
+   923→5. الأداء في الـ Bear يتحسن دون إفساد الـ Bull.
+   924→6. نتائج الاختبار خارج العينة مقبولة.
+   925→7. لا توجد مشاكل تشغيلية أو تعارضات.
+   926→8. التوصيات النهائية تتوافق مع البيانات التي أنتجتها.
+   927→
+   928→# 19. القرار الاستراتيجي النهائي
+   929→
+   930→أنا شايف إن أهم تغيير لازم يحصل في دليل الاستثمار هو:
+   931→
+   932→نحوّل المحرك من نظام بيولد توصيات بناءً على قوة المؤشرات إلى نظام يكتشف ويختبر فرص الربح الفعلية.
+   933→
+   934→وده معناه إن:
+   935→
+   936→- السوق يحدد الظروف.
+   937→- القوة النسبية تساعد في اكتشاف الأسهم.
+   938→- الاتجاه والزخم يساعدان في التقييم.
+   939→- السيولة تحدد قابلية التنفيذ.
+   940→- Entry Validation يحدد التوقيت.
+   941→- Risk Management يحدد حجم التعرض.
+   942→- Exit Management يحافظ على نتائج الصفقة.
+   943→- Backtest يثبت هل كل ده حقق قيمة فعلية.
+   944→
+   945→مش هنحاول نكسب من كل سهم.
+   946→
+   947→هنحاول نكتشف الأسهم التي لديها فرصة أفضل، ونتأكد إن الفرصة تستحق المخاطرة.
+   948→
+   949→# 20. البرومبت التنفيذي لبرافو
+   950→
+   951→ده البرومبت اللي أنصح تبعته لجيمي أو برافو باعتباره خطة المشروع المعتمدة للتحقيق والتطوير المرحلي.
+   952→
+   953→# 🅱️ Bravo — Strategic Profit Engine Development Plan
+   954→
+   955→## Project: GLMinvestment / دليل الاستثمار
+   956→
+   957→## Mission
+   958→
+   959→Develop a market-adaptive stock selection and trading engine focused on discovering profitable opportunities across Bull, Bear, and Sideways market conditions.
+   960→
+   961→The system is NOT designed merely to reduce trading or maximize cash exposure.
+   962→
+   963→The objective is to identify stocks with superior relative strength, validate their entry opportunities, manage position risk, and generate measurable net returns.
+   964→
+   965→Capital protection remains a risk constraint, not the sole objective.
+   966→
+   967→---
+   968→
+   969→# PHASE 0 — DATA QUALITY & BASELINE
+   970→
+   971→## Objective
+   972→
+   973→Establish a reproducible baseline before changing financial logic.
+   974→
+   975→## Required checks
+   976→
+   977→- Verify price freshness.
+   978→- Verify OHLCV consistency.
+   979→- Verify signal timestamps.
+   980→- Verify entry and exit prices.
+   981→- Check corporate actions and splits.
+   982→- Check missing and duplicate bars.
+   983→- Check stale-price usage.
+   984→- Verify transaction costs.
+   985→- Verify Profit Factor.
+   986→- Verify Max Drawdown.
+   987→- Verify exposure and position calculations.
+   988→- Check for look-ahead bias.
+   989→
+   990→## Deliverables
+   991→
+   992→1. Data Quality Report.
+   993→2. Current System Baseline.
+   994→3. Trade-level historical dataset.
+   995→4. Identified root causes.
+   996→5. Reproducibility evidence.
+   997→
+   998→No strategy changes before baseline validation.
+   999→
+  1000→---
+  1001→
+  1002→# PHASE 1 — HISTORICAL PROFIT OPPORTUNITY ANALYSIS
+  1003→
+  1004→## Objective
+  1005→
+  1006→Discover which stocks generated positive returns during weak market conditions and identify the characteristics that distinguished winners from losers.
+  1007→
+  1008→## Required analysis
+  1009→
+  1010→For each historical trade:
+  1011→
+  1012→- Ticker.
+  1013→- Entry Date.
+  1014→- Entry Price.
+  1015→- Exit Date.
+  1016→- Exit Price.
+  1017→- Net PnL.
+  1018→- R Multiple.
+  1019→- Regime.
+  1020→- Relative Strength.
+  1021→- SMA50.
+  1022→- SMA200.
+  1023→- Momentum.
+  1024→- Liquidity.
+  1025→- Sector.
+  1026→- Entry Type.
+  1027→- Exit Reason.
+  1028→
+  1029→## Required comparisons
+  1030→
+  1031→- Winners vs losers.
+  1032→- Stocks outperforming EGX30 vs underperforming.
+  1033→- Stocks outperforming their sector vs underperforming.
+  1034→- Stocks above vs below SMA50.
+  1035→- Stocks above vs below SMA200.
+  1036→- Strong vs weak momentum.
+  1037→- High vs low liquidity.
+  1038→- Sector performance.
+  1039→- Entry timing.
+  1040→- Exit timing.
+  1041→
+  1042→## Deliverable
+  1043→
+  1044→A ranked evidence report identifying which factors were associated with better outcomes.
+  1045→
+  1046→Do not assume defensive sectors or institutional flow are effective before testing them.
+  1047→
+  1048→---
+  1049→
+  1050→# PHASE 2 — REGIME VALIDATION
+  1051→
+  1052→## Objective
+  1053→
+  1054→Validate the existing Regime Detection logic.
+  1055→
+  1056→## Inputs
+  1057→
+  1058→Use the existing implementation where possible:
+  1059→
+  1060→- EGX30.
+  1061→- SMA200.
+  1062→- Breadth SMA50.
+  1063→- Other currently available market breadth measures.
+  1064→
+  1065→## Required output
+  1066→
+  1067→Daily table:
+  1068→
+  1069→Date | EGX30 | SMA200 | Breadth | Regime | Classification Reason
+  1070→
+  1071→Monthly table:
+  1072→
+  1073→Month | Bull Days | Bear Days | Sideways Days
+  1074→
+  1075→## Tests
+  1076→
+  1077→- Regime consistency.
+  1078→- Regime transitions.
+  1079→- Performance by regime.
+  1080→- Stock performance within each regime.
+  1081→- Relative-strength behavior within each regime.
+  1082→
+  1083→Do not invent new thresholds before reviewing the existing implementation.
+  1084→
+  1085→---
+  1086→
+  1087→# PHASE 3 — STOCK SELECTION
+  1088→
+  1089→## Objective
+  1090→
+  1091→Improve the ability to identify stocks with superior performance potential.
+  1092→
+  1093→## Test factors separately
+  1094→
+  1095→1. Relative Strength vs EGX30.
+  1096→2. Relative Strength vs Sector.
+  1097→3. Trend.
+  1098→4. Momentum.
+  1099→5. Liquidity.
+  1100→6. Sector performance.
+  1101→
+  1102→## Test combinations
+  1103→
+  1104→- Relative Strength + Trend.
+  1105→- Relative Strength + Liquidity.
+  1106→- Trend + Momentum.
+  1107→- Relative Strength + Trend + Entry Validation.
+  1108→
+  1109→## Metrics
+  1110→
+  1111→- Net PnL.
+  1112→- PF.
+  1113→- Win Rate.
+  1114→- Average R.
+  1115→- MaxDD.
+  1116→- Number of trades.
+  1117→- Performance by regime.
+  1118→
+  1119→Only retain factors that demonstrate incremental value.
+  1120→
+  1121→---
+  1122→
+  1123→# PHASE 4 — ENTRY VALIDATION
+  1124→
+  1125→## Objective
+  1126→
+  1127→Determine whether better entry timing improves profitability.
+  1128→
+  1129→## Tests
+  1130→
+  1131→- Current entry logic.
+  1132→- Trend confirmation.
+  1133→- Breakout validation.
+  1134→- Retest entry.
+  1135→- ATR-based distance from entry.
+  1136→
+  1137→## Required comparison
+  1138→
+  1139→- Number of signals.
+  1140→- Number of executed trades.
+  1141→- Net PnL.
+  1142→- PF.
+  1143→- MaxDD.
+  1144→- Average R.
+  1145→- Failed breakout rate.
+  1146→- Performance by regime.
+  1147→
+  1148→Do not assume one entry method is universally superior.
+  1149→
+  1150→---
+  1151→
+  1152→# PHASE 5 — CASH MODE & POSITION SIZING
+  1153→
+  1154→## Objective
+  1155→
+  1156→Improve exposure management without eliminating profitable opportunities.
+  1157→
+  1158→## Test versions
+  1159→
+  1160→A. Current System.
+  1161→
+  1162→B. Conservative Cash Mode:
+  1163→
+  1164→- Bear entry threshold 0.72.
+  1165→- Half position from 0.72 to 0.82.
+  1166→- Full position at or above 0.82.
+  1167→- Maximum 3 concurrent positions.
+  1168→
+  1169→C. Updated Cash Mode:
+  1170→
+  1171→- Bear entry threshold 0.68.
+  1172→- Half position from 0.68 to 0.78.
+  1173→- Full position at or above 0.78.
+  1174→- Maximum 4 concurrent positions.
+  1175→
+  1176→These are experimental configurations, not production settings.
+  1177→
+  1178→## Metrics
+  1179→
+  1180→- Net PnL.
+  1181→- PF.
+  1182→- MaxDD.
+  1183→- Cash Days.
+  1184→- Exposure.
+  1185→- Number of trades.
+  1186→- Average position size.
+  1187→- Losing streaks.
+  1188→- Performance by regime.
+  1189→
+  1190→Do not select a configuration based on Cash Days alone.
+  1191→
+  1192→---
+  1193→
+  1194→# PHASE 6 — EXIT MANAGEMENT
+  1195→
+  1196→## Objective
+  1197→
+  1198→Improve realized profitability and reduce avoidable losses.
+  1199→
+  1200→## Test independently
+  1201→
+  1202→- Fixed Stop.
+  1203→- ATR Stop.
+  1204→- Target.
+  1205→- Trailing Stop.
+  1206→- Score Reversal Exit.
+  1207→- Time Exit.
+  1208→
+  1209→## Metrics
+  1210→
+  1211→- Net PnL.
+  1212→- PF.
+  1213→- MaxDD.
+  1214→- Average R.
+  1215→- Holding Days.
+  1216→- Stop-out rate.
+  1217→- Early exit rate.
+  1218→- Profit giveback.
+  1219→
+  1220→Do not change exit parameters without historical evidence.
+  1221→
+  1222→---
+  1223→
+  1224→# PHASE 7 — INTEGRATED BACKTEST
+  1225→
+  1226→## Objective
+  1227→
+  1228→Combine only factors that passed previous tests.
+  1229→
+  1230→## Compare
+  1231→
+  1232→Current System vs Improved System.
+  1233→
+  1234→Use identical:
+  1235→
+  1236→- Data.
+  1237→- Universe.
+  1238→- Costs.
+  1239→- Execution assumptions.
+  1240→- Signal timing.
+  1241→- Position accounting.
+  1242→
+  1243→## Required outputs
+  1244→
+  1245→- Monthly performance.
+  1246→- Regime performance.
+  1247→- Trade-level details.
+  1248→- Net PnL.
+  1249→- PF.
+  1250→- Win Rate.
+  1251→- MaxDD.
+  1252→- Average R.
+  1253→- Number of trades.
+  1254→- Average exposure.
+  1255→- Cash Days.
+  1256→- Cost impact.
+  1257→
+  1258→---
+  1259→
+  1260→# PHASE 8 — WALK-FORWARD & HOLDOUT
+  1261→
+  1262→## Objective
+  1263→
+  1264→Verify that improvements generalize beyond the development period.
+  1265→
+  1266→## Requirements
+  1267→
+  1268→- Separate development and test periods.
+  1269→- No future data leakage.
+  1270→- No tuning on holdout results.
+  1271→- Walk-forward validation.
+  1272→- Out-of-sample performance.
+  1273→- Reproducible results.
+  1274→
+  1275→Do not claim statistical confidence without adequate sample size and calibration.
+  1276→
+  1277→---
+  1278→
+  1279→# ACCEPTANCE CRITERIA
+  1280→
+  1281→## Data
+  1282→
+  1283→- Valid and reproducible.
+  1284→- No look-ahead bias.
+  1285→- Correct price and corporate-action handling.
+  1286→- Costs included.
+  1287→
+  1288→## Performance
+  1289→
+  1290→Initial evaluation targets:
+  1291→
+  1292→- Total PF >= 1.25.
+  1293→- Bear PF >= 0.80 as an initial floor.
+  1294→- Bull PF >= 1.90 as an initial target.
+  1295→- MaxDD <= -22% as an initial target.
+  1296→- Bear Cash Days >= 55% as a reference, not a standalone objective.
+  1297→
+  1298→These targets are not guarantees.
+  1299→
+  1300→If the targets fail, report the failure and its cause. Do not tune parameters automatically to force acceptance.
+  1301→
+  1302→---
+  1303→
+  1304→# STRICT IMPLEMENTATION RULES
+  1305→
+  1306→- No simultaneous multi-factor changes.
+  1307→- No production changes before approval.
+  1308→- No new ML block in this plan.
+  1309→- No new seasonality block.
+  1310→- No new macro block.
+  1311→- No defensive-sector block before evidence.
+  1312→- No unverified institutional-flow claims.
+  1313→- No fake or synthetic trading results.
+  1314→- No deletion of files or databases.
+  1315→- Do not modify maestro_orchestrator.py without explicit approval.
+  1316→- Respect the existing architecture and database access layer.
+  1317→- Do not move financial calculations into the frontend.
+  1318→
+  1319→---
+  1320→
+  1321→# REPORTING
+  1322→
+  1323→After every phase, submit:
+  1324→
+  1325→1. Objective.
+  1326→2. Files inspected.
+  1327→3. Files changed, if any.
+  1328→4. Data used.
+  1329→5. Test methodology.
+  1330→6. Results.
+  1331→7. Failure cases.
+  1332→8. Root-cause findings.
+  1333→9. Acceptance status.
+  1334→10. Recommended next phase.
+  1335→
+  1336→Stop after each phase and wait for approval.
+  1337→
+  1338→## START
+  1339→
+  1340→Start with Phase 0.
+  1341→
+  1342→Inspect the current implementation and produce the baseline and data-quality report.
+  1343→
+  1344→Do not modify financial logic until the baseline is validated.
+  1345→
+  1346→The goal is not to generate more signals.
+  1347→
+  1348→The goal is to identify and validate profitable opportunities that the current system is missing.
+  1349→
+  1350→## آخر نقطة: رأيي في ترتيب الأولويات
+  1351→
+  1352→لو أنا هحدد لبرافو أهم 3 حاجات يبدأ بيهم، هتكون:
+  1353→
+  1354→1\. إثبات جودة البيانات والتوصيات الحالية.\
+  1355→لأن لو Entry Price أو Exit Price غلط، أي تطوير بعده ممكن يبقى مضلل.
+  1356→
+  1357→2\. اكتشاف الأسهم الرابحة داخل الـ Bear.\
+  1358→دي أهم مرحلة لأنها هتحدد فعليًا إيه اللي النظام محتاج يتعلمه.
+  1359→
+  1360→3\. تحسين اختيار الأسهم وتوقيت الدخول قبل تغيير Stop Loss وCash Mode.\
+  1361→لأننا عايزين نعرف إزاي نجيب فرص أفضل، مش فقط إزاي نخرج من الصفقات السيئة.
+  1362→
+  1363→والقرار التنفيذي الآن: برافو يبدأ Phase 0 فقط، ثم يقدم النتائج. لا تعديل للأوزان، ولا Defensive Sector، ولا تغيير قواعد الخروج قبل ما نعرف السبب الحقيقي وراء خسائر سبتمبر وأكتوبر.
+  1364→
+  1365→ده المسار اللي يخلي دليل الاستثمار منصة لاكتشاف فرص الربح، مش مجرد نظام بيقلل عدد الصفقات في السوق الهابط.

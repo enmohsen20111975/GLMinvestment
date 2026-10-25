@@ -37,13 +37,19 @@ def setup_temp_db(label: str) -> Path:
     temp_db = TEMP_DIR / f'pred_{label}_{int(time.time())}.db'
     if temp_db.exists():
         temp_db.unlink()
-    src = sqlite3.connect(str(PREDICTIONS_DB))
-    dst = sqlite3.connect(str(temp_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    src = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    dst = db_manager.connection(str(temp_db), writable=False).__enter__()
     src.backup(dst)
     dst.close()
     src.close()
     temp_db.chmod(0o644)
-    c = sqlite3.connect(str(temp_db))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(temp_db), writable=True).__enter__()
     try:
         c.execute('DELETE FROM predictions')
         c.commit()
@@ -94,7 +100,9 @@ def extract_metrics(db_path: Path, label: str) -> dict:
     if not db_path.exists():
         return {'label': label, 'error': 'DB missing'}
 
-    c = sqlite3.connect(str(db_path))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    c = db_manager.connection(str(db_path), writable=False).__enter__()
     c.row_factory = sqlite3.Row
 
     try:

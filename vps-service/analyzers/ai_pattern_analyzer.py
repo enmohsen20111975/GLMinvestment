@@ -740,7 +740,9 @@ class AIPatternAnalyzer:
             PRICE_HISTORY_DB_PATH = str(Path(self.db_path).parent / 'price_history.db')
         
         try:
-            conn = sqlite3.connect(PRICE_HISTORY_DB_PATH)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
             cursor = conn.cursor()
             
             cursor.execute('''

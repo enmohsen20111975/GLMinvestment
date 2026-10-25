@@ -99,7 +99,9 @@ def main() -> int:
 
     print(f"Parsed {len(rows)} rows. Date range: {rows[-1][1]} -> {rows[0][1]}")
 
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=True).__enter__()
     cur = conn.cursor()
     # Golden rule: CREATE TABLE IF NOT EXISTS (no ALTER TABLE)
     cur.execute(

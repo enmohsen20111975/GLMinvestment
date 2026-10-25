@@ -19,7 +19,9 @@ def seed_expert_recommendations():
     """Add expert recommendations to auth.db"""
     log("Seeding expert recommendations...")
     
-    conn = sqlite3.connect(DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_PATH, writable=True).__enter__()
     cursor = conn.cursor()
     
     # Create table if not exists
@@ -106,7 +108,9 @@ def seed_prediction_logs():
     """Add prediction logs to stocks.db"""
     log("Seeding prediction logs...")
     
-    conn = sqlite3.connect(STOCKS_DB_PATH)
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB_PATH, writable=True).__enter__()
     cursor = conn.cursor()
     
     # Create table if not exists

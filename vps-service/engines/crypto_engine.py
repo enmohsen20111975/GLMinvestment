@@ -106,7 +106,9 @@ class CryptoEngine:
 
     def _get_conn(self):
         if not os.path.exists(self.db_path): return None
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         return conn
 

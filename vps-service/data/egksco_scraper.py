@@ -167,7 +167,9 @@ class EGKSCODatabase:
         self.db_path = db_path or DATABASE_PATH
         
     def _get_connection(self):
-        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        # Phase 7.1: migrated to db_manager (writable=True)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=True)
         conn.row_factory = sqlite3.Row
         # Enable WAL mode for better concurrency
         try:
@@ -658,7 +660,9 @@ class EGKSCOScraper:
         # Also update the main stocks table for Next.js frontend
         main_stocks_updated = 0
         try:
-            conn = sqlite3.connect(self.db.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db.db_path, writable=False)
             cursor = conn.cursor()
             
             for stock in stocks:
@@ -722,7 +726,9 @@ class EGKSCOScraper:
             # DNA-WINNER: also calculate delta_volume at write-time
             history_added = 0
             try:
-                conn_hist = sqlite3.connect(PRICE_HISTORY_DB_PATH)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn_hist = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
                 cursor_hist = conn_hist.cursor()
                 today = datetime.now().strftime('%Y-%m-%d')
                 
@@ -803,7 +809,9 @@ class EGKSCOScraper:
                     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                     'db', 'data_engine.db'
                 )
-                conn_de = sqlite3.connect(data_engine_db_path, timeout=30.0)
+                # Phase 7.1: migrated to db_manager (writable=False)
+                from core.db_manager import db_manager
+                conn_de = db_manager.get_connection(data_engine_db_path, writable=False)
                 cursor_de = conn_de.cursor()
 
                 # Ensure delta columns exist in data_engine.db.egksco_price_history

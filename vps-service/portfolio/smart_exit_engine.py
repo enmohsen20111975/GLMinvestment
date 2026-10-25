@@ -1161,7 +1161,9 @@ class SectorMomentumScanner:
         result = {}
         
         try:
-            conn = sqlite3.connect(self.db_path)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(self.db_path, writable=False)
             conn.row_factory = sqlite3.Row
             
             # جيب كل القطاعات مع أسهمها

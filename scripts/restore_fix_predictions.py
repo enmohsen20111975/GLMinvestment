@@ -25,7 +25,9 @@ MAX_LOSS_PCT = -20.0  # 20% max loss (industry standard with stop)
 SELL_STOP_PCT = 1.25   # 25% above entry for SELL stop
 SELL_TARGET_PCT = 0.85 # 15% below entry for SELL target
 
-con = sqlite3.connect(DB)
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+con = db_manager.connection(DB, writable=False).__enter__()
 cur = con.cursor()
 
 print("=" * 70)

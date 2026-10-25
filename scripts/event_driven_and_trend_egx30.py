@@ -58,7 +58,9 @@ COST_RT = 1.0              # تكاليف round-trip 1%
 def load_ticker_data(start_date='2024-01-01', end_date='2026-10-18'):
     """تحميل بيانات كل الأسهم"""
     ph_db = DB_DIR / 'price_history.db'
-    conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     tickers = conn.execute("""

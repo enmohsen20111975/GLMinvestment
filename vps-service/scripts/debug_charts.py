@@ -27,7 +27,9 @@ print(f"Exists: {os.path.exists(PH_DB)}")
 
 if os.path.exists(PH_DB):
     try:
-        conn = sqlite3.connect(PH_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(PH_DB, writable=False)
         conn.row_factory = sqlite3.Row
 
         # Tables
@@ -91,7 +93,9 @@ print(f"Exists: {os.path.exists(S_DB)}")
 
 if os.path.exists(S_DB):
     try:
-        conn = sqlite3.connect(S_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(S_DB, writable=False)
         conn.row_factory = sqlite3.Row
 
         # Check stock_daily_prices in stocks.db

@@ -52,7 +52,9 @@ def parse_volume(v):
 
 def scan_daily_universe(days: int = 1):
     """امسح كل EGX stock لليوم/الأيام الماضية وشوف مين اللي V2 بـ يقبله."""
-    conn = sqlite3.connect(STOCKS_DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
 
     last_date = conn.execute("SELECT MAX(price_date) FROM stock_daily_prices").fetchone()[0]

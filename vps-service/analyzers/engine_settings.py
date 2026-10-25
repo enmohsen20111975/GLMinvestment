@@ -506,7 +506,9 @@ def _coerce_value(raw: str, key: str) -> Union[float, int, str]:
 def _load_all_from_db() -> Dict[str, str]:
     """Load all settings from the DB (raw string values)."""
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         _ensure_schema(conn)
         cur = conn.execute("SELECT key, value FROM system_settings")
         result = {row[0]: row[1] for row in cur.fetchall()}
@@ -1306,7 +1308,9 @@ def update_setting(key: str, value: Any, updated_by: str = "admin") -> bool:
     Invalidates the cache so the new value is visible immediately.
     """
     try:
-        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(STOCKS_DB, writable=False)
         _ensure_schema(conn)
         # Determine type
         if isinstance(value, bool):

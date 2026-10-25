@@ -132,7 +132,9 @@ def main():
     trades = replay.get('trades', [])
     print(f"Loaded {len(trades)} trades from replay results")
     
-    conn = sqlite3.connect(f"file:{PRICE_HISTORY_DB}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(PRICE_HISTORY_DB, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     
     # Compute filters for each trade

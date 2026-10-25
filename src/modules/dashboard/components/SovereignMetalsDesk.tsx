@@ -17,9 +17,9 @@
 
 import React from 'react';
 import { Gem } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useApiQuery } from '@/hooks/use-api-query';
+import { WidgetCard } from '@/components/shared/WidgetCard';
+import { WidgetStatGrid } from '@/components/shared/WidgetStat';
 
 interface MetalsForexData {
   success: boolean;
@@ -79,17 +79,15 @@ export function SovereignMetalsDesk() {
 
   if (isLoading) {
     return (
-      <Card className="border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Gem className="h-4 w-4 text-profit" />
-            الذهب والعملات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+      <WidgetCard
+        title="الذهب والعملات"
+        icon={Gem}
+        iconColor="text-profit"
+        iconBg="bg-profit/10"
+        loading
+        skeletonRows={1}
+        skeletonHeight="h-20"
+      />
     );
   }
 
@@ -97,33 +95,30 @@ export function SovereignMetalsDesk() {
   const fx = data?.forex;
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Gem className="h-4 w-4 text-profit" />
-          الذهب والعملات
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-
+    <WidgetCard
+      title="الذهب والعملات"
+      icon={Gem}
+      iconColor="text-profit"
+      iconBg="bg-profit/10"
+    >
         {/* كروت الصاغة المصرية */}
         {gold && (
-          <div className="grid grid-cols-4 gap-1.5">
+          <WidgetStatGrid cols={4}>
             <GoldCard label="عيار 24" value={gold.karat24} />
             <GoldCard label="عيار 21" value={gold.karat21} />
             <GoldCard label="عيار 18" value={gold.karat18} />
             <GoldCard label="الجنيه ذهب" value={gold.gold_coin} />
-          </div>
+          </WidgetStatGrid>
         )}
 
         {/* شريط العملات السيادي */}
         {fx && (
-          <div className="grid grid-cols-4 gap-1.5">
+          <WidgetStatGrid cols={4}>
             <FxCard label="دولار بنكي" value={fx.usd_bank} />
             <FxCard label="دولار موازي" value={fx.usd_parallel} />
             <FxCard label="يورو" value={fx.eur} />
             <FxCard label="ريال سعودي" value={fx.sar} />
-          </div>
+          </WidgetStatGrid>
         )}
 
         {/* Empty state */}
@@ -133,8 +128,7 @@ export function SovereignMetalsDesk() {
           </p>
         )}
 
-      </CardContent>
-    </Card>
+    </WidgetCard>
   );
 }
 

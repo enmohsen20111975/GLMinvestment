@@ -112,7 +112,7 @@ class StockDNAAnalyzer:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
             cur = conn.cursor()
@@ -614,7 +614,7 @@ class StockDNAAnalyzer:
             if os.path.exists(_PRICE_HISTORY_DB):
                 try:
                     from core.db_manager import db_manager
-                    conn = db_manager.connection('price_history', writable=False).__enter__()
+                    conn = db_manager.get_connection('price_history', writable=False)
                 except Exception:
                     conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
                 cur = conn.cursor()
@@ -652,7 +652,7 @@ class StockDNAAnalyzer:
             try:
                 try:
                     from core.db_manager import db_manager
-                    conn = db_manager.connection('stocks', writable=False).__enter__()
+                    conn = db_manager.get_connection('stocks', writable=False)
                 except Exception:
                     conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
                 cur = conn.cursor()
@@ -736,7 +736,7 @@ class StockDNAAnalyzer:
             if os.path.exists(_PRICE_HISTORY_DB):
                 try:
                     from core.db_manager import db_manager
-                    conn = db_manager.connection('price_history', writable=False).__enter__()
+                    conn = db_manager.get_connection('price_history', writable=False)
                 except Exception:
                     conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
                 cur = conn.cursor()
@@ -752,7 +752,7 @@ class StockDNAAnalyzer:
                     # خد أول مؤشر ونحسب أيام الأزمة
                     try:
                         from core.db_manager import db_manager
-                        conn = db_manager.connection('price_history', writable=False).__enter__()
+                        conn = db_manager.get_connection('price_history', writable=False)
                     except Exception:
                         conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
                     cur = conn.cursor()
@@ -963,7 +963,7 @@ class StockDNAAnalyzer:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=True).__enter__()
+                conn = db_manager.get_connection('stocks', writable=True)
             except Exception:
                 conn = sqlite3.connect(self.stocks_db, timeout=15)
             cur = conn.cursor()
@@ -1028,7 +1028,7 @@ class StockDNAAnalyzer:
         try:
             try:
                 from core.db_manager import db_manager
-                conn = db_manager.connection('stocks', writable=False).__enter__()
+                conn = db_manager.get_connection('stocks', writable=False)
             except Exception:
                 conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
             cur = conn.cursor()

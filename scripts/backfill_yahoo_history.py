@@ -74,7 +74,9 @@ def get_active_stocks(market='EGX', tickers=None):
         print(f"❌ stocks.db غير موجود: {STOCKS_DB}")
         return []
 
-    conn = sqlite3.connect(str(STOCKS_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA busy_timeout = 30000')
     cur = conn.cursor()
@@ -314,7 +316,9 @@ def run_backfill(market='EGX', days=None, tickers=None, sleep_s=0.3, verbose=Tru
     print(f"{'='*60}")
 
     PRICE_HISTORY_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(PRICE_HISTORY_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PRICE_HISTORY_DB), writable=False).__enter__()
     conn.execute('PRAGMA busy_timeout = 30000')
     ensure_price_history_table(conn)
 

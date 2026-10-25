@@ -71,7 +71,9 @@ def main():
         sys.exit(1)
 
     # 1) تأكّد إن أعمدة persona موجودة
-    conn = sqlite3.connect(predictions_db, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(predictions_db, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout=30000")
     try:

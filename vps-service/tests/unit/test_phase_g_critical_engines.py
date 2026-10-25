@@ -62,7 +62,9 @@ def db_conn():
         f"data/active_databases_20260817_full.zip into db/vps_real/?"
     )
     uri = f"file:{_ARCHIVE_DB}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(uri, writable=False)
     conn.row_factory = sqlite3.Row
     try:
         yield conn

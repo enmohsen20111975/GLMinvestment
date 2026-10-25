@@ -418,3 +418,179 @@ if __name__ == '__main__':
 
     print()
     print("✅ All tests passed.")
+
+
+# ===========================================================================
+# ApiResponseCache (Phase 8.4) — endpoint-level response caching
+# ===========================================================================
+# Separate from AnalysisCache (which caches per-ticker analysis results).
+# ApiResponseCache caches full HTTP endpoint responses (JSON payloads) keyed
+# by (endpoint_name, params_dict). Useful for slow endpoints that return
+# market-overview / sector-tracking / investor-flows style data that changes
+# on the order of minutes, not seconds.
+#
+# Design:
+#   - TTL per entry (default 300s = 5 minutes).
+#   - maxsize eviction (LRU by expiry timestamp when over capacity).
+#   - Thread-safe via a single threading.Lock.
+#   - Stats: hits/misses/sets/evictions/hit_rate/size.
+#   - Singleton instance `api_cache` exported at module level.
+# ===========================================================================
+class ApiResponseCache:
+    """
+    In-memory TTL cache for HTTP API endpoint responses.
+
+    Cache key: (endpoint_name, params_canonical_string).
+    Cache value: (expiry_timestamp, data).
+
+    Usage:
+        from core.cache_manager import api_cache
+
+        # At the start of an endpoint:
+        cached = api_cache.get('sector_tracking', params={'market': 'EGX'})
+        if cached is not None:
+            return cached  # already jsonify'd? — caller decides
+
+        # ... compute response ...
+        response_data = {...}
+        api_cache.set('sector_tracking', response_data, ttl=300,
+                      params={'market': 'EGX'})
+        return response_data
+    """
+
+    def __init__(self, default_ttl: int = 300, maxsize: int = 256) -> None:
+        self._default_ttl = default_ttl
+        self._maxsize = maxsize
+        # key (str) → (expiry_ts (float), data (Any))
+        self._cache: Dict[str, Tuple[float, Any]] = {}
+        self._lock = threading.Lock()
+        self._logger = logging.getLogger("api_cache")
+        # Stats
+        self._stats: Dict[str, int] = {
+            'hits': 0,
+            'misses': 0,
+            'sets': 0,
+            'evictions': 0,
+        }
+
+    # ------------------------------------------------------------------
+    # Key builder
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _make_key(endpoint: str, params: Optional[Dict[str, Any]] = None) -> str:
+        """Build a canonical cache key from endpoint + params.
+
+        The key is endpoint_name|sorted_params_string. Sorting makes the key
+        order-independent so {'a':1,'b':2} and {'b':2,'a':1} hit the same entry.
+        """
+        ep = (endpoint or '').strip().lower()
+        if not params:
+            return ep
+        # Sort keys, stringify values (handle bool/None gracefully).
+        items = sorted((str(k), str(v)) for k, v in params.items())
+        params_str = '&'.join(f"{k}={v}" for k, v in items)
+        return f"{ep}|{params_str}"
+
+    # ------------------------------------------------------------------
+    # GET
+    # ------------------------------------------------------------------
+    def get(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> Optional[Any]:
+        """Return cached data if present and not expired, else None."""
+        key = self._make_key(endpoint, params)
+        now = time.time()
+        with self._lock:
+            entry = self._cache.get(key)
+            if entry is None:
+                self._stats['misses'] += 1
+                return None
+            expiry_ts, data = entry
+            if expiry_ts < now:
+                # Expired — remove and miss.
+                self._cache.pop(key, None)
+                self._stats['misses'] += 1
+                return None
+            # Hit.
+            self._stats['hits'] += 1
+            return data
+
+    # ------------------------------------------------------------------
+    # SET
+    # ------------------------------------------------------------------
+    def set(
+        self,
+        endpoint: str,
+        data: Any,
+        ttl: Optional[int] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Cache `data` for `ttl` seconds (default = self._default_ttl)."""
+        key = self._make_key(endpoint, params)
+        effective_ttl = self._default_ttl if ttl is None else int(ttl)
+        expiry_ts = time.time() + effective_ttl
+        with self._lock:
+            # Eviction if at capacity and this is a new key.
+            if key not in self._cache and len(self._cache) >= self._maxsize:
+                # Evict the entry with the earliest expiry_ts (LRU-by-expiry).
+                oldest_key = min(self._cache, key=lambda k: self._cache[k][0])
+                self._cache.pop(oldest_key, None)
+                self._stats['evictions'] += 1
+            self._cache[key] = (expiry_ts, data)
+            self._stats['sets'] += 1
+
+    # ------------------------------------------------------------------
+    # INVALIDATE
+    # ------------------------------------------------------------------
+    def invalidate(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """Remove a specific cache entry. Returns True if removed, False if not found."""
+        key = self._make_key(endpoint, params)
+        with self._lock:
+            if key in self._cache:
+                self._cache.pop(key, None)
+                return True
+            return False
+
+    # ------------------------------------------------------------------
+    # CLEAR
+    # ------------------------------------------------------------------
+    def clear(self) -> int:
+        """Remove all entries. Returns count before clear."""
+        with self._lock:
+            count = len(self._cache)
+            self._cache.clear()
+            return count
+
+    # ------------------------------------------------------------------
+    # STATS
+    # ------------------------------------------------------------------
+    def get_stats(self) -> Dict[str, Any]:
+        """Return cache statistics."""
+        with self._lock:
+            hits = self._stats['hits']
+            misses = self._stats['misses']
+            total = hits + misses
+            hit_rate = round(hits / total, 4) if total > 0 else 0.0
+            return {
+                'hits': hits,
+                'misses': misses,
+                'sets': self._stats['sets'],
+                'evictions': self._stats['evictions'],
+                'hit_rate': hit_rate,
+                'size': len(self._cache),
+                'maxsize': self._maxsize,
+                'default_ttl': self._default_ttl,
+            }
+
+    def reset_stats(self) -> None:
+        """Zero the stats counters (for benchmarking)."""
+        with self._lock:
+            self._stats = {'hits': 0, 'misses': 0, 'sets': 0, 'evictions': 0}
+
+
+# ---------------------------------------------------------------------------
+# Singleton instance — the entry point used by the API layer.
+# ---------------------------------------------------------------------------
+api_cache = ApiResponseCache(default_ttl=300, maxsize=256)

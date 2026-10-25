@@ -55,7 +55,9 @@ LEGACY_SOURCES = [
 
 def get_table_schema(db_path, table):
     """يجيب schema الجدول"""
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     try:
         cols = conn.execute(f"PRAGMA table_info({table})").fetchall()
         return [(c[1], c[2]) for c in cols]
@@ -65,7 +67,9 @@ def get_table_schema(db_path, table):
 
 def get_row_count(db_path, table):
     """يجيب row count"""
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     try:
         return conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
     finally:
@@ -74,7 +78,9 @@ def get_row_count(db_path, table):
 
 def get_sample_rows(db_path, table, limit=5):
     """يجيب sample rows للتحقق"""
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     try:
         cols = [c[1] for c in conn.execute(f"PRAGMA table_info({table})").fetchall()]
         cols_str = ', '.join(cols[:8])  # أول 8 أعمدة بس
@@ -124,10 +130,14 @@ def archive_source(source):
 
     # انسخ الـ DB الأصلي مؤقتاً ثم اعمل extract للجدول بس
     # طريقة أبسط: اعمل CREATE TABLE + INSERT SELECT من الـ DB الأصلي
-    archive_conn = sqlite3.connect(str(archive_db_path))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    archive_conn = db_manager.connection(str(archive_db_path), writable=True).__enter__()
     try:
         # اقرا schema كامل من الأصلي (CREATE TABLE statement)
-        src_conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        src_conn = db_manager.connection(db_path, writable=False).__enter__()
         create_sql = src_conn.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
         ).fetchone()
@@ -138,7 +148,9 @@ def archive_source(source):
             archive_conn.execute(create_sql[0])
 
             # انسخ البيانات (chunked عشان الجداول الكبيرة)
-            src_conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            src_conn = db_manager.connection(db_path, writable=False).__enter__()
             cols = [c[1] for c in src_conn.execute(f"PRAGMA table_info({table})").fetchall()]
             cols_str = ', '.join(f'"{c}"' for c in cols)
             placeholders = ', '.join('?' * len(cols))
@@ -225,7 +237,9 @@ def update_index_status(source, archive_result):
         print(f"    ⚠️ {INDEX_DB} not found — skipping index update")
         return
 
-    conn = sqlite3.connect(str(INDEX_DB))
+    # Phase 7.1: migrated to db_manager (writable=True)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(INDEX_DB), writable=True).__enter__()
     try:
         conn.execute("""
             UPDATE source_inventory
@@ -337,7 +351,9 @@ def verify_archive():
 
     for archive_db in sorted(archives):
         print(f"  📦 {archive_db.name} ({archive_db.stat().st_size / (1024*1024):.2f} MB)")
-        conn = sqlite3.connect(f"file:{archive_db}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(archive_db, writable=False).__enter__()
         tables = [r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall() if not r[0].startswith('sqlite_')]
@@ -349,7 +365,9 @@ def verify_archive():
     # تحقق من الـ index
     if INDEX_DB.exists():
         print(f"\n  📋 Source Index status:")
-        conn = sqlite3.connect(f"file:{INDEX_DB}?mode=ro", uri=True)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(INDEX_DB, writable=False).__enter__()
         for r in conn.execute(
             "SELECT db_file, table_name, status, row_count FROM source_inventory ORDER BY status, row_count DESC"
         ).fetchall():

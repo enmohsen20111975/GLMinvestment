@@ -262,7 +262,9 @@ def main():
     print(f"DB: {db_path}")
     print("=" * 60)
 
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
 
     try:
         if args.stats_only:

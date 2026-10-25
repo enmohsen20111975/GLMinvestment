@@ -61,8 +61,7 @@ def _open_db(db_path: str, writable: bool = False):
     conn = None
     try:
         if _V38_BT_DBM_AVAILABLE:
-            ctx = _dbm.connection(db_path, writable=writable)
-            conn = ctx.__enter__()
+            conn = _dbm.get_connection(db_path, writable=writable)
         else:
             raise RuntimeError("db_manager unavailable")
     except Exception:
@@ -149,8 +148,7 @@ def _resolve_price_history_db():
             _v38_rph_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_rph_ctx = _dbm.connection(primary, writable=False)
-                    db = _v38_rph_ctx.__enter__()
+                    db = _dbm.get_connection(primary, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -176,8 +174,7 @@ def _resolve_price_history_db():
             _v38_rph2_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_rph2_ctx = _dbm.connection(stocks_db, writable=False)
-                    db = _v38_rph2_ctx.__enter__()
+                    db = _dbm.get_connection(stocks_db, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1161,8 +1158,7 @@ class V38BacktestEngine:
                     _v38_fs1_ctx = None
                     try:
                         if _V38_BT_DBM_AVAILABLE:
-                            _v38_fs1_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                            conn = _v38_fs1_ctx.__enter__()
+                            conn = _dbm.get_connection(STOCKS_DB, writable=False)
                         else:
                             raise RuntimeError("db_manager unavailable")
                     except Exception:
@@ -1218,8 +1214,7 @@ class V38BacktestEngine:
             _v38_fs2_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_fs2_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                    conn = _v38_fs2_ctx.__enter__()
+                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1301,8 +1296,7 @@ class V38BacktestEngine:
             _v38_sc_ctx = None
             try:
                 if _V38_BT_DBM_AVAILABLE:
-                    _v38_sc_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                    conn = _v38_sc_ctx.__enter__()
+                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
                 else:
                     raise RuntimeError("db_manager unavailable")
             except Exception:
@@ -1329,8 +1323,7 @@ class V38BacktestEngine:
         _v38_gt_ctx = None
         try:
             if _V38_BT_DBM_AVAILABLE:
-                _v38_gt_ctx = _dbm.connection(PRICE_HISTORY_DB, writable=False)
-                conn = _v38_gt_ctx.__enter__()
+                conn = _dbm.get_connection(PRICE_HISTORY_DB, writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception:
@@ -1374,7 +1367,9 @@ class V38BacktestEngine:
             try:
                 _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
                 if os.path.exists(_ph_db):
-                    conn = sqlite3.connect(f'file:{_ph_db}?mode=ro', uri=True, timeout=10.0)
+                    # Phase 7.1: migrated to db_manager
+                    from core.db_manager import db_manager
+                    conn = db_manager.get_connection(_ph_db, writable=False)
                     cur = conn.cursor()
                     cur.execute("""
                         SELECT date, open_price, high_price, low_price, close_price, volume
@@ -1398,7 +1393,9 @@ class V38BacktestEngine:
 
         # 2. PRIMARY INTRADAY/DAILY: data_engine.db (egksco_price_history — طازج)
         try:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+            # Phase 7.1: migrated to db_manager
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
@@ -1421,7 +1418,9 @@ class V38BacktestEngine:
 
         # 3. LATEST: stocks.db.stock_daily_prices (تحديثات اليوم والجلسات الحالية)
         try:
-            conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
+            # Phase 7.1: migrated to db_manager (writable=False)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             cur = conn.cursor()
             cur.execute("""
                 SELECT price_date, open_price, high_price, low_price, close_price, volume
@@ -1489,8 +1488,8 @@ class V38BacktestEngine:
         
         # Bollinger Bands
         bb_mid, bb_up, bb_low = calc_bollinger_bands(sl_closes, 20, 2.0)
-        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if bb_mid[-1] > 0 else 0
-        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if bb_mid[i] > 0 else 0 for i in range(len(bb_mid))], 50)
+        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if (bb_mid[-1] and bb_mid[-1] > 0) else 0
+        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if (bb_mid[i] is not None and bb_mid[i] > 0) else 0 for i in range(len(bb_mid))], 50)
         bb_width_sma = bb_width_sma_vals[-1]
         is_squeeze = bb_width < bb_width_sma * get_setting('bb_squeeze_threshold', default=0.8)
         is_expanding = bb_width > bb_width_sma * get_setting('bb_expansion_threshold', default=1.2)
@@ -1639,8 +1638,8 @@ class V38BacktestEngine:
         }
         
         bb_mid, bb_up, bb_low = calc_bollinger_bands(sl_closes, 20, 2.0)
-        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if bb_mid[-1] > 0 else 0
-        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if bb_mid[i] > 0 else 0 for i in range(len(bb_mid))], 50)
+        bb_width = (bb_up[-1] - bb_low[-1]) / bb_mid[-1] * 100 if (bb_mid[-1] and bb_mid[-1] > 0) else 0
+        bb_width_sma_vals = calc_sma([((bb_up[i] - bb_low[i]) / bb_mid[i] * 100) if (bb_mid[i] is not None and bb_mid[i] > 0) else 0 for i in range(len(bb_mid))], 50)
         bb_width_sma = bb_width_sma_vals[-1]
         is_squeeze = bb_width < bb_width_sma * 0.8
         is_expanding = bb_width > bb_width_sma * 1.2
@@ -2002,8 +2001,7 @@ class V38BacktestEngine:
                 _v38_run_ctx = None
                 try:
                     if _V38_BT_DBM_AVAILABLE:
-                        _v38_run_ctx = _dbm.connection(STOCKS_DB, writable=False)
-                        conn = _v38_run_ctx.__enter__()
+                        conn = _dbm.get_connection(STOCKS_DB, writable=False)
                     else:
                         raise RuntimeError("db_manager unavailable")
                 except Exception:

@@ -43,7 +43,9 @@ EXPIRY_DAYS = 14
 @contextmanager
 def get_db(db_path: str):
     """Get database connection"""
-    conn = sqlite3.connect(db_path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(db_path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     try:
         yield conn

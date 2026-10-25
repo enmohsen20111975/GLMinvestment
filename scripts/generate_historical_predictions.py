@@ -24,7 +24,9 @@ print(f"STOCKS_DB: {STOCKS_DB}")
 print(f"PREDICTIONS_DB: {PREDICTIONS_DB}")
 
 def get_db(path):
-    conn = sqlite3.connect(path)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(path, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

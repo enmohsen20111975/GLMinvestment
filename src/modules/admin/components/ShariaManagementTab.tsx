@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 
 interface ShariaStats {
  total?: number;
@@ -315,18 +316,13 @@ export function ShariaManagementTab() {
 
  {/* Sources */}
  {data?.success && sources.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <Sparkles className="w-4 h-4 text-profit" />
- المصادر الشرعية ({activeSources}/{totalSources} نشط)
- </CardTitle>
- <CardDescription className="text-xs">
- المنهجية الأساسية: <Badge variant="outline" className="text-xs">{data.primary_method ?? 'S&P'}</Badge>
- {' '}· الحد الأدنى للإجماع: <Badge variant="outline" className="text-xs">{data.consensus_min ?? 6}</Badge>
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`المصادر الشرعية (${activeSources}/${totalSources} نشط)`}
+ icon={Sparkles}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
  {sources.map((s) => (
  <div
@@ -352,23 +348,18 @@ export function ShariaManagementTab() {
  </div>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Review queue (alias map) */}
  {data?.success && reviewQueue.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-base flex items-center gap-2">
- <AlertTriangle className="w-4 h-4 text-warning" />
- طابور المراجعة — رموز متعارضة ({reviewQueue.length})
- </CardTitle>
- <CardDescription className="text-xs">
- أسهم الرمز فيها مختلف بين المصدر الشرعي و stocks.db — تحتاج مراجعة يدوية.
- </CardDescription>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title={`طابور المراجعة — رموز متعارضة (${reviewQueue.length})`}
+ icon={AlertTriangle}
+ iconColor="text-warning"
+ hideRefresh
+ headerClassName="pb-2"
+ >
  <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
  <table className="w-full text-xs">
  <thead className="sticky top-0 bg-background z-10">
@@ -411,20 +402,19 @@ export function ShariaManagementTab() {
  </tbody>
  </table>
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Alias totals summary */}
  {data?.success && aliasTotals.length > 0 && (
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-2">
- <ShieldCheck className="w-4 h-4 text-profit" />
- ملخص مطابقات الرموز
- </CardTitle>
- </CardHeader>
- <CardContent>
+ <WidgetCard
+ title="ملخص مطابقات الرموز"
+ icon={ShieldCheck}
+ iconColor="text-profit"
+ hideRefresh
+ headerClassName="pb-2"
+ titleClassName="text-sm"
+ >
  <div className="flex flex-wrap gap-2">
  {aliasTotals.map((t, i) => (
  <Badge key={i} variant="outline" className="text-xs">
@@ -432,8 +422,7 @@ export function ShariaManagementTab() {
  </Badge>
  ))}
  </div>
- </CardContent>
- </Card>
+ </WidgetCard>
  )}
 
  {/* Empty state */}

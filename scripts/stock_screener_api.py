@@ -79,7 +79,9 @@ def load_ticker_data(ticker: str, lookback_days: int = 600) -> Optional[Dict]:
         return None
 
     try:
-        conn = sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(ph_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         rows = conn.execute("""
             SELECT date, open_price, high_price, low_price, close_price, volume
@@ -116,7 +118,9 @@ def load_all_tickers(market: str = 'EGX', min_days: int = 200, limit: int = 100)
         return []
 
     try:
-        conn = sqlite3.connect(str(ph_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(ph_db), writable=False).__enter__()
         conn.row_factory = sqlite3.Row
         tickers = conn.execute("""
             SELECT ticker, COUNT(*) as cnt, MAX(date) as last_date

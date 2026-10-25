@@ -48,7 +48,9 @@ def load_with_anomaly():
             clean[ticker] = data
     universe['prices'] = clean
     # Add sector
-    conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'), timeout=5)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
     cur = conn.execute('SELECT ticker, sector FROM stocks')
     sectors = {r[0]: r[1] for r in cur.fetchall()}
     conn.close()
@@ -61,7 +63,9 @@ def get_delta_volume(ticker, universe_prices):
     """جلب آخر delta_volume لسهم من egksco_price_history."""
     # Try to read from DB
     try:
-        conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'data_engine.db'), timeout=5)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'data_engine.db'), writable=False).__enter__()
         row = conn.execute('''
             SELECT delta_pct, pressure, buy_volume, sell_volume
             FROM egksco_price_history

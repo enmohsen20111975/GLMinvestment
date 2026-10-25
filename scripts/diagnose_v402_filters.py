@@ -23,7 +23,9 @@ V68_DIRTY_DIST_REJECT = os.environ.get('V68_DIRTY_DIST_REJECT', '1') == '1'
 V72_HIDDEN_DIST_BLOCK = os.environ.get('V72_HIDDEN_DIST_BLOCK', '1') == '1'
 V73_DESERT_PHASE_REJECT = os.environ.get('V73_DESERT_PHASE_REJECT', '1') == '1'
 
-conn = sqlite3.connect('db/price_history.db')
+# Phase 7.1: migrated to db_manager (writable=False)
+from core.db_manager import db_manager
+conn = db_manager.connection('db/price_history.db', writable=False).__enter__()
 cur = conn.cursor()
 
 def parse_volume(val):
@@ -100,7 +102,9 @@ for ticker in test_tickers:
     # 3. Sector-Liquidity Filter
     try:
         _sec_db = str(Path('vps-service').resolve().parents[0] / 'db' / 'stocks.db')
-        _sec_conn = sqlite3.connect(_sec_db, timeout=5.0)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        _sec_conn = db_manager.connection(_sec_db, writable=False).__enter__()
         _sec_conn.row_factory = sqlite3.Row
         _sec_row = _sec_conn.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,)).fetchone()
         _stock_sector = _sec_row['sector'] if _sec_row and _sec_row['sector'] else None

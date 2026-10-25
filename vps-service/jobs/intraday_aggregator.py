@@ -219,7 +219,9 @@ def aggregate_intraday_to_daily(
 
     # ── 1. اتصل بـ intraday.db ──
     try:
-        intraday_conn = sqlite3.connect(intraday_db, timeout=30)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        intraday_conn = db_manager.get_connection(intraday_db, writable=False)
         intraday_conn.execute('PRAGMA busy_timeout = 30000')
     except Exception as e:
         result['error'] = f'intraday.db connect failed: {e}'
@@ -227,7 +229,9 @@ def aggregate_intraday_to_daily(
         return result
 
     # ── 2. اتصل بـ price_history.db ──
-    ph_conn = sqlite3.connect(ph_db, timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.get_connection(ph_db, writable=False)
     ph_conn.execute('PRAGMA busy_timeout = 30000')
     if not _ensure_price_history_schema(ph_conn):
         intraday_conn.close()

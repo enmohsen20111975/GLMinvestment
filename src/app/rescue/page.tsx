@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -271,14 +272,15 @@ export default function RescuePage() {
  {/* Trade Autopsy + Asset Health */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Trade Autopsy */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-1.5">
- <Skull className="w-4 h-4 text-danger" />
- تشريح الصفقة
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-2 text-xs">
+ <WidgetCard
+ 	title="تشريح الصفقة"
+ 	icon={Skull}
+ 	iconColor="text-danger"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm gap-1.5"
+ 	contentClassName="space-y-2 text-xs"
+ >
+
  <div className="flex justify-between">
  <span className="text-muted-foreground">نسبة الخسارة</span>
  <span className={cn('font-bold font-mono', result.loss_pct < 0 ? 'text-danger' : 'text-profit')}>
@@ -311,18 +313,18 @@ export default function RescuePage() {
  )}
  </div>
  <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">{result.autopsy.summary}</p>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Asset Health */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-1.5">
- <Heart className="w-4 h-4 text-profit" />
- حيوية الأصل والسيولة
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-2 text-xs">
+ <WidgetCard
+ 	title="حيوية الأصل والسيولة"
+ 	icon={Heart}
+ 	iconColor="text-profit"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm gap-1.5"
+ 	contentClassName="space-y-2 text-xs"
+ >
+
  <div className="flex justify-between">
  <span className="text-muted-foreground">تدفق السيولة المؤسسية</span>
  <span className="font-semibold">{result.asset_health.institutional_flow}</span>
@@ -357,19 +359,19 @@ export default function RescuePage() {
  <span className="font-mono font-semibold text-loss">{result.asset_health.resistance_exit_level.toFixed(2)}</span>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
 
  {/* Action Plan */}
- <Card>
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-1.5">
- <Target className="w-4 h-4 text-primary" />
- خطة العمل والتعافي
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-2">
+ <WidgetCard
+ 	title="خطة العمل والتعافي"
+ 	icon={Target}
+ 	iconColor="text-primary"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm gap-1.5"
+ 	contentClassName="space-y-2"
+ >
+
  <div className="p-3 rounded-lg bg-muted/30">
  <p className="text-xs text-foreground leading-relaxed">{result.action_plan.recommended_action}</p>
  </div>
@@ -382,23 +384,23 @@ export default function RescuePage() {
  <p className="text-xs text-muted-foreground">{result.action_plan.average_down_reason}</p>
  </div>
  )}
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* Lessons Learned */}
- <Card className="border-warning/20 dark:border-warning/30 bg-warning/5">
- <CardHeader className="pb-2">
- <CardTitle className="text-sm flex items-center gap-1.5">
- <Lightbulb className="w-4 h-4 text-warning" />
- الدروس المستفادة
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-1.5">
+ <WidgetCard
+ 	title="الدروس المستفادة"
+ 	icon={Lightbulb}
+ 	iconColor="text-warning"
+ 	iconSize="w-4 h-4"
+ 	titleClassName="text-sm gap-1.5"
+ 	className="border-warning/20 dark:border-warning/30 bg-warning/5"
+ 	contentClassName="space-y-1.5"
+ >
+
  {result.lessons_learned.map((lesson, i) => (
  <p key={i} className="text-xs text-muted-foreground leading-relaxed">{lesson}</p>
  ))}
- </CardContent>
- </Card>
+ </WidgetCard>
  </div>
  )}
  </div>

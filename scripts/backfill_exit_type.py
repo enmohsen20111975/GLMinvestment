@@ -15,7 +15,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
 
 def main():
-    conn = sqlite3.connect(str(PREDICTIONS_DB), timeout=30)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PREDICTIONS_DB), writable=False).__enter__()
     
     # Count before
     n_null = conn.execute('SELECT COUNT(*) FROM predictions WHERE actual_return IS NOT NULL AND exit_type IS NULL').fetchone()[0]

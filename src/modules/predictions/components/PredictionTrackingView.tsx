@@ -1,7 +1,6 @@
 'use client';
 import { StatCard } from '@/components/ui/stat-card';
 
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
 /**
  * PredictionTrackingView — تتبع التوقعات (Feature 3)
  * =========================================================
@@ -115,7 +114,9 @@ const STATUS_BADGE_CLASS: Record<PickStatus, string> = {
  expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-700',
 };
 
-/* formatNumber moved to @/lib/format (Phase 1 DRY) */);
+function formatNumber(v: number | null | undefined, digits = 2): string {
+ if (v === null || v === undefined || Number.isNaN(v)) return '—';
+ return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 function formatPct(v: number | null | undefined, withSign = false): string {

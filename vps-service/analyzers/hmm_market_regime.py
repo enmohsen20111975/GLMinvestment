@@ -66,7 +66,9 @@ class HMMMarketRegime:
 
     def _load_index_data(self, ticker: str = 'EGX30ETF', lookback_days: int = 500) -> Tuple[np.ndarray, np.ndarray]:
         """تحميل بيانات المؤشر من price_history.db."""
-        conn = sqlite3.connect(self.db_path)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
 
         rows = conn.execute('''

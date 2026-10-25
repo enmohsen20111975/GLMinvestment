@@ -93,7 +93,9 @@ def load_resolver():
     if not os.path.exists(STOCKS_DB):
         log("⚠️ stocks.db مش موجود — المطابقة هتكون بالحرف العربي بس")
         return known, by_name, by_market
-    conn = sqlite3.connect("file:%s?mode=ro" % STOCKS_DB, uri=True, timeout=20)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.get_connection(DB_FILE, writable=False)
     rows = conn.execute("SELECT ticker, name, name_ar, market FROM stocks").fetchall()
     conn.close()
     for tk, nm, na, mk in rows:
@@ -262,7 +264,9 @@ def main():
         % (len(KNOWN), ", ".join("%s=%d" % (k, len(v)) for k, v in sorted(BY_MARKET.items()))))
     log("=" * 66)
 
-    conn = sqlite3.connect(DB_FILE, timeout=60)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB_FILE, writable=False).__enter__()
     conn.execute("PRAGMA foreign_keys=OFF")
     reports = []
     for t in args.tables:

@@ -53,7 +53,9 @@ def check_db(db_rel, table):
         return {'exists': False, 'path': str(db_path)}
     try:
         size_mb = db_path.stat().st_size / (1024 * 1024)
-        conn = sqlite3.connect(str(db_path))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(db_path), writable=False).__enter__()
         # تحقق من الـ table
         cur = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
@@ -122,7 +124,9 @@ def _is_production():
     if not stocks_db.exists():
         return False
     try:
-        conn = sqlite3.connect(str(stocks_db))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.connection(str(stocks_db), writable=False).__enter__()
         n = conn.execute("SELECT COUNT(*) FROM stock_daily_prices").fetchone()[0]
         conn.close()
         return n > 1000

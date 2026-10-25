@@ -56,7 +56,9 @@ _original_load = load_universe_with_anomaly_filter
 def load_with_sector():
     universe = _original_load()
     import sqlite3
-    conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'), timeout=5)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
     cur = conn.execute('SELECT ticker, sector FROM stocks')
     sectors = {r[0]: r[1] for r in cur.fetchall()}
     conn.close()

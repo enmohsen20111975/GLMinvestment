@@ -188,7 +188,9 @@ def _open_db_readonly(db_path: Path) -> sqlite3.Connection:
     if not db_path.exists():
         raise FileNotFoundError(f"DB not found: {db_path}")
     uri = f"file:{db_path.as_posix()}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True, timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(uri, writable=False).__enter__()
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -51,7 +51,9 @@ def main():
     print(f"  EGX70: {len(egx70)} tickers")
     print(f"  EGX100: {len(egx100)} tickers")
 
-    conn = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(str(STOCKS_DB), writable=False).__enter__()
     cur = conn.cursor()
 
     # check which columns exist

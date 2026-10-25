@@ -602,7 +602,9 @@ def simulate_trade(conn, ticker, entry_date, entry_price, stop_pct=8, target_pct
 # ═══════════════════════════════════════════════════════════════════
 
 def main():
-    conn = sqlite3.connect(DB)
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    conn = db_manager.connection(DB, writable=False).__enter__()
 
     print("╔" + "═"*78 + "╗")
     print("║" + "   V4-Daily — كاشف التجميع الهادئ على البيانات اليومية   ".center(78) + "║")

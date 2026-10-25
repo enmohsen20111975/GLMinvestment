@@ -2,13 +2,12 @@
 import { StatCard } from '@/components/ui/stat-card';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import {
-import { formatPrice, formatNumber, formatPercent } from '@/lib/format';
  Select,
  SelectContent,
  SelectItem,
@@ -84,7 +83,9 @@ interface ApiResponse {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/* formatPrice moved to @/lib/format (Phase 1 DRY) */);
+function formatPrice(n: number | null): string {
+ if (n === null || n === undefined) return '—';
+ if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
  if (n >= 1) return '$' + (n ?? 0).toFixed(2);
  if (n >= 0.01) return '$' + (n ?? 0).toFixed(4);
  return '$' + (n ?? 0).toFixed(6);
@@ -411,14 +412,14 @@ export default function CryptoPredictionTrackingView() {
  </div>
 
  {/* Main Card */}
- <Card>
- <CardHeader className="pb-3">
- <CardTitle className="text-base flex items-center gap-2">
- <Target className="h-4 w-4" />
- التوقعات ({filtered.length})
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
+ <WidgetCard
+        title={`التوقعات (${filtered.length})`}
+        icon={Target}
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        contentClassName="space-y-4"
+ >
+
  {/* Filters */}
  <div className="flex flex-col md:flex-row gap-3">
  <div className="relative flex-1">
@@ -467,8 +468,7 @@ export default function CryptoPredictionTrackingView() {
  />
  </TabsContent>
  </Tabs>
- </CardContent>
- </Card>
+ </WidgetCard>
 
  {/* إخلاء مسؤولية قانوني */}
  <LegalDisclaimerFooter />

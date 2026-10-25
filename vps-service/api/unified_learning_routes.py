@@ -26,6 +26,7 @@ Endpoints (actual URL prefix: /api/unified-learning):
 """
 
 from flask import Blueprint, jsonify, request
+from core.auth_middleware import require_admin
 from datetime import datetime
 import sys
 import os
@@ -76,7 +77,9 @@ def get_status():
     try:
         import sqlite3
         
-        conn = sqlite3.connect(LEARNING_DB)
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        conn = db_manager.get_connection(LEARNING_DB, writable=False)
         cursor = conn.cursor()
         
         # Helper function to safely get count
@@ -164,6 +167,7 @@ def get_status():
         })
 
 
+@require_admin
 @learning_bp.route('/iterative', methods=['POST'])
 def run_iterative():
     """
@@ -238,6 +242,7 @@ def run_iterative():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/intelligent', methods=['POST'])
 def run_intelligent():
     """
@@ -319,6 +324,7 @@ def get_indicators():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/mirror/<int:trade_id>', methods=['POST'])
 def run_mirror(trade_id):
     """
@@ -421,6 +427,7 @@ def get_expectancy():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/mine-lessons', methods=['POST'])
 def mine_lessons():
     """
@@ -494,6 +501,7 @@ def get_summary():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/stop', methods=['POST'])
 def stop_learning():
     """
@@ -633,6 +641,7 @@ def get_session(session_type, session_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/storage/cleanup', methods=['POST'])
 def cleanup_old_files():
     """
@@ -658,6 +667,7 @@ def cleanup_old_files():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/iterative-with-file', methods=['POST'])
 def run_iterative_with_file():
     """
@@ -728,6 +738,7 @@ def run_iterative_with_file():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/intelligent-with-file', methods=['POST'])
 def run_intelligent_with_file():
     """
@@ -780,6 +791,7 @@ def run_intelligent_with_file():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/apply', methods=['POST'])
 def apply_parameters():
     """
@@ -854,6 +866,7 @@ def apply_parameters():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@require_admin
 @learning_bp.route('/learn-from-errors', methods=['POST'])
 def run_learn_from_errors():
     """

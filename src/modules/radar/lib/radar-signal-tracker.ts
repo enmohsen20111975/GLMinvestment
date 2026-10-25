@@ -75,12 +75,14 @@ export function ensureSchema(db: Database.Database): void {
  max_price_after REAL,
  min_price_after REAL,
  verified_at TEXT,
- created_at TEXT DEFAULT (datetime('now'))
+ created_at TEXT DEFAULT (datetime('now')),
+ source TEXT DEFAULT 'maker_radar'
  );
  CREATE INDEX IF NOT EXISTS idx_radar_sig_ticker ON radar_signal_tracking(ticker);
  CREATE INDEX IF NOT EXISTS idx_radar_sig_status ON radar_signal_tracking(status);
  CREATE INDEX IF NOT EXISTS idx_radar_sig_type ON radar_signal_tracking(signal_type);
  CREATE INDEX IF NOT EXISTS idx_radar_sig_date ON radar_signal_tracking(signal_date);
+ CREATE INDEX IF NOT EXISTS idx_radar_sig_source ON radar_signal_tracking(source);
  `);
 }
 
@@ -150,8 +152,8 @@ export function recordSignal(input: RecordSignalInput): RecordSignalResult {
  const result = db
  .prepare(
  `INSERT INTO radar_signal_tracking
- (ticker, signal_date, signal_type, entry_price, path, reason, status)
- VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+ (ticker, signal_date, signal_type, entry_price, path, reason, status, source)
+ VALUES (?, ?, ?, ?, ?, ?, 'pending', 'frontend')`,
  )
  .run(ticker, signalDate, input.signal_type, input.entry_price, input.path ?? null, input.reason ?? null);
 

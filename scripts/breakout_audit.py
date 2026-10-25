@@ -66,7 +66,9 @@ def calc_regime(closes, idx):
 
 def load_ticker_data(start_date, end_date, preload_start):
     ph_db = DB_DIR / 'price_history.db'
-    ph_conn = sqlite3.connect(str(ph_db))
+    # Phase 7.1: migrated to db_manager (writable=False)
+    from core.db_manager import db_manager
+    ph_conn = db_manager.connection(str(ph_db), writable=False).__enter__()
     ph_conn.row_factory = sqlite3.Row
     
     tickers = ph_conn.execute("""
@@ -94,7 +96,9 @@ def load_ticker_data(start_date, end_date, preload_start):
     # Sector map
     sector_map = {}
     try:
-        s_conn = sqlite3.connect(str(DB_DIR / 'stocks.db'))
+        # Phase 7.1: migrated to db_manager (writable=False)
+        from core.db_manager import db_manager
+        s_conn = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
         s_conn.row_factory = sqlite3.Row
         for r in s_conn.execute("SELECT ticker, sector FROM stocks WHERE sector IS NOT NULL").fetchall():
             sector_map[r['ticker']] = r['sector'] or 'UNKNOWN'
