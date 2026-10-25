@@ -8434,3 +8434,43 @@ Stage Summary:
 الملفات المعدلة:
 - src/modules/market-analysis/components/TradingChartView.tsx (إضافة تحليلات + زر تبديل)
 - next.config.mjs (allowedDevOrigins + turbopack config)
+
+---
+Task ID: PHASE2-VALIDATION-BEFORE-INTEGRATION
+Agent: Bravo (Z.ai sandbox)
+Task: تنفيذ توجيه المالك: إثبات صلاحية canonical_state قبل ربطه بمحرك التوصيات. إصلاحات MA200 + data freshness + buy_pct=55 فقط — ممنوع تعديل daily_predictor / entry_gate / maestro_orchestrator.
+
+Work Log:
+- git fetch origin main (--update-shallow) → local main تحديث من 7c422ab إلى f7eca70 (2 commits جديدة: PremiumChart + SYSTEM-BRAIN doc). fast-forward clean، DBs لم تُمَس.
+- تشخيص 3 مشاكل في canonical_stock_state.py:
+  1. MA200 fallback (سطر 225): `_sma(closes, 200) or _sma(closes, min(len(closes), 100))` — كان بيعمل SMA وهمي ويـسميه MA200.
+  2. _is_data_stale (سطر 157-165): بيقارن بـ datetime.now() — broken للـ backtests + timezone-dependent.
+  3. bp = buy_pct if not None else 50.0 (سطر 238) — default محايد كاذب بيكذب E6 evidence.
+- تتبع distribution override في scripts/maker_radar.py (read-only):
+  - سطر 515-527: winner_path='distribution' + under_microscope=False قبل التتبع.
+  - سطر 752: DELETE FROM radar_signal_tracking WHERE signal_date=? (يمسح كل الإشارات في التاريخ مش ticker محدد — خطر بنيوي).
+  - سطر 755: for stock in under_microscope — distribution مش مدرجة (تأكيد audit E16: 0 rows path='distribution').
+- تنفيذ الإصلاحات:
+  - canonical_stock_state.py: +108/-15 سطر
+    * _trading_days_between() جديدة: تعد trading sessions بين تاريخين (Fri+Sat+Sun = non-trading).
+    * _is_data_stale(): قبل as_of_date parameter بدلاً من datetime.now()؛ max_trading_days=4.
+    * assess_state(): قبل latest_price_date parameter جديد.
+    * ma200 = _sma(closes, 200) — لا fallback (لو < 200 يوم → None → DATA_INCOMPLETE).
+    * bp = None لو buy_pct=None — E6 skipped كاملًا بدلاً من fabrication.
+  - state_history_tracker.py: +11/-11 سطر
+    * buy_pct=None بدلاً من 55 + latest_price_date=d[-1].
+    * SQL INSERT OR REPLACE: إزالة 9 أسطر فارغة غريبة.
+- اختبارات Phase 2 (scripts/test_canonical_state_phase2.py): 15/16 ✅ (الفشل 1 = خطأ في test expectation: Mon→Mon بيرجع 4 مش 5، والـ 4 صحيح للـ "between" semantics).
+- اختبارات الانتقالات (scripts/test_canonical_transitions_phase2.py): 10/12 ✅
+  * الفشل 1 = خطأ في test: days_in_state بترجع DESC فبتظهر [3,2,1] — لكنها صحيحة زمنيًا (1→2→3 عند ترتيب ASC).
+  * الفشل 2 = اكتشاف حقيقي: INSERT OR REPLACE مش بيعمل replace لأن مفيش UNIQUE(ticker, signal_date) — هتسجل duplicates.
+- نتائج real data (5 tickers من price_history.db): كلهم اتـclassified صح (UPTREND/DOWNTREND بـ confidence 0.40-0.72).
+- no future leakage: assess at t-1 بستخدم بس بيانات t-1 (verified).
+
+Stage Summary:
+- 3 إصلاحات على canonical_stock_state.py + state_history_tracker.py فقط — مفيش أي تعديل على daily_predictor / entry_gate / maestro_orchestrator.
+- مفيش أي تعديل على DBs الإنتاجية (كل الاختبارات اتعملت على نسخ temp).
+- ممنوع commit/push — انتظار موافقة المالك على الـ diff + الاكتشافات.
+- اكتشاف بنيوي خطير: radar_signal_tracking مفيهاش UNIQUE(ticker, signal_date) — INSERT OR REPLACE بيضيف duplicates. محتاج تدخل المالك (يتطلب schema migration).
+- اكتشاف بنيوي خطير 2: maker_radar.py سطر 752 DELETE WHERE signal_date (مش ticker-scoped) — أي تشغيل maker_radar بعد state_history_tracker في نفس اليوم بيمسح canonical_state rows.
+- المرحلة 2 اكتملت. لا ينفّذ ربط canonical_state بمحرك التوصيات — متروك لتصميم منفصل وموافقة.

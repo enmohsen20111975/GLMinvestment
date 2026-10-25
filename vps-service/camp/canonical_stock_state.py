@@ -154,13 +154,49 @@ def _volume_ratio(volumes: List[float], period: int = 20) -> Optional[float]:
     return volumes[-1] / avg
 
 
-def _is_data_stale(latest_date: str, max_days: int = 7) -> bool:
-    """Check if the latest price data is more than max_days old.
-    Default 7 days (allows weekends + holidays). For live trading, set max_days=3."""
+def _trading_days_between(latest_date: str, as_of_date: str) -> int:
+    """Count trading sessions strictly between latest_date and as_of_date.
+
+    EGX/Saudi/US markets are closed Fri-Sat (EGX) or Sat-Sun (US/Tadawul).
+    For the freshness check we use a conservative calendar that treats
+    Friday + Saturday + Sunday as non-trading (covers all 3 markets the
+    project supports). Holidays are NOT modelled here — that's an
+    explicit decision: if the gap exceeds trading-day tolerance we mark
+    the data stale rather than silently accepting it.
+    """
     try:
-        d = datetime.strptime(latest_date, '%Y-%m-%d')
-        age = (datetime.now() - d).days
-        return age > max_days
+        d_latest = datetime.strptime(latest_date, '%Y-%m-%d').date()
+        d_as_of = datetime.strptime(as_of_date, '%Y-%m-%d').date()
+    except Exception:
+        return 999  # unparseable → treat as very stale
+    if d_latest > d_as_of:
+        return 0
+    count = 0
+    cur = d_latest
+    while cur < d_as_of:
+        cur = cur + timedelta(days=1)
+        # 4=Friday, 5=Saturday, 6=Sunday → non-trading
+        if cur.weekday() in (4, 5, 6):
+            continue
+        count += 1
+    return count
+
+
+def _is_data_stale(latest_date: str, as_of_date: str, max_trading_days: int = 4) -> bool:
+    """Check if the latest price data is too old relative to the assessment date.
+
+    FIX (Phase 2 — owner directive "Validation Before Integration"):
+      - Previously compared latest_date to datetime.now() — broken for
+        historical backtests and timezone-dependent.
+      - Now compares to the explicit as_of_date (the assessment date).
+      - Counts *trading* sessions missed, not raw calendar days, so a
+        Friday close assessed on Monday is NOT stale (1 trading day gap).
+      - max_trading_days=4 is the tolerance: 4 missed trading sessions
+        (~1 week of trading) → stale. Tighter than the old 7-day rule.
+    """
+    try:
+        gap = _trading_days_between(latest_date, as_of_date)
+        return gap > max_trading_days
     except Exception:
         return True
 
@@ -179,6 +215,7 @@ def assess_state(
     buy_pct: Optional[float] = None,
     prev_state: str = '',
     prev_date: str = '',
+    latest_price_date: str = '',
 ) -> StockStateAssessment:
     """
     Assess the canonical stock state based on ALL available evidence.
@@ -193,9 +230,16 @@ def assess_state(
         highs: High prices
         lows: Low prices
         volumes: Volume data
-        buy_pct: Buy percentage from money flow (0-100, optional)
+        buy_pct: Buy percentage from money flow (0-100). If None, evidence
+                E6 (buy_pct accumulation/distribution) is NOT collected and
+                the state is derived only from price/volume evidence; if the
+                remaining evidence is insufficient, the assessment falls back
+                to STATE_UNCONFIRMED rather than fabricating a flow signal.
         prev_state: Previous state (for transition tracking)
         prev_date: Previous assessment date
+        latest_price_date: Date of closes[-1] (YYYY-MM-DD). If empty, falls
+                          back to `date` itself (assumes closes[-1] == assessment
+                          date). Used for freshness check.
 
     Returns:
         StockStateAssessment with canonical state + evidence + confidence
@@ -209,7 +253,11 @@ def assess_state(
         assessment.confidence = 0.0
         return assessment
 
-    if _is_data_stale(date):
+    # FIX (Phase 2 — owner directive): use latest_price_date (or fallback to
+    # assessment date) as the freshness reference, NOT datetime.now(). This
+    # makes historical backtests correct and removes timezone dependency.
+    freshness_ref = latest_price_date or date
+    if _is_data_stale(freshness_ref, date):
         assessment.state = DATA_STALE
         assessment.data_freshness = 'stale'
         assessment.confidence = 0.0
@@ -222,7 +270,12 @@ def assess_state(
     # ─── Compute indicators ────────────────────────────────────────────────
     price = closes[-1]
     ma50 = _sma(closes, 50)
-    ma200 = _sma(closes, 200) or _sma(closes, min(len(closes), 100))
+    # FIX (Phase 2 — owner directive): MA200 must be a real 200-day SMA.
+    # Previously: `_sma(closes, 200) or _sma(closes, min(len(closes), 100))`
+    # which silently substituted a shorter SMA (e.g. SMA100) and labelled it
+    # MA200 — misleading E2/E3 evidence + invalid invalidation conditions.
+    # Now: if < 200 closes, ma200 = None → DATA_INCOMPLETE (handled below).
+    ma200 = _sma(closes, 200)
     roc_5d = _roc(closes, 5)
     roc_10d = _roc(closes, 10)
     roc_20d = _roc(closes, 20)
@@ -235,7 +288,9 @@ def assess_state(
         return assessment
 
     atr_pct = (atr_val / price) * 100 if price > 0 else 0
-    bp = float(buy_pct) if buy_pct is not None else 50.0  # default neutral
+    # FIX (Phase 2): no fabricated default. If buy_pct is None, E6 evidence
+    # is skipped entirely (see E6 below) — state derived only from real data.
+    bp = float(buy_pct) if buy_pct is not None else None
 
     # ─── Gather evidence ──────────────────────────────────────────────────
     evidence_support = []
@@ -294,20 +349,25 @@ def assess_state(
                                               f'حجم هادئ ({vol_ratio:.1f}×) — تجميع محتمل', 'neutral'))
 
     # E6: Buy percentage (from money flow)
-    if bp >= 60:
-        if -3 <= roc_10d <= 5:
-            evidence_support.append(Evidence('buy_pct_accumulation', bp, ACCUMULATION, 0.6,
-                                              f'ضغط شراء ({bp:.0f}%) مع سعر مستقر', 'bullish'))
-        else:
-            evidence_support.append(Evidence('buy_pct_strong', bp, UPTREND, 0.4,
-                                              f'ضغط شراء ({bp:.0f}%)', 'bullish'))
-    elif bp <= 40:
-        if roc_10d and roc_10d > -3:
-            evidence_oppose.append(Evidence('buy_pct_distribution', bp, DISTRIBUTION, 0.6,
-                                             f'ضغط بيع ({bp:.0f}%) مع سعر مستقر', 'bearish'))
-        else:
-            evidence_oppose.append(Evidence('buy_pct_selling', bp, DOWNTREND, 0.6,
-                                             f'ضغط بيع ({bp:.0f}%) مع هبوط', 'bearish'))
+    # FIX (Phase 2): if bp is None (no money_flow data available), SKIP E6
+    # entirely instead of fabricating a neutral 50%. The state will be
+    # derived only from price/volume evidence; if insufficient, the
+    # engine falls back to STATE_UNCONFIRMED (see state-scoring section).
+    if bp is not None:
+        if bp >= 60:
+            if -3 <= roc_10d <= 5:
+                evidence_support.append(Evidence('buy_pct_accumulation', bp, ACCUMULATION, 0.6,
+                                                  f'ضغط شراء ({bp:.0f}%) مع سعر مستقر', 'bullish'))
+            else:
+                evidence_support.append(Evidence('buy_pct_strong', bp, UPTREND, 0.4,
+                                                  f'ضغط شراء ({bp:.0f}%)', 'bullish'))
+        elif bp <= 40:
+            if roc_10d and roc_10d > -3:
+                evidence_oppose.append(Evidence('buy_pct_distribution', bp, DISTRIBUTION, 0.6,
+                                                 f'ضغط بيع ({bp:.0f}%) مع سعر مستقر', 'bearish'))
+            else:
+                evidence_oppose.append(Evidence('buy_pct_selling', bp, DOWNTREND, 0.6,
+                                                 f'ضغط بيع ({bp:.0f}%) مع هبوط', 'bearish'))
 
     # E7: ATR (volatility regime)
     if atr_pct < 2.0:

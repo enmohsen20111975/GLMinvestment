@@ -99,11 +99,19 @@ def assess_and_record(conn_ph: sqlite3.Connection, conn_st: sqlite3.Connection,
     prev_state, prev_date, prev_days = get_prev_state(conn_st, ticker, assessment_date)
 
     # Assess
+    # FIX (Phase 2 — owner directive): buy_pct=None (was hardcoded 55).
+    # canonical_stock_state.assess_state now skips E6 evidence when bp is
+    # None and falls back to STATE_UNCONFIRMED if remaining evidence is
+    # insufficient. We do NOT fabricate a flow signal.
+    # FIX (Phase 2): pass latest_price_date = d[-1] (last close date) so
+    # the freshness check compares the actual last close to the assessment
+    # date, not datetime.now().
     result = assess_state(
         ticker=ticker, date=assessment_date,
         closes=c, highs=h, lows=l, volumes=v,
-        buy_pct=55,  # default — will be replaced by real money_flow when available
+        buy_pct=None,  # no real money_flow data wired in yet — explicit
         prev_state=prev_state,
+        latest_price_date=d[-1] if d else assessment_date,
     )
 
     # Calculate days_in_state
@@ -123,6 +131,9 @@ def assess_and_record(conn_ph: sqlite3.Connection, conn_st: sqlite3.Connection,
     invalidation_json = json.dumps(result.invalidation_conditions, default=str)
 
     # Upsert into radar_signal_tracking
+    # FIX (Phase 2): the original SQL had 9 blank lines inside VALUES(...).
+    # SQLite ignores them but it's a code-quality hazard + signals un-reviewed
+    # SQL. Cleaned up to a single, well-formed statement.
     conn_st.execute("""
         INSERT OR REPLACE INTO radar_signal_tracking
             (ticker, signal_date, signal_type, entry_price, status,
@@ -130,15 +141,6 @@ def assess_and_record(conn_ph: sqlite3.Connection, conn_st: sqlite3.Connection,
              confidence, direction_up, direction_down,
              evidence_json, invalidation_json, data_freshness)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-
-
-
-
-
-
-
-
-
     """, (
         ticker, assessment_date, 'canonical_state', result.last_price, 'assessed',
         result.state, prev_state, result.transition_type, days_in_state,
