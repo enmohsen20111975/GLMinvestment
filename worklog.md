@@ -8765,3 +8765,39 @@ Stage Summary:
   Q1: لا — فيه تعارض بنيوي (maker_radar DELETE + INSERT OR REPLACE بدون UNIQUE).
   Q2: نعم — نقطة الربط محددة + Shadow Mode جاهز.
   Q3: غير محسوم — مفيش بيانات متداخلة في sandbox للحكم.
+
+---
+Task ID: CRYPTO-CALENDAR-FIX-AND-METHODOLOGY-FIRST-VALIDATION
+Agent: Bravo (Z.ai sandbox)
+Task: إصلاح CRYPTO calendar (محسن أكتشفه) + منهجية تاريخية محددة مسبقًا + التحقق من تحميل Shadow Mode.
+
+Work Log:
+- HEAD الفعلي = 3236740 (6 commits ahead of origin/main، كلها sandbox auto-commit).
+- إصلاح CRYPTO calendar في canonical_stock_state.py:
+  * قبل: CRYPTO معاملة مثل US (Sat+Sun non-trading) — غلط.
+  * بعد: CRYPTO = 24/7/365، non_trading = () (كل أيام التداول).
+  * اختبار: CRYPTO Fri→Mon = 3 (Sat+Sun+Mon all trading) ✅
+  * اختبار: EGX و US لسه شغالين صح (backward compatibility).
+- التحقق من تحميل canonical_state_shadow.py في مسار التشغيل:
+  * Grep على كل المستودع: canonical_state_shadow موجود بس في 4 ملفات (module + اختبارين + worklog).
+  * مش مستورد في أي ملف إنتاجي (daily_predictor.py + cron jobs).
+  * النتيجة: Shadow Mode مُنفَّذ كموديول + مُختبَر في بيئة معزولة، **مش متصل بمسار التشغيل الإنتاجي**.
+- فحص تطابق tickers/markets/dates:
+  * predictions: 2256 صف، 1442 بـ actual_return، تواريخ من 2025-09 لـ 2026-10-22.
+  * canonical_state: 42 صف كلها 2026-10-21، 26 tickers مصرية.
+  * overlap على 2026-10-21: 8 predictions على MTIE/RKAZ، 0 overlap مع canonical_state.
+  * predictions مصرية كتير (ABUK, ETEL, HRHO, SWDY) بس بتواريخ تانية (2026-01 لـ 2026-04).
+- محاولة historical comparison بمنهجية محددة مسبقًا:
+  * Min sample: 30، Significance: ±2%، Groups: bullish/bearish/neutral.
+  * Lookahead protection: استخدم most_recent_before matches بس.
+  * النتيجة: 0 matches (no overlap). INCONCLUSIVE — insufficient data in sandbox.
+- لا يمكن عمل historical validation على sandbox sample بدون:
+  (أ) تشغيل state_history_tracker على كل تواريخ predictions (محتاج VPS).
+  (ب) أو تشغيل Shadow Mode على الإنتاج 2-4 أسابيع لجمع بيانات جديدة.
+
+Stage Summary:
+- CRYPTO calendar fix: ✅ تم (code change آمن، backward compatible).
+- Shadow Mode loading verification: مكتشف إنه مش متصل بمسار الإنتاج — مش جاهز للإنتاج.
+- Historical validation: 0% coverage → INCONCLUSIVE (pre-defined methodology جاهزة لكن بيانات غير كافية).
+- الـ 96 اختبار سابقة أثبتت سلوك الكود في بيئة اختبار، مش صحة الإنتاج.
+- الـ 6 commits ahead كلها sandbox auto-commit — مش على GitHub ولا الإنتاج.

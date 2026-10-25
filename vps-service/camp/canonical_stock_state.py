@@ -164,8 +164,10 @@ def _trading_days_between(latest_date: str, as_of_date: str, market: str = 'EGX'
 
     Market calendars supported:
       - EGX, TADAWUL, KSE, QSE: Sun-Thu (Fri+Sat non-trading)
-      - US, CRYPTO: Mon-Fri (Sat+Sun non-trading). Crypto trades 24/7 but
-        for freshness purposes we treat it like US (conservative).
+      - US: Mon-Fri (Sat+Sun non-trading)
+      - CRYPTO: 24/7/365 (NO non-trading days — every calendar day is a
+        trading day). Treating crypto with US weekend rules would
+        incorrectly mark fresh weekend data as stale.
 
     Args:
         latest_date: YYYY-MM-DD (last close date).
@@ -190,8 +192,14 @@ def _trading_days_between(latest_date: str, as_of_date: str, market: str = 'EGX'
     if m in ('EGX', 'TADAWUL', 'KSE', 'QSE'):
         # Sun-Thu trading → Fri (4) + Sat (5) non-trading
         non_trading = (4, 5)
+    elif m == 'CRYPTO':
+        # FIX (owner review 2026-10-25): CRYPTO trades 24/7/365.
+        # No weekend non-trading days — every calendar day is a trading day.
+        # Treating crypto like US stocks (Sat+Sun non-trading) would
+        # incorrectly mark fresh crypto data as stale after a weekend.
+        non_trading = ()
     else:
-        # US, CRYPTO, or unknown → Mon-Fri trading → Sat (5) + Sun (6) non-trading
+        # US, or unknown → Mon-Fri trading → Sat (5) + Sun (6) non-trading
         non_trading = (5, 6)
 
     count = 0
