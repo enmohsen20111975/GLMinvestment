@@ -8626,3 +8626,31 @@ Stage Summary:
 - اكتشاف فعلي: 7 استثناءات `!active_databases_*.zip` في .gitignore — تحتاج توضيح المالك.
 - لا تعديل على .gitignore، لا حذف ملفات، لا ادعاء بتنفيذ ما لم يُنفَّذ.
 - أي مراجعة قادمة تبدأ بقراءة هذا القسم + باقي worklog.md قبل اقتراح أي إعادة تحقيق.
+
+---
+Task ID: CALENDAR-FIX-EGX-TRADING-DAYS
+Agent: Bravo (Z.ai sandbox)
+Task: إصلاح bug في _trading_days_between() اكتشفه المالك: كان بيعامل الأحد كـ non-trading، بس EGX/Tadawul/KSE/QSE بيتداولوا Sun-Thu.
+
+Work Log:
+- HEAD الفعلي = `053bbae` (مش `cac31b9` زي ما التقرير السابق قال — auto-commit شغّال).
+- التحقق من d[-1] ordering: state_history_tracker.py سطر 83 `ORDER BY date DESC` + سطر 90 `reversed(rows)` → d مرتب تصاعديًا ✅. d[-1] = أحدث تاريخ.
+- إصلاح `_trading_days_between()`:
+  * قبل: `if cur.weekday() in (4, 5, 6)` → Fri+Sat+Sun non-trading (غلط).
+  * بعد: market-aware. EGX/TADAWUL/KSE/QSE → Fri+Sat non-trading (Sun-Thu trading). US/CRYPTO → Sat+Sun non-trading (Mon-Fri).
+  * أضفت `market` parameter لـ `_trading_days_between` و `_is_data_stale` و `assess_state` (default='EGX').
+- اختبار الـ calendar الجديد (6 حالات):
+  * EGX Fri→Sun = 1 (Sat skipped, Sun trading) ✅
+  * EGX Thu→Sun = 1 (Fri+Sat skipped, Sun trading) ✅ — ده الـ bug الأصلي
+  * EGX Fri→Mon = 2 (Sat skipped, Sun+Mon trading) ✅
+  * EGX Mon→Mon = 5 (Tue+Wed+Thu+Sun+Mon) ✅
+  * US Fri→Mon = 1 (Sat+Sun skipped, Mon trading) ✅
+  * same day = 0 ✅
+- إعادة اختبار canonical_stock_state: 21/21 ✅ (قبل كده 19/19، ضفت 2 اختبار US + EGX Thu→Sun).
+
+Stage Summary:
+- bug الـ EGX calendar اتحل. الأحد بقى trading day للـ EGX/Tadawul/KSE/QSE.
+- market-aware parameter إتضاف لكل الـ chain: assess_state → _is_data_stale → _trading_days_between.
+- mafish تعديل على daily_predictor / entry_gate / maestro_orchestrator.
+- الـ default = EGX (أكتر سوق في المشروع).
+- الخطوة الجاية: حسم ملكية السجل (scoped DELETE) على نسخة مؤقتة.

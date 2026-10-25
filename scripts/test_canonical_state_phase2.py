@@ -199,19 +199,28 @@ print('4. _trading_days_between — اختبارات الوحدة')
 print('='*80)
 
 gap = _trading_days_between('2026-10-23', '2026-10-26')  # Fri → Mon
-log('trading_days: Fri→Mon = 1', gap == 1, f'got {gap}')
+# EGX calendar (Sun-Thu trading): Sat skipped, Sun+Mon trading → 2 days
+log('trading_days: EGX Fri→Mon = 2 (Sat non-trading, Sun+Mon trading)', gap == 2, f'got {gap}')
 
 gap = _trading_days_between('2026-10-19', '2026-10-26')  # Mon → Mon
-# Semantics: "between" = exclusive of both endpoints. Trading days
-# strictly between Mon 19 and Mon 26 = Tue, Wed, Thu, Fri = 4 (Mon 26
-# itself is NOT counted as "missed").
-log('trading_days: Mon→Mon = 4 (between, exclusive)', gap == 4, f'got {gap}')
+# EGX calendar: Tue+Wed+Thu (week) + Fri+Sat skipped + Sun+Mon = 5 days
+log('trading_days: EGX Mon→Mon = 5 (Tue+Wed+Thu+Sun+Mon)', gap == 5, f'got {gap}')
 
 gap = _trading_days_between('2026-10-26', '2026-10-26')
 log('trading_days: same day = 0', gap == 0, f'got {gap}')
 
 gap = _trading_days_between('2026-10-30', '2026-10-26')
 log('trading_days: future latest = 0', gap == 0, f'got {gap}')
+
+# New test: US market calendar (Mon-Fri trading, Sat+Sun non-trading)
+gap_us = _trading_days_between('2026-10-23', '2026-10-26', market='US')  # Fri → Mon
+# US calendar: Sat+Sun skipped, Mon trading → 1 day
+log('trading_days: US Fri→Mon = 1 (Sat+Sun non-trading)', gap_us == 1, f'got {gap_us}')
+
+# EGX Sun IS a trading day (key fix)
+gap_egx = _trading_days_between('2026-10-22', '2026-10-25', market='EGX')  # Thu → Sun
+# EGX: Fri+Sat skipped, Sun trading → 1 day (NOT 0 as old code would do)
+log('trading_days: EGX Thu→Sun = 1 (Fri+Sat non-trading, Sun trading)', gap_egx == 1, f'got {gap_egx}')
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 5. BUY_PCT=None FIX: E6 skipped

@@ -154,15 +154,27 @@ def _volume_ratio(volumes: List[float], period: int = 20) -> Optional[float]:
     return volumes[-1] / avg
 
 
-def _trading_days_between(latest_date: str, as_of_date: str) -> int:
+def _trading_days_between(latest_date: str, as_of_date: str, market: str = 'EGX') -> int:
     """Count trading sessions strictly between latest_date and as_of_date.
 
-    EGX/Saudi/US markets are closed Fri-Sat (EGX) or Sat-Sun (US/Tadawul).
-    For the freshness check we use a conservative calendar that treats
-    Friday + Saturday + Sunday as non-trading (covers all 3 markets the
-    project supports). Holidays are NOT modelled here — that's an
-    explicit decision: if the gap exceeds trading-day tolerance we mark
-    the data stale rather than silently accepting it.
+    FIX (owner review 2026-10-25): previous version treated Friday+Saturday+
+    Sunday as non-trading — WRONG. EGX/Tadawul/KSE/QSE trade Sunday-Thursday,
+    so Friday+Saturday are the only non-trading days for them. Sunday IS a
+    trading day. US (Mon-Fri) has Saturday+Sunday as non-trading.
+
+    Market calendars supported:
+      - EGX, TADAWUL, KSE, QSE: Sun-Thu (Fri+Sat non-trading)
+      - US, CRYPTO: Mon-Fri (Sat+Sun non-trading). Crypto trades 24/7 but
+        for freshness purposes we treat it like US (conservative).
+
+    Args:
+        latest_date: YYYY-MM-DD (last close date).
+        as_of_date: YYYY-MM-DD (assessment date).
+        market: market code (EGX/TADAWUL/KSE/QSE/US/CRYPTO). Default EGX.
+
+    Returns:
+        Number of trading sessions strictly between the two dates
+        (exclusive of both endpoints). 999 on parse error.
     """
     try:
         d_latest = datetime.strptime(latest_date, '%Y-%m-%d').date()
@@ -171,18 +183,28 @@ def _trading_days_between(latest_date: str, as_of_date: str) -> int:
         return 999  # unparseable → treat as very stale
     if d_latest > d_as_of:
         return 0
+
+    # Determine non-trading weekdays based on market
+    # weekday(): 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+    m = (market or 'EGX').upper()
+    if m in ('EGX', 'TADAWUL', 'KSE', 'QSE'):
+        # Sun-Thu trading → Fri (4) + Sat (5) non-trading
+        non_trading = (4, 5)
+    else:
+        # US, CRYPTO, or unknown → Mon-Fri trading → Sat (5) + Sun (6) non-trading
+        non_trading = (5, 6)
+
     count = 0
     cur = d_latest
     while cur < d_as_of:
         cur = cur + timedelta(days=1)
-        # 4=Friday, 5=Saturday, 6=Sunday → non-trading
-        if cur.weekday() in (4, 5, 6):
+        if cur.weekday() in non_trading:
             continue
         count += 1
     return count
 
 
-def _is_data_stale(latest_date: str, as_of_date: str, max_trading_days: int = 4) -> bool:
+def _is_data_stale(latest_date: str, as_of_date: str, max_trading_days: int = 4, market: str = 'EGX') -> bool:
     """Check if the latest price data is too old relative to the assessment date.
 
     FIX (Phase 2 — owner directive "Validation Before Integration"):
@@ -190,12 +212,15 @@ def _is_data_stale(latest_date: str, as_of_date: str, max_trading_days: int = 4)
         historical backtests and timezone-dependent.
       - Now compares to the explicit as_of_date (the assessment date).
       - Counts *trading* sessions missed, not raw calendar days, so a
-        Friday close assessed on Monday is NOT stale (1 trading day gap).
+        Friday close assessed on Sunday is NOT stale (1 trading day gap
+        for EGX which trades Sundays).
       - max_trading_days=4 is the tolerance: 4 missed trading sessions
         (~1 week of trading) → stale. Tighter than the old 7-day rule.
+      - market parameter added (owner review 2026-10-25): EGX/TADAWUL/KSE/QSE
+        use Sun-Thu calendar; US/CRYPTO use Mon-Fri calendar.
     """
     try:
-        gap = _trading_days_between(latest_date, as_of_date)
+        gap = _trading_days_between(latest_date, as_of_date, market=market)
         return gap > max_trading_days
     except Exception:
         return True
@@ -216,6 +241,7 @@ def assess_state(
     prev_state: str = '',
     prev_date: str = '',
     latest_price_date: str = '',
+    market: str = 'EGX',
 ) -> StockStateAssessment:
     """
     Assess the canonical stock state based on ALL available evidence.
@@ -257,7 +283,7 @@ def assess_state(
     # assessment date) as the freshness reference, NOT datetime.now(). This
     # makes historical backtests correct and removes timezone dependency.
     freshness_ref = latest_price_date or date
-    if _is_data_stale(freshness_ref, date):
+    if _is_data_stale(freshness_ref, date, market=market):
         assessment.state = DATA_STALE
         assessment.data_freshness = 'stale'
         assessment.confidence = 0.0
