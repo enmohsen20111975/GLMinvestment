@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { PremiumChart } from '@/components/premium-chart';
+import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, TrendingUp } from 'lucide-react';
+import { RefreshCw, TrendingUp, PenTool, LineChart } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // بيانات تجريبية للشارت — شموع عشوائية بتتحرك
 function generateMockOhlcv(days: number = 90) {
@@ -38,14 +40,27 @@ export default function ChartTestPage() {
   const [ohlcv, setOhlcv] = useState<any[]>([]);
   const [indicators, setIndicators] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
-  const [tradePlan, setTradePlan] = useState<any>({
+  // ALPHA: تبديل بين PremiumChart و TradingViewChart (محفوظ في localStorage)
+  const [usePremium, setUsePremium] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trading-chart-preference');
+      return saved === null ? true : saved === 'premium';
+    } catch { return true; }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('trading-chart-preference', usePremium ? 'premium' : 'simple');
+    } catch { /* ignore */ }
+  }, [usePremium]);
+
+  const tradePlan = {
     entry: 12.8,
     stop: 11.9,
     target1: 14.2,
     target2: 15.5,
     target3: 17.0,
     riskReward: 2.1,
-  });
+  };
 
   useEffect(() => {
     const data = generateMockOhlcv(90);
@@ -53,7 +68,7 @@ export default function ChartTestPage() {
     setIndicators({
       sma20: generateSMA(data, 20),
       sma50: generateSMA(data, 50),
-      sma200: [], // مش هنولّد 200 يوم لأن عندنا 90 بس
+      sma200: [],
     });
   }, [refreshKey]);
 
@@ -61,15 +76,44 @@ export default function ChartTestPage() {
     <div className="min-h-screen bg-background p-4 space-y-4" dir="rtl">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-profit" />
-              اختبار الشارت المتميز — PremiumChart
+              اختبار الشارت — PremiumChart vs TradingViewChart
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="font-mono">
-                COMI · تجريبي
-              </Badge>
+              <Badge variant="outline" className="font-mono">COMI · تجريبي</Badge>
+              {/* تبديل الشارت */}
+              <div className="flex bg-muted border border-border rounded-xl p-0.5 text-xs font-semibold gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => setUsePremium(true)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1',
+                    usePremium
+                      ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  title="شارت متميز — مع أدوات رسم تفاعلية ومؤشرات"
+                >
+                  <PenTool className="w-3 h-3" />
+                  متميز
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUsePremium(false)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1',
+                    !usePremium
+                      ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  title="شارت بسيط — شارت TradingView العادي"
+                >
+                  <LineChart className="w-3 h-3" />
+                  بسيط
+                </button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -82,21 +126,25 @@ export default function ChartTestPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <PremiumChart
-            ticker="COMI"
-            stockName="البنك التجاري الدولي"
-            ohlcv={ohlcv}
-            indicators={indicators}
-            tradePlan={tradePlan}
-            livePrice={ohlcv[ohlcv.length - 1]?.close ?? null}
-            currencyLabel="ج.م"
-            height={500}
-            showDrawingToolbar
-            showIndicatorPanel
-            showTradePlanLines
-            showSMCZones
-            storageKey="COMI__test"
-          />
+          {usePremium ? (
+            <PremiumChart
+              ticker="COMI"
+              stockName="البنك التجاري الدولي"
+              ohlcv={ohlcv}
+              indicators={indicators}
+              tradePlan={tradePlan}
+              livePrice={ohlcv[ohlcv.length - 1]?.close ?? null}
+              currencyLabel="ج.م"
+              height={500}
+              showDrawingToolbar
+              showIndicatorPanel
+              showTradePlanLines
+              showSMCZones
+              storageKey="COMI__test"
+            />
+          ) : (
+            <TradingViewChart ticker="COMI" stockName="البنك التجاري الدولي" />
+          )}
         </CardContent>
       </Card>
 
@@ -105,14 +153,14 @@ export default function ChartTestPage() {
           <CardTitle>تعليمات الاختبار</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2 text-muted-foreground">
-          <p>• الزر الأيمن فوق الشارت فيه أدوات الرسم: خط اتجاه، خط أفقي، مستطيل، فيبوناتشي، فرشاة، نص، سهم.</p>
-          <p>• ارسم خط اتجاه: اختار أداة "خط اتجاه" ثم اضغط نقطتين على الشارت.</p>
+          <p>• <strong>الشارت المتميز:</strong> فيه أدوات رسم (خط اتجاه، مستطيل، فيبوناتشي، فرشاة، نص، سهم).</p>
+          <p>• <strong>الشارت البسيط:</strong> شارت TradingView العادي بدون أدوات رسم.</p>
+          <p>• التبديل بينهم بيتم حفظه تلقائياً في المتصفح (localStorage).</p>
+          <p>• في الشارت المتميز: ارسم خط أفقي — اختار الأداة ثم اضغط على الشارت.</p>
           <p>• للتراجع: Ctrl+Z — للإعادة: Ctrl+Y — للحذف: Delete بعد اختيار رسم.</p>
-          <p>• الرسومات بتتحفظ تلقائياً في المتصفح (localStorage) حسب السهم والفترة.</p>
-          <p>• خطوط الدخول/الوقف/الأهداف ظاهرة كخطوط أفقية على الشارت.</p>
-          <p>• المؤشرات (SMA 20/50) ظاهرة كخطوط ملوّنة على الشارت.</p>
         </CardContent>
       </Card>
     </div>
   );
 }
+

@@ -117,11 +117,12 @@ const nextConfig = {
       "@prisma/predictions-client",
     ],
     // Next 16: turbopack is the default bundler — acknowledge it
+    // ALPHA-FIX: استخدمنا path.relative بدل absolute path عشان Turbopack يقبلها
     turbopack: {
       resolveAlias: {
         '@': path.resolve(__dirname, 'src'),
         // Sandbox-only: redirect next-auth/react to our shim to bypass CJS issue
-        'next-auth/react': path.resolve(__dirname, 'src/lib/next-auth-shim.ts'),
+        'next-auth/react': './src/lib/next-auth-shim.ts',
       },
     },
     // Next 16: allow cross-origin requests from preview/sandbox domains
