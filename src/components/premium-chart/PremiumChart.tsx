@@ -32,6 +32,9 @@ import {
   ColorType,
   CrosshairMode,
   LineStyle,
+  CandlestickSeries,
+  HistogramSeries,
+  LineSeries,
   type IChartApi,
   type ISeriesApi,
   type Time,
@@ -134,8 +137,8 @@ export function PremiumChart({
 
     chartRef.current = chart;
 
-    // Candlestick series
-    const candleSeries = chart.addCandlestickSeries({
+    // Candlestick series (v5 API: addSeries(SeriesType, options))
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: chartTheme.upColor,
       downColor: chartTheme.downColor,
       borderUpColor: chartTheme.upColor,
@@ -147,7 +150,7 @@ export function PremiumChart({
     candleSeriesRef.current = candleSeries;
 
     // Volume series (overlay at bottom)
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
       color: chartTheme.upColor,
@@ -208,7 +211,7 @@ export function PremiumChart({
     // SMA 20
     if (indicators?.sma20 && indicators.sma20.length > 0) {
       if (!sma20SeriesRef.current) {
-        sma20SeriesRef.current = chart.addLineSeries({
+        sma20SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma20Color,
           lineWidth: 2,
           priceLineVisible: false,
@@ -225,7 +228,7 @@ export function PremiumChart({
     // SMA 50
     if (indicators?.sma50 && indicators.sma50.length > 0) {
       if (!sma50SeriesRef.current) {
-        sma50SeriesRef.current = chart.addLineSeries({
+        sma50SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma50Color,
           lineWidth: 2,
           priceLineVisible: false,
@@ -242,7 +245,7 @@ export function PremiumChart({
     // SMA 200
     if (indicators?.sma200 && indicators.sma200.length > 0) {
       if (!sma200SeriesRef.current) {
-        sma200SeriesRef.current = chart.addLineSeries({
+        sma200SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma200Color,
           lineWidth: 3,
           priceLineVisible: false,
