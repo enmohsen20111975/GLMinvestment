@@ -509,11 +509,11 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
  ];
  return (
  <WidgetCard
- 	title="تقييم النقاط · Score Dashboard"
- 	icon={BarChart3}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+        title="تقييم النقاط · Score Dashboard"
+        icon={BarChart3}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
  >
 
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -571,12 +571,12 @@ function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
 
  return (
  <WidgetCard
- 	title="المؤشرات الفنية · Technical Indicators"
- 	icon={Activity}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
- 	contentClassName="p-0"
+        title="المؤشرات الفنية · Technical Indicators"
+        icon={Activity}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+        contentClassName="p-0"
  >
 
  <div className="grid grid-cols-1 sm:grid-cols-2 divide-x divide-x-reverse divide-slate-700/40">
@@ -669,11 +669,11 @@ function FundamentalSection({
 
  return (
  <WidgetCard
- 	title="القوائم الأساسية · Fundamental Analysis"
- 	icon={Scale}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+        title="القوائم الأساسية · Fundamental Analysis"
+        icon={Scale}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
  >
 
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -781,11 +781,11 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
  };
  return (
  <WidgetCard
- 	title="تحليل المخاطر · Risk Metrics"
- 	icon={AlertTriangle}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+        title="تحليل المخاطر · Risk Metrics"
+        icon={AlertTriangle}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
  >
 
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -811,11 +811,11 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
  const rec = analysis.recommendation;
  return (
  <WidgetCard
- 	title="الخلاصة والتوقع الفني · Conclusion"
- 	icon={Shield}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a] print:break-inside-avoid"
+        title="الخلاصة والتوقع الفني · Conclusion"
+        icon={Shield}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-warning/20 from-[#0d1320] to-[#10162a] print:break-inside-avoid"
  >
 
  <div className="grid grid-cols-3 gap-3 mb-4">
@@ -891,11 +891,11 @@ function PriceLevelsCard({
  const range = maxVal - minVal || 1;
  return (
  <WidgetCard
- 	title="مستويات الأسعار · Price Levels"
- 	icon={Target}
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base font-bold text-warning"
- 	className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
+        title="مستويات الأسعار · Price Levels"
+        icon={Target}
+        iconSize="w-5 h-5"
+        titleClassName="text-base font-bold text-warning"
+        className="overflow-hidden border-slate-700/50 bg-[#0d1320] print:break-inside-avoid"
  >
 
  <div className="space-y-2">
@@ -1162,9 +1162,9 @@ export function StockAnalysisReport() {
  {showDropdown && (
  <div className="absolute top-full mt-1 right-0 left-0 z-50 bg-[#0d1320] border border-slate-700/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
  {filteredStocks.length > 0 ? (
- filteredStocks.map((stock) => (
+ filteredStocks.filter(s => s.ticker).map((stock) => (
  <button
- key={stock.ticker || Math.random()}
+ key={stock.ticker}
  onClick={() => handleSelectStock(stock as StockInfo)}
  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-warning/10 transition-colors text-right border-b border-slate-700/30 last:border-b-0"
  >

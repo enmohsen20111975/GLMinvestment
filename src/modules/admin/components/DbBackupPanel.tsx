@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+// ALPHA-LIVE-CONSOLE: كونسول حي لمتابعة رفع قواعد البيانات
+import { GenericLiveLogConsole } from '@/components/shared/GenericLiveLogConsole';
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -148,6 +150,8 @@ export function DbBackupPanel() {
  const [loading, setLoading] = useState(false);
  const [busy, setBusy] = useState(false);
  const [busyLabel, setBusyLabel] = useState('');
+ // ALPHA-LIVE-CONSOLE: state للكونسول الحي
+ const [liveConsoleJobId, setLiveConsoleJobId] = useState<string | null>(null);
 
  // Form options
  const [selectedDbs, setSelectedDbs] = useState<Set<string>>(new Set());
@@ -341,7 +345,7 @@ export function DbBackupPanel() {
  }
 
  setBusy(true);
- setBusyLabel(pushToGithub ? 'جاري الضغط والتجزئة والرفع إلى GitHub...' : 'جاري ضغط وتجزئة القواعد المحددة...');
+ setBusyLabel(pushToGithub ? 'جاري بدء العملية...' : 'جاري ضغط وتجزئة القواعد المحددة...');
 
  try {
  const res = await fetch('/api/admin/db-backup', {
@@ -361,45 +365,57 @@ export function DbBackupPanel() {
  }),
  });
 
- const json: PostResult = await res.json();
- if (json.success) {
- const created = json.archives?.length || 0;
- const totalMb = json.archives?.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024;
+ const json = await res.json();
+
+ // ALPHA-LIVE-CONSOLE: لو الـ POST رجّع job_id، افتح الكونسول الحي فوراً
+ if (json.success && json.job_id) {
+ setLiveConsoleJobId(json.job_id);
+ setBusy(false);
+ setBusyLabel('');
+ toast.success('بدأت العملية في الخلفية — يتم متابعتها في الكونسول الحي');
+ return;
+ }
+
+ // fallback: لو الـ POST رجع النتيجة مباشرة (legacy mode)
+ const legacyJson = json as PostResult;
+ if (legacyJson.success) {
+ const created = legacyJson.archives?.length || 0;
+ const totalMb = legacyJson.archives?.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024;
 
  if (created > 0) {
  toast.success(`تم إنشاء ${created} ملف أرشيف (الحجم الإجمالي: ${(totalMb ?? 0).toFixed(1)} MB) بمقاس أقصى ${maxPartSizeMb} MB`);
  }
 
  if (pushToGithub) {
- if (json.git?.pushed) {
- const aheadBehind = json.git.ahead_behind ? ` (ahead: ${json.git.ahead_behind.ahead}, behind: ${json.git.ahead_behind.behind})` : '';
- toast.success(`تم رفع ${json.git.archived_to_push?.length || created} ملف إلى GitHub بنجاح${aheadBehind}`, {
- description: `${json.git.message} | strategy: ${json.git.push_strategy}`,
+ if (legacyJson.git?.pushed) {
+ const aheadBehind = legacyJson.git.ahead_behind ? ` (ahead: ${legacyJson.git.ahead_behind.ahead}, behind: ${legacyJson.git.ahead_behind.behind})` : '';
+ toast.success(`تم رفع ${legacyJson.git.archived_to_push?.length || created} ملف إلى GitHub بنجاح${aheadBehind}`, {
+ description: `${legacyJson.git.message} | strategy: ${legacyJson.git.push_strategy}`,
  });
- } else if (json.git?.committed) {
+ } else if (legacyJson.git?.committed) {
  toast.warning('تم حفظ الـ Commit محلياً ولكن تعذر الرفع (push)', {
- description: json.git.message,
+ description: legacyJson.git.message,
  });
  } else {
- toast.warning(json.git?.message || 'لم يكتمل الرفع إلى GitHub');
+ toast.warning(legacyJson.git?.message || 'لم يكتمل الرفع إلى GitHub');
  }
 
  // عرض الـ warnings (لو فيه)
- if (json.git?.warnings && json.git.warnings.length > 0) {
- for (const w of json.git.warnings.slice(0, 5)) {
+ if (legacyJson.git?.warnings && legacyJson.git.warnings.length > 0) {
+ for (const w of legacyJson.git.warnings.slice(0, 5)) {
  toast.warning(w, { duration: 8000 });
  }
  }
- if (json.git?.rollback_performed) {
+ if (legacyJson.git?.rollback_performed) {
  toast.info('تم التراجع عن آخر commit قبل الرفع');
  }
- if (json.git?.remote_archives_deleted && json.git.remote_archives_deleted.length > 0) {
- toast.info(`تم مسح ${json.git.remote_archives_deleted.length} أرشيف قديم من GitHub`);
+ if (legacyJson.git?.remote_archives_deleted && legacyJson.git.remote_archives_deleted.length > 0) {
+ toast.info(`تم مسح ${legacyJson.git.remote_archives_deleted.length} أرشيف قديم من GitHub`);
  }
  }
 
- if (json.errors?.length) {
- for (const err of json.errors.slice(0, 3)) {
+ if (legacyJson.errors?.length) {
+ for (const err of legacyJson.errors.slice(0, 3)) {
  toast.error(err, { duration: 8000 });
  }
  }
@@ -408,7 +424,7 @@ export function DbBackupPanel() {
  // refresh git status
  fetchGitStatus();
  } else {
- toast.error(json.error || 'فشلت عملية النسخ الاحتياطي');
+ toast.error(legacyJson.error || 'فشلت عملية النسخ الاحتياطي');
  }
  } catch (e) {
  toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
@@ -1278,6 +1294,35 @@ export function DbBackupPanel() {
  </DialogFooter>
  </DialogContent>
  </Dialog>
+
+ {/* ALPHA-LIVE-CONSOLE: كونسول حي لمتابعة عملية الرفع */}
+ {liveConsoleJobId && (
+  <GenericLiveLogConsole
+   title="كونسول رفع قواعد البيانات"
+   description={`job_id: ${liveConsoleJobId}`}
+   logsUrl={`/api/admin/db-backup/logs?job=${liveConsoleJobId}`}
+   statusUrl={`/api/admin/db-backup/status?job=${liveConsoleJobId}`}
+   onClose={() => {
+    setLiveConsoleJobId(null);
+    // refresh data بعد إغلاق الكونسول
+    fetchData();
+    fetchGitStatus();
+   }}
+   onAbort={async () => {
+    try {
+     await fetch('/api/admin/db-backup', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ action: 'abort' }),
+     });
+     toast.success('تم إرسال أمر الإيقاف');
+    } catch {
+     toast.error('فشل إرسال أمر الإيقاف');
+    }
+   }}
+  />
+ )}
  </div>
  );
 }

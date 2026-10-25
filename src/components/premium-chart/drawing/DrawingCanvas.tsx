@@ -356,7 +356,7 @@ export function DrawingCanvas({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-auto"
+      className="absolute inset-0 pointer-events-auto z-10"
       style={{ cursor }}
     >
       <canvas

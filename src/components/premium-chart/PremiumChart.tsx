@@ -32,6 +32,9 @@ import {
   ColorType,
   CrosshairMode,
   LineStyle,
+  CandlestickSeries,
+  HistogramSeries,
+  LineSeries,
   type IChartApi,
   type ISeriesApi,
   type Time,
@@ -67,6 +70,8 @@ export function PremiumChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  // ALPHA-FIX: state عشان نخلي الـ DrawingCanvas بيتـ re-render لما الـ chart يتسجّل
+  const [chartReady, setChartReady] = useState(false);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const sma20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const sma50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
@@ -133,9 +138,11 @@ export function PremiumChart({
     });
 
     chartRef.current = chart;
+    // ALPHA-FIX: notify DrawingCanvas that the chart is ready
+    setChartReady(true);
 
-    // Candlestick series
-    const candleSeries = chart.addCandlestickSeries({
+    // Candlestick series (v5 API: addSeries(SeriesType, options))
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: chartTheme.upColor,
       downColor: chartTheme.downColor,
       borderUpColor: chartTheme.upColor,
@@ -147,7 +154,7 @@ export function PremiumChart({
     candleSeriesRef.current = candleSeries;
 
     // Volume series (overlay at bottom)
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
       color: chartTheme.upColor,
@@ -208,7 +215,7 @@ export function PremiumChart({
     // SMA 20
     if (indicators?.sma20 && indicators.sma20.length > 0) {
       if (!sma20SeriesRef.current) {
-        sma20SeriesRef.current = chart.addLineSeries({
+        sma20SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma20Color,
           lineWidth: 2,
           priceLineVisible: false,
@@ -225,7 +232,7 @@ export function PremiumChart({
     // SMA 50
     if (indicators?.sma50 && indicators.sma50.length > 0) {
       if (!sma50SeriesRef.current) {
-        sma50SeriesRef.current = chart.addLineSeries({
+        sma50SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma50Color,
           lineWidth: 2,
           priceLineVisible: false,
@@ -242,7 +249,7 @@ export function PremiumChart({
     // SMA 200
     if (indicators?.sma200 && indicators.sma200.length > 0) {
       if (!sma200SeriesRef.current) {
-        sma200SeriesRef.current = chart.addLineSeries({
+        sma200SeriesRef.current = chart.addSeries(LineSeries, {
           color: chartTheme.sma200Color,
           lineWidth: 3,
           priceLineVisible: false,
@@ -472,6 +479,8 @@ export function PremiumChart({
       />
 
       {/* Drawing Canvas overlay (above chart, below toolbar) */}
+      {/* chartReady prop forces re-render once chart is registered */}
+      {chartReady && (
       <DrawingCanvas
         chart={chartRef.current}
         candleSeries={candleSeriesRef.current}
@@ -479,6 +488,7 @@ export function PremiumChart({
         height={dimensions.height}
         storageKey={storageKey || `${ticker}__premium`}
       />
+      )}
 
       {/* Drawing Toolbar */}
       {showDrawingToolbar && <DrawingToolbar />}

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+// ALPHA-LIVE-CONSOLE: job tracking for live log streaming
+import {
+  createJob, appendLog, updatePhase, addWarning, addError,
+  addArchiveCreated, addArchivePushed, finishJob, generateJobId,
+} from '@/lib/db-backup-jobs';
 // P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/mkdirSync/readdirSync/
 // statSync/unlinkSync with async fs/promises equivalents so the GET/POST/DELETE
 // handlers never block the event loop on DB / archive enumeration, prune, or
@@ -276,20 +281,61 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = (await req.json().catch(() => ({}))) as PostBody;
-    const uploadToGithub = body.upload_to_github === true;
-    const pruneOlderThanDays = Math.max(0, Number(body.prune_older_than_days) || 0);
-    const maxPartSizeMb = Math.max(10, Math.min(95, Number(body.max_part_size_mb) || DEFAULT_MAX_ZIP_MB));
-    const maxZipBytes = maxPartSizeMb * 1024 * 1024;
 
-    // Ensure data dir exists
-    if (!(await pathExists(DATA_DIR))) await mkdir(DATA_DIR, { recursive: true });
+    // ALPHA-LIVE-CONSOLE: إنشاء job_id فوراً وبدء الشغل في الـ background
+    const jobId = generateJobId();
+    createJob(jobId);
+    await appendLog(jobId, `[init] بدء عملية النسخ الاحتياطي (job_id=${jobId})`);
+    await appendLog(jobId, `[init] upload_to_github=${body.upload_to_github === true}, max_part_size_mb=${body.max_part_size_mb || DEFAULT_MAX_ZIP_MB}`);
+    if (body.selected_dbs?.length) {
+      await appendLog(jobId, `[init] قواعد محددة: ${body.selected_dbs.join(', ')}`);
+    }
+    updatePhase(jobId, 'init', 5);
 
-    let dbs = await listDbFiles();
+    // بدء الشغل كـ fire-and-forget promise (بدون await)
+    runBackupJob(jobId, body).catch(err => {
+      console.error(`[admin:db-backup] job ${jobId} crashed:`, err);
+      addError(jobId, `Job crashed: ${err instanceof Error ? err.message : String(err)}`);
+      finishJob(jobId, 1, { error: 'job crashed' });
+    });
+
+    return NextResponse.json({
+      success: true,
+      job_id: jobId,
+      status: 'running',
+      message: 'بدأت العملية في الخلفية — افتح الكونسول الحي لمتابعة التقدّم',
+      logs_url: `/api/admin/db-backup/logs?job=${jobId}`,
+      status_url: `/api/admin/db-backup/status?job=${jobId}`,
+    });
+  } catch (e) {
+    console.error('[admin:db-backup]', e);
+    return NextResponse.json({
+      success: false,
+      error: 'internal_error',
+    }, { status: 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// runBackupJob — الشغل الفعلي (fire-and-forget)
+// ---------------------------------------------------------------------------
+
+async function runBackupJob(jobId: string, body: PostBody) {
+ try {
+  const uploadToGithub = body.upload_to_github === true;
+  const pruneOlderThanDays = Math.max(0, Number(body.prune_older_than_days) || 0);
+  const maxPartSizeMb = Math.max(10, Math.min(95, Number(body.max_part_size_mb) || DEFAULT_MAX_ZIP_MB));
+  const maxZipBytes = maxPartSizeMb * 1024 * 1024;
+
+  // Ensure data dir exists
+  if (!(await pathExists(DATA_DIR))) await mkdir(DATA_DIR, { recursive: true });
+
+  let dbs = await listDbFiles();
     if (dbs.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'لا توجد قواعد بيانات للنسخ الاحتياطي (مجلد db/ فارغ).',
-      }, { status: 400 });
+      await appendLog(jobId, `[error] لا توجد قواعد بيانات للنسخ الاحتياطي (مجلد db/ فارغ)`);
+      addError(jobId, 'لا توجد قواعد بيانات للنسخ الاحتياطي (مجلد db/ فارغ).');
+      finishJob(jobId, 1, { error: 'no databases found' });
+      return;
     }
 
     // Filter by selected_dbs if provided
@@ -297,12 +343,14 @@ export async function POST(req: NextRequest) {
       const selectedSet = new Set(body.selected_dbs);
       dbs = dbs.filter(d => selectedSet.has(d.name));
       if (dbs.length === 0) {
-        return NextResponse.json({
-          success: false,
-          error: 'لم يتم العثور على أي من قواعد البيانات المحددة في مجلد db/.',
-        }, { status: 400 });
+        await appendLog(jobId, `[error] لم يتم العثور على أي من قواعد البيانات المحددة`);
+        addError(jobId, 'لم يتم العثور على أي من قواعد البيانات المحددة في مجلد db/.');
+        finishJob(jobId, 1, { error: 'selected databases not found' });
+        return;
       }
     }
+
+    await appendLog(jobId, `[init] تم العثور على ${dbs.length} قاعدة بيانات`);
 
     // Optional pruning of old archives
     let prunedCount = 0;
@@ -315,12 +363,18 @@ export async function POST(req: NextRequest) {
           try { await unlink(arc.path); prunedCount++; } catch { /* ignore */ }
         }
       }
+      if (prunedCount > 0) {
+        await appendLog(jobId, `[prune] تم مسح ${prunedCount} أرشيف قديم (أقدم من ${pruneOlderThanDays} يوم)`);
+      }
     }
 
     const batches = chunkDbs(dbs, maxZipBytes);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const createdArchives: BackupResult[] = [];
     const errors: string[] = [];
+
+    await appendLog(jobId, `[compress] تم تقسيم ${dbs.length} قاعدة إلى ${batches.length} دفعة (max ${maxPartSizeMb}MB لكل أرشيف)`);
+    updatePhase(jobId, 'compress', 10);
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
@@ -330,8 +384,14 @@ export async function POST(req: NextRequest) {
       const dbNames = batch.map(b => b.name);
       const dbPaths = batch.map(b => b.path);
 
+      const batchPct = 10 + Math.round((i / batches.length) * 40);
+      updatePhase(jobId, 'compress', batchPct);
+      await appendLog(jobId, `[compress] دفعة ${i + 1}/${batches.length}: ${dbNames.join(', ')} → ${archiveName}`);
+
       try {
         await compressToZip(archivePath, dbPaths);
+        await appendLog(jobId, `[compress] ✅ تم ضغط ${archiveName} (${dbNames.length} قاعدة)`);
+        addArchiveCreated(jobId, archiveName);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         errors.push(`فشل ضغط ${archiveName}: ${msg}`);
@@ -346,6 +406,8 @@ export async function POST(req: NextRequest) {
 
       // If compressed archive exceeds chosen maxPartSizeMb, split it into chunks
       if (st.size > maxZipBytes) {
+        updatePhase(jobId, 'split', batchPct + 5);
+        await appendLog(jobId, `[split] ${archiveName} حجمه ${(st.size / 1024 / 1024).toFixed(2)}MB > ${maxPartSizeMb}MB — جاري التجزئة...`);
         try {
           const chunkPrefix = archivePath.replace(/\.zip$/, '_split_');
           await execFileAsync(SPLIT_BIN, [
@@ -377,10 +439,14 @@ export async function POST(req: NextRequest) {
               size_mb: (pSt.size / 1024 / 1024).toFixed(2),
               included_dbs: dbNames,
             });
+            addArchiveCreated(jobId, pFile);
+            await appendLog(jobId, `[split] ✅ تم إنشاء جزء: ${pFile} (${(pSt.size / 1024 / 1024).toFixed(2)}MB)`);
           }
         } catch (splitErr) {
           const splitMsg = splitErr instanceof Error ? splitErr.message : String(splitErr);
           errors.push(`فشل تجزئة الأرشيف الكبير ${archiveName}: ${splitMsg}`);
+          addError(jobId, `فشل تجزئة ${archiveName}: ${splitMsg.slice(0, 150)}`);
+          await appendLog(jobId, `[split] ❌ فشل تجزئة ${archiveName}: ${splitMsg.slice(0, 100)}`);
         }
       } else {
         createdArchives.push({
@@ -478,6 +544,8 @@ export async function POST(req: NextRequest) {
 
         // 4) git add للأرشيفات المختارة
         const addArgs = ['add', '-f', ...archivesToPush.map(a => `data/${a.archive_name}`)];
+        updatePhase(jobId, 'commit', 60);
+        await appendLog(jobId, `[commit] git add ${archivesToPush.length} ملف أرشيف`);
         await runGit(addArgs, cwd);
 
         // 5) commit
@@ -485,23 +553,29 @@ export async function POST(req: NextRequest) {
         try {
           await runGit(['commit', '-m', commitMsg], cwd);
           gitResult.committed = true;
+          await appendLog(jobId, `[commit] ✅ تم commit: ${commitMsg}`);
         } catch (e) {
           gitResult.message = `commit: ${e instanceof Error ? e.message.slice(0, 200) : 'no changes'}`;
+          await appendLog(jobId, `[commit] ⚠️ ${gitResult.message}`);
         }
 
         // 6) استراتيجية الرفع (push strategy)
         const strategy = body.push_strategy || (body.force_no_rebase ? 'no_pull' : 'fetch_rebase');
         gitResult.push_strategy = strategy;
+        await appendLog(jobId, `[fetch] استراتيجية الرفع: ${strategy}`);
 
         // نفحص ahead/behind الأول (لو الـ fetch يشتغل)
+        updatePhase(jobId, 'fetch', 70);
         try {
           await runGit(['fetch', 'origin'], cwd);
+          await appendLog(jobId, `[fetch] ✅ تم fetch من origin`);
           const { stdout: abStdout } = await runGit(
             ['rev-list', '--left-right', '--count', 'HEAD...origin/HEAD'],
             cwd
           ).catch(() => ({ stdout: '0\t0', stderr: '' }));
           const [ahead, behind] = abStdout.trim().split(/\s+/).map(n => parseInt(n, 10) || 0);
           gitResult.ahead_behind = { ahead, behind };
+          await appendLog(jobId, `[fetch] ahead=${ahead}, behind=${behind}`);
         } catch (e) {
           gitResult.warnings?.push(`fetch failed (network?): ${e instanceof Error ? e.message.slice(0, 100) : 'unknown'}`);
         }
@@ -509,54 +583,86 @@ export async function POST(req: NextRequest) {
         try {
           if (strategy === 'force_push') {
             // ⚠️ Force push — خطير لكنه الحل الأخير
+            await appendLog(jobId, `[push] ⚠️ جاري force push (${archivesToPush.length} ملف) — قد يمسح تعديلات الـ remote`);
             await runGit(['push', '--force', 'origin', 'HEAD'], cwd);
             gitResult.pushed = true;
             gitResult.message = `تم الرفع بالـ force push (${archivesToPush.length} ملف). ⚠️ أي تعديلات على الـ remote اتمسحت.`;
             gitResult.warnings?.push('⚠️ تم استخدام --force — تأكد إن مفيش حد بيرفع على نفس الـ branch');
+            await appendLog(jobId, `[push] ✅ تم force push بنجاح`);
+            addWarning(jobId, '⚠️ تم استخدام --force — تأكد إن مفيش حد بيرفع على نفس الـ branch');
           } else if (strategy === 'no_pull') {
             // رفع مباشر بدون أي محاولة لمزامنة (لو الـ fetch فشل)
+            await appendLog(jobId, `[push] جاري رفع مباشر بدون مزامنة (${archivesToPush.length} ملف)`);
             await runGit(['push', 'origin', 'HEAD'], cwd);
             gitResult.pushed = true;
             gitResult.message = `تم الرفع بدون مزامنة (${archivesToPush.length} ملف).`;
+            await appendLog(jobId, `[push] ✅ تم الرفع بنجاح`);
           } else if (strategy === 'fetch_merge') {
             // fetch + merge (بدل rebase — بيحافظ على التاريخ)
+            await appendLog(jobId, `[merge] جاري merge مع origin/HEAD`);
             try {
               await runGit(['merge', 'origin/HEAD', '--no-edit'], cwd);
+              await appendLog(jobId, `[merge] ✅ تم merge بنجاح`);
             } catch (mergeErr) {
               // abort merge لو فيه conflict
               await runGit(['merge', '--abort'], cwd).catch(() => {});
-              throw new Error(`merge conflict — حل يدوي مطلوب: ${mergeErr instanceof Error ? mergeErr.message.slice(0, 150) : 'unknown'}`);
+              const errMsg = `merge conflict — حل يدوي مطلوب: ${mergeErr instanceof Error ? mergeErr.message.slice(0, 150) : 'unknown'}`;
+              addError(jobId, errMsg);
+              await appendLog(jobId, `[merge] ❌ ${errMsg}`);
+              throw new Error(errMsg);
             }
+            await appendLog(jobId, `[push] جاري الرفع بعد merge (${archivesToPush.length} ملف)`);
             await runGit(['push', 'origin', 'HEAD'], cwd);
             gitResult.pushed = true;
             gitResult.message = `تم الرفع بعد merge (${archivesToPush.length} ملف).`;
+            await appendLog(jobId, `[push] ✅ تم الرفع بنجاح`);
           } else {
             // default: fetch_rebase
             try {
               const behind = gitResult.ahead_behind?.behind || 0;
               if (behind > 0) {
+                await appendLog(jobId, `[rebase] جاري rebase مع origin/HEAD (${behind} commits خلف)`);
                 await runGit(['rebase', 'origin/HEAD'], cwd);
                 gitResult.warnings?.push(`✅ تم rebase بنجاح (${behind} commits من الـ remote)`);
+                await appendLog(jobId, `[rebase] ✅ تم rebase بنجاح (${behind} commits)`);
               }
             } catch (rebaseErr) {
               // abort rebase لو فيه conflict
               await runGit(['rebase', '--abort'], cwd).catch(() => {});
-              throw new Error(`rebase conflict — حل يدوي مطلوب: ${rebaseErr instanceof Error ? rebaseErr.message.slice(0, 150) : 'unknown'}`);
+              const errMsg = `rebase conflict — حل يدوي مطلوب: ${rebaseErr instanceof Error ? rebaseErr.message.slice(0, 150) : 'unknown'}`;
+              addError(jobId, errMsg);
+              await appendLog(jobId, `[rebase] ❌ ${errMsg}`);
+              throw new Error(errMsg);
             }
+            await appendLog(jobId, `[push] جاري الرفع بعد rebase (${archivesToPush.length} ملف)`);
             await runGit(['push', 'origin', 'HEAD'], cwd);
             gitResult.pushed = true;
             gitResult.message = `تم رفع ${archivesToPush.length} ملف أرشيف إلى GitHub بنجاح (rebase strategy).`;
+            await appendLog(jobId, `[push] ✅ تم الرفع بنجاح`);
+          }
+          // سجّل كل archive اترفع
+          if (gitResult.pushed) {
+            for (const arch of archivesToPush) {
+              addArchivePushed(jobId, arch.archive_name);
+            }
           }
         } catch (e) {
-          gitResult.message = `push failed: ${e instanceof Error ? e.message.slice(0, 200) : 'unknown'}`;
+          const errMsg = `push failed: ${e instanceof Error ? e.message.slice(0, 200) : 'unknown'}`;
+          gitResult.message = errMsg;
+          addError(jobId, errMsg);
+          await appendLog(jobId, `[push] ❌ ${errMsg}`);
         }
       } catch (e) {
-        gitResult.message = `git error: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`;
+        const errMsg = `git error: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`;
+        gitResult.message = errMsg;
+        addError(jobId, errMsg);
+        await appendLog(jobId, `[git] ❌ ${errMsg}`);
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    // ALPHA-LIVE-CONSOLE: إنهاء الـ job بتسجيل النتيجة النهائية
+    const finalResult = {
+      success: errors.length === 0,
       timestamp: new Date().toISOString(),
       stamp,
       max_part_size_mb: maxPartSizeMb,
@@ -569,13 +675,24 @@ export async function POST(req: NextRequest) {
       },
       git: gitResult,
       errors,
-    });
+    };
+
+    if (errors.length > 0) {
+      for (const e of errors) {
+        addError(jobId, e);
+        await appendLog(jobId, `[error] ${e}`);
+      }
+    }
+
+    const exitCode = errors.length === 0 && (!gitResult || gitResult.pushed !== false) ? 0 : 1;
+    await appendLog(jobId, `[done] ✅ اكتملت العملية — ${createdArchives.length} أرشيف، ${errors.length} خطأ، ${gitResult?.pushed ? 'تم الرفع' : 'لم يُرفع'}`);
+    finishJob(jobId, exitCode, finalResult);
   } catch (e) {
-    console.error('[admin:db-backup]', e);
-    return NextResponse.json({
-      success: false,
-      error: 'internal_error',
-    }, { status: 500 });
+    console.error(`[admin:db-backup] job ${jobId} failed:`, e);
+    const errMsg = e instanceof Error ? e.message : String(e);
+    addError(jobId, errMsg);
+    await appendLog(jobId, `[error] ❌ ${errMsg}`);
+    finishJob(jobId, 1, { error: errMsg });
   }
 }
 
