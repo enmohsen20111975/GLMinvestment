@@ -19,6 +19,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: false,
+  turbopack: {},
   // ─── FIX: Increase static generation timeout ──────────────────────
   // Default is 60s. On slow VPS with large DB, pages may take longer.
   staticPageGenerationTimeout: 300, // 5 minutes
@@ -88,9 +89,9 @@ const nextConfig = {
       "@tanstack/react-table",
       "@tanstack/react-query",
     ],
-    outputFileTracingRoot: path.join(__dirname),
-    outputFileTracingExcludes: {
-      "*": [
+  outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingExcludes: {
+    "*": [
         "**/*.db",
         "**/*.db-wal",
         "**/*.db-shm",
@@ -99,7 +100,7 @@ const nextConfig = {
         "./vps-service/data/egksco/*.pdf",
         "./node_modules/pm2/**/*",
         "./node_modules/playwright/**/*",
-      ],
+    ],
     },
   },
   env: {
@@ -125,7 +126,7 @@ const nextConfig = {
             key: "Cache-Control",
             value: "public, max-age=3600, must-revalidate",
           },
-        ],
+      ],
       },
     ];
   },
