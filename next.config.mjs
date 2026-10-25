@@ -19,7 +19,19 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: false,
-  turbopack: {},
+  // ALPHA-FIX: next-auth v4 uses CommonJS (require/module.exports) which breaks
+  // Turbopack's ESM-only client bundle in Next.js 16. transpilePackages helps
+  // but @babel/runtime helpers still leak. In sandbox we use a shim that returns
+  // null session (the real API returns 404 anyway). In production, remove the
+  // turbopack.resolveAlias below and use the real next-auth/react.
+  transpilePackages: ['next-auth', '@babel/runtime'],
+  turbopack: {
+    resolveAlias: {
+      '@': path.resolve(__dirname, 'src'),
+      // Sandbox-only: redirect next-auth/react to our shim to bypass CJS issue
+      'next-auth/react': path.resolve(__dirname, 'src/lib/next-auth-shim.ts'),
+    },
+  },
   // ─── FIX: Increase static generation timeout ──────────────────────
   // Default is 60s. On slow VPS with large DB, pages may take longer.
   staticPageGenerationTimeout: 300, // 5 minutes

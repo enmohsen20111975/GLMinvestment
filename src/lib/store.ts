@@ -17,7 +17,20 @@ import type {
 import type { RecommendResponse, PersonaType } from '@/types/v2';
 import { apiClient } from '@/lib/api-client';
 import { trackStockView, trackFeature } from '@/lib/analytics';
-import type { Session } from 'next-auth';
+// ALPHA-FIX: remove next-auth type import — Turbopack in Next.js 16 leaks CJS
+// from next-auth into client bundle. We define a minimal Session type locally.
+// In production, use `import type { Session } from 'next-auth'`.
+interface Session {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    role?: string | null;
+    id?: string | null;
+  };
+  expires?: string;
+  accessToken?: string | null;
+}
 
 // ==================== DATA ADAPTERS ====================
 // These functions transform backend API responses to match frontend types.

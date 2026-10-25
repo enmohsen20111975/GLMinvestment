@@ -70,6 +70,8 @@ export function PremiumChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  // ALPHA-FIX: state عشان نخلي الـ DrawingCanvas بيتـ re-render لما الـ chart يتسجّل
+  const [chartReady, setChartReady] = useState(false);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const sma20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const sma50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
@@ -136,6 +138,8 @@ export function PremiumChart({
     });
 
     chartRef.current = chart;
+    // ALPHA-FIX: notify DrawingCanvas that the chart is ready
+    setChartReady(true);
 
     // Candlestick series (v5 API: addSeries(SeriesType, options))
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -475,6 +479,8 @@ export function PremiumChart({
       />
 
       {/* Drawing Canvas overlay (above chart, below toolbar) */}
+      {/* chartReady prop forces re-render once chart is registered */}
+      {chartReady && (
       <DrawingCanvas
         chart={chartRef.current}
         candleSeries={candleSeriesRef.current}
@@ -482,6 +488,7 @@ export function PremiumChart({
         height={dimensions.height}
         storageKey={storageKey || `${ticker}__premium`}
       />
+      )}
 
       {/* Drawing Toolbar */}
       {showDrawingToolbar && <DrawingToolbar />}
