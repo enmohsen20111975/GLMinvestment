@@ -8654,3 +8654,114 @@ Stage Summary:
 - mafish تعديل على daily_predictor / entry_gate / maestro_orchestrator.
 - الـ default = EGX (أكتر سوق في المشروع).
 - الخطوة الجاية: حسم ملكية السجل (scoped DELETE) على نسخة مؤقتة.
+
+
+---
+Task ID: PREDICTION-ENGINE-MAPPING
+Agent: Bravo (subagent — prediction engine mapping)
+Task: تتبّع محرك التوقعات وتحديد نقطة ربط canonical_state.
+
+Work Log:
+- قرأت آخر 200 سطر من worklog.md (إصلاحات canonical_stock_state/state_history_tracker + radar ownership audit) — السياق: canonical_state مكتوب في radar_signal_tracking بس مفيش مستهلك بيقراه من الـ prediction pipeline.
+- قرأت daily_predictor.py (4730 سطر) بالكامل — تتبعت data flow من entry point لـ outcome tracking.
+- قرأت entry_gate.py (857 سطر) — تأكدت إنه stateless + بياخد كل data من الـ caller (daily_predictor).
+- قرأت canonical_stock_state.py (642 سطر) — معزول تمامًا، بيرجع StockStateAssessment dataclass.
+- قرأت state_history_tracker.py (263 سطر) — اكتشفت إن run_daily_assessment مش مربوط بأي cron/scheduler.
+- Grep على canonical_state في daily_predictor.py + entry_gate.py → 0 matches (تأكيد عدم الربط).
+- Grep على canonical_stock_state في كامل vps-service → موجود فقط في: canonical_stock_state.py نفسها + state_history_tracker.py + lightweight_server.py (للعرض فقط).
+- تأكدت إن radar_integration.py بياخد data من maker_radar JSON files فقط — مش من radar_signal_tracking table (اللي بـ يحتوي على canonical_state).
+
+Stage Summary:
+- خريطة تدفق البيانات (من الكود الفعلي):
+  * Entry: `python3 vps-service/jobs/daily_predictor.py --yesterday-only` (CLI، cron مقترح 14:30 Cairo بعد إغلاق السوق).
+  * Price source: db/price_history.db.price_history (PRIMARY، عبر V38BacktestEngine.get_price_data).
+  * Indicators: calc_atr(highs,lows,closes,14) من engines/backtest_engine.py؛ RSI من analyzers/indicators/rsi.py (Wilder's smoothing، Rule 67 canonical). MA50/MA200 تُحسب داخل V38 engine.
+  * Regime/Market state: MarketRegimeEngine.update_regime() من analyzers/market_regime_engine.py — بيكتب system_settings + market_regime_log + بيرجع thresholds. **هذا ليس canonical_state** — هو market-level regime (bull/range/bear/defensive) منفصل تمامًا عن per-stock state.
+  * Entry Gate: `check_entry_gate(_gate_data)` في daily_predictor.py سطر 1664 — بعد تأكيد إشارة BUY وقبل الـ radar hard gate. بياخد dict بـ entry/target/stop/evidence/proofs/closes/volumes/market_regime/stock_roc/benchmark_change/ticker/high_52w/low_52w/rsi.
+  * Stop/Target/R:R: compute_dynamic_target + enforce_atr_based_stop من core/opportunity_quality.py (سطر 2365-2413) — ATR-based، regime-aware min_rr (1.8 default، 2.5 في DEFENSIVE). R:R gate نهائي في سطر 2524 (skip لو < min_rr).
+  * Storage: predictions.db.predictions table عبر PredictionTracker.record_prediction() (سطر 4047) + predictions.db.stored_analyses (UPSERT، سطر 4150) — مع CANONICAL-WRITER claim (daily_predictor هو الـ writer الوحيد لـ stored_analyses).
+  * Outcome update: في backtest mode → tracker.set_verified_outcome() (سطر 4090). في live mode → daily_closer.py:3326 DailyCloser.run() (cron 14:35 Cairo Sun-Thu) — مفصول تمامًا عن daily_predictor. بيعمل UPDATE predictions SET outcome_date/exit_price/actual_return/... WHERE id=?. **لا يقرأ canonical_state**.
+
+- نقاط الربط المحتملة لـ canonical_state:
+  * أين يُقرأ المفروض؟ في daily_predictor.py سطر 1643-1663 (بناء _gate_data dict) — ده المكان الطبيعي لإضافة `'canonical_state': <state>` + `'state_confidence': <conf>` + `'state_direction': <up/down>`. أو في entry_gate.py::check_entry_gate بـ parameter جديد `data['canonical_state']`.
+  * أين يؤثر؟ (1) Entry Gate: رفض لو state ∈ {DISTRIBUTION, DOWNTREND} → hard reject. (2) Scoring: boost/penalty على result['score'] حسب state (UPTREND/ACCUMULATION → +5، CORRECTION_HEALTHY → +2، RECOVERY → +3). (3) Position sizing: state_weak (STATE_UNCONFIRMED / DATA_STALE) → position_size × 0.5. (4) R:R floor: state=DISTRIBUTION → رفع min_rr لـ 2.5.
+  * طبقة وسيطة (adapter/wrapper): ممكن جدًا. design pattern ممكن: (a) Adapter: `canonical_state_adapter.get_state_for_ticker(ticker, date)` بـ wraps state_history_tracker.get_state_timeline ويرجع آخر state. (b) Wrapper: `PredictionContext` class بـ combines V38 result + canonical_state + radar path → dict واحد يبعت لـ entry_gate. (c) Monkey-patch: patch `check_entry_gate` عشان يقرأ canonical_state من DB لو الـ caller مش مرّرها (محفوف بالمخاطر — غير موصى به).
+  * هل canonical_state دلوقتي بيتقرا من أي حته؟ **تأكيد نهائي: 0 مراجع في daily_predictor.py و 0 مراجع في entry_gate.py**. يُقرأ فقط في lightweight_server.py سطر 1906-1922 (للـ UI timeline endpoint). لا يُقرأ في أي قرار prediction.
+
+- مصفوفة الاعتماديات:
+
+| المكوّن | يقرأ من | يكتب إلى | المستهلك التالي | حالة الربط مع canonical_state |
+|---|---|---|---|---|
+| Data Engine | tradingview/egksco scrapers | db/price_history.db.price_history | V38BacktestEngine + state_history_tracker | غير محسوم (لا قارئ ولا كاتب canonical_state) |
+| Canonical State Engine | price_history.db (closes/highs/lows/volumes) | (dataclass فقط — لا DB مباشرة) | state_history_tracker | معزول — مفيش consumer |
+| state_history_tracker | price_history.db + radar_signal_tracking (prev_state) | stocks.db.radar_signal_tracking (canonical_state columns) | lightweight_server.py (UI فقط) | مكتوب بس مفيش reader من pipeline |
+| Radar (maker_radar.py) | price_history.db + intraday | scripts/output/maker_radar_*.json + stocks.db.radar_signal_tracking (path rows) | daily_predictor (radar_integration.py) + entry_gate (radar bypass) | ربط كامل عبر JSON — لا يلمس canonical_state |
+| daily_predictor (V40.2) | price_history.db + stocks.db + radar_integration (JSON) + market_regime_engine + news/fundamentals/screener | predictions.db.predictions + predictions.db.stored_analyses | daily_closer + UI APIs | غير محسوم — 0 مراجع canonical_state |
+| Entry Gate | dict من daily_predictor (stateless) | return dict | daily_predictor | غير محسوم — 0 مراجع canonical_state |
+| Outcome Tracker (daily_closer) | predictions.db.predictions (PENDING rows) + price_history.db (future prices) | predictions.db.predictions (UPDATE outcome_date/exit_price/...) | learning_engine + UI | غير محسوم — لا يقرأ canonical_state |
+
+- علاقة الـ Radar بالتوقعات (الأدلة تدعم الاحتمال التالي):
+  * (أ) + (ج) بدرجات مختلفة:
+    - (أ) Radar يشارك التوقعات نفس مصدر البيانات (price_history.db) — مُؤكد.
+    - (ج) Radar يؤثر في التوقعات من خلال جدول/cache مشترك — مُؤكد جزئيًا: الـ influence بتحصل عبر **JSON files** (scripts/output/maker_radar_{MARKET}_{date}.json) اللي بـ يكتبها scripts/maker_radar.py وبيقراها analyzers/radar_integration.py في daily_predictor سطر 521-818 (WHALE_RADAR Hunter) + سطر 1745-1813 (RADAR HARD GATE) + entry_gate سطر 783-794 (radar_bypass لـ market_context).
+    - canonical_state في radar_signal_tracking DB table — ده **مشترك** مع radar rows، بس canonical_state مفيهوش reader في prediction pipeline. الـ lightweight_server.py بـ يقراه بس للـ UI timeline.
+  * الاحتمال (ب) "Radar يؤثر مباشرة في مدخلات التوقعات" — مرفوض: maker_radar.py لوحده مستقل، الـ influence بتحصل عبر JSON artifacts.
+  * الاحتمال (د) "Radar يؤثر في العرض/التتبع بس" — مرفوض: maker_radar له HARD GATE في daily_predictor (سطر 1786-1808) ممكن يرفض السهم كاملًا لو مش في A_pre_surge/B_quiet_accumulation_strong.
+
+- توصية نقطة الربط:
+  * الربط المباشر المثالي: في daily_predictor.py سطر 1643-1663 (بناء _gate_data)، أضف قراءة آخر canonical_state من radar_signal_tracking table للـ ticker + scan_date. ده يحتاج:
+    - import sqlite3 + query: `SELECT canonical_state, confidence, direction_up, direction_down FROM radar_signal_tracking WHERE ticker=? AND signal_date<=? AND canonical_state!='' ORDER BY signal_date DESC LIMIT 1`.
+    - ضيف result['canonical_state'], result['state_confidence'], result['state_direction'].
+    - مرر لـ entry_gate عبر _gate_data['canonical_state'].
+    - في entry_gate، أضف _check_canonical_state() function جديد في قائمة checks (سطر 811-825).
+  * **ممنوع تعديل**: daily_predictor.py + entry_gate.py محميّان (per task constraints).
+  * Shadow Mode بدون تعديل protected files: **ممكن جدًا** عبر design pattern "Interceptor":
+    - (1) **Wrapper/Adapter module جديد** (vps-service/camp/canonical_state_reader.py — file جديد، مش protected): function `get_canonical_state_for_ticker(ticker, date)` بـ يقرأ من radar_signal_tracking ويرجع dict.
+    - (2) **Monkey-patch في bootstrap** (vps-service/jobs/predictor_bootstrap.py جديد أو في lightweight_server startup): `import entry_gate; _original_check = entry_gate.check_entry_gate; def _patched_check(data): data = enrich_with_canonical_state(data); return _original_check(data); entry_gate.check_entry_gate = _patched_check`. ده بـ يحول كل استدعاء check_entry_gate في daily_predictor يمر عبر adapter بدون تعديل daily_predictor نفسه.
+    - (3) **Observer pattern via PredictionTracker.record_prediction hook**: نـ subclass PredictionTracker ونعمل override record_prediction() — قبل ما يستدعي الـ super، بـ يـ log التوقع + canonical_state في جدول audit منفصل (shadow_predictions) للمقارنة. ده بيخلي الـ shadow = "log only" (مش بـ يغير القرار) — أنسب لـ A/B comparison.
+  * التوصية النهائية: pattern (3) — Observer على PredictionTracker.record_prediction. السبب:
+    - آمن 100% (مش بـ يغير أي قرار — بـ يسجل بس).
+    - بـ يسمح بمقارنة أداء التوقعات مع/ضد canonical_state دون مخاطرة.
+    - بعد أسبوعين من بيانات حقيقية، نقرر هل canonical_state فعّال → ننتقل لـ pattern (1) كربط فعلي بعد موافقة المالك.
+  * لو الربط المباشر مستحيل بدون تعديل protected files (وهو الحال): البديل الأقوى بعد الـ Observer هو **Interceptor middleware في analyzers/radar_integration.py** (الملف ده مش protected — هو اللي بـ يـ wrap radar data) — نضيف canonical_state لـ radar_data_available / is_radar_strong_accumulation responses بحيث يرجعوا dict فيه `{'radar_path': ..., 'canonical_state': ...}`. الـ daily_predictor بـ يستهلكها حاليًا بدون تعديل لو الـ function signature بقى compatible (يرجع نفس القيم + keys إضافية اختيارية).
+
+- Shadow Mode feasibility: **ممكن بدون تعديل أي protected file**.
+  - الخطوات: (1) إنشاء `vps-service/camp/canonical_state_shadow.py` جديد. (2) يـ monkey-patch `analyzers.prediction_tracker.PredictionTracker.record_prediction` في وقت الـ import (lazy). (3) الـ patch بـ يستدعي `canonical_state_reader.get_state_for_ticker(ticker, prediction_date)` ويخزن النتيجة في جدول منفصل `shadow_canonical_state_audit` (CREATE TABLE IF NOT EXISTS — schema migration صفر). (4) الـ patch لازم يحترم fail-safe: لو canonical_state غير متاح أو DB فشل → استدعي الـ original function فقط.
+  - ملاحظة مهمة: monkey-patch على PredictionTracker مـ نورّط الـ backtest runs كمان (مفيش flag يميز live من backtest غير V40_2_BACKTEST_MODE env var). لازم الـ patch يتخطى لو env var = '1'.
+
+
+---
+Task ID: SHADOW-MODE-IMPLEMENTATION-AND-HISTORICAL-VALIDATION
+Agent: Bravo (Z.ai sandbox)
+Task: تنفيذ الـ master directive: تتبّع محرك التوقعات + تنفيذ Shadow Mode + اختبار تاريخي + تقرير نهائي.
+
+Work Log:
+- المرحلة 5 (subagent): تتبّع محرك التوقعات من daily_predictor.py + entry_gate.py. تأكيد نهائي: 0 مراجع لـ canonical_state في الاتنين. نقطة الربط المثالية = daily_predictor.py:1643-1663 (بناء _gate_data، محمي). البديل الآمن = Observer pattern على PredictionTracker.record_prediction.
+- المرحلة 6: تنفيذ vps-service/camp/canonical_state_shadow.py (385 سطر):
+  * POLICY_MATRIX مقترحة (9 حالات، priority_delta مقترح، مش مُطبّق).
+  * ensure_audit_table() → CREATE TABLE IF NOT EXISTS shadow_canonical_state_audit (17 columns).
+  * fetch_canonical_state_for_ticker() → read from radar_signal_tracking.
+  * _shadow_record_prediction() → wrapper على record_prediction (fail-safe).
+  * activate()/deactivate() → monkey-patch lifecycle.
+  * get_shadow_audits()/get_shadow_summary() → analysis queries.
+- المرحلة 7: اختبار Shadow Mode (scripts/test_shadow_mode_phase2.py): 24/24 ✅.
+  * activate/deactivate lifecycle verified.
+  * audit table creation verified.
+  * record_prediction مع shadow = prediction_id + audit record verified.
+  * fail-safe: ticker بدون canonical_state → audit بـ NULL + prediction ناجح.
+  * لا تغيير في قرار التوقع (predictions table بدون canonical_state column).
+  * analysis queries شغّالة.
+- المرحلة 7 (historical validation): scripts/test_historical_validation_phase2.py.
+  * اكتشاف: 0% coverage بين predictions و canonical_state.
+  * السبب: tickers التوقعات سعودية (1120, 1150, 1182) بينما canonical_state مصرية (COMI, ABUK, AALR). مفيش overlap.
+  * هذا data alignment issue في sandbox sample — مش code bug.
+  * لا يمكن عمل historical comparison صالح بدون canonical_state computed for same tickers as predictions.
+
+Stage Summary:
+- Shadow Mode module جاهز + مُختبَر (24/24 ✅).
+- نقطة الربط محددة (daily_predictor.py:1643-1663).
+- historical validation مش ممكن في sandbox sample بسبب data alignment (ticker mismatch).
+- الإجابات الثلاثة:
+  Q1: لا — فيه تعارض بنيوي (maker_radar DELETE + INSERT OR REPLACE بدون UNIQUE).
+  Q2: نعم — نقطة الربط محددة + Shadow Mode جاهز.
+  Q3: غير محسوم — مفيش بيانات متداخلة في sandbox للحكم.
