@@ -33,6 +33,7 @@ import {
  Activity,
  Gauge,
  PenTool,
+ LineChart,
 } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -488,7 +489,21 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  const [quickAdding, setQuickAdding] = useState(false);
  const [quickAdded, setQuickAdded] = useState(false);
  // ALPHA-PREMIUM-CHART: state للتبديل بين الشارت التفاعلي والشارت البسيط
- const [usePremiumChart, setUsePremiumChart] = useState(true);
+ // محفوظ في localStorage عشان يفضل بين الجلسات (default: PremiumChart)
+ const [usePremiumChart, setUsePremiumChart] = useState(() => {
+  try {
+   const saved = localStorage.getItem('trading-chart-preference');
+   return saved === null ? true : saved === 'premium';
+  } catch {
+   return true;
+  }
+ });
+ // حفظ التغيير في localStorage كل ما يتغير
+ useEffect(() => {
+  try {
+   localStorage.setItem('trading-chart-preference', usePremiumChart ? 'premium' : 'simple');
+  } catch { /* ignore */ }
+ }, [usePremiumChart]);
 
  const cardRef = useRef<HTMLDivElement>(null);
  const [screenshotting, setScreenshotting] = useState(false);
@@ -830,17 +845,38 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  <Gauge className="w-3 h-3 ml-1" />
  مؤشرات
  </Button>
- {/* ALPHA-PREMIUM-CHART: زر التبديل بين الشارت المتميز والبسيط */}
- <Button
-  variant={usePremiumChart ? 'default' : 'outline'}
-  size="sm"
-  onClick={() => setUsePremiumChart((v) => !v)}
-  className={cn('h-7 text-xs px-2.5 rounded-lg', usePremiumChart && 'bg-primary text-primary-foreground')}
-  title="التبديل بين الشارت التفاعلي (مع أدوات رسم) والشارت البسيط"
- >
-  <PenTool className="w-3 h-3 ml-1" />
-  {usePremiumChart ? 'شارت متميز' : 'شارت بسيط'}
- </Button>
+ {/* ALPHA-PREMIUM-CHART: زر التبديل بين الشارت المتميز والبسيط
+     محفوظ في localStorage — يفضل بين الجلسات */}
+ <div className="flex bg-muted border border-border rounded-xl p-0.5 text-xs font-semibold gap-0.5">
+  <button
+   type="button"
+   onClick={() => setUsePremiumChart(true)}
+   className={cn(
+    'px-2 py-1 rounded-lg transition-colors flex items-center gap-1',
+    usePremiumChart
+     ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+     : 'text-muted-foreground hover:text-foreground'
+   )}
+   title="شارت متميز — مع أدوات رسم تفاعلية ومؤشرات"
+  >
+   <PenTool className="w-3 h-3" />
+   متميز
+  </button>
+  <button
+   type="button"
+   onClick={() => setUsePremiumChart(false)}
+   className={cn(
+    'px-2 py-1 rounded-lg transition-colors flex items-center gap-1',
+    !usePremiumChart
+     ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+     : 'text-muted-foreground hover:text-foreground'
+   )}
+   title="شارت بسيط — شارت TradingView العادي"
+  >
+   <LineChart className="w-3 h-3" />
+   بسيط
+  </button>
+ </div>
  </div>
  </div>
 

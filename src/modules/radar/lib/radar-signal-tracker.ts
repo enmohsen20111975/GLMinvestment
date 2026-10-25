@@ -76,7 +76,7 @@ export function ensureSchema(db: Database.Database): void {
  min_price_after REAL,
  verified_at TEXT,
  created_at TEXT DEFAULT (datetime('now')),
- source TEXT DEFAULT NULL
+ source TEXT DEFAULT 'maker_radar'
  );
  CREATE INDEX IF NOT EXISTS idx_radar_sig_ticker ON radar_signal_tracking(ticker);
  CREATE INDEX IF NOT EXISTS idx_radar_sig_status ON radar_signal_tracking(status);

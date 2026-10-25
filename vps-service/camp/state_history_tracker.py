@@ -53,7 +53,7 @@ def ensure_state_columns(conn: sqlite3.Connection):
     # on a fresh DB, so we ensure it here too (idempotent — ALTER TABLE ADD COLUMN
     # is a no-op if the column already exists).
     if 'source' not in cols:
-        additions.append("ADD COLUMN source TEXT DEFAULT NULL")
+        additions.append("ADD COLUMN source TEXT DEFAULT 'maker_radar'")
 
     for add in additions:
         try:
