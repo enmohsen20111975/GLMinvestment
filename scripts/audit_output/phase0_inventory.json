@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-10-24T09:43:04.332128",
+  "total_engines": 8,
+  "passed": 8,
+  "results": [
+    {
+      "name": "Liquidity Filter",
+      "file": "analyzers/liquidity_filter.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 2154.3,
+      "output_shape": "LiquidityFilter",
+      "verdict": "PASS"
+    },
+    {
+      "name": "Market Regime Engine",
+      "file": "analyzers/market_regime_engine.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 8.4,
+      "output_shape": "MarketRegimeEngine",
+      "verdict": "PASS"
+    },
+    {
+      "name": "Fundamental Scorer",
+      "file": "analyzers/fundamental_scorer.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 3.8,
+      "output_shape": "FundamentalScorer",
+      "verdict": "PASS"
+    },
+    {
+      "name": "SMC Engine",
+      "file": "analyzers/smc_engine.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 0.1,
+      "output_shape": "N/A",
+      "verdict": "PASS"
+    },
+    {
+      "name": "Volume Profile",
+      "file": "analyzers/volume_profile.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 0.0,
+      "output_shape": "N/A",
+      "verdict": "PASS"
+    },
+    {
+      "name": "V38 Backtest Engine",
+      "file": "engines/backtest_engine.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 36.7,
+      "output_shape": "V38BacktestEngine",
+      "verdict": "PASS"
+    },
+    {
+      "name": "Session Timing",
+      "file": "analyzers/session_timing.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 0.1,
+      "output_shape": "SessionTimingAnalyzer",
+      "verdict": "PASS"
+    },
+    {
+      "name": "Sentiment Analyzer",
+      "file": "analyzers/sentiment_analyzer.py",
+      "file_exists": true,
+      "import_ok": true,
+      "import_error": "",
+      "class_found": true,
+      "run_ok": true,
+      "run_error": "",
+      "speed_ms": 0.0,
+      "output_shape": "SentimentAnalyzer",
+      "verdict": "PASS"
+    }
+  ]
+}

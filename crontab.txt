@@ -1,0 +1,208 @@
+# crontab.txt — جدول المهام الإنتاجي الشامل (CANONICAL)
+# ============================================================================
+# IMPORTANT: Replace PROJECT_ROOT with your actual project path:
+#   - Production VPS: /root/GLMinvestment
+#   - Staging:        /opt/GLMinvestment
+#   - Sandbox:        /home/z/my-project
+# ============================================================================
+# For automated deployment, use this sed one-liner to adapt this file
+# to the current host before installing the crontab:
+#
+#   sed "s|/root/GLMinvestment|$(pwd)|g" crontab.txt > /tmp/crontab.txt && crontab /tmp/crontab.txt
+#
+# (Optional) override the Python binary path the same way:
+#
+#   sed -e "s|/root/GLMinvestment|$(pwd)|g" \
+#       -e "s|/root/GLMinvestment/.venv/bin/python3|$(pwd)/.venv/bin/python3|g" \
+#       crontab.txt > /tmp/crontab.txt && crontab /tmp/crontab.txt
+# ============================================================================
+# ⭐ PHASE-5 (2026-08-31): V40.2 هو العقل الوحيد — Maestro مات
+# ============================================================================
+# ✅ هذا الملف هو المصدر الوحيد للحقيقة (single source of truth)
+# ✅ CANONICAL per Rule 21 + Rule 35
+# ✅ vps-service/crontab.txt تم إلغاؤه (معطّل V40.2 كان خطأ)
+# ✅ vps-service/crontab.txt.DEPRECATED متناقض مع هذا الملف — تم تعطيله
+# ✅ كل المسارات تم التحقق منها في 2026-09-27 (P0 #6 fix)
+# ============================================================================
+# المسارات: عدّل /root/GLMinvestment حسب مسار المشروع على سيرفرك
+# البيئة: استخدم الـ venv المناسب (.venv أو venv)
+# Timezone: VPS = UTC (Cairo = UTC + 2)
+# أيام التداول: الأحد-الخميس (cron: 0-4)
+# ============================================================================
+
+# ─── 1. مولّد التوقعات الأساسي (V40.2 — العقل الوحيد) ───────────────────
+# يومياً 03:00 UTC (05:00 Cairo — قبل فتح السوق) — يولّد توقعات اليوم
+0 3 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5 >> /tmp/v40_2_morning.log 2>&1
+
+# يومياً 13:30 UTC (15:30 Cairo — بعد إغلاق السوق) — يولّد توقعات الغد
+30 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
+
+# ─── 2. محرك التوقعات اللحظي (V40.2 Intraday Scanner) ─────────────────────
+# كل 5 دقائق أثناء جلسة التداول (08:00-12:00 UTC = 10:00-14:00 Cairo)
+# يفحص بيانات الـ 5 دقائق الحية من intraday.db ويكتشف الاختراقات وتدفق السيولة
+*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
+
+# ─── 2b. Intraday Storage — حفظ لقطات الأسعار اللحظية (BRAVO-CRON-1) ─────
+# كل دقيقتين أثناء الجلسة (08:00-12:00 UTC = 10:00-14:00 Cairo)
+# يغذي stock_intraday بلقطات سريعة → intraday_scanner يجمع 5 بارات في 10 دقايق بس
+# (بدلاً من 25 دقيقة على */5) → يصطاد الانفجار السعري وهو لسه بيسخن
+# السكريبت محلي (يقرا من data_engine.db + يكتب intraday.db) — أقل من 50ms لكل run
+*/2 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/intraday_storage.py --stocks >> /tmp/intraday_storage.log 2>&1
+
+# ─── 3. إغلاق الصفقات (daily_closer) ────────────────────────────────────
+# يومياً 14:00 UTC (16:00 Cairo — بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
+0 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
+
+# ─── 4. محرك التعلم (learning_engine) ──────────────────────────────────
+# يومياً 15:00 UTC (17:00 Cairo) — يتعلم من نتائج اليوم
+0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1
+
+# ─── 5. Corporate Actions (توزيعات + اكتتاب + جمعيات) ───────────────────
+# يومياً 04:00 UTC (06:00 Cairo) — يجمع توزيعات الأرباح + أخبار الاكتتاب
+0 4 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/fetch_corporate_actions.py >> /tmp/corporate_actions.log 2>&1
+
+# ─── 6. تحديث الأسعار اليومية (EGX OHLC → price_history.db) ─────────────
+# 2x يومياً: 07:00 UTC (09:00 Cairo — قبل فتح السوق) + 13:00 UTC (15:00 Cairo — بعد الإغلاق)
+0 7 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_morning.log 2>&1
+0 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_evening.log 2>&1
+
+# ─── 7. سكرابر TradingView (المسار الصحيح: data_engine/scrapers/) ──────
+# كل 5 دقائق أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
+*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scraper.py >> /tmp/tradingview.log 2>&1
+
+# ─── 8. SafetyNet لتحديث الأسعار (Yahoo Finance fallback) ───────────────
+# يومياً 06:00 UTC (08:00 Cairo) — يسد أي فجوات في price_history.db
+0 6 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/price_history_safetynet.py >> /tmp/price_safetynet.log 2>&1
+
+# ─── 9. فحص صحة قواعد البيانات (المسار الصحيح: data_heartbeat_checker) ─
+# يومياً 01:00 UTC (03:00 Cairo)
+0 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/data_heartbeat_checker.py >> /tmp/heartbeat.log 2>&1
+
+# ─── 10. نسخة احتياطية يومية (smart_db_backup) ─────────────────────────
+# يومياً 01:30 UTC (03:30 Cairo)
+30 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/smart_db_backup.py >> /tmp/backup.log 2>&1
+
+# ─── 11. جلب الأساسيات (أسبوعياً يوم السبت) ─────────────────────────────
+# السبت 14:00 UTC (16:00 Cairo)
+0 14 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egx_fundamental_fetcher.py >> /tmp/fundamentals.log 2>&1
+
+# ─── 12. EGX Disclosures fetch ───────────────────────────────────────────
+# كل ساعتين أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
+0 8-12/2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; print(fetch_and_store_disclosures(50))" >> /tmp/disclosures.log 2>&1
+
+# ─── 13. Signal Tracker — مزامنة توقعات V40.2 إلى hunter_pick_tracking ──
+# يومياً 13:35 UTC (15:35 Cairo) — بعد V40.2 generator بشوية
+35 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/sync_hunter_pick_tracking.py >> /tmp/sync_hunter_pick.log 2>&1
+
+# ─── 14. Radar Signal Tracker — تحقّق من مصير الإشارات (7/14/30 يوم) ──
+# يومياً 02:00 UTC (04:00 Cairo) — يتحقّق من الإشارات اللي عدّت 7+ أيام
+0 2 * * * cd /root/GLMinvestment && curl -s -X POST http://localhost:3000/api/maker-radar/signal-tracker/verify -H "Content-Type: application/json" -d '{"max_age_days": 45}' >> /tmp/radar_signal_verify.log 2>&1
+
+# ─── 15. Market Regime Engine — تحديث حالة السوق (يومياً قبل الـ generator) ──
+# يومياً 02:50 UTC (04:50 Cairo) — قبل V40.2 generator بـ 10 دقائق
+# بـ يقرأ 6 indicators (SMA20/50/200 + breadth + ATR + turnover + loss streak)
+# و يـ output regime = DEFENSIVE / NORMAL / AGGRESSIVE مع hysteresis 2-3 أيام.
+# النتيجة بـ تـ store في system_settings و market_regime_log.
+# V40.2 generator بـ يقرأها عند بداية كل run و يـ override الـ thresholds.
+50 2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.market_regime_engine import MarketRegimeEngine; MarketRegimeEngine('EGX').update_regime()" >> /tmp/regime_engine.log 2>&1
+
+# ─── 15b. Market Regime Engine (multi-market update — أسبوعياً يوم السبت) ──
+# السبت 02:55 UTC — تحديث لكل الأسواق مرة في الأسبوع (EGX/TADAWUL/KSE/QSE/CRYPTO/GOLD)
+# EGX بـ يتحدث يومياً بالـ cron اللي فوق. الـ markets التانية أسبوعياً.
+55 2 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/analyzers/market_regime_engine.py --all >> /tmp/regime_engine_weekly.log 2>&1
+
+# ─── 16. Weekly Radar Report — تقرير أسبوعي كل يوم أحد صباحاً ────────────
+# يومياً 06:00 UTC (08:00 Cairo) — يولّد التقرير الأسبوعي + يبعت Telegram
+# 1. يقرأ أحدث رادار كاش (scripts/output/maker_radar_<date>.json)
+# 2. يحسب أداء أسهم الأسبوع اللي فات من db/maker_radar_tracking.json
+# 3. يختار سهم الأسبوع + أفضل 5 أسهم + خريطة القطاعات + حالة السوق
+# 4. يولّد PDF + PNG + JSON في scripts/output/weekly_radar_report_<date>.*
+# 5. يبعت PNG + ملخص نصي لقناة التليجرام (لو TELEGRAM_BOT_TOKEN موجود)
+0 6 * * 0 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/weekly_radar_report.py --market EGX --send-telegram >> /tmp/weekly_report.log 2>&1
+
+# ─── 17. US Stock Scraper — جلب أسعار الأسهم الأمريكية ──────────────────
+# يومياً 22:00 UTC (00:00 Cairo — بعد إغلاق السوق الأمريكي بساعة)
+# يجيب OHLCV لـ 50 سهم أمريكي (AAPL, MSFT, GOOGL, ...) من Yahoo Finance
+# ويكتبهم في price_history.db مع source='yahoo_us' + market='US' + adjusted=0
+0 22 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/us_stock_scraper.py >> /tmp/us_scraper.log 2>&1
+
+# ─── 18. Multi-Market Scraper — تشغيل كل السكرابرز ────────────────────
+# كل ساعة خلال ساعات السوق العالمية (09:00-22:00 UTC = 11:00 Cairo-00:00 Cairo)
+# يشغّل: EGX (tradingview + yahoo fallback) + US (yahoo) + Crypto + Metals
+# لو سوق واحد فشل، السوق التاني بيفضل يشتغل (graceful degradation)
+0 9-22 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/multi_market_scraper.py >> /tmp/multi_scraper.log 2>&1
+
+# ─── 19. Mine Learned Lessons — أسبوعياً (الأحد) ──────────────────────
+# الأحد 04:00 UTC (06:00 Cairo) — تعدين الدروس المستفادة من التوقعات المغلقة
+# يقرأ predictions.db + يطابق التوقعات المُنفّذة مع نتائجها الفعلية
+# ويستخرج أنماط ناجحة/فاشلة → يكتبها في learned_lessons.db
+# تستهلكها later: confluence_engine_v3 + smart_exit + learning_engine
+0 4 * * 0 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/mine_learned_lessons.py >> /tmp/learned_lessons.log 2>&1
+
+# ─── 20. Exit Policy Optimizer — شهرياً (أول كل شهر) ──────────────────
+# يوم 1 من كل شهر 05:00 UTC (07:00 Cairo) — يضبط سياسة الخروج (stop/target/trailing)
+# بناءً على أداء آخر 90 يوم من predictions.db + market_regime_log
+# يكتب الإعدادات المُحسّنة في exit_policy_optimizer_state.json
+0 5 1 * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/exit_policy_optimizer.py >> /tmp/exit_optimizer.log 2>&1
+
+# ─── 21. Post-Market Feedback — يومياً بعد الإغلاق ────────────────────
+# أيام السوق (الأحد-الخميس) 14:30 UTC (16:30 Cairo — بعد إغلاق EGX بنصف ساعة)
+# يفحص كل التوقعات النشطة: مين وصل تارجت؟ مين ضرب ستوب؟ مين لسه معلّق؟
+# يحدّث predictions.db بـ exit_type + exit_price + pnl_percent
+30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/post_market_feedback.py >> /tmp/post_market_feedback.log 2>&1
+
+# ─── 22. Hot Candidate Detector — كل 15 دقيقة خلال السوق ─────────────
+# أيام السوق (الأحد-الخميس) 08:00-12:30 UTC (10:00-14:30 Cairo — خلال جلسة EGX)
+# يفحص تدفقات السيولة الحية ويكتشف أسهم تحت ضغط شراء قوي
+# يبعت تنبيه فوري لـ Telegram لو في candidate score > 0.85
+# يكتب نتائجه في hot_candidates_<date>.json للمتابعة اللحظية
+*/15 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/hot_candidate_detector.py >> /tmp/hot_candidate.log 2>&1
+
+# ============================================================================
+# للتثبيت: crontab crontab.txt
+# للتحقق: crontab -l
+# ============================================================================
+
+# ─── 23. Comprehensive Telegram Report — تقرير شامل يومي بعد الإغلاق ──
+# يومياً 14:30 UTC (16:30 Cairo — بعد إغلاق السوق بنصف ساعة)
+30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/telegram_comprehensive_report.py --send >> /tmp/telegram_report.log 2>&1
+
+# ─── 24. Downgrade Expired Subscriptions (P0-2 — Fix Battalion) ──────
+# يومياً 03:00 UTC (05:00 Cairo) — يخفض الـ User.subscription_tier لـ
+# 'free' لكل المستخدمين اللي انتهت اشتراكاتهم (UserSubscription.expires_at < now
+# AND status='active'). كمان بـ يحدّث UserSubscription.status لـ 'expired'.
+# Admin tier مستثنى (محفوظ دائماً — Rule 50 MONEY-AS-CUSTOMER-LIFE).
+# Idempotent: آمن تشغيله أكثر من مرة. بيستخدم Prisma auth client (مش Python)
+# عشان auth.db متاح عبر Prisma فقط.
+# استخدم: bun (موجود على الـ VPS) بدل python.
+0 3 * * * cd /root/GLMinvestment && /root/GLMinvestment/node_modules/.bin/bun run scripts/downgrade-expired-subscriptions.ts >> /tmp/downgrade_expired_subs.log 2>&1
+
+# ─── 25. Shariah Compliance Scraper — بيانات التوافق الشرعي + التطهير ──
+# أسبوعياً يوم السبت 15:00 UTC (17:00 Cairo — بعد job 11 بتاع الأساسيات)
+# المصدر: stocks.templatesnippet.com/data/stocks_merged.json (JSON ثابت، مفتوح)
+#   253 سهم × 8 مصادر شرعية (بورصة حلال · مصفّى · كاشف · حلال إنفست ·
+#   بنك فيصل · أسطول · ثندر · ج الأسهم الشرعية)
+# بيطلب conditional GET بالـ ETag ⇒ لو المصدر ما اتغيرش بيرجّع 304 في ~0 تكلفة.
+# بيكتب في data_engine.db: sharia_sources · sharia_source_status ·
+#   sharia_metrics · sharia_purification_rates · sharia_history
+# الحاسبة الأساسية = معيار S&P (sharia_purification_rates.is_primary=1).
+# --sync-stocks بيملأ stocks.is_halal / compliance_* — OFF هنا افتراضياً
+#   (schema change في stocks.db، يُشغّل مرة واحدة يدوي بعد المراجعة).
+30 15 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/sharia_compliance_scraper.py >> /tmp/sharia_scraper.log 2>&1
+
+# ─── 26. Maker Radar — كل الأسواق (Task 35-A — Rule 67 root-cause fix) ──
+# كل 5 دقائق أثناء جلسة التداول للأسواق العربية + الأمريكية (08:00-14:00 UTC).
+# كل 5 دقائق 24/7 للـ CRYPTO + GOLD لأنها بتتداول 24 ساعة.
+# كل سوق ليه log file منفصل + cache file منفصل (scripts/output/maker_radar_{MARKET}_{DATE}.json)
+# الـ multi-market API بـ يقرأ كل cache على حدة + بيعمل first-generation
+# background warmup لو الـ cache مش موجود (Rule 67: مفيش كذب "تحت التسخين" للأبد).
+# Task 35-A: قبل ده، كان فيه cron واحد لـ EGX بس — فالـ API بيرجّع
+# warming_up=true للأبد للأسواق الـ 6 التانية (TADAWUL/KSE/QSE/US/CRYPTO/GOLD).
+*/5 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market EGX --json-only >> /tmp/maker_radar_egx.log 2>&1
+*/5 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market TADAWUL --json-only >> /tmp/maker_radar_tadawul.log 2>&1
+*/5 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market KSE --json-only >> /tmp/maker_radar_kse.log 2>&1
+*/5 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market QSE --json-only >> /tmp/maker_radar_qse.log 2>&1
+*/5 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market US --json-only >> /tmp/maker_radar_us.log 2>&1
+# CRYPTO + GOLD — 24/7 (بتتداول كل أيام الأسبوع + كل ساعة)
+*/5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market CRYPTO --json-only >> /tmp/maker_radar_crypto.log 2>&1
+*/5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market GOLD --json-only >> /tmp/maker_radar_gold.log 2>&1

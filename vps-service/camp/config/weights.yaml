@@ -1,0 +1,44 @@
+# weights.yaml — Regime-specific block weights
+# NOTE: These are PLACEHOLDER weights. After Rolling IC analysis,
+# weights will be updated based on actual IC per regime.
+# Formula: weight_i = IC_i / sum(IC) × total_weight_cap
+
+default:
+  momentum_20: 0.15
+  momentum_60: 0.15
+  sector_leadership: 0.15
+  volume_surge: 0.10
+  distance_52w: 0.10
+  breadth_trend: 0.15
+  volume_price_div: 0.10
+  buy_sell_pressure: 0.10
+
+Bull:
+  momentum_20: 0.20
+  momentum_60: 0.15
+  sector_leadership: 0.15
+  volume_surge: 0.10
+  distance_52w: 0.10
+  breadth_trend: 0.15
+  volume_price_div: 0.08
+  buy_sell_pressure: 0.07
+
+Bear:
+  momentum_20: 0.08
+  momentum_60: 0.05
+  sector_leadership: 0.10
+  volume_surge: 0.15
+  distance_52w: 0.12
+  breadth_trend: 0.20
+  volume_price_div: 0.15
+  buy_sell_pressure: 0.15
+
+Sideways:
+  momentum_20: 0.15
+  momentum_60: 0.12
+  sector_leadership: 0.15
+  volume_surge: 0.12
+  distance_52w: 0.12
+  breadth_trend: 0.12
+  volume_price_div: 0.12
+  buy_sell_pressure: 0.10

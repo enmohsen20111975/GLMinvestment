@@ -1,0 +1,46 @@
+[INFO] predictions.db:   /home/z/my-project/db/predictions.db
+[INFO] price_history.db: /home/z/my-project/db/price_history.db
+[INFO] READ-ONLY mode (URI ?mode=ro) — no DB writes will occur.
+
+[1/4] Fetched 1213 closed predictions.
+[2/4] Fetching price history for 80 distinct tickers (batched per-ticker)...
+      Price-history rows cached for 79 / 80 tickers.
+
+========================================================================
+[3/4] RECONCILIATION SUMMARY
+========================================================================
+Total closed predictions checked : 1213
+  MATCH (recorded == actual)      : 775  (63.89%)
+  MISMATCH (recorded != actual)   : 401  (33.06%)
+  INSUFFICIENT_DATA               : 37  (3.05%)
+
+Mismatches by type (recorded_to_actual):
+  EXPIRED_to_TARGET_HIT            : 252
+  EXPIRED_to_STOPPED               : 89
+  STOPPED_to_TARGET_HIT            : 28
+  STOPPED_to_EXPIRED               : 28
+  TARGET_HIT_to_EXPIRED            : 4
+
+Anomalies (exit_date < prediction_date etc.): 0
+
+Top 10 mismatches (by largest |recorded actual_return|):
+------------------------------------------------------------------------
+id      ticker   pred_date   recorded     actual           entry    target     stop   max_high    min_low     ret%
+------------------------------------------------------------------------
+50285   HELI     2025-10-12  EXPIRED      TARGET_HIT        3.14      9.40     2.95       8.77       3.11  +161.15
+50291   HELI     2025-10-13  EXPIRED      TARGET_HIT        3.19      9.41     3.00       8.77       3.12  +157.05
+50327   HELI     2025-10-22  EXPIRED      TARGET_HIT        3.20      9.41     3.01       8.77       3.19  +156.25
+50331   HELI     2025-10-23  EXPIRED      TARGET_HIT        3.24      9.42     3.05       8.77       3.20  +153.09
+50312   HELI     2025-10-19  EXPIRED      TARGET_HIT        3.25      9.42     3.06       8.77       3.18  +152.31
+50363   HELI     2025-11-02  EXPIRED      TARGET_HIT        3.25      9.42     3.06       8.77       3.22  +152.31
+50337   HELI     2025-10-26  EXPIRED      TARGET_HIT        3.27      9.42     3.08       8.77       3.22  +150.76
+50388   HELI     2025-11-09  EXPIRED      TARGET_HIT        3.27      9.42     3.08       8.77       3.25  +150.76
+50346   HELI     2025-10-28  EXPIRED      TARGET_HIT        3.28      9.42     3.09       8.77       3.22  +150.00
+50376   HELI     2025-11-05  EXPIRED      TARGET_HIT        3.28      9.42     3.09       8.77       3.25  +150.00
+
+[4/4] Wrote JSON report: /home/z/my-project/scripts/output/hit_target_reconciliation_20260927T162241Z.json
+[4/4] Wrote SQL fixes : /home/z/my-project/scripts/output/hit_target_fixes_20260927T162241Z.sql
+
+========================================================================
+DONE. checked=1213  match=775 (63.89%)  mismatch=401 (33.06%)  insufficient=37
+========================================================================

@@ -1,0 +1,64 @@
+# دليل الاستثمار - Docker Compose for Production
+# ======================================================
+
+version: '3.8'
+
+services:
+  # Python Backend - THE BRAIN
+  egx-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egx-backend
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    volumes:
+      # Persist database and logs
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./live_signals:/app/live_signals
+    environment:
+      - PORT=8010
+      - DATABASE_PATH=/app/data/stocks.db
+      - TZ=Africa/Cairo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - egx-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Scheduler Service (Optional - for scheduled tasks)
+  egx-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: egx-scheduler
+    restart: unless-stopped
+    command: ["python", "-c", "from core.egypt_scheduler import run_scheduler; run_scheduler()"]
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - TZ=Africa/Cairo
+      - DATABASE_PATH=/app/data/stocks.db
+    depends_on:
+      - egx-backend
+    networks:
+      - egx-network
+
+networks:
+  egx-network:
+    driver: bridge
+
+volumes:
+  egx-data:
+  egx-logs:

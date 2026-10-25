@@ -1,0 +1,203 @@
+{
+  "ts": "2026-10-24T12:53:01.423140",
+  "exps": [
+    {
+      "name": "V38 Baseline",
+      "m": {
+        "signals": 302,
+        "wins": 136,
+        "losses": 154,
+        "wr": 45.0,
+        "pf": 1.07,
+        "max_dd": 34.0,
+        "avg_ret": 0.28,
+        "sharpe": 0.54,
+        "expectancy": 0.06,
+        "avg_win": 10.0,
+        "avg_loss": 8.29
+      },
+      "d": 0,
+      "v": "baseline"
+    },
+    {
+      "name": "BullOnly",
+      "m": {
+        "signals": 63,
+        "wins": 25,
+        "losses": 35,
+        "wr": 39.7,
+        "pf": 0.84,
+        "max_dd": 26.3,
+        "avg_ret": -0.75,
+        "sharpe": -0.66,
+        "expectancy": -0.15,
+        "avg_win": 10.0,
+        "avg_loss": 8.42
+      },
+      "d": -0.23,
+      "v": "REJECT"
+    },
+    {
+      "name": "RSI 40-70",
+      "m": {
+        "signals": 175,
+        "wins": 74,
+        "losses": 92,
+        "wr": 42.3,
+        "pf": 0.96,
+        "max_dd": 30.6,
+        "avg_ret": -0.19,
+        "sharpe": -0.28,
+        "expectancy": -0.04,
+        "avg_win": 10.0,
+        "avg_loss": 8.33
+      },
+      "d": -0.11,
+      "v": "REJECT"
+    },
+    {
+      "name": "Vol 1.2x",
+      "m": {
+        "signals": 55,
+        "wins": 22,
+        "losses": 29,
+        "wr": 40.0,
+        "pf": 0.9,
+        "max_dd": 15.8,
+        "avg_ret": -0.43,
+        "sharpe": -0.36,
+        "expectancy": -0.09,
+        "avg_win": 10.0,
+        "avg_loss": 8.18
+      },
+      "d": -0.17,
+      "v": "REJECT"
+    },
+    {
+      "name": "Stop 5%",
+      "m": {
+        "signals": 302,
+        "wins": 98,
+        "losses": 203,
+        "wr": 32.5,
+        "pf": 0.97,
+        "max_dd": 36.8,
+        "avg_ret": -0.11,
+        "sharpe": -0.28,
+        "expectancy": -0.02,
+        "avg_win": 10.0,
+        "avg_loss": 5.0
+      },
+      "d": -0.1,
+      "v": "REJECT"
+    },
+    {
+      "name": "Target 7.5%",
+      "m": {
+        "signals": 302,
+        "wins": 153,
+        "losses": 145,
+        "wr": 50.7,
+        "pf": 0.95,
+        "max_dd": 37.0,
+        "avg_ret": -0.18,
+        "sharpe": -0.41,
+        "expectancy": -0.04,
+        "avg_win": 7.5,
+        "avg_loss": 8.29
+      },
+      "d": -0.12,
+      "v": "REJECT"
+    },
+    {
+      "name": "Bull+RSI",
+      "m": {
+        "signals": 38,
+        "wins": 16,
+        "losses": 19,
+        "wr": 42.1,
+        "pf": 0.98,
+        "max_dd": 12.7,
+        "avg_ret": -0.07,
+        "sharpe": -0.05,
+        "expectancy": -0.01,
+        "avg_win": 10.0,
+        "avg_loss": 8.43
+      },
+      "d": -0.09,
+      "v": "REJECT"
+    },
+    {
+      "name": "Bull+Vol",
+      "m": {
+        "signals": 7,
+        "wins": 4,
+        "losses": 2,
+        "wr": 57.1,
+        "pf": 2.15,
+        "max_dd": 2.4,
+        "avg_ret": 3.06,
+        "sharpe": 0.92,
+        "expectancy": 0.61,
+        "avg_win": 10.0,
+        "avg_loss": 7.66
+      },
+      "d": 1.08,
+      "v": "KEEP"
+    },
+    {
+      "name": "RSI+Vol",
+      "m": {
+        "signals": 31,
+        "wins": 10,
+        "losses": 17,
+        "wr": 32.3,
+        "pf": 0.69,
+        "max_dd": 11.5,
+        "avg_ret": -1.49,
+        "sharpe": -0.99,
+        "expectancy": -0.3,
+        "avg_win": 10.0,
+        "avg_loss": 8.23
+      },
+      "d": -0.38,
+      "v": "REJECT"
+    },
+    {
+      "name": "Bull+RSI+Vol",
+      "m": {
+        "signals": 3,
+        "wins": 2,
+        "losses": 0,
+        "wr": 66.7,
+        "pf": 6.07,
+        "max_dd": 0.7,
+        "avg_ret": 5.57,
+        "sharpe": 1.26,
+        "expectancy": 1.11,
+        "avg_win": 10.0,
+        "avg_loss": 0
+      },
+      "d": 5.0,
+      "v": "KEEP"
+    },
+    {
+      "name": "All Best",
+      "m": {
+        "signals": 3,
+        "wins": 2,
+        "losses": 0,
+        "wr": 66.7,
+        "pf": 6.07,
+        "max_dd": 0.7,
+        "avg_ret": 5.57,
+        "sharpe": 1.26,
+        "expectancy": 1.11,
+        "avg_win": 10.0,
+        "avg_loss": 0
+      },
+      "d": 5.0,
+      "v": "BEST"
+    }
+  ]
+}
