@@ -54,7 +54,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
-import { useSession } from 'next-auth/react'; // kept for hook parity
+import { useSession } from '@/lib/next-auth-shim'; // kept for hook parity
 import { LazyTabLoader } from '@/components/shared/LazyTabLoader';
 import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { RegimeDetectionWidget } from '@/modules/admin/components/RegimeDetectionWidget';

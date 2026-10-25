@@ -23,7 +23,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { Sparkles, X, Rocket, Clock, AlertTriangle, Crown, Lock, KeyRound } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuthCheck } from '@/hooks/useAuthCheck';

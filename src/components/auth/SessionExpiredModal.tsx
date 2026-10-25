@@ -25,7 +25,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { signOut } from 'next-auth/react';
+import { signOut } from '@/lib/next-auth-shim';
 import { LogIn, AlertTriangle, Loader2 } from 'lucide-react';
 import {
  Dialog,

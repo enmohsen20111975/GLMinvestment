@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import React from 'react';
 import dynamicImport from 'next/dynamic';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { motion } from 'framer-motion';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';

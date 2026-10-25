@@ -25,7 +25,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { useSearchParams } from 'next/navigation';
 import { Gift, Clock } from 'lucide-react';
 import { toast } from 'sonner';

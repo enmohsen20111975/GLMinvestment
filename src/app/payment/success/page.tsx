@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { PAID_TIERS } from '@/lib/subscription-gate';
 

@@ -34,7 +34,7 @@ import {
  TrendingUp, TrendingDown, Layers, Lock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library

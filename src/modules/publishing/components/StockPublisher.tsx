@@ -71,7 +71,7 @@ import {
  generatePublishText,
  generatePublishPayload,
 } from '@/modules/publishing/lib/stock-publish-text';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { useAppStore } from '@/lib/store';
 import { isAdmin, adminFetch } from '@/lib/admin-auth';
 // MERGE-LIST-CARDS + TELEGRAM-LINK: pull in StockInfographicCard so the

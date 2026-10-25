@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react';
-import { useSession } from 'next-auth/react';
+import { signIn } from '@/lib/next-auth-shim';
+import { useSession } from '@/lib/next-auth-shim';
 import {
  LogIn,
  UserPlus,

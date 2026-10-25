@@ -40,7 +40,52 @@ const nextConfig = {
   reactStrictMode: false,
 
   // ✅ يعمل في Next 14 و 16 — يحوّل CJS modules لـ ESM
-  transpilePackages: ['next-auth', '@babel/runtime'],
+  // B5 FIX: transpilePackages أكبر — Turbopack بيـ leak CJS (module.exports)
+  // من lucide-react + @radix-ui/* + @babel/runtime للـ browser chunk
+  // ده بيـ cause "ReferenceError: module is not defined"
+  transpilePackages: [
+    'next-auth',
+    '@babel/runtime',
+    'lucide-react',
+    '@radix-ui/react-accordion',
+    '@radix-ui/react-alert-dialog',
+    '@radix-ui/react-avatar',
+    '@radix-ui/react-checkbox',
+    '@radix-ui/react-dialog',
+    '@radix-ui/react-dropdown-menu',
+    '@radix-ui/react-label',
+    '@radix-ui/react-popover',
+    '@radix-ui/react-progress',
+    '@radix-ui/react-scroll-area',
+    '@radix-ui/react-select',
+    '@radix-ui/react-separator',
+    '@radix-ui/react-slider',
+    '@radix-ui/react-slot',
+    '@radix-ui/react-switch',
+    '@radix-ui/react-tabs',
+    '@radix-ui/react-toast',
+    '@radix-ui/react-toggle',
+    '@radix-ui/react-toggle-group',
+    '@radix-ui/react-tooltip',
+    '@radix-ui/react-context-menu',
+    '@radix-ui/react-hover-card',
+    '@radix-ui/react-aspect-ratio',
+    '@radix-ui/react-menubar',
+    '@radix-ui/react-navigation-menu',
+    '@radix-ui/react-collapsible',
+    'react-is',
+    'html2pdf.js',
+    'lodash',
+    'tiny-invariant',
+    'date-fns',
+    'framer-motion',
+    'recharts',
+    'react-markdown',
+    'react-syntax-highlighter',
+    'lightweight-charts',
+    '@tanstack/react-table',
+    '@tanstack/react-query',
+  ],
 
   // ✅ يعمل في Next 14 و 16 (في 16 اتحطت top-level بس experimental لسه مدعوم)
   experimental: {

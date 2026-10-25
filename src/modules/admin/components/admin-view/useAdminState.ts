@@ -25,7 +25,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { isAdmin } from '@/lib/admin-auth';

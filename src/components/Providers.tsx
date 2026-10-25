@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider } from '@/lib/next-auth-shim';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SessionExpiredModal } from '@/components/auth/SessionExpiredModal';
 // FOCUS-5-TASKS — i18n Phase 2 Full (2026-10-01): cookie-based i18n context.

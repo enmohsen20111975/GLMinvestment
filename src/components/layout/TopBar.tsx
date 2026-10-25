@@ -40,7 +40,7 @@ import {
  Sun, Moon, Globe,
  Settings, LogIn, LogOut, Shield,
 } from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signOut } from '@/lib/next-auth-shim';
 import { useTheme } from 'next-themes';
 // FOCUS-5-TASKS — i18n Phase 2 (2026-10-01): LanguageToggle component.
 // Adds a language switcher (عربى ↔ English) next to the theme toggle.
