@@ -386,3 +386,12 @@ backtest_results/*.json
 # Phase 3: untrack ALL data/ and db/ files (databases + data files + scripts)
 /data/
 /db/
+
+# P0-DB-CLEANUP: Remove all compressed DB files from git tracking
+db_release_*/
+data/db_backup*
+data/*.zip
+data/*.zip.part
+data/*.db
+upload/*.zip
+upload/*.db
