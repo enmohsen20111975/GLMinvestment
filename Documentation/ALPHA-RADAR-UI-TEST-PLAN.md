@@ -1,10 +1,11 @@
-# ALPHA — Liquidity Radar UI Test Plan (RADAR-CLOSURE-01 Phase 6)
-> **Status:** PARTIALLY EXECUTED — Tests 6 + 3 done; Tests 1,2,4,5 blocked on DBs; Test 7 pending Bravo
+# ALPHA — Liquidity Radar UI Test Plan (RADAR-CLOSURE-02 Part B)
+> **Status:** B1+B2 DONE — Tests 3 + 6 verified; Tests 1,2,4,5 BLOCKED on DBs; Test 7 PENDING Bravo
 > **Owner:** Alpha (Frontend/UI)
 > **Date:** 2026-10-25
-> **Commit tested:** `ca5ce1e` on `main`
+> **Commit tested:** `c63aebb` on `main`
 > **Server:** `http://localhost:3000` (Next.js 16.1.3, Turbopack dev mode)
 > **Branch:** `main` (NOT fix/radar-forensic-minimal — Bravo's fix not yet delivered)
+> **RADAR-CLOSURE-02:** Updated per final execution order — B1 (update plan) + B2 (fix test statuses) done.
 
 ---
 
@@ -147,9 +148,11 @@ HTTP 401: {"success":false,"error":"auth_required"}
 
 ### Test 6: Loading/Error/Empty states
 
-**Status:** ✅ PASS (with 1 DEFECT found)
+**Status:** ⚠️ PARTIAL (API-level PASS, UI-level BLOCKED)
 
-**Executed:** 2026-10-25 on commit `ca5ce1e`
+**Per RADAR-CLOSURE-02 B2:** Test 6 remains PARTIAL until the UI rendering inside the actual `#liquidity-radar` screen is tested. The root page (`/`) crashes with `ReferenceError: module is not defined` (pre-existing Turbopack/next-auth CJS issue — NOT caused by radar changes). API-level tests pass from chart-test page.
+
+**Executed:** 2026-10-25 on commit `c63aebb` (re-verified)
 **Server:** `http://localhost:3000` (dev mode)
 
 **6a. EMPTY state (no cache, no DB):**
@@ -277,26 +280,61 @@ cat price_history.db.tar.gz.* | tar xzf - -C ../db/
 
 ---
 
-## 5. Summary
+## 5. Summary (RADAR-CLOSURE-02 B1+B2)
 
-| Test | Status | Result |
-|------|--------|--------|
-| 1 | ⏳ BLOCKED | Needs DBs + cache |
-| 2 | ⏳ BLOCKED | Needs DBs + cache + Python |
-| 3 | ✅ PASS | API response shapes verified (code-level) |
-| 4 | ⏳ BLOCKED | Needs predictions.db with signals |
-| 5 | ⏳ BLOCKED | Needs all above |
-| 6 | ✅ PASS | Loading/Error/Empty states verified (1 LOW defect found) |
-| 7 | ⏳ PENDING | Waiting for Bravo's fix |
+| Test | Status | Result | Per B2 ruling |
+|------|--------|--------|---------------|
+| 1 | ⏳ BLOCKED | Needs DBs + cache | Not run |
+| 2 | ⏳ BLOCKED | Needs DBs + cache + Python | Not run |
+| 3 | ✅ PASS | API response shapes verified (code-level only — NOT data correctness) | Stays PASS on shape level only |
+| 4 | ⏳ BLOCKED | Needs predictions.db with signals | Not run |
+| 5 | ⏳ BLOCKED | Needs all above | Not run |
+| 6 | ⚠️ PARTIAL | API states verified (8/9 sub-tests); UI rendering blocked by pre-existing root error | Stays PARTIAL until UI tested inside actual screen |
+| 7 | ⏳ PENDING | Waiting for Bravo's fix on fix/radar-forensic-minimal | Not run |
 
 **Tests executed:** 2 of 7 (Tests 3 + 6)
-**Tests passed:** 2 of 2 executed
+**Tests passed:** 1 of 2 (Test 3 = shape only; Test 6 = PARTIAL)
 **Tests blocked:** 4 (need DBs)
 **Tests pending:** 1 (need Bravo)
 **Defects found:** 1 (LOW severity — invalid market parameter accepted)
 
-**Next action:** Wait for DB extraction + Bravo's code fix. Then execute Tests 1, 2, 4, 5, 7.
+### Part C — Integration Status
+
+**Waiting for:** Bravo's Part A delivery (A1-A6) on `fix/radar-forensic-minimal`
+**Cannot proceed with:** B3 (review Bravo's fix) + B4 (UI discrepancy check) + Test 7 (regression)
+**Blocker:** DBs not extracted from `db_release_20261025/` (minimum: `db/stocks.db` + `db/predictions.db`)
+
+### Prerequisites for B3 execution (when Bravo delivers):
+1. Bravo's code fix committed on `fix/radar-forensic-minimal`
+2. DBs extracted: `db/stocks.db`, `db/predictions.db`, `db/price_history.db`
+3. Radar cache file generated: `scripts/output/maker_radar_EGX_*.json`
+4. At least 5 stocks with real data in cache
+5. At least 10 signals in `radar_signal_tracking` with mixed statuses
+
+**Next action:** Wait for Bravo's Part A + DB extraction. Then execute B3, B4, Tests 1-5, 7.
 
 ---
 
-*This test plan is updated with actual execution results. No PASS was recorded without execution.*
+## 6. Part B + C Delivery (RADAR-CLOSURE-02)
+
+### B1 — Update existing test plan ✅
+Done — this file updated (no new report created).
+
+### B2 — Fix previous test statuses ✅
+- Test 3: stays PASS on **shape level only** (not data correctness)
+- Test 6: downgraded to **PARTIAL** (API verified, UI rendering blocked by pre-existing root error)
+- Tests 1, 2, 4, 5: stay **BLOCKED** (need DBs)
+- Test 7: stays **PENDING** (need Bravo)
+
+### B3 — Review Bravo's fix ⏳ PENDING
+Cannot start until Bravo delivers on `fix/radar-forensic-minimal`.
+
+### B4 — UI discrepancy handling ⏳ PENDING
+Cannot start until B3 is done + DBs available.
+
+### Part C — Integration ⏳ PENDING
+Cannot close until both Bravo (Part A) and Alpha (Part B3+B4) are complete.
+
+---
+
+*This test plan is updated with actual execution results. No PASS was recorded without execution. No test was marked PASS based on code review alone — Test 3 is explicitly "shape level only".*
