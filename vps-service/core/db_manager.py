@@ -117,10 +117,11 @@ _DB_ALIASES: Dict[str, str] = {
 }
 
 
-def _resolve_db_name(name: str) -> str:
+def _resolve_db_name(name) -> str:
     """حوّل اسم مختصر → مسار DB مطلق. يدعم .db suffix وعناوين مطلقة."""
     if not name:
         raise ValueError("DB name cannot be empty")
+    name = str(name)
 
     # لو مسار مطلق/نسبي مباشر لملف .db → استخدمه زي ما هو
     if name.endswith('.db') and ('/' in name or '\\' in name):

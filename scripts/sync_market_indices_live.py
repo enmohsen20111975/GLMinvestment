@@ -33,6 +33,11 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
+# Add vps-service to sys.path so core.db_manager can be imported
+_vps_dir = Path(__file__).resolve().parent.parent / "vps-service"
+if str(_vps_dir) not in sys.path:
+    sys.path.insert(0, str(_vps_dir))
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 INTRADAY_DB = PROJECT_ROOT / 'db' / 'intraday.db'
@@ -49,15 +54,12 @@ def get_latest_prices():
     # 1. اقرا من stocks.db
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.connection(STOCKS_DB, writable=False).__enter__()
-    try:
+    with db_manager.connection(STOCKS_DB, writable=False) as conn:
         rows = conn.execute("""
             SELECT ticker, market, current_price, previous_close, change_percent,
                    market_cap, free_float_shares
             FROM stocks WHERE is_active = 1 AND current_price > 0
         """).fetchall()
-    finally:
-        conn.close()
 
     for ticker, market, cp, pc, chg, mcap, ff_shares in rows:
         prices[ticker] = {
