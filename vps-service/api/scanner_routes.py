@@ -193,8 +193,58 @@ def run_advanced_scan():
             _advanced_scan_state['current_stock'] = ticker
             
             try:
-                # تشغيل التحليل الشامل (الذي يدمج تاريخ الأسعار مع intraday.db تلقائياً)
+                # تشغيل التحليل الشامل مع Risk Gate + Decision Log
+                # (Production integration: master_analyzer → risk_gate → decision_log)
                 analysis = analyzer.analyze(ticker)
+                
+                # BRAVO-PRODUCTION-INTEGRATION: apply Risk Gate after analysis
+                try:
+                    import sys as _sys
+                    _vps_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '')
+                    if _vps_path not in _sys.path:
+                        _sys.path.insert(0, _vps_path)
+                    from core.risk_gate import apply_risk_gate
+                    from core.decision_log import log_decision as _log_decision
+                    
+                    _raw_sig = getattr(analysis, 'signal', 'HOLD')
+                    _score = getattr(analysis, 'master_score', 0)
+                    _rp = getattr(analysis, 'risk_profile', {}) or {}
+                    if not isinstance(_rp, dict): _rp = {}
+                    _rr = _rp.get('risk_reward_ratio', 2.0)
+                    _pos = getattr(analysis, 'suggested_position_size', 5.0) or 5.0
+                    
+                    _final_sig, _risk_warns, _final_pos = apply_risk_gate(
+                        signal=_raw_sig, master_score=_score,
+                        risk_profile={'risk_reward_ratio': _rr},
+                        position_size_pct=_pos,
+                    )
+                    
+                    if _final_sig == 'NO_TRADE':
+                        analysis.signal = 'NO_TRADE'
+                        analysis.signal_ar = 'لا تتداول'
+                    
+                    if _risk_warns:
+                        _old_reason = getattr(analysis, 'reason', '') or ''
+                        analysis.reason = f"{_old_reason} | Risk: {'; '.join(_risk_warns)}"[:500]
+                    
+                    if _final_pos != _pos:
+                        analysis.suggested_position_size = _final_pos
+                    
+                    _eid = _log_decision(
+                        ticker=ticker,
+                        market_state=getattr(analysis, 'market_regime_ar', 'unknown'),
+                        selected_engines=['master_analyzer'],
+                        engine_results={'signal': getattr(analysis, 'signal', 'HOLD'), 'score': _score},
+                        final_signal=getattr(analysis, 'signal', 'HOLD'),
+                        master_score=_score,
+                        risk_profile={'entry_price': getattr(analysis, 'entry_price', 0),
+                                      'stop_loss': getattr(analysis, 'stop_loss', 0),
+                                      'target_price': getattr(analysis, 'target_price', 0)},
+                        code_version=os.environ.get('GIT_COMMIT', '4128d87'),
+                        warnings=_risk_warns, errors=[],
+                    )
+                except Exception:
+                    pass  # Risk gate/decision log optional — don't break scan if unavailable
                 
                 # تصفية الأسهم غير الصالحة للتداول
                 if not include_dead_stocks and not analysis.is_tradeable:
