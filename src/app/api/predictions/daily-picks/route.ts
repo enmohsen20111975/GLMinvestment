@@ -33,6 +33,146 @@ const MARKET_MAP: Record<string, string> = {
   CRYPTO: 'CRYPTO',
 };
 
+// ============================================================================
+// S-1.3 (Bravo, Integration Stabilization) — Trusted market_regime_info source
+// ============================================================================
+// When the Python backend is OFFLINE, the Next.js fallback path used to return
+// `{picks: []}` WITHOUT a `market_regime_info` field, so the user saw empty
+// picks with NO explanation. The frontend (A4 MarketRegimeBanner) relies on
+// `market_regime_info` to render the NO_TRADE banner — without it, the UI
+// falls back to "regime unavailable" which is honest but vague.
+//
+// The TRUSTED source for the regime is the same one Python reads:
+//   `stocks.db.system_settings` with key `current_regime_<MARKET>`.
+// The regime is persisted by `analyzers/market_regime_engine.py`
+// (MarketRegimeEngine.update_regime()). We READ it here — NEVER fabricate.
+//
+// Shape mirrors what `api/misc_routes.py::_b4_get_market_regime_info()` returns
+// (B4-MARKET-REGIME-FIX, Task 1-c). If stocks.db is missing or the row is
+// absent, we return `null` + `no_trade_reason: "backend_offline"` (honest —
+// NOT a fabricated DEFENSIVE/OFFENSIVE regime).
+// ============================================================================
+
+interface MarketRegimeInfo {
+  market_regime: 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | null;
+  market_regime_source: string;
+  market_regime_reasons: string[];
+  market_regime_last_update: string;
+  no_trade_reason: string;
+}
+
+const REGIME_MARKET_MAP: Record<string, string> = {
+  EGX: 'EGX',
+  EGYPT: 'EGX',
+  TADAWUL: 'TADAWUL',
+  KSA: 'TADAWUL',
+  SAUDI: 'TADAWUL',
+  KSE: 'KSE',
+  KUWAIT: 'KSE',
+  QSE: 'QSE',
+  QATAR: 'QSE',
+  CRYPTO: 'CRYPTO',
+  BINANCE: 'CRYPTO',
+};
+
+function _regimeNoTradeReason(
+  regime: 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | null,
+  picksCount: number,
+): string {
+  if (picksCount > 0) return '';
+  if (regime === null) {
+    return 'backend_offline — Python backend is down and no persisted market regime was found. Cash/wait position.';
+  }
+  if (regime === 'DEFENSIVE') {
+    return (
+      'BEAR/DEFENSIVE market regime — no qualifying BUY signals passed the ' +
+      'regime-aware min_score + min_rr gates. Hold cash; NO_TRADE decision preserved.'
+    );
+  }
+  if (regime === 'NORMAL') {
+    return 'NORMAL market regime — no BUY signals currently qualify. Cash/wait position.';
+  }
+  if (regime === 'AGGRESSIVE') {
+    return 'AGGRESSIVE market regime — no BUY signals currently qualify. Unusual; verify data freshness.';
+  }
+  return 'No qualifying BUY signals — cash/wait.';
+}
+
+function _readRegimeFromStocksDb(marketCode: string): {
+  regime: 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | null;
+  source: string;
+  reasons: string[];
+  lastUpdate: string;
+} | null {
+  // Read the persisted regime from stocks.db.system_settings.
+  // Returns null if stocks.db is missing OR the regime row is absent
+  // (in which case the caller MUST NOT fabricate a regime — it should
+  // surface `market_regime: null` + `no_trade_reason: "backend_offline"`).
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
+    if (!fs.existsSync(stocksDbPath)) return null;
+    const Database = require('better-sqlite3');
+    const db = new Database(stocksDbPath, { readonly: true });
+    try {
+      // Idempotent-ish: if system_settings doesn't exist, return null.
+      const marketKey = REGIME_MARKET_MAP[(marketCode || 'EGX').toUpperCase()] || 'EGX';
+      const settingsKey = `current_regime_${marketKey}`;
+      const row = db
+        .prepare('SELECT value FROM system_settings WHERE key = ?')
+        .get(settingsKey) as { value?: string } | undefined;
+      if (!row || !row.value) {
+        return { regime: null, source: 'system_settings_missing', reasons: [], lastUpdate: '' };
+      }
+      let parsed: { current_regime?: string; last_update?: string; reasons?: string[] };
+      try {
+        parsed = JSON.parse(row.value);
+      } catch {
+        return { regime: null, source: 'system_settings_invalid_json', reasons: [], lastUpdate: '' };
+      }
+      let regime = (parsed.current_regime || '').toUpperCase();
+      if (!['DEFENSIVE', 'NORMAL', 'AGGRESSIVE'].includes(regime)) {
+        regime = '';
+      }
+      const reasons = Array.isArray(parsed.reasons) ? parsed.reasons.map(String) : [];
+      const lastUpdate = parsed.last_update || '';
+      return {
+        regime: (regime || null) as 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | null,
+        source: 'MarketRegimeEngine',
+        reasons,
+        lastUpdate,
+      };
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+function _buildMarketRegimeInfo(marketCode: string, picksCount: number): MarketRegimeInfo {
+  const read = _readRegimeFromStocksDb(marketCode);
+  if (read === null) {
+    // stocks.db missing OR error reading → DO NOT fabricate a regime.
+    // Surface null + honest "backend_offline" reason.
+    return {
+      market_regime: null,
+      market_regime_source: 'stocks_db_missing',
+      market_regime_reasons: [],
+      market_regime_last_update: '',
+      no_trade_reason: _regimeNoTradeReason(null, picksCount),
+    };
+  }
+  return {
+    market_regime: read.regime,
+    market_regime_source: read.source,
+    market_regime_reasons: read.reasons,
+    market_regime_last_update: read.lastUpdate,
+    no_trade_reason: _regimeNoTradeReason(read.regime, picksCount),
+  };
+}
+
 interface DailyPick {
   ticker: string;
   market: string;
@@ -137,6 +277,12 @@ export async function GET(req: NextRequest) {
     const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
     if (!fs.existsSync(dbPath)) {
       // PHASE3-MARKET-SEGREGATION: graceful fallback when DB file is missing.
+      // S-1.3 (Bravo): also surface market_regime_info so the frontend's
+      // MarketRegimeBanner can render an honest NO_TRADE banner explaining
+      // WHY picks is empty (not just "no data"). The regime is read from
+      // the trusted stocks.db.system_settings source — NOT fabricated.
+      const marketRaw0 = (url.searchParams.get('market') || 'EGX').toUpperCase();
+      const market0 = MARKET_MAP[marketRaw0] || 'EGX';
       return NextResponse.json(
         {
           success: true,
@@ -144,6 +290,7 @@ export async function GET(req: NextRequest) {
           count: 0,
           message: 'لا توجد توقعات متاحة لهذا السوق حالياً. يتم توليد التوقعات للسوق المصري أولاً، ثم تُضاف بقية الأسواق تدريجياً.',
           source: 'db-missing',
+          market_regime_info: _buildMarketRegimeInfo(market0, 0),
         },
         {
           status: 200,
@@ -283,6 +430,12 @@ export async function GET(req: NextRequest) {
         avg_confidence: avgConfidence,
         market,
       },
+      // S-1.3 (Bravo): same trusted market_regime_info shape as Python.
+      // The frontend's MarketRegimeBanner (A4) can now render the
+      // NO_TRADE banner explaining WHY picks is empty even when Python
+      // is offline. Read from stocks.db.system_settings (the persisted
+      // regime) — NEVER fabricated.
+      market_regime_info: _buildMarketRegimeInfo(market, validatedPicks.length),
       generated_at: new Date().toISOString(),
     }, picksLocked, isPaidUser));
   } catch (e) {
@@ -290,6 +443,13 @@ export async function GET(req: NextRequest) {
     // honest-tracking/list — never return 500 to the client. The error is
     // logged server-side for diagnostics, but the UI gets an empty list +
     // a friendly Arabic message so the user can keep browsing other tabs.
+    //
+    // S-1.3 (Bravo): still surface market_regime_info so the frontend's
+    // NO_TRADE banner can render. We have NO picks to count, so picksCount=0
+    // — the regime read is best-effort; if stocks.db is unreadable, the
+    // regime becomes `null` with `no_trade_reason: "backend_offline"`.
+    const marketRawErr = (url.searchParams.get('market') || 'EGX').toUpperCase();
+    const marketErr = MARKET_MAP[marketRawErr] || 'EGX';
     return NextResponse.json(
       {
         success: true,
@@ -297,6 +457,7 @@ export async function GET(req: NextRequest) {
         count: 0,
         message: 'لا توجد توقعات متاحة لهذا السوق حالياً. يتم توليد التوقعات للسوق المصري أولاً، ثم تُضاف بقية الأسواق تدريجياً.',
         source: 'error-fallback',
+        market_regime_info: _buildMarketRegimeInfo(marketErr, 0),
       },
       {
         status: 200,
