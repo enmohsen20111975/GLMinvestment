@@ -46,8 +46,25 @@ export function useSession() {
 }
 
 export async function signIn(provider?: string, options?: any) {
-  console.log('[next-auth-shim] signIn called', provider);
-  return Promise.resolve(false);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        username_or_email: options?.username_or_email || options?.email || options?.username,
+        password: options?.password,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data?.success) {
+      return { ok: true, error: null };
+    }
+    return { ok: false, error: data?.error || 'credentials' };
+  } catch (e) {
+    console.log('[next-auth-shim] signIn error', e);
+    return { ok: false, error: 'network' };
+  }
 }
 
 export async function signOut(options?: any) {
