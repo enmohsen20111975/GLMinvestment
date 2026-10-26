@@ -9924,3 +9924,74 @@ Stage Summary:
 - Vitest found 8 NEW failures in a2-sector-tracking.test.tsx — integration break from commit 5b82abc (replaced separate Treemap component with inline version, losing testids). NEEDS OWNER DECISION: revert 5b82abc or update tests.
 - Files modified by Alpha: NONE (diagnosis only — owner decision required before any code change).
 - Git state: unchanged. 8341a28 preserved.
+
+---
+Task ID: Incubator-Redesign-Alpha
+Agent: Alpha (Frontend Engineer — Incubator Radar Redesign)
+Task: Redesign "رادار التربص وقيد التسخين" (Incubator Section) — transform static list with blinking into a 3-zone professional analysis experience. Real data only, no fabrication, respects prefers-reduced-motion.
+
+Work Log:
+- Phase 1 (Inspection):
+  * Located component: src/modules/radar/components/IncubatorSection.tsx (473 LOC legacy).
+  * Located API: src/app/api/radar/incubator/route.ts — reads scripts/output/maker_radar_{MARKET}_{date}.json → incubator_candidates[].
+  * Inspected real data: ran `python3 scripts/maker_radar.py --market EGX --limit 100 --json-only` from terminal (bypassed Next.js OOM). Got 5 real incubator candidates (ANFI, EDBM, + 3 others).
+  * Verified candidate shape: ticker, name_ar, current_price, readiness_pct, signals_passed, total_signals, passed_reasons[5 Arabic reasons], trigger{type, condition_ar, trigger_price, distance_to_trigger_pct}, target_if_promoted, stop_loss_if_promoted, risk_reward, stage, path.
+  * Verified sparkline API: /api/stocks/sparkline reads price_history.db (ANFI=405 rows, EDBM=5654 rows).
+  * Confirmed current animation was only `animate-pulse` on promoted cards + Eye pulse in loading — no real "radar scanning" feel.
+- Phase 2 (Design):
+  * Designed 3-zone layout: A (status bar with real counts + last-update + refresh button), B (vertical candidate list with click-to-select), C (analysis panel: identity + sparkline + condition panel + promotion targets).
+  * Auto-advance: every 4000ms; pauses on hover/click; respects prefers-reduced-motion (auto-advance + stagger animations disabled).
+  * Colors: green=passed, amber=waiting, red=failed (only if system provides reason), gray=unknown. NO neon, NO glow.
+  * Real data only: sparkline fetched from /api/stocks/sparkline per selected ticker; conditions from real passed_reasons[] + trigger{}; NO fabricated points/prices.
+- Phase 3 (Implementation):
+  * Rewrote src/modules/radar/components/IncubatorSection.tsx (~720 LOC). ADDED new 'panel' view mode (default) WITHOUT removing legacy 'grid'/'table' modes (backward compat).
+  * New components: useSparkline hook, MiniSparkline (SVG path from real prices), ConditionRow, ConditionPanel (builds rows from passed_reasons[] + trigger{}), CandidateAnalysisPanel (Zone C), PanelView (orchestrates 3 zones), usePrefersReducedMotion hook.
+  * Added new imports: RadarIcon, Play, Pause, RefreshCw, CheckCircle2, Clock, Circle, AlertTriangle (all from lucide-react).
+  * Added new props: defaultViewMode='panel', autoAdvanceMs=4000.
+  * Added path field to IncubatorCandidate interface (optional — maker_radar provides it).
+  * ConditionPanel builds rows from REAL API data only: passed_reasons[] → 'passed' rows; trigger.condition_ar → 'waiting' row; if signals_passed < total_signals AND no explicit trigger → 'unknown' placeholder (honest gap, NOT fabrication).
+  * MiniSparkline: SVG path computed from real prices[] array. If <2 prices or error → honest "لا توجد بيانات تاريخية كافية" message (no fabricated curve).
+  * Auto-advance stops on: (a) user click on candidate, (b) user click on Pause button, (c) hover over candidate list, (d) prefers-reduced-motion=true.
+  * Stagger entrance animation on Zone C sections (delay-0/75/150/200ms) — disabled when prefers-reduced-motion.
+- Phase 4 (Testing):
+  * Created src/__tests__/components/incubator-panel.test.tsx (12 tests).
+  * Mocked: fetch (/api/radar/incubator + /api/stocks/sparkline), StockIconMini, lucide-react icons, matchMedia.
+  * Test coverage:
+    1. Panel view is default
+    2. Zone A shows real candidate count
+    3. Zone B shows all candidates with prices
+    4. Zone B click selects + stops auto-advance (Play button appears)
+    5. Zone C shows active candidate ticker + name_ar
+    6. Zone C condition panel renders passed_reasons as 'متحقق' rows (5) + trigger as 'انتظار' (1)
+    7. Zone C promotion targets (104.42 / 94.28 / 1.8) appear when provided
+    8. Empty state (0 candidates)
+    9. Error state (fetch fails)
+    10. NO fabricated tickers (FAKE1/MOCK/TEST123 never appear)
+    11. Auto-advance switches active candidate after autoAdvanceMs
+    12. prefers-reduced-motion disables auto-advance (ANFI stays active after timer advance)
+  * Result: 12/12 PASS (1.33s).
+  * bun run lint: exit 0 (clean).
+  * bunx tsc --noEmit: 0 errors on touched files.
+  * Browser test (agent-browser): NOT RUN — Next.js dev server OOM-kills in 4GB sandbox (documented environmental limitation). Verified via fixture tests instead.
+
+Stage Summary:
+- Files modified:
+  * src/modules/radar/components/IncubatorSection.tsx (rewritten, ~720 LOC): added PanelView + CandidateAnalysisPanel + ConditionPanel + MiniSparkline + useSparkline + usePrefersReducedMotion. Kept CandidateCard + CandidateTable (legacy) for backward compat. Added 'panel' view mode as default.
+- Files created:
+  * src/__tests__/components/incubator-panel.test.tsx (~360 LOC, 12 tests): covers all 3 zones + auto-advance + reduced-motion + empty/error states + no-fabrication guard.
+- Design decisions:
+  * 3-zone layout (status / list / analysis) — matches owner's vision of "professional market analysis room".
+  * Auto-advance 4s, pausable, respects reduced-motion.
+  * Real sparkline from price_history.db via /api/stocks/sparkline.
+  * Condition panel from real passed_reasons[] + trigger{} — NO fabricated conditions.
+  * Colors: green/amber/red/gray with text labels (not color-only).
+  * Stagger entrance animations (150ms between Zone C sections).
+  * NO neon, NO glow, NO continuous blinking. Static "updated" indicator dot instead.
+- Backward compat: legacy 'grid' + 'table' view modes preserved; users can switch via the toolbar.
+- Verification method + results:
+  * Fixture test (vitest + @testing-library/react + jsdom): 12/12 PASS (1.33s).
+  * ESLint: exit 0 (clean).
+  * TypeScript: 0 errors on touched files.
+  * Browser: NOT RUN (OOM environmental).
+- Git state: 8341a28 preserved. New changes are unstaged (NOT committed) — awaiting owner review.
+- NO push, NO merge, NO deploy.
