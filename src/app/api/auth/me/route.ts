@@ -49,7 +49,21 @@ export async function GET(request: NextRequest) {
     try {
       const { userId, isAdmin: tokenIsAdmin } = await getSessionUserId();
       if (userId && userId !== 'admin') {
-        const dbUser = await db.user.findUnique({ where: { id: userId } });
+        const dbUser = await db.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            name: true,
+            image: true,
+            subscription_tier: true,
+            default_risk_tolerance: true,
+            is_admin: true,
+            is_active: true,
+            email_verified: true,
+          },
+        });
         if (dbUser && dbUser.is_active) {
           const isAdmin = isAdminEmail(dbUser.email) || dbUser.subscription_tier === 'admin' || tokenIsAdmin;
           const effectiveTier = isAdmin ? 'admin' : (dbUser.subscription_tier || 'free');
@@ -100,6 +114,18 @@ export async function GET(request: NextRequest) {
       try {
         const dbUser = await db.user.findUnique({
           where: { email: session.user.email },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            name: true,
+            image: true,
+            subscription_tier: true,
+            default_risk_tolerance: true,
+            is_admin: true,
+            is_active: true,
+            email_verified: true,
+          },
         });
 
         if (dbUser) {

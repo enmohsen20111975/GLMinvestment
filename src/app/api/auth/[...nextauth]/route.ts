@@ -105,19 +105,31 @@ export const authOptions: NextAuthOptions = {
             return diff === 0;
           };
 
-          // SEC-01 FIX: Only match against env-configured credentials. No hardcoded usernames/passwords.
+          // SEC-01 FIX: Match against env-configured credentials or central admin identities.
+          const adminUsernames = getServerAdminUsernames().map((u: string) => u.toLowerCase());
+          const adminEmails = getServerAdminEmails().map((e: string) => e.toLowerCase());
+
           const userMatches =
             identifier.toLowerCase() === ENV_ADMIN_USERNAME.toLowerCase() ||
-            identifier.toLowerCase() === ENV_ADMIN_EMAIL.toLowerCase();
+            identifier.toLowerCase() === ENV_ADMIN_EMAIL.toLowerCase() ||
+            adminUsernames.includes(identifier.toLowerCase()) ||
+            adminEmails.includes(identifier.toLowerCase());
           const passMatches = ENV_ADMIN_PASSWORD.length > 0 && safeEqual(password, ENV_ADMIN_PASSWORD);
           console.log('[Auth Debug] userMatches:', userMatches, 'passMatches:', passMatches, 'identifier:', identifier);
 
           if (userMatches && passMatches) {
-            // Resolve (or lazily provision) the admin identity in the DB by the
-            // configured ADMIN_EMAIL only. We never write secrets to the DB.
+            // Resolve (or lazily provision) the admin identity in the DB
             let adminUser = null;
             try {
-              adminUser = await db.user.findUnique({ where: { email: ENV_ADMIN_EMAIL } });
+              adminUser = await db.user.findFirst({
+                where: {
+                  OR: [
+                    { username: identifier },
+                    { email: identifier },
+                    { email: ENV_ADMIN_EMAIL },
+                  ],
+                },
+              });
             } catch (dbFindErr) {
               console.error('[Auth] DB lookup error for env-admin login:', dbFindErr);
               return null; // fail closed — do NOT fabricate a session without DB identity
@@ -129,8 +141,8 @@ export const authOptions: NextAuthOptions = {
               try {
                 adminUser = await db.user.create({
                   data: {
-                    email: ENV_ADMIN_EMAIL,
-                    username: ENV_ADMIN_USERNAME,
+                    email: identifier.includes('@') ? identifier.toLowerCase() : ENV_ADMIN_EMAIL,
+                    username: identifier.includes('@') ? identifier.split('@')[0] : identifier,
                     name: 'System Admin',
                     subscription_tier: 'admin',
                     is_active: true,
@@ -366,9 +378,19 @@ export const authOptions: NextAuthOptions = {
         
         // Always fetch fresh subscription data from DB (ensures up-to-date tier)
         try {
-          // Look up by email to avoid issues with mismatched Google ID / CUID
+          // Look up by email with explicit select to avoid Prisma DateTime deserialization errors
           let freshUser = await db.user.findUnique({
             where: { email: session.user.email! },
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              name: true,
+              image: true,
+              subscription_tier: true,
+              default_risk_tolerance: true,
+              is_active: true,
+            },
           });
 
           // Proactive Sync: If user is logged in via Google but not in DB, create them now!
