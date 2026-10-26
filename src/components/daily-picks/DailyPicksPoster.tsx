@@ -270,7 +270,7 @@ export function DailyPicksPoster() {
  {/* Target */}
  <div className="py-3 px-2">
  <div className="text-2xl font-bold" style={{ color: '#00a651' }}>
- {(pick.target_price ?? 0).toFixed(2)}
+ {pick.target_price ? pick.target_price.toFixed(2) : "—"}
  </div>
  <div className="text-xs font-semibold" style={{ color: '#00a651' }}>
  +{pick.target_pct || 0}%
@@ -281,7 +281,7 @@ export function DailyPicksPoster() {
  <div className="py-3 px-2">
  <div className="text-xs text-muted-foreground mb-0">وقف الخسارة</div>
  <div className="text-2xl font-bold" style={{ color: '#e31937' }}>
- {(pick.stop_loss ?? 0).toFixed(2)}
+ {pick.stop_loss ? pick.stop_loss.toFixed(2) : "—"}
  </div>
  </div>
  </div>

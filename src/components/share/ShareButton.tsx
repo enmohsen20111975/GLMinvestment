@@ -190,7 +190,7 @@ function ShareCard({
  background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
  }}>
  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>🎯 السعر المستهدف</div>
- <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{(data.targetPrice ?? 0).toFixed(2)}</div>
+ <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{data.targetPrice ? data.targetPrice.toFixed(2) : "—"}</div>
  </div>
  )}
  {data.stopLoss && (
@@ -199,7 +199,7 @@ function ShareCard({
  background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
  }}>
  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>🛑 وقف الخسارة</div>
- <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{(data.stopLoss ?? 0).toFixed(2)}</div>
+ <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{data.stopLoss ? data.stopLoss.toFixed(2) : "—"}</div>
  </div>
  )}
  {data.fairValue && (
@@ -328,15 +328,15 @@ export function ShareButton({
  if (d.sellPrice) {
  text += `📤 سعر البيع المقترح: ${(d.sellPrice ?? 0).toFixed(2)} ج.م\n`;
  } else if (d.targetPrice) {
- text += `📤 سعر البيع المقترح: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
+ text += `📤 سعر البيع المقترح: ${d.targetPrice ? d.targetPrice.toFixed(2) : "—"} ج.م\n`;
  }
  
  if (d.targetPrice) {
- text += `🎯 السعر المستهدف: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
+ text += `🎯 السعر المستهدف: ${d.targetPrice ? d.targetPrice.toFixed(2) : "—"} ج.م\n`;
  }
  
  if (d.stopLoss) {
- text += `🛑 وقف الخسارة: ${(d.stopLoss ?? 0).toFixed(2)} ج.م\n`;
+ text += `🛑 وقف الخسارة: ${d.stopLoss ? d.stopLoss.toFixed(2) : "—"} ج.م\n`;
  }
  
  if (d.expectedReturn !== undefined) {

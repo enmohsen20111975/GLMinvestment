@@ -443,7 +443,7 @@ export function TradingJournalView() {
  </Badge>
  </td>
  <td className="p-3">{trade.quantity}</td>
- <td className="p-3">{(trade.entry_price ?? 0).toFixed(2)}</td>
+ <td className="p-3">{trade.entry_price ? trade.entry_price.toFixed(2) : "—"}</td>
  <td className="p-3">
  {trade.exit_price ? (trade.exit_price ?? 0).toFixed(2) : '-'}
  </td>

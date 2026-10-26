@@ -329,19 +329,19 @@ export function UserPublishingView() {
  {post.entry_price && (
  <div className="bg-muted/50 rounded-lg p-2 text-center">
  <div className="text-xs text-muted-foreground">سعر الدخول</div>
- <div className="font-bold">{(post.entry_price ?? 0).toFixed(2)}</div>
+ <div className="font-bold">{post.entry_price ? post.entry_price.toFixed(2) : "—"}</div>
  </div>
  )}
  {post.target_price && (
  <div className="bg-success/10 rounded-lg p-2 text-center">
  <div className="text-xs text-success">الهدف</div>
- <div className="font-bold text-success">{(post.target_price ?? 0).toFixed(2)}</div>
+ <div className="font-bold text-success">{post.target_price ? post.target_price.toFixed(2) : "—"}</div>
  </div>
  )}
  {post.stop_loss && (
  <div className="bg-loss/10 rounded-lg p-2 text-center">
  <div className="text-xs text-loss">الوقف</div>
- <div className="font-bold text-loss">{(post.stop_loss ?? 0).toFixed(2)}</div>
+ <div className="font-bold text-loss">{post.stop_loss ? post.stop_loss.toFixed(2) : "—"}</div>
  </div>
  )}
  {post.currentPrice && (

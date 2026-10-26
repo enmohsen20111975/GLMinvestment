@@ -76,8 +76,9 @@ function buildStockPublishDataFromStock(
  ? deepAnalysis.strengths.slice(0, 3).join(' · ')
  : undefined,
  entryPrice,
- entryZoneLow: entryPrice ? entryPrice * 0.99 : undefined,
- entryZoneHigh: entryPrice ? entryPrice * 1.01 : undefined,
+ // ISSUE-3 FIX: removed fabricated entryPrice*0.99/1.01 entry zone. Use real data or undefined.
+ entryZoneLow: undefined,   // was: entryPrice * 0.99
+ entryZoneHigh: undefined,  // was: entryPrice * 1.01
  targetPrice1,
  targetPrice2,
  stopLoss,

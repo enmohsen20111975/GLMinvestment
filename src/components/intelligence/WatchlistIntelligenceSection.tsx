@@ -476,7 +476,7 @@ export function WatchlistIntelligenceSection() {
  </p>
  {analysis.recommendation.target && (
  <p className="text-xs text-muted-foreground mt-1">
- الهدف: {(analysis.recommendation.target ?? 0).toFixed(2)} | 
+ الهدف: {analysis.recommendation.target ? analysis.recommendation.target.toFixed(2) : "—"} | 
  وقف الخسارة: {analysis.recommendation.stop_loss?.toFixed(2) || '—'}
  </p>
  )}
