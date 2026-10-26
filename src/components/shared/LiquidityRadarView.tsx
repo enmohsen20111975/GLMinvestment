@@ -738,19 +738,19 @@ export function LiquidityRadarView({
  {data && data.stocks && data.stocks.length > 0 && (
   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
    <Badge variant="outline" className="font-mono">
-    المفحوصة: {data.scanned_count ?? data.stocks.length}
+    المفحوصة: {data.summary?.scanned_count ?? data.scanned_count ?? data.stocks.length}
    </Badge>
    <Badge variant="outline" className="font-mono">
     المعروضة: {data.stocks.length}
    </Badge>
    <Badge variant="outline" className="font-mono text-profit">
-    مصنّفة: {data.stocks.filter(s => phaseToBucket(s.phase) !== 'unclassified' && phaseToBucket(s.phase) !== 'data_invalid').length}
+    مصنّفة: {data.summary?.classified_count ?? data.stocks.filter(s => s.classification && s.classification !== 'unclassified' && s.classification !== 'DATA_INVALID' && s.classification !== 'INSUFFICIENT_DATA').length}
    </Badge>
    <Badge variant="outline" className="font-mono text-muted-foreground">
-    غير مصنّفة: {data.stocks.filter(s => phaseToBucket(s.phase) === 'unclassified').length}
+    غير مصنّفة: {data.summary?.unclassified_count ?? data.stocks.filter(s => s.classification === 'unclassified').length}
    </Badge>
    <Badge variant="outline" className="font-mono text-loss/70">
-    بيانات ناقصة: {data.stocks.filter(s => phaseToBucket(s.phase) === 'data_invalid').length}
+    بيانات ناقصة: {data.summary?.data_error_count ?? data.stocks.filter(s => isDataInvalidStock(s)).length}
    </Badge>
   </div>
  )}
