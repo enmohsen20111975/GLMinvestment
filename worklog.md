@@ -9872,3 +9872,55 @@ Stage Summary:
 - Task D: lint clean, tsc clean, API live tests pass. Browser test NOT RUN (OOM). Worklog updated.
 - Files modified: NONE (no code changes were needed — Task A typos were false alarm; B/C are decision/handoff items).
 - Git state: unchanged. 8341a28 preserved. No commits added. No push.
+
+---
+Task ID: S-2-Alpha-Browser
+Agent: Alpha (Frontend Engineer — Browser + Test verification)
+Task: Independent browser/API/test verification after owner encouragement to keep moving without waiting for Bravo
+
+Work Log:
+- Step 1 (Radar cache warmup from terminal — BYPASS Next.js OOM):
+  Ran `python3 scripts/maker_radar.py --market EGX --limit 30 --json-only` directly from terminal.
+  Result: SUCCESS. JSON saved to `scripts/output/maker_radar_EGX_20261026.json` (152KB).
+  Cache contents (REAL data, not fabricated):
+    - source_count: 30
+    - scanned_count: 30
+    - classified_count: 13
+    - unclassified_count: 7
+    - data_error_count: 10 (B1 sanity flags)
+    - results array: 30 stocks with full B3 contract fields
+    - Sample: AALR=DATA_INVALID, ACAMD=distribution, ACAP=unclassified, ACFR=liquidity_drought
+  B1 isolation confirmed working: ADP flagged as `currency_market_mismatch:market=EGX,currency=USD,expected=EGP, history_current_mismatch:min=3.7,max=272.76,ratio=73.7x`. ADPC flagged as `open_out_of_range`.
+- Step 2 (API verification via Next.js wrapper):
+  After cache populated, started Next.js (NODE_OPTIONS=512MB). Health: HTTP 200.
+  GET /api/v2/liquidity-radar?market=EGX → HTTP 200 with:
+    - success: true
+    - source_count: 30, scanned_count: 30
+    - summary: {source_count:30, scanned_count:30, classified_count:13, unclassified_count:7, data_error_count:10}
+    - stocks array: 30 entries
+    - results array: 30 entries
+    - Sample: AALR classification=DATA_INVALID price=193.56, ACAMD classification=distribution price=1.92
+  CONCLUSION: The radar API contract (B3) works end-to-end. The frontend will receive 30 stocks. The "5 stocks only" issue is INDEED the GUEST_MAX_ROWS=5 slicing (confirmed by code), not an API defect.
+- Step 3 (Browser test via agent-browser):
+  Opened http://127.0.0.1:3000/ in agent-browser. Page loaded title "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية".
+  BUT: ErrorBoundary activated — page shows "إعادة المحاولة" button.
+  Console error: `ReferenceError: module is not defined` at `react-server-dom-turbopack_*.js:1722:24` in <ClientPageRoot>.
+  This is the documented Turbopack CJS leak (worklog: "Turbopack CJS leak → not fixable on Turbopack, works on Webpack production").
+  Tried `--webpack` flag: Next.js 16 supports it, but dev server OOM-kills during initial compilation in 4GB sandbox regardless of mode.
+  dmesg confirms: `oom-kill: next-server (v1) total-vm:31139924kB, anon-rss:2568696kB` (2.5GB used before kill).
+  CONCLUSION: Browser testing is environmentally blocked. This is NOT a code defect — it is the 4GB sandbox RAM limit. Documented in prior worklog entries.
+- Step 4 (Vitest re-run — found NEW failures):
+  Ran `bun run vitest run src/__tests__/components/`. Result: 49 passed, 8 FAILED (was 57/57 PASS in prior worklog claim).
+  All 8 failures are in `src/__tests__/components/a2-sector-tracking.test.tsx`.
+  Root cause: The tests expect `data-testid="sector-treemap-title"` etc. (defined in SectorLiquidityTreemap.tsx), but commit `5b82abc` REPLACED the SectorLiquidityTreemap component import with an INLINE Treemap in SectorTrackingTab.tsx — and the inline version does NOT carry those testids.
+  This is an INTEGRATION BREAK introduced by commit 5b82abc (the second A2 commit). The first A2 commit (163e3ad) correctly wired SectorLiquidityTreemap + SectorMomentumStrip + SectorLeaderSparkline as separate components. The second commit (5b82abc) reverted that and inlined a different Treemap, breaking both the component separation AND the tests.
+  IMPACT: The Treemap DOES render (inline version at line 640-654 of SectorTrackingTab.tsx), but with different testids and without the honest labels (subtitle/note/total) the tests verify.
+  This requires owner decision: (a) revert 5b82abc's SectorTrackingTab changes back to the 163e3ad version (separate components), OR (b) update the tests to match the inline version. Alpha can do either, but needs owner pick.
+
+Stage Summary:
+- Radar cache populated from terminal — 30 real stocks with B3 contract. ADP/ADPC B1 isolation confirmed live.
+- Radar API (Next.js wrapper) verified end-to-end: returns 30 stocks with classifications. "5 stocks" = GUEST_MAX_ROWS paywall, NOT a bug.
+- Browser test BLOCKED by Turbopack + OOM (environmental, documented). ErrorBoundary activates due to `module is not defined` (Turbopack CJS leak).
+- Vitest found 8 NEW failures in a2-sector-tracking.test.tsx — integration break from commit 5b82abc (replaced separate Treemap component with inline version, losing testids). NEEDS OWNER DECISION: revert 5b82abc or update tests.
+- Files modified by Alpha: NONE (diagnosis only — owner decision required before any code change).
+- Git state: unchanged. 8341a28 preserved.
