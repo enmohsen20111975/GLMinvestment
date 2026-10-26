@@ -9521,3 +9521,114 @@ Stage Summary:
 - Ready for merge: YES للـ B3 deliverables (results + summary + B1 integration + tests + API route update). NO للـ deployment حتى:
   * (a) owner يوافق على الـ min_price filter removal من `all_results` — حاليًا `all_results` لسه price-filtered (backward compat مع unified-stock-data.ts). الأسهم تحت min_price بقت موجودة في `results` الجديد بس مش في `all_results` القديم. لو الـ owner عايز `all_results` يبقى full set too، محتاج موافقته.
   * (b) TS consumer `src/modules/predictions/components/maker-radar/types.ts:81` لسه بيعلن `data_quality?: 'fresh'|'stale'|'very_stale'|'unknown'|null` — ما بـ يدعمش الـ new lowercase values (`'invalid'`, `'unavailable'`). ممكن Alpha agent يـ update الـ TS interface في مرحلة UI integration.
+
+---
+Task ID: 4-a
+Agent: Alpha (A3 — Prediction dedup frontend)
+Task: Frontend secondary defense against duplicate daily predictions
+
+Work Log:
+- Read B2 (Task 1-b) worklog section to align identity model with backend: (ticker, date(prediction_date), persona, market, track).
+- Located usePredictionTrackingState.ts + prediction-dashboard/helpers.ts + live-tracking API route.
+- Added to helpers.ts: parsePredictionDateMs(), predictionIdentityKey(), dedupPredictions() — 147 LOC with full inline docs.
+- Wired dedupPredictions into usePredictionTrackingState.ts line 341 (useMemo) BEFORE the quality filter so it stays active in 'all' mode.
+- Conflict resolution: keep EARLIEST entryDate (original) — preserves original entry_price / stop_loss / target_price per B2 contract.
+- Never merges different persona / market / track. Sets 'updated' badge from backend update_count (no synthesis).
+- Modified live-tracking API route to surface track + update_count + market columns (defensive PRAGMA check).
+- Updated vitest.config.ts to include the new test path.
+
+Stage Summary:
+- Identity key: \${ticker}|\${YYYY-MM-DD of prediction_date}|\${persona}|\${market}|\${track}
+- Files: helpers.ts (+147), usePredictionTrackingState.ts (wired), live-tracking/route.ts (+23), vitest.config.ts (+7), __tests__/dedup.test.ts (NEW, 31 tests), __tests__/dedup.runtime-verify.ts (NEW, e2e).
+- Tests: 31/31 unit PASS + runtime-verify PASS (injected ADPC duplicate collapsed, original entryPrice 3.75 preserved, 6 distinct identities NOT merged).
+- Backend B2 is the PRIMARY fix; this is the SECONDARY frontend defense.
+- Commit: e5ee83a. Ready for merge. No blockers.
+
+---
+Task ID: 3-a
+Agent: Alpha (A2 — Sector Tracking visualization)
+Task: Rebuild SectorTrackingTab visual flow with an HONEST Recharts treemap + momentum strip + leader sparkline; stop the UI from implying metrics (net money flow) the data doesn't measure.
+
+Work Log:
+- Step 1 (Investigation — 8 min): read `src/modules/market-analysis/components/SectorTrackingTab.tsx` + the Python backend `vps-service/api/sector_tracking_routes.py` + Node proxy `src/app/api/sectors/tracking/route.ts` + types `src/modules/market-analysis/components/types.ts`. Confirmed data source = `/api/sectors/tracking` → Python `FlowSystemEngine.get_sector_heatmap()` + per-sector stocks from `stocks` table.
+  - Per-sector fields & what they ACTUALLY measure:
+    * `turnover` (EGP) = Σ(volume × current_price) TODAY across sector stocks → TRADED VALUE / LIQUIDITY (NOT net flow).
+    * `turnover_pct` = sector turnover / market total × 100 → liquidity share.
+    * `avg_change` (%) = average of today's `change_percent` across sector stocks → TODAY's PERFORMANCE % (real).
+    * `gainers`/`losers`/`breadth` = today's up/down counts + (gainers/total×100) → BREADTH (today).
+    * `heat_level` = derived from avg_change + turnover thresholds (HOT/WARM/NEUTRAL/COOL/COLD).
+    * `leader_ticker`/`leader_change` = top stock by change_percent today (Python sorts desc).
+    * `total_market_cap` = Σ market_cap of sector stocks.
+  - What's MISSING for a "net money flow" claim: NO buy vs sell breakdown, NO day-over-day delta of sector turnover (only `rotation.entering/leaving` when `with_rotation=1` — 5-day lookback signals, NOT today's net flow).
+  - Sparkline endpoint `/api/stocks/sparkline?ticker=X&days=30` EXISTS and pulls REAL history (price_history.db → stock_daily_prices → index_daily_prices). Returns `source:'none'` + `prices:[]` when no history — never fabricates (ALPHA-FAB-FIX-SPARKLINE-001 already removed the sin-wave fabrication block).
+  - Recharts was imported in SectorTrackingTab (PieChart/Pie/Cell/BarChart/Bar/XAxis/YAxis/CartesianGrid/Tooltip/Legend) but UNUSED. Treemap was NOT imported.
+
+- Step 2 (SectorLiquidityTreemap — new component):
+  * File: `src/modules/market-analysis/components/SectorLiquidityTreemap.tsx`
+  * Recharts `<Treemap>` with custom `content` renderer (rect + sector name + turnover + avg_change text).
+  * AREA ∝ `sector.turnover` (liquidity share). COLOR ∝ `sector.avg_change` (real today's performance %):
+    - avg_change ≥ +0.5 → green (hsl 160 84% 39%)
+    - avg_change ≤ -0.5 → red (hsl 0 84% 60%)
+    - |avg_change| < 0.5 → neutral gray (hsl 215 16% 47%)
+  * LABEL = "توزيع سيولة القطاعات" (Sector Liquidity Distribution). Subtitle explicitly states: "حجم المربع = نسبة السيولة اليوم • اللون = متوسط التغير % اليوم".
+  * Honest disclosure note under the chart: "البيانات تقيس قيمة التداول اليوم ومتوسط التغير % — لا تقيس صافي التدفق النقدي (لا يوجد فصل بين شراء/بيع)".
+  * Tooltip shows full breakdown (turnover, %, avg_change, status, gainers/losers, leader).
+  * Empty state when no turnover data (no fake rendering).
+  * sr-only anchor with `data-total` = computed sum of sector turnovers (for test assertion + acceptance criterion).
+
+- Step 3 (SectorMomentumStrip — new component):
+  * File: `src/modules/market-analysis/components/SectorMomentumStrip.tsx`
+  * Three compact columns: Strongest today (avg_change DESC), Weakest today (avg_change ASC), Top liquidity (turnover DESC).
+  * Section headers explicitly say "اليوم" (today) + "حسب متوسط التغير %" — NOT "flow" / "rotation".
+  * Footer note: "البيانات الحالية تقيس قيمة التداول اليوم ومتوسط التغير % اليوم — لا تقيس صافي التدفق النقدي ولا دوران السيولة بين القطاعات (يتطلب ذلك بيانات شراء/بيع أو مقارنة يومية غير متوفرة)".
+  * Shows market code + total sectors/stocks + fetched-at timestamp.
+
+- Step 4 (SectorLeaderSparkline — new component):
+  * File: `src/modules/market-analysis/components/SectorLeaderSparkline.tsx`
+  * Recharts `<LineChart>` 30-day sparkline for the sector's leader stock.
+  * Fetches REAL history from `/api/stocks/sparkline?ticker=X&days=30`.
+  * If `source==='none'` or `prices.length<2` → renders "—" (NO fabrication — Rule 27 NO-FAKE-DATA).
+  * 60s per-ticker in-memory cache to avoid refetching on re-renders.
+  * Sparkline reflects the LEADER STOCK's price path — NOT sector flow.
+
+- Step 5 (SectorTrackingTab wiring):
+  * Removed unused recharts imports from SectorTrackingTab.tsx (recharts now consumed by child components).
+  * Imported the 3 new components.
+  * Added `fetchedAt` state (client-side timestamp; the API has no server timestamp field — recorded when the client receives the snapshot).
+  * Inserted `<SectorLiquidityTreemap>` + `<SectorMomentumStrip>` after the header toolbar, BEFORE the summary strip.
+  * Added new column `leader_sparkline` ("مخطط القائد (30ي)") to the sector table rendering `<SectorLeaderSparkline>` for `leader_ticker`. Click on it stops propagation so row expand doesn't toggle.
+  * Added footer with data source `/api/sectors/tracking`, explicit disclosure of what the data measures (and does NOT measure), + fetched-at timestamp.
+  * Kept existing table sort (default turnover DESC), heat filter, rotation toggle, expandable rows, UnifiedTable.
+
+- Step 6 (Fixture test):
+  * File: `src/__tests__/components/a2-sector-tracking.test.tsx`
+  * Mocks `global.fetch` for `/api/sectors/tracking` (fixture with 4 sectors: Banks +3.4%, Real Estate -2.1%, Energy +0.1%, Materials +1.2%) + `/api/stocks/sparkline` (returns `source:'none'` to assert the honest "—" path).
+  * Installs a WORKING ResizeObserver mock (jsdom's is a no-op → ResponsiveContainer renders nothing) + HTMLCanvasElement.getContext stub (Recharts Tooltip uses canvas).
+  * 8 assertions:
+    1. Treemap title = "توزيع سيولة القطاعات" (NOT "صافي التدفق"/"Net Money Flow").
+    2. ALL 4 sectors render by name (exact match).
+    3. Subtitle + footer disclose size/color meaning + explicit "لا تقيس صافي التدفق النقدي" negation.
+    4. Momentum strip shows Banks (strongest) + Real Estate (weakest); headers say "today"/"متوسط التغير".
+    5. Treemap SVG rects contain both green (hsl 160) AND red (hsl 0) fills — colors match the metric.
+    6. NO positive "صافي التدفق" / "تهرب السيولة" / "draining liquidity" / "inflow|outflow" claim (after stripping the honest negation phrases).
+    7. Leader sparkline renders "—" honestly when no history exists.
+    8. Total liquidity (data-total anchor) == sum of sector turnovers (5,000,000,000) — no fabrication.
+
+- Step 7 (Verification):
+  * `bun run lint` → clean (no errors, no warnings).
+  * `npx tsc --noEmit` → 0 errors in my touched files (baseline already has 1619 pre-existing errors in untouched files like `.next/dev/types/validator.ts`, `src/lib/honest-tracking/*`, `src/lib/store-modules/*` — NOT caused by me; verified by stash + recheck).
+  * `timeout 60 bun run vitest run src/__tests__/components/a2-sector-tracking.test.tsx` → **8/8 passed** in 2.93s.
+  * Dev server (`bun run dev`) was NOT running during my session (no process on :3000). Per owner directive ("If dev server runs, use Agent Browser; If OOM, rely on fixture"), I relied on the fixture test (8/8 green) + lint + tsc as verification evidence. agent-browser returned ERR_CONNECTION_REFUSED (server not up).
+
+Stage Summary:
+- Data source + what it measures: `/api/sectors/tracking` → Python `FlowSystemEngine.get_sector_heatmap()` + `stocks` table. Measures TODAY's traded value (`turnover` = Σ volume×price) + TODAY's avg price change (`avg_change`) + breadth (gainers/losers) + leader stock. Does NOT measure net money flow (no buy/sell split) or day-over-day flow delta.
+- Chart label decided + why: "توزيع سيولة القطاعات" (Sector Liquidity Distribution). Size = liquidity share (turnover); Color = today's performance (avg_change). NOT "Net Money Flow" because no inflow/outflow data exists. NOT pure "Sector Performance" because size isn't performance — it's liquidity. The chosen label is the most honest description of what the treemap actually shows.
+- Files modified:
+  * `src/modules/market-analysis/components/SectorTrackingTab.tsx` (wired treemap + momentum + sparkline col + footer; removed unused recharts imports)
+- Files created:
+  * `src/modules/market-analysis/components/SectorLiquidityTreemap.tsx` (Recharts Treemap, honest labels)
+  * `src/modules/market-analysis/components/SectorMomentumStrip.tsx` (strongest/weakest/liquidity ranking + honest note)
+  * `src/modules/market-analysis/components/SectorLeaderSparkline.tsx` (real /api/stocks/sparkline; "—" when no history)
+  * `src/__tests__/components/a2-sector-tracking.test.tsx` (8 fixture assertions)
+- Verification method + results: `bun run lint` clean; `tsc --noEmit` 0 errors in my files; `vitest run a2-sector-tracking.test.tsx` 8/8 passed in 2.93s. Dev server not running → relied on fixture + lint + tsc.
+- Ready for merge? YES — no blockers. All owner hard constraints met (no fabricated data, honest labels, color = real metric, no flow claims, no fabricated sparklines, no trading recommendations, not pushed to remote).
