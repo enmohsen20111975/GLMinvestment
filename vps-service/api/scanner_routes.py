@@ -231,7 +231,7 @@ def run_advanced_scan():
                             reason_code='risk_gate_blocked',
                             reason_text='; '.join(_risk_warns),
                             flag_active='RISK_GATE',
-                            score_before=_score,
+                            score_before=int(_score) if _score else 0,
                             score_after=0,
                         )
                     else:
@@ -242,8 +242,8 @@ def run_advanced_scan():
                             reason_code='risk_gate_passed',
                             reason_text=f'signal={_final_sig} score={_score}',
                             flag_active='RISK_GATE',
-                            score_before=_score,
-                            score_after=_score,
+                            score_before=int(_score) if _score else 0,
+                            score_after=int(_score) if _score else 0,
                         )
                     
                     if _risk_warns:
