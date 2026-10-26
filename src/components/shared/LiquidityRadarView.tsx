@@ -91,39 +91,73 @@ interface RadarStock {
  accumulation?: string | null;
  expected?: string | null;
  roc_10d?: number | null;
+ turnover_egp?: number | null;
+ // ─── B3 (Task 2-a): additive contract fields ─────────────────────────
+ // canonical mutually-exclusive classification — drives the filter chips.
+ // Consumers MUST treat 'unclassified' | 'INSUFFICIENT_DATA' | 'DATA_INVALID'
+ // as "no actionable signal" — NOT as a trade opportunity, NOT as a dead trap.
+ classification?: string | null;
+ // Uppercase enum from B1 price_sanity gate.
+ data_quality_status?: 'OK' | 'STALE' | 'INVALID' | 'UNAVAILABLE' | null;
+ // B1 sanity gate status (separate from data_quality_status — sanity is about
+ // price contamination, data_quality_status is about freshness).
+ sanity_status?: 'OK' | 'DATA_INVALID' | 'STALE' | 'DATA_UNAVAILABLE' | string | null;
+ sanity_reasons?: string[] | null;
+ // B3: human-readable reasons (raw array — UI joins them for display).
+ reasons?: string[] | null;
+ // B3: ISO timestamp when this ticker was scanned by maker_radar.py.
+ scan_timestamp?: string | null;
+ // B3: identity fields for cross-market display.
+ company?: string | null;
+ market?: string | null;
+ currency?: string | null;
+ // Legacy lowercase data_quality from older cache (forward-compat).
+ data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | 'invalid' | 'unavailable' | null;
 }
 
 
-// ─── TASK-ALPHA-C: Tactical liquidity-bucket filters + pagination ─────────
-// ALPHA-RESTORE: BucketKey محدّث ليتطابق مع classification من Python RVOL engine
-type BucketKey = 'all' | 'dry_accumulation' | 'accumulation_confirmed' | 'distribution_risk' | 'illiquid_trap' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion' | 'unclassified' | 'data_invalid';
-const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
- { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
- // RVOL classifications (from Python engine)
- { key: 'dry_accumulation', label: 'جفاف سيولة (تربص)', icon: '🔵', cls: 'bg-whale/10 text-whale border-whale/20' },
- { key: 'accumulation_confirmed', label: 'اختراق وتأكيد تجميع', icon: '✅', cls: 'bg-profit/10 text-profit border-profit/20' },
- { key: 'distribution_risk', label: 'خطر تصريف', icon: '⚠️', cls: 'bg-warning/10 text-warning border-warning/20' },
- { key: 'illiquid_trap', label: 'سهم ميت (مصيدة)', icon: '⛔', cls: 'bg-muted text-muted-foreground border-border' },
- // Legacy buckets (backward compat)
- { key: 'quiet_accumulation', label: 'تجميع هادئ', icon: '🟢', cls: 'bg-whale/10 text-whale border-whale/20' },
- { key: 'whale_inflow', label: 'تدفق حيتان قوي', icon: '🌊', cls: 'bg-profit/10 text-profit border-profit/20' },
- { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/20' },
- { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/20' },
- { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-warning/10 text-warning border-warning/20' },
- // A1 FIX: unclassified + data_invalid filters
- { key: 'unclassified', label: 'غير مصنّف', icon: '❓', cls: 'bg-muted/40 text-muted-foreground border-transparent' },
- { key: 'data_invalid', label: 'بيانات ناقصة', icon: '⚠️', cls: 'bg-loss/5 text-loss/70 border-transparent' },
-];
+// ─── TASK-A1 (Task 2-b): B3 contract — classification-driven filters ───────
+// HARD CONSTRAINT #1: Show ALL stocks the API sends (the new `results` array).
+// HARD CONSTRAINT #3: counts come from REAL API data — NO hardcoding.
+// HARD CONSTRAINT #5: DATA_INVALID / INSUFFICIENT_DATA get their OWN chip
+//   (combined as "بيانات غير مكتملة") — NOT under "dead_trap".
+import {
+  RADAR_FILTERS,
+  type RadarFilterKey,
+  filterStocksByClassification,
+  buildRadarFilterCounts,
+  getRadarStatusReasons,
+  describeRadarStatus,
+  isDataInvalidStock,
+} from '@/components/shared/radar-filters';
+
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
+
+interface RadarSummary {
+  source_count: number;
+  scanned_count: number;
+  valid_data_count: number;
+  classified_count: number;
+  unclassified_count: number;
+  data_error_count: number;
+  scan_timestamp: string | null;
+}
 
 interface RadarResponse {
  success: boolean;
  market: string;
  market_regime: MarketRegime | null;
  scanned_count?: number;
+ // B3 (Task 2-a): source list size (no vanishing check).
+ source_count?: number;
+ // B3 (Task 2-a): full summary block from the backend.
+ summary?: RadarSummary | null;
  phases_breakdown?: Record<string, number>;
+ // B3: `results` is the FULL scanned set (every ticker — no vanishing).
+ // `stocks` is the same array (legacy alias kept for backward compat).
  stocks: RadarStock[];
+ results?: RadarStock[];
  error?: string | null;
  message?: string | null;
 }
@@ -210,23 +244,6 @@ function getPhaseInfo(rawPhase?: string | null, netFlow?: number | null): { labe
  };
 }
 
-/**
- * phaseToBucket — ALPHA-UX-FIX-8: maps the phase (اللي موجود دايمًا) لـ bucket key
- * عشان الفلاتر تشتغل حتى لو الـ API ميرجّعش liquidity_bucket (مش بيرجعها غالبًا).
- * الـ phase هو الـ signal الحقيقي (تجميع هادئ / صعود / تصريف / ...) — بنشتغل بيه.
- */
-function phaseToBucket(phase?: string | null): string {
- if (!phase) return 'unclassified'; // A1 FIX: was 'neutral' → now 'unclassified'
- const p = phase.toLowerCase().trim();
- if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) return 'quiet_accumulation';
- if (p.includes('inflow') || p.includes('بيتحضر') || p.includes('صعود') || p.includes('surge')) return 'whale_inflow';
- if (p.includes('distribution') || p.includes('بيصرف') || p.includes('تصريف') || p.includes('outflow')) return 'whale_outflow';
- if (p.includes('absorption') || p.includes('قيعان')) return 'bottom_absorption';
- if (p.includes('correction') || p.includes('تصحيح')) return 'correction_exhaustion';
- if (p.includes('accumulation') || p.includes('تجميع')) return 'quiet_accumulation';
- if (p.includes('data_invalid') || p.includes('invalid') || p.includes('ناقصة')) return 'data_invalid';
- return 'unclassified'; // A1 FIX: was 'neutral' → now 'unclassified'
-}
 
 const MARKET_OPTIONS = [
  { code: 'EGX', label: '🇪🇬 مصر', currency: 'ج.م' },
@@ -276,8 +293,10 @@ export function LiquidityRadarView({
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
- const [bucketFilter, setBucketFilter] = useState<BucketKey>('all');
- const [hideInactive, setHideInactive] = useState(true);
+ const [bucketFilter, setBucketFilter] = useState<RadarFilterKey>('all');
+ // TASK-A1: default OFF — show ALL scanned stocks (HARD CONSTRAINT #1).
+ // User can opt-in to hide inactive via the toggle if they want a smaller view.
+ const  [hideInactive, setHideInactive] = useState(false);
  const [page, setPage] = useState(0);
  const currency = marketCurrency(market);
 
@@ -314,33 +333,36 @@ export function LiquidityRadarView({
  { market, allowOffMarket: false }
  );
 
- // ─── TASK-ALPHA-C: client-side bucket + inactive filtering + pagination ───
+ // ─── TASK-A1 (Task 2-b): classification-driven filtering (NO vanishing) ───
+ // HARD CONSTRAINT #1: read `results` (the FULL scanned set) — fall back to
+ // `stocks` (legacy alias) for older cache files. Every ticker the engine
+ // scanned MUST appear in the UI (no drop, no price filter by default).
+ // HARD CONSTRAINT #5: DATA_INVALID / INSUFFICIENT_DATA stocks get their own
+ // `data_invalid` filter — they NEVER appear under `dead_trap`.
+ const allScanned = React.useMemo(() => {
+ // `results` is the canonical B3 array. `stocks` is the legacy alias (same
+ // array on the wire). Prefer `results` when present.
+ const list = data?.results ?? data?.stocks ?? [];
+ return list;
+ }, [data]);
+
  const filteredStocks = React.useMemo(() => {
- const list = data?.stocks ?? [];
- let out = list;
- if (bucketFilter !== 'all') {
- // ALPHA-UX-FIX-8: filter by liquidity_bucket OR derive from phase (الـ API ميرجّعش liquidity_bucket دايمًا)
- out = out.filter((s) => {
- const bucket = s.liquidity_bucket || phaseToBucket(s.phase) || 'neutral';
- return bucket === bucketFilter;
- });
- }
+ // Use the canonical classification (NOT the phase-string heuristic).
+ // The helper handles missing classification gracefully (defaults to
+ // 'unclassified' — never 'dead_trap').
+ let out = filterStocksByClassification(allScanned, bucketFilter);
  if (hideInactive) {
+ // Opt-in filter — user can hide inactive stocks (turnover < 1.5M EGP).
+ // Default is OFF (HARD CONSTRAINT #1: show ALL stocks the API sends).
  out = out.filter((s) => {
- // ALPHA-RESTORE: فحص السيولة الحقيقية — Python بيبعت turnover_egp (مش volume/net_flow_egp)
- // RADAR-FIX-1 (2026-10-22): fallback chain — turnover_egp → volume × current_price → net_flow_egp
- // المشكلة: لو turnover_egp = NULL (الـ cache قديم)، السهم بيتطرد غلط.
- // الحل: نحاول نحسب من volume × price لو turnover_egp مش متاح.
  let turnover = Number(s.turnover_egp ?? 0);
  if (turnover === 0) {
- // fallback 1: volume × current_price (آخر يوم)
  const vol = Number(s.volume ?? 0);
  const price = Number(s.current_price ?? 0);
  if (vol > 0 && price > 0) {
  turnover = vol * price;
  }
  }
- // fallback 2: net_flow_egp (لو لسه 0)
  if (turnover === 0) {
  turnover = Number(s.whale?.net_flow_egp ?? 0);
  }
@@ -352,7 +374,17 @@ export function LiquidityRadarView({
  out = out.slice(0, GUEST_MAX_ROWS);
  }
  return out;
- }, [data, bucketFilter, hideInactive, isGuest]);
+ }, [allScanned, bucketFilter, hideInactive, isGuest]);
+
+ // Pre-compute filter counts ONCE per data change — drives the chip badges.
+ // HARD CONSTRAINT #3: counts come from REAL API data (the `results` array +
+ // `summary` block). NO hardcoded numbers anywhere.
+ const filterCounts = React.useMemo(() => {
+ return buildRadarFilterCounts(allScanned, data?.summary ?? null);
+ }, [allScanned, data?.summary]);
+
+ // Quick alias for the canonical scanned total (prefers summary.scanned_count).
+ const scannedTotal = filterCounts.all;
 
  // GUEST: always page 0 (no pagination for guests)
  const totalPages = isGuest ? 1 : Math.max(1, Math.ceil(filteredStocks.length / PAGE_SIZE));
@@ -627,6 +659,48 @@ export function LiquidityRadarView({
  )
  ),
  },
+ // ─── TASK-A1 (Task 2-b): B3 classification status column ───────────────
+ // HARD CONSTRAINT #5: render DATA_INVALID / INSUFFICIENT_DATA as a
+ // SEPARATE state — show the `reasons` + `sanity_status` so the user
+ // understands WHY the engine couldn't classify this ticker.
+ {
+ key: 'b3_status',
+ header: '🔍 الحالة',
+ sortable: true,
+ width: 'w-40',
+ align: 'center',
+ sortValue: (row) => describeRadarStatus(row),
+ filterValue: (row) => describeRadarStatus(row),
+ render: (row) => {
+ const status = describeRadarStatus(row);
+ const reasons = getRadarStatusReasons(row);
+ const cls = isDataInvalidStock(row)
+ ? 'bg-warning/10 text-warning border-warning/20'
+ : row.classification === 'dead_trap'
+ ? 'bg-loss/10 text-loss border-loss/20'
+ : row.classification === 'distribution'
+ ? 'bg-warning/10 text-warning border-warning/20'
+ : row.classification === 'quiet_accumulation'
+ ? 'bg-profit/10 text-profit border-profit/20'
+ : row.classification === 'liquidity_drought'
+ ? 'bg-whale/10 text-whale border-whale/20'
+ : row.classification === 'rule80_downtrend'
+ ? 'bg-loss/10 text-loss border-loss/20'
+ : 'bg-muted text-muted-foreground border-border';
+ return (
+ <div className="flex flex-col items-center gap-0.5" title={reasons.join(' | ')}>
+ <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border', cls)}>
+ {status}
+ </span>
+ {reasons.length > 0 && (
+ <span className="text-[9px] text-muted-foreground max-w-[180px] truncate" dir="rtl">
+ {reasons[0]}
+ </span>
+ )}
+ </div>
+ );
+ },
+ },
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
  ];
 
@@ -658,7 +732,7 @@ export function LiquidityRadarView({
 
  {/* ─── TAB 1: رادار السيولة ─── */}
  <TabsContent value="radar" className="space-y-4 mt-0">
- <PulseRibbon market={market} scannedCount={data?.scanned_count ?? data?.stocks?.length ?? 0} />
+ <PulseRibbon market={market} summary={data?.summary ?? null} scannedCount={scannedTotal} />
 
  {/* A1 FIX: Scan stats display — إجمالي الأسهم المفحوصة + المصنّفة + غير المصنّفة */}
  {data && data.stocks && data.stocks.length > 0 && (
@@ -686,11 +760,18 @@ export function LiquidityRadarView({
  <Skeleton className="h-12 w-full rounded-xl" />
  <Skeleton className="h-64 w-full rounded-xl" />
  </div>
- ) : error || !data || !data.stocks || data.stocks.length === 0 ? (
+ ) : error || !data || allScanned.length === 0 ? (
  <UnifiedEmptyState
  variant={error ? 'error' : 'empty'}
  title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
- description={error || 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'}
+ description={error || (
+ // TASK-A1: if summary says scanned > 0 but `results` is empty, that's
+ // a backend bug — show honest message. Otherwise, the engine hasn't
+ // scanned yet — show the standard "scanning" message.
+ (data?.summary && (data.summary.scanned_count ?? 0) > 0)
+ ? 'تم الفحص لكن لا توجد تصنيفات — تحقق من سجلات المحرك'
+ : 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'
+ )}
  actionLabel="إعادة المحاولة"
  onAction={fetchData}
  />
@@ -709,15 +790,18 @@ export function LiquidityRadarView({
  size="sm"
  />
  <div className="h-4 w-px bg-border mx-1" />
- {BUCKET_FILTERS.map((f) => {
- const count = f.key === 'all'
- ? (data?.stocks?.length ?? 0)
- : (data?.stocks ?? []).filter((st) => phaseToBucket(st.phase) === f.key).length;
+ {RADAR_FILTERS.map((f) => {
+ // TASK-A1: counts come from REAL API data — NO hardcoding.
+ // `filterCounts` is computed once per data change from `buildRadarFilterCounts`.
+ // `all` uses `summary.scanned_count` (the canonical engine-reported total).
+ const count = filterCounts[f.key] ?? 0;
  const active = bucketFilter === f.key;
  return (
  <button
  key={f.key}
  onClick={() => setBucketFilter(f.key)}
+ aria-pressed={active}
+ aria-label={`${f.label} (${count})`}
  className={cn(
  'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border flex items-center gap-1',
  active
@@ -725,7 +809,7 @@ export function LiquidityRadarView({
  : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
  )}
  >
- <span>{f.icon}</span>
+ <span aria-hidden>{f.icon}</span>
  <span>{f.label}</span>
  <span className="text-[9px] opacity-70">({count})</span>
  </button>
@@ -758,7 +842,7 @@ export function LiquidityRadarView({
  setSelectedTicker(row.ticker);
  }}
  maxHeight="calc(100vh - 280px)"
- emptyText={bucketFilter === 'all' ? 'لا توجد أسهم مطابقة' : `لا توجد أسهم في تصنيف "${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label || ''}"`}
+ emptyText={bucketFilter === 'all' ? 'لا توجد أسهم مطابقة' : `لا توجد أسهم في تصنيف "${RADAR_FILTERS.find(f => f.key === bucketFilter)?.label || ''}"`}
  className="bg-card border-border rounded-xl"
  />
 
@@ -767,7 +851,7 @@ export function LiquidityRadarView({
  <div className="flex items-center justify-between gap-2 bg-card border border-border rounded-xl px-3 py-2">
  <span className="text-xs text-muted-foreground">
  عرض {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredStocks.length)} من {filteredStocks.length} سهم
- {bucketFilter !== 'all' && ` (مُصفّى: ${BUCKET_FILTERS.find(f => f.key === bucketFilter)?.label})`}
+ {bucketFilter !== 'all' && ` (مُصفّى: ${RADAR_FILTERS.find(f => f.key === bucketFilter)?.label})`}
  </span>
  {/* P0-COMPONENT-UNIFICATION Phase 2.4: UnifiedPagination */}
  <UnifiedPagination
@@ -829,7 +913,21 @@ export function LiquidityRadarView({
 // Pulse Ribbon
 // ============================================================================
 
-function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: number }) {
+function PulseRibbon({
+ market,
+ scannedCount,
+ summary,
+}: {
+ market: string;
+ scannedCount: number;
+ summary?: RadarSummary | null;
+}) {
+ // TASK-A1: surface the canonical summary counts. NO fabrication — if the
+ // backend didn't send `summary`, we show only the scanned count (which
+ // itself comes from the real `results` array).
+ const classified = summary?.classified_count ?? null;
+ const unclassified = summary?.unclassified_count ?? null;
+ const dataErrors = summary?.data_error_count ?? null;
  return (
  <div className="w-full bg-muted px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm rounded-xl border border-border">
  <div className="flex items-center gap-3">
@@ -846,13 +944,39 @@ function PulseRibbon({ market, scannedCount }: { market: string; scannedCount: n
  <span className="font-mono font-semibold text-foreground">{market}</span>
  </div>
  </div>
- <div className="flex items-center gap-3">
+ <div className="flex items-center gap-3 flex-wrap">
  <div className="flex items-center gap-1 text-xs text-muted-foreground">
  <Shield className="w-3.5 h-3.5 text-profit" />
  <span>بروتوكول Rule 80 نشط</span>
  </div>
  <div className="h-4 w-px bg-border" />
- <span className="font-mono text-[10px] text-muted-foreground">مرقوب: {scannedCount} سهم</span>
+ <span className="font-mono text-[10px] text-muted-foreground">
+ مرقوب: <span className="text-foreground font-semibold">{scannedCount}</span> سهم
+ </span>
+ {classified != null && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-profit">
+ مصنّف: {classified}
+ </span>
+ </>
+ )}
+ {unclassified != null && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-muted-foreground">
+ غير مصنّف: {unclassified}
+ </span>
+ </>
+ )}
+ {dataErrors != null && dataErrors > 0 && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-warning" title="بيانات غير صالحة / غير مكتملة">
+ بيانات خاطئة: {dataErrors}
+ </span>
+ </>
+ )}
  </div>
  </div>
  );

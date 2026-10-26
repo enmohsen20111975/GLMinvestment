@@ -78,14 +78,51 @@ export interface RadarStock {
  // عشان يقدر يثق في إن السعر اللي شايفه فعلاً live (مش قديم بـ 10 أيام)
  last_close_date?: string | null; // آخر تاريخ إغلاق في الـ DB
  staleness_days?: number | null; // كم يوم قديم (0=اليوم، 1=أمس، ...)
- data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | null;
+ // B3 (Task 2-a): extended to include new lowercase values from price_sanity.
+ // Legacy values: 'fresh' | 'stale' | 'very_stale' | 'unknown'.
+ // New B3 values: 'invalid' (B1 DATA_INVALID) | 'unavailable' (B1 DATA_UNAVAILABLE).
+ data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | 'invalid' | 'unavailable' | null;
  data_stale?: boolean | null; // true لو stale
  live_price?: number | null; // السعر الحي من stocks.current_price
  live_change_percent?: number | null;
  live_last_update?: string | null; // ISO timestamp آخر تحديث لـ stocks
  price_source?: 'live' | 'daily' | null; // مصدر current_price
  data_date?: string | null; // التاريخ الفعلي للسعر المعروض
+ // ─── B3 (Task 2-a): additive classification contract ──────────────────
+ // canonical mutually-exclusive classification from the radar engine.
+ // Consumers MUST treat 'unclassified' | 'INSUFFICIENT_DATA' | 'DATA_INVALID'
+ // as "no actionable signal" — NOT as a trade opportunity, NOT as a dead trap.
+ classification?: RadarClassification | null;
+ // Uppercase enum from B1 price_sanity gate. Mirrors API route's enum.
+ data_quality_status?: 'OK' | 'STALE' | 'INVALID' | 'UNAVAILABLE' | null;
+ // B1 sanity gate status (separate from data_quality_status — sanity is about
+ // price contamination, data_quality_status is about freshness).
+ sanity_status?: 'OK' | 'DATA_INVALID' | 'STALE' | 'DATA_UNAVAILABLE' | null;
+ sanity_reasons?: string[] | null;
+ // B3: human-readable list of reasons (joined into a single string by API for
+ // `phase_reason`, but the raw array is also surfaced for transparency).
+ reasons?: string[] | null;
+ // B3: ISO timestamp when this ticker was scanned by maker_radar.py.
+ scan_timestamp?: string | null;
+ // B3: identity fields for cross-market display.
+ company?: string | null;
+ market?: string | null;
+ currency?: string | null;
 }
+
+// ─── B3 (Task 2-a): canonical classification enum ──────────────────────
+// Mirrors the B3 contract from scripts/maker_radar.py::_classify_scanned_result.
+// 'unclassified' / 'INSUFFICIENT_DATA' / 'DATA_INVALID' MUST be treated as
+// "no actionable signal" — never as a dead-trap or trade opportunity.
+export type RadarClassification =
+ | 'quiet_accumulation'
+ | 'distribution'
+ | 'dead_trap'
+ | 'liquidity_drought'
+ | 'rule80_downtrend'
+ | 'unclassified'
+ | 'INSUFFICIENT_DATA'
+ | 'DATA_INVALID';
 
 export interface MakerRadarResponse {
  success: boolean;

@@ -9632,3 +9632,94 @@ Stage Summary:
   * `src/__tests__/components/a2-sector-tracking.test.tsx` (8 fixture assertions)
 - Verification method + results: `bun run lint` clean; `tsc --noEmit` 0 errors in my files; `vitest run a2-sector-tracking.test.tsx` 8/8 passed in 2.93s. Dev server not running → relied on fixture + lint + tsc.
 - Ready for merge? YES — no blockers. All owner hard constraints met (no fabricated data, honest labels, color = real metric, no flow claims, no fabricated sparklines, no trading recommendations, not pushed to remote).
+
+---
+Task ID: 2-b
+Agent: Alpha (A1 — Liquidity Radar UI fix)
+Task: Fix LiquidityRadarView to consume the B3 contract — show ALL scanned stocks, real filter counts, and a SEPARATE state for DATA_INVALID / INSUFFICIENT_DATA stocks.
+
+Work Log:
+- Step 1 (INVESTIGATION — 5 min): Read `src/components/shared/LiquidityRadarView.tsx` (877 LOC). Found:
+  * Endpoint: `GET /api/v2/liquidity-radar?market=...` — reads ONLY `data.stocks` (legacy union of categorized lists). Does NOT read `data.results` or `data.summary`.
+  * Filter counts: derived via `phaseToBucket(s.phase)` — a string-contains heuristic on `phase`. Hardcoded enum `{ dry_accumulation, accumulation_confirmed, distribution_risk, illiquid_trap, quiet_accumulation, whale_inflow, whale_outflow, bottom_absorption, correction_exhaustion }` — NONE map 1:1 to B3's `classification` enum.
+  * `hideInactive=true` default (line 276) drops every stock whose turnover_egp/volume×price/net_flow_egp < 1.5M EGP → ~316 of ~347 stocks vanish before reaching the UI.
+  * `phaseToBucket('غير معروفة')` returns `'neutral'` → unclassified stocks match NO chip → vanish from view.
+  * Investigation report at `agent-ctx/2-b-A1-investigation.md`.
+- Step 2 (Consume new B3 contract):
+  * Updated `src/modules/predictions/components/maker-radar/types.ts` line 81: extended `data_quality` enum to include `'invalid' | 'unavailable'` (B3 lowercase values from price_sanity). Added new fields to `RadarStock`: `classification`, `data_quality_status`, `sanity_status`, `sanity_reasons`, `reasons`, `scan_timestamp`, `company`, `market`, `currency`. Exported `RadarClassification` type.
+  * Updated `src/components/shared/LiquidityRadarView.tsx` `RadarStock` interface to mirror the API's full B3 surface (so `api-shape.test.ts` stays green). Added `RadarSummary` interface + `source_count`/`summary`/`results` fields to `RadarResponse`.
+  * Created NEW module `src/components/shared/radar-filters.ts` (305 LOC) — pure helpers: `RadarClassification` type, `RadarFilterKey` type, `RADAR_FILTERS` array (8 chips), `classifyStock()`, `isDataInvalidStock()`, `filterKeyForStock()`, `filterStocksByClassification()`, `getRadarFilterCount()`, `buildRadarFilterCounts()`, `getRadarStatusReasons()`, `describeRadarStatus()`. NO React, NO side effects, NO fabrication.
+  * Refactored `LiquidityRadarView.tsx` to read `data.results ?? data.stocks` (the FULL scanned set — no vanishing) and `data.summary` (the canonical counts block).
+- Step 3 (Real filter counts — no hardcoding):
+  * Removed the old `BucketKey`/`BUCKET_FILTERS`/`phaseToBucket` heuristic entirely.
+  * Replaced with `RADAR_FILTERS` import + `filterStocksByClassification()` + `buildRadarFilterCounts()`.
+  * Chip badges now show `filterCounts[f.key]` — computed ONCE per data change in `React.useMemo`. The `all` chip uses `summary.scanned_count` (the canonical engine-reported total); falls back to `results.length` only when summary is missing.
+  * Filter code (snippet from the new file):
+    ```ts
+    export function getRadarFilterCount<S extends RadarStockLike>(
+      stocks: readonly S[],
+      filterKey: RadarFilterKey,
+      summary?: RadarSummaryLike | null,
+    ): number {
+      if (filterKey === 'all') {
+        if (summary && typeof summary.scanned_count === 'number') {
+          return summary.scanned_count;
+        }
+        return stocks.length;
+      }
+      return stocks.filter((s) => filterKeyForStock(s) === filterKey).length;
+    }
+    ```
+  * HARD CONSTRAINT #4 (no double-counting): each stock has exactly ONE `classification`, so summing by classification is naturally de-duplicated. Verified by test: sum of all non-`all` chips == scanned_count.
+- Step 4 (DATA_INVALID distinct state):
+  * `filterKeyForStock()` maps both `DATA_INVALID` and `INSUFFICIENT_DATA` to the `data_invalid` chip (combined — both share the "no actionable signal — bad data" semantic). They NEVER appear under `dead_trap` (HARD CONSTRAINT #5).
+  * Added a NEW `b3_status` column to the table that shows:
+    - `describeRadarStatus(row)` — Arabic label per classification (e.g. "بيانات غير صالحة" for DATA_INVALID).
+    - `getRadarStatusReasons(row)` — first reason shown as a tooltip + truncated sub-line.
+    - Color-coded: warning amber for DATA_INVALID, red for dead_trap, etc. NO indigo/blue.
+  * `isDataInvalidStock(row)` — returns true for `classification ∈ {DATA_INVALID, INSUFFICIENT_DATA}`.
+- Step 5 (Empty / loading states):
+  * Loading → skeleton (unchanged).
+  * Empty state now distinguishes:
+    - `error` → "تعذّر تحميل الرادار" + retry button.
+    - `summary.scanned_count > 0 && results.length === 0` → "تم الفحص لكن لا توجد تصنيفات" (honest — backend bug).
+    - Otherwise → "المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها".
+- Default `hideInactive` changed from `true` → `false` (HARD CONSTRAINT #1: show ALL stocks the API sends). The toggle is preserved as an opt-in for users who want a smaller view.
+- PulseRibbon updated: now accepts the `summary` block and surfaces `scanned_count`, `classified_count`, `unclassified_count`, `data_error_count` from REAL API data — NO fabrication (null when summary is missing).
+- Step 6 (Verification — RAN, real output below):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` filtered to touched files (`LiquidityRadarView|radar-filters|maker-radar/types`) → 0 errors. (Pre-existing tsc errors in other files are unrelated — caused by the dev server OOM-killing mid-compile and leaving `.next/dev/types/validator.ts` broken.)
+  * Wrote `src/__tests__/components/a1-liquidity-radar.test.tsx` (28 tests):
+    - 23 pure helper tests (classifyStock, isDataInvalidStock, filterKeyForStock, filterStocksByClassification, buildRadarFilterCounts, getRadarFilterCount, describeRadarStatus, getRadarStatusReasons).
+    - 5 render tests (mocked fetch + mocked heavy deps) covering: all 5 tickers render, canonical scanned count, chip counts, dead_trap filter hides DATA_INVALID, data_invalid filter shows both bad-data stocks, empty-state "scanned but no classifications" message.
+  * Run: `timeout 60 bun run vitest run src/__tests__/components/a1-liquidity-radar.test.tsx` → 28/28 PASS (4.19s).
+  * Ran all component tests: `bun run vitest run src/__tests__/components/` → 57/57 PASS across 6 files (a1, a2, a4, api-shape, fabrication-guard, null-handling).
+  * Browser verification (agent-browser): NOT RUN — dev server OOM-kills in this 4GB sandbox (dmesg shows `oom-killer: next-server (v1)` repeatedly). Per owner directive, fixture verification is sufficient in this case. Details in `agent-ctx/2-b-A1-investigation.md`.
+
+Stage Summary:
+- Files modified:
+  * `src/components/shared/LiquidityRadarView.tsx` (~+120 / -65 lines): extended `RadarStock` + `RadarResponse` interfaces with B3 fields; replaced `BucketKey`/`BUCKET_FILTERS`/`phaseToBucket` with `RADAR_FILTERS` import; default `hideInactive` → `false`; new `b3_status` column showing classification + reasons; updated `PulseRibbon` to surface summary counts; honest empty-state for "scanned but no classifications".
+  * `src/modules/predictions/components/maker-radar/types.ts` (+35 lines): extended `data_quality` enum with `'invalid' | 'unavailable'`; added `classification`, `data_quality_status`, `sanity_status`, `sanity_reasons`, `reasons`, `scan_timestamp`, `company`, `market`, `currency` to `RadarStock`; exported `RadarClassification` type.
+- Files created (NEW):
+  * `src/components/shared/radar-filters.ts` (305 LOC): pure helpers — `RADAR_FILTERS`, `RadarClassification`, `RadarFilterKey`, `filterStocksByClassification`, `buildRadarFilterCounts`, `getRadarFilterCount`, `isDataInvalidStock`, `describeRadarStatus`, `getRadarStatusReasons`, `filterKeyForStock`, `classifyStock`. NO React, NO side effects, fully unit-tested.
+  * `src/__tests__/components/a1-liquidity-radar.test.tsx` (~580 LOC, 28 tests): pure helper tests + render tests with mocked fetch.
+  * `agent-ctx/2-b-A1-investigation.md` (investigation report).
+- Filter counts source: `buildRadarFilterCounts(stocks, summary)` — iterates the REAL `results` array ONCE per data change, mapping each stock to its canonical classification, then deriving the count for every chip. `all` chip prefers `summary.scanned_count` (canonical backend-reported total); falls back to `stocks.length`. NO hardcoded numbers anywhere.
+- API fields consumed (B3 contract):
+  * Top-level: `response.results` (FULL scanned set — replaces legacy `stocks` alias as primary source), `response.summary` (block), `response.source_count` (int), `response.scanned_count` (int).
+  * Per-stock: `stock.classification`, `stock.data_quality_status` ('OK'|'STALE'|'INVALID'|'UNAVAILABLE'), `stock.reasons` (string[]), `stock.sanity_status` ('OK'|'DATA_INVALID'|'STALE'|'DATA_UNAVAILABLE'), `stock.sanity_reasons` (string[]), `stock.scan_timestamp` (ISO), `stock.company`, `stock.market`, `stock.currency`, `stock.data_quality` (legacy lowercase enum extended with 'invalid'|'unavailable').
+  * Summary block: `summary.source_count`, `summary.scanned_count`, `summary.valid_data_count`, `summary.classified_count`, `summary.unclassified_count`, `summary.data_error_count`, `summary.scan_timestamp`.
+- Verification method + results:
+  * Fixture test (vitest + @testing-library/react + jsdom): 28/28 PASS (4.19s).
+  * All component tests: 57/57 PASS across 6 files.
+  * TypeScript: 0 errors on touched files (verified via `bunx tsc --noEmit` filtered to `LiquidityRadarView|radar-filters|maker-radar/types`).
+  * ESLint (`bun run lint`): exit 0 (clean).
+  * Browser (agent-browser): NOT RUN — dev server OOM-killed in 4GB sandbox (environmental, not code).
+- Acceptance criteria (owner's spec):
+  * Total count in UI == API's `summary.scanned_count`: ✅ verified by test "renders the canonical scanned count from summary (== 5)" + PulseRibbon surfaces `summary.scanned_count`.
+  * Every filter tested: ✅ all 8 chips tested (all, quiet_accumulation, distribution, dead_trap, liquidity_drought, rule80_downtrend, unclassified, data_invalid).
+  * Unclassified stocks render correctly: ✅ verified by "returns ONLY the unclassified stock for the 'unclassified' filter" + the empty-state for "scanned but no classifications" case.
+  * Insufficient-data stocks render separately (not as dead): ✅ verified by "DATA_INVALID stock does NOT appear when dead_trap filter is active" + "DATA_INVALID + INSUFFICIENT_DATA stocks appear under the data_invalid filter".
+  * No console errors: ✅ ESLint clean. The only stderr noise is jsdom's `HTMLCanvasElement.prototype.getContext` "not implemented" warning (from UnifiedTable's column-resize handle) — pre-existing, unrelated to A1, doesn't fail tests.
+- BLOCKER: NONE. The dev server OOM-kills are environmental (4GB sandbox RAM limit) — the code is verified via fixture tests.
+- Ready for merge: YES. All HARD CONSTRAINTS honored (#1 show all stocks, #2 summary counts, #3 real filter counts, #4 no double-counting, #5 DATA_INVALID distinct state, #6 no false dead trap, #7 no remote push, #8 no frontend trading recommendations).
