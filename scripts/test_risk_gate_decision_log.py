@@ -27,33 +27,33 @@ print("\n=== Risk Gate Tests ===")
 from core.risk_gate import apply_risk_gate, validate_risk_profile
 
 # Rule 1: Liquidity blocked → NO_TRADE
-sig, warns = apply_risk_gate('BUY', 70, {}, liquidity_blocked=True)
+sig, warns, pos = apply_risk_gate('BUY', 70, {}, liquidity_blocked=True)
 check('Liquidity blocked → NO_TRADE', sig == 'NO_TRADE', f'got {sig}')
 
 # Rule 6: Critical engine failure → NO_TRADE
-sig, warns = apply_risk_gate('STRONG_BUY', 85, {}, critical_engine_failed=True)
+sig, warns, pos = apply_risk_gate('STRONG_BUY', 85, {}, critical_engine_failed=True)
 check('Engine failure → NO_TRADE', sig == 'NO_TRADE', f'got {sig}')
 
 # Rule 2: R:R < 1.0 → downgrade
 rp = {'risk_reward_ratio': 0.5, 'entry_price': 100, 'stop_loss': 95, 'target_price': 102}
-sig, warns = apply_risk_gate('STRONG_BUY', 80, rp)
+sig, warns, pos = apply_risk_gate('STRONG_BUY', 80, rp)
 check('R:R<1.0 → downgrade STRONG_BUY→BUY', sig == 'BUY', f'got {sig}')
 
 # Rule 3: Position > 25% → clamp (warning only)
-sig, warns = apply_risk_gate('BUY', 70, {}, position_size_pct=40.0)
+sig, warns, pos = apply_risk_gate('BUY', 70, {}, position_size_pct=40.0)
 check('Position >25% → warning', any('clamped' in w for w in warns), warns)
 
 # Rule 4: Conviction LOW → downgrade
-sig, warns = apply_risk_gate('BUY', 70, {}, conviction_level='LOW')
+sig, warns, pos = apply_risk_gate('BUY', 70, {}, conviction_level='LOW')
 check('Conviction LOW → downgrade', sig != 'BUY' or 'downgrade' in ' '.join(warns), f'got {sig}')
 
 # Rule 5: Stale data → flagged
-sig, warns = apply_risk_gate('HOLD', 50, {}, data_quality='very_stale')
+sig, warns, pos = apply_risk_gate('HOLD', 50, {}, data_quality='very_stale')
 check('Stale data → flagged', any('stale' in w.lower() for w in warns), warns)
 
 # Normal case: no rules triggered
 rp = {'risk_reward_ratio': 2.0, 'entry_price': 100, 'stop_loss': 95, 'target_price': 110}
-sig, warns = apply_risk_gate('BUY', 70, rp, data_quality='fresh')
+sig, warns, pos = apply_risk_gate('BUY', 70, rp, data_quality='fresh')
 check('Normal case → signal unchanged', sig == 'BUY', f'got {sig}')
 
 # validate_risk_profile
