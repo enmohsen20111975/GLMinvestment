@@ -26,3 +26,10 @@
 git status                    # حالة الفرع
 git log --oneline -10         # آخر commits
 git pull --rebase origin main # Rule 76
+
+
+
+
+المستودع: https://github.com/enmohsen20111975/GLMinvestment
+GitHub token: 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
+انقل المشروع إلى /home/z/my-project
