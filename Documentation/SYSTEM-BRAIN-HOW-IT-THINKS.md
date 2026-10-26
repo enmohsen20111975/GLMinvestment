@@ -1798,6 +1798,107 @@ gantt
 > - `Documentation/03-HOW-IT-THINKS.md` (الإصدار السابق، 444 LOC)
 > - `Documentation/04-ENGINES-ARCHITECTURE.md`
 > - `Documentation/ENGINES-MASTER-REFERENCE.md`
+
+---
+
+## 21. تحديث رادار السيولة — Forensic Fixes (2026-10-25)
+
+> **مهم:** هذا القسم يوثّق إصلاحات تمت على فرع `fix/radar-closure-final` (commit `b253243`). **لم تُدمج إلى main بعد** — بانتظار موافقة المالك. النص أدناه يعكس الحالة الحقيقية للنظام بعد الإصلاح.
+
+### 21.1 — مشكلة عزل السوق (Market Contamination)
+
+**السبب الجذرى المُثبت:**
+- `stock_daily_prices.market TEXT DEFAULT 'US'` — الـ schema default خاطئ (يجب `'EGX'`)
+- `eodhd_fetcher.py:195` + `daily_price_updater.py:165` — INSERT بدون `market` column → DEFAULT 'US' يطبّق
+- `UNIQUE(ticker, price_date)` — `market` ليس جزء من المفتاح → same-ticker-different-market يصطدم
+- 427 من 461 EGX ticker (93%) اتلوّثوا يوم **2026-10-08** (single batch event)
+
+**الإصلاح المُنفّذ (C2 — Market Isolation):**
+أضيف `market_filter='EGX'` لكل استعلامات الأسعار:
+- `scripts/verify_radar_signals.py` — `_fetch_n_sessions_from_sources(market_filter='EGX')`
+- `scripts/radar_accuracy_report.py` — `AND market='EGX'` فى `build_price_index`
+- `src/app/api/maker-radar/signal-tracker/verify/route.ts` — `marketClause` فى `fetchPricesAfter`
+- `scripts/generate_unified_audit.py` — filter عبر `fetch_nth_session_unified_or_ph`
+
+**الـ schema migration (مقترح، غير منفّذ):**
+```sql
+-- مقترح: DEFAULT 'US' → DEFAULT 'EGX'
+-- مقترح: UNIQUE(ticker, price_date) → UNIQUE(ticker, price_date, market)
+```
+
+### 21.2 — عدّ جلسات التداول (F1-v2)
+
+**المشكلة:** `verify_radar_signals.py` كان بيحسب `signal_date + timedelta(days=7)` (calendar days) — ده بياخد أول سعر بعد 7 أيام تقويمية، مش الجلسة السابعة الفعلية. عطلات الجمعة+السبت بتتخطى، فالنتيجة بتكون الجلسة 5 أو 6 مش 7.
+
+**الإصلاح:** `_fetch_n_sessions_from_sources()` بتجلب أول N صف `ORDER BY date ASC LIMIT N` — ده بيطابق الـ TS route `prices[N-1]` تماماً. العطلات والويكاند بتتخطى تلقائياً.
+
+### 21.3 — طفرة السيولة (F3-v2)
+
+**المشكلة:** `has_volume_surge()` كان بيستخدم `volumes[-20:]` كـ baseline — ده بيتداخل مع `recent_vol = volumes[-5:]`، فآخر 5 جلسات بتحسب فى البسط والمقام → نسبة منحازة.
+
+**الإصلاح:** `volumes[-(surge_lookback + base_lookback):-surge_lookback]` = `volumes[-25:-5]` (غير متداخل). **لا fallback** — لو <25 جلسة، الرفض واضح بدل استخدام baseline متداخل.
+
+### 21.4 — حالة `stale_data`
+
+**الـ writers:**
+- `maker_radar.py:806` — `initial_status = 'stale_data' if staleness_days > 3` (عند INSERT)
+- `backfill_stale_radar_signals.py:179` — UPDATE retroactive لو age > 7 أيام
+
+**الـ outcome_7d للـ stale signals:**
+- 259 من 432 stale_data signals ليها `outcome_7d` SET
+- دى كتبها `radar_accuracy_report.py --write` (بيعالج ALL signals، `WHERE signal_date >= cutoff`)
+- `verified_at = NULL` لأن `verify_radar_signals.py` بيتعامل مع `status='pending'` فقط
+
+**السياسة (3 خيارات للمالك):**
+- Option A: استبعاد stale_data من إحصائيات الدقة
+- Option B: فئة منفصلة (توصية برافو)
+- Option C: إعادة حساب + تضمين
+
+### 21.5 — فجوات جلسات EGX
+
+| التاريخ | الحالة | السبب |
+|---|---|---|
+| 2026-10-06 (Tue) | ✅ عطلة مؤكدة | Armed Forces Day — EGX مغلقة |
+| 2026-10-15 (Thu) | ⚠️ غير محسوم | كل 461 ticker غايبين، لا إفصاح موثّق |
+| 2026-10-17 (Sat) | ⚠️ غير محسوم | صف موجود بـ `market='EGX'` فى `historical_data` — يوم سبت |
+
+### 21.6 — الإجراءات الرأسمالية
+
+| Ticker | الحدث | المعامل | الحالة |
+|---|---|---|---|
+| POUL | اندماج + زيادة رأس مال (Sep 28) | 0.2542 (close-to-close) | 🟡 غير محسوم (6.27% خطأ vs reference 10.36) |
+| ORHD | أسهم مجانية 2328:721 (Oct 7) | 0.30967 | ✅ مؤكد (0.09% خطأ) |
+| MENA | لا إجراء (data glitch) | N/A | ⚠️ بيانات فاسدة (127→6.68 revert) |
+
+### 21.7 — الأرقام بعد الإصلاح
+
+| Metric | Stored (قبل) | Post-fix (بعد C2) |
+|---|---|---|
+| Total signals | 1,329 | 1,329 |
+| Compared | 438 | 438 |
+| Win Rate | 42.7% | **28.3%** |
+| Changed (>0.5% diff) | — | 343 (78%) |
+
+**ملاحظة:** 28.3% نتيجة وسيطة، مش نهائية. تحتاج حل A3 (schema) + A4 (stale policy) + A5 (session gaps) قبل الاعتماد النهائى.
+
+### 21.8 — ملفات الأدلة
+
+| الملف | السجلات |
+|---|---|
+| `tool-results/MARKET_CONTAMINATION_AUDIT.csv` | 1,103 tickers |
+| `tool-results/EGX_SESSION_GAPS.csv` | 1,822 gap records |
+| `tool-results/STALE_SIGNAL_OUTCOMES.csv` | 432 signals |
+| `tool-results/audit_signal_fate.csv` | 1,329 rows (per-signal) |
+| `Documentation/BRAVO-RADAR-CLOSURE-01.md` | تقرير الإغلاق الكامل |
+
+### 21.9 — حالة الاعتماد
+
+- ✅ السبب الجذرى مُثبت
+- ✅ الإصلاح (C2) مُنفّذ + مُختبَر (37/37 PASS)
+- ❌ Schema migration — بانتظار موافقة المالك
+- ❌ Writer fixes — بانتظار موافقة المالك
+- ❌ Data cleanup — بانتظار موافقة المالك
+- ❌ Merge لـ main — بانتظار موافقة المالك
 > - `Documentation/01-ARCHITECTURE.md`
 > - `Documentation/00-CONSTITUTION.md`
 > - الكود المصدري في `/home/z/my-project/vps-service/`
