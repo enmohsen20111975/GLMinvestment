@@ -231,3 +231,147 @@ export function computeStatsFromPredictions(preds: LivePrediction[]): PersonaSta
  const rrRatio = avgLossPct < 0 ? avgWinPct / Math.abs(avgLossPct) : 0; // متوسط الربح ÷ متوسط الخسارة
  return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired, netReturn, grossProfit, grossLoss, maxLoss, rrRatio };
 }
+
+// ─── A3-DEDUP (Task 4-a / Alpha) ───────────────────────────────────────────────
+//
+// Frontend SECONDARY defense against duplicate daily predictions.
+//
+// WHY THIS EXISTS
+// ---------------
+// B2 (Task 1-b) added a backend dedup with a UNIQUE INDEX on
+//   `(ticker, substr(prediction_date,1,10), persona, market, track)`
+// and made `record_prediction()` + `promote_incubator_candidates()` UPDATE
+// the original row instead of INSERT-ing a new one. That is the PRIMARY fix.
+//
+// This helper is the SECONDARY defense: even with B2 in place, the API may
+// return near-duplicate rows in edge cases — legacy rows that slipped in
+// before the migration, race conditions between the intraday scanner and the
+// API read, or rows that arrived via different tracks that the frontend
+// cannot distinguish without the `track` field. The frontend must NOT render
+// the same daily prediction twice.
+//
+// IDENTITY KEY (matches B2 backend exactly)
+// ------------------------------------------
+//   `${ticker}|${YYYY-MM-DD of entryDate}|${persona}|${market}|${track}`
+//
+// where:
+//   • entryDate        = the backend's `prediction_date` (already sliced to
+//                         YYYY-MM-DD — we explicitly DO NOT use the full
+//                         timestamp with seconds, per owner constraint #2).
+//   • market           = the per-row `market` field surfaced by the API
+//                         (A3-DEDUP); falls back to the hook's `market`
+//                         prop when missing (older API responses).
+//   • track            = the per-row `track` field (full_analysis /
+//                         RADAR_PROMOTED / liquidity); falls back to
+//                         'unknown' when missing (older API responses).
+//   • persona          = balanced / gambler / conservative (NOT merged —
+//                         different personas stay as separate rows per
+//                         owner constraint #3).
+//
+// CONFLICT RESOLUTION (owner constraint #5: preserve the ORIGINAL)
+// ----------------------------------------------------------------
+// When two rows share the same identity key, we keep the one with the
+// EARLIEST `entryDate`. This is critical because the live-tracking API
+// returns rows in `prediction_date DESC` order (newest first), so naive
+// "first-seen wins" would actually keep the LATEST re-analysis row —
+// overwriting the original entry_price the backend went out of its way to
+// preserve. By keeping the earliest, we honor B2's contract that the
+// original entry_price / stop_loss / target_price / prediction_date are
+// the source of truth.
+//
+// `updated` BADGE (owner constraint #6: do NOT invent data)
+// ---------------------------------------------------------
+// If the kept (original) row's `update_count > 0`, we set `updated = true`
+// so the UI can render a small "updated" badge. We never SYNTHESIZE
+// `update_count` — we only forward what the backend already gave us.
+//
+// IMPORTANT — what this helper DOES NOT do
+// ----------------------------------------
+//   • Does NOT merge fields from duplicate rows into a Frankenstein object.
+//   • Does NOT change the original's entryPrice / stopLoss / targetPrice /
+//     prediction_date / persona / market / track.
+//   • Does NOT invent a new trading recommendation (owner constraint #8).
+//   • Does NOT collapse different personas (constraint #3) or different
+//     tracks/markets (constraint #4) into one row.
+
+// Parse a `prediction_date`-style string ('YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS')
+// into a millisecond timestamp. Returns null for unparseable input so callers
+// can decide on a stable tiebreaker.
+export function parsePredictionDateMs(s?: string | null): number | null {
+ if (!s) return null;
+ try {
+  const t = new Date(String(s).replace(' ', 'T')).getTime();
+  return Number.isNaN(t) ? null : t;
+ } catch {
+  return null;
+ }
+}
+
+// Build the B2 identity key for a single prediction. Exported so the test
+// suite can assert on it directly.
+export function predictionIdentityKey(
+ p: LivePrediction,
+ marketFallback?: string,
+): string {
+ const datePart = String(p.entryDate || '').slice(0, 10); // YYYY-MM-DD only
+ const ticker = (p.ticker || '').toUpperCase();
+ const persona = (p.persona || 'unknown').toLowerCase();
+ const market = (
+  p.market != null && p.market !== ''
+   ? p.market
+   : (marketFallback || 'unknown')
+ ).toUpperCase();
+ const track = (p.track != null && p.track !== '' ? p.track : 'unknown').toLowerCase();
+ return `${ticker}|${datePart}|${persona}|${market}|${track}`;
+}
+
+// Mark a row with `updated = true` when the backend bumped `update_count` at
+// least once. Returns the SAME object reference when there's nothing to add
+// (keeps the hot path allocation-free).
+function withUpdatedBadge(p: LivePrediction): LivePrediction {
+ const uc = Number(p.update_count ?? 0);
+ if (uc > 0 && p.updated !== true) {
+  return { ...p, updated: true };
+ }
+ return p;
+}
+
+// The dedup itself. Pure function — no React, no side effects — so it can
+// be unit-tested in isolation in `src/modules/predictions/__tests__/dedup.test.ts`.
+export function dedupPredictions(
+ predictions: LivePrediction[],
+ marketFallback?: string,
+): LivePrediction[] {
+ const kept = new Map<string, LivePrediction>();
+ const keptDate = new Map<string, number>(); // earliest entryDate ms per key
+
+ for (const p of predictions) {
+  if (!p.ticker) continue; // ignore malformed rows
+  const key = predictionIdentityKey(p, marketFallback);
+  const prev = kept.get(key);
+  if (!prev) {
+   kept.set(key, p);
+   keptDate.set(key, parsePredictionDateMs(p.entryDate) ?? Number.POSITIVE_INFINITY);
+   continue;
+  }
+  // Two rows share the identity — keep the EARLIEST entryDate (original).
+  const curDate = parsePredictionDateMs(p.entryDate);
+  const prevDate = keptDate.get(key) ?? Number.POSITIVE_INFINITY;
+  // A parseable current date that is strictly earlier wins. If current date
+  // is unparseable, keep the previous (don't let garbage overwrite a real
+  // original). If both are unparseable (tie), keep the first-seen for
+  // deterministic output.
+  if (curDate != null && (prevDate == null || curDate < prevDate)) {
+   kept.set(key, p);
+   keptDate.set(key, curDate);
+  }
+ }
+
+ // Apply the (optional) `updated` badge AFTER dedup, so it reflects the
+ // kept (original) row's update_count — not a merged value.
+ const out: LivePrediction[] = [];
+ for (const p of kept.values()) {
+  out.push(withUpdatedBadge(p));
+ }
+ return out;
+}

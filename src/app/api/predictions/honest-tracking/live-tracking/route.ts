@@ -119,6 +119,18 @@ export async function GET(request: NextRequest) {
     } catch { v40Cols = false; }
     const v40Sel = v40Cols ? ', evidence_count, morning_bell, kill_filter_result' : '';
 
+    // A3-DEDUP (Task 4-a / Alpha): surface `track` + `update_count` so the frontend
+    // can build the FULL B2 identity key (ticker|date|persona|market|track) without
+    // guessing. `market` is already selected above. The columns were added to the
+    // predictions table by B2 (Task 1-b); we detect them defensively in case some
+    // deployments haven't been migrated yet (fallback to '' / 0).
+    let b2Cols = false;
+    try {
+      const cols = db.prepare("PRAGMA table_info(predictions)").all() as Array<{ name: string }>;
+      b2Cols = cols.some((c) => c.name === 'track') && cols.some((c) => c.name === 'update_count');
+    } catch { b2Cols = false; }
+    const b2Sel = b2Cols ? ', track, update_count' : '';
+
     // V40.2-PROTECTION: SQL-level filter for morning_bell / hide_weak modes
     const protFilter = getProtectionSqlFilter();
     let protClause = protFilter.clause;
@@ -137,7 +149,7 @@ export async function GET(request: NextRequest) {
         outcome_date, exit_price, actual_return, exit_reason,
         hit_target, hit_stop, is_correct, holding_days,
         notes, persona, exit_type, status, pnl_pct, closed_at,
-        highest_price_reached, lowest_price_reached${v40Sel}
+        highest_price_reached, lowest_price_reached${v40Sel}${b2Sel}
       FROM predictions
       WHERE 1=1 ${dayFilter} ${scoreFilter} ${protSql}
       ${marketAndClause}
@@ -203,6 +215,15 @@ export async function GET(request: NextRequest) {
         evidence_count: r.evidence_count != null ? Number(r.evidence_count) : 0,
         morning_bell: r.morning_bell === 1,
         kill_filter_result: r.kill_filter_result || null,
+        // A3-DEDUP (Task 4-a / Alpha): surface B2 identity columns so the frontend
+        // dedup can use the FULL key (ticker|date|persona|market|track). The
+        // `update_count` lets the UI show a subtle "updated" badge when the
+        // original prediction has been re-analyzed by the backend (B2 bumps it on
+        // UPDATE). Fallbacks to '' / 0 keep the response shape stable on
+        // pre-B2-migration deployments.
+        market: r.market != null ? String(r.market) : (marketUpper || ''),
+        track: r.track != null ? String(r.track) : '',
+        update_count: r.update_count != null ? Number(r.update_count) : 0,
       };
 
       if (buckets[persona].length < limit) {
