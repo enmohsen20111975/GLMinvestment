@@ -26,7 +26,7 @@ warnings.filterwarnings('ignore')
 # ============================================================
 WINDOW_START = '2026-06-25'
 WINDOW_END = '2026-10-25'
-SAMPLE_TICKERS = 20        # زيّد إلى 50 أو 100 لو جهازك سريع
+SAMPLE_TICKERS = 50        # زيّد إلى 50 أو 100 لو جهازك سريع
 COMMISSION_PCT = 0.1       # عمولة 0.1% لكل صفقة
 SLIPPAGE_PCT = 0.05        # انزلاق 0.05%
 POSITION_SIZE_PCT = 5.0    # 5% من رأس المال لكل صفقة
