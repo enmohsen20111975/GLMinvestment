@@ -99,7 +99,7 @@ interface BagHolderRescuePanelProps {
  autoAnalyze?: boolean;
 }
 
-export function BagHolderRescuePanel({
+export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  ticker: tickerProp,
  buyPrice: buyPriceProp,
  quantity: quantityProp,
@@ -1121,4 +1121,4 @@ export function BagHolderRescuePanel({
  <DynamicRiskProfilerModal open={profilerOpen} onOpenChange={setProfilerOpen} />
  </div>
  );
-}
+});

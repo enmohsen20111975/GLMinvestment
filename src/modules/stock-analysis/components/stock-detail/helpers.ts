@@ -149,10 +149,11 @@ function buildStockInfographicDataFromStock(
  }));
 
  // Levels — derive from support/resistance with a 3% buffer for the outer bands
- const res1 = stock.resistance_level || (current > 0 ? Number((current * 1.03).toFixed(2)) : 0);
- const res2 = (stock as any).resistance_level_2 || (res1 > 0 ? Number((res1 * 1.04).toFixed(2)) : 0);
- const sup1 = stock.support_level || (current > 0 ? Number((current * 0.97).toFixed(2)) : 0);
- const sup2 = (stock as any).support_level_2 || (sup1 > 0 ? Number((sup1 * 0.96).toFixed(2)) : 0);
+ // ISSUE-3 FIX: removed fabricated current*1.03/0.97 levels. Only use real data.
+ const res1 = stock.resistance_level || null;
+ const res2 = (stock as any).resistance_level_2 || null;
+ const sup1 = stock.support_level || null;
+ const sup2 = (stock as any).support_level_2 || null;
 
  // Technical indicators — derive from deepAnalysis signals or overall_score
  const score = deepAnalysis?.overall_score != null

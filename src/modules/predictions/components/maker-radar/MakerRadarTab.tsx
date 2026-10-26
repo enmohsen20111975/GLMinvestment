@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 // ALPHA-INCUBATOR: The Stalking Radar section (per Mohsen's directive 2026-10-20)
@@ -50,13 +51,20 @@ const MultiMarketRadarTab = dynamic(
  () => import('@/modules/radar/components/MultiMarketRadarTab').then(m => ({ default: m.MultiMarketRadarTab })),
  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
 );
-const AccuracyDashboard = dynamic(
- () => import('@/modules/radar/components/AccuracyDashboard').then(m => ({ default: m.AccuracyDashboard })),
- { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+// ISSUE-3 FIX: wrap AccuracyDashboard + PersonalizedRadarTab with error boundary
+const AccuracyDashboard = withErrorBoundary(
+  dynamic(
+    () => import('@/modules/radar/components/AccuracyDashboard').then(m => ({ default: m.AccuracyDashboard })),
+    { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+  ),
+  'لوحة دقة الرادار',
 );
-const PersonalizedRadarTab = dynamic(
- () => import('@/modules/radar/components/PersonalizedRadarTab').then(m => ({ default: m.PersonalizedRadarTab })),
- { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+const PersonalizedRadarTab = withErrorBoundary(
+  dynamic(
+    () => import('@/modules/radar/components/PersonalizedRadarTab').then(m => ({ default: m.PersonalizedRadarTab })),
+    { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+  ),
+  'الرادار المخصص',
 );
 
 // ─── Extracted sub-components (F-Phase3-Split) ─────────────────────────

@@ -104,19 +104,21 @@ export function mapPredictionToStockData(p: PredictionRow): StockData {
  if (entryPrice > 0) {
  if (isSell) {
  // بيع: الهدف تحت الدخول، الوقف فوق الدخول
+ // ISSUE-3 FIX: no fabrication — if no target/stop from real data, leave as 0
  if (target === 0 || target >= entryPrice) {
- target = Number((entryPrice * 0.90).toFixed(2));
+ target = 0;  // was: entryPrice * 0.90
  }
  if (stop === 0 || stop <= entryPrice) {
- stop = Number((entryPrice * 1.08).toFixed(2));
+ stop = 0;  // was: entryPrice * 1.08
  }
  } else {
  // شراء: الهدف فوق الدخول، الوقف تحت الدخول
+ // ISSUE-3 FIX: no fabrication
  if (target === 0 || target <= entryPrice) {
- target = Number((entryPrice * 1.12).toFixed(2));
+ target = 0;  // was: entryPrice * 1.12
  }
  if (stop === 0 || stop >= entryPrice) {
- stop = Number((entryPrice * 0.93).toFixed(2));
+ stop = 0;  // ISSUE-3 FIX: no fabrication
  }
  }
  }
@@ -667,15 +669,15 @@ export function evalPrediction(stock: StockData, liveStock?: LiveStock) {
  if (isSellSignal) {
  // بيع: الهدف تحت الدخول، الوقف فوق الدخول
  if (targetPrice === 0 || targetPrice >= entryPrice) {
- targetPrice = Number((entryPrice * 0.90).toFixed(2));
+ targetPrice = 0;  // ISSUE-3 FIX: no fabrication
  }
  if (stopLoss === 0 || stopLoss <= entryPrice) {
- stopLoss = Number((entryPrice * 1.08).toFixed(2));
+ stopLoss = 0;  // ISSUE-3 FIX: no fabrication
  }
  } else {
  // شراء: الهدف فوق الدخول، الوقف تحت الدخول
  if (targetPrice === 0 || targetPrice <= entryPrice) {
- targetPrice = Number((entryPrice * 1.10).toFixed(2));
+ targetPrice = 0;  // ISSUE-3 FIX: no fabrication
  }
  if (stopLoss === 0 || stopLoss >= entryPrice) {
  stopLoss = Number((entryPrice * 0.92).toFixed(2));

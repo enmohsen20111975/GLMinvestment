@@ -113,8 +113,10 @@ export function adaptCryptoToStock(raw: Record<string, unknown>): Stock {
     // FIX (Aug 2026): احسب open/high/low تقريبياً من price + change24h
     // عشان الـ price-range bar في StocksView.StockCard يشتغل صح
     open_price: price && change24h ? price / (1 + change24h / 100) : price,
-    high_price: price > 0 ? price * 1.005 : price, // تقريب: high = price + 0.5%
-    low_price: price > 0 ? price * 0.995 : price,  // تقريب: low = price - 0.5%
+    // ISSUE-3 FIX: removed fabricated price*1.005/0.995 high/low.
+    // Use real high/low if available; NULL otherwise.
+    high_price: null,  // was: price * 1.005
+    low_price: null,   // was: price * 0.995
     volume,
     volume_int: volume,
     volume_week: volume,

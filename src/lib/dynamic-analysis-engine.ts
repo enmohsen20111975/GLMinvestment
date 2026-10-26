@@ -509,8 +509,9 @@ export function calculateStructuralTargets(options: {
     target = candidateTarget;
   }
 
-  // Ensure target is positive
-  if (target <= 0) target = isBuy ? entry * 1.05 : entry * 0.95;
+  // ISSUE-3 FIX: removed fabricated entry*1.05/entry*0.95 fallback.
+  // If no real target found, leave as 0 — caller should handle NULL.
+  // (Previous: if (target <= 0) target = isBuy ? entry * 1.05 : entry * 0.95;)
 
   // ---- STEP 3: Calculate R:R ----
   const risk = Math.abs(entry - stopLoss);

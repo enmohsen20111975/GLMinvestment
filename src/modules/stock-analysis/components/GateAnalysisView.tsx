@@ -83,9 +83,10 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
  pd = {
  stock: {
  close: stk.current_price ?? null,
- open: stk.previous_close ?? null, // closest available (no intraday open in unified)
- high: stk.current_price != null ? stk.current_price * 1.01 : null, // placeholder; consumer falls back to price*1.01
- low: stk.current_price != null ? stk.current_price * 0.99 : null,
+ open: stk.previous_close ?? null,
+ // ISSUE-3 FIX: no fabrication — use real day_high/day_low or null
+ high: stk.day_high ?? null,
+ low: stk.day_low ?? null,
  volume: stk.volume ?? null,
  avg_volume: tech.avg_volume ?? null,
  },
@@ -120,12 +121,13 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
  const price = currentPrice || st.close || st.price || v2?.close || 100;
 
  const input: GateAnalysisInput = {
- close: price, open: st.open || price, high: st.high || price * 1.01, low: st.low || price * 0.99,
+ close: price, open: st.open || price, high: st.high || price, low: st.low || price,
  rsi: ind.rsi?.value || 50, macdLine: ind.macd?.macd_line || 0, signalLine: ind.macd?.signal_line || 0,
- macdHist: ind.macd?.histogram || 0, atr: ind.atr?.value || price * 0.02,
- support1: pl.support_1 || price * 0.95, support2: pl.support_2 || price * 0.90,
- resistance1: pl.resistance_1 || price * 1.05, resistance2: pl.resistance_2 || price * 1.10,
- sma20: ind.sma_20 || price, sma50: ind.sma_50 || price, sma200: ind.sma_200 || price * 1.05,
+ macdHist: ind.macd?.histogram || 0, atr: ind.atr?.value || 0,
+ // ISSUE-3 FIX: no fabrication — use real levels or 0
+ support1: pl.support_1 || 0, support2: pl.support_2 || 0,
+ resistance1: pl.resistance_1 || 0, resistance2: pl.resistance_2 || 0,
+ sma20: ind.sma_20 || price, sma50: ind.sma_50 || price, sma200: ind.sma_200 || 0,
  volume: st.volume || v2?.volume || 50000, avgVolume20: vol?.avg_volume_20 || st.avg_volume || 50000,
  };
  setCachedInput(input);

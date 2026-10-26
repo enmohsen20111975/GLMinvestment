@@ -152,18 +152,14 @@ export async function GET(req: NextRequest) {
       const phase: string = s.path ?? s.life_cycle ?? s.pattern ?? 'غير معروفة';
       const phaseReason: string | null = s.reason ?? s.quiet_details?.signals_met?.join(' ، ') ?? null;
 
-      // ALPHA-RR-GATE-1: final fallback — احسب وقف (3% تحت الدخول) + هدف (1.5x risk)
-      const _entry = Number(s.entry_price ?? s.current_price) || 0;
-      const _srSupport = srMap[(s.ticker || '').toUpperCase()]?.support;
-      const _srResistance = srMap[(s.ticker || '').toUpperCase()]?.resistance;
-      const _stop = s.stop_loss ?? _srSupport ?? (_entry > 0 ? _entry * 0.97 : null);
-      const _risk = _entry > 0 && _stop != null ? _entry - _stop : 0;
-      const _target = s.target_price ?? _srResistance ?? (_risk > 0 ? _entry + 1.5 * _risk : null);
+      // ISSUE-3 FIX: removed fabricated entry*0.97 / entry+1.5*risk fallback.
+      // Only return real values from cache or stocks.db. NULL if unavailable.
+      const _srSupport = srMap[(s.ticker || '').toUpperCase()]?.support ?? null;
+      const _srResistance = srMap[(s.ticker || '').toUpperCase()]?.resistance ?? null;
       const entryDefense: EntryDefense = {
-        // ALPHA-UX-FIX-8: fallback chain: stop_loss → srMap.support → 3% under entry. target → srMap.resistance → 1.5x risk.
         entry_level: s.entry_price ?? s.current_price ?? null,
-        defense_level: _stop,
-        resistance_level: _target,
+        defense_level: s.stop_loss ?? _srSupport ?? null,  // no fabrication
+        resistance_level: s.target_price ?? _srResistance ?? null,  // no fabrication
       };
 
       return {

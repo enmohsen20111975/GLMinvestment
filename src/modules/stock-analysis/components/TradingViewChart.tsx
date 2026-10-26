@@ -604,7 +604,7 @@ function filterMarketHours(candles: OhlcvBar[]): OhlcvBar[] {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function TradingViewChart({
+export const TradingViewChart = React.memo(function TradingViewChart({
  ticker,
  stockName,
  height = 500,
@@ -1355,8 +1355,9 @@ export function TradingViewChart({
  const swingLow = allLows.length > 0 ? Math.min(...allLows) : 0;
  const lastClose = allCloses.length > 0 ? allCloses[allCloses.length - 1] : 0;
  const swingRange = swingHigh - swingLow || 1;
- const targetPrice = swingHigh > 0 ? swingHigh : lastClose * 1.05;
- const stopPrice = swingLow > 0 ? swingLow : lastClose * 0.95;
+ // ISSUE-3 FIX: removed lastClose*1.05/0.95 fabrication. Use real swing levels or 0.
+ const targetPrice = swingHigh > 0 ? swingHigh : 0;
+ const stopPrice = swingLow > 0 ? swingLow : 0;
  const fib618 = swingHigh - swingRange * 0.618;
 
  // ─── Markers (createSeriesMarkers — v5 API) ───────────────────────
@@ -1899,4 +1900,4 @@ export function TradingViewChart({
 
  </div>
  );
-}
+});

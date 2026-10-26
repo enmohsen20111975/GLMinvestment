@@ -192,18 +192,18 @@ export function getDirections(t: TFunc) {
 // كل القيم null/0 → -1 (sorts to bottom). Rule 27: لا fabrication.
 
 export function computeScreenerEntry(s: ScreenerStock): number {
-  if (s.support && s.support > 0) return s.support * 1.02;
-  return s.current_price > 0 ? s.current_price : -1;
+  if (s.current_price && s.current_price > 0) return s.current_price;
+  return -1;
 }
 
 export function computeScreenerStop(s: ScreenerStock): number {
-  if (s.support && s.support > 0) return s.support * 0.97;
-  return s.current_price > 0 ? s.current_price * 0.95 : -1;
+  if (s.support && s.support > 0) return s.support;  // real support, no multiplier
+  return -1;  // ISSUE-3 FIX: no fabrication
 }
 
 export function computeScreenerTarget(s: ScreenerStock): number {
-  if (s.resistance && s.resistance > 0) return s.resistance;
-  return s.current_price > 0 ? s.current_price * 1.10 : -1;
+  if (s.resistance && s.resistance > 0) return s.resistance;  // real resistance
+  return -1;  // ISSUE-3 FIX: no fabrication
 }
 
 export function computeScreenerRR(s: ScreenerStock): number {

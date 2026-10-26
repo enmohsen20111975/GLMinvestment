@@ -602,23 +602,20 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
   const signal = data.signal?.toUpperCase() || 'HOLD';
   const isSellSignal = ['SELL', 'STRONG_SELL', 'REDUCE'].includes(signal);
 
-  // Calculate target1 if missing
-  // BUY signals: target = resistance (if > entry) or entry * 1.10
-  // SELL signals: target = support (if < entry) or entry * 0.90
+  // ISSUE-3 FIX: removed fabricated entry*1.10/0.90/1.05/0.95 and target1*1.20/0.80 fallbacks.
+  // Only use real support/resistance/target values. NULL if unavailable.
   const calcTarget1 = target1 ?? (entry ? (
     isSellSignal
-      ? (support && support < entry ? support : entry * 0.90)
-      : (resistance && resistance > entry ? resistance : entry * 1.10)
+      ? (support && support < entry ? support : null)
+      : (resistance && resistance > entry ? resistance : null)
   ) : null);
-  // Calculate target2 if missing (target1 * 1.20 for BUY, * 0.80 for SELL)
-  const calcTarget2 = target2 ?? (calcTarget1 ? (isSellSignal ? calcTarget1 * 0.80 : calcTarget1 * 1.20) : null);
-  // Calculate stop loss if missing
-  // BUY signals: stop = support (if < entry) or entry * 0.95
-  // SELL signals: stop = resistance (if > entry) or entry * 1.05
+  // target2: only if provided from real data, no fabrication
+  const calcTarget2 = target2 ?? null;
+  // stop loss: only from real support/resistance, no entry*multiplier
   const calcStop = stopLoss ?? (entry ? (
     isSellSignal
-      ? (resistance && resistance > entry ? resistance : entry * 1.05)
-      : (support && support < entry ? support : entry * 0.95)
+      ? (resistance && resistance > entry ? resistance : null)
+      : (support && support < entry ? support : null)
   ) : null);
 
   // R:R for BUY: (target - entry) / (entry - stop)

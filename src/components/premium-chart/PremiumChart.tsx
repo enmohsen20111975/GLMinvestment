@@ -50,7 +50,7 @@ import { sanitizeCandles, toTime, formatVolumeData, formatPrice } from './utils'
 import type { ChartData, CandleWithIndicators, PremiumChartProps, TradePlan, SMCData } from './types';
 import { DARK_THEME } from './types';
 
-export function PremiumChart({
+export const PremiumChart = React.memo(function PremiumChart({
   ticker,
   stockName,
   ohlcv,
@@ -536,4 +536,4 @@ export function PremiumChart({
       )}
     </div>
   );
-}
+});
