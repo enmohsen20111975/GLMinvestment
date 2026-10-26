@@ -30,8 +30,8 @@ import { getSessionUserId } from '@/lib/auth-helper';
 // P0.1 (SEC-01): admin emails sourced from env vars via @/lib/admin-identities.
 // No hardcoded list in this file anymore.
 
-function isAdminEmail(email: string | null | undefined): boolean {
-  return isServerAdmin(email);
+function isAdminEmail(email: string | null | undefined, username?: string | null): boolean {
+  return isServerAdmin(email, username);
 }
 
 export async function GET(request: NextRequest) {
@@ -59,13 +59,12 @@ export async function GET(request: NextRequest) {
             image: true,
             subscription_tier: true,
             default_risk_tolerance: true,
-            is_admin: true,
             is_active: true,
             email_verified: true,
           },
         });
         if (dbUser && dbUser.is_active) {
-          const isAdmin = isAdminEmail(dbUser.email) || dbUser.subscription_tier === 'admin' || tokenIsAdmin;
+          const isAdmin = isAdminEmail(dbUser.email, dbUser.username) || dbUser.subscription_tier === 'admin' || tokenIsAdmin;
           const effectiveTier = isAdmin ? 'admin' : (dbUser.subscription_tier || 'free');
 
           // Proactively upgrade DB tier if user is an admin but tier in DB is free
@@ -122,7 +121,6 @@ export async function GET(request: NextRequest) {
             image: true,
             subscription_tier: true,
             default_risk_tolerance: true,
-            is_admin: true,
             is_active: true,
             email_verified: true,
           },
@@ -131,7 +129,7 @@ export async function GET(request: NextRequest) {
         if (dbUser) {
           // SEC-01 HOTFIX (Phase A): username-based admin detection removed.
           // FIX-P1-SECURITY (CRIT-1): premium is NOT admin. Only 'admin' tier is.
-          const isAdmin = isAdminEmail(dbUser.email) || dbUser.subscription_tier === 'admin';
+          const isAdmin = isAdminEmail(dbUser.email, dbUser.username) || dbUser.subscription_tier === 'admin';
           const effectiveTier = isAdmin ? 'admin' : (dbUser.subscription_tier || 'free');
 
           // Proactively upgrade DB tier if user is an admin but tier in DB is free

@@ -273,11 +273,12 @@ export function LiquidityRadarView({
  const t = useTranslation('liquidityRadar');
  const storeMarket = useAppStore((s) => s.currentMarket);
  const storeStocks = useAppStore((s) => s.stocks);
+ const user = useAppStore((s) => s.user);
+ const isAuthenticated = useAppStore((s) => s.isAuthenticated);
  const { status: authStatus } = useSession();
-  const user = useAppStore((s) => s.user);
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const isGuest = (!isAuthenticated || !user) && authStatus !== 'authenticated';
-  const GUEST_MAX_ROWS = 0;
+  // PAYWALL-RELAX (owner directive 2026-10-26): GUEST_MAX_ROWS raised from 5 to 0 (= no slicing).
+  const GUEST_MAX_ROWS = 0; // 0 = no slicing (ب + ج)
  const [showLockModal, setShowLockModal] = useState(false);
  const [activeMarket, setActiveMarket] = useState(
  (marketProp || storeMarket || 'EGX').toUpperCase()

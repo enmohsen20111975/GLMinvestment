@@ -496,7 +496,7 @@ function AppShell() {
   // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
   // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
   const { status: authStatus } = useSession();
-  const isGuest = authStatus === 'unauthenticated' || isGuestUser(user, isAuthenticated);
+  const isGuest = isGuestUser(user, isAuthenticated) && authStatus !== 'authenticated';
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
