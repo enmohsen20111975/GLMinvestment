@@ -27,25 +27,29 @@ def apply_risk_gate(
     data_quality: str = 'fresh',
     liquidity_blocked: bool = False,
     critical_engine_failed: bool = False,
-    position_size_pct: float = 0.0,
+    position_size_pct: float = 5.0,
     capital: float = 10000.0,
-) -> Tuple[str, list]:
-    """Apply risk gate rules. Returns (final_signal, warnings)."""
+) -> Tuple[str, list, float]:
+    """Apply risk gate rules. Returns (final_signal, warnings, final_position_size_pct).
+    
+    FIX: position_size_pct is now returned (was local-only before).
+    """
     warnings = []
+    final_position_size = position_size_pct
     
     # Rule 1: Liquidity blocked
     if liquidity_blocked:
-        return 'NO_TRADE', ['Liquidity filter blocked → NO_TRADE']
+        return 'NO_TRADE', ['Liquidity filter blocked → NO_TRADE'], 0.0
     
     # Rule 6: Critical engine failure
     if critical_engine_failed:
-        return 'NO_TRADE', ['Critical engine failed → NO_TRADE (no fake)']
+        return 'NO_TRADE', ['Critical engine failed → NO_TRADE (no fake)'], 0.0
     
     final_signal = signal
     if final_signal not in SIGNAL_ORDER:
         final_signal = 'NO_TRADE'
         warnings.append(f'Unknown signal "{signal}" → NO_TRADE')
-        return final_signal, warnings
+        return final_signal, warnings, 0.0
     
     # Rule 2: R:R < 1.0 → downgrade
     rr = risk_profile.get('risk_reward_ratio', 0) if risk_profile else 0
@@ -55,10 +59,10 @@ def apply_risk_gate(
         final_signal = SIGNAL_ORDER[new_idx]
         warnings.append(f'R:R={rr:.2f} < 1.0 → downgrade to {final_signal}')
     
-    # Rule 3: Position size > 25% → clamp
-    if position_size_pct > 25.0:
-        warnings.append(f'Position size {position_size_pct}% > 25% → clamped to 25%')
-        position_size_pct = 25.0
+    # Rule 3: Position size > 25% → clamp (FIX: now affects returned value)
+    if final_position_size > 25.0:
+        warnings.append(f'Position size {final_position_size}% > 25% → clamped to 25%')
+        final_position_size = 25.0
     
     # Rule 4: Conviction LOW → downgrade
     if conviction_level and conviction_level.upper() == 'LOW':
@@ -71,7 +75,7 @@ def apply_risk_gate(
     if data_quality in ('stale', 'very_stale'):
         warnings.append(f'Data quality={data_quality} → stale recommendation (flagged)')
     
-    return final_signal, warnings
+    return final_signal, warnings, final_position_size
 
 
 def validate_risk_profile(risk_profile: Dict) -> Tuple[bool, list]:
