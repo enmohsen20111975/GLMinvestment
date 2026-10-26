@@ -38,7 +38,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useSession() {
-  return useContext(SessionContext);
+  const ctx = useContext(SessionContext);
+  if (!ctx) {
+    return { data: null, status: 'unauthenticated' as const, update: async () => null };
+  }
+  return ctx;
 }
 
 export async function signIn(provider?: string, options?: any) {

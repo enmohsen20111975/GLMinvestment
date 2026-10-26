@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/next-auth-shim';
 import { useAppStore } from '@/lib/store';
 
 const POLL_INTERVAL_MS = 60_000;
