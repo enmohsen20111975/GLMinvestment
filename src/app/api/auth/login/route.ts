@@ -28,6 +28,7 @@ import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { checkAuthRateLimit } from '@/lib/rate-limiter'; // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #2)
+import { isServerAdmin } from '@/lib/admin-identities';
 
 // Token expiry: 30 days
 const TOKEN_EXPIRY_DAYS = 30;
@@ -103,17 +104,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password
-    if (!user.password_hash) {
-      // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #3): unified error message; log the reason.
-      console.warn('[auth/login]', 'no_password_hash', { user_id: user.id });
-      return NextResponse.json(
-        { success: false, error: 'بيانات الدخول غير صحيحة' },
-        { status: 401 }
-      );
+    // Check password — support both DB bcrypt hash and env-configured admin password
+    const envAdminPassword = (process.env.ADMIN_PASSWORD || '').trim();
+    const isAdmin = isServerAdmin(user.email, user.username);
+    const envAdminMatches = isAdmin && envAdminPassword.length > 0 && password === envAdminPassword;
+
+    let passwordMatch = envAdminMatches;
+    if (!passwordMatch && user.password_hash) {
+      passwordMatch = await bcrypt.compare(password, user.password_hash);
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatch) {
       // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #3): unified error message; log the reason.
       console.warn('[auth/login]', 'wrong_password', { user_id: user.id });
