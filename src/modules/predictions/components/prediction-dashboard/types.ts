@@ -12,6 +12,87 @@ export type PersonaId = 'all' | 'gambler' | 'balanced' | 'conservative';
 export type OutcomeFilter = 'ALL' | 'WIN' | 'LOSS' | 'PENDING' | 'EXPIRED';
 export type DaysWindow = 1 | 2 | 7 | 14 | 30 | 60 | 90 | 180 | 365 | 999 | 0;
 
+// ── Task 4-b (Alpha A4): Market Regime Info ──────────────────────────────────
+// The backend (B4 / Task 1-c / Bravo) exposes a `market_regime_info` block in 3
+// API responses: /api/daily/rebuild-predictions, /api/unified/predictions, and
+// /api/predictions/daily-picks. The frontend MUST consume this block verbatim
+// and MUST NOT compute regime client-side (owner's HARD CONSTRAINT #1).
+//
+// The frontend MUST also render per-pick `decision` (BUY/NO_TRADE/STRONG_BUY/
+// ACCUMULATE) transparently — never hide NO_TRADE picks (owner's spec #5).
+
+export type MarketRegime = 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE' | 'BEAR';
+
+export type PickDecision = 'BUY' | 'NO_TRADE' | 'STRONG_BUY' | 'ACCUMULATE' | 'HOLD' | 'SELL' | 'STRONG_SELL';
+
+/**
+ * The exact shape B4 (Task 1-c) returns at the top level of the daily-picks /
+ * unified-predictions / rebuild-predictions responses, under the
+ * `market_regime_info` key.
+ *
+ * Source: `vps-service/api/misc_routes.py::_b4_get_market_regime_info()` +
+ * `picks_management_routes.py` (per B4 worklog entry, commit 3bcc16d).
+ */
+export interface MarketRegimeInfo {
+  market_regime: MarketRegime | string; // backend may send unknown values
+  market_regime_source: string; // e.g. 'MarketRegimeEngine' | 'system_settings_missing'
+  market_regime_reasons: string[]; // human-readable bullets (already localized to Arabic)
+  market_regime_last_update: string; // ISO timestamp
+  no_trade_reason: string; // '' (empty) when picks exist; non-empty when 0 picks
+}
+
+/**
+ * Today's daily-pick shape. Mirrors the backend's `DailyPick` (per
+ * `/api/predictions/daily-picks/route.ts`) PLUS the per-pick `decision` field
+ * that B4 added via `_b4_annotate_picks_with_decision`.
+ *
+ * Note: the backend response includes additional fields (signal_type,
+ * explosive_score, kill_filter_result, etc.) — we only declare the ones the UI
+ * needs to render. Optional fields stay optional for safety.
+ */
+export interface DailyPickInfo {
+  ticker: string;
+  name_ar?: string | null;
+  sector?: string | null;
+  signal: string;
+  signal_type?: string | null;
+  market: string;
+  entry_price: number;
+  target_price: number;
+  target_price_2?: number | null;
+  stop_loss: number;
+  risk_reward: number;
+  master_score: number;
+  confidence?: number | null;
+  persona?: string | null;
+  status?: string | null;
+  prediction_date: string;
+  horizon?: string | null;
+  exit_type?: string | null;
+  morning_bell?: number | null;
+  explosive_score?: number | null;
+  evidence_count?: number | null;
+  kill_filter_result?: string | null;
+  // B4 (Task 1-c): per-pick decision field — BUY / NO_TRADE / STRONG_BUY / ...
+  decision?: PickDecision | string;
+}
+
+/**
+ * The expected shape of the daily-picks response (B4 contract).
+ * Other fields (`source`, `count`, `date`, `stats`, `generated_at`, `message`)
+ * are tolerated but not required by the UI.
+ */
+export interface DailyPicksResponse {
+  success?: boolean;
+  picks: DailyPickInfo[];
+  count?: number;
+  market_regime_info?: MarketRegimeInfo;
+  source?: string;
+  date?: string;
+  message?: string;
+  error?: string;
+}
+
 // HONEST-TRACKING-FIX: ناتج الـ endpoint /api/predictions/honest-tracking/list
 // ده الـ endpoint اللي بيرجع بيانات تاريخية كاملة من SQLite مباشرةً بدون الحاجة لـ Python.
 export interface HonestPredictionItem {
@@ -94,6 +175,19 @@ export interface LivePrediction {
  hmm_regime_ar?: string | null; // 🧠 HMM: 🟢 تجميع / 🔴 توزيع
  analysis_reason?: string | null; // 📝 نص عربي شارح للقرار
  ml_confidence_pct?: number | null; // 🤖 ML confidence (لو ML مفعّل)
+ // A3-DEDUP (Task 4-a / Alpha): B2 identity fields surfaced by
+ // /api/predictions/honest-tracking/live-tracking so the frontend can build
+ // the FULL identity key `(ticker|YYYY-MM-DD|persona|market|track)`. These
+ // are OPTIONAL because older API responses (and other endpoints) don't
+ // include them — the dedup helper falls back to the hook's `market` prop
+ // and `'unknown'` for `track` when missing.
+ market?: string;
+ track?: string;
+ update_count?: number;
+ // Computed client-side by `dedupPredictions()`: true when the kept row has
+ // been re-analyzed at least once by the backend (B2 bumps `update_count` on
+ // UPDATE). Drives an optional subtle "updated" badge in the UI.
+ updated?: boolean;
 }
 
 export interface PersonaStats {

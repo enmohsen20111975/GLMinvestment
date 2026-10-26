@@ -9317,3 +9317,68 @@ Stage Summary:
   * A GROUP BY query shows remaining duplicates (should be only the quarantined historical ones): ✅ 0 duplicate groups in main; 1270 quarantined rows in `predictions_duplicates_archive`.
   * A report shows count before AND after cleanup: ✅ BEFORE=2627 / AFTER=1357 (main) + 1270 (archive).
 - Ready for merge: YES — all code changes minimal + tested + DB migration applied locally + owner constraints honored. BLOCKER: pre-existing `lifecycle_status` column missing from predictions table (pre-B2 bug) — record_prediction() primary INSERT path fails on this DB snapshot, but B2 dedup logic still works (returns existing id without INSERT). Owner decision needed: add `lifecycle_status` column to production predictions.db (separate from B2 scope) OR refactor record_prediction() to drop lifecycle_status reference.
+
+---
+Task ID: 4-b
+Agent: Alpha (A4 — NO_TRADE banner)
+Task: إضافة NO_TRADE banner + Market Regime display في PredictionTrackingDashboard.tsx — قراءة market_regime_info من الـ backend (B4) بصرامة بدون أي توليد عميل لتوصيات.
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md لفهم سياق B4 (Task 1-c) + B1 (Task 1-a) + B2 (Task 1-b) + الـ API contract الجديد (`market_regime_info` + per-pick `decision`).
+- Step 1 (INVESTIGATION): حددت إن PredictionTrackingDashboard الحالي بيستدعي `/api/predictions/honest-tracking/live-tracking` (مش واحد من الـ 3 endpoints اللي B4 عدّلها). الـ dashboard مكنش بيقرأ `market_regime_info` خالص. الـ empty-state الحالي بيقول "لا توجد صفقات تطابق خيارات الفلترة المحددة" — بيلوم المستخدم بدل ما يقول NO_TRADE. الـ hook مفيهوش أي fabrication لكنه مش بيُظهر حالة السوق. التقرير كامل في `agent-ctx/4-b-A4-NO-TRADE-BANNER-investigation.md`.
+- Step 2 (Consume market_regime_info): أضفت fetch منفصل في `usePredictionTrackingState.ts` لـ `/api/predictions/daily-picks?market={market}&limit=5` — علشان يجيب الـ `market_regime_info` block + اليوم picks (مع per-pick `decision` field). الـ fetch منفصل تماماً عن polling الـ historical tracking (مش متأثر بـ filters/days/qualityMode). poll كل 5 دقايق. لو الـ backend مش شغال أو SQLite fallback مش بيرجّع `market_regime_info`، الـ state بتفضل null → الواجهة بتعرض neutral "regime unavailable" panel — NEVER fabricated regime.
+- Step 3 (Market Warning Banner): أنشأت `MarketRegimeBanner.tsx` جديد. بيعرض:
+  * `market_regime` (DEFENSIVE/NORMAL/AGGRESSIVE/BEAR) كـ badge ملوّن: DEFENSIVE=amber (warning), BEAR=red (loss), NORMAL=neutral, AGGRESSIVE=green (profit). NO indigo/blue.
+  * Arabic label (دفاعي/محايد/هجومي/هابط).
+  * `market_regime_reasons` كـ list من الـ backend (مش محسوبة عميل).
+  * `market_regime_last_update` كـ relative time بالعربي ("آخر تحديث: منذ X دقيقة").
+  * `market_regime_source` (provenance — بيبيّن إن ده جه من الخادم).
+  * لما `no_trade_reason` مش فاضي → بيعرض الـ suggested Arabic copy (spec #7) + السبب الفني من الخادم.
+  * NO hardcoded percentages. لو الـ backend بعت index-drop percentage بعدين، الـ banner هيـ renderه؛ حالياً مفيش.
+  * الـ banner display-only — مابيغيّرش trading decisions.
+- Step 4 (NO_TRADE empty state): أنشأت `DailyPicksPanel.tsx` جديد. لما `dailyPicks.length === 0 && (defensive || no_trade_reason)` → بيعرض NO_TRADE panel (مش empty table) فيه:
+  * الـ suggested Arabic copy ("لا توجد فرص شراء مستوفية لشروط النظام حاليًا. الحفاظ على السيولة هو القرار المعتمد في هذه الحالة.").
+  * السبب الفني من الخادم (`no_trade_reason` verbatim).
+  * NO fabricated picks. NO loading spinner forever (loading=false).
+  * لما في picks (حتى DEFENSIVE — real approved exception) → بـ renderهم عادي.
+- Step 5 (Per-pick decision field): الـ DailyPicksPanel بيـ render كل pick مع `decision` field (BUY/NO_TRADE/STRONG_BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL):
+  * BUY → green badge. STRONG_BUY → brighter green. ACCUMULATE → teal (whale). HOLD → neutral. NO_TRADE → amber badge + muted row (opacity-60 + bg-muted/20). SELL/STRONG_SELL → red badge.
+  * NO_TRADE picks NEVER hidden — بتـ render بشفافية كاملة (owner spec #5).
+- Wiring: عدّلت `PredictionTrackingDashboard.tsx` (container) لإدراج `MarketRegimeBanner` + `DailyPicksPanel` فوق الـ historical tracking table. الـ historical table (filteredPredictions) لسه بيشتغل زي ما هو — الـ banner الجديد بـ يتعرض فوقه.
+- Types: أضفت `MarketRegimeInfo` + `DailyPickInfo` + `DailyPicksResponse` + `MarketRegime` + `PickDecision` types في `types.ts` بـ mirror للـ B4 contract.
+- Step 6 (Verification):
+  * أنشأت fixture test في `src/__tests__/components/a4-no-trade-banner.test.tsx` بـ 11 assertion في 4 scenarios + fabrication guard.
+  * Run: `bun run vitest run src/__tests__/components/a4-no-trade-banner.test.tsx` → 11/11 PASS.
+  * Run: `bun run vitest run src/__tests__/components/fabrication-guard.test.ts src/__tests__/components/null-handling.test.ts src/__tests__/components/api-shape.test.ts src/__tests__/components/a4-no-trade-banner.test.tsx` → 20/21 PASS (الـ failure الوحيد pre-existing في LiquidityRadarView — مش من تعديلي).
+  * TypeScript check (`bunx tsc --noEmit`): clean على كل الملفات المعدّلة (الأخطاء بس في ملفات pre-existing unrelated: expert-recommendations, stock-analysis, trading-view-chart).
+  * ESLint (`bun run lint`): clean.
+  * Live API smoke test: `GET /api/predictions/daily-picks?market=EGX&limit=5` → 200 OK (28.7s compile, SQLite fallback since Python مش شغال). الـ response رجع 5 picks من غير `market_regime_info` (لأن SQLite fallback مش بيضيفه — بس Python بعمل). الكود بتاعي بـ handle ده بـ neutral "regime unavailable" panel — NEVER fabricated.
+  * Browser verification (agent-browser): مفيش — dev server بـ OOM-kill في الـ sandbox (dmesg بيبيّن `oom-killer: next-server (v1)` بسبب 4GB RAM limit + 2.6GB next-server RSS). الـ owner directive سمح بـ fixture verification في الحالة دي. التفاصيل في `agent-ctx/4-b-A4-VERIFICATION.md`.
+
+Stage Summary:
+- Files modified:
+  * `src/modules/predictions/components/prediction-dashboard/types.ts` (+85 lines: MarketRegimeInfo + DailyPickInfo + DailyPicksResponse + MarketRegime + PickDecision types).
+  * `src/modules/predictions/components/prediction-dashboard/usePredictionTrackingState.ts` (+95 lines: marketRegimeInfo + dailyPicks state + fetchDailyPicks + polling + refetchDailyPicks).
+  * `src/modules/predictions/components/prediction-dashboard/PredictionTrackingDashboard.tsx` (+22 lines: wire MarketRegimeBanner + DailyPicksPanel above the historical table).
+  * `src/modules/predictions/components/prediction-dashboard/MarketRegimeBanner.tsx` (NEW, ~280 lines).
+  * `src/modules/predictions/components/prediction-dashboard/DailyPicksPanel.tsx` (NEW, ~390 lines).
+  * `src/__tests__/components/a4-no-trade-banner.test.tsx` (NEW, 11 tests — fixture verification).
+  * `agent-ctx/4-b-A4-NO-TRADE-BANNER-investigation.md` (NEW).
+  * `agent-ctx/4-b-A4-VERIFICATION.md` (NEW).
+- Banner fields consumed (B4 contract): `market_regime`, `market_regime_source`, `market_regime_reasons[]`, `market_regime_last_update` (relative time), `no_trade_reason`.
+- Per-pick `decision` field consumed: BUY / STRONG_BUY / ACCUMULATE / HOLD / NO_TRADE / SELL / STRONG_SELL — كل واحد ليه badge ملوّن + Arabic label. NO_TRADE بـ render في muted row + بـ badge واضح.
+- Verification method + results:
+  * Fixture test (vitest + @testing-library/react + jsdom): 11/11 PASS.
+  * Existing fabrication-guard test: PASS (zero fabrication patterns introduced).
+  * TypeScript: clean على كل الملفات المعدّلة.
+  * ESLint: clean.
+  * Live API smoke: `/api/predictions/daily-picks` رجع 200 OK بـ 5 picks.
+  * Browser (agent-browser): مفيش — dev server OOM-killed في الـ sandbox (environmental limit).
+- Acceptance criteria (owner's spec):
+  * Bull market → banner shows NORMAL/AGGRESSIVE, picks render normally: ✅ (Scenario A في fixture test).
+  * Bear market → banner shows DEFENSIVE, NO_TRADE panel shows when no picks: ✅ (Scenario B في fixture test — الـ panel بيعرض الـ suggested Arabic copy + `no_trade_reason` verbatim).
+  * Defensive market → real approved exceptions still render: ✅ (Scenario C في fixture test — COMI/BUY pick بـ render عادي حتى مع DEFENSIVE regime).
+  * Proof the frontend does NOT independently generate recommendations: ✅ (Scenario D + fabrication-guard test — `dailyPicks=[]` + `marketRegimeInfo=null` → honest empty state, NEVER fabricated).
+  * NO_TRADE reaches the user clearly: ✅ (Scenarios B + C — الـ panel headline + الـ suggested Arabic copy + الـ reason كلهم بـ render. NO_TRADE picks بـ render في muted row + NO_TRADE badge).
+- BLOCKER: مفيش. الـ dev server OOM-kills هي environmental (4GB sandbox RAM) — الكود شغال زي ما الـ fixture test بـ يبيّن.
+- Ready for merge: YES. كل التعديلات minimal + مفيش fabrication + الـ B4 contract بيـ consume صح + الـ tests بتـ verify كل scenario.

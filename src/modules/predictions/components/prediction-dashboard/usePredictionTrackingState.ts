@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import {
  generatePredictionsText,
  computeStatsFromPredictions,
+ dedupPredictions,
 } from './helpers';
 import type {
  LivePrediction,
@@ -40,6 +41,10 @@ import type {
  EntryPeriod,
  CumulativeProfitPoint,
  FocusTickerInfo,
+ // Task 4-b (Alpha A4): regime + daily-picks contract (from B4 / Task 1-c)
+ MarketRegimeInfo,
+ DailyPickInfo,
+ DailyPicksResponse,
 } from './types';
 
 export interface UsePredictionTrackingStateReturn {
@@ -92,6 +97,20 @@ export interface UsePredictionTrackingStateReturn {
  proofCardRef: React.RefObject<HTMLDivElement>;
  downloadingProof: boolean;
  handleExportProofImage: () => Promise<void>;
+
+ // ── Task 4-b (Alpha A4): Market Regime + Today's Daily Picks ──
+ // The hook separately fetches `/api/predictions/daily-picks` (one of the 3
+ // B4-updated endpoints) to retrieve the `market_regime_info` block plus the
+ // per-pick `decision` field. This is intentionally a SEPARATE fetch from the
+ // historical `live-tracking` data — the regime info is independent of the
+ // YTD tracking view and should remain visible even when the tracking table
+ // is filtered to a different persona / date range.
+ marketRegimeInfo: MarketRegimeInfo | null;
+ dailyPicks: DailyPickInfo[];
+ dailyPicksLoading: boolean;
+ dailyPicksError: string | null;
+ dailyPicksDate: string | null;
+ refetchDailyPicks: () => void;
 }
 
 export function usePredictionTrackingState(
@@ -126,6 +145,87 @@ export function usePredictionTrackingState(
  // اللي بـ يسبب re-fetch loop). بنقرأ الـ ref جوه catch block علشان نقرر هل نـ show
  // toast.error (initial load failure) ولا لأ (polling failure — silent).
  const hasDataRef = useRef(false);
+
+ // ── Task 4-b (Alpha A4): Market Regime + Today's Daily Picks ──
+ // Separate state for the daily-picks + market_regime_info fetch. This MUST be
+ // independent of the historical `live-tracking` fetch (which polls every 5 min
+ // and depends on filter state). The regime info block is owned entirely by
+ // the backend (B4) — the frontend never computes regime.
+ const [marketRegimeInfo, setMarketRegimeInfo] = useState<MarketRegimeInfo | null>(null);
+ const [dailyPicks, setDailyPicks] = useState<DailyPickInfo[]>([]);
+ const [dailyPicksDate, setDailyPicksDate] = useState<string | null>(null);
+ const [dailyPicksLoading, setDailyPicksLoading] = useState(true);
+ const [dailyPicksError, setDailyPicksError] = useState<string | null>(null);
+ const dailyAbortRef = useRef<AbortController | null>(null);
+ const hasRegimeRef = useRef(false);
+
+ // Fetch the daily-picks endpoint. This response now (post-B4 / Task 1-c)
+ // includes the `market_regime_info` block at the top level + per-pick
+ // `decision` field. Both are surfaced to the UI.
+ //
+ // We use a generous timeout (8s) and tolerate failure: if the Python backend
+ // is down OR the SQLite fallback doesn't expose `market_regime_info`, we leave
+ // `marketRegimeInfo` as null and the UI renders a neutral "regime unavailable"
+ // state — NEVER a fabricated regime (owner HARD CONSTRAINT #1 + #4).
+ const fetchDailyPicks = useCallback(async () => {
+ if (dailyAbortRef.current) dailyAbortRef.current.abort();
+ const ctrl = new AbortController();
+ dailyAbortRef.current = ctrl;
+ setDailyPicksError(null);
+
+ try {
+ const res = await fetch(
+ `/api/predictions/daily-picks?market=${encodeURIComponent(market)}&limit=5`,
+ { cache: 'no-store', signal: ctrl.signal },
+ );
+ if (!res.ok) throw new Error(`HTTP ${res.status}`);
+ const json: DailyPicksResponse = await res.json();
+ if (ctrl.signal.aborted) return;
+
+ // B4 contract: picks may be empty; market_regime_info may be absent in
+ // the SQLite fallback path. We tolerate both — NEVER fabricate.
+ const picksArr: DailyPickInfo[] = Array.isArray(json?.picks) ? json.picks : [];
+ setDailyPicks(picksArr);
+ setDailyPicksDate(json?.date ?? null);
+
+ if (json?.market_regime_info) {
+ setMarketRegimeInfo(json.market_regime_info);
+ hasRegimeRef.current = true;
+ } else {
+ // SQLite fallback path or older backend — leave regime null so the UI
+ // shows the neutral "regime unavailable" state instead of fabricating.
+ setMarketRegimeInfo(null);
+ }
+ } catch (e: any) {
+ if (e?.name !== 'AbortError') {
+ console.error('[PredictionTracking] daily-picks fetch failed:', e);
+ setDailyPicksError('تعذّر تحميل حالة السوق اليومية');
+ // Leave marketRegimeInfo as-is — don't wipe a previously-loaded regime
+ // (better to show stale regime than to flip to a fabricated default).
+ }
+ } finally {
+ if (!dailyAbortRef.current?.signal.aborted) {
+ setDailyPicksLoading(false);
+ }
+ }
+ }, [market]);
+
+ // Initial + on-market-change fetch of the daily picks / regime info.
+ useEffect(() => {
+ setDailyPicksLoading(true);
+ fetchDailyPicks();
+ return () => {
+ if (dailyAbortRef.current) dailyAbortRef.current.abort();
+ };
+ }, [fetchDailyPicks]);
+
+ // Polling for the regime info — 5 min cadence, same as the main polling loop.
+ // This keeps the "آخر تحديث: منذ X دقيقة" badge fresh without hammering the API.
+ useEffect(() => {
+ const pollSec = 300;
+ const timer = setInterval(fetchDailyPicks, pollSec * 1000);
+ return () => clearInterval(timer);
+ }, [fetchDailyPicks]);
 
  // ── Fetch Data ──
  // HONEST-TRACKING-FIX: بنجيب البيانات من /api/predictions/honest-tracking/live-tracking
@@ -211,23 +311,36 @@ export function usePredictionTrackingState(
  ];
  }, [data?.predictions]);
 
- // FIX-5B: Dedup client-side — توقع واحد لكل (ticker, persona, entryDate).
- // A3 FIX: Dedup على (ticker, persona, prediction_date) — استخدام prediction_date
- // بدل entryDate (اللي بيتضمن ثواني ويسمح بتكرار نفس التوقع).
- // لو prediction_date مش متاحة، نرجع لـ entryDate.slice(0, 10) كـ fallback.
+ // A3-DEDUP (Task 4-a / Alpha): SECONDARY frontend defense against duplicate
+ // daily predictions. The PRIMARY fix is B2's backend UNIQUE INDEX
+ // `(ticker, substr(prediction_date,1,10), persona, market, track)` +
+ // `record_prediction()` UPDATE-not-INSERT behavior. This helper catches
+ // near-duplicates the API may still return (legacy rows, race conditions,
+ // rows that arrived via different tracks the frontend cannot distinguish
+ // without the `track` field).
+ //
+ // Identity key: `${ticker}|${YYYY-MM-DD of entryDate}|${persona}|${market}|${track}`
+ //   • Uses ONLY the date portion of `entryDate` (= backend's prediction_date)
+ //     — NOT the full timestamp with seconds (owner constraint #2).
+ //   • `market` falls back to the hook's `market` prop when the API response
+ //     doesn't include it (older responses).
+ //   • `track` falls back to 'unknown' when missing.
+ //
+ // Conflict resolution: when two rows share the same key, keep the one with
+ // the EARLIEST `entryDate` — i.e. the ORIGINAL prediction. This preserves
+ // the original entry_price / stop_loss / target_price / prediction_date that
+ // B2 went out of its way to protect. (Critical: the API returns rows in
+ // `prediction_date DESC` order, so naive "first-seen wins" would actually
+ // keep the LATEST re-analysis row — wrong.)
+ //
+ // Different persona / market / track → separate rows (no merging).
+ //
+ // Optional `updated` badge: if the kept row's `update_count > 0`, the
+ // helper sets `updated = true` so the UI can show a subtle "updated" badge.
+ // We never SYNTHESIZE `update_count` — only forward what the backend sent.
  const dedupedPredictions = useMemo<LivePrediction[]>(() => {
- const seen = new Set<string>();
- const out: LivePrediction[] = [];
- for (const p of allRawPredictions) {
- // A3 FIX: dedup on date (not datetime) — slice(0,10) removes time component
- const dateKey = (p.predictionDate || p.entryDate || '').slice(0, 10);
- const key = `${p.ticker}__${p.persona || 'unknown'}__${dateKey}`;
- if (seen.has(key)) continue;
- seen.add(key);
- out.push(p);
- }
- return out;
- }, [allRawPredictions]);
+  return dedupPredictions(allRawPredictions, market);
+ }, [allRawPredictions, market]);
 
  // RL-FIX-13: Quality-filtered predictions — يطبّق (1) حد الثقة و (2) top-5/يوم/شخصية
  // على كل التوقعات الخام قبل ما تروح للـ stats والـ chart والـ table.
@@ -502,5 +615,13 @@ export function usePredictionTrackingState(
  proofCardRef,
  downloadingProof,
  handleExportProofImage,
+
+ // Task 4-b (Alpha A4): Market Regime + Today's Daily Picks
+ marketRegimeInfo,
+ dailyPicks,
+ dailyPicksLoading,
+ dailyPicksError,
+ dailyPicksDate,
+ refetchDailyPicks: fetchDailyPicks,
  };
 }

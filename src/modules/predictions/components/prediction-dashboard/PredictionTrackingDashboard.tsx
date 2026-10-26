@@ -47,6 +47,9 @@ import { FocusStocksBanner } from './FocusStocksBanner';
 import { CumulativeProfitChart } from './CumulativeProfitChart';
 import { ProofTableCard } from './ProofTableCard';
 import { ProofModal } from './ProofModal';
+// Task 4-b (Alpha A4): NO_TRADE banner + Market Regime display.
+import { MarketRegimeBanner } from './MarketRegimeBanner';
+import { DailyPicksPanel } from './DailyPicksPanel';
 import type { PredictionTrackingDashboardProps } from './types';
 
 export function PredictionTrackingDashboard({
@@ -86,22 +89,26 @@ export function PredictionTrackingDashboard({
 
  return (
  <div className={cn('space-y-5 dir-rtl', className)}>
- {/* A4 FIX: NO_TRADE Banner — يظهر لما السوق هابط ومفيش فرص */}
- {showNoTradeBanner && (
-  <div className="rounded-xl border-2 border-warning/30 bg-warning/5 p-4 text-center">
-   <p className="text-sm font-bold text-warning">
-    لا توجد فرص شراء مستوفية لشروط النظام حاليًا.
-   </p>
-   <p className="text-xs text-muted-foreground mt-1">
-    الحفاظ على السيولة هو القرار المعتمد في هذه الحالة.
-   </p>
-   {session?.market_regime && (
-    <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-     حالة السوق: {session.market_regime} | آخر تحديث: {session.last_update || '—'}
-    </p>
-   )}
-  </div>
- )}
+ {/* ─── 0. Task 4-b (Alpha A4): Market Regime Banner + Today's Daily Picks ─── */}
+ {/* The banner reads `market_regime_info` from the backend (B4 / Task 1-c) and
+ is DISPLAY-ONLY — it never changes trading decisions. The DailyPicksPanel
+ shows today's picks (with per-pick `decision` field) OR a NO_TRADE panel
+ when the backend says there are 0 qualifying picks during DEFENSIVE/BEAR. */}
+ <MarketRegimeBanner
+ marketRegimeInfo={s.marketRegimeInfo}
+ loading={s.dailyPicksLoading}
+ error={s.dailyPicksError}
+ onRefresh={s.refetchDailyPicks}
+ />
+ <DailyPicksPanel
+ dailyPicks={s.dailyPicks}
+ marketRegimeInfo={s.marketRegimeInfo}
+ loading={s.dailyPicksLoading}
+ error={s.dailyPicksError}
+ date={s.dailyPicksDate}
+ onRefresh={s.refetchDailyPicks}
+ />
+
  {/* ─── 1. Luxury Header & Timeframe Control Bar ─── */}
  <HeaderBar
  session={session}
