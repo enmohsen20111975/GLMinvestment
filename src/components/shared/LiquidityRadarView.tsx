@@ -274,15 +274,10 @@ export function LiquidityRadarView({
  const storeMarket = useAppStore((s) => s.currentMarket);
  const storeStocks = useAppStore((s) => s.stocks);
  const { status: authStatus } = useSession();
- // FIX (2026-10-26): isGuest كان بيعتمد على useSession() اللي بترجع 'unauthenticated'
- // دائمًا في الـ sandbox (next-auth-shim.ts hardcoded). ده خلى كل المستخدمين — حتى
- // الأدمن — يتعرضوا كـ guest → GUEST_MAX_ROWS=5 بيقطعهم لـ 5 أسهم بس.
- // الحل: isGuest يعتمد على useAppStore.isAuthenticated (اللي بيتحدد عبر useAuthCheck
- // polling لـ /api/auth/me). كده أي مستخدم مسجل دخول بنجاح هيتعامل كـ authenticated
- // وهايشوف 25 سهم/صفحة بدل 5.
- const isAuthenticatedInStore = useAppStore((s) => s.isAuthenticated);
- const isGuest = !isAuthenticatedInStore && authStatus === 'unauthenticated';
- const GUEST_MAX_ROWS = 5;
+  const user = useAppStore((s) => s.user);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const isGuest = (!isAuthenticated || !user) && authStatus !== 'authenticated';
+  const GUEST_MAX_ROWS = 0;
  const [showLockModal, setShowLockModal] = useState(false);
  const [activeMarket, setActiveMarket] = useState(
  (marketProp || storeMarket || 'EGX').toUpperCase()
@@ -376,10 +371,8 @@ export function LiquidityRadarView({
  return turnover >= 1500000; // 1.5M EGP minimum liquidity
  });
  }
- // GUEST: limit to 5 rows max — clear table, no blur
- if (isGuest) {
- out = out.slice(0, GUEST_MAX_ROWS);
- }
+ // PAYWALL-RELAX (owner directive 2026-10-26): guest row-limit removed (ب + ج).
+ // Guests now see the same filtered list as authenticated users.
  return out;
  }, [allScanned, bucketFilter, hideInactive, isGuest]);
 
@@ -393,10 +386,10 @@ export function LiquidityRadarView({
  // Quick alias for the canonical scanned total (prefers summary.scanned_count).
  const scannedTotal = filterCounts.all;
 
- // GUEST: always page 0 (no pagination for guests)
- const totalPages = isGuest ? 1 : Math.max(1, Math.ceil(filteredStocks.length / PAGE_SIZE));
- const safePage = isGuest ? 0 : Math.min(page, totalPages - 1);
- const pagedStocks = isGuest ? filteredStocks : filteredStocks.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+ // PAYWALL-RELAX (owner directive 2026-10-26): guests get full pagination now.
+ const totalPages = Math.max(1, Math.ceil(filteredStocks.length / PAGE_SIZE));
+ const safePage = Math.min(page, totalPages - 1);
+ const pagedStocks = filteredStocks.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
  React.useEffect(() => { setPage(0); }, [bucketFilter, hideInactive, activeMarket]);
 
