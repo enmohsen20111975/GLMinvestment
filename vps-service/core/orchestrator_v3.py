@@ -32,16 +32,16 @@ ENGINE_FAMILIES = {
 # مصفوفة الأوزان V1 (من المالك — مجموع < 100 عمدًا، يُطبّع برمجياً)
 # ============================================================================
 RAW_WEIGHTS = {
-    'S1': {'TREND': 25, 'MOM': 20, 'MR': 5,  'BRK': 15, 'FLOW': 15, 'FUND': 10, 'EVENT': 10},
-    'S2': {'TREND': 20, 'MOM': 10, 'MR': 10, 'BRK': 5,  'FLOW': 20, 'FUND': 15, 'EVENT': 15},
-    'S3': {'TREND': 5,  'MOM': 10, 'MR': 25, 'BRK': 5,  'FLOW': 20, 'FUND': 15, 'EVENT': 15},
-    'S4': {'TREND': 10, 'MOM': 15, 'MR': 0,  'BRK': 30, 'FLOW': 20, 'FUND': 10, 'EVENT': 10},
-    'S5': {'TREND': 20, 'MOM': 15, 'MR': 5,  'BRK': 5,  'FLOW': 15, 'FUND': 15, 'EVENT': 20},
-    'S6': {'TREND': 10, 'MOM': 10, 'MR': 0,  'BRK': 5,  'FLOW': 15, 'FUND': 20, 'EVENT': 30},
-    'S7': {'TREND': 10, 'MOM': 10, 'MR': 5,  'BRK': 5,  'FLOW': 15, 'FUND': 20, 'EVENT': 20},
-    'S8': {'TREND': 10, 'MOM': 5,  'MR': 5,  'BRK': 5,  'FLOW': 25, 'FUND': 20, 'EVENT': 20},
-    'S9': {'TREND': 10, 'MOM': 10, 'MR': 10, 'BRK': 10, 'FLOW': 15, 'FUND': 20, 'EVENT': 20},
-    'S10': {'TREND': 10, 'MOM': 10, 'MR': 10, 'BRK': 10, 'FLOW': 15, 'FUND': 20, 'EVENT': 20},
+    'S1': {'TREND': 30, 'MOM': 25, 'MR': 5,  'BRK': 10, 'FLOW': 20, 'FUND': 5,  'EVENT': 5},   # صعود مستقر
+    'S2': {'TREND': 25, 'MOM': 15, 'MR': 10, 'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 10},  # صعود يضعف
+    'S3': {'TREND': 10, 'MOM': 10, 'MR': 30, 'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 10},  # عرضي
+    'S4': {'TREND': 15, 'MOM': 15, 'MR': 0,  'BRK': 25, 'FLOW': 30, 'FUND': 5,  'EVENT': 10},  # اختراق صاعد
+    'S5': {'TREND': 30, 'MOM': 20, 'MR': 5,  'BRK': 5,  'FLOW': 20, 'FUND': 10, 'EVENT': 10},  # هبوط مستقر
+    'S6': {'TREND': 25, 'MOM': 20, 'MR': 0,  'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 15},  # هبوط متسارع
+    'S7': {'TREND': 20, 'MOM': 10, 'MR': 5,  'BRK': 5,  'FLOW': 30, 'FUND': 15, 'EVENT': 15},  # تذبذب مرتفع
+    'S8': {'TREND': 10, 'MOM': 5,  'MR': 5,  'BRK': 5,  'FLOW': 50, 'FUND': 15, 'EVENT': 10},  # سيولة ضعيفة
+    'S9': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10},  # أدلة متعارضة
+    'S10': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10}, # UNKNOWN
     'S11': {},  # NO_TRADE — بيانات ناقصة
 }
 

@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 WINDOW_START = '2026-06-25'; WINDOW_END = '2026-10-25'
 COMMISSION_PCT = 0.1; SLIPPAGE_PCT = 0.05
 POSITION_SIZE = 5.0; CAPITAL = 10000.0; MAX_HOLD = 7
-SAMPLE = 5; DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
+SAMPLE = 20; DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
 
 def week_key(d):
     dt = datetime.strptime(d, '%Y-%m-%d'); iso = dt.isocalendar()
