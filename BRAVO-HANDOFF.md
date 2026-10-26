@@ -248,6 +248,124 @@ should be updated to reflect it, OR whether the code should be relaxed to honor 
 
 ---
 
+## Issue #9 — `last_active_at` field stores numeric ms instead of ISO DateTime (CRITICAL — ROOT CAUSE OF AUTH REDIRECT LOOP)
+
+### Problem (diagnosed by Jimmy via `pm2 logs nextjs` live evidence)
+The `User.last_active_at` column in `auth.db` contains **numeric millisecond timestamps**
+(e.g., `1793047238764`) instead of ISO DateTime strings (e.g., `2026-10-26T20:00:00.000Z`).
+
+When NextAuth's `session()` callback calls `db.user.findUnique(...)` via Prisma, Prisma throws:
+
+```
+PrismaClientKnownRequestError:
+Inconsistent column data: Could not convert value "1793047238764" of the field `last_active_at`
+to type `DateTime`.
+code: 'P2023'
+```
+
+### Cascade impact (why the user gets logged out every ~60s)
+1. `useAuthCheck` polls `/api/auth/me` every 60 seconds (src/hooks/useAuthCheck.ts:86).
+2. `/api/auth/me` calls `getServerSession(authOptions)` → NextAuth `session()` callback.
+3. `session()` callback calls `db.user.findUnique({ where: { email } })` to fetch fresh user data.
+4. Prisma hits the corrupted `last_active_at` value → throws `P2023`.
+5. `session()` callback catches the error → returns session WITHOUT DB enrichment
+   (or returns null depending on the catch path).
+6. `/api/auth/me` sees no valid session → returns `401`.
+7. `useAuthCheck` retries after 2s → still 401 → sets `isAuthenticated = false`.
+8. `AuthGate` detects unauthenticated → opens `LoginPromptModal` → "سجّل تاني".
+9. Loop repeats every 60s.
+
+### Why Alpha's shim fix (commit b497061) was insufficient
+Alpha's fix (saving the real Bearer token from `/api/auth/login`) helps the **form login**
+flow bypass the broken NextAuth session path by using the Bearer token directly. BUT:
+- Google OAuth users have NO Bearer token — they rely entirely on the NextAuth session cookie.
+- So Google OAuth users STILL hit the P2023 error in the session callback → still get logged out.
+
+### What Bravo needs to do (CRITICAL)
+1. **Immediate fix (data):** Clean the corrupted `last_active_at` values in `auth.db`:
+   ```sql
+   -- Find corrupted rows
+   SELECT id, email, last_active_at FROM User WHERE typeof(last_active_at) = 'integer';
+   -- OR (if stored as TEXT but numeric):
+   SELECT id, email, last_active_at FROM User WHERE last_active_at GLOB '[0-9]*' AND length(last_active_at) >= 13;
+
+   -- Fix: convert numeric ms to ISO DateTime
+   UPDATE User
+   SET last_active_at = strftime('%Y-%m-%dT%H:%M:%fZ', last_active_at / 1000, 'unixepoch')
+   WHERE typeof(last_active_at) = 'integer';
+   ```
+2. **Root cause fix (writer):** Find WHERE `last_active_at` is written with a numeric value.
+   Suspects (Bravo to audit):
+   - `src/app/api/track/route.ts` (the track endpoint — updates `last_active_at` on each request)
+   - Any `db.user.update({ data: { last_active_at: Date.now() } })` call (should be `new Date().toISOString()`)
+   - Any raw SQL `UPDATE User SET last_active_at = ?` with a numeric bind param
+3. **Defensive fix (reader):** Wrap the `db.user.findUnique` in NextAuth `session()` callback
+   with a try/catch that returns the token-based session (without DB enrichment) if Prisma
+   throws P2023 — so a corrupted row doesn't log the user out.
+
+### Evidence (Jimmy's live pm2 logs)
+```
+PrismaClientKnownRequestError:
+Inconsistent column data: Could not convert value "1793047238764" of the field `last_active_at`
+to type `DateTime`.
+code: 'P2023'
+```
+
+### Impact
+- **CRITICAL:** Every authenticated user (Google OAuth + form login) gets logged out every 60s.
+- This is the #1 complaint ("every navigation asks to login again").
+- Alpha's shim fix helps form login users ONLY (Bearer token bypasses NextAuth session).
+- Google OAuth users have NO bypass — they MUST have this Prisma error fixed.
+
+---
+
+## Issue #10 — `ADMIN_USERNAME` env mismatch with owner's login (HIGH — BLOCKS OWNER LOGIN)
+
+### Problem (diagnosed by Jimmy)
+The owner (محسن) tries to log in with username `mohseny`, but the `.env` file has:
+```
+ADMIN_USERNAME=admin
+```
+
+The NextAuth CredentialsProvider `authorize()` function in
+`src/app/api/auth/[...nextauth]/route.ts` (lines ~95-130) checks:
+```ts
+const userMatches =
+  identifier.toLowerCase() === ENV_ADMIN_USERNAME.toLowerCase() ||  // ← 'admin', NOT 'mohseny'
+  identifier.toLowerCase() === ENV_ADMIN_EMAIL.toLowerCase();
+```
+
+When the owner types `mohseny`:
+1. `userMatches` = `false` (because `mohseny !== admin`)
+2. Falls through to the standard DB-backed path
+3. Looks up `mohseny` in `auth.db` → finds an old user with a stale bcrypt hash
+4. `bcrypt.compare(password, stale_hash)` → `false`
+5. Returns 401 "اسم المستخدم أو كلمة المرور غير صحيحة"
+
+### What Bravo needs to do (Bravo decides — NO recommendation from Alpha)
+1. **Option A:** Add `mohseny` as an accepted admin username:
+   ```
+   ADMIN_USERNAME=mohseny
+   ```
+   (or support a comma-separated list: `ADMIN_USERNAME=admin,mohseny` — requires code change)
+2. **Option B:** Update the `mohseny` user's `password_hash` in `auth.db` to match the owner's
+   current password (using bcrypt).
+3. **Option C:** Tell the owner to log in with `admin` + the `ADMIN_PASSWORD` from `.env`.
+
+### Why this is Bravo's scope
+- Modifying `.env` is a backend/ops task.
+- Modifying `auth.db` user records is a backend task.
+- The CredentialsProvider `authorize()` logic is in `src/app/api/auth/[...nextauth]/route.ts`
+  which is a backend API route (NOT a frontend file).
+
+### Impact
+- Owner cannot log in via form with `mohseny` username.
+- Owner CAN still log in via Google OAuth (if `ADMIN_EMAIL` is set to the owner's Google email
+  in `.env`, and that email is in `getServerAdminEmails()`).
+- Owner can use `admin` + `ADMIN_PASSWORD` as a temporary workaround (if Bravo confirms Option C).
+
+---
+
 ## Summary Table
 
 | # | Issue | Priority | Alpha blocked? | Bravo action required |
@@ -260,6 +378,8 @@ should be updated to reflect it, OR whether the code should be relaxed to honor 
 | 6 | Python migrator errors | LOW | No | Investigate predictions.db + persona_type |
 | 7 | 9 EGX tickers open>high | LOW | No | Owner decision (scraper fix / tolerance / accept) |
 | 8 | dual-track/list limit docs/code conflict | LOW | No (UI matches actual cap) | Verify Task 40-C directive still active, audit consumers, decide intended contract |
+| 9 | **last_active_at numeric ms → P2023** | **CRITICAL** | No (Google OAuth users blocked) | Clean auth.db + fix writer + defensive reader |
+| 10 | **ADMIN_USERNAME mismatch (mohseny vs admin)** | **HIGH** | No (owner form login blocked) | Decide Option A/B/C, update .env or DB |
 
 ---
 
