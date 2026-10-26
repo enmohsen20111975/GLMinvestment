@@ -386,3 +386,5 @@ backtest_results/*.json
 # Phase 3: untrack ALL data/ and db/ files (databases + data files + scripts)
 /data/
 /db/
+
+db/custom.db
