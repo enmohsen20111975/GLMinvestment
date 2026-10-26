@@ -9215,3 +9215,105 @@ Stage Summary:
 - REGIME_CONFIG untouched: DEFENSIVE min_rr=1.8 / min_score=65 / max_picks=5 / pos_mult=0.5 (same as market_regime_engine.py). لا تعديل على thresholds أو weights.
 - BLOCKER (owner decision needed): (1) تأكيد إن الـ RADAR FALLBACK removal مقصود — الـ block كان added في 2026-10-05 بـ comment "لو DEFENSIVE regime و مفيش picks → استخدم radar candidates" لكن مفيش mention له في worklog.md (مفيش owner approval موثّق). لو الـ owner اعتبره approved strategy، لازم يُسترجع بطريقة مختلفة (e.g. كـ 'NEEDS_CONFIRMATION' tier بدل BUY). (2) parallel agents B1 (Task 1-a) + B2 (Task 1-b) عدّلوا نفس الـ files (daily_predictor.py + prediction_tracker.py + intraday_scanner.py) — تعديلاتهم مش مني. (3) prediction_tracker.py في working tree فيه SyntaxError (line ~626: try بدون except) — من تعديل B2، مش من B4.
 - Ready for merge: YES للـ B4 deliverables (regime surfacing + NO_TRADE contract + fabrication removal + tests). NO للـ deployment حتى: (a) owner يوافق على RADAR FALLBACK removal، (b) prediction_tracker.py syntax يتعمل fix من B2 owner، (c) توافقون مع B1 على ADP isolation approach.
+
+---
+Task ID: 1-b
+Agent: Bravo (B2 — Prediction dedup)
+Task: منع تكرار التوقعات اليومية في predictions.db (intraday scanner كل 5 دقائق كان بيعمل صف جديد لكل ticker لكل scan).
+
+Work Log:
+- Step 0: قرأت آخر ~200 سطر من worklog.md لفهم P0-DELETE-OWNERSHIP-FIX + B1 (ADP/ADPC) + B4 (market_regime pipeline). ولا تعديل لـ agents تانيين.
+- Step 1 (INVESTIGATION قبل أي تعديل):
+  * قرأت `vps-service/jobs/intraday_scanner.py` كامل + `vps-service/analyzers/prediction_tracker.py::record_prediction()`.
+  * استخرجت schema كامل لـ `predictions` table من `db/predictions.db` (74 عمود، أهمهم: id, ticker, signal, signal_type, prediction_date, entry_price, target_price, stop_loss, persona, market, track, status, updated_at, outcome_date, original_stop_loss). مفيش `lifecycle_status` column (pre-existing bug في `record_prediction()` primary INSERT — مش من B2).
+  * indexes موجودة على: (ticker), (prediction_date), (created_at DESC), (market), (outcome_date), (outcome_date, hit_target, hit_stop). مفيش UNIQUE INDEX.
+  * triggers: trg_prevent_invalid_prices_insert, trg_prevent_invalid_prices_update, trg_prevent_wrong_direction, trg_prevent_wrong_direction_sell — كلها بتفتكر entry/target/stop > 0 على INSERT فقط (UPDATE بتفعّل فقط لو العمود اتعدّل).
+  * شكل `prediction_date`: 476 row بصيغة 'YYYY-MM-DD' (length=10) + 2151 row بصيغة 'YYYY-MM-DD HH:MM:SS' (length=19). الـ promote_incubator_candidates بـ يستخدم `'%Y-%m-%d %H:%M:%S'` (with seconds) → سبب الـ duplication. الـ daily_predictor بـ يستخدم `'%Y-%m-%d'` (date only).
+  * writers اللي بـ يكتبوا predictions table:
+    1. intraday_scanner.scan_intraday() → PredictionTracker.record_prediction() (track='full_analysis' default)
+    2. intraday_scanner.promote_incubator_candidates() → direct INSERT OR IGNORE (track='RADAR_PROMOTED')
+    3. daily_predictor.py → PredictionTracker.record_prediction() (track='full_analysis')
+    4. historical_predictions_v2_routes.py (2 INSERTs)
+    5. generate_persona_predictions.py (2 INSERTs)
+    6. populate_history_fast.py, dual_track_generator.py (backfill scripts)
+    7. src/app/api/sniper/track/route.ts (TS API, 1 INSERT)
+  * root cause الحقيقي: السطر 37 في intraday_scanner.py: `os.environ['BYPASS_PRED_CAP'] = '1'`. هذا الـ flag بـ يـ bypass الـ dedup logic في record_prediction() (لأنها gated خلف `if not _BYPASS_CAP:`). والـ promote_incubator_candidates بـ يستخدم INSERT OR IGNORE بدون check-then-update → 60 row لكل ticker في اليوم.
+  * duplicate inventory (BEFORE migration):
+    - Total rows in predictions: 2627
+    - Duplicate groups (by ticker, date, persona, market, track): 132
+    - Rows in duplicate groups: 1402
+    - Rows to archive (non-originals): 1270
+    - Breakdown by (market, track):
+      * EGX + RADAR_PROMOTED: 35 groups, 1135 rows (from intraday scan 每 5 دقائق)
+      * EGX + full_analysis: 59 groups, 191 rows (from backfill scripts)
+      * US + liquidity: 38 groups, 76 rows (from liquidity breakouts)
+  * "ADP" duplicates mentioned by owner = `ADPC` ticker (Arabia for Dairy Products). صفّين في 2026-09-24 بنفس entry_price=3.75 لكن different target_price (3.8437 vs 3.8625) و different status (STOPPED vs EXPIRED). تم أرشفة الـ newer row.
+  * SWDY on 2026-10-25: 35 rows كلها track='RADAR_PROMOTED' من الـ 5-min scans. entry_price اتغير من 104.7 لـ 100.56 عبر اليوم — كل row كانت scan منفصلة. الأصلي = 104.7 (earliest).
+  * HCFI/NPCO/SNFI/TAQATA/TWSATA on 2026-10-25: 60 rows لكل ticker، كلها entry_price متطابقة (e.g. HCFI=3.09). الـ promote_incubator_candidates بـ يعمل INSERT OR IGNORE على نفس السهم كل scan → 60 صف.
+
+- Step 2 (Identity Model Decision):
+  * استخدمت identity = `(ticker, substr(prediction_date,1,10), persona, market, track)`.
+  * track مهم لأنه بيميّز prediction TYPES: 'full_analysis' (daily EGX) ≠ 'RADAR_PROMOTED' (intraday EGX) ≠ 'liquidity' (US/CRYPTO breakouts). الـ owner constraint #4 بيقول "no blanket unique constraint" — وده بيتحقق بـ inclusion الـ track + market.
+  * verified إن مفيش legit multi-persona cases على نفس ticker+day (query رجعت 0 rows). الـ persona 'balanced' (2491) هي الغالبة؛ 'gambler' + 'conservative' بيظهروا في backfill فقط.
+  * decision documented in migration script header + commit message.
+
+- Step 3 (Code Fixes — minimal, before migration):
+  * `vps-service/analyzers/prediction_tracker.py::record_prediction()`:
+    - فصلت dedup عن cap: dedup دلوقتي ALWAYS runs (مش gated بـ BYPASS_PRED_CAP). الـ cap لسه قابل للـ bypass (عشان daily_predictor يقدر يحلل أكتر من 5 tickers).
+    - الـ dedup UPDATE بـ يحافظ على entry_price, target_price, stop_loss, prediction_date, persona, market, track (owner constraint #2 + #6: "DO NOT silently overwrite the original Entry Price"). الـ UPDATE بـ يعدّل فقط mutable analysis fields: signal, signal_type, master_score, technical_score, fundamental_score, ai_pattern_score, sentiment_score, notes, atr_at_entry, target_price_2, explosive_score, explosive_label, risk_reward, who_is_buying, kill_filter_result, updated_at, update_count.
+    - bump `update_count = COALESCE(update_count, 0) + 1` على كل re-analysis.
+    - fallback بدون update_count لو العمود مش موجود (old schema).
+  * `vps-service/jobs/intraday_scanner.py::promote_incubator_candidates()`:
+    - استبدلت `INSERT OR IGNORE INTO predictions (...)` بـ explicit check-then-update:
+      1. SELECT existing row WHERE (ticker, today, persona, market, track='RADAR_PROMOTED') ORDER BY prediction_date ASC, rowid ASC LIMIT 1.
+      2. لو موجود → UPDATE فقط mutable fields (signal, signal_type, risk_reward, confidence, notes, updated_at, kill_filter_result) + bump update_count. الـ entry_price/stop_loss/target_price/prediction_date/persona بـ تت保留.
+      3. لو مش موجود → INSERT new row مع persona='balanced', market='EGX', track='RADAR_PROMOTED', update_count=0.
+    - تم تسجيل log message واضحة لكل path (UPDATE vs NEW INSERT).
+
+- Step 4 (DB Migration — بعد investigation):
+  * كتبت `scripts/b2_dedup_migration.py` — idempotent, safe-to-re-run, مع dry-run mode.
+  * الخطوات:
+    1. ALTER TABLE predictions ADD COLUMN update_count INTEGER DEFAULT 0 (لو مش موجود).
+    2. ALTER TABLE predictions ADD COLUMN is_duplicate INTEGER DEFAULT 0 (لو مش موجود).
+    3. CREATE TABLE predictions_duplicates_archive (mirror of predictions + archived_at TEXT DEFAULT CURRENT_TIMESTAMP).
+    4. لكل duplicate group: identify original = earliest prediction_date مع non-null entry_price; tie → lowest rowid. الـ non-originals بيـ COPY لـ archive + DELETE من main.
+    5. CREATE UNIQUE INDEX idx_predictions_dedup ON (ticker, substr(prediction_date,1,10), persona, market, track) — SQLite expression index على substr().
+  * Backup قبل أي تعديل: `db/predictions.db.b2-backup-20261026-140455` (نسخة كاملة).
+  * Migration results (applied on actual db/predictions.db):
+    - BEFORE: 2627 rows, 132 duplicate groups, 1402 rows in dup groups.
+    - AFTER: 1357 rows in main (unique), 0 duplicate groups, 1270 rows in predictions_duplicates_archive.
+    - Archived rows breakdown: EGX+RADAR_PROMOTED=1100, EGX+full_analysis=132, US+liquidity=38.
+    - ADPC: من 2 rows لـ 1 (original entry_price=3.75 PRESERVED).
+    - HCFI 2026-10-25 RADAR_PROMOTED: من 60 rows لـ 1 (original entry_price=3.09 PRESERVED).
+    - ALIMTI 2026-09-24 full_analysis EGX: من 5 rows لـ 1 (original entry_price=69.5 PRESERVED).
+
+- Step 5 (Tests — كتبت + شغّلت + لصقت الـ output الحقيقي):
+  * `scripts/test_b2_prediction_dedup.py`: 6 tests.
+  * الـ tests بتشتغل على temp DB (نسخة من production، مع truncate للـ predictions table) + UNIQUE INDEX + columns إضافية عشان الـ record_prediction() primary INSERT يشتغل (lifecycle_status, tp1_price, etc. — pre-existing bug مش من B2).
+  * Run: `python3 scripts/test_b2_prediction_dedup.py` → 6/6 PASS.
+    1. same identity → 1 row, update_count=1, entry_price PRESERVED at 10.0 (10.0 مش 12.34).
+    2. different persona (balanced vs gambler) → 2 distinct rows (NOT merged).
+    3. different ticker same day → 2 rows.
+    4. different day same ticker+persona → 2 rows (1+1).
+    5. promote_incubator_candidates simulation (same SQL pattern) → 1 row, update_count=1, entry_price PRESERVED at 100.0 (مش 105.0).
+    6. UNIQUE INDEX blocks direct duplicate INSERT (IntegrityError: UNIQUE constraint failed: index 'idx_predictions_dedup').
+
+Stage Summary:
+- Prediction identity model decided: `(ticker, substr(prediction_date,1,10), persona, market, track)` — ONE prediction per day per persona per market per track. الـ track بيميّز prediction TYPES (full_analysis / RADAR_PROMOTED / liquidity) عشان الـ owner constraint #4 (no blanket unique constraint) يتحقق.
+- Duplicates found: 132 groups / 1402 rows / 1270 archived (BEFORE: 2627 rows → AFTER: 1357 unique rows in main + 1270 in archive). مفيش rows اتـ deleted definitively — كلهم في `predictions_duplicates_archive` للـ owner review.
+- Files modified:
+  * `vps-service/analyzers/prediction_tracker.py` (+181 / -82 lines) — B2 dedup always-on + preserves entry_price/stop_loss/target_price + update_count bump.
+  * `vps-service/jobs/intraday_scanner.py` (+145 / -22 lines) — promote_incubator_candidates() check-then-update.
+  * `scripts/b2_dedup_migration.py` (NEW, 286 lines) — idempotent migration with dry-run.
+  * `scripts/test_b2_prediction_dedup.py` (NEW, 507 lines) — 6 tests.
+- Test results: 6/6 PASS (run: `python3 scripts/test_b2_prediction_dedup.py`).
+- Quarantined rows: 1270 (in `predictions_duplicates_archive` table, preserved for owner review — NOT deleted).
+- Local commit: `cfbbdca` — `fix(b2): prevent daily prediction duplication — Task 1-b / Bravo` (4 files, 1037 insertions, 82 deletions). NO push to remote.
+- Backup: `db/predictions.db.b2-backup-20261026-140455`.
+- Acceptance criteria (owner's spec):
+  * Running the scanner multiple times on the same ticker produces NO daily duplicates: ✅ verified by Test 1 + Test 5 (UPDATE not INSERT, update_count bumped, entry_price preserved).
+  * Re-analysis does NOT change the original Entry Price: ✅ verified by Test 1 (entry_price=10.0 PRESERVED even when 2nd call had entry_price=12.34) + Test 5 (entry_price=100.0 PRESERVED even when 2nd call had entry_price=105.0).
+  * Different personas are NOT wrongly merged: ✅ verified by Test 2 (balanced=1 + gambler=1 = 2 distinct rows).
+  * A GROUP BY query shows remaining duplicates (should be only the quarantined historical ones): ✅ 0 duplicate groups in main; 1270 quarantined rows in `predictions_duplicates_archive`.
+  * A report shows count before AND after cleanup: ✅ BEFORE=2627 / AFTER=1357 (main) + 1270 (archive).
+- Ready for merge: YES — all code changes minimal + tested + DB migration applied locally + owner constraints honored. BLOCKER: pre-existing `lifecycle_status` column missing from predictions table (pre-B2 bug) — record_prediction() primary INSERT path fails on this DB snapshot, but B2 dedup logic still works (returns existing id without INSERT). Owner decision needed: add `lifecycle_status` column to production predictions.db (separate from B2 scope) OR refactor record_prediction() to drop lifecycle_status reference.
