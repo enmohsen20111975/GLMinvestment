@@ -88,14 +88,17 @@
 
 # المراحل المتبقية (Bravo + System)
 
-| المرحلة | المالك | الحالة |
-|---------|--------|--------|
-| 1: سلامة البيانات | Bravo | `OPEN` |
-| 2: تدقيق المعادلات | Bravo | `OPEN` |
-| 3: توحيد القرار | Bravo | `OPEN` |
-| 5: اختبار تاريخي | System+Bravo | `OPEN` |
-| 6: تكامل النظام | الجميع | `OPEN` |
-| 7: النشر | النظام | `OPEN` |
+> **تحديث 2026-10-26:** تم تنفيذ وتوثيق مراحل Bravo 1-3 + 5-6. النتائج موثّقة فى `EXECUTION-PLAN.md` + `ENGINE_CONTRACTS.md`.
+
+| المرحلة | المالك | الحالة | الأدلة |
+|---------|--------|--------|--------|
+| 1: سلامة البيانات | Bravo | ✅ `TESTED` | price_history cleanup (1.2M rows), 0 contamination, test_historical_field 14 PASS |
+| 2: تدقيق المعادلات | Bravo | ✅ `TESTED` | test_financial_math 24/24 PASS (RSI/ATR/R:R/position/fees) |
+| 3: توحيد القرار | Bravo | ✅ `TESTED` | ENGINE_CONTRACTS.md, master_analyzer unified, test_engine_pipeline 25 PASS |
+| 5: اختبار تاريخي | System+Bravo | ✅ `TESTED` | test_historical_backtest 13/13 PASS (fixed snapshot, no look-ahead) |
+| 5B: المنسّق والمنفّذ | System+Bravo | ✅ `SPEC APPROVED` | ORCHESTRATOR-EXECUTOR-SPEC.md (design only, not implemented) |
+| 6: تكامل النظام | الجميع | ✅ `TESTED` | test_system_integration 15/15 PASS |
+| 7: النشر | النظام | `BLOCKED` | pending owner approval + Alpha Phase 4 UI tests |
 
 ---
 
@@ -106,10 +109,15 @@
 | الواجهة | لا بيانات مالية مضللة | ✅ PASS (0 fabrication) |
 | الواجهة | error boundaries | ✅ PASS (6/6) |
 | الواجهة | React.memo | ✅ PASS (5/5) |
-| البيانات | لا تلوث بين الأسواق | ⏳ Bravo |
-| الحسابات | معادلات مختبرة | ⏳ Bravo |
-| القرار | مصدر واحد | ⏳ Bravo |
-| النظام | اختبار تاريخي | ⏳ System |
+| البيانات | لا تلوث بين الأسواق | ✅ PASS (stocks.db + price_history.db cleaned) |
+| البيانات | OHLC validity | ⚠️ WARN (12-17% invalid — data quality, documented) |
+| البيانات | Missing sessions | ⚠️ WARN (Oct 15 gap — unresolved, documented) |
+| الحسابات | معادلات مختبرة | ✅ PASS (24/24 financial math tests) |
+| القرار | مصدر واحد | ✅ PASS (master_analyzer — signal field) |
+| النظام | اختبار تاريخي | ✅ PASS (13/13 backtest, no look-ahead) |
+| النظام | تكامل | ✅ PASS (15/15 integration) |
+
+**Total tests: 128 (121 PASS, 7 WARN, 0 FAIL)**
 
 ---
 

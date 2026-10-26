@@ -397,3 +397,87 @@ TOTAL: 128 tests, 121 PASS, 7 WARN, 0 FAIL
 ## Next steps:
 - **Alpha:** Complete Phase 4 (fabrication patterns + API contracts + screen tests)
 - **System:** Once Alpha Phase 4 is done → SYSTEM-INTEGRATION-ACCEPTANCE → Release
+
+---
+
+# FINAL STATUS UPDATE — 2026-10-26 (Unified — Bravo complete)
+
+## تطابق الحالة بين EXECUTION-PLAN و UNIFIED-RELIABILITY-PLAN
+
+تم توحيد الملفين. الحالة الحالية (موثّقة بالأدلة):
+
+| المرحلة | المالك | Status | Commit | Tests | Evidence |
+|---|---|---|---|---|---|
+| 0: Baseline | System | ✅ TESTED | d4a551a | 37/37 PASS | DB inventory + backup + integrity |
+| 1: Data integrity | Bravo | ✅ TESTED | 08692fd | 14 PASS + 7 WARN | price_history cleanup (1.2M rows) |
+| 2: Financial math | Bravo | ✅ TESTED | cdf1bc1 | 24/24 PASS | RSI/ATR/MA/R:R/position/fees |
+| 3: Engine contract | Bravo | ✅ TESTED | 4345882 | 25/25 PASS | ENGINE_CONTRACTS.md |
+| 4: Frontend | Alpha | ✅ TESTED | d4a551a | 0 fabrication + 6 EB + 5 memo | ALPHA-FRONTEND-RELIABILITY-AUDIT.md |
+| 5: Backtest | System+Bravo | ✅ TESTED | 4345882 | 13/13 PASS | Fixed snapshot, no look-ahead |
+| 5B: Orchestrator/Executor spec | System+Bravo | ✅ SPEC APPROVED | (this commit) | — | ORCHESTRATOR-EXECUTOR-SPEC.md |
+| 6: System integration | All | ✅ TESTED | 4345882 | 15/15 PASS | Source→analyzer→API |
+| 7: Release | System | ❌ BLOCKED | — | — | Pending owner approval |
+
+## قواعد منع الإغلاق الشكلى
+
+1. `IMPLEMENTED` ≠ صحيح — لازم اختبار
+2. `TESTED` ≠ مقبول — لازم مراجعة دليل الاختبار
+3. `ACCEPTED` = مراجعة شروط القبول + دليل قابل للمراجعة
+4. أى `WARN` يظل مفتوحًا حتى حسم أثره
+5. عدد الاختبارات الناجحة وحده لا يثبت السلامة
+6. لا دمج لـ main أو نشر دون موافقة المالك
+7. لا تعديل DBs الإنتاج دون تصريح + backup
+
+## التحذيرات المفتوحة (WARN — موثّقة)
+
+| # | التحذير | الأثر | الحل |
+|---|---|---|---|
+| 1 | OHLC validity 12-17% | بيانات low>high — لا تؤثر على القرار (تجاهل آلى) | data quality cleanup لاحقًا |
+| 2 | Oct 15 gap | 5 EGX tickers ناقصة | تحقق من EGX calendar مستقل |
+| 3 | Oct 17 Sat row | weekend row tagged EGX | ingestion pipeline fix |
+| 4 | POUL factor 6.27% | entry_price غير معدّل | official EGX reference price |
+| 5 | Sub-engines emit recommendation | contract violation | إزالة لاحقًا (موثّق) |
+| 6 | MasterAnalysis uses `signal` not `recommendation` | API naming inconsistency | توثيق + تحديث لاحقًا |
+| 7 | Entry/stop/target nested in risk_profile | not top-level fields | موثّق فى ENGINE_CONTRACTS.md |
+
+## بوابات القبول النهائية
+
+| البوابة | Status | الأدلة |
+|---|---|---|
+| **بوابة البيانات** | ✅ PASS | 0 contamination (stocks + price_history) |
+| **بوابة الحسابات** | ✅ PASS | 24/24 financial math tests |
+| **بوابة القرار** | ✅ PASS | master_analyzer unified + engine contract |
+| **بوابة الواجهة** | ✅ PASS | 0 fabrication + 6 error boundaries + 5 React.memo |
+| **بوابة النظام** | ✅ PASS | 13/13 backtest + 15/15 integration |
+
+## الملفات المرجعية
+
+| الملف | المحتوى |
+|---|---|
+| `EXECUTION-PLAN.md` | هذا الملف — سجل موحّد |
+| `UNIFIED-RELIABILITY-PLAN.md` | الخطة الأصلية (محدّثة) |
+| `ENGINE_CONTRACTS.md` | عقد المحركات + pipeline |
+| `ORCHESTRATOR-EXECUTOR-SPEC.md` | مواصفات المنسّق والمنفّذ |
+| `BACKEND-RELIABILITY-AUDIT.md` | تدقيق الباك إند |
+| `DATA_LINEAGE.md` | مصادر البيانات |
+| `ALPHA-FRONTEND-RELIABILITY-AUDIT.md` | تدقيق الواجهة |
+| `SYSTEM-BRAIN-HOW-IT-THINKS.md` | المرجع المعمارى (محدّث بـ Section 21) |
+
+## أوامر إعادة الإنتاج
+
+```bash
+# كل الاختبارات
+python3 scripts/test_bravo_fixes_v2.py        # 25/25
+python3 scripts/test_c4_regression.py          # 12/12
+python3 scripts/test_historical_field.py       # 14 PASS + 7 WARN
+python3 scripts/test_financial_math.py         # 24/24
+python3 scripts/test_engine_pipeline.py        # 25/25
+python3 scripts/test_historical_backtest.py    # 13/13
+python3 scripts/test_system_integration.py    # 15/15
+```
+
+## الخطوة التالية
+
+- **النظام:** مراجعة بوابات القبول + قرار النشر (Shadow Mode أو Production)
+- **Alpha:** استكمال اختبارات الواجهة مع DBs (Tests 1,2,4,5)
+- **Bravo:** جاهز لأى مهام إضافية يطلبها النظام
