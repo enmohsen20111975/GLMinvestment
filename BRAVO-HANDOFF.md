@@ -191,6 +191,63 @@ reduces the radar's useful coverage.
 
 ---
 
+## Issue #8 — `dual-track/list` route: docs/code conflict on `limit` (LOW PRIORITY — BRAVO VERIFY)
+
+### Problem
+`src/app/api/predictions/dual-track/list/route.ts` has a contradiction between its documentation
+comment and its actual code behavior:
+
+- **Line 14 (comment block):** `limit  — 50 (default, max 200)`
+- **Line 59-60 (code):**
+  ```ts
+  // Task 40-C (2026-10-04): Maximum 5 predictions per owner directive.
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '5', 10), 5);
+  ```
+
+The code hard-caps `limit` at **5** regardless of what the client requests. If a consumer
+sends `limit=10` or `limit=50`, the API silently returns only 5 results.
+
+### Current UI consumer behavior
+- `src/modules/predictions/components/DualTrackPredictionsView.tsx:183` currently requests
+  `limit=5`:
+  ```ts
+  `/api/predictions/dual-track/list?market=${...}&track=${track}&limit=5`
+  ```
+- So the UI's current request **matches** the actual hard cap (5). No UI breakage today.
+- The conflict is between the **documented contract** (50/200) and the **actual contract** (5).
+
+### Code comment context
+The in-code comment on line 59 states: "Task 40-C (2026-10-04): Maximum 5 predictions per
+owner directive." This suggests the 5-cap was an intentional owner decision at the time.
+Bravo should verify whether this directive is still current, and whether the docs (line 14)
+should be updated to reflect it, OR whether the code should be relaxed to honor the documented
+50/200 range.
+
+### What Bravo needs to verify (NO recommendation implied)
+1. Confirm whether the "Task 40-C (2026-10-04)" owner directive (max 5) is still active.
+2. Audit ALL actual consumers of `/api/predictions/dual-track/list` to confirm none rely on
+   the documented `limit=50/200` behavior.
+3. Decide which of the following is the intended contract:
+   - (Option A) Align code with docs: default 50, max 200 (relax the cap).
+   - (Option B) Align docs with code: update line 14 comment to `limit — 5 (hard cap)`.
+   - (Option C) Something else (e.g., per-track limits).
+4. Alpha does NOT recommend any specific option. Bravo must verify the intended contract and
+   the actual consumers before recommending a change.
+
+### What Alpha did NOT do
+- Did NOT change the `limit` cap in the code.
+- Did NOT change the docs comment in the route file.
+- Did NOT change the UI request (`limit=5` stays as-is in DualTrackPredictionsView).
+- Did NOT recommend Option A as the default.
+
+### Impact on UI
+- **Today:** No breakage. UI requests 5, API returns 5.
+- **If Bravo changes the cap (any direction):** UI request of `limit=5` will still work —
+  the API will return 5 (or fewer if fewer exist). No UI change required by Alpha unless
+  Bravo explicitly asks to show more.
+
+---
+
 ## Summary Table
 
 | # | Issue | Priority | Alpha blocked? | Bravo action required |
@@ -202,6 +259,7 @@ reduces the radar's useful coverage.
 | 5 | Scanner dedup verification | MEDIUM | No | Run scanner twice, confirm no dups |
 | 6 | Python migrator errors | LOW | No | Investigate predictions.db + persona_type |
 | 7 | 9 EGX tickers open>high | LOW | No | Owner decision (scraper fix / tolerance / accept) |
+| 8 | dual-track/list limit docs/code conflict | LOW | No (UI matches actual cap) | Verify Task 40-C directive still active, audit consumers, decide intended contract |
 
 ---
 
