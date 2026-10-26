@@ -189,12 +189,16 @@ class EODHDFetcher:
         conn = db_manager.get_connection(self.stocks_db, writable=False)
         cur = conn.cursor()
         saved_daily = 0
+        # BRAVO-FIX-C2 (2026-10-26): resolve market via get_market_for_ticker
+        # before INSERT to prevent DEFAULT 'US' contamination (now 'EGX' after migration).
+        from data.source_authority import get_market_for_ticker
+        resolved_market = get_market_for_ticker(ticker, db_path='db/stocks.db')
         for r in records:
             try:
                 cur.execute("""
                     INSERT OR REPLACE INTO stock_daily_prices
-                        (ticker, price_date, open, high, low, close, volume, change_percent, fetch_time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                        (ticker, price_date, open, high, low, close, volume, change_percent, fetch_time, market)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
                 """, (
                     ticker,
                     r.get('date'),
@@ -204,6 +208,7 @@ class EODHDFetcher:
                     float(r.get('close', 0)),
                     int(r.get('volume', 0) or 0),
                     None,  # change_percent will be calculated
+                    resolved_market,
                 ))
                 saved_daily += 1
             except Exception as e:

@@ -1,0 +1,433 @@
+id,ticker,signal_date,entry_price,outcome_7d,outcome_14d,outcome_30d,verified_at,likely_writer,writer_evidence,staleness_days,status
+41,ABUK,2026-09-28,90.5,-4.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+53,ACGC,2026-09-28,14.28,2.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+1,ACTF,2026-09-28,2.83,-7.420494699646642,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+66,ADCI,2026-09-28,284.0,-3.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+40,ADIB,2026-09-28,51.0,-3.71,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+55,ADPC,2026-09-28,3.75,-4.27,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+46,AFDI,2026-09-28,52.03,2.83,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+67,AIFI,2026-09-28,2.33,-6.866952789699576,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+68,AJWA,2026-09-28,181.5,4.81,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+11,ALCN,2026-09-28,33.5,4.69,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+54,APSW,2026-09-28,8.21,4.26,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+24,ARVA,2026-09-28,11.08,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+69,ATQA,2026-09-28,12.61,-4.76,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+17,AXPH,2026-09-28,1670.0,-8.64,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+49,BTFH,2026-09-28,2.82,-0.35,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+28,CCRS,2026-09-28,2.53,-6.72,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+3,CIEB,2026-09-28,24.07,1.79,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+43,CLHO,2026-09-28,15.5,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+25,CPCI,2026-09-28,560.0,7.86,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+21,CRST,2026-09-28,3.72,-15.591397849462366,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+37,CSAG,2026-09-28,37.53,-1.41,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+62,DSCW,2026-09-28,1.73,-1.16,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+14,DTPP,2026-09-28,326.01,-10.21,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+70,ECAP,2026-09-28,31.48,-3.37,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+71,EEII,2026-09-28,2.33,-7.73,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+50,EFID,2026-09-28,29.5,-35.8,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+64,EGAL,2026-09-28,356.96,-3.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+8,EGAS,2026-09-28,55.01,3.67,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+72,EGCH,2026-09-28,14.2,-5.63,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+48,EGTS,2026-09-28,18.1,-7.18,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+19,EHDR,2026-09-28,2.68,-5.97,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+12,ELEC,2026-09-28,1.93,-1.04,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+73,ELNA,2026-09-28,34.37,0.23,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+22,ENGC,2026-09-28,40.28,-7.82,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+74,EOSB,2026-09-28,1.64,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+13,ETEL,2026-09-28,135.99,11.04,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+75,EXPA,2026-09-28,21.75,-2.16,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+60,FAIT,2026-09-28,46.31,-2.33,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+51,FCMD,2026-09-28,7.3,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+45,FERC,2026-09-28,76.88,-0.55,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+57,FWRY,2026-09-28,18.75,0.53,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+76,GBCO,2026-09-28,30.62,3.7883736120182894,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+16,GSSC,2026-09-28,290.91,-2.21,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+29,GTHE,2026-09-28,4.9,-10.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+36,HDBK,2026-09-28,109.48,0.95,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+30,HELI,2026-09-28,7.82,-4.22,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+77,HRHO,2026-09-28,24.3,7.2,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+61,ICFC,2026-09-28,22.21,4.41,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+10,IDRE,2026-09-28,51.5,-2.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+58,IFAP,2026-09-28,20.06,-1.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+39,INFI,2026-09-28,127.89,-2.21,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+44,IRON,2026-09-28,28.14,3.98,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+78,ISMQ,2026-09-28,8.58,-4.079254079254075,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+32,JUFO,2026-09-28,25.98,-0.27,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+79,KWIN,2026-09-28,88.62,-11.18,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+26,LKGP,2026-09-28,3.16,1.2658227848101276,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+65,MENA,2026-09-28,6.5,2.77,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+38,MFPC,2026-09-28,47.0,-1.28,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+23,MHOT,2026-09-28,18.89,-7.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+80,MICH,2026-09-28,48.38,-4.73,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+63,MOIN,2026-09-28,34.16,4.54,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+35,MOSC,2026-09-28,293.8,-3.1,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+81,MPRC,2026-09-28,38.99,3.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+82,NEDA,2026-09-28,2.68,-2.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+31,NPCO,2026-09-28,25.0,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+18,OFH,2026-09-28,1.02,-10.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+27,OIH,2026-09-28,2.11,-10.43,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+83,OLFI,2026-09-28,22.45,-6.10244988864143,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+6,ORAS,2026-09-28,824.0,0.11,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+33,ORHD,2026-09-28,40.67,-5.34,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+56,ORWE,2026-09-28,26.99,1.67,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+84,PHDC,2026-09-28,13.5,-1.85,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+7,QNBE,2026-09-28,60.0,-1.2166666666666615,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+85,RAKT,2026-09-28,22.08,3.13,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+86,RAYA,2026-09-28,6.92,-4.19,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+42,RKAZ,2026-09-28,5.48,-8.759124087591248,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+9,SAUD,2026-09-28,23.29,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+20,SDTI,2026-09-28,79.99,4.71,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+87,SNFC,2026-09-28,11.55,0.52,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+88,SNFI,2026-09-28,11.29,-7.52878653675819,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+2,TAQA,2026-09-28,17.12,0.11682242990653956,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+15,TORA,2026-09-28,61.0,10.02,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+4,UPMS,2026-09-28,10.17,1.5732546705998047,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+52,UTOP,2026-09-28,106.5,-2.63,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+5,VALU,2026-09-28,10.67,7.591377694470483,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+34,VERT,2026-09-28,6.01,-3.83,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+59,VLMRA,2026-09-28,30.25,-3.64,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+47,WCDF,2026-09-28,688.9,-4.93,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,9,stale_data
+129,ABUK,2026-09-29,90.5,-3.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+141,ACGC,2026-09-29,14.28,1.54,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+89,ACTF,2026-09-29,2.83,,,,,none,outcome NULL,8,stale_data
+154,ADCI,2026-09-29,284.0,-4.86,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+128,ADIB,2026-09-29,51.0,-5.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+143,ADPC,2026-09-29,3.75,-4.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+134,AFDI,2026-09-29,52.03,3.56,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+155,AIFI,2026-09-29,2.33,,,,,none,outcome NULL,8,stale_data
+156,AJWA,2026-09-29,181.5,6.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+99,ALCN,2026-09-29,33.5,3.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+196,ALUM,2026-09-29,24.01,-0.67,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+187,AMER,2026-09-29,5.06,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+214,AMII,2026-09-29,14.2,,,,,none,outcome NULL,8,stale_data
+206,AMOC,2026-09-29,13.4,5.45,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+194,APPC,2026-09-29,1.57,4.46,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+142,APSW,2026-09-29,8.21,4.14,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+112,ARVA,2026-09-29,11.08,,,,,none,outcome NULL,8,stale_data
+157,ATQA,2026-09-29,12.61,-4.84,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+105,AXPH,2026-09-29,1670.0,-9.58,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+182,BINV,2026-09-29,57.0,,,,,none,outcome NULL,8,stale_data
+204,BONY,2026-09-29,4.19,-2.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+137,BTFH,2026-09-29,2.82,-1.42,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+184,CANA,2026-09-29,47.49,-4.19,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+216,CCAP,2026-09-29,7.09,-6.77,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+116,CCRS,2026-09-29,2.53,-7.11,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+217,CEFM,2026-09-29,139.21,1.65,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+190,CICH,2026-09-29,11.98,0.67,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+91,CIEB,2026-09-29,24.07,0.96,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+203,CIRA,2026-09-29,39.07,,,,,none,outcome NULL,8,stale_data
+131,CLHO,2026-09-29,15.5,,,,,none,outcome NULL,8,stale_data
+218,COMI,2026-09-29,128.2,-1.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+113,CPCI,2026-09-29,560.0,7.22,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+200,CPME,2026-09-29,35.0,,,,,none,outcome NULL,8,stale_data
+109,CRST,2026-09-29,3.72,,,,,none,outcome NULL,8,stale_data
+125,CSAG,2026-09-29,37.53,-1.41,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+195,DGTZ,2026-09-29,2.31,,,,,none,outcome NULL,8,stale_data
+221,DOMT,2026-09-29,25.64,,,,,none,outcome NULL,8,stale_data
+150,DSCW,2026-09-29,1.73,-1.73,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+102,DTPP,2026-09-29,326.01,-3.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+158,ECAP,2026-09-29,31.48,-3.11,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+159,EEII,2026-09-29,2.33,-6.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+138,EFID,2026-09-29,29.5,-36.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+222,EFIH,2026-09-29,22.98,7.27,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+152,EGAL,2026-09-29,356.96,-3.49,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+96,EGAS,2026-09-29,55.01,2.69,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+160,EGCH,2026-09-29,14.2,-6.34,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+136,EGTS,2026-09-29,18.1,-6.85,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+107,EHDR,2026-09-29,2.68,-4.1,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+100,ELEC,2026-09-29,1.93,-2.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+161,ELNA,2026-09-29,34.37,-0.2,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+110,ENGC,2026-09-29,40.28,-7.72,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+162,EOSB,2026-09-29,1.64,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+101,ETEL,2026-09-29,135.99,8.83,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+163,EXPA,2026-09-29,21.75,-2.76,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+148,FAIT,2026-09-29,46.31,-2.4,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+139,FCMD,2026-09-29,7.3,,,,,none,outcome NULL,8,stale_data
+133,FERC,2026-09-29,76.88,-0.69,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+226,FNAR,2026-09-29,14.88,-4.3,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+145,FWRY,2026-09-29,18.75,0.8,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+164,GBCO,2026-09-29,30.62,,,,,none,outcome NULL,8,stale_data
+228,GIHD,2026-09-29,76.49,-14.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+189,GMCI,2026-09-29,1.69,-1.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+229,GPIM,2026-09-29,1.6,,,,,none,outcome NULL,8,stale_data
+188,GRCA,2026-09-29,39.22,-3.11,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+104,GSSC,2026-09-29,290.91,-4.92,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+117,GTHE,2026-09-29,4.9,-10.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+198,GTWL,2026-09-29,224.99,-26.97,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+124,HDBK,2026-09-29,109.48,-1.35,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+118,HELI,2026-09-29,7.82,-5.12,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+165,HRHO,2026-09-29,24.3,10.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+180,IBCT,2026-09-29,12.33,-7.3,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+149,ICFC,2026-09-29,22.21,4.46,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+98,IDRE,2026-09-29,51.5,0.97,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+146,IFAP,2026-09-29,20.06,-2.94,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+127,INFI,2026-09-29,127.89,3.22,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+132,IRON,2026-09-29,28.14,9.17,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+166,ISMQ,2026-09-29,8.58,,,,,none,outcome NULL,8,stale_data
+177,ISPH,2026-09-29,11.67,-0.69,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+120,JUFO,2026-09-29,25.98,-3.27,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+167,KWIN,2026-09-29,88.62,-11.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+231,KZPC,2026-09-29,13.9,-6.4,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+114,LKGP,2026-09-29,3.16,,,,,none,outcome NULL,8,stale_data
+153,MENA,2026-09-29,6.5,2.77,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+126,MFPC,2026-09-29,47.0,-1.96,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+232,MFSC,2026-09-29,49.99,-9.22,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+111,MHOT,2026-09-29,18.89,-7.62,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+168,MICH,2026-09-29,48.38,-3.45,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+185,MIPH,2026-09-29,809.92,-1.22,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+151,MOIN,2026-09-29,34.16,2.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+123,MOSC,2026-09-29,293.8,-3.5,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+201,MPCO,2026-09-29,2.57,-5.06,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+169,MPRC,2026-09-29,38.99,3.05,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+234,MTIE,2026-09-29,8.18,,,,,none,outcome NULL,8,stale_data
+178,NARE,2026-09-29,17.58,,,,,none,outcome NULL,8,stale_data
+208,NCCW,2026-09-29,7.4,-4.59,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+170,NEDA,2026-09-29,2.68,-1.12,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+235,NHPS,2026-09-29,77.71,-3.53,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+193,NIPH,2026-09-29,325.51,-1.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+119,NPCO,2026-09-29,25.0,,,,,none,outcome NULL,8,stale_data
+207,OBRI,2026-09-29,28.55,-0.46,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+179,OCPH,2026-09-29,227.0,0.01,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+236,ODIN,2026-09-29,2.65,-3.4,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+106,OFH,2026-09-29,1.02,-12.06,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+115,OIH,2026-09-29,2.11,-11.85,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+171,OLFI,2026-09-29,22.45,,,,,none,outcome NULL,8,stale_data
+94,ORAS,2026-09-29,824.0,0.73,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+121,ORHD,2026-09-29,40.67,-4.65,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+144,ORWE,2026-09-29,26.99,0.41,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+186,PACH,2026-09-29,85.0,1.53,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+172,PHDC,2026-09-29,13.5,-4.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+209,PHTV,2026-09-29,347.34,-3.26,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+202,POUL,2026-09-29,38.2,-73.82,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+240,PRCL,2026-09-29,30.8,-16.17,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+95,QNBE,2026-09-29,60.0,,,,,none,outcome NULL,8,stale_data
+210,RACC,2026-09-29,9.43,0.21,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+173,RAKT,2026-09-29,22.08,8.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+174,RAYA,2026-09-29,6.92,-5.35,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+130,RKAZ,2026-09-29,5.48,,,,,none,outcome NULL,8,stale_data
+205,RMDA,2026-09-29,5.77,,,,,none,outcome NULL,8,stale_data
+242,ROTO,2026-09-29,39.57,-0.68,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+192,RREI,2026-09-29,4.02,0.25,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+199,RTVC,2026-09-29,3.73,-1.34,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+97,SAUD,2026-09-29,23.29,-0.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+108,SDTI,2026-09-29,79.99,5.01,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+191,SMFR,2026-09-29,221.88,5.46,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+175,SNFC,2026-09-29,11.55,-0.35,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+176,SNFI,2026-09-29,11.29,,,,,none,outcome NULL,8,stale_data
+197,SUCE,2026-09-29,144.0,-1.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+244,SWDY,2026-09-29,118.5,0.43,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+90,TAQA,2026-09-29,17.12,,,,,none,outcome NULL,8,stale_data
+103,TORA,2026-09-29,61.0,10.02,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+245,TWSA,2026-09-29,7.19,,,,,none,outcome NULL,8,stale_data
+92,UPMS,2026-09-29,10.17,,,,,none,outcome NULL,8,stale_data
+140,UTOP,2026-09-29,106.5,-6.2,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+93,VALU,2026-09-29,10.67,,,,,none,outcome NULL,8,stale_data
+122,VERT,2026-09-29,6.01,-4.33,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+147,VLMRA,2026-09-29,30.25,-3.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+135,WCDF,2026-09-29,688.9,-3.47,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+181,WKOL,2026-09-29,325.34,-9.02,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,8,stale_data
+262,ABUK,2026-09-30,90.5,-3.31,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+328,ACTF,2026-09-30,2.83,,,,,none,outcome NULL,7,stale_data
+329,ADCI,2026-09-30,284.0,-5.36,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+330,ADPC,2026-09-30,3.75,-4.53,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+308,ALUM,2026-09-30,24.01,-2.12,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+288,AMER,2026-09-30,5.06,-1.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+333,AMII,2026-09-30,14.2,,,,,none,outcome NULL,7,stale_data
+304,APPC,2026-09-30,1.57,,,,,none,outcome NULL,7,stale_data
+334,ATQA,2026-09-30,12.61,-4.84,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+335,AXPH,2026-09-30,1670.0,-9.76,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+320,BONY,2026-09-30,4.19,3.58,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+336,CCAP,2026-09-30,7.09,-7.19,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+251,CCRS,2026-09-30,2.53,-6.72,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+250,CRST,2026-09-30,3.72,,,,,none,outcome NULL,7,stale_data
+340,CSAG,2026-09-30,37.53,-0.61,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+305,DGTZ,2026-09-30,2.31,,,,,none,outcome NULL,7,stale_data
+341,DOMT,2026-09-30,25.64,,,,,none,outcome NULL,7,stale_data
+279,DTPP,2026-09-30,326.01,-5.63,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+343,EEII,2026-09-30,2.33,-6.87,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+302,EFID,2026-09-30,29.5,-35.59,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+268,EGAL,2026-09-30,356.96,-4.19,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+345,EGCH,2026-09-30,14.2,-5.77,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+300,EGTS,2026-09-30,18.1,-7.18,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+276,ELEC,2026-09-30,1.93,-2.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+347,ENGC,2026-09-30,40.28,-8.14,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+351,FAIT,2026-09-30,46.31,-2.76,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+352,FNAR,2026-09-30,14.88,-6.05,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+355,GIHD,2026-09-30,76.49,-16.43,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+293,GMCI,2026-09-30,1.69,-1.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+356,GPIM,2026-09-30,1.6,,,,,none,outcome NULL,7,stale_data
+290,GRCA,2026-09-30,39.22,-4.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+281,GSSC,2026-09-30,290.91,-2.73,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+253,GTHE,2026-09-30,4.9,,,,,none,outcome NULL,7,stale_data
+310,GTWL,2026-09-30,224.99,-28.09,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+254,HELI,2026-09-30,7.82,-5.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+266,IBCT,2026-09-30,12.33,-8.03,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+267,ICFC,2026-09-30,22.21,3.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+275,IDRE,2026-09-30,51.5,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+291,INFI,2026-09-30,127.89,3.24,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+358,IRON,2026-09-30,28.14,8.07,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+359,ISMQ,2026-09-30,8.58,,,,,none,outcome NULL,7,stale_data
+255,JUFO,2026-09-30,25.98,-2.39,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+360,KWIN,2026-09-30,88.62,-12.32,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+361,KZPC,2026-09-30,13.9,-4.32,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+285,LKGP,2026-09-30,3.16,,,,,none,outcome NULL,7,stale_data
+363,MHOT,2026-09-30,18.89,-6.03,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+364,MICH,2026-09-30,48.38,-2.09,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+289,MOSC,2026-09-30,293.8,-5.68,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+317,MPCO,2026-09-30,2.57,-6.23,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+258,NARE,2026-09-30,17.58,,,,,none,outcome NULL,7,stale_data
+324,NCCW,2026-09-30,7.4,-5.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+368,NHPS,2026-09-30,77.71,-4.44,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+323,OBRI,2026-09-30,28.55,0.88,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+265,OCPH,2026-09-30,227.0,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+369,ODIN,2026-09-30,2.65,-3.77,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+370,OFH,2026-09-30,1.02,-12.55,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+286,OIH,2026-09-30,2.11,-11.85,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+372,ORHD,2026-09-30,40.67,-70.27,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+318,POUL,2026-09-30,38.2,-74.08,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+375,PRCL,2026-09-30,30.8,-16.36,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+326,RACC,2026-09-30,9.43,0.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+378,RAYA,2026-09-30,6.92,-5.92,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+292,RKAZ,2026-09-30,5.48,,,,,none,outcome NULL,7,stale_data
+321,RMDA,2026-09-30,5.77,,,,,none,outcome NULL,7,stale_data
+379,ROTO,2026-09-30,39.57,2.81,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+311,RTVC,2026-09-30,3.73,-1.88,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+248,SAUD,2026-09-30,23.29,-0.82,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+297,SMFR,2026-09-30,221.88,7.26,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+382,SNFI,2026-09-30,11.29,,,,,none,outcome NULL,7,stale_data
+309,SUCE,2026-09-30,144.0,,,,,none,outcome NULL,7,stale_data
+383,SWDY,2026-09-30,118.5,-1.65,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+306,UTOP,2026-09-30,106.5,-4.23,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+256,VERT,2026-09-30,6.01,1.0,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+298,WCDF,2026-09-30,688.9,-4.78,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+271,WKOL,2026-09-30,325.34,-8.71,,,,radar_accuracy_report.py,outcome SET + verified_at NULL,7,stale_data
+467,ACTF,2026-10-02,2.83,,,,,none,outcome NULL,5,stale_data
+427,AMER,2026-10-02,5.06,,,,,none,outcome NULL,5,stale_data
+472,AMII,2026-10-02,14.2,,,,,none,outcome NULL,5,stale_data
+443,APPC,2026-10-02,1.57,,,,,none,outcome NULL,5,stale_data
+473,ATQA,2026-10-02,12.61,,,,,none,outcome NULL,5,stale_data
+474,AXPH,2026-10-02,1670.0,,,,,none,outcome NULL,5,stale_data
+478,CPCI,2026-10-02,560.0,,,,,none,outcome NULL,5,stale_data
+389,CRST,2026-10-02,3.72,,,,,none,outcome NULL,5,stale_data
+444,DGTZ,2026-10-02,2.31,,,,,none,outcome NULL,5,stale_data
+418,DTPP,2026-10-02,326.01,,,,,none,outcome NULL,5,stale_data
+482,EEII,2026-10-02,2.33,,,,,none,outcome NULL,5,stale_data
+441,EFID,2026-10-02,29.5,,,,,none,outcome NULL,5,stale_data
+439,EGTS,2026-10-02,18.1,,,,,none,outcome NULL,5,stale_data
+422,EHDR,2026-10-02,2.68,,,,,none,outcome NULL,5,stale_data
+486,ENGC,2026-10-02,40.28,,,,,none,outcome NULL,5,stale_data
+494,GIHD,2026-10-02,76.49,,,,,none,outcome NULL,5,stale_data
+495,GPIM,2026-10-02,1.6,,,,,none,outcome NULL,5,stale_data
+429,GRCA,2026-10-02,39.22,,,,,none,outcome NULL,5,stale_data
+420,GSSC,2026-10-02,290.91,,,,,none,outcome NULL,5,stale_data
+392,GTHE,2026-10-02,4.9,,,,,none,outcome NULL,5,stale_data
+449,GTWL,2026-10-02,224.99,,,,,none,outcome NULL,5,stale_data
+405,IBCT,2026-10-02,12.33,,,,,none,outcome NULL,5,stale_data
+497,IRON,2026-10-02,28.14,,,,,none,outcome NULL,5,stale_data
+498,ISMQ,2026-10-02,8.58,,,,,none,outcome NULL,5,stale_data
+499,KWIN,2026-10-02,88.62,,,,,none,outcome NULL,5,stale_data
+500,KZPC,2026-10-02,13.9,,,,,none,outcome NULL,5,stale_data
+424,LKGP,2026-10-02,3.16,,,,,none,outcome NULL,5,stale_data
+501,MFSC,2026-10-02,49.99,,,,,none,outcome NULL,5,stale_data
+502,MHOT,2026-10-02,18.89,,,,,none,outcome NULL,5,stale_data
+503,MICH,2026-10-02,48.38,,,,,none,outcome NULL,5,stale_data
+507,NHPS,2026-10-02,77.71,,,,,none,outcome NULL,5,stale_data
+462,OBRI,2026-10-02,28.55,,,,,none,outcome NULL,5,stale_data
+509,OFH,2026-10-02,1.02,,,,,none,outcome NULL,5,stale_data
+425,OIH,2026-10-02,2.11,,,,,none,outcome NULL,5,stale_data
+457,POUL,2026-10-02,38.2,,,,,none,outcome NULL,5,stale_data
+514,PRCL,2026-10-02,30.8,,,,,none,outcome NULL,5,stale_data
+431,RKAZ,2026-10-02,5.48,,,,,none,outcome NULL,5,stale_data
+460,RMDA,2026-10-02,5.77,,,,,none,outcome NULL,5,stale_data
+450,RTVC,2026-10-02,3.73,,,,,none,outcome NULL,5,stale_data
+519,SDTI,2026-10-02,79.99,,,,,none,outcome NULL,5,stale_data
+521,SNFI,2026-10-02,11.29,,,,,none,outcome NULL,5,stale_data
+448,SUCE,2026-10-02,144.0,,,,,none,outcome NULL,5,stale_data
+445,UTOP,2026-10-02,106.5,,,,,none,outcome NULL,5,stale_data
+395,VERT,2026-10-02,6.01,,,,,none,outcome NULL,5,stale_data
+410,WKOL,2026-10-02,325.34,,,,,none,outcome NULL,5,stale_data
+606,ACTF,2026-10-03,2.83,,,,,none,outcome NULL,4,stale_data
+566,AMER,2026-10-03,5.06,,,,,none,outcome NULL,4,stale_data
+611,AMII,2026-10-03,14.2,,,,,none,outcome NULL,4,stale_data
+582,APPC,2026-10-03,1.57,,,,,none,outcome NULL,4,stale_data
+612,ATQA,2026-10-03,12.61,,,,,none,outcome NULL,4,stale_data
+613,AXPH,2026-10-03,1670.0,,,,,none,outcome NULL,4,stale_data
+617,CPCI,2026-10-03,560.0,,,,,none,outcome NULL,4,stale_data
+528,CRST,2026-10-03,3.72,,,,,none,outcome NULL,4,stale_data
+583,DGTZ,2026-10-03,2.31,,,,,none,outcome NULL,4,stale_data
+557,DTPP,2026-10-03,326.01,,,,,none,outcome NULL,4,stale_data
+621,EEII,2026-10-03,2.33,,,,,none,outcome NULL,4,stale_data
+580,EFID,2026-10-03,29.5,,,,,none,outcome NULL,4,stale_data
+578,EGTS,2026-10-03,18.1,,,,,none,outcome NULL,4,stale_data
+561,EHDR,2026-10-03,2.68,,,,,none,outcome NULL,4,stale_data
+625,ENGC,2026-10-03,40.28,,,,,none,outcome NULL,4,stale_data
+633,GIHD,2026-10-03,76.49,,,,,none,outcome NULL,4,stale_data
+634,GPIM,2026-10-03,1.6,,,,,none,outcome NULL,4,stale_data
+568,GRCA,2026-10-03,39.22,,,,,none,outcome NULL,4,stale_data
+559,GSSC,2026-10-03,290.91,,,,,none,outcome NULL,4,stale_data
+531,GTHE,2026-10-03,4.9,,,,,none,outcome NULL,4,stale_data
+588,GTWL,2026-10-03,224.99,,,,,none,outcome NULL,4,stale_data
+544,IBCT,2026-10-03,12.33,,,,,none,outcome NULL,4,stale_data
+636,IRON,2026-10-03,28.14,,,,,none,outcome NULL,4,stale_data
+637,ISMQ,2026-10-03,8.58,,,,,none,outcome NULL,4,stale_data
+638,KWIN,2026-10-03,88.62,,,,,none,outcome NULL,4,stale_data
+639,KZPC,2026-10-03,13.9,,,,,none,outcome NULL,4,stale_data
+563,LKGP,2026-10-03,3.16,,,,,none,outcome NULL,4,stale_data
+640,MFSC,2026-10-03,49.99,,,,,none,outcome NULL,4,stale_data
+641,MHOT,2026-10-03,18.89,,,,,none,outcome NULL,4,stale_data
+642,MICH,2026-10-03,48.38,,,,,none,outcome NULL,4,stale_data
+646,NHPS,2026-10-03,77.71,,,,,none,outcome NULL,4,stale_data
+601,OBRI,2026-10-03,28.55,,,,,none,outcome NULL,4,stale_data
+648,OFH,2026-10-03,1.02,,,,,none,outcome NULL,4,stale_data
+564,OIH,2026-10-03,2.11,,,,,none,outcome NULL,4,stale_data
+596,POUL,2026-10-03,38.2,,,,,none,outcome NULL,4,stale_data
+653,PRCL,2026-10-03,30.8,,,,,none,outcome NULL,4,stale_data
+570,RKAZ,2026-10-03,5.48,,,,,none,outcome NULL,4,stale_data
+599,RMDA,2026-10-03,5.77,,,,,none,outcome NULL,4,stale_data
+589,RTVC,2026-10-03,3.73,,,,,none,outcome NULL,4,stale_data
+658,SDTI,2026-10-03,79.99,,,,,none,outcome NULL,4,stale_data
+660,SNFI,2026-10-03,11.29,,,,,none,outcome NULL,4,stale_data
+587,SUCE,2026-10-03,144.0,,,,,none,outcome NULL,4,stale_data
+584,UTOP,2026-10-03,106.5,,,,,none,outcome NULL,4,stale_data
+534,VERT,2026-10-03,6.01,,,,,none,outcome NULL,4,stale_data
+549,WKOL,2026-10-03,325.34,,,,,none,outcome NULL,4,stale_data
+745,ACTF,2026-10-04,2.83,,,,,none,outcome NULL,3,stale_data
+705,AMER,2026-10-04,5.06,,,,,none,outcome NULL,3,stale_data
+750,AMII,2026-10-04,14.2,,,,,none,outcome NULL,3,stale_data
+721,APPC,2026-10-04,1.57,,,,,none,outcome NULL,3,stale_data
+751,ATQA,2026-10-04,12.61,,,,,none,outcome NULL,3,stale_data
+752,AXPH,2026-10-04,1670.0,,,,,none,outcome NULL,3,stale_data
+689,BINV,2026-10-04,57.0,,,,,none,outcome NULL,3,stale_data
+756,CPCI,2026-10-04,560.0,,,,,none,outcome NULL,3,stale_data
+731,CPME,2026-10-04,35.0,,,,,none,outcome NULL,3,stale_data
+667,CRST,2026-10-04,3.72,,,,,none,outcome NULL,3,stale_data
+696,DTPP,2026-10-04,326.01,,,,,none,outcome NULL,3,stale_data
+760,EEII,2026-10-04,2.33,,,,,none,outcome NULL,3,stale_data
+719,EFID,2026-10-04,29.5,,,,,none,outcome NULL,3,stale_data
+717,EGTS,2026-10-04,18.1,,,,,none,outcome NULL,3,stale_data
+700,EHDR,2026-10-04,2.68,,,,,none,outcome NULL,3,stale_data
+764,ENGC,2026-10-04,40.28,,,,,none,outcome NULL,3,stale_data
+766,ETEL,2026-10-04,135.99,,,,,none,outcome NULL,3,stale_data
+771,GBCO,2026-10-04,30.62,,,,,none,outcome NULL,3,stale_data
+772,GIHD,2026-10-04,76.49,,,,,none,outcome NULL,3,stale_data
+773,GPIM,2026-10-04,1.6,,,,,none,outcome NULL,3,stale_data
+670,GTHE,2026-10-04,4.9,,,,,none,outcome NULL,3,stale_data
+727,GTWL,2026-10-04,224.99,,,,,none,outcome NULL,3,stale_data
+671,HELI,2026-10-04,7.82,,,,,none,outcome NULL,3,stale_data
+774,HRHO,2026-10-04,24.3,,,,,none,outcome NULL,3,stale_data
+683,IBCT,2026-10-04,12.33,,,,,none,outcome NULL,3,stale_data
+777,KWIN,2026-10-04,88.62,,,,,none,outcome NULL,3,stale_data
+778,KZPC,2026-10-04,13.9,,,,,none,outcome NULL,3,stale_data
+702,LKGP,2026-10-04,3.16,,,,,none,outcome NULL,3,stale_data
+686,MENA,2026-10-04,6.5,,,,,none,outcome NULL,3,stale_data
+779,MFSC,2026-10-04,49.99,,,,,none,outcome NULL,3,stale_data
+780,MHOT,2026-10-04,18.89,,,,,none,outcome NULL,3,stale_data
+787,OFH,2026-10-04,1.02,,,,,none,outcome NULL,3,stale_data
+703,OIH,2026-10-04,2.11,,,,,none,outcome NULL,3,stale_data
+735,POUL,2026-10-04,38.2,,,,,none,outcome NULL,3,stale_data
+792,PRCL,2026-10-04,30.8,,,,,none,outcome NULL,3,stale_data
+709,RKAZ,2026-10-04,5.48,,,,,none,outcome NULL,3,stale_data
+799,SNFI,2026-10-04,11.29,,,,,none,outcome NULL,3,stale_data
+726,SUCE,2026-10-04,144.0,,,,,none,outcome NULL,3,stale_data
+803,VALU,2026-10-04,10.67,,,,,none,outcome NULL,3,stale_data
+688,WKOL,2026-10-04,325.34,,,,,none,outcome NULL,3,stale_data

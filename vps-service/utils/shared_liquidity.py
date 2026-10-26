@@ -132,13 +132,22 @@ def has_volume_surge(
     Returns:
         (True/False, reason)
     """
-    if not volumes or len(volumes) < base_lookback:
-        return False, f'بيانات حجم غير كافية ({len(volumes) if volumes else 0} < {base_lookback})'
+    # BRAVO-FIX-F3-v2 (2026-10-25): non-overlapping baseline, NO fallback.
+    required_len = surge_lookback + base_lookback
+    if not volumes or len(volumes) < required_len:
+        return False, (
+            f'بيانات حجم غير كافية للـ non-overlap ({len(volumes) if volumes else 0} < {required_len}) '
+            f'— مطلوب {surge_lookback} (recent) + {base_lookback} (base) = {required_len} جلسة'
+        )
 
     recent_vol = volumes[-surge_lookback:]
     recent_avg = sum(recent_vol) / len(recent_vol)
-    base_vol = volumes[-base_lookback:]
-    base_avg = sum(base_vol) / len(base_vol)
+    base_vol = volumes[-(surge_lookback + base_lookback):-surge_lookback]
+    if len(base_vol) < base_lookback:
+        return False, (
+            f'base_vol أقصر من المطلوب ({len(base_vol)} < {base_lookback}) — رفض لمنع الانحياز'
+        )
+    base_avg = sum(base_vol) / len(base_vol) if base_vol else 0
 
     if base_avg <= 0:
         return False, 'متوسط الحجم = 0'

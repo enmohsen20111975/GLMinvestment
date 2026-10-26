@@ -117,6 +117,11 @@ async function fetchPricesAfter(
         db.close();
         continue;
       }
+      // C2 FIX: check if table has market column, add EGX filter to prevent
+      // cross-market contamination (US-tagged rows for EGX tickers).
+      const tableInfo = db.prepare(`PRAGMA table_info(${src.table})`).all() as any[];
+      const hasMarketCol = tableInfo.some((c: any) => c.name === 'market');
+      const marketClause = hasMarketCol ? `AND market = 'EGX'` : '';
       const rows = db
         .prepare(
           `SELECT ${src.dateCol} AS d, ${src.closeCol} AS c,
@@ -126,6 +131,7 @@ async function fetchPricesAfter(
              AND ${src.dateCol} > ?
              AND ${src.closeCol} IS NOT NULL
              AND ${src.closeCol} > 0
+             ${marketClause}
            ORDER BY ${src.dateCol} ASC
            LIMIT ?`
         )

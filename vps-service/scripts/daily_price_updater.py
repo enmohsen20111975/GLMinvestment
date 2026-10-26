@@ -161,11 +161,14 @@ class PriceUpdater:
                         ''', (_close, _op, _hi, _lo, _vol, chg, ticker, today))
 
                         if result.rowcount == 0:
+                            # BRAVO-FIX-C2 (2026-10-26): resolve market via get_market_for_ticker
+                            # before INSERT to prevent DEFAULT contamination.
+                            _market = get_market_for_ticker(ticker, db_path=STOCKS_DB)
                             conn.execute('''
                                 INSERT INTO stock_daily_prices
-                                (ticker, price_date, open, high, low, close, volume, change_percent)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                            ''', (ticker, today, _op, _hi, _lo, _close, _vol, chg))
+                                (ticker, price_date, open, high, low, close, volume, change_percent, market)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', (ticker, today, _op, _hi, _lo, _close, _vol, chg, _market))
                         updated_sdp += 1
                     except Exception as e:
                         logger.warning(f"[PriceUpdater] sdp error for {ticker}: {e}")

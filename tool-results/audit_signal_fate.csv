@@ -1,0 +1,1330 @@
+id,ticker,signal_date,signal_type,entry_price,fate,reason,stored_7d,recomputed_7d,diff,changed,flip,source,nth_date,status
+41,ABUK,2026-09-28,quiet_accumulation_strong,90.5,eligible_compared,,-4.0,-0.5525,3.4475,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+53,ACGC,2026-09-28,quiet_accumulation_strong,14.28,eligible_compared,,2.24,0.3501,1.8899,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-07,stale_data
+1,ACTF,2026-09-28,explosive_surge,2.83,eligible_compared,,-7.420494699646642,-7.0671,0.3534,no,,data_engine.db::historical_data,2026-10-08,stale_data
+66,ADCI,2026-09-28,pre_surge,284.0,eligible_compared,,-3.87,-3.8908,0.0208,no,,data_engine.db::historical_data,2026-10-07,stale_data
+40,ADIB,2026-09-28,quiet_accumulation_strong,51.0,eligible_compared,,-3.71,-6.2745,2.5645,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+55,ADPC,2026-09-28,quiet_accumulation_strong,3.75,eligible_compared,,-4.27,-5.8667,1.5967,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+46,AFDI,2026-09-28,quiet_accumulation_strong,52.03,eligible_compared,,2.83,3.9016,1.0716,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+67,AIFI,2026-09-28,pre_surge,2.33,eligible_compared,,-6.866952789699576,-4.721,2.1459,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+68,AJWA,2026-09-28,pre_surge,181.5,eligible_compared,,4.81,8.0771,3.2671,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+11,ALCN,2026-09-28,quiet_accumulation_strong,33.5,eligible_compared,,4.69,0.1493,4.5407,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-07,stale_data
+54,APSW,2026-09-28,quiet_accumulation_strong,8.21,eligible_compared,,4.26,3.1669,1.0931,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+24,ARVA,2026-09-28,quiet_accumulation_strong,11.08,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-08,stale_data
+69,ATQA,2026-09-28,pre_surge,12.61,eligible_compared,,-4.76,-2.8549,1.9051,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+17,AXPH,2026-09-28,quiet_accumulation_strong,1670.0,eligible_compared,,-8.64,-99.9401,91.3001,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+49,BTFH,2026-09-28,quiet_accumulation_strong,2.82,eligible_compared,,-0.35,-1.773,1.423,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+28,CCRS,2026-09-28,quiet_accumulation_strong,2.53,eligible_compared,,-6.72,-8.3004,1.5804,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+3,CIEB,2026-09-28,quiet_accumulation_strong,24.07,eligible_compared,,1.79,-0.2908,2.0808,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-07,stale_data
+43,CLHO,2026-09-28,quiet_accumulation_strong,15.5,eligible_compared,,0.0,-0.9677,0.9677,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+25,CPCI,2026-09-28,quiet_accumulation_strong,560.0,eligible_compared,,7.86,7.1429,0.7171,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+21,CRST,2026-09-28,quiet_accumulation_strong,3.72,eligible_compared,,-15.591397849462366,-16.6667,1.0753,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+37,CSAG,2026-09-28,quiet_accumulation_strong,37.53,eligible_compared,,-1.41,-2.1316,0.7216,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+62,DSCW,2026-09-28,quiet_accumulation_strong,1.73,eligible_compared,,-1.16,-1.7341,0.5741,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+14,DTPP,2026-09-28,quiet_accumulation_strong,326.01,eligible_compared,,-10.21,-6.4446,3.7654,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+70,ECAP,2026-09-28,pre_surge,31.48,eligible_compared,,-3.37,-4.3837,1.0137,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+71,EEII,2026-09-28,pre_surge,2.33,eligible_compared,,-7.73,-8.5837,0.8537,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+50,EFID,2026-09-28,quiet_accumulation_strong,29.5,eligible_compared,,-35.8,-35.3559,0.4441,no,,data_engine.db::historical_data,2026-10-07,stale_data
+64,EGAL,2026-09-28,quiet_accumulation_strong,356.96,eligible_compared,,-3.07,-4.9193,1.8493,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+8,EGAS,2026-09-28,quiet_accumulation_strong,55.01,eligible_compared,,3.67,2.0724,1.5976,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+72,EGCH,2026-09-28,pre_surge,14.2,eligible_compared,,-5.63,-5.9155,0.2855,no,,data_engine.db::historical_data,2026-10-07,stale_data
+48,EGTS,2026-09-28,quiet_accumulation_strong,18.1,eligible_compared,,-7.18,-9.6685,2.4885,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+19,EHDR,2026-09-28,quiet_accumulation_strong,2.68,eligible_compared,,-5.97,-5.2239,0.7461,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+12,ELEC,2026-09-28,quiet_accumulation_strong,1.93,eligible_compared,,-1.04,-3.1088,2.0688,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+73,ELNA,2026-09-28,pre_surge,34.37,eligible_compared,,0.23,-0.0582,0.2882,no,,data_engine.db::historical_data,2026-10-07,stale_data
+22,ENGC,2026-09-28,quiet_accumulation_strong,40.28,eligible_compared,,-7.82,-8.143,0.323,no,,data_engine.db::historical_data,2026-10-07,stale_data
+74,EOSB,2026-09-28,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-07,stale_data
+13,ETEL,2026-09-28,quiet_accumulation_strong,135.99,eligible_compared,,11.04,8.8315,2.2085,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+75,EXPA,2026-09-28,pre_surge,21.75,eligible_compared,,-2.16,-27.2644,25.1044,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+60,FAIT,2026-09-28,quiet_accumulation_strong,46.31,eligible_compared,,-2.33,-1.5547,0.7753,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+51,FCMD,2026-09-28,quiet_accumulation_strong,7.3,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-08,stale_data
+45,FERC,2026-09-28,quiet_accumulation_strong,76.88,eligible_compared,,-0.55,-1.0146,0.4646,no,,data_engine.db::historical_data,2026-10-07,stale_data
+57,FWRY,2026-09-28,quiet_accumulation_strong,18.75,eligible_compared,,0.53,1.6533,1.1233,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+76,GBCO,2026-09-28,pre_surge,30.62,eligible_compared,,3.7883736120182894,1.2737,2.5147,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+16,GSSC,2026-09-28,quiet_accumulation_strong,290.91,eligible_compared,,-2.21,-2.0694,0.1406,no,,data_engine.db::historical_data,2026-10-07,stale_data
+29,GTHE,2026-09-28,quiet_accumulation_strong,4.9,eligible_compared,,-10.0,-10.0,0.0,no,,data_engine.db::historical_data,2026-10-07,stale_data
+36,HDBK,2026-09-28,quiet_accumulation_strong,109.48,eligible_compared,,0.95,-1.5437,2.4937,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-07,stale_data
+30,HELI,2026-09-28,quiet_accumulation_strong,7.82,eligible_compared,,-4.22,-4.2199,0.0001,no,,data_engine.db::historical_data,2026-10-07,stale_data
+77,HRHO,2026-09-28,pre_surge,24.3,eligible_compared,,7.2,9.3416,2.1416,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+61,ICFC,2026-09-28,quiet_accumulation_strong,22.21,eligible_compared,,4.41,4.4575,0.0475,no,,data_engine.db::historical_data,2026-10-07,stale_data
+10,IDRE,2026-09-28,quiet_accumulation_strong,51.5,eligible_compared,,-2.87,-2.7184,0.1516,no,,data_engine.db::historical_data,2026-10-07,stale_data
+58,IFAP,2026-09-28,quiet_accumulation_strong,20.06,eligible_compared,,-1.94,-3.2901,1.3501,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+39,INFI,2026-09-28,quiet_accumulation_strong,127.89,eligible_compared,,-2.21,0.9774,3.1874,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-07,stale_data
+44,IRON,2026-09-28,quiet_accumulation_strong,28.14,eligible_compared,,3.98,5.8635,1.8835,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+78,ISMQ,2026-09-28,pre_surge,8.58,eligible_compared,,-4.079254079254075,-3.8462,0.2331,no,,data_engine.db::historical_data,2026-10-08,stale_data
+32,JUFO,2026-09-28,quiet_accumulation_strong,25.98,eligible_compared,,-0.27,-3.7721,3.5021,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+79,KWIN,2026-09-28,pre_surge,88.62,eligible_compared,,-11.18,-13.3943,2.2143,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+26,LKGP,2026-09-28,quiet_accumulation_strong,3.16,eligible_compared,,1.2658227848101276,-2.2152,3.481,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+65,MENA,2026-09-28,quiet_accumulation_strong,6.5,eligible_compared,,2.77,1884.6154,1881.8454,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+38,MFPC,2026-09-28,quiet_accumulation_strong,47.0,eligible_compared,,-1.28,-1.0638,0.2162,no,,data_engine.db::historical_data,2026-10-07,stale_data
+23,MHOT,2026-09-28,quiet_accumulation_strong,18.89,eligible_compared,,-7.94,-7.9407,0.0007,no,,data_engine.db::historical_data,2026-10-07,stale_data
+80,MICH,2026-09-28,pre_surge,48.38,eligible_compared,,-4.73,-2.7697,1.9603,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+63,MOIN,2026-09-28,quiet_accumulation_strong,34.16,eligible_compared,,4.54,3.8934,0.6466,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+35,MOSC,2026-09-28,quiet_accumulation_strong,293.8,eligible_compared,,-3.1,-5.1566,2.0566,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+81,MPRC,2026-09-28,pre_surge,38.99,eligible_compared,,3.87,3.1803,0.6897,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+82,NEDA,2026-09-28,pre_surge,2.68,eligible_compared,,-2.24,-1.1194,1.1206,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+31,NPCO,2026-09-28,quiet_accumulation_strong,25.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-08,stale_data
+18,OFH,2026-09-28,quiet_accumulation_strong,1.02,eligible_compared,,-10.78,-13.5294,2.7494,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+27,OIH,2026-09-28,quiet_accumulation_strong,2.11,eligible_compared,,-10.43,-10.9005,0.4705,no,,data_engine.db::historical_data,2026-10-07,stale_data
+83,OLFI,2026-09-28,pre_surge,22.45,eligible_compared,,-6.10244988864143,-6.0579,0.0445,no,,data_engine.db::historical_data,2026-10-08,stale_data
+6,ORAS,2026-09-28,quiet_accumulation_strong,824.0,eligible_compared,,0.11,6.4345,6.3245,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-07,stale_data
+33,ORHD,2026-09-28,quiet_accumulation_strong,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),-5.34,,,,,,,stale_data
+56,ORWE,2026-09-28,quiet_accumulation_strong,26.99,eligible_compared,,1.67,0.5558,1.1142,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+84,PHDC,2026-09-28,pre_surge,13.5,eligible_compared,,-1.85,-4.2222,2.3722,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+7,QNBE,2026-09-28,quiet_accumulation_strong,60.0,eligible_compared,,-1.2166666666666615,-2.9,1.6833,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+85,RAKT,2026-09-28,pre_surge,22.08,eligible_compared,,3.13,8.1975,5.0675,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+86,RAYA,2026-09-28,pre_surge,6.92,eligible_compared,,-4.19,-4.6243,0.4343,no,,data_engine.db::historical_data,2026-10-07,stale_data
+42,RKAZ,2026-09-28,quiet_accumulation_strong,5.48,eligible_compared,,-8.759124087591248,-9.4891,0.7299,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+9,SAUD,2026-09-28,quiet_accumulation_strong,23.29,eligible_compared,,0.0,-0.7299,0.7299,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+20,SDTI,2026-09-28,quiet_accumulation_strong,79.99,eligible_compared,,4.71,8.7636,4.0536,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+87,SNFC,2026-09-28,pre_surge,11.55,eligible_compared,,0.52,0.7792,0.2592,no,,data_engine.db::historical_data,2026-10-07,stale_data
+88,SNFI,2026-09-28,pre_surge,11.29,eligible_compared,,-7.52878653675819,-4.9601,2.5686,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+2,TAQA,2026-09-28,explosive_surge,17.12,eligible_compared,,0.11682242990653956,-0.1168,0.2336,no,,data_engine.db::historical_data,2026-10-08,stale_data
+15,TORA,2026-09-28,quiet_accumulation_strong,61.0,eligible_compared,,10.02,3.3115,6.7085,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+4,UPMS,2026-09-28,quiet_accumulation_strong,10.17,eligible_compared,,1.5732546705998047,5.2114,3.6382,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+52,UTOP,2026-09-28,quiet_accumulation_strong,106.5,eligible_compared,,-2.63,-4.6948,2.0648,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+5,VALU,2026-09-28,quiet_accumulation_strong,10.67,eligible_compared,,7.591377694470483,5.3421,2.2493,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+34,VERT,2026-09-28,quiet_accumulation_strong,6.01,eligible_compared,,-3.83,0.9983,4.8283,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-07,stale_data
+59,VLMRA,2026-09-28,quiet_accumulation_strong,30.25,eligible_compared,,-3.64,-5.3884,1.7484,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+47,WCDF,2026-09-28,quiet_accumulation_strong,688.9,eligible_compared,,-4.93,-3.7625,1.1675,YES,,data_engine.db::historical_data,2026-10-07,stale_data
+129,ABUK,2026-09-29,quiet_accumulation_strong,90.5,eligible_compared,,-3.87,-0.5525,3.3175,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+141,ACGC,2026-09-29,quiet_accumulation_strong,14.28,eligible_compared,,1.54,0.3501,1.1899,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+89,ACTF,2026-09-29,explosive_surge,2.83,eligible_no_stored,no stored outcome_7d to compare,,-8.1272,,,,,,stale_data
+154,ADCI,2026-09-29,pre_surge,284.0,eligible_compared,,-4.86,-3.8908,0.9692,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+128,ADIB,2026-09-29,quiet_accumulation_strong,51.0,eligible_compared,,-5.39,-6.2745,0.8845,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+143,ADPC,2026-09-29,quiet_accumulation_strong,3.75,eligible_compared,,-4.0,-5.8667,1.8667,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+134,AFDI,2026-09-29,quiet_accumulation_strong,52.03,eligible_compared,,3.56,3.9016,0.3416,no,,data_engine.db::historical_data,2026-10-08,stale_data
+155,AIFI,2026-09-29,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-9.4421,,,,,,stale_data
+156,AJWA,2026-09-29,pre_surge,181.5,eligible_compared,,6.94,8.0771,1.1371,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+99,ALCN,2026-09-29,quiet_accumulation_strong,33.5,eligible_compared,,3.94,0.1493,3.7907,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+196,ALUM,2026-09-29,quiet_accumulation_strong,24.01,eligible_compared,,-0.67,-1.9992,1.3292,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+187,AMER,2026-09-29,quiet_accumulation_strong,5.06,eligible_compared,,0.0,-0.5929,0.5929,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+214,AMII,2026-09-29,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-17.1127,,,,,,stale_data
+206,AMOC,2026-09-29,quiet_accumulation_strong,13.4,eligible_compared,,5.45,8.0597,2.6097,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+194,APPC,2026-09-29,quiet_accumulation_strong,1.57,eligible_compared,,4.46,8.9172,4.4572,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+142,APSW,2026-09-29,quiet_accumulation_strong,8.21,eligible_compared,,4.14,3.1669,0.9731,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+112,ARVA,2026-09-29,quiet_accumulation_strong,11.08,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,stale_data
+157,ATQA,2026-09-29,pre_surge,12.61,eligible_compared,,-4.84,-2.8549,1.9851,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+105,AXPH,2026-09-29,quiet_accumulation_strong,1670.0,eligible_compared,,-9.58,-99.9401,90.3601,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+182,BINV,2026-09-29,quiet_accumulation_strong,57.0,eligible_no_stored,no stored outcome_7d to compare,,1.7193,,,,,,stale_data
+204,BONY,2026-09-29,quiet_accumulation_strong,4.19,eligible_compared,,-2.39,4.0573,6.4473,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+137,BTFH,2026-09-29,quiet_accumulation_strong,2.82,eligible_compared,,-1.42,-1.773,0.353,no,,data_engine.db::historical_data,2026-10-08,stale_data
+184,CANA,2026-09-29,quiet_accumulation_strong,47.49,eligible_compared,,-4.19,-5.3906,1.2006,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+216,CCAP,2026-09-29,pre_surge,7.09,eligible_compared,,-6.77,-6.6291,0.1409,no,,data_engine.db::historical_data,2026-10-08,stale_data
+116,CCRS,2026-09-29,quiet_accumulation_strong,2.53,eligible_compared,,-7.11,-8.3004,1.1904,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+217,CEFM,2026-09-29,pre_surge,139.21,eligible_compared,,1.65,-1.0129,2.6629,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+190,CICH,2026-09-29,quiet_accumulation_strong,11.98,eligible_compared,,0.67,1.0017,0.3317,no,,data_engine.db::historical_data,2026-10-08,stale_data
+91,CIEB,2026-09-29,quiet_accumulation_strong,24.07,eligible_compared,,0.96,-0.2908,1.2508,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+203,CIRA,2026-09-29,quiet_accumulation_strong,39.07,eligible_no_stored,no stored outcome_7d to compare,,-3.9416,,,,,,stale_data
+131,CLHO,2026-09-29,quiet_accumulation_strong,15.5,eligible_no_stored,no stored outcome_7d to compare,,-3.2903,,,,,,stale_data
+218,COMI,2026-09-29,pre_surge,128.2,eligible_compared,,-1.94,-2.7691,0.8291,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+113,CPCI,2026-09-29,quiet_accumulation_strong,560.0,eligible_compared,,7.22,7.1429,0.0771,no,,data_engine.db::historical_data,2026-10-08,stale_data
+200,CPME,2026-09-29,quiet_accumulation_strong,35.0,eligible_no_stored,no stored outcome_7d to compare,,31.4286,,,,,,stale_data
+109,CRST,2026-09-29,quiet_accumulation_strong,3.72,eligible_no_stored,no stored outcome_7d to compare,,-13.4409,,,,,,stale_data
+125,CSAG,2026-09-29,quiet_accumulation_strong,37.53,eligible_compared,,-1.41,-2.1316,0.7216,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+195,DGTZ,2026-09-29,quiet_accumulation_strong,2.31,eligible_no_stored,no stored outcome_7d to compare,,-6.0606,,,,,,stale_data
+221,DOMT,2026-09-29,pre_surge,25.64,eligible_no_stored,no stored outcome_7d to compare,,-6.9033,,,,,,stale_data
+150,DSCW,2026-09-29,quiet_accumulation_strong,1.73,eligible_compared,,-1.73,-1.7341,0.0041,no,,data_engine.db::historical_data,2026-10-08,stale_data
+102,DTPP,2026-09-29,quiet_accumulation_strong,326.01,eligible_compared,,-3.07,-6.4446,3.3746,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+158,ECAP,2026-09-29,pre_surge,31.48,eligible_compared,,-3.11,-4.3837,1.2737,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+159,EEII,2026-09-29,pre_surge,2.33,eligible_compared,,-6.87,-8.5837,1.7137,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+138,EFID,2026-09-29,quiet_accumulation_strong,29.5,eligible_compared,,-36.0,-35.3559,0.6441,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+222,EFIH,2026-09-29,pre_surge,22.98,eligible_compared,,7.27,9.7911,2.5211,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+152,EGAL,2026-09-29,quiet_accumulation_strong,356.96,eligible_compared,,-3.49,-4.9193,1.4293,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+96,EGAS,2026-09-29,quiet_accumulation_strong,55.01,eligible_compared,,2.69,2.0724,0.6176,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+160,EGCH,2026-09-29,pre_surge,14.2,eligible_compared,,-6.34,-5.9155,0.4245,no,,data_engine.db::historical_data,2026-10-08,stale_data
+136,EGTS,2026-09-29,quiet_accumulation_strong,18.1,eligible_compared,,-6.85,-9.6685,2.8185,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+107,EHDR,2026-09-29,quiet_accumulation_strong,2.68,eligible_compared,,-4.1,-5.597,1.497,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+100,ELEC,2026-09-29,quiet_accumulation_strong,1.93,eligible_compared,,-2.07,-3.1088,1.0388,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+161,ELNA,2026-09-29,pre_surge,34.37,eligible_compared,,-0.2,-0.0582,0.1418,no,,data_engine.db::historical_data,2026-10-08,stale_data
+110,ENGC,2026-09-29,quiet_accumulation_strong,40.28,eligible_compared,,-7.72,-8.143,0.423,no,,data_engine.db::historical_data,2026-10-08,stale_data
+162,EOSB,2026-09-29,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-08,stale_data
+101,ETEL,2026-09-29,quiet_accumulation_strong,135.99,eligible_compared,,8.83,8.8315,0.0015,no,,data_engine.db::historical_data,2026-10-08,stale_data
+163,EXPA,2026-09-29,pre_surge,21.75,eligible_compared,,-2.76,-27.2644,24.5044,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+148,FAIT,2026-09-29,quiet_accumulation_strong,46.31,eligible_compared,,-2.4,-1.5547,0.8453,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+139,FCMD,2026-09-29,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,stale_data
+133,FERC,2026-09-29,quiet_accumulation_strong,76.88,eligible_compared,,-0.69,-1.0146,0.3246,no,,data_engine.db::historical_data,2026-10-08,stale_data
+226,FNAR,2026-09-29,pre_surge,14.88,eligible_compared,,-4.3,-6.1156,1.8156,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+145,FWRY,2026-09-29,quiet_accumulation_strong,18.75,eligible_compared,,0.8,1.6533,0.8533,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+164,GBCO,2026-09-29,pre_surge,30.62,eligible_no_stored,no stored outcome_7d to compare,,-0.6532,,,,,,stale_data
+228,GIHD,2026-09-29,pre_surge,76.49,eligible_compared,,-14.24,-18.4992,4.2592,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+189,GMCI,2026-09-29,quiet_accumulation_strong,1.69,eligible_compared,,-1.78,-2.9586,1.1786,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+229,GPIM,2026-09-29,pre_surge,1.6,eligible_no_stored,no stored outcome_7d to compare,,17.5,,,,,,stale_data
+188,GRCA,2026-09-29,quiet_accumulation_strong,39.22,eligible_compared,,-3.11,-3.8756,0.7656,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+104,GSSC,2026-09-29,quiet_accumulation_strong,290.91,eligible_compared,,-4.92,-2.0694,2.8506,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+117,GTHE,2026-09-29,quiet_accumulation_strong,4.9,eligible_compared,,-10.0,-10.0,0.0,no,,data_engine.db::historical_data,2026-10-08,stale_data
+198,GTWL,2026-09-29,quiet_accumulation_strong,224.99,eligible_compared,,-26.97,-28.8857,1.9157,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+124,HDBK,2026-09-29,quiet_accumulation_strong,109.48,eligible_compared,,-1.35,-1.5437,0.1937,no,,data_engine.db::historical_data,2026-10-08,stale_data
+118,HELI,2026-09-29,quiet_accumulation_strong,7.82,eligible_compared,,-5.12,-4.2199,0.9001,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+165,HRHO,2026-09-29,pre_surge,24.3,eligible_compared,,10.0,9.3416,0.6584,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+180,IBCT,2026-09-29,quiet_accumulation_strong,12.33,eligible_compared,,-7.3,-7.867,0.567,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+149,ICFC,2026-09-29,quiet_accumulation_strong,22.21,eligible_compared,,4.46,4.4575,0.0025,no,,data_engine.db::historical_data,2026-10-08,stale_data
+98,IDRE,2026-09-29,quiet_accumulation_strong,51.5,eligible_compared,,0.97,-2.7184,3.6884,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-08,stale_data
+146,IFAP,2026-09-29,quiet_accumulation_strong,20.06,eligible_compared,,-2.94,-3.2901,0.3501,no,,data_engine.db::historical_data,2026-10-08,stale_data
+127,INFI,2026-09-29,quiet_accumulation_strong,127.89,eligible_compared,,3.22,0.9774,2.2426,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+132,IRON,2026-09-29,quiet_accumulation_strong,28.14,eligible_compared,,9.17,5.8635,3.3065,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+166,ISMQ,2026-09-29,pre_surge,8.58,eligible_no_stored,no stored outcome_7d to compare,,-4.8951,,,,,,stale_data
+177,ISPH,2026-09-29,quiet_accumulation_strong,11.67,eligible_compared,,-0.69,0.2571,0.9471,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+120,JUFO,2026-09-29,quiet_accumulation_strong,25.98,eligible_compared,,-3.27,-3.7721,0.5021,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+167,KWIN,2026-09-29,pre_surge,88.62,eligible_compared,,-11.87,-13.3943,1.5243,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+231,KZPC,2026-09-29,pre_surge,13.9,eligible_compared,,-6.4,-5.2518,1.1482,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+114,LKGP,2026-09-29,quiet_accumulation_strong,3.16,eligible_no_stored,no stored outcome_7d to compare,,-2.2152,,,,,,stale_data
+153,MENA,2026-09-29,quiet_accumulation_strong,6.5,eligible_compared,,2.77,2023.0769,2020.3069,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+126,MFPC,2026-09-29,quiet_accumulation_strong,47.0,eligible_compared,,-1.96,-1.0638,0.8962,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+232,MFSC,2026-09-29,pre_surge,49.99,eligible_compared,,-9.22,-12.1624,2.9424,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+111,MHOT,2026-09-29,quiet_accumulation_strong,18.89,eligible_compared,,-7.62,-7.9407,0.3207,no,,data_engine.db::historical_data,2026-10-08,stale_data
+168,MICH,2026-09-29,pre_surge,48.38,eligible_compared,,-3.45,-2.7697,0.6803,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+185,MIPH,2026-09-29,quiet_accumulation_strong,809.92,eligible_compared,,-1.22,2.1089,3.3289,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+151,MOIN,2026-09-29,quiet_accumulation_strong,34.16,eligible_compared,,2.78,3.8934,1.1134,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+123,MOSC,2026-09-29,quiet_accumulation_strong,293.8,eligible_compared,,-3.5,-5.1566,1.6566,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+201,MPCO,2026-09-29,quiet_accumulation_strong,2.57,eligible_compared,,-5.06,-7.0039,1.9439,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+169,MPRC,2026-09-29,pre_surge,38.99,eligible_compared,,3.05,3.1803,0.1303,no,,data_engine.db::historical_data,2026-10-08,stale_data
+234,MTIE,2026-09-29,pre_surge,8.18,eligible_no_stored,no stored outcome_7d to compare,,-4.0342,,,,,,stale_data
+178,NARE,2026-09-29,quiet_accumulation_strong,17.58,eligible_no_stored,no stored outcome_7d to compare,,-4.0956,,,,,,stale_data
+208,NCCW,2026-09-29,quiet_accumulation_strong,7.4,eligible_compared,,-4.59,-5.1351,0.5451,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+170,NEDA,2026-09-29,pre_surge,2.68,eligible_compared,,-1.12,-1.1194,0.0006,no,,data_engine.db::historical_data,2026-10-08,stale_data
+235,NHPS,2026-09-29,pre_surge,77.71,eligible_compared,,-3.53,-5.6878,2.1578,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+193,NIPH,2026-09-29,quiet_accumulation_strong,325.51,eligible_compared,,-1.39,-3.0752,1.6852,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+119,NPCO,2026-09-29,quiet_accumulation_strong,25.0,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,stale_data
+207,OBRI,2026-09-29,quiet_accumulation_strong,28.55,eligible_compared,,-0.46,-0.6655,0.2055,no,,data_engine.db::historical_data,2026-10-08,stale_data
+179,OCPH,2026-09-29,quiet_accumulation_strong,227.0,eligible_compared,,0.01,-2.3392,2.3492,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+236,ODIN,2026-09-29,pre_surge,2.65,eligible_compared,,-3.4,-4.5283,1.1283,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+106,OFH,2026-09-29,quiet_accumulation_strong,1.02,eligible_compared,,-12.06,-13.5294,1.4694,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+115,OIH,2026-09-29,quiet_accumulation_strong,2.11,eligible_compared,,-11.85,-10.9005,0.9495,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+171,OLFI,2026-09-29,pre_surge,22.45,eligible_no_stored,no stored outcome_7d to compare,,-5.9688,,,,,,stale_data
+94,ORAS,2026-09-29,quiet_accumulation_strong,824.0,eligible_compared,,0.73,6.4345,5.7045,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+121,ORHD,2026-09-29,quiet_accumulation_strong,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),-4.65,,,,,,,stale_data
+144,ORWE,2026-09-29,quiet_accumulation_strong,26.99,eligible_compared,,0.41,0.5558,0.1458,no,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+186,PACH,2026-09-29,quiet_accumulation_strong,85.0,eligible_compared,,1.53,1.7647,0.2347,no,,data_engine.db::historical_data,2026-10-08,stale_data
+172,PHDC,2026-09-29,pre_surge,13.5,eligible_compared,,-4.07,-4.2222,0.1522,no,,data_engine.db::historical_data,2026-10-08,stale_data
+209,PHTV,2026-09-29,quiet_accumulation_strong,347.34,eligible_compared,,-3.26,-1.2495,2.0105,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+202,POUL,2026-09-29,quiet_accumulation_strong,38.2,eligible_compared,,-73.82,-73.8482,0.0282,no,,data_engine.db::historical_data,2026-10-08,stale_data
+240,PRCL,2026-09-29,pre_surge,30.8,eligible_compared,,-16.17,-16.8182,0.6482,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+95,QNBE,2026-09-29,quiet_accumulation_strong,60.0,eligible_no_stored,no stored outcome_7d to compare,,-2.4333,,,,,,stale_data
+210,RACC,2026-09-29,quiet_accumulation_strong,9.43,eligible_compared,,0.21,-1.1665,1.3765,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+173,RAKT,2026-09-29,pre_surge,22.08,eligible_compared,,8.24,8.1975,0.0425,no,,data_engine.db::historical_data,2026-10-08,stale_data
+174,RAYA,2026-09-29,pre_surge,6.92,eligible_compared,,-5.35,-4.6243,0.7257,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+130,RKAZ,2026-09-29,quiet_accumulation_strong,5.48,eligible_no_stored,no stored outcome_7d to compare,,-7.4818,,,,,,stale_data
+205,RMDA,2026-09-29,quiet_accumulation_strong,5.77,eligible_no_stored,no stored outcome_7d to compare,,-9.1854,,,,,,stale_data
+242,ROTO,2026-09-29,pre_surge,39.57,eligible_compared,,-0.68,3.26,3.94,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+192,RREI,2026-09-29,quiet_accumulation_strong,4.02,eligible_compared,,0.25,-2.7363,2.9863,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+199,RTVC,2026-09-29,quiet_accumulation_strong,3.73,eligible_compared,,-1.34,-1.3405,0.0005,no,,data_engine.db::historical_data,2026-10-08,stale_data
+97,SAUD,2026-09-29,quiet_accumulation_strong,23.29,eligible_compared,,-0.39,-0.7299,0.3399,no,,data_engine.db::historical_data,2026-10-08,stale_data
+108,SDTI,2026-09-29,quiet_accumulation_strong,79.99,eligible_compared,,5.01,8.7636,3.7536,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+191,SMFR,2026-09-29,quiet_accumulation_strong,221.88,eligible_compared,,5.46,4.6286,0.8314,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+175,SNFC,2026-09-29,pre_surge,11.55,eligible_compared,,-0.35,0.7792,1.1292,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+176,SNFI,2026-09-29,pre_surge,11.29,eligible_no_stored,no stored outcome_7d to compare,,-4.9601,,,,,,stale_data
+197,SUCE,2026-09-29,quiet_accumulation_strong,144.0,eligible_compared,,-1.39,7.5,8.89,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+244,SWDY,2026-09-29,pre_surge,118.5,eligible_compared,,0.43,-2.1097,2.5397,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+90,TAQA,2026-09-29,explosive_surge,17.12,eligible_no_stored,no stored outcome_7d to compare,,-4.1472,,,,,,stale_data
+103,TORA,2026-09-29,quiet_accumulation_strong,61.0,eligible_compared,,10.02,3.3115,6.7085,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+245,TWSA,2026-09-29,pre_surge,7.19,eligible_no_stored,no stored outcome_7d to compare,,12.7955,,,,,,stale_data
+92,UPMS,2026-09-29,quiet_accumulation_strong,10.17,eligible_no_stored,no stored outcome_7d to compare,,3.2448,,,,,,stale_data
+140,UTOP,2026-09-29,quiet_accumulation_strong,106.5,eligible_compared,,-6.2,-4.6948,1.5052,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+93,VALU,2026-09-29,quiet_accumulation_strong,10.67,eligible_no_stored,no stored outcome_7d to compare,,3.1865,,,,,,stale_data
+122,VERT,2026-09-29,quiet_accumulation_strong,6.01,eligible_compared,,-4.33,0.9983,5.3283,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-08,stale_data
+147,VLMRA,2026-09-29,quiet_accumulation_strong,30.25,eligible_compared,,-3.87,-5.3884,1.5184,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+135,WCDF,2026-09-29,quiet_accumulation_strong,688.9,eligible_compared,,-3.47,-3.7625,0.2925,no,,data_engine.db::historical_data,2026-10-08,stale_data
+181,WKOL,2026-09-29,quiet_accumulation_strong,325.34,eligible_compared,,-9.02,-9.6607,0.6407,YES,,data_engine.db::historical_data,2026-10-08,stale_data
+262,ABUK,2026-09-30,quiet_accumulation_strong,90.5,eligible_compared,,-3.31,-3.8011,0.4911,no,,data_engine.db::historical_data,2026-10-11,stale_data
+327,ACGC,2026-09-30,pre_surge,14.28,eligible_no_stored,no stored outcome_7d to compare,,-3.3613,,,,,,verified_loss
+328,ACTF,2026-09-30,pre_surge,2.83,eligible_no_stored,no stored outcome_7d to compare,,-10.2473,,,,,,stale_data
+329,ADCI,2026-09-30,pre_surge,284.0,eligible_compared,,-5.36,-5.2676,0.0924,no,,data_engine.db::historical_data,2026-10-11,stale_data
+261,ADIB,2026-09-30,quiet_accumulation_strong,51.0,eligible_no_stored,no stored outcome_7d to compare,,-8.6275,,,,,,verified_loss
+330,ADPC,2026-09-30,pre_surge,3.75,eligible_compared,,-4.53,-7.2,2.67,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+263,AFDI,2026-09-30,quiet_accumulation_strong,52.03,eligible_compared,,3.9015952335191257,1.8643,2.0373,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+331,AIFI,2026-09-30,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-9.8712,,,,,,verified_loss
+332,AJWA,2026-09-30,pre_surge,181.5,eligible_compared,,8.077134986225893,9.9449,1.8678,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+249,ALCN,2026-09-30,quiet_accumulation_strong,33.5,eligible_compared,,4.477611940298507,-1.194,5.6716,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,verified_win
+308,ALUM,2026-09-30,quiet_accumulation_strong,24.01,eligible_compared,,-2.12,-4.8313,2.7113,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+288,AMER,2026-09-30,quiet_accumulation_strong,5.06,eligible_compared,,-1.78,-1.581,0.199,no,,data_engine.db::historical_data,2026-10-11,stale_data
+333,AMII,2026-09-30,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-21.6901,,,,,,stale_data
+322,AMOC,2026-09-30,quiet_accumulation_strong,13.4,eligible_compared,,4.850746268656718,2.5373,2.3134,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+304,APPC,2026-09-30,quiet_accumulation_strong,1.57,eligible_no_stored,no stored outcome_7d to compare,,8.9172,,,,,,stale_data
+307,APSW,2026-09-30,quiet_accumulation_strong,8.21,eligible_compared,,3.166869671132762,0.3654,2.8015,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,verified_win
+284,ARVA,2026-09-30,quiet_accumulation_strong,11.08,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-12,pending
+334,ATQA,2026-09-30,pre_surge,12.61,eligible_compared,,-4.84,-5.7891,0.9491,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+335,AXPH,2026-09-30,pre_surge,1670.0,eligible_compared,,-9.76,-99.9401,90.1801,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+272,BINV,2026-09-30,quiet_accumulation_strong,57.0,eligible_compared,,4.8070175438596525,1.7544,3.0526,YES,,data_engine.db::historical_data,2026-10-12,verified_loss
+320,BONY,2026-09-30,quiet_accumulation_strong,4.19,eligible_compared,,3.58,2.864,0.716,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+264,BTFH,2026-09-30,quiet_accumulation_strong,2.82,eligible_no_stored,no stored outcome_7d to compare,,-4.2553,,,,,,verified_loss
+277,CANA,2026-09-30,quiet_accumulation_strong,47.49,eligible_no_stored,no stored outcome_7d to compare,,-9.4125,,,,,,verified_loss
+336,CCAP,2026-09-30,pre_surge,7.09,eligible_compared,,-7.19,-8.1805,0.9905,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+251,CCRS,2026-09-30,quiet_accumulation_strong,2.53,eligible_compared,,-6.72,-13.0435,6.3235,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+337,CEFM,2026-09-30,pre_surge,139.21,eligible_no_stored,no stored outcome_7d to compare,,-2.8518,,,,,,verified_loss
+295,CICH,2026-09-30,quiet_accumulation_strong,11.98,eligible_no_stored,no stored outcome_7d to compare,,-1.5025,,,,,,verified_loss
+257,CIEB,2026-09-30,quiet_accumulation_strong,24.07,eligible_no_stored,no stored outcome_7d to compare,,-1.5787,,,,,,verified_loss
+319,CIRA,2026-09-30,quiet_accumulation_strong,39.07,eligible_no_stored,no stored outcome_7d to compare,,-6.2708,,,,,,verified_loss
+294,CLHO,2026-09-30,quiet_accumulation_strong,15.5,eligible_compared,,3.5483870967741984,-6.2581,9.8065,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+338,COMI,2026-09-30,pre_surge,128.2,eligible_no_stored,no stored outcome_7d to compare,,-4.2902,,,,,,verified_loss
+339,CPCI,2026-09-30,pre_surge,560.0,eligible_compared,,6.96071428571429,6.4375,0.5232,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+314,CPME,2026-09-30,quiet_accumulation_strong,35.0,eligible_compared,,2.857142857142857,14.2857,11.4286,YES,,data_engine.db::historical_data,2026-10-12,verified_loss
+250,CRST,2026-09-30,quiet_accumulation_strong,3.72,eligible_no_stored,no stored outcome_7d to compare,,-19.8925,,,,,,stale_data
+340,CSAG,2026-09-30,pre_surge,37.53,eligible_compared,,-0.61,-2.025,1.415,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+305,DGTZ,2026-09-30,quiet_accumulation_strong,2.31,eligible_no_stored,no stored outcome_7d to compare,,-8.2251,,,,,,stale_data
+341,DOMT,2026-09-30,pre_surge,25.64,eligible_no_stored,no stored outcome_7d to compare,,-7.7223,,,,,,stale_data
+315,DSCW,2026-09-30,quiet_accumulation_strong,1.73,eligible_no_stored,no stored outcome_7d to compare,,-3.4682,,,,,,verified_loss
+279,DTPP,2026-09-30,quiet_accumulation_strong,326.01,eligible_compared,,-5.63,-12.9505,7.3205,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+342,ECAP,2026-09-30,pre_surge,31.48,eligible_no_stored,no stored outcome_7d to compare,,-5.1461,,,,,,verified_loss
+343,EEII,2026-09-30,pre_surge,2.33,eligible_compared,,-6.87,-10.3004,3.4304,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+302,EFID,2026-09-30,quiet_accumulation_strong,29.5,eligible_compared,,-35.59,-36.2373,0.6473,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+344,EFIH,2026-09-30,pre_surge,22.98,eligible_compared,,4.395126196692767,6.6144,2.2193,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+268,EGAL,2026-09-30,quiet_accumulation_strong,356.96,eligible_compared,,-4.19,-6.1351,1.9451,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+273,EGAS,2026-09-30,quiet_accumulation_strong,55.01,eligible_compared,,2.5813488456644276,0.0,2.5813,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,verified_loss
+345,EGCH,2026-09-30,pre_surge,14.2,eligible_compared,,-5.77,-7.5352,1.7652,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+300,EGTS,2026-09-30,quiet_accumulation_strong,18.1,eligible_compared,,-7.18,-11.547,4.367,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+283,EHDR,2026-09-30,quiet_accumulation_strong,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,verified_loss
+276,ELEC,2026-09-30,quiet_accumulation_strong,1.93,eligible_compared,,-2.07,-6.2176,4.1476,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+346,ELNA,2026-09-30,pre_surge,34.37,eligible_compared,,-2.64765784114052,-1.3675,1.2802,YES,,data_engine.db::historical_data,2026-10-11,pending
+347,ENGC,2026-09-30,pre_surge,40.28,eligible_compared,,-8.14,-10.6256,2.4856,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+348,EOSB,2026-09-30,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-11,pending
+349,ETEL,2026-09-30,pre_surge,135.99,eligible_compared,,10.36105595999706,6.6255,3.7356,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+350,EXPA,2026-09-30,pre_surge,21.75,eligible_no_stored,no stored outcome_7d to compare,,-29.6552,,,,,,verified_loss
+351,FAIT,2026-09-30,pre_surge,46.31,eligible_compared,,-2.76,-4.4483,1.6883,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+303,FCMD,2026-09-30,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+296,FERC,2026-09-30,quiet_accumulation_strong,76.88,eligible_no_stored,no stored outcome_7d to compare,,-3.0437,,,,,,verified_loss
+352,FNAR,2026-09-30,pre_surge,14.88,eligible_compared,,-6.05,-10.4167,4.3667,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+353,FWRY,2026-09-30,pre_surge,18.75,eligible_compared,,-0.693333333333328,-0.8,0.1067,no,,data_engine.db::historical_data,2026-10-11,pending
+354,GBCO,2026-09-30,pre_surge,30.62,eligible_compared,,6.139777922926188,-2.776,8.9157,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+355,GIHD,2026-09-30,pre_surge,76.49,eligible_compared,,-16.43,-21.4799,5.0499,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+293,GMCI,2026-09-30,quiet_accumulation_strong,1.69,eligible_compared,,-1.78,-2.3669,0.5869,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+356,GPIM,2026-09-30,pre_surge,1.6,eligible_no_stored,no stored outcome_7d to compare,,18.75,,,,,,stale_data
+290,GRCA,2026-09-30,quiet_accumulation_strong,39.22,eligible_compared,,-4.39,-10.2244,5.8344,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+281,GSSC,2026-09-30,quiet_accumulation_strong,290.91,eligible_compared,,-2.73,-4.5375,1.8075,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+253,GTHE,2026-09-30,quiet_accumulation_strong,4.9,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,stale_data
+310,GTWL,2026-09-30,quiet_accumulation_strong,224.99,eligible_compared,,-28.09,-34.7082,6.6182,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+259,HDBK,2026-09-30,quiet_accumulation_strong,109.48,eligible_no_stored,no stored outcome_7d to compare,,-2.2561,,,,,,verified_loss
+254,HELI,2026-09-30,quiet_accumulation_strong,7.82,eligible_compared,,-5.24,-9.7187,4.4787,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+357,HRHO,2026-09-30,pre_surge,24.3,eligible_compared,,6.9958847736625485,6.214,0.7819,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+266,IBCT,2026-09-30,quiet_accumulation_strong,12.33,eligible_compared,,-8.03,-9.4079,1.3779,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+267,ICFC,2026-09-30,quiet_accumulation_strong,22.21,eligible_compared,,3.24,1.6209,1.6191,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+275,IDRE,2026-09-30,quiet_accumulation_strong,51.5,eligible_compared,,0.0,-8.0194,8.0194,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+312,IFAP,2026-09-30,quiet_accumulation_strong,20.06,eligible_no_stored,no stored outcome_7d to compare,,-4.8853,,,,,,verified_loss
+291,INFI,2026-09-30,quiet_accumulation_strong,127.89,eligible_compared,,3.24,-3.1981,6.4381,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,stale_data
+358,IRON,2026-09-30,pre_surge,28.14,eligible_compared,,8.07,0.6041,7.4659,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+359,ISMQ,2026-09-30,pre_surge,8.58,eligible_no_stored,no stored outcome_7d to compare,,-8.8578,,,,,,stale_data
+252,ISPH,2026-09-30,quiet_accumulation_strong,11.67,eligible_compared,,3.5132819194515865,-2.3136,5.8269,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,verified_win
+255,JUFO,2026-09-30,quiet_accumulation_strong,25.98,eligible_compared,,-2.39,-3.7721,1.3821,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+360,KWIN,2026-09-30,pre_surge,88.62,eligible_compared,,-12.32,-16.1814,3.8614,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+361,KZPC,2026-09-30,pre_surge,13.9,eligible_compared,,-4.32,-4.8201,0.5001,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+285,LKGP,2026-09-30,quiet_accumulation_strong,3.16,eligible_no_stored,no stored outcome_7d to compare,,-5.3797,,,,,,stale_data
+269,MENA,2026-09-30,quiet_accumulation_strong,6.5,eligible_compared,,1853.846153846154,1946.1538,92.3077,YES,,data_engine.db::historical_data,2026-10-11,verified_loss
+260,MFPC,2026-09-30,quiet_accumulation_strong,47.0,eligible_no_stored,no stored outcome_7d to compare,,-4.234,,,,,,verified_loss
+362,MFSC,2026-09-30,pre_surge,49.99,eligible_no_stored,no stored outcome_7d to compare,,-15.3831,,,,,,verified_loss
+363,MHOT,2026-09-30,pre_surge,18.89,eligible_compared,,-6.03,-7.7819,1.7519,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+364,MICH,2026-09-30,pre_surge,48.38,eligible_compared,,-2.09,-3.8239,1.7339,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+278,MIPH,2026-09-30,quiet_accumulation_strong,809.92,eligible_no_stored,no stored outcome_7d to compare,,-0.6075,,,,,,verified_loss
+316,MOIN,2026-09-30,quiet_accumulation_strong,34.16,eligible_compared,,2.517564402810324,4.3911,1.8735,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+289,MOSC,2026-09-30,quiet_accumulation_strong,293.8,eligible_compared,,-5.68,-7.0796,1.3996,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+317,MPCO,2026-09-30,quiet_accumulation_strong,2.57,eligible_compared,,-6.23,-10.8949,4.6649,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+365,MPRC,2026-09-30,pre_surge,38.99,eligible_compared,,4.898691972300581,1.2567,3.642,YES,,data_engine.db::historical_data,2026-10-11,verified_loss
+366,MTIE,2026-09-30,pre_surge,8.18,eligible_no_stored,no stored outcome_7d to compare,,-7.0905,,,,,,verified_loss
+258,NARE,2026-09-30,quiet_accumulation_strong,17.58,eligible_no_stored,no stored outcome_7d to compare,,-9.8976,,,,,,stale_data
+324,NCCW,2026-09-30,quiet_accumulation_strong,7.4,eligible_compared,,-5.0,-7.5676,2.5676,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+367,NEDA,2026-09-30,pre_surge,2.68,eligible_no_stored,no stored outcome_7d to compare,,-2.9851,,,,,,verified_loss
+368,NHPS,2026-09-30,pre_surge,77.71,eligible_compared,,-4.44,-8.4931,4.0531,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+301,NIPH,2026-09-30,quiet_accumulation_strong,325.51,eligible_no_stored,no stored outcome_7d to compare,,-6.5682,,,,,,verified_loss
+287,NPCO,2026-09-30,quiet_accumulation_strong,25.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-12,pending
+323,OBRI,2026-09-30,quiet_accumulation_strong,28.55,eligible_compared,,0.88,1.6112,0.7312,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+265,OCPH,2026-09-30,quiet_accumulation_strong,227.0,eligible_compared,,0.0,-3.2159,3.2159,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+369,ODIN,2026-09-30,pre_surge,2.65,eligible_compared,,-3.77,-6.7925,3.0225,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+370,OFH,2026-09-30,pre_surge,1.02,eligible_compared,,-12.55,-17.7451,5.1951,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+286,OIH,2026-09-30,quiet_accumulation_strong,2.11,eligible_compared,,-11.85,-10.9005,0.9495,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+371,OLFI,2026-09-30,pre_surge,22.45,eligible_no_stored,no stored outcome_7d to compare,,-7.3051,,,,,,verified_loss
+270,ORAS,2026-09-30,quiet_accumulation_strong,824.0,eligible_compared,,6.4344660194174725,3.892,2.5425,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+372,ORHD,2026-09-30,pre_surge,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),-70.27,,,,,,,stale_data
+373,ORWE,2026-09-30,pre_surge,26.99,eligible_compared,,3.1493145609485045,-1.6302,4.7795,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-11,verified_win
+282,PACH,2026-09-30,quiet_accumulation_strong,85.0,eligible_compared,,0.01176470588235896,1.7647,1.7529,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-11,pending
+374,PHDC,2026-09-30,pre_surge,13.5,eligible_no_stored,no stored outcome_7d to compare,,-4.6667,,,,,,verified_loss
+325,PHTV,2026-09-30,quiet_accumulation_strong,347.34,eligible_no_stored,no stored outcome_7d to compare,,-0.8205,,,,,,verified_loss
+318,POUL,2026-09-30,quiet_accumulation_strong,38.2,eligible_compared,,-74.08,-74.6073,0.5273,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+375,PRCL,2026-09-30,pre_surge,30.8,eligible_compared,,-16.36,-19.4805,3.1205,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+376,QNBE,2026-09-30,pre_surge,60.0,eligible_no_stored,no stored outcome_7d to compare,,-4.9167,,,,,,verified_loss
+326,RACC,2026-09-30,quiet_accumulation_strong,9.43,eligible_compared,,0.0,-2.9692,2.9692,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+377,RAKT,2026-09-30,pre_surge,22.08,eligible_compared,,8.197463768115954,6.8841,1.3134,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+378,RAYA,2026-09-30,pre_surge,6.92,eligible_compared,,-5.92,-8.526,2.606,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+292,RKAZ,2026-09-30,quiet_accumulation_strong,5.48,eligible_no_stored,no stored outcome_7d to compare,,-8.5766,,,,,,stale_data
+321,RMDA,2026-09-30,quiet_accumulation_strong,5.77,eligible_no_stored,no stored outcome_7d to compare,,-11.7851,,,,,,stale_data
+379,ROTO,2026-09-30,pre_surge,39.57,eligible_compared,,2.81,4.1193,1.3093,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+299,RREI,2026-09-30,quiet_accumulation_strong,4.02,eligible_no_stored,no stored outcome_7d to compare,,-7.4627,,,,,,verified_loss
+311,RTVC,2026-09-30,quiet_accumulation_strong,3.73,eligible_compared,,-1.88,-2.681,0.801,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+248,SAUD,2026-09-30,quiet_accumulation_strong,23.29,eligible_compared,,-0.82,-2.1039,1.2839,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+380,SDTI,2026-09-30,pre_surge,79.99,eligible_compared,,5.425678209776227,7.5259,2.1003,YES,,data_engine.db::historical_data,2026-10-11,verified_win
+297,SMFR,2026-09-30,quiet_accumulation_strong,221.88,eligible_compared,,7.26,5.2326,2.0274,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+381,SNFC,2026-09-30,pre_surge,11.55,eligible_no_stored,no stored outcome_7d to compare,,-1.1255,,,,,,verified_loss
+382,SNFI,2026-09-30,pre_surge,11.29,eligible_no_stored,no stored outcome_7d to compare,,-10.806,,,,,,stale_data
+309,SUCE,2026-09-30,quiet_accumulation_strong,144.0,eligible_no_stored,no stored outcome_7d to compare,,7.5,,,,,,stale_data
+383,SWDY,2026-09-30,pre_surge,118.5,eligible_compared,,-1.65,-4.9789,3.3289,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+274,TAQA,2026-09-30,quiet_accumulation_strong,17.12,eligible_no_stored,no stored outcome_7d to compare,,-6.5421,,,,,,verified_loss
+280,TORA,2026-09-30,quiet_accumulation_strong,61.0,eligible_compared,,3.3114754098360706,3.3115,0.0,no,,data_engine.db::historical_data,2026-10-11,verified_win
+384,TWSA,2026-09-30,pre_surge,7.19,eligible_compared,,4.311543810848395,7.2323,2.9207,YES,,data_engine.db::historical_data,2026-10-12,verified_loss
+385,UPMS,2026-09-30,pre_surge,10.17,eligible_compared,,5.211406096361842,-0.6883,5.8997,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+306,UTOP,2026-09-30,quiet_accumulation_strong,106.5,eligible_compared,,-4.23,-7.9812,3.7512,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+386,VALU,2026-09-30,pre_surge,10.67,eligible_compared,,3.467666354264285,1.9681,1.4995,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+256,VERT,2026-09-30,quiet_accumulation_strong,6.01,eligible_compared,,1.0,4.8253,3.8253,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+313,VLMRA,2026-09-30,quiet_accumulation_strong,30.25,eligible_no_stored,no stored outcome_7d to compare,,-6.0826,,,,,,verified_loss
+298,WCDF,2026-09-30,quiet_accumulation_strong,688.9,eligible_compared,,-4.78,-4.8454,0.0654,no,,data_engine.db::historical_data,2026-10-11,stale_data
+271,WKOL,2026-09-30,quiet_accumulation_strong,325.34,eligible_compared,,-8.71,-13.2169,4.5069,YES,,data_engine.db::historical_data,2026-10-11,stale_data
+401,ABUK,2026-10-02,quiet_accumulation_strong,90.5,eligible_no_stored,no stored outcome_7d to compare,,-4.9945,,,,,,verified_loss
+466,ACGC,2026-10-02,pre_surge,14.28,eligible_no_stored,no stored outcome_7d to compare,,-7.9832,,,,,,verified_loss
+467,ACTF,2026-10-02,pre_surge,2.83,eligible_no_stored,no stored outcome_7d to compare,,-11.6608,,,,,,stale_data
+468,ADCI,2026-10-02,pre_surge,284.0,eligible_no_stored,no stored outcome_7d to compare,,-9.1197,,,,,,verified_loss
+400,ADIB,2026-10-02,quiet_accumulation_strong,51.0,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+469,ADPC,2026-10-02,pre_surge,3.75,eligible_no_stored,no stored outcome_7d to compare,,-13.0667,,,,,,verified_loss
+402,AFDI,2026-10-02,quiet_accumulation_strong,52.03,eligible_compared,,3.9015952335191257,-0.788,4.6896,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+470,AIFI,2026-10-02,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-13.3047,,,,,,verified_loss
+471,AJWA,2026-10-02,pre_surge,181.5,eligible_compared,,8.077134986225893,16.8044,8.7273,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+388,ALCN,2026-10-02,quiet_accumulation_strong,33.5,eligible_compared,,4.477611940298507,2.3881,2.0896,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+447,ALUM,2026-10-02,quiet_accumulation_strong,24.01,eligible_no_stored,no stored outcome_7d to compare,,-7.7468,,,,,,verified_loss
+427,AMER,2026-10-02,quiet_accumulation_strong,5.06,eligible_no_stored,no stored outcome_7d to compare,,-3.5573,,,,,,stale_data
+472,AMII,2026-10-02,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-27.7465,,,,,,stale_data
+461,AMOC,2026-10-02,quiet_accumulation_strong,13.4,eligible_compared,,4.850746268656718,0.8209,4.0299,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+443,APPC,2026-10-02,quiet_accumulation_strong,1.57,eligible_no_stored,no stored outcome_7d to compare,,3.1847,,,,,,stale_data
+446,APSW,2026-10-02,quiet_accumulation_strong,8.21,eligible_compared,,3.166869671132762,-1.3398,4.5067,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+423,ARVA,2026-10-02,quiet_accumulation_strong,11.08,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+473,ATQA,2026-10-02,pre_surge,12.61,eligible_no_stored,no stored outcome_7d to compare,,-8.8025,,,,,,stale_data
+474,AXPH,2026-10-02,pre_surge,1670.0,eligible_no_stored,no stored outcome_7d to compare,,-99.9401,,,,,,stale_data
+411,BINV,2026-10-02,quiet_accumulation_strong,57.0,eligible_compared,,4.8070175438596525,2.6842,2.1228,YES,,data_engine.db::historical_data,2026-10-13,verified_loss
+459,BONY,2026-10-02,quiet_accumulation_strong,4.19,eligible_compared,,4.057279236276848,0.9547,3.1026,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+403,BTFH,2026-10-02,quiet_accumulation_strong,2.82,eligible_no_stored,no stored outcome_7d to compare,,-6.0284,,,,,,verified_loss
+416,CANA,2026-10-02,quiet_accumulation_strong,47.49,eligible_no_stored,no stored outcome_7d to compare,,-7.3489,,,,,,verified_loss
+475,CCAP,2026-10-02,pre_surge,7.09,eligible_no_stored,no stored outcome_7d to compare,,-11.5656,,,,,,verified_loss
+390,CCRS,2026-10-02,quiet_accumulation_strong,2.53,eligible_no_stored,no stored outcome_7d to compare,,-17.7866,,,,,,verified_loss
+476,CEFM,2026-10-02,pre_surge,139.21,eligible_no_stored,no stored outcome_7d to compare,,-7.9951,,,,,,verified_loss
+434,CICH,2026-10-02,quiet_accumulation_strong,11.98,eligible_no_stored,no stored outcome_7d to compare,,-5.6761,,,,,,verified_loss
+396,CIEB,2026-10-02,quiet_accumulation_strong,24.07,eligible_no_stored,no stored outcome_7d to compare,,-4.6531,,,,,,verified_loss
+458,CIRA,2026-10-02,quiet_accumulation_strong,39.07,eligible_no_stored,no stored outcome_7d to compare,,-6.4756,,,,,,verified_loss
+433,CLHO,2026-10-02,quiet_accumulation_strong,15.5,eligible_compared,,3.5483870967741984,-9.0323,12.5806,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+477,COMI,2026-10-02,pre_surge,128.2,eligible_no_stored,no stored outcome_7d to compare,,-4.454,,,,,,verified_loss
+478,CPCI,2026-10-02,pre_surge,560.0,eligible_no_stored,no stored outcome_7d to compare,,5.8232,,,,,,stale_data
+453,CPME,2026-10-02,quiet_accumulation_strong,35.0,eligible_compared,,2.857142857142857,8.6,5.7429,YES,,data_engine.db::historical_data,2026-10-13,verified_loss
+389,CRST,2026-10-02,quiet_accumulation_strong,3.72,eligible_no_stored,no stored outcome_7d to compare,,-22.5806,,,,,,stale_data
+479,CSAG,2026-10-02,pre_surge,37.53,eligible_no_stored,no stored outcome_7d to compare,,-7.061,,,,,,verified_loss
+444,DGTZ,2026-10-02,quiet_accumulation_strong,2.31,eligible_no_stored,no stored outcome_7d to compare,,-11.2554,,,,,,stale_data
+480,DOMT,2026-10-02,pre_surge,25.64,eligible_no_stored,no stored outcome_7d to compare,,-9.6334,,,,,,verified_loss
+454,DSCW,2026-10-02,quiet_accumulation_strong,1.73,eligible_no_stored,no stored outcome_7d to compare,,-6.3584,,,,,,verified_loss
+418,DTPP,2026-10-02,quiet_accumulation_strong,326.01,eligible_no_stored,no stored outcome_7d to compare,,-14.7265,,,,,,stale_data
+481,ECAP,2026-10-02,pre_surge,31.48,eligible_no_stored,no stored outcome_7d to compare,,-4.7332,,,,,,verified_loss
+482,EEII,2026-10-02,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-14.1631,,,,,,stale_data
+441,EFID,2026-10-02,quiet_accumulation_strong,29.5,eligible_no_stored,no stored outcome_7d to compare,,-36.9492,,,,,,stale_data
+483,EFIH,2026-10-02,pre_surge,22.98,eligible_compared,,4.395126196692767,4.8738,0.4787,no,,data_engine.db::historical_data,2026-10-12,verified_win
+407,EGAL,2026-10-02,quiet_accumulation_strong,356.96,eligible_no_stored,no stored outcome_7d to compare,,-8.5332,,,,,,verified_loss
+412,EGAS,2026-10-02,quiet_accumulation_strong,55.01,eligible_compared,,2.5813488456644276,-7.1078,9.6891,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+484,EGCH,2026-10-02,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+439,EGTS,2026-10-02,quiet_accumulation_strong,18.1,eligible_no_stored,no stored outcome_7d to compare,,-19.8895,,,,,,stale_data
+422,EHDR,2026-10-02,quiet_accumulation_strong,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,stale_data
+415,ELEC,2026-10-02,quiet_accumulation_strong,1.93,eligible_no_stored,no stored outcome_7d to compare,,-9.8446,,,,,,verified_loss
+485,ELNA,2026-10-02,pre_surge,34.37,eligible_compared,,-2.64765784114052,-2.5313,0.1164,no,,data_engine.db::historical_data,2026-10-12,pending
+486,ENGC,2026-10-02,pre_surge,40.28,eligible_no_stored,no stored outcome_7d to compare,,-12.7607,,,,,,stale_data
+487,EOSB,2026-10-02,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-12,pending
+488,ETEL,2026-10-02,pre_surge,135.99,eligible_compared,,10.36105595999706,4.7871,5.5739,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+489,EXPA,2026-10-02,pre_surge,21.75,eligible_no_stored,no stored outcome_7d to compare,,-31.908,,,,,,verified_loss
+490,FAIT,2026-10-02,pre_surge,46.31,eligible_no_stored,no stored outcome_7d to compare,,-4.9017,,,,,,verified_loss
+442,FCMD,2026-10-02,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+435,FERC,2026-10-02,quiet_accumulation_strong,76.88,eligible_no_stored,no stored outcome_7d to compare,,-7.5572,,,,,,verified_loss
+491,FNAR,2026-10-02,pre_surge,14.88,eligible_no_stored,no stored outcome_7d to compare,,-18.5484,,,,,,verified_loss
+492,FWRY,2026-10-02,pre_surge,18.75,eligible_compared,,-0.693333333333328,-0.2667,0.4267,no,,data_engine.db::historical_data,2026-10-12,pending
+493,GBCO,2026-10-02,pre_surge,30.62,eligible_compared,,6.139777922926188,-2.678,8.8178,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+494,GIHD,2026-10-02,pre_surge,76.49,eligible_no_stored,no stored outcome_7d to compare,,-29.1934,,,,,,stale_data
+432,GMCI,2026-10-02,quiet_accumulation_strong,1.69,eligible_no_stored,no stored outcome_7d to compare,,-8.8757,,,,,,verified_loss
+495,GPIM,2026-10-02,pre_surge,1.6,eligible_no_stored,no stored outcome_7d to compare,,16.25,,,,,,stale_data
+429,GRCA,2026-10-02,quiet_accumulation_strong,39.22,eligible_no_stored,no stored outcome_7d to compare,,-13.335,,,,,,stale_data
+420,GSSC,2026-10-02,quiet_accumulation_strong,290.91,eligible_no_stored,no stored outcome_7d to compare,,-9.9378,,,,,,stale_data
+392,GTHE,2026-10-02,quiet_accumulation_strong,4.9,eligible_no_stored,no stored outcome_7d to compare,,-13.2653,,,,,,stale_data
+449,GTWL,2026-10-02,quiet_accumulation_strong,224.99,eligible_no_stored,no stored outcome_7d to compare,,-37.775,,,,,,stale_data
+398,HDBK,2026-10-02,quiet_accumulation_strong,109.48,eligible_no_stored,no stored outcome_7d to compare,,-3.1787,,,,,,verified_loss
+393,HELI,2026-10-02,quiet_accumulation_strong,7.82,eligible_no_stored,no stored outcome_7d to compare,,-8.5678,,,,,,verified_loss
+496,HRHO,2026-10-02,pre_surge,24.3,eligible_compared,,6.9958847736625485,3.9095,3.0864,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+405,IBCT,2026-10-02,quiet_accumulation_strong,12.33,eligible_no_stored,no stored outcome_7d to compare,,-10.7056,,,,,,stale_data
+406,ICFC,2026-10-02,quiet_accumulation_strong,22.21,eligible_compared,,3.5569563259792845,-3.4219,6.9788,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+414,IDRE,2026-10-02,quiet_accumulation_strong,51.5,eligible_no_stored,no stored outcome_7d to compare,,-16.3107,,,,,,verified_loss
+451,IFAP,2026-10-02,quiet_accumulation_strong,20.06,eligible_no_stored,no stored outcome_7d to compare,,-7.7268,,,,,,verified_loss
+430,INFI,2026-10-02,quiet_accumulation_strong,127.89,eligible_no_stored,no stored outcome_7d to compare,,-7.1702,,,,,,verified_loss
+497,IRON,2026-10-02,pre_surge,28.14,eligible_no_stored,no stored outcome_7d to compare,,-0.7818,,,,,,stale_data
+498,ISMQ,2026-10-02,pre_surge,8.58,eligible_no_stored,no stored outcome_7d to compare,,-13.0536,,,,,,stale_data
+391,ISPH,2026-10-02,quiet_accumulation_strong,11.67,eligible_compared,,3.5132819194515865,-3.5133,7.0266,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+394,JUFO,2026-10-02,quiet_accumulation_strong,25.98,eligible_no_stored,no stored outcome_7d to compare,,-5.0038,,,,,,verified_loss
+499,KWIN,2026-10-02,pre_surge,88.62,eligible_no_stored,no stored outcome_7d to compare,,-21.09,,,,,,stale_data
+500,KZPC,2026-10-02,pre_surge,13.9,eligible_no_stored,no stored outcome_7d to compare,,-8.6331,,,,,,stale_data
+424,LKGP,2026-10-02,quiet_accumulation_strong,3.16,eligible_no_stored,no stored outcome_7d to compare,,-5.3797,,,,,,stale_data
+408,MENA,2026-10-02,quiet_accumulation_strong,6.5,eligible_compared,,1853.846153846154,1946.1538,92.3077,YES,,data_engine.db::historical_data,2026-10-12,verified_loss
+399,MFPC,2026-10-02,quiet_accumulation_strong,47.0,eligible_no_stored,no stored outcome_7d to compare,,-7.0213,,,,,,verified_loss
+501,MFSC,2026-10-02,pre_surge,49.99,eligible_no_stored,no stored outcome_7d to compare,,-20.4041,,,,,,stale_data
+502,MHOT,2026-10-02,pre_surge,18.89,eligible_no_stored,no stored outcome_7d to compare,,-6.7761,,,,,,stale_data
+503,MICH,2026-10-02,pre_surge,48.38,eligible_no_stored,no stored outcome_7d to compare,,-7.8131,,,,,,stale_data
+417,MIPH,2026-10-02,quiet_accumulation_strong,809.92,eligible_no_stored,no stored outcome_7d to compare,,-2.6237,,,,,,verified_loss
+455,MOIN,2026-10-02,quiet_accumulation_strong,34.16,eligible_compared,,2.517564402810324,-1.3759,3.8934,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+428,MOSC,2026-10-02,quiet_accumulation_strong,293.8,eligible_no_stored,no stored outcome_7d to compare,,-6.9095,,,,,,verified_loss
+456,MPCO,2026-10-02,quiet_accumulation_strong,2.57,eligible_no_stored,no stored outcome_7d to compare,,-14.3969,,,,,,verified_loss
+504,MPRC,2026-10-02,pre_surge,38.99,eligible_compared,,4.898691972300581,-5.386,10.2847,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+505,MTIE,2026-10-02,pre_surge,8.18,eligible_no_stored,no stored outcome_7d to compare,,-8.802,,,,,,verified_loss
+397,NARE,2026-10-02,quiet_accumulation_strong,17.58,eligible_no_stored,no stored outcome_7d to compare,,-8.0774,,,,,,verified_loss
+463,NCCW,2026-10-02,quiet_accumulation_strong,7.4,eligible_no_stored,no stored outcome_7d to compare,,-13.3784,,,,,,verified_loss
+506,NEDA,2026-10-02,pre_surge,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,verified_loss
+507,NHPS,2026-10-02,pre_surge,77.71,eligible_no_stored,no stored outcome_7d to compare,,-13.975,,,,,,stale_data
+440,NIPH,2026-10-02,quiet_accumulation_strong,325.51,eligible_no_stored,no stored outcome_7d to compare,,-9.373,,,,,,verified_loss
+426,NPCO,2026-10-02,quiet_accumulation_strong,25.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+462,OBRI,2026-10-02,quiet_accumulation_strong,28.55,eligible_no_stored,no stored outcome_7d to compare,,-7.951,,,,,,stale_data
+404,OCPH,2026-10-02,quiet_accumulation_strong,227.0,eligible_compared,,3.788546255506606,-7.489,11.2775,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+508,ODIN,2026-10-02,pre_surge,2.65,eligible_no_stored,no stored outcome_7d to compare,,-13.2075,,,,,,verified_loss
+509,OFH,2026-10-02,pre_surge,1.02,eligible_no_stored,no stored outcome_7d to compare,,-20.4902,,,,,,stale_data
+425,OIH,2026-10-02,quiet_accumulation_strong,2.11,eligible_no_stored,no stored outcome_7d to compare,,-17.0616,,,,,,stale_data
+510,OLFI,2026-10-02,pre_surge,22.45,eligible_no_stored,no stored outcome_7d to compare,,-9.8886,,,,,,verified_loss
+409,ORAS,2026-10-02,quiet_accumulation_strong,824.0,eligible_compared,,6.4344660194174725,3.1614,3.2731,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+511,ORHD,2026-10-02,pre_surge,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),,,,,,,,verified_loss
+512,ORWE,2026-10-02,pre_surge,26.99,eligible_compared,,3.1493145609485045,-0.9263,4.0756,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+421,PACH,2026-10-02,quiet_accumulation_strong,85.0,eligible_compared,,0.01176470588235896,1.8235,1.8118,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-12,pending
+513,PHDC,2026-10-02,pre_surge,13.5,eligible_no_stored,no stored outcome_7d to compare,,-5.1852,,,,,,verified_loss
+464,PHTV,2026-10-02,quiet_accumulation_strong,347.34,eligible_no_stored,no stored outcome_7d to compare,,-2.9769,,,,,,verified_loss
+457,POUL,2026-10-02,quiet_accumulation_strong,38.2,eligible_no_stored,no stored outcome_7d to compare,,-74.8953,,,,,,stale_data
+514,PRCL,2026-10-02,pre_surge,30.8,eligible_no_stored,no stored outcome_7d to compare,,-25.4221,,,,,,stale_data
+515,QNBE,2026-10-02,pre_surge,60.0,eligible_no_stored,no stored outcome_7d to compare,,-8.2667,,,,,,verified_loss
+465,RACC,2026-10-02,quiet_accumulation_strong,9.43,eligible_no_stored,no stored outcome_7d to compare,,-4.4539,,,,,,verified_loss
+516,RAKT,2026-10-02,pre_surge,22.08,eligible_compared,,8.197463768115954,3.7138,4.4837,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+517,RAYA,2026-10-02,pre_surge,6.92,eligible_no_stored,no stored outcome_7d to compare,,-12.8613,,,,,,verified_loss
+431,RKAZ,2026-10-02,quiet_accumulation_strong,5.48,eligible_no_stored,no stored outcome_7d to compare,,-9.6715,,,,,,stale_data
+460,RMDA,2026-10-02,quiet_accumulation_strong,5.77,eligible_no_stored,no stored outcome_7d to compare,,-9.5321,,,,,,stale_data
+518,ROTO,2026-10-02,pre_surge,39.57,eligible_compared,,3.2600454890068216,-3.8918,7.1519,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+438,RREI,2026-10-02,quiet_accumulation_strong,4.02,eligible_no_stored,no stored outcome_7d to compare,,-13.6816,,,,,,verified_loss
+450,RTVC,2026-10-02,quiet_accumulation_strong,3.73,eligible_no_stored,no stored outcome_7d to compare,,-6.7024,,,,,,stale_data
+387,SAUD,2026-10-02,quiet_accumulation_strong,23.29,eligible_compared,,2.6620867325032247,-6.3976,9.0597,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+519,SDTI,2026-10-02,pre_surge,79.99,eligible_no_stored,no stored outcome_7d to compare,,6.5758,,,,,,stale_data
+436,SMFR,2026-10-02,quiet_accumulation_strong,221.88,eligible_compared,,3.596538669551117,-1.7397,5.3362,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+520,SNFC,2026-10-02,pre_surge,11.55,eligible_no_stored,no stored outcome_7d to compare,,-2.1645,,,,,,verified_loss
+521,SNFI,2026-10-02,pre_surge,11.29,eligible_no_stored,no stored outcome_7d to compare,,-10.806,,,,,,stale_data
+448,SUCE,2026-10-02,quiet_accumulation_strong,144.0,eligible_no_stored,no stored outcome_7d to compare,,1.7361,,,,,,stale_data
+522,SWDY,2026-10-02,pre_surge,118.5,eligible_no_stored,no stored outcome_7d to compare,,-5.4852,,,,,,verified_loss
+413,TAQA,2026-10-02,quiet_accumulation_strong,17.12,eligible_no_stored,no stored outcome_7d to compare,,-7.9439,,,,,,verified_loss
+419,TORA,2026-10-02,quiet_accumulation_strong,61.0,eligible_compared,,3.3114754098360706,-1.5574,4.8689,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+523,TWSA,2026-10-02,pre_surge,7.19,eligible_compared,,4.311543810848395,-4.0334,8.3449,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+524,UPMS,2026-10-02,pre_surge,10.17,eligible_compared,,5.211406096361842,-1.6716,6.883,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+445,UTOP,2026-10-02,quiet_accumulation_strong,106.5,eligible_no_stored,no stored outcome_7d to compare,,-10.7981,,,,,,stale_data
+525,VALU,2026-10-02,pre_surge,10.67,eligible_compared,,3.467666354264285,2.343,1.1246,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+395,VERT,2026-10-02,quiet_accumulation_strong,6.01,eligible_no_stored,no stored outcome_7d to compare,,9.1514,,,,,,stale_data
+452,VLMRA,2026-10-02,quiet_accumulation_strong,30.25,eligible_no_stored,no stored outcome_7d to compare,,-8.4298,,,,,,verified_loss
+437,WCDF,2026-10-02,quiet_accumulation_strong,688.9,eligible_no_stored,no stored outcome_7d to compare,,-7.377,,,,,,verified_loss
+410,WKOL,2026-10-02,quiet_accumulation_strong,325.34,eligible_no_stored,no stored outcome_7d to compare,,-14.1759,,,,,,stale_data
+540,ABUK,2026-10-03,quiet_accumulation_strong,90.5,eligible_no_stored,no stored outcome_7d to compare,,-4.9945,,,,,,verified_loss
+605,ACGC,2026-10-03,pre_surge,14.28,eligible_no_stored,no stored outcome_7d to compare,,-7.9832,,,,,,verified_loss
+606,ACTF,2026-10-03,pre_surge,2.83,eligible_no_stored,no stored outcome_7d to compare,,-11.6608,,,,,,stale_data
+607,ADCI,2026-10-03,pre_surge,284.0,eligible_no_stored,no stored outcome_7d to compare,,-9.1197,,,,,,verified_loss
+539,ADIB,2026-10-03,quiet_accumulation_strong,51.0,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+608,ADPC,2026-10-03,pre_surge,3.75,eligible_no_stored,no stored outcome_7d to compare,,-13.0667,,,,,,verified_loss
+541,AFDI,2026-10-03,quiet_accumulation_strong,52.03,eligible_compared,,3.9015952335191257,-0.788,4.6896,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+609,AIFI,2026-10-03,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-13.3047,,,,,,verified_loss
+610,AJWA,2026-10-03,pre_surge,181.5,eligible_compared,,8.077134986225893,16.8044,8.7273,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+527,ALCN,2026-10-03,quiet_accumulation_strong,33.5,eligible_compared,,4.477611940298507,2.3881,2.0896,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+586,ALUM,2026-10-03,quiet_accumulation_strong,24.01,eligible_no_stored,no stored outcome_7d to compare,,-7.7468,,,,,,verified_loss
+566,AMER,2026-10-03,quiet_accumulation_strong,5.06,eligible_no_stored,no stored outcome_7d to compare,,-3.5573,,,,,,stale_data
+611,AMII,2026-10-03,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-27.7465,,,,,,stale_data
+600,AMOC,2026-10-03,quiet_accumulation_strong,13.4,eligible_compared,,3.731343283582089,0.8209,2.9104,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+582,APPC,2026-10-03,quiet_accumulation_strong,1.57,eligible_no_stored,no stored outcome_7d to compare,,3.1847,,,,,,stale_data
+585,APSW,2026-10-03,quiet_accumulation_strong,8.21,eligible_compared,,3.166869671132762,-1.3398,4.5067,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+562,ARVA,2026-10-03,quiet_accumulation_strong,11.08,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+612,ATQA,2026-10-03,pre_surge,12.61,eligible_no_stored,no stored outcome_7d to compare,,-8.8025,,,,,,stale_data
+613,AXPH,2026-10-03,pre_surge,1670.0,eligible_no_stored,no stored outcome_7d to compare,,-99.9401,,,,,,stale_data
+550,BINV,2026-10-03,quiet_accumulation_strong,57.0,eligible_compared,,6.964912280701753,2.6842,4.2807,YES,,data_engine.db::historical_data,2026-10-13,verified_loss
+598,BONY,2026-10-03,quiet_accumulation_strong,4.19,eligible_compared,,4.057279236276848,0.9547,3.1026,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+542,BTFH,2026-10-03,quiet_accumulation_strong,2.82,eligible_no_stored,no stored outcome_7d to compare,,-6.0284,,,,,,verified_loss
+555,CANA,2026-10-03,quiet_accumulation_strong,47.49,eligible_no_stored,no stored outcome_7d to compare,,-7.3489,,,,,,verified_loss
+614,CCAP,2026-10-03,pre_surge,7.09,eligible_no_stored,no stored outcome_7d to compare,,-11.5656,,,,,,verified_loss
+529,CCRS,2026-10-03,quiet_accumulation_strong,2.53,eligible_no_stored,no stored outcome_7d to compare,,-17.7866,,,,,,verified_loss
+615,CEFM,2026-10-03,pre_surge,139.21,eligible_no_stored,no stored outcome_7d to compare,,-7.9951,,,,,,verified_loss
+573,CICH,2026-10-03,quiet_accumulation_strong,11.98,eligible_no_stored,no stored outcome_7d to compare,,-5.6761,,,,,,verified_loss
+535,CIEB,2026-10-03,quiet_accumulation_strong,24.07,eligible_no_stored,no stored outcome_7d to compare,,-4.6531,,,,,,verified_loss
+597,CIRA,2026-10-03,quiet_accumulation_strong,39.07,eligible_no_stored,no stored outcome_7d to compare,,-6.4756,,,,,,verified_loss
+572,CLHO,2026-10-03,quiet_accumulation_strong,15.5,eligible_compared,,3.5483870967741984,-9.0323,12.5806,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+616,COMI,2026-10-03,pre_surge,128.2,eligible_no_stored,no stored outcome_7d to compare,,-4.454,,,,,,verified_loss
+617,CPCI,2026-10-03,pre_surge,560.0,eligible_no_stored,no stored outcome_7d to compare,,5.8232,,,,,,stale_data
+592,CPME,2026-10-03,quiet_accumulation_strong,35.0,eligible_compared,,7.999999999999992,8.6,0.6,YES,,data_engine.db::historical_data,2026-10-13,verified_loss
+528,CRST,2026-10-03,quiet_accumulation_strong,3.72,eligible_no_stored,no stored outcome_7d to compare,,-22.5806,,,,,,stale_data
+618,CSAG,2026-10-03,pre_surge,37.53,eligible_no_stored,no stored outcome_7d to compare,,-7.061,,,,,,verified_loss
+583,DGTZ,2026-10-03,quiet_accumulation_strong,2.31,eligible_no_stored,no stored outcome_7d to compare,,-11.2554,,,,,,stale_data
+619,DOMT,2026-10-03,pre_surge,25.64,eligible_no_stored,no stored outcome_7d to compare,,-9.6334,,,,,,verified_loss
+593,DSCW,2026-10-03,quiet_accumulation_strong,1.73,eligible_no_stored,no stored outcome_7d to compare,,-6.3584,,,,,,verified_loss
+557,DTPP,2026-10-03,quiet_accumulation_strong,326.01,eligible_no_stored,no stored outcome_7d to compare,,-14.7265,,,,,,stale_data
+620,ECAP,2026-10-03,pre_surge,31.48,eligible_no_stored,no stored outcome_7d to compare,,-4.7332,,,,,,verified_loss
+621,EEII,2026-10-03,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-14.1631,,,,,,stale_data
+580,EFID,2026-10-03,quiet_accumulation_strong,29.5,eligible_no_stored,no stored outcome_7d to compare,,-36.9492,,,,,,stale_data
+622,EFIH,2026-10-03,pre_surge,22.98,eligible_compared,,4.395126196692767,4.8738,0.4787,no,,data_engine.db::historical_data,2026-10-12,verified_win
+546,EGAL,2026-10-03,quiet_accumulation_strong,356.96,eligible_no_stored,no stored outcome_7d to compare,,-8.5332,,,,,,verified_loss
+551,EGAS,2026-10-03,quiet_accumulation_strong,55.01,eligible_compared,,5.199054717324122,-7.1078,12.3069,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+623,EGCH,2026-10-03,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+578,EGTS,2026-10-03,quiet_accumulation_strong,18.1,eligible_no_stored,no stored outcome_7d to compare,,-19.8895,,,,,,stale_data
+561,EHDR,2026-10-03,quiet_accumulation_strong,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,stale_data
+554,ELEC,2026-10-03,quiet_accumulation_strong,1.93,eligible_no_stored,no stored outcome_7d to compare,,-9.8446,,,,,,verified_loss
+624,ELNA,2026-10-03,pre_surge,34.37,eligible_compared,,-2.64765784114052,-2.5313,0.1164,no,,data_engine.db::historical_data,2026-10-12,pending
+625,ENGC,2026-10-03,pre_surge,40.28,eligible_no_stored,no stored outcome_7d to compare,,-12.7607,,,,,,stale_data
+626,EOSB,2026-10-03,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-12,pending
+627,ETEL,2026-10-03,pre_surge,135.99,eligible_compared,,10.36105595999706,4.7871,5.5739,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+628,EXPA,2026-10-03,pre_surge,21.75,eligible_no_stored,no stored outcome_7d to compare,,-31.908,,,,,,verified_loss
+629,FAIT,2026-10-03,pre_surge,46.31,eligible_no_stored,no stored outcome_7d to compare,,-4.9017,,,,,,verified_loss
+581,FCMD,2026-10-03,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+574,FERC,2026-10-03,quiet_accumulation_strong,76.88,eligible_no_stored,no stored outcome_7d to compare,,-7.5572,,,,,,verified_loss
+630,FNAR,2026-10-03,pre_surge,14.88,eligible_no_stored,no stored outcome_7d to compare,,-18.5484,,,,,,verified_loss
+631,FWRY,2026-10-03,pre_surge,18.75,eligible_compared,,-0.693333333333328,-0.2667,0.4267,no,,data_engine.db::historical_data,2026-10-12,pending
+632,GBCO,2026-10-03,pre_surge,30.62,eligible_compared,,6.139777922926188,-2.678,8.8178,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+633,GIHD,2026-10-03,pre_surge,76.49,eligible_no_stored,no stored outcome_7d to compare,,-29.1934,,,,,,stale_data
+571,GMCI,2026-10-03,quiet_accumulation_strong,1.69,eligible_no_stored,no stored outcome_7d to compare,,-8.8757,,,,,,verified_loss
+634,GPIM,2026-10-03,pre_surge,1.6,eligible_no_stored,no stored outcome_7d to compare,,16.25,,,,,,stale_data
+568,GRCA,2026-10-03,quiet_accumulation_strong,39.22,eligible_no_stored,no stored outcome_7d to compare,,-13.335,,,,,,stale_data
+559,GSSC,2026-10-03,quiet_accumulation_strong,290.91,eligible_no_stored,no stored outcome_7d to compare,,-9.9378,,,,,,stale_data
+531,GTHE,2026-10-03,quiet_accumulation_strong,4.9,eligible_no_stored,no stored outcome_7d to compare,,-13.2653,,,,,,stale_data
+588,GTWL,2026-10-03,quiet_accumulation_strong,224.99,eligible_no_stored,no stored outcome_7d to compare,,-37.775,,,,,,stale_data
+537,HDBK,2026-10-03,quiet_accumulation_strong,109.48,eligible_no_stored,no stored outcome_7d to compare,,-3.1787,,,,,,verified_loss
+532,HELI,2026-10-03,quiet_accumulation_strong,7.82,eligible_no_stored,no stored outcome_7d to compare,,-8.5678,,,,,,verified_loss
+635,HRHO,2026-10-03,pre_surge,24.3,eligible_compared,,6.9958847736625485,3.9095,3.0864,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+544,IBCT,2026-10-03,quiet_accumulation_strong,12.33,eligible_no_stored,no stored outcome_7d to compare,,-10.7056,,,,,,stale_data
+545,ICFC,2026-10-03,quiet_accumulation_strong,22.21,eligible_compared,,3.5569563259792845,-3.4219,6.9788,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+553,IDRE,2026-10-03,quiet_accumulation_strong,51.5,eligible_no_stored,no stored outcome_7d to compare,,-16.3107,,,,,,verified_loss
+590,IFAP,2026-10-03,quiet_accumulation_strong,20.06,eligible_no_stored,no stored outcome_7d to compare,,-7.7268,,,,,,verified_loss
+569,INFI,2026-10-03,quiet_accumulation_strong,127.89,eligible_no_stored,no stored outcome_7d to compare,,-7.1702,,,,,,verified_loss
+636,IRON,2026-10-03,pre_surge,28.14,eligible_no_stored,no stored outcome_7d to compare,,-0.7818,,,,,,stale_data
+637,ISMQ,2026-10-03,pre_surge,8.58,eligible_no_stored,no stored outcome_7d to compare,,-13.0536,,,,,,stale_data
+530,ISPH,2026-10-03,quiet_accumulation_strong,11.67,eligible_compared,,3.5132819194515865,-3.5133,7.0266,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+533,JUFO,2026-10-03,quiet_accumulation_strong,25.98,eligible_no_stored,no stored outcome_7d to compare,,-5.0038,,,,,,verified_loss
+638,KWIN,2026-10-03,pre_surge,88.62,eligible_no_stored,no stored outcome_7d to compare,,-21.09,,,,,,stale_data
+639,KZPC,2026-10-03,pre_surge,13.9,eligible_no_stored,no stored outcome_7d to compare,,-8.6331,,,,,,stale_data
+563,LKGP,2026-10-03,quiet_accumulation_strong,3.16,eligible_no_stored,no stored outcome_7d to compare,,-5.3797,,,,,,stale_data
+547,MENA,2026-10-03,quiet_accumulation_strong,6.5,eligible_compared,,1853.846153846154,1946.1538,92.3077,YES,,data_engine.db::historical_data,2026-10-12,verified_loss
+538,MFPC,2026-10-03,quiet_accumulation_strong,47.0,eligible_no_stored,no stored outcome_7d to compare,,-7.0213,,,,,,verified_loss
+640,MFSC,2026-10-03,pre_surge,49.99,eligible_no_stored,no stored outcome_7d to compare,,-20.4041,,,,,,stale_data
+641,MHOT,2026-10-03,pre_surge,18.89,eligible_no_stored,no stored outcome_7d to compare,,-6.7761,,,,,,stale_data
+642,MICH,2026-10-03,pre_surge,48.38,eligible_no_stored,no stored outcome_7d to compare,,-7.8131,,,,,,stale_data
+556,MIPH,2026-10-03,quiet_accumulation_strong,809.92,eligible_no_stored,no stored outcome_7d to compare,,-2.6237,,,,,,verified_loss
+594,MOIN,2026-10-03,quiet_accumulation_strong,34.16,eligible_compared,,3.8934426229508357,-1.3759,5.2693,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+567,MOSC,2026-10-03,quiet_accumulation_strong,293.8,eligible_no_stored,no stored outcome_7d to compare,,-6.9095,,,,,,verified_loss
+595,MPCO,2026-10-03,quiet_accumulation_strong,2.57,eligible_no_stored,no stored outcome_7d to compare,,-14.3969,,,,,,verified_loss
+643,MPRC,2026-10-03,pre_surge,38.99,eligible_compared,,4.898691972300581,-5.386,10.2847,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+644,MTIE,2026-10-03,pre_surge,8.18,eligible_no_stored,no stored outcome_7d to compare,,-8.802,,,,,,verified_loss
+536,NARE,2026-10-03,quiet_accumulation_strong,17.58,eligible_no_stored,no stored outcome_7d to compare,,-8.0774,,,,,,verified_loss
+602,NCCW,2026-10-03,quiet_accumulation_strong,7.4,eligible_no_stored,no stored outcome_7d to compare,,-13.3784,,,,,,verified_loss
+645,NEDA,2026-10-03,pre_surge,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,verified_loss
+646,NHPS,2026-10-03,pre_surge,77.71,eligible_no_stored,no stored outcome_7d to compare,,-13.975,,,,,,stale_data
+579,NIPH,2026-10-03,quiet_accumulation_strong,325.51,eligible_no_stored,no stored outcome_7d to compare,,-9.373,,,,,,verified_loss
+565,NPCO,2026-10-03,quiet_accumulation_strong,25.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+601,OBRI,2026-10-03,quiet_accumulation_strong,28.55,eligible_no_stored,no stored outcome_7d to compare,,-7.951,,,,,,stale_data
+543,OCPH,2026-10-03,quiet_accumulation_strong,227.0,eligible_compared,,3.788546255506606,-7.489,11.2775,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+647,ODIN,2026-10-03,pre_surge,2.65,eligible_no_stored,no stored outcome_7d to compare,,-13.2075,,,,,,verified_loss
+648,OFH,2026-10-03,pre_surge,1.02,eligible_no_stored,no stored outcome_7d to compare,,-20.4902,,,,,,stale_data
+564,OIH,2026-10-03,quiet_accumulation_strong,2.11,eligible_no_stored,no stored outcome_7d to compare,,-17.0616,,,,,,stale_data
+649,OLFI,2026-10-03,pre_surge,22.45,eligible_no_stored,no stored outcome_7d to compare,,-9.8886,,,,,,verified_loss
+548,ORAS,2026-10-03,quiet_accumulation_strong,824.0,eligible_compared,,6.4344660194174725,3.1614,3.2731,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+650,ORHD,2026-10-03,pre_surge,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),,,,,,,,verified_loss
+651,ORWE,2026-10-03,pre_surge,26.99,eligible_compared,,2.704705446461654,-0.9263,3.631,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+560,PACH,2026-10-03,quiet_accumulation_strong,85.0,eligible_compared,,0.01176470588235896,1.8235,1.8118,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-12,pending
+652,PHDC,2026-10-03,pre_surge,13.5,eligible_no_stored,no stored outcome_7d to compare,,-5.1852,,,,,,verified_loss
+603,PHTV,2026-10-03,quiet_accumulation_strong,347.34,eligible_no_stored,no stored outcome_7d to compare,,-2.9769,,,,,,verified_loss
+596,POUL,2026-10-03,quiet_accumulation_strong,38.2,eligible_no_stored,no stored outcome_7d to compare,,-74.8953,,,,,,stale_data
+653,PRCL,2026-10-03,pre_surge,30.8,eligible_no_stored,no stored outcome_7d to compare,,-25.4221,,,,,,stale_data
+654,QNBE,2026-10-03,pre_surge,60.0,eligible_no_stored,no stored outcome_7d to compare,,-8.2667,,,,,,verified_loss
+604,RACC,2026-10-03,quiet_accumulation_strong,9.43,eligible_no_stored,no stored outcome_7d to compare,,-4.4539,,,,,,verified_loss
+655,RAKT,2026-10-03,pre_surge,22.08,eligible_compared,,8.197463768115954,3.7138,4.4837,YES,,data_engine.db::historical_data,2026-10-12,verified_win
+656,RAYA,2026-10-03,pre_surge,6.92,eligible_no_stored,no stored outcome_7d to compare,,-12.8613,,,,,,verified_loss
+570,RKAZ,2026-10-03,quiet_accumulation_strong,5.48,eligible_no_stored,no stored outcome_7d to compare,,-9.6715,,,,,,stale_data
+599,RMDA,2026-10-03,quiet_accumulation_strong,5.77,eligible_no_stored,no stored outcome_7d to compare,,-9.5321,,,,,,stale_data
+657,ROTO,2026-10-03,pre_surge,39.57,eligible_compared,,3.2600454890068216,-3.8918,7.1519,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+577,RREI,2026-10-03,quiet_accumulation_strong,4.02,eligible_no_stored,no stored outcome_7d to compare,,-13.6816,,,,,,verified_loss
+589,RTVC,2026-10-03,quiet_accumulation_strong,3.73,eligible_no_stored,no stored outcome_7d to compare,,-6.7024,,,,,,stale_data
+526,SAUD,2026-10-03,quiet_accumulation_strong,23.29,eligible_compared,,2.6620867325032247,-6.3976,9.0597,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_loss
+658,SDTI,2026-10-03,pre_surge,79.99,eligible_no_stored,no stored outcome_7d to compare,,6.5758,,,,,,stale_data
+575,SMFR,2026-10-03,quiet_accumulation_strong,221.88,eligible_compared,,3.596538669551117,-1.7397,5.3362,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+659,SNFC,2026-10-03,pre_surge,11.55,eligible_no_stored,no stored outcome_7d to compare,,-2.1645,,,,,,verified_loss
+660,SNFI,2026-10-03,pre_surge,11.29,eligible_no_stored,no stored outcome_7d to compare,,-10.806,,,,,,stale_data
+587,SUCE,2026-10-03,quiet_accumulation_strong,144.0,eligible_no_stored,no stored outcome_7d to compare,,1.7361,,,,,,stale_data
+661,SWDY,2026-10-03,pre_surge,118.5,eligible_no_stored,no stored outcome_7d to compare,,-5.4852,,,,,,verified_loss
+552,TAQA,2026-10-03,quiet_accumulation_strong,17.12,eligible_no_stored,no stored outcome_7d to compare,,-7.9439,,,,,,verified_loss
+558,TORA,2026-10-03,quiet_accumulation_strong,61.0,eligible_compared,,3.3114754098360706,-1.5574,4.8689,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-12,verified_win
+662,TWSA,2026-10-03,pre_surge,7.19,eligible_compared,,3.7552155771905364,-4.0334,7.7886,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+663,UPMS,2026-10-03,pre_surge,10.17,eligible_compared,,5.211406096361842,-1.6716,6.883,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+584,UTOP,2026-10-03,quiet_accumulation_strong,106.5,eligible_no_stored,no stored outcome_7d to compare,,-10.7981,,,,,,stale_data
+664,VALU,2026-10-03,pre_surge,10.67,eligible_compared,,5.435801312089972,2.343,3.0928,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+534,VERT,2026-10-03,quiet_accumulation_strong,6.01,eligible_no_stored,no stored outcome_7d to compare,,9.1514,,,,,,stale_data
+591,VLMRA,2026-10-03,quiet_accumulation_strong,30.25,eligible_no_stored,no stored outcome_7d to compare,,-8.4298,,,,,,verified_loss
+576,WCDF,2026-10-03,quiet_accumulation_strong,688.9,eligible_no_stored,no stored outcome_7d to compare,,-7.377,,,,,,verified_loss
+549,WKOL,2026-10-03,quiet_accumulation_strong,325.34,eligible_no_stored,no stored outcome_7d to compare,,-14.1759,,,,,,stale_data
+679,ABUK,2026-10-04,quiet_accumulation_strong,90.5,eligible_no_stored,no stored outcome_7d to compare,,-6.8177,,,,,,verified_loss
+829,ACAMD,2026-10-04,pre_surge,2.06,eligible_no_stored,no stored outcome_7d to compare,,-4.8544,,,,,,verified_loss
+744,ACGC,2026-10-04,pre_surge,14.28,eligible_no_stored,no stored outcome_7d to compare,,-8.1933,,,,,,verified_loss
+745,ACTF,2026-10-04,pre_surge,2.83,eligible_no_stored,no stored outcome_7d to compare,,-11.6608,,,,,,stale_data
+746,ADCI,2026-10-04,pre_surge,284.0,eligible_no_stored,no stored outcome_7d to compare,,-5.2852,,,,,,verified_loss
+678,ADIB,2026-10-04,quiet_accumulation_strong,51.0,eligible_no_stored,no stored outcome_7d to compare,,-12.7451,,,,,,verified_loss
+747,ADPC,2026-10-04,pre_surge,3.75,eligible_no_stored,no stored outcome_7d to compare,,-17.0667,,,,,,verified_loss
+680,AFDI,2026-10-04,quiet_accumulation_strong,52.03,eligible_compared,,3.9015952335191257,-5.7851,9.6867,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+748,AIFI,2026-10-04,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-13.3047,,,,,,verified_loss
+749,AJWA,2026-10-04,pre_surge,181.5,eligible_compared,,8.077134986225893,15.1074,7.0303,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+666,ALCN,2026-10-04,quiet_accumulation_strong,33.5,eligible_compared,,4.477611940298507,-1.4925,5.9701,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+819,ALEX,2026-10-04,quiet_accumulation_strong,22.5,eligible_no_stored,no stored outcome_7d to compare,,-11.1111,,,,,,verified_loss
+725,ALUM,2026-10-04,quiet_accumulation_strong,24.01,eligible_no_stored,no stored outcome_7d to compare,,-12.2449,,,,,,verified_loss
+705,AMER,2026-10-04,quiet_accumulation_strong,5.06,eligible_no_stored,no stored outcome_7d to compare,,-6.1265,,,,,,stale_data
+837,AMIA,2026-10-04,pre_surge,19.17,eligible_no_stored,no stored outcome_7d to compare,,-4.3818,,,,,,verified_loss
+750,AMII,2026-10-04,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-27.7465,,,,,,stale_data
+739,AMOC,2026-10-04,quiet_accumulation_strong,13.4,eligible_compared,,3.731343283582089,0.7463,2.9851,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+831,AMPI,2026-10-04,pre_surge,2.68,eligible_no_stored,no stored outcome_7d to compare,,-1.8657,,,,,,verified_loss
+805,ANFI,2026-10-04,quiet_accumulation_strong,97.9,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-19,pending
+721,APPC,2026-10-04,quiet_accumulation_strong,1.57,eligible_no_stored,no stored outcome_7d to compare,,3.1847,,,,,,stale_data
+724,APSW,2026-10-04,quiet_accumulation_strong,8.21,eligible_compared,,3.166869671132762,-2.5579,5.7247,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+834,AREH,2026-10-04,pre_surge,1.34,eligible_no_stored,no stored outcome_7d to compare,,-13.4328,,,,,,verified_loss
+701,ARVA,2026-10-04,quiet_accumulation_strong,11.08,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-14,pending
+838,ASCM,2026-10-04,pre_surge,59.74,eligible_no_stored,no stored outcome_7d to compare,,-17.6599,,,,,,verified_loss
+751,ATQA,2026-10-04,pre_surge,12.61,eligible_no_stored,no stored outcome_7d to compare,,-11.1023,,,,,,stale_data
+752,AXPH,2026-10-04,pre_surge,1670.0,eligible_no_stored,no stored outcome_7d to compare,,-99.9401,,,,,,stale_data
+689,BINV,2026-10-04,quiet_accumulation_strong,57.0,eligible_no_stored,no stored outcome_7d to compare,,2.6842,,,,,,stale_data
+737,BONY,2026-10-04,quiet_accumulation_strong,4.19,eligible_compared,,4.057279236276848,-2.148,6.2053,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+681,BTFH,2026-10-04,quiet_accumulation_strong,2.82,eligible_no_stored,no stored outcome_7d to compare,,-4.9645,,,,,,verified_loss
+848,CAED,2026-10-04,pre_surge,123.57,eligible_no_stored,no stored outcome_7d to compare,,-15.6591,,,,,,verified_loss
+694,CANA,2026-10-04,quiet_accumulation_strong,47.49,eligible_no_stored,no stored outcome_7d to compare,,-5.5591,,,,,,verified_loss
+753,CCAP,2026-10-04,pre_surge,7.09,eligible_no_stored,no stored outcome_7d to compare,,-11.7066,,,,,,verified_loss
+668,CCRS,2026-10-04,quiet_accumulation_strong,2.53,eligible_no_stored,no stored outcome_7d to compare,,-17.7866,,,,,,verified_loss
+754,CEFM,2026-10-04,pre_surge,139.21,eligible_no_stored,no stored outcome_7d to compare,,-12.7577,,,,,,verified_loss
+815,CERA,2026-10-04,quiet_accumulation_strong,1.45,eligible_no_stored,no stored outcome_7d to compare,,-15.1724,,,,,,verified_loss
+712,CICH,2026-10-04,quiet_accumulation_strong,11.98,eligible_no_stored,no stored outcome_7d to compare,,-8.1803,,,,,,verified_loss
+674,CIEB,2026-10-04,quiet_accumulation_strong,24.07,eligible_no_stored,no stored outcome_7d to compare,,-5.484,,,,,,verified_loss
+736,CIRA,2026-10-04,quiet_accumulation_strong,39.07,eligible_no_stored,no stored outcome_7d to compare,,-6.4756,,,,,,verified_loss
+711,CLHO,2026-10-04,quiet_accumulation_strong,15.5,eligible_compared,,3.5483870967741984,-9.0323,12.5806,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-14,verified_loss
+755,COMI,2026-10-04,pre_surge,128.2,eligible_no_stored,no stored outcome_7d to compare,,-5.6162,,,,,,verified_loss
+756,CPCI,2026-10-04,pre_surge,560.0,eligible_no_stored,no stored outcome_7d to compare,,5.3589,,,,,,stale_data
+731,CPME,2026-10-04,quiet_accumulation_strong,35.0,eligible_no_stored,no stored outcome_7d to compare,,8.6,,,,,,stale_data
+667,CRST,2026-10-04,quiet_accumulation_strong,3.72,eligible_no_stored,no stored outcome_7d to compare,,-22.5806,,,,,,stale_data
+757,CSAG,2026-10-04,pre_surge,37.53,eligible_no_stored,no stored outcome_7d to compare,,-6.235,,,,,,verified_loss
+722,DGTZ,2026-10-04,quiet_accumulation_strong,2.31,eligible_no_stored,no stored outcome_7d to compare,,-11.2554,,,,,,verified_loss
+758,DOMT,2026-10-04,pre_surge,25.64,eligible_no_stored,no stored outcome_7d to compare,,-9.6334,,,,,,verified_loss
+732,DSCW,2026-10-04,quiet_accumulation_strong,1.73,eligible_no_stored,no stored outcome_7d to compare,,-8.6705,,,,,,verified_loss
+696,DTPP,2026-10-04,quiet_accumulation_strong,326.01,eligible_no_stored,no stored outcome_7d to compare,,-20.0607,,,,,,stale_data
+759,ECAP,2026-10-04,pre_surge,31.48,eligible_no_stored,no stored outcome_7d to compare,,-11.1499,,,,,,verified_loss
+846,EDFM,2026-10-04,pre_surge,401.97,eligible_no_stored,no stored outcome_7d to compare,,-2.4803,,,,,,verified_loss
+760,EEII,2026-10-04,pre_surge,2.33,eligible_no_stored,no stored outcome_7d to compare,,-16.7382,,,,,,stale_data
+719,EFID,2026-10-04,quiet_accumulation_strong,29.5,eligible_no_stored,no stored outcome_7d to compare,,-38.0339,,,,,,stale_data
+761,EFIH,2026-10-04,pre_surge,22.98,eligible_compared,,4.395126196692767,2.7415,1.6536,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+685,EGAL,2026-10-04,quiet_accumulation_strong,356.96,eligible_no_stored,no stored outcome_7d to compare,,-11.752,,,,,,verified_loss
+690,EGAS,2026-10-04,quiet_accumulation_strong,55.01,eligible_compared,,5.199054717324122,-6.5624,11.7615,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+762,EGCH,2026-10-04,pre_surge,14.2,eligible_no_stored,no stored outcome_7d to compare,,-15.1408,,,,,,verified_loss
+717,EGTS,2026-10-04,quiet_accumulation_strong,18.1,eligible_no_stored,no stored outcome_7d to compare,,-23.5912,,,,,,stale_data
+700,EHDR,2026-10-04,quiet_accumulation_strong,2.68,eligible_no_stored,no stored outcome_7d to compare,,-5.597,,,,,,stale_data
+693,ELEC,2026-10-04,quiet_accumulation_strong,1.93,eligible_no_stored,no stored outcome_7d to compare,,-12.4352,,,,,,verified_loss
+763,ELNA,2026-10-04,pre_surge,34.37,eligible_compared,,-2.64765784114052,-2.6477,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+764,ENGC,2026-10-04,pre_surge,40.28,eligible_no_stored,no stored outcome_7d to compare,,-17.1549,,,,,,stale_data
+765,EOSB,2026-10-04,pre_surge,1.64,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-13,pending
+766,ETEL,2026-10-04,pre_surge,135.99,eligible_no_stored,no stored outcome_7d to compare,,7.9491,,,,,,stale_data
+767,EXPA,2026-10-04,pre_surge,21.75,eligible_no_stored,no stored outcome_7d to compare,,-33.8391,,,,,,verified_loss
+768,FAIT,2026-10-04,pre_surge,46.31,eligible_no_stored,no stored outcome_7d to compare,,-8.2272,,,,,,verified_loss
+720,FCMD,2026-10-04,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+713,FERC,2026-10-04,quiet_accumulation_strong,76.88,eligible_no_stored,no stored outcome_7d to compare,,-9.2742,,,,,,verified_loss
+769,FNAR,2026-10-04,pre_surge,14.88,eligible_no_stored,no stored outcome_7d to compare,,-22.3118,,,,,,verified_loss
+842,FTNS,2026-10-04,pre_surge,1.19,eligible_no_stored,no stored outcome_7d to compare,,-7.563,,,,,,verified_loss
+770,FWRY,2026-10-04,pre_surge,18.75,eligible_compared,,-0.693333333333328,-0.64,0.0533,no,,data_engine.db::historical_data,2026-10-13,pending
+771,GBCO,2026-10-04,pre_surge,30.62,eligible_no_stored,no stored outcome_7d to compare,,-2.678,,,,,,stale_data
+772,GIHD,2026-10-04,pre_surge,76.49,eligible_no_stored,no stored outcome_7d to compare,,-26.997,,,,,,stale_data
+710,GMCI,2026-10-04,quiet_accumulation_strong,1.69,eligible_no_stored,no stored outcome_7d to compare,,-7.1006,,,,,,verified_loss
+852,GOUR,2026-10-04,pre_surge,16.17,eligible_no_stored,no stored outcome_7d to compare,,-10.2041,,,,,,verified_loss
+773,GPIM,2026-10-04,pre_surge,1.6,eligible_no_stored,no stored outcome_7d to compare,,16.25,,,,,,stale_data
+707,GRCA,2026-10-04,quiet_accumulation_strong,39.22,eligible_no_stored,no stored outcome_7d to compare,,-18.3325,,,,,,verified_loss
+698,GSSC,2026-10-04,quiet_accumulation_strong,290.91,eligible_no_stored,no stored outcome_7d to compare,,-8.4253,,,,,,verified_loss
+670,GTHE,2026-10-04,quiet_accumulation_strong,4.9,eligible_no_stored,no stored outcome_7d to compare,,-13.2653,,,,,,stale_data
+727,GTWL,2026-10-04,quiet_accumulation_strong,224.99,eligible_no_stored,no stored outcome_7d to compare,,-35.5527,,,,,,stale_data
+676,HDBK,2026-10-04,quiet_accumulation_strong,109.48,eligible_no_stored,no stored outcome_7d to compare,,-5.4805,,,,,,verified_loss
+671,HELI,2026-10-04,quiet_accumulation_strong,7.82,eligible_no_stored,no stored outcome_7d to compare,,-9.2072,,,,,,stale_data
+774,HRHO,2026-10-04,pre_surge,24.3,eligible_no_stored,no stored outcome_7d to compare,,3.7037,,,,,,stale_data
+683,IBCT,2026-10-04,quiet_accumulation_strong,12.33,eligible_no_stored,no stored outcome_7d to compare,,-7.9481,,,,,,stale_data
+684,ICFC,2026-10-04,quiet_accumulation_strong,22.21,eligible_compared,,3.5569563259792845,-5.3579,8.9149,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+692,IDRE,2026-10-04,quiet_accumulation_strong,51.5,eligible_no_stored,no stored outcome_7d to compare,,-18.4078,,,,,,verified_loss
+729,IFAP,2026-10-04,quiet_accumulation_strong,20.06,eligible_no_stored,no stored outcome_7d to compare,,-9.7707,,,,,,verified_loss
+708,INFI,2026-10-04,quiet_accumulation_strong,127.89,eligible_no_stored,no stored outcome_7d to compare,,-10.079,,,,,,verified_loss
+775,IRON,2026-10-04,pre_surge,28.14,eligible_compared,,5.863539445628993,-4.3355,10.199,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+776,ISMQ,2026-10-04,pre_surge,8.58,eligible_no_stored,no stored outcome_7d to compare,,-13.0536,,,,,,verified_loss
+669,ISPH,2026-10-04,quiet_accumulation_strong,11.67,eligible_compared,,3.5132819194515865,-5.7412,9.2545,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+672,JUFO,2026-10-04,quiet_accumulation_strong,25.98,eligible_no_stored,no stored outcome_7d to compare,,-8.0446,,,,,,verified_loss
+777,KWIN,2026-10-04,pre_surge,88.62,eligible_no_stored,no stored outcome_7d to compare,,-26.2243,,,,,,stale_data
+778,KZPC,2026-10-04,pre_surge,13.9,eligible_no_stored,no stored outcome_7d to compare,,-8.2014,,,,,,stale_data
+820,LCSW,2026-10-04,quiet_accumulation_strong,33.6,eligible_compared,,3.7202380952380953,-1.9345,5.6548,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+702,LKGP,2026-10-04,quiet_accumulation_strong,3.16,eligible_no_stored,no stored outcome_7d to compare,,-5.3797,,,,,,stale_data
+686,MENA,2026-10-04,quiet_accumulation_strong,6.5,excluded_data_anomaly,MENA glitch window 2026-10-04..2026-10-14,,,,,,,,stale_data
+677,MFPC,2026-10-04,quiet_accumulation_strong,47.0,eligible_no_stored,no stored outcome_7d to compare,,-6.3404,,,,,,verified_loss
+779,MFSC,2026-10-04,pre_surge,49.99,eligible_no_stored,no stored outcome_7d to compare,,-21.9844,,,,,,stale_data
+780,MHOT,2026-10-04,pre_surge,18.89,eligible_no_stored,no stored outcome_7d to compare,,-17.5754,,,,,,stale_data
+781,MICH,2026-10-04,pre_surge,48.38,eligible_no_stored,no stored outcome_7d to compare,,-8.9086,,,,,,verified_loss
+695,MIPH,2026-10-04,quiet_accumulation_strong,809.92,eligible_no_stored,no stored outcome_7d to compare,,-5.5462,,,,,,verified_loss
+813,MKIT,2026-10-04,quiet_accumulation_strong,2.78,eligible_no_stored,no stored outcome_7d to compare,,-70.5036,,,,,,verified_loss
+733,MOIN,2026-10-04,quiet_accumulation_strong,34.16,eligible_compared,,3.8934426229508357,-7.3185,11.2119,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+706,MOSC,2026-10-04,quiet_accumulation_strong,293.8,eligible_no_stored,no stored outcome_7d to compare,,-12.2056,,,,,,verified_loss
+734,MPCO,2026-10-04,quiet_accumulation_strong,2.57,eligible_no_stored,no stored outcome_7d to compare,,-17.8988,,,,,,verified_loss
+782,MPRC,2026-10-04,pre_surge,38.99,eligible_compared,,4.898691972300581,-6.6684,11.5671,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+783,MTIE,2026-10-04,pre_surge,8.18,eligible_no_stored,no stored outcome_7d to compare,,-8.802,,,,,,verified_loss
+675,NARE,2026-10-04,quiet_accumulation_strong,17.58,eligible_no_stored,no stored outcome_7d to compare,,-8.0774,,,,,,verified_loss
+741,NCCW,2026-10-04,quiet_accumulation_strong,7.4,eligible_no_stored,no stored outcome_7d to compare,,-20.2703,,,,,,verified_loss
+784,NEDA,2026-10-04,pre_surge,2.68,eligible_no_stored,no stored outcome_7d to compare,,-7.0896,,,,,,verified_loss
+785,NHPS,2026-10-04,pre_surge,77.71,eligible_no_stored,no stored outcome_7d to compare,,-16.0854,,,,,,verified_loss
+718,NIPH,2026-10-04,quiet_accumulation_strong,325.51,eligible_no_stored,no stored outcome_7d to compare,,-16.0394,,,,,,verified_loss
+704,NPCO,2026-10-04,quiet_accumulation_strong,25.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-14,pending
+740,OBRI,2026-10-04,quiet_accumulation_strong,28.55,eligible_compared,,4.6234676007005255,-11.3835,16.007,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+682,OCPH,2026-10-04,quiet_accumulation_strong,227.0,eligible_compared,,3.788546255506606,-11.2026,14.9912,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+786,ODIN,2026-10-04,pre_surge,2.65,eligible_no_stored,no stored outcome_7d to compare,,-16.9811,,,,,,verified_loss
+787,OFH,2026-10-04,pre_surge,1.02,eligible_no_stored,no stored outcome_7d to compare,,-22.7451,,,,,,stale_data
+703,OIH,2026-10-04,quiet_accumulation_strong,2.11,eligible_no_stored,no stored outcome_7d to compare,,-15.1659,,,,,,stale_data
+788,OLFI,2026-10-04,pre_surge,22.45,eligible_no_stored,no stored outcome_7d to compare,,-9.8886,,,,,,verified_loss
+687,ORAS,2026-10-04,quiet_accumulation_strong,824.0,eligible_compared,,6.4344660194174725,6.9175,0.483,no,,data_engine.db::historical_data,2026-10-13,verified_win
+789,ORHD,2026-10-04,pre_surge,40.67,excluded_corp_pre,ORHD pre-event (< 2026-10-07),,,,,,,,verified_loss
+790,ORWE,2026-10-04,pre_surge,26.99,eligible_compared,,2.704705446461654,-1.0745,3.7792,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+699,PACH,2026-10-04,quiet_accumulation_strong,85.0,eligible_compared,,0.01176470588235896,1.8235,1.8118,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-13,pending
+807,PHAR,2026-10-04,quiet_accumulation_strong,117.25,eligible_no_stored,no stored outcome_7d to compare,,-10.0213,,,,,,verified_loss
+791,PHDC,2026-10-04,pre_surge,13.5,eligible_no_stored,no stored outcome_7d to compare,,-5.2593,,,,,,verified_loss
+742,PHTV,2026-10-04,quiet_accumulation_strong,347.34,eligible_no_stored,no stored outcome_7d to compare,,-2.9769,,,,,,verified_loss
+735,POUL,2026-10-04,quiet_accumulation_strong,38.2,eligible_no_stored,no stored outcome_7d to compare,,-75.0785,,,,,,stale_data
+792,PRCL,2026-10-04,pre_surge,30.8,eligible_no_stored,no stored outcome_7d to compare,,-30.0325,,,,,,stale_data
+793,QNBE,2026-10-04,pre_surge,60.0,eligible_no_stored,no stored outcome_7d to compare,,-8.2667,,,,,,verified_loss
+743,RACC,2026-10-04,quiet_accumulation_strong,9.43,eligible_no_stored,no stored outcome_7d to compare,,-5.4083,,,,,,verified_loss
+794,RAKT,2026-10-04,pre_surge,22.08,eligible_compared,,8.197463768115954,3.7138,4.4837,YES,,data_engine.db::historical_data,2026-10-13,verified_win
+795,RAYA,2026-10-04,pre_surge,6.92,eligible_no_stored,no stored outcome_7d to compare,,-14.8844,,,,,,verified_loss
+709,RKAZ,2026-10-04,quiet_accumulation_strong,5.48,eligible_no_stored,no stored outcome_7d to compare,,-9.6715,,,,,,stale_data
+738,RMDA,2026-10-04,quiet_accumulation_strong,5.77,eligible_no_stored,no stored outcome_7d to compare,,-9.5321,,,,,,verified_loss
+796,ROTO,2026-10-04,pre_surge,39.57,eligible_compared,,3.2600454890068216,-5.9136,9.1736,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+716,RREI,2026-10-04,quiet_accumulation_strong,4.02,eligible_no_stored,no stored outcome_7d to compare,,-14.4279,,,,,,verified_loss
+728,RTVC,2026-10-04,quiet_accumulation_strong,3.73,eligible_no_stored,no stored outcome_7d to compare,,-9.1153,,,,,,verified_loss
+665,SAUD,2026-10-04,quiet_accumulation_strong,23.29,eligible_compared,,2.6620867325032247,-7.6857,10.3478,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_loss
+797,SDTI,2026-10-04,pre_surge,79.99,eligible_compared,,4.3755469433679215,3.9505,0.4251,no,,data_engine.db::historical_data,2026-10-13,verified_win
+714,SMFR,2026-10-04,quiet_accumulation_strong,221.88,eligible_compared,,3.596538669551117,-7.121,10.7175,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+798,SNFC,2026-10-04,pre_surge,11.55,eligible_no_stored,no stored outcome_7d to compare,,-4.0693,,,,,,verified_loss
+799,SNFI,2026-10-04,pre_surge,11.29,eligible_no_stored,no stored outcome_7d to compare,,-10.806,,,,,,stale_data
+726,SUCE,2026-10-04,quiet_accumulation_strong,144.0,eligible_no_stored,no stored outcome_7d to compare,,1.7361,,,,,,stale_data
+800,SWDY,2026-10-04,pre_surge,118.5,eligible_no_stored,no stored outcome_7d to compare,,-6.3291,,,,,,verified_loss
+691,TAQA,2026-10-04,quiet_accumulation_strong,17.12,eligible_no_stored,no stored outcome_7d to compare,,-7.9439,,,,,,verified_loss
+697,TORA,2026-10-04,quiet_accumulation_strong,61.0,eligible_compared,,3.3114754098360706,-1.5574,4.8689,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+801,TWSA,2026-10-04,pre_surge,7.19,eligible_compared,,3.7552155771905364,-4.0334,7.7886,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-14,verified_loss
+814,UEFM,2026-10-04,quiet_accumulation_strong,511.46,eligible_no_stored,no stored outcome_7d to compare,,-3.2202,,,,,,verified_loss
+802,UPMS,2026-10-04,pre_surge,10.17,eligible_compared,,5.211406096361842,-1.6716,6.883,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-14,verified_loss
+723,UTOP,2026-10-04,quiet_accumulation_strong,106.5,eligible_no_stored,no stored outcome_7d to compare,,-13.2488,,,,,,verified_loss
+803,VALU,2026-10-04,pre_surge,10.67,eligible_no_stored,no stored outcome_7d to compare,,2.343,,,,,,stale_data
+673,VERT,2026-10-04,quiet_accumulation_strong,6.01,eligible_compared,,4.825291181364393,-0.1664,4.9917,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-13,verified_win
+730,VLMRA,2026-10-04,quiet_accumulation_strong,30.25,eligible_no_stored,no stored outcome_7d to compare,,-10.0165,,,,,,verified_loss
+715,WCDF,2026-10-04,quiet_accumulation_strong,688.9,eligible_no_stored,no stored outcome_7d to compare,,-20.2685,,,,,,verified_loss
+688,WKOL,2026-10-04,quiet_accumulation_strong,325.34,eligible_no_stored,no stored outcome_7d to compare,,-15.4331,,,,,,stale_data
+2915,ABUK,2026-10-07,A_pre_surge,90.0,eligible_no_stored,no stored outcome_7d to compare,,-2.5778,,,,,,verified_loss
+3068,ABUK,2026-10-07,pre_surge,90.0,eligible_no_stored,no stored outcome_7d to compare,,-2.5778,,,,,,verified_loss
+2926,ACAMD,2026-10-07,A_pre_surge,2.05,eligible_no_stored,no stored outcome_7d to compare,,0.9756,,,,,,verified_loss
+3079,ACAMD,2026-10-07,pre_surge,2.05,eligible_no_stored,no stored outcome_7d to compare,,0.9756,,,,,,verified_loss
+2949,ACGC,2026-10-07,A_pre_surge,14.33,eligible_no_stored,no stored outcome_7d to compare,,-5.792,,,,,,verified_loss
+3102,ACGC,2026-10-07,pre_surge,14.33,eligible_no_stored,no stored outcome_7d to compare,,-5.792,,,,,,verified_loss
+2964,ADCI,2026-10-07,A_pre_surge,272.01,eligible_no_stored,no stored outcome_7d to compare,,-4.3454,,,,,,verified_loss
+3117,ADCI,2026-10-07,pre_surge,272.01,eligible_no_stored,no stored outcome_7d to compare,,-4.3454,,,,,,verified_loss
+2940,AFMC,2026-10-07,A_pre_surge,152.0,eligible_no_stored,no stored outcome_7d to compare,,-12.6645,,,,,,verified_loss
+3093,AFMC,2026-10-07,pre_surge,152.0,eligible_no_stored,no stored outcome_7d to compare,,-12.6645,,,,,,verified_loss
+2928,AJWA,2026-10-07,A_pre_surge,196.16,eligible_compared,,8.07504078303426,15.7219,7.6468,YES,,data_engine.db::historical_data,2026-10-17,verified_win
+3081,AJWA,2026-10-07,pre_surge,196.16,eligible_compared,,8.07504078303426,15.7219,7.6468,YES,,data_engine.db::historical_data,2026-10-17,verified_win
+2916,ALCN,2026-10-07,A_pre_surge,33.55,eligible_compared,,-1.9374068554396384,0.6557,2.5931,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-17,pending
+3069,ALCN,2026-10-07,pre_surge,33.55,eligible_compared,,-1.9374068554396384,0.6557,2.5931,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-17,pending
+2977,ALEX,2026-10-07,A_pre_surge,22.1,eligible_no_stored,no stored outcome_7d to compare,,1.7195,,,,,,verified_loss
+3130,ALEX,2026-10-07,pre_surge,22.1,eligible_no_stored,no stored outcome_7d to compare,,1.7195,,,,,,verified_loss
+2943,AMIA,2026-10-07,A_pre_surge,19.18,eligible_no_stored,no stored outcome_7d to compare,,-0.9385,,,,,,verified_loss
+3096,AMIA,2026-10-07,pre_surge,19.18,eligible_no_stored,no stored outcome_7d to compare,,-0.9385,,,,,,verified_loss
+3014,AMOC,2026-10-07,B_quiet_accumulation_strong,14.48,eligible_no_stored,no stored outcome_7d to compare,,-6.9061,,,,,,verified_loss
+3057,AMOC,2026-10-07,quiet_accumulation_strong,14.48,eligible_no_stored,no stored outcome_7d to compare,,-6.9061,,,,,,verified_loss
+2927,AMPI,2026-10-07,A_pre_surge,2.69,eligible_no_stored,no stored outcome_7d to compare,,-3.7175,,,,,,verified_loss
+3080,AMPI,2026-10-07,pre_surge,2.69,eligible_no_stored,no stored outcome_7d to compare,,-3.7175,,,,,,verified_loss
+2983,ANFI,2026-10-07,B_quiet_accumulation_strong,97.9,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-20,pending
+3026,ANFI,2026-10-07,quiet_accumulation_strong,97.9,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-20,pending
+2971,APSW,2026-10-07,A_pre_surge,8.44,eligible_no_stored,no stored outcome_7d to compare,,-6.2796,,,,,,verified_loss
+3124,APSW,2026-10-07,pre_surge,8.44,eligible_no_stored,no stored outcome_7d to compare,,-6.2796,,,,,,verified_loss
+2994,ARCC,2026-10-07,B_quiet_accumulation_strong,71.07,eligible_no_stored,no stored outcome_7d to compare,,-5.8393,,,,,,verified_loss
+3037,ARCC,2026-10-07,quiet_accumulation_strong,71.07,eligible_no_stored,no stored outcome_7d to compare,,-5.8393,,,,,,verified_loss
+2944,ASCM,2026-10-07,A_pre_surge,57.53,eligible_no_stored,no stored outcome_7d to compare,,-12.0633,,,,,,verified_loss
+3097,ASCM,2026-10-07,pre_surge,57.53,eligible_no_stored,no stored outcome_7d to compare,,-12.0633,,,,,,verified_loss
+2950,BINV,2026-10-07,A_pre_surge,58.26,eligible_no_stored,no stored outcome_7d to compare,,0.2231,,,,,,verified_loss
+3103,BINV,2026-10-07,pre_surge,58.26,eligible_no_stored,no stored outcome_7d to compare,,0.2231,,,,,,verified_loss
+2998,BONY,2026-10-07,B_quiet_accumulation_strong,4.36,eligible_no_stored,no stored outcome_7d to compare,,-4.1284,,,,,,verified_loss
+3041,BONY,2026-10-07,quiet_accumulation_strong,4.36,eligible_no_stored,no stored outcome_7d to compare,,-4.1284,,,,,,verified_loss
+2917,BTFH,2026-10-07,A_pre_surge,2.77,eligible_no_stored,no stored outcome_7d to compare,,-0.722,,,,,,verified_loss
+3070,BTFH,2026-10-07,pre_surge,2.77,eligible_no_stored,no stored outcome_7d to compare,,-0.722,,,,,,verified_loss
+2936,CANA,2026-10-07,A_pre_surge,44.93,eligible_no_stored,no stored outcome_7d to compare,,-2.1812,,,,,,verified_loss
+3089,CANA,2026-10-07,pre_surge,44.93,eligible_no_stored,no stored outcome_7d to compare,,-2.1812,,,,,,verified_loss
+2969,CEFM,2026-10-07,A_pre_surge,135.82,eligible_no_stored,no stored outcome_7d to compare,,-7.2302,,,,,,verified_loss
+3122,CEFM,2026-10-07,pre_surge,135.82,eligible_no_stored,no stored outcome_7d to compare,,-7.2302,,,,,,verified_loss
+2921,CERA,2026-10-07,A_pre_surge,1.38,eligible_no_stored,no stored outcome_7d to compare,,-7.971,,,,,,verified_loss
+3074,CERA,2026-10-07,pre_surge,1.38,eligible_no_stored,no stored outcome_7d to compare,,-7.971,,,,,,verified_loss
+3019,CICH,2026-10-07,B_quiet_accumulation_strong,11.94,eligible_no_stored,no stored outcome_7d to compare,,-7.9564,,,,,,verified_loss
+3062,CICH,2026-10-07,quiet_accumulation_strong,11.94,eligible_no_stored,no stored outcome_7d to compare,,-7.9564,,,,,,verified_loss
+2912,CIEB,2026-10-07,A_pre_surge,24.0,eligible_no_stored,no stored outcome_7d to compare,,-4.2083,,,,,,verified_loss
+3065,CIEB,2026-10-07,pre_surge,24.0,eligible_no_stored,no stored outcome_7d to compare,,-4.2083,,,,,,verified_loss
+2933,CIRA,2026-10-07,A_pre_surge,39.42,eligible_no_stored,no stored outcome_7d to compare,,-10.1979,,,,,,verified_loss
+3086,CIRA,2026-10-07,pre_surge,39.42,eligible_no_stored,no stored outcome_7d to compare,,-10.1979,,,,,,verified_loss
+2920,CLHO,2026-10-07,A_pre_surge,15.35,eligible_no_stored,no stored outcome_7d to compare,,-8.7948,,,,,,verified_loss
+3073,CLHO,2026-10-07,pre_surge,15.35,eligible_no_stored,no stored outcome_7d to compare,,-8.7948,,,,,,verified_loss
+2999,COMI,2026-10-07,B_quiet_accumulation_strong,124.65,eligible_compared,,-1.0348977135980797,0.2808,1.3157,YES,,data_engine.db::historical_data,2026-10-17,pending
+3042,COMI,2026-10-07,quiet_accumulation_strong,124.65,eligible_compared,,-1.0348977135980797,0.2808,1.3157,YES,,data_engine.db::historical_data,2026-10-17,pending
+2954,CPCI,2026-10-07,A_pre_surge,602.9,eligible_compared,,-1.4761983745231344,-0.1493,1.3269,YES,,data_engine.db::historical_data,2026-10-17,pending
+3107,CPCI,2026-10-07,pre_surge,602.9,eligible_compared,,-1.4761983745231344,-0.1493,1.3269,YES,,data_engine.db::historical_data,2026-10-17,pending
+3001,CPMEC,2026-10-07,B_quiet_accumulation_strong,19.9,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+3044,CPMEC,2026-10-07,quiet_accumulation_strong,19.9,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+2934,CSAG,2026-10-07,A_pre_surge,36.82,eligible_no_stored,no stored outcome_7d to compare,,-1.7653,,,,,,verified_loss
+3087,CSAG,2026-10-07,pre_surge,36.82,eligible_no_stored,no stored outcome_7d to compare,,-1.7653,,,,,,verified_loss
+3002,DGTZD,2026-10-07,B_quiet_accumulation_strong,2.69,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3045,DGTZD,2026-10-07,quiet_accumulation_strong,2.69,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+2923,DSCW,2026-10-07,A_pre_surge,1.7,eligible_no_stored,no stored outcome_7d to compare,,-4.7059,,,,,,verified_loss
+3076,DSCW,2026-10-07,pre_surge,1.7,eligible_no_stored,no stored outcome_7d to compare,,-4.7059,,,,,,verified_loss
+2931,ECAP,2026-10-07,A_pre_surge,30.1,eligible_no_stored,no stored outcome_7d to compare,,-4.186,,,,,,verified_loss
+3084,ECAP,2026-10-07,pre_surge,30.1,eligible_no_stored,no stored outcome_7d to compare,,-4.186,,,,,,verified_loss
+2972,EDFM,2026-10-07,A_pre_surge,410.0,eligible_no_stored,no stored outcome_7d to compare,,-5.961,,,,,,verified_loss
+3125,EDFM,2026-10-07,pre_surge,410.0,eligible_no_stored,no stored outcome_7d to compare,,-5.961,,,,,,verified_loss
+2990,EFIH,2026-10-07,B_quiet_accumulation_strong,25.23,eligible_no_stored,no stored outcome_7d to compare,,-3.5275,,,,,,verified_loss
+3033,EFIH,2026-10-07,quiet_accumulation_strong,25.23,eligible_no_stored,no stored outcome_7d to compare,,-3.5275,,,,,,verified_loss
+2975,EGAL,2026-10-07,A_pre_surge,339.4,eligible_no_stored,no stored outcome_7d to compare,,-10.1267,,,,,,verified_loss
+3128,EGAL,2026-10-07,pre_surge,339.4,eligible_no_stored,no stored outcome_7d to compare,,-10.1267,,,,,,verified_loss
+2961,EGAS,2026-10-07,A_pre_surge,56.15,eligible_no_stored,no stored outcome_7d to compare,,-5.7168,,,,,,verified_loss
+3114,EGAS,2026-10-07,pre_surge,56.15,eligible_no_stored,no stored outcome_7d to compare,,-5.7168,,,,,,verified_loss
+2970,EGCH,2026-10-07,A_pre_surge,13.36,eligible_no_stored,no stored outcome_7d to compare,,-9.8054,,,,,,verified_loss
+3123,EGCH,2026-10-07,pre_surge,13.36,eligible_no_stored,no stored outcome_7d to compare,,-9.8054,,,,,,verified_loss
+2992,EGS385S1C012,2026-10-07,B_quiet_accumulation_strong,81.2,eligible_no_stored,no stored outcome_7d to compare,,-6.2808,,,,,,verified_loss
+3035,EGS385S1C012,2026-10-07,quiet_accumulation_strong,81.2,eligible_no_stored,no stored outcome_7d to compare,,-6.2808,,,,,,verified_loss
+2979,EGS3E071C013-EGP,2026-10-07,A_pre_surge,101.0,eligible_no_stored,no stored outcome_7d to compare,,-0.9901,,,,,,verified_loss
+3132,EGS3E071C013-EGP,2026-10-07,pre_surge,101.0,eligible_no_stored,no stored outcome_7d to compare,,-0.9901,,,,,,verified_loss
+3009,EGTS,2026-10-07,B_quiet_accumulation_strong,16.35,eligible_no_stored,no stored outcome_7d to compare,,-14.2508,,,,,,verified_loss
+3052,EGTS,2026-10-07,quiet_accumulation_strong,16.35,eligible_no_stored,no stored outcome_7d to compare,,-14.2508,,,,,,verified_loss
+2960,ELEC,2026-10-07,A_pre_surge,1.87,eligible_no_stored,no stored outcome_7d to compare,,-7.4866,,,,,,verified_loss
+3113,ELEC,2026-10-07,pre_surge,1.87,eligible_no_stored,no stored outcome_7d to compare,,-7.4866,,,,,,verified_loss
+2955,ELNA,2026-10-07,A_pre_surge,35.22,eligible_compared,,-4.997160704145366,0.0,4.9972,YES,,data_engine.db::historical_data,2026-10-17,pending
+3108,ELNA,2026-10-07,pre_surge,35.22,eligible_compared,,-4.997160704145366,0.0,4.9972,YES,,data_engine.db::historical_data,2026-10-17,pending
+2945,ELSH,2026-10-07,A_pre_surge,12.08,eligible_no_stored,no stored outcome_7d to compare,,-7.2848,,,,,,verified_loss
+3098,ELSH,2026-10-07,pre_surge,12.08,eligible_no_stored,no stored outcome_7d to compare,,-7.2848,,,,,,verified_loss
+2939,ELWA,2026-10-07,A_pre_surge,1.59,eligible_compared,,2.5157232704402395,-1.2579,3.7736,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-17,verified_loss
+3092,ELWA,2026-10-07,pre_surge,1.59,eligible_compared,,2.5157232704402395,-1.2579,3.7736,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-17,verified_loss
+3000,ETEL,2026-10-07,B_quiet_accumulation_strong,148.0,eligible_compared,,-4.459459459459455,-1.7568,2.7027,YES,,data_engine.db::historical_data,2026-10-17,pending
+3043,ETEL,2026-10-07,quiet_accumulation_strong,148.0,eligible_compared,,-4.459459459459455,-1.7568,2.7027,YES,,data_engine.db::historical_data,2026-10-17,pending
+2959,ETRS,2026-10-07,A_pre_surge,10.8,eligible_no_stored,no stored outcome_7d to compare,,-1.7593,,,,,,verified_loss
+3112,ETRS,2026-10-07,pre_surge,10.8,eligible_no_stored,no stored outcome_7d to compare,,-1.7593,,,,,,verified_loss
+2941,FAIT,2026-10-07,A_pre_surge,45.59,eligible_no_stored,no stored outcome_7d to compare,,-4.5185,,,,,,verified_loss
+3094,FAIT,2026-10-07,pre_surge,45.59,eligible_no_stored,no stored outcome_7d to compare,,-4.5185,,,,,,verified_loss
+3003,FCMD,2026-10-07,B_quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+3046,FCMD,2026-10-07,quiet_accumulation_strong,7.3,eligible_no_stored,no stored outcome_7d to compare,,0.0,,,,,,verified_loss
+2932,FERC,2026-10-07,A_pre_surge,75.27,eligible_no_stored,no stored outcome_7d to compare,,-6.6693,,,,,,verified_loss
+3085,FERC,2026-10-07,pre_surge,75.27,eligible_no_stored,no stored outcome_7d to compare,,-6.6693,,,,,,verified_loss
+3016,FNAR,2026-10-07,B_quiet_accumulation_strong,13.86,eligible_no_stored,no stored outcome_7d to compare,,-15.0794,,,,,,verified_loss
+3059,FNAR,2026-10-07,quiet_accumulation_strong,13.86,eligible_no_stored,no stored outcome_7d to compare,,-15.0794,,,,,,verified_loss
+2919,FWRY,2026-10-07,A_pre_surge,19.06,eligible_no_stored,no stored outcome_7d to compare,,-1.4166,,,,,,verified_loss
+3072,FWRY,2026-10-07,pre_surge,19.06,eligible_no_stored,no stored outcome_7d to compare,,-1.4166,,,,,,verified_loss
+2925,GBCO,2026-10-07,A_pre_surge,31.01,eligible_no_stored,no stored outcome_7d to compare,,-6.5463,,,,,,verified_loss
+3078,GBCO,2026-10-07,pre_surge,31.01,eligible_no_stored,no stored outcome_7d to compare,,-6.5463,,,,,,verified_loss
+2993,GOUR,2026-10-07,B_quiet_accumulation_strong,16.2,eligible_no_stored,no stored outcome_7d to compare,,-8.9506,,,,,,verified_loss
+3036,GOUR,2026-10-07,quiet_accumulation_strong,16.2,eligible_no_stored,no stored outcome_7d to compare,,-8.9506,,,,,,verified_loss
+3004,GOURG,2026-10-07,B_quiet_accumulation_strong,12.93,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3047,GOURG,2026-10-07,quiet_accumulation_strong,12.93,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+2929,HBCO,2026-10-07,A_pre_surge,8.8,eligible_compared,,5.113636363636355,-16.8182,21.9318,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-18,verified_loss
+3082,HBCO,2026-10-07,pre_surge,8.8,eligible_compared,,5.113636363636355,-16.8182,21.9318,YES,WIN→LOSS,data_engine.db::historical_data,2026-10-18,verified_loss
+3005,HBCOH,2026-10-07,B_quiet_accumulation_strong,8.22,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3048,HBCOH,2026-10-07,quiet_accumulation_strong,8.22,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+2942,HDBK,2026-10-07,A_pre_surge,107.79,eligible_no_stored,no stored outcome_7d to compare,,-5.4551,,,,,,verified_loss
+3095,HDBK,2026-10-07,pre_surge,107.79,eligible_no_stored,no stored outcome_7d to compare,,-5.4551,,,,,,verified_loss
+2913,HELI,2026-10-07,A_pre_surge,7.49,eligible_no_stored,no stored outcome_7d to compare,,-2.4032,,,,,,verified_loss
+3066,HELI,2026-10-07,pre_surge,7.49,eligible_no_stored,no stored outcome_7d to compare,,-2.4032,,,,,,verified_loss
+2980,HRHO,2026-10-07,B_quiet_accumulation_strong,26.57,eligible_no_stored,no stored outcome_7d to compare,,-2.9356,,,,,,verified_loss
+3023,HRHO,2026-10-07,quiet_accumulation_strong,26.57,eligible_no_stored,no stored outcome_7d to compare,,-2.9356,,,,,,verified_loss
+3018,ICFC,2026-10-07,B_quiet_accumulation_strong,23.2,eligible_no_stored,no stored outcome_7d to compare,,-5.819,,,,,,verified_loss
+3061,ICFC,2026-10-07,quiet_accumulation_strong,23.2,eligible_no_stored,no stored outcome_7d to compare,,-5.819,,,,,,verified_loss
+2948,IFAP,2026-10-07,A_pre_surge,19.4,eligible_no_stored,no stored outcome_7d to compare,,-4.8969,,,,,,verified_loss
+3101,IFAP,2026-10-07,pre_surge,19.4,eligible_no_stored,no stored outcome_7d to compare,,-4.8969,,,,,,verified_loss
+2935,ISMQ,2026-10-07,A_pre_surge,8.25,eligible_no_stored,no stored outcome_7d to compare,,-13.697,,,,,,verified_loss
+3088,ISMQ,2026-10-07,pre_surge,8.25,eligible_no_stored,no stored outcome_7d to compare,,-13.697,,,,,,verified_loss
+2924,ISPH,2026-10-07,A_pre_surge,11.7,eligible_no_stored,no stored outcome_7d to compare,,-3.6752,,,,,,verified_loss
+3077,ISPH,2026-10-07,pre_surge,11.7,eligible_no_stored,no stored outcome_7d to compare,,-3.6752,,,,,,verified_loss
+2914,JUFO,2026-10-07,A_pre_surge,25.0,eligible_no_stored,no stored outcome_7d to compare,,-2.28,,,,,,verified_loss
+3067,JUFO,2026-10-07,pre_surge,25.0,eligible_no_stored,no stored outcome_7d to compare,,-2.28,,,,,,verified_loss
+2978,KORA,2026-10-07,A_pre_surge,6.5,eligible_no_stored,no stored outcome_7d to compare,,-58.0,,,,,,verified_loss
+3131,KORA,2026-10-07,pre_surge,6.5,eligible_no_stored,no stored outcome_7d to compare,,-58.0,,,,,,verified_loss
+3017,LCSW,2026-10-07,B_quiet_accumulation_strong,34.85,eligible_no_stored,no stored outcome_7d to compare,,-2.439,,,,,,verified_loss
+3060,LCSW,2026-10-07,quiet_accumulation_strong,34.85,eligible_no_stored,no stored outcome_7d to compare,,-2.439,,,,,,verified_loss
+2957,MAAL,2026-10-07,A_pre_surge,10.9,eligible_no_stored,no stored outcome_7d to compare,,-21.0092,,,,,,verified_loss
+3110,MAAL,2026-10-07,pre_surge,10.9,eligible_no_stored,no stored outcome_7d to compare,,-21.0092,,,,,,verified_loss
+3020,MBEG,2026-10-07,B_quiet_accumulation_strong,7.93,eligible_no_stored,no stored outcome_7d to compare,,-33.1652,,,,,,verified_loss
+3063,MBEG,2026-10-07,quiet_accumulation_strong,7.93,eligible_no_stored,no stored outcome_7d to compare,,-33.1652,,,,,,verified_loss
+2988,MBSC,2026-10-07,B_quiet_accumulation_strong,377.0,eligible_no_stored,no stored outcome_7d to compare,,-8.2228,,,,,,verified_loss
+3031,MBSC,2026-10-07,quiet_accumulation_strong,377.0,eligible_no_stored,no stored outcome_7d to compare,,-8.2228,,,,,,verified_loss
+3021,MENA,2026-10-07,D_explosive_surge,129.0,excluded_data_anomaly,MENA glitch window 2026-10-04..2026-10-14,6.976744186046512,,,,,,,verified_loss
+3022,MENA,2026-10-07,explosive_surge,129.0,excluded_data_anomaly,MENA glitch window 2026-10-04..2026-10-14,6.976744186046512,,,,,,,verified_loss
+2918,MFPC,2026-10-07,A_pre_surge,46.5,eligible_no_stored,no stored outcome_7d to compare,,-5.5699,,,,,,verified_loss
+3071,MFPC,2026-10-07,pre_surge,46.5,eligible_no_stored,no stored outcome_7d to compare,,-5.5699,,,,,,verified_loss
+2987,MHOT,2026-10-07,B_quiet_accumulation_strong,17.39,eligible_no_stored,no stored outcome_7d to compare,,-9.4882,,,,,,verified_loss
+3030,MHOT,2026-10-07,quiet_accumulation_strong,17.39,eligible_no_stored,no stored outcome_7d to compare,,-9.4882,,,,,,verified_loss
+3012,MICH,2026-10-07,B_quiet_accumulation_strong,47.04,eligible_no_stored,no stored outcome_7d to compare,,-12.1173,,,,,,verified_loss
+3055,MICH,2026-10-07,quiet_accumulation_strong,47.04,eligible_no_stored,no stored outcome_7d to compare,,-12.1173,,,,,,verified_loss
+2922,MILS,2026-10-07,A_pre_surge,183.87,eligible_no_stored,no stored outcome_7d to compare,,-15.7013,,,,,,verified_loss
+3075,MILS,2026-10-07,pre_surge,183.87,eligible_no_stored,no stored outcome_7d to compare,,-15.7013,,,,,,verified_loss
+2951,MIPH,2026-10-07,A_pre_surge,829.4,eligible_no_stored,no stored outcome_7d to compare,,-3.7859,,,,,,verified_loss
+3104,MIPH,2026-10-07,pre_surge,829.4,eligible_no_stored,no stored outcome_7d to compare,,-3.7859,,,,,,verified_loss
+2974,MOIN,2026-10-07,A_pre_surge,35.49,eligible_no_stored,no stored outcome_7d to compare,,-9.9465,,,,,,verified_loss
+3127,MOIN,2026-10-07,pre_surge,35.49,eligible_no_stored,no stored outcome_7d to compare,,-9.9465,,,,,,verified_loss
+2947,MPRC,2026-10-07,A_pre_surge,40.23,eligible_no_stored,no stored outcome_7d to compare,,-10.5891,,,,,,verified_loss
+3100,MPRC,2026-10-07,pre_surge,40.23,eligible_no_stored,no stored outcome_7d to compare,,-10.5891,,,,,,verified_loss
+2930,MTIE,2026-10-07,A_pre_surge,8.06,eligible_no_stored,no stored outcome_7d to compare,,-8.1886,,,,,,verified_loss
+3083,MTIE,2026-10-07,pre_surge,8.06,eligible_no_stored,no stored outcome_7d to compare,,-8.1886,,,,,,verified_loss
+2937,NARE,2026-10-07,A_pre_surge,17.05,eligible_no_stored,no stored outcome_7d to compare,,-17.2434,,,,,,verified_loss
+3090,NARE,2026-10-07,pre_surge,17.05,eligible_no_stored,no stored outcome_7d to compare,,-17.2434,,,,,,verified_loss
+2966,NEDA,2026-10-07,A_pre_surge,2.61,eligible_no_stored,no stored outcome_7d to compare,,-1.1494,,,,,,verified_loss
+3119,NEDA,2026-10-07,pre_surge,2.61,eligible_no_stored,no stored outcome_7d to compare,,-1.1494,,,,,,verified_loss
+2956,NINH,2026-10-07,A_pre_surge,19.06,eligible_no_stored,no stored outcome_7d to compare,,-13.1165,,,,,,verified_loss
+3109,NINH,2026-10-07,pre_surge,19.06,eligible_no_stored,no stored outcome_7d to compare,,-13.1165,,,,,,verified_loss
+2965,NIPH,2026-10-07,A_pre_surge,315.5,eligible_no_stored,no stored outcome_7d to compare,,-13.0745,,,,,,verified_loss
+3118,NIPH,2026-10-07,pre_surge,315.5,eligible_no_stored,no stored outcome_7d to compare,,-13.0745,,,,,,verified_loss
+2989,OBRI,2026-10-07,B_quiet_accumulation_strong,28.36,eligible_no_stored,no stored outcome_7d to compare,,-4.6192,,,,,,verified_loss
+3032,OBRI,2026-10-07,quiet_accumulation_strong,28.36,eligible_no_stored,no stored outcome_7d to compare,,-4.6192,,,,,,verified_loss
+2995,ORAS,2026-10-07,B_quiet_accumulation_strong,877.02,eligible_compared,,-0.9144603315773849,2.0501,2.9646,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-17,pending
+3038,ORAS,2026-10-07,quiet_accumulation_strong,877.02,eligible_compared,,-0.9144603315773849,2.0501,2.9646,YES,LOSS→WIN,data_engine.db::historical_data,2026-10-17,pending
+3015,ORWE,2026-10-07,B_quiet_accumulation_strong,27.14,eligible_compared,,1.4369933677229203,2.1002,0.6632,YES,,data_engine.db::historical_data,2026-10-17,pending
+3058,ORWE,2026-10-07,quiet_accumulation_strong,27.14,eligible_compared,,1.4369933677229203,2.1002,0.6632,YES,,data_engine.db::historical_data,2026-10-17,pending
+2967,PACH,2026-10-07,A_pre_surge,86.5,eligible_compared,,-0.2890173410404624,-1.7225,1.4335,YES,,data_engine.db::historical_data,2026-10-17,pending
+3120,PACH,2026-10-07,pre_surge,86.5,eligible_compared,,-0.2890173410404624,-1.7225,1.4335,YES,,data_engine.db::historical_data,2026-10-17,pending
+2911,PHDC,2026-10-07,A_pre_surge,12.93,eligible_compared,,-3.09358081979892,-0.7734,2.3202,YES,,data_engine.db::historical_data,2026-10-17,pending
+3064,PHDC,2026-10-07,pre_surge,12.93,eligible_compared,,-3.09358081979892,-0.7734,2.3202,YES,,data_engine.db::historical_data,2026-10-17,pending
+2946,PHTV,2026-10-07,A_pre_surge,351.81,eligible_no_stored,no stored outcome_7d to compare,,-3.3569,,,,,,verified_loss
+3099,PHTV,2026-10-07,pre_surge,351.81,eligible_no_stored,no stored outcome_7d to compare,,-3.3569,,,,,,verified_loss
+2958,QNBE,2026-10-07,A_pre_surge,58.26,eligible_no_stored,no stored outcome_7d to compare,,-11.3114,,,,,,verified_loss
+3111,QNBE,2026-10-07,pre_surge,58.26,eligible_no_stored,no stored outcome_7d to compare,,-11.3114,,,,,,verified_loss
+2952,RACC,2026-10-07,A_pre_surge,9.32,eligible_no_stored,no stored outcome_7d to compare,,-2.4678,,,,,,verified_loss
+3105,RACC,2026-10-07,pre_surge,9.32,eligible_no_stored,no stored outcome_7d to compare,,-2.4678,,,,,,verified_loss
+2997,RAKT,2026-10-07,B_quiet_accumulation_strong,23.89,eligible_no_stored,no stored outcome_7d to compare,,-7.6601,,,,,,verified_loss
+3040,RAKT,2026-10-07,quiet_accumulation_strong,23.89,eligible_no_stored,no stored outcome_7d to compare,,-7.6601,,,,,,verified_loss
+3010,RAYA,2026-10-07,B_quiet_accumulation_strong,6.6,eligible_no_stored,no stored outcome_7d to compare,,-9.5455,,,,,,verified_loss
+3053,RAYA,2026-10-07,quiet_accumulation_strong,6.6,eligible_no_stored,no stored outcome_7d to compare,,-9.5455,,,,,,verified_loss
+3006,RMDAT,2026-10-07,B_quiet_accumulation_strong,5.15,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3049,RMDAT,2026-10-07,quiet_accumulation_strong,5.15,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3011,ROTO,2026-10-07,B_quiet_accumulation_strong,40.86,eligible_no_stored,no stored outcome_7d to compare,,-7.905,,,,,,verified_loss
+3054,ROTO,2026-10-07,quiet_accumulation_strong,40.86,eligible_no_stored,no stored outcome_7d to compare,,-7.905,,,,,,verified_loss
+2984,RTVC,2026-10-07,B_quiet_accumulation_strong,3.68,eligible_no_stored,no stored outcome_7d to compare,,-6.7935,,,,,,verified_loss
+3027,RTVC,2026-10-07,quiet_accumulation_strong,3.68,eligible_no_stored,no stored outcome_7d to compare,,-6.7935,,,,,,verified_loss
+2982,SAUD,2026-10-07,B_quiet_accumulation_strong,22.97,eligible_no_stored,no stored outcome_7d to compare,,-4.2229,,,,,,verified_loss
+3025,SAUD,2026-10-07,quiet_accumulation_strong,22.97,eligible_no_stored,no stored outcome_7d to compare,,-4.2229,,,,,,verified_loss
+2976,SEIG,2026-10-07,A_pre_surge,233.37,eligible_no_stored,no stored outcome_7d to compare,,-17.5558,,,,,,verified_loss
+3129,SEIG,2026-10-07,pre_surge,233.37,eligible_no_stored,no stored outcome_7d to compare,,-17.5558,,,,,,verified_loss
+2985,SMFR,2026-10-07,B_quiet_accumulation_strong,232.15,eligible_no_stored,no stored outcome_7d to compare,,-14.3829,,,,,,verified_loss
+3028,SMFR,2026-10-07,quiet_accumulation_strong,232.15,eligible_no_stored,no stored outcome_7d to compare,,-14.3829,,,,,,verified_loss
+2968,SNFC,2026-10-07,A_pre_surge,11.64,eligible_no_stored,no stored outcome_7d to compare,,-3.1787,,,,,,verified_loss
+3121,SNFC,2026-10-07,pre_surge,11.64,eligible_no_stored,no stored outcome_7d to compare,,-3.1787,,,,,,verified_loss
+2986,SNFI,2026-10-07,B_quiet_accumulation_strong,10.73,eligible_no_stored,no stored outcome_7d to compare,,-2.1435,,,,,,verified_loss
+3029,SNFI,2026-10-07,quiet_accumulation_strong,10.73,eligible_no_stored,no stored outcome_7d to compare,,-2.1435,,,,,,verified_loss
+2953,SPIN,2026-10-07,A_pre_surge,16.31,eligible_no_stored,no stored outcome_7d to compare,,-8.1545,,,,,,verified_loss
+3106,SPIN,2026-10-07,pre_surge,16.31,eligible_no_stored,no stored outcome_7d to compare,,-8.1545,,,,,,verified_loss
+2991,SWDY,2026-10-07,B_quiet_accumulation_strong,116.0,eligible_no_stored,no stored outcome_7d to compare,,-2.5172,,,,,,verified_loss
+3034,SWDY,2026-10-07,quiet_accumulation_strong,116.0,eligible_no_stored,no stored outcome_7d to compare,,-2.5172,,,,,,verified_loss
+2962,TAQA,2026-10-07,A_pre_surge,17.1,eligible_no_stored,no stored outcome_7d to compare,,-12.5731,,,,,,verified_loss
+3115,TAQA,2026-10-07,pre_surge,17.1,eligible_no_stored,no stored outcome_7d to compare,,-12.5731,,,,,,verified_loss
+2996,TORA,2026-10-07,B_quiet_accumulation_strong,63.02,eligible_no_stored,no stored outcome_7d to compare,,-6.5535,,,,,,verified_loss
+3039,TORA,2026-10-07,quiet_accumulation_strong,63.02,eligible_no_stored,no stored outcome_7d to compare,,-6.5535,,,,,,verified_loss
+3007,TORAT,2026-10-07,B_quiet_accumulation_strong,75.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3050,TORAT,2026-10-07,quiet_accumulation_strong,75.0,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+2963,UBEE,2026-10-07,A_pre_surge,15.94,eligible_no_stored,no stored outcome_7d to compare,,-7.2773,,,,,,verified_loss
+3116,UBEE,2026-10-07,pre_surge,15.94,eligible_no_stored,no stored outcome_7d to compare,,-7.2773,,,,,,verified_loss
+3013,UPMS,2026-10-07,B_quiet_accumulation_strong,10.7,eligible_no_stored,no stored outcome_7d to compare,,-9.2523,,,,,,verified_loss
+3056,UPMS,2026-10-07,quiet_accumulation_strong,10.7,eligible_no_stored,no stored outcome_7d to compare,,-9.2523,,,,,,verified_loss
+2973,UTOP,2026-10-07,A_pre_surge,99.82,eligible_no_stored,no stored outcome_7d to compare,,-10.8395,,,,,,verified_loss
+3126,UTOP,2026-10-07,pre_surge,99.82,eligible_no_stored,no stored outcome_7d to compare,,-10.8395,,,,,,verified_loss
+2981,VALU,2026-10-07,B_quiet_accumulation_strong,11.24,eligible_no_stored,no stored outcome_7d to compare,,2.3132,,,,,,verified_loss
+3024,VALU,2026-10-07,quiet_accumulation_strong,11.24,eligible_no_stored,no stored outcome_7d to compare,,2.3132,,,,,,verified_loss
+3008,VALUU,2026-10-07,B_quiet_accumulation_strong,11.79,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+3051,VALUU,2026-10-07,quiet_accumulation_strong,11.79,eligible_compared,,0.0,0.0,0.0,no,,data_engine.db::historical_data,2026-10-18,pending
+2938,ZEOT,2026-10-07,A_pre_surge,12.6,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+3091,ZEOT,2026-10-07,pre_surge,12.6,eligible_no_stored,no stored outcome_7d to compare,,-10.0,,,,,,verified_loss
+3917,GRAM,2026-10-08,B_quiet_accumulation_strong,1.39,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3919,M,2026-10-08,B_quiet_accumulation_strong,1.06,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3909,OKB,2026-10-08,A_pre_surge,124.61,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3915,PROM,2026-10-08,A_pre_surge,5.13,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3914,QNT,2026-10-08,A_pre_surge,236.35,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3910,USDE,2026-10-08,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3918,USDG,2026-10-08,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3911,USDT,2026-10-08,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3916,USDY,2026-10-08,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3912,WBT,2026-10-08,A_pre_surge,80.42,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+3913,XMR,2026-10-08,A_pre_surge,534.98,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10149,BNB,2026-10-09,A_pre_surge,743.03,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+10150,BTC,2026-10-09,A_pre_surge,82655.87,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+10164,CRCLB,2026-10-09,A_pre_surge,84.92,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+10151,DAI,2026-10-09,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10160,DOT,2026-10-09,A_pre_surge,1.24,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+10152,ETH,2026-10-09,A_pre_surge,2488.63,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+10153,FIGR_HELOC,2026-10-09,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10161,FIL,2026-10-09,A_pre_surge,1.08,excluded_crypto,crypto ticker collision (FIL),,,,,,,,pending
+10162,INJ,2026-10-09,A_pre_surge,7.12,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+10167,LEO,2026-10-09,B_quiet_accumulation_strong,8.89,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10154,LTC,2026-10-09,A_pre_surge,63.75,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+10159,M,2026-10-09,A_pre_surge,1.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10163,PROM,2026-10-09,A_pre_surge,5.13,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10166,PYUSD,2026-10-09,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10155,SUI,2026-10-09,A_pre_surge,1.07,excluded_crypto,crypto ticker collision (SUI),,,,,,,,pending
+10156,UNI,2026-10-09,A_pre_surge,7.33,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+10157,USDG,2026-10-09,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10158,USDS,2026-10-09,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+10165,USDY,2026-10-09,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16918,AAVE,2026-10-10,B_quiet_accumulation_strong,168.62,excluded_crypto,crypto ticker collision (AAVE),,,,,,,,pending
+16927,AVAX,2026-10-10,B_quiet_accumulation_strong,10.36,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+16926,BNB,2026-10-10,B_quiet_accumulation_strong,750.02,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+16922,BTC,2026-10-10,B_quiet_accumulation_strong,82941.0,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+16936,DAI,2026-10-10,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16921,ETH,2026-10-10,B_quiet_accumulation_strong,2505.86,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+16919,HYPE,2026-10-10,B_quiet_accumulation_strong,85.41,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16909,LEO,2026-10-10,A_pre_surge,8.81,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16925,LINK,2026-10-10,B_quiet_accumulation_strong,13.01,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+16917,LPT,2026-10-10,A_pre_surge,1.81,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16928,LTC,2026-10-10,B_quiet_accumulation_strong,64.02,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+16933,NEAR,2026-10-10,B_quiet_accumulation_strong,5.29,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+16910,OKB,2026-10-10,A_pre_surge,126.08,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16911,PYUSD,2026-10-10,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16920,QNT,2026-10-10,B_quiet_accumulation_strong,239.7,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16935,RLUSD,2026-10-10,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16923,SOL,2026-10-10,B_quiet_accumulation_strong,110.08,excluded_crypto,crypto ticker collision (SOL),,,,,,,,pending
+16930,SUI,2026-10-10,B_quiet_accumulation_strong,1.11,excluded_crypto,crypto ticker collision (SUI),,,,,,,,pending
+16931,TAO,2026-10-10,B_quiet_accumulation_strong,285.08,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16929,UNI,2026-10-10,B_quiet_accumulation_strong,7.59,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+16932,USD1,2026-10-10,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16934,USDC,2026-10-10,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16912,USDS,2026-10-10,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16913,USDT,2026-10-10,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16914,USDY,2026-10-10,A_pre_surge,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16924,XRP,2026-10-10,B_quiet_accumulation_strong,1.4,excluded_crypto,crypto ticker collision (XRP),,,,,,,,pending
+16915,ZEC,2026-10-10,A_pre_surge,1220.99,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+16916,ZRO,2026-10-10,A_pre_surge,2.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52940,ATOM,2026-10-11,A_pre_surge,1.92,excluded_crypto,crypto ticker collision (ATOM),,,,,,,,pending
+52933,BCH,2026-10-11,A_pre_surge,285.26,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+52934,BNB,2026-10-11,A_pre_surge,754.69,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+52935,BTC,2026-10-11,A_pre_surge,83780.5,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+52943,DAI,2026-10-11,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52939,DOT,2026-10-11,A_pre_surge,1.26,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+52936,NEAR,2026-10-11,A_pre_surge,5.88,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+52937,PYUSD,2026-10-11,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52941,QNT,2026-10-11,A_pre_surge,238.12,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52938,USDE,2026-10-11,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52944,USDG,2026-10-11,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52945,USDS,2026-10-11,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52946,USDY,2026-10-11,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+52942,WBT,2026-10-11,B_quiet_accumulation_strong,82.26,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88577,AVAX,2026-10-12,A_pre_surge,10.17,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+88578,BCH,2026-10-12,A_pre_surge,266.3,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+88592,BTW,2026-10-12,B_quiet_accumulation_strong,1.73,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88593,BUIDL,2026-10-12,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+88579,ETH,2026-10-12,A_pre_surge,2450.92,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+88580,FIGR_HELOC,2026-10-12,A_pre_surge,1.06,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88589,ICP,2026-10-12,A_pre_surge,3.13,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88591,INJ,2026-10-12,A_pre_surge,7.33,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+88581,LINK,2026-10-12,A_pre_surge,12.67,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+88582,LTC,2026-10-12,A_pre_surge,61.18,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+88583,PAXG,2026-10-12,A_pre_surge,4169.59,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88590,QNT,2026-10-12,A_pre_surge,226.52,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88584,SUI,2026-10-12,A_pre_surge,1.03,excluded_crypto,crypto ticker collision (SUI),,,,,,,,pending
+88585,UNI,2026-10-12,A_pre_surge,7.0,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+88595,USDF,2026-10-12,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+88586,USDY,2026-10-12,A_pre_surge,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+88594,USYC,2026-10-12,disqualified_illiquid,1.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+88587,XRP,2026-10-12,A_pre_surge,1.34,excluded_crypto,crypto ticker collision (XRP),,,,,,,,pending
+88588,ZEC,2026-10-12,A_pre_surge,1170.57,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126522,BUIDL,2026-10-13,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+126520,FIGR_HELOC,2026-10-13,B_quiet_accumulation_strong,1.03,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126516,OKB,2026-10-13,A_pre_surge,122.05,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126517,PAXG,2026-10-13,A_pre_surge,4169.59,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126518,USDE,2026-10-13,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126524,USDF,2026-10-13,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+126521,USDY,2026-10-13,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+126523,USYC,2026-10-13,disqualified_illiquid,1.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+126519,XMR,2026-10-13,A_pre_surge,547.65,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127092,AVAX,2026-10-14,A_pre_surge,10.33,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+127093,BCH,2026-10-14,A_pre_surge,277.3,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+127094,BNB,2026-10-14,A_pre_surge,745.25,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+127107,BUIDL,2026-10-14,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127099,DOT,2026-10-14,A_pre_surge,1.16,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+127102,FIL,2026-10-14,A_pre_surge,1.17,excluded_crypto,crypto ticker collision (FIL),,,,,,,,pending
+127103,INJ,2026-10-14,A_pre_surge,8.23,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+127105,INTCB,2026-10-14,A_pre_surge,104.23,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127101,MSTRB,2026-10-14,A_pre_surge,153.81,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127095,PAXG,2026-10-14,A_pre_surge,4169.59,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127100,QNT,2026-10-14,A_pre_surge,216.76,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127104,SOXLB,2026-10-14,A_pre_surge,130.25,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127096,SUI,2026-10-14,A_pre_surge,1.06,excluded_crypto,crypto ticker collision (SUI),,,,,,,,pending
+127097,UNI,2026-10-14,A_pre_surge,7.52,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+127109,USDF,2026-10-14,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127106,USDY,2026-10-14,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127108,USYC,2026-10-14,disqualified_illiquid,1.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127098,ZEC,2026-10-14,A_pre_surge,1271.06,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127782,AAVE,2026-10-16,B_quiet_accumulation_strong,155.22,excluded_crypto,crypto ticker collision (AAVE),,,,,,,,pending
+127786,AVAX,2026-10-16,B_quiet_accumulation_strong,9.96,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+127764,BCH,2026-10-16,A_pre_surge,276.63,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+127785,BNB,2026-10-16,B_quiet_accumulation_strong,722.06,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+127779,BTC,2026-10-16,B_quiet_accumulation_strong,81617.59,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+127796,BUIDL,2026-10-16,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127774,CRCLB,2026-10-16,A_pre_surge,82.25,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+127794,DOT,2026-10-16,B_quiet_accumulation_strong,1.19,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+127776,ETH,2026-10-16,B_quiet_accumulation_strong,2423.01,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+127771,FIL,2026-10-16,A_pre_surge,1.16,excluded_crypto,crypto ticker collision (FIL),,,,,,,,pending
+127789,HYPE,2026-10-16,B_quiet_accumulation_strong,80.32,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127797,LEO,2026-10-16,disqualified_illiquid,8.96,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127787,LINK,2026-10-16,B_quiet_accumulation_strong,12.35,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+127780,LTC,2026-10-16,B_quiet_accumulation_strong,59.7,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+127790,NEAR,2026-10-16,B_quiet_accumulation_strong,5.07,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+127765,PAXG,2026-10-16,A_pre_surge,4164.44,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127773,PROM,2026-10-16,A_pre_surge,4.85,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127793,QNT,2026-10-16,B_quiet_accumulation_strong,201.03,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127769,RENDER,2026-10-16,A_pre_surge,1.98,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127781,RLUSD,2026-10-16,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127772,SNDKB,2026-10-16,A_pre_surge,1292.68,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127788,SOL,2026-10-16,B_quiet_accumulation_strong,104.43,excluded_crypto,crypto ticker collision (SOL),,,,,,,,pending
+127775,SOXLB,2026-10-16,A_pre_surge,94.35,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127768,SPCXB,2026-10-16,A_pre_surge,145.55,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127791,SUI,2026-10-16,B_quiet_accumulation_strong,1.02,excluded_crypto,crypto ticker collision (SUI),,,,,,,,pending
+127792,TAO,2026-10-16,B_quiet_accumulation_strong,276.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127770,TRUMP,2026-10-16,A_pre_surge,1.87,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127783,UNI,2026-10-16,B_quiet_accumulation_strong,7.34,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+127777,USD1,2026-10-16,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127766,USDE,2026-10-16,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127767,USDS,2026-10-16,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127798,USYC,2026-10-16,disqualified_illiquid,1.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+127778,XAUT,2026-10-16,B_quiet_accumulation_strong,4159.54,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+127784,XRP,2026-10-16,B_quiet_accumulation_strong,1.31,excluded_crypto,crypto ticker collision (XRP),,,,,,,,pending
+127795,ZEC,2026-10-16,B_quiet_accumulation_strong,1150.88,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132913,AAVE,2026-10-17,D_explosive_surge,151.89,excluded_crypto,crypto ticker collision (AAVE),,,,,,,,pending
+132919,AVAX,2026-10-17,D_explosive_surge,9.77,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+132922,BNB,2026-10-17,D_explosive_surge,717.91,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+132911,BTC,2026-10-17,D_explosive_surge,81475.31,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+132923,BUIDL,2026-10-17,disqualified_illiquid,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+132906,CRCLB,2026-10-17,A_pre_surge,81.76,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+132916,DOT,2026-10-17,D_explosive_surge,1.12,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+132912,ETH,2026-10-17,D_explosive_surge,2401.94,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+132910,FIGR_HELOC,2026-10-17,B_quiet_accumulation_strong,1.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132917,HYPE,2026-10-17,D_explosive_surge,78.1,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132909,LEO,2026-10-17,B_quiet_accumulation_strong,9.04,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132920,LINK,2026-10-17,D_explosive_surge,11.99,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+132918,LTC,2026-10-17,D_explosive_surge,58.84,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+132900,MUB,2026-10-17,A_pre_surge,862.53,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132894,NEAR,2026-10-17,A_pre_surge,4.86,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+132903,QNT,2026-10-17,A_pre_surge,195.67,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132902,RENDER,2026-10-17,A_pre_surge,1.98,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132895,RLUSD,2026-10-17,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132905,SNDKB,2026-10-17,A_pre_surge,1265.93,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132914,SOL,2026-10-17,D_explosive_surge,103.46,excluded_crypto,crypto ticker collision (SOL),,,,,,,,pending
+132907,SOXLB,2026-10-17,A_pre_surge,92.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132901,SPCXB,2026-10-17,A_pre_surge,145.23,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132896,TAO,2026-10-17,A_pre_surge,269.6,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132921,UNI,2026-10-17,D_explosive_surge,7.15,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+132897,USD1,2026-10-17,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132908,USDY,2026-10-17,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132924,USYC,2026-10-17,disqualified_illiquid,1.14,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,disqualified_illiquid
+132898,XMR,2026-10-17,A_pre_surge,569.4,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132915,XRP,2026-10-17,D_explosive_surge,1.29,excluded_crypto,crypto ticker collision (XRP),,,,,,,,pending
+132899,ZEC,2026-10-17,A_pre_surge,1128.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+132904,ZRO,2026-10-17,A_pre_surge,1.87,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174772,BCH,2026-10-18,A_pre_surge,275.88,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+174788,CAKE,2026-10-18,A_pre_surge,2.24,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174792,CRCLB,2026-10-18,B_quiet_accumulation_strong,83.33,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+174773,DAI,2026-10-18,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174793,DOT,2026-10-18,D_explosive_surge,1.12,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+174774,ETH,2026-10-18,A_pre_surge,2409.57,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+174775,GRAM,2026-10-18,A_pre_surge,1.35,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174787,INTCB,2026-10-18,A_pre_surge,90.59,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174789,KORUB,2026-10-18,A_pre_surge,10.73,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174776,LTC,2026-10-18,A_pre_surge,59.16,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+174790,OKB,2026-10-18,B_quiet_accumulation_strong,113.49,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174777,PYUSD,2026-10-18,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174786,SOXLB,2026-10-18,A_pre_surge,94.88,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174785,SPCXB,2026-10-18,A_pre_surge,145.94,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174778,USDE,2026-10-18,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174791,USDG,2026-10-18,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174779,USDS,2026-10-18,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174780,USDT,2026-10-18,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174781,USDY,2026-10-18,A_pre_surge,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174782,WBT,2026-10-18,A_pre_surge,80.12,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174783,XMR,2026-10-18,A_pre_surge,593.17,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+174784,ZEC,2026-10-18,A_pre_surge,1130.46,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212404,BCH,2026-10-19,A_pre_surge,279.58,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+212410,BTW,2026-10-19,B_quiet_accumulation_strong,2.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212405,FIGR_HELOC,2026-10-19,A_pre_surge,1.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212406,OKB,2026-10-19,A_pre_surge,114.12,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212408,PYUSD,2026-10-19,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212409,USDS,2026-10-19,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212411,USDY,2026-10-19,B_quiet_accumulation_strong,1.15,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+212407,XMR,2026-10-19,A_pre_surge,603.82,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236973,COMP,2026-10-20,A_pre_surge,25.84,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236969,CRCLB,2026-10-20,A_pre_surge,86.13,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+236964,DOT,2026-10-20,A_pre_surge,1.17,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+236974,FIGR_HELOC,2026-10-20,B_quiet_accumulation_strong,1.02,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236968,INJ,2026-10-20,A_pre_surge,8.94,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+236960,NEAR,2026-10-20,A_pre_surge,4.93,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+236966,QNT,2026-10-20,A_pre_surge,194.93,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236961,RLUSD,2026-10-20,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236972,SKHYB,2026-10-20,A_pre_surge,140.59,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236967,SNDKB,2026-10-20,A_pre_surge,1402.24,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236970,SOXLB,2026-10-20,A_pre_surge,104.42,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236965,SPCXB,2026-10-20,A_pre_surge,159.64,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236971,TSLAB,2026-10-20,A_pre_surge,380.26,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236962,USD1,2026-10-20,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236963,USDC,2026-10-20,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+236975,USDS,2026-10-20,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+248066,COMP,2026-10-21,A_pre_surge,26.09,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+248067,DAI,2026-10-21,B_quiet_accumulation_strong,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+248064,DOT,2026-10-21,A_pre_surge,1.17,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+248062,RLUSD,2026-10-21,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+248065,SKHYB,2026-10-21,A_pre_surge,141.09,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+248063,USDT,2026-10-21,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259765,AAVE,2026-10-22,A_pre_surge,146.33,excluded_crypto,crypto ticker collision (AAVE),,,,,,,,pending
+259745,AVAX,2026-10-22,A_pre_surge,9.11,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+259746,BCH,2026-10-22,A_pre_surge,274.72,excluded_crypto,crypto ticker collision (BCH),,,,,,,,pending
+259747,BNB,2026-10-22,A_pre_surge,730.54,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+259748,BTC,2026-10-22,A_pre_surge,81307.0,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+259770,COMP,2026-10-22,A_pre_surge,26.09,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259768,CRCLB,2026-10-22,A_pre_surge,85.78,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+259764,DOT,2026-10-22,A_pre_surge,1.17,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+259749,ETH,2026-10-22,A_pre_surge,2384.14,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+259771,FIGR_HELOC,2026-10-22,B_quiet_accumulation_strong,1.03,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259750,HYPE,2026-10-22,A_pre_surge,77.29,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259767,INJ,2026-10-22,A_pre_surge,7.92,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+259751,LINK,2026-10-22,A_pre_surge,11.94,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+259752,LTC,2026-10-22,A_pre_surge,58.74,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+259753,NEAR,2026-10-22,A_pre_surge,4.88,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+259766,QNT,2026-10-22,A_pre_surge,186.9,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259754,RLUSD,2026-10-22,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259755,SOL,2026-10-22,A_pre_surge,103.5,excluded_crypto,crypto ticker collision (SOL),,,,,,,,pending
+259756,TAO,2026-10-22,A_pre_surge,257.34,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259769,TSLAB,2026-10-22,A_pre_surge,373.16,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259757,UNI,2026-10-22,A_pre_surge,7.0,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+259758,USD1,2026-10-22,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259759,USDC,2026-10-22,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259760,XAUT,2026-10-22,A_pre_surge,4024.37,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259761,XMR,2026-10-22,A_pre_surge,598.62,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+259762,XRP,2026-10-22,A_pre_surge,1.31,excluded_crypto,crypto ticker collision (XRP),,,,,,,,pending
+259763,ZEC,2026-10-22,A_pre_surge,1217.34,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262856,BNB,2026-10-23,A_pre_surge,739.9,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+262872,COMP,2026-10-23,A_pre_surge,26.09,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262869,CRCLB,2026-10-23,A_pre_surge,85.49,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+262857,DAI,2026-10-23,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262863,DOT,2026-10-23,A_pre_surge,1.08,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+262868,INJ,2026-10-23,A_pre_surge,7.75,excluded_crypto,crypto ticker collision (INJ),,,,,,,,pending
+262866,MSTRB,2026-10-23,A_pre_surge,146.38,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262864,MUB,2026-10-23,A_pre_surge,879.46,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262858,NEAR,2026-10-23,A_pre_surge,4.7,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+262871,SKHYB,2026-10-23,A_pre_surge,136.88,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262867,SNDKB,2026-10-23,A_pre_surge,1240.48,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262870,SOXLB,2026-10-23,A_pre_surge,83.2,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262865,SPCXB,2026-10-23,A_pre_surge,147.83,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262859,TAO,2026-10-23,A_pre_surge,255.3,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262860,UNI,2026-10-23,A_pre_surge,6.97,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+262861,USDE,2026-10-23,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+262862,ZEC,2026-10-23,A_pre_surge,1183.89,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265263,COMP,2026-10-24,A_pre_surge,26.09,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265261,CRCLB,2026-10-24,A_pre_surge,85.44,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+265260,MSTRB,2026-10-24,A_pre_surge,145.08,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265256,NEAR,2026-10-24,A_pre_surge,4.51,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+265258,QNT,2026-10-24,A_pre_surge,177.9,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265262,SOXLB,2026-10-24,A_pre_surge,84.78,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265257,SPCXB,2026-10-24,A_pre_surge,146.85,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+265259,TRUMP,2026-10-24,A_pre_surge,1.67,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276880,AVAX,2026-10-25,A_pre_surge,8.89,excluded_crypto,crypto ticker collision (AVAX),,,,,,,,pending
+276881,BNB,2026-10-25,A_pre_surge,742.26,excluded_crypto,crypto ticker collision (BNB),,,,,,,,pending
+276882,BTC,2026-10-25,A_pre_surge,80776.01,excluded_crypto,crypto ticker collision (BTC),,,,,,,,pending
+276898,CRCLB,2026-10-25,A_pre_surge,85.22,excluded_crypto,crypto ticker collision (CRCLB),,,,,,,,pending
+276899,DASH,2026-10-25,A_pre_surge,53.33,excluded_crypto,crypto ticker collision (DASH),,,,,,,,pending
+276895,DOT,2026-10-25,A_pre_surge,1.04,excluded_crypto,crypto ticker collision (DOT),,,,,,,,pending
+276883,ETH,2026-10-25,A_pre_surge,2346.07,excluded_crypto,crypto ticker collision (ETH),,,,,,,,pending
+276884,FIGR_HELOC,2026-10-25,A_pre_surge,1.06,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276885,LINK,2026-10-25,A_pre_surge,11.43,excluded_crypto,crypto ticker collision (LINK),,,,,,,,pending
+276886,LTC,2026-10-25,A_pre_surge,56.79,excluded_crypto,crypto ticker collision (LTC),,,,,,,,pending
+276897,MSTRB,2026-10-25,A_pre_surge,144.91,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276887,NEAR,2026-10-25,A_pre_surge,4.51,excluded_crypto,crypto ticker collision (NEAR),,,,,,,,pending
+276888,OKB,2026-10-25,A_pre_surge,107.08,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276889,SOL,2026-10-25,A_pre_surge,101.68,excluded_crypto,crypto ticker collision (SOL),,,,,,,,pending
+276896,SPCXB,2026-10-25,A_pre_surge,146.85,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276890,TAO,2026-10-25,A_pre_surge,251.2,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276891,UNI,2026-10-25,A_pre_surge,6.82,excluded_crypto,crypto ticker collision (UNI),,,,,,,,pending
+276892,USDE,2026-10-25,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276893,USDS,2026-10-25,A_pre_surge,1.0,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending
+276894,ZEC,2026-10-25,A_pre_surge,1216.2,eligible_insufficient_prices,fewer than 7 sessions available in any source,,,,,,,,pending

@@ -135,7 +135,12 @@ def build_price_index():
                 conn.close()
                 continue
             # Load all prices from this source
-            cur.execute(f"SELECT {source['ticker_col']}, {source['date_col']}, {source['close_col']} FROM {source['table']} WHERE {source['close_col']} > 0")
+            # C2 FIX: filter by market='EGX' when the table has a market column,
+            # to prevent cross-market contamination (US-tagged rows for EGX tickers).
+            cur.execute(f"PRAGMA table_info({source['table']})")
+            src_cols = [r[1] for r in cur.fetchall()]
+            market_clause = "AND market = 'EGX'" if 'market' in src_cols else ""
+            cur.execute(f"SELECT {source['ticker_col']}, {source['date_col']}, {source['close_col']} FROM {source['table']} WHERE {source['close_col']} > 0 {market_clause}")
             added = 0
             for row in cur:
                 ticker = str(row[0] or '').upper().strip()
