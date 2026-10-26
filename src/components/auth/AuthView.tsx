@@ -173,7 +173,15 @@ export function AuthView() {
  // on its next poll.
  setAuthenticated(true);
  setAuthChecked(true);
- setApiKey('session-key-' + Date.now());
+ // FIX (2026-10-26): استخدم الـ token الحقيقي اللي رجع من /api/auth/login
+ // بدل الـ fake key. قبل ده، كان setApiKey('session-key-' + Date.now())
+ // → useAuthCheck بيبعت Authorization: Bearer session-key-... → /api/auth/me
+ // بيرجع 401 (لأن الـ token مش حقيقي) → redirect loop.
+ // دلوقتي بنستخدم الـ token الحقيقي + بنحفظه في localStorage عبر الـ shim.
+ const realToken = (result as { token?: string })?.token;
+ if (realToken) {
+ setApiKey(realToken);
+ }
  setCurrentView('dashboard');
  // Trigger an immediate auth check to populate the full user object
  // (subscription_tier, is_admin, etc.) without waiting 60s.

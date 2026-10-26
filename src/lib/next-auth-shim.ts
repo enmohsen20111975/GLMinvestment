@@ -58,7 +58,22 @@ export async function signIn(provider?: string, options?: any) {
     });
     const data = await res.json();
     if (res.ok && data?.success) {
-      return { ok: true, error: null };
+      // FIX (2026-10-26): احفظ الـ token الحقيقي اللي رجعه /api/auth/login
+      // في localStorage + الـ store، علشان useAuthCheck يقدر يبعت Authorization
+      // header صحيح لـ /api/auth/me. قبل ده، الـ shim كان بيرجّع {ok: true} بدون
+      // ما يحفظ الـ token → /api/auth/me بيرجع 401 → useAuthCheck بيطرد المستخدم
+      // → redirect loop "سجّل تاني". ده الـ root cause لشكوى محسن.
+      const token = data?.token as string | undefined;
+      const user = data?.user;
+      if (token && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('egx_api_key', token);
+        } catch {
+          // localStorage may be disabled (private mode) — non-fatal,
+          // useAuthCheck will still get the token via the zustand store.
+        }
+      }
+      return { ok: true, error: null, token, user };
     }
     return { ok: false, error: data?.error || 'credentials' };
   } catch (e) {
