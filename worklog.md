@@ -9382,3 +9382,142 @@ Stage Summary:
   * NO_TRADE reaches the user clearly: ✅ (Scenarios B + C — الـ panel headline + الـ suggested Arabic copy + الـ reason كلهم بـ render. NO_TRADE picks بـ render في muted row + NO_TRADE badge).
 - BLOCKER: مفيش. الـ dev server OOM-kills هي environmental (4GB sandbox RAM) — الكود شغال زي ما الـ fixture test بـ يبيّن.
 - Ready for merge: YES. كل التعديلات minimal + مفيش fabrication + الـ B4 contract بيـ consume صح + الـ tests بتـ verify كل scenario.
+
+---
+Task ID: 2-a
+Agent: Bravo (B3 — Radar JSON contract)
+Task: Fix maker_radar.py JSON data contract so every scanned stock surfaces in the output (no vanishing) + integrate B1 price sanity gate + expose `results`/`summary` to the API.
+
+Work Log:
+- Step 0: قرأت آخر ~250 سطر من worklog.md لفهم سياق B1 (price_sanity) + B2 (dedup) + B4 (market regime). ولا تعديل لـ agents تانيين.
+- Step 1 (INVESTIGATION قبل أي تعديل):
+  * scripts/maker_radar.py (~1702 LOC) structure:
+    - `_find_radar_db(market)` (line 72): اكتشاف الـ DB المتاح حسب السوق.
+    - `fetch_ticker_series(conn, ticker, days=40)` (line 331): جلب آخر 40 يوم لسهم.
+    - `scan_ticker(rows, ticker, regime)` (line 402): يحسب metrics + path + winner_path. بـ يرجع None لو `len(rows) < 15` (line 405) → **DROP POINT #1**.
+    - `main()` (line 1085): الـ scan loop (line 1678+) + JSON dump (line 2098+).
+  * **DROP POINTS identified** (file:line):
+    1. `scan_ticker` line 405: `if len(rows) < 15: return None` — أسهم بـ < 15 يوم تختفي.
+    2. `main` line 1773: `results = [r for r in results if r['current_price'] >= args.min_price]` — أسهم تحت min_price تختفي من `results` وبالتالي من `all_results` والـ lists.
+    3. `main` line 1761: السطر الأصلي `if result:` بـ يـ skip الأسهم اللي scan_ticker رجع None — يـسقطهم صامتًا من `results`.
+  * **Current JSON contract (top-level keys)** (15 keys): generated_at, market, market_regime, min_quiet_signals, min_price, db_source, db_file, db_table, total_scanned, under_microscope_count, quiet_count, pre_surge_count, explosive_count, early_break_count, distribution_count, quiet_list, pre_surge_list, explosive_list, early_break_list, distribution_list, incubator_candidates, under_microscope, all_results.
+  * **API consumer** `src/app/api/v2/liquidity-radar/route.ts` lines 128-139: بـ يـ read بس `quiet_list, pre_surge_list, explosive_list, early_break_list, distribution_list, under_microscope, stocks` — **مش بـ read `all_results`** → ده الـ root cause لـ "vanishing": الأسهم اللي مش في أي list (e.g. scanned but no path matched, أو price below min_price) مابتوصلش للـ API أصلًا.
+  * **Other TS consumers of radar JSON** (grep results — 16 files):
+    - `src/lib/unified-stock-data.ts:441-446` — reads `all_results`, `under_microscope` for stock-detail enrichment.
+    - `src/lib/schedulers/radar-alerts.ts:440-512, 1020-1021` — reads `explosive_list`, `quiet_list`, `pre_surge_list`, `early_break_list`.
+    - `src/hooks/useMakerRadarData.ts:146` — checks `success || quiet_list || explosive_list`.
+    - `src/hooks/useScreenerData.ts:180-296` — reads `quiet_list, pre_surge_list, explosive_list, early_break_list`.
+    - `src/modules/radar/lib/radar-cache.ts` — reads `total_scanned, under_microscope_count, db_source, generated_at`.
+    - `src/modules/predictions/components/maker-radar/types.ts:107-115` — TS interface declares `quiet_list, pre_surge_list, explosive_list, early_break_list, under_microscope_count`.
+    - `src/app/api/radar/personalized/route.ts:256-259` — reads the 4 lists.
+    - `src/app/api/stocks/[ticker]/publish-data/route.ts:225-234` — reads the 4 lists.
+    - `src/app/api/maker-radar/live-watch/route.ts:130-133` — reads the 4 lists.
+    - `src/app/api/maker-radar/sector-treemap/route.ts:14` — reads the 4 lists.
+    - `src/app/api/maker-radar/warmup/route.ts:29,49` — reads `under_microscope_count`.
+    - `src/app/api/maker-radar/net-picks/route.ts:31-56` — reads the 4 lists.
+    - `src/app/api/maker-radar/route.ts:168-173` — reads `quiet_list, explosive_list, early_break_list, pre_surge_list, under_microscope, all_results`.
+    - `src/app/api/maker-radar/multi-market/route.ts:271,281` — reads `under_microscope_count` + the 4 lists.
+  * **Decision**: إحنا لازم نـ PRESERVE كل الـ legacy keys (quiet_list, pre_surge_list, explosive_list, early_break_list, distribution_list, under_microscope, all_results) عشان ما نكسرش أي consumer. بنضيف NEW keys بس (results, summary, dead_trap_list, liquidity_drought_list, rule80_downtrend_list).
+- Step 2 (PRE-WORK FIX — db_manager closed-DB bug):
+  * maker_radar.py ما كانش يقدر يشتغل في الساندبوكس بسبب `sqlite3.ProgrammingError: Cannot operate on a closed database.` عند line 1131.
+  * السبب: 6 أماكن بتستخدم anti-pattern: `db_manager.connection(...).__enter__()`. الـ `_GeneratorContextManager` object ما بيتخزن في متغير → Python GC بـ يـ close الـ conn قبل ما الـ caller يستخدمه.
+  * FIX: استبدلت `db_manager.connection(...).__enter__()` بـ `db_manager.get_connection(...)` (raw connection — caller-managed lifecycle) في 6 أماكن (lines 196, 705, 1124, 1207, 1362, 1387). نفس الـ DBs، نفس الـ queries، بس بدون GC-related close bug.
+- Step 3 (B3 contract — extend JSON):
+  * Added helper functions:
+    - `_normalize_data_quality_status(legacy_dq)` — maps legacy lowercase data_quality to uppercase enum.
+    - `_build_insufficient_result(ticker, identity, scan_timestamp, reason, data_quality, data_quality_status, extra_reasons)` — builds minimal result entry for tickers that could NOT be classified (insufficient history / B1 DATA_INVALID / STALE).
+    - `_classify_scanned_result(result, args)` — assigns B3 classification per priority: distribution > dead_trap (limit_up_trap/kill_switch) > liquidity_drought (avg_turnover_20d < 100k) > rule80_downtrend (drop_from_peak < -20%) > quiet_accumulation (any bullish path) > unclassified.
+    - `_enrich_result_with_b3_fields(result, identity, args, scan_timestamp)` — adds classification, reasons (list), data_quality_status, scan_timestamp, company, market, currency IN-PLACE.
+    - `_build_summary(results, source_count, scan_timestamp)` — builds the summary block.
+  * Modified `main()`:
+    - Captures `source_count = len(tickers)` BEFORE the scan loop (hard constraint: "DO NOT assume 347 is fixed").
+    - Builds `identity_map` from stocks.db.stocks (ticker → market/currency/name) — needed for B1 sanity.
+    - Builds `contract_results: list = []` — collects EVERY scanned ticker (no drop).
+    - In scan loop: if `len(rows) < 15` → append INSUFFICIENT_DATA entry. If `scan_ticker` returns None → append INSUFFICIENT_DATA entry. Otherwise run B1 sanity (see Step 4). If sanity OK → enrich with B3 fields + append to BOTH `contract_results` AND legacy `results` (which gets price-filtered below for legacy list keys).
+    - Builds NEW list keys (subsets of contract_results): `dead_trap_list`, `liquidity_drought_list`, `rule80_downtrend_list`.
+    - Builds `summary` block via `_build_summary(contract_results, source_count, scan_timestamp)`.
+    - Emits a warning if `len(contract_results) != source_count` (defensive — should not happen).
+    - JSON dump now contains 31 top-level keys (15 legacy + 16 new additive, including `results`, `summary`, the 3 new lists, and their count fields).
+- Step 4 (B1 price sanity integration):
+  * For each scanned ticker (after scan_ticker succeeds), run `validate_price_data(prices, ohlc, ticker, market, currency, latest_date, max_age_days=4, entry_price, support=stop_loss, resistance=target_price)` from `vps-service/core/price_sanity.py`.
+  * If `sanity.status == 'DATA_INVALID'` → build a DATA_INVALID entry (classification='DATA_INVALID', data_quality='invalid', data_quality_status='INVALID'), preserve scan_ticker metrics (current_price etc.) so the UI can show the contaminated price with a red flag, log "⛔ B1 DATA_INVALID [ticker]: reasons", `continue` (skip classification). Owner's constraint #8 satisfied.
+  * If `sanity.status == 'STALE'` → build INSUFFICIENT_DATA entry with data_quality='stale'/'very_stale', data_quality_status='STALE'. NOT DATA_INVALID (because stale data is not necessarily contaminated, just outdated).
+  * If `sanity.status == 'DATA_UNAVAILABLE'` → build INSUFFICIENT_DATA entry with data_quality='unavailable', data_quality_status='UNAVAILABLE'.
+  * If `sanity.status == 'OK'` → enrich result with B3 fields, append to contract_results + legacy results.
+  * FAIL-OPEN: ImportError or any other exception → log warning + continue with normal classification (don't break the radar).
+  * Each contract_results entry now has `sanity_status` + `sanity_reasons` fields for transparency.
+- Step 5 (API route update — `src/app/api/v2/liquidity-radar/route.ts`):
+  * Added `RadarStock` interface fields: `classification`, `data_quality`, `data_quality_status`, `scan_timestamp`, `reasons`, `sanity_status` (all optional + nullable — additive).
+  * Added `RadarSummary` interface with 7 fields: source_count, scanned_count, valid_data_count, classified_count, unclassified_count, data_error_count, scan_timestamp.
+  * Added `RadarResponse` fields: `source_count`, `summary`, `results`.
+  * In GET handler:
+    - Reads `data.results` (new full scanned set) + the legacy union of list keys (quiet_list, pre_surge_list, etc.) — deduplicates by ticker. Prefers `results` entries; falls back to legacy list entries for tickers not in `results` (defensive).
+    - For each stock, sets `phase = classification ?? path ?? life_cycle ?? pattern ?? 'غير معروفة'`. **Crucially**: `unclassified` / `INSUFFICIENT_DATA` / `DATA_INVALID` stocks are NOT displayed as "dead" — they surface as "غير معروفة" / their actual classification string.
+    - `phase_reason = reason ?? reasons.join(' | ') ?? quiet_details.signals_met`.
+    - Builds `summary` block from `data.summary` (or null if missing).
+    - `scanned_count` now prefers `summary.scanned_count` over legacy `data.total_scanned` (which was price-filtered and under-reported).
+    - `response.results = response.stocks` (same array reference) — Alpha's UI can read either field name.
+- Step 6 (Tests — wrote + RAN + pasted real stdout):
+  * `scripts/test_b3_radar_contract.py` (NEW, 13 tests):
+    1. `no_vanishing`: source_count == scanned_count == len(results).
+    2. `counts_add_up`: classified + unclassified + data_error == scanned.
+    3. `classification_enum`: every entry's classification is in the allowed enum.
+    4. `required_b3_fields`: every entry has ticker, classification, reasons, data_quality, data_quality_status, scan_timestamp, company, market, currency.
+    5. `lists_are_subsets_of_results`: every list entry appears in `results`.
+    6. `classification_matches_list_membership`: dead_trap_list entries have classification='dead_trap', etc.
+    7. `no_overlap_between_lists`: no ticker in two NEW lists at once.
+    8. `insufficient_not_misclassified`: insufficient/invalid stocks NOT in dead_trap/distribution/etc.
+    9. `data_invalid_has_no_live_signal`: DATA_INVALID stocks don't have live-trade classification.
+    10. `adp_isolation_visibility`: ADP (B1's isolated contaminated ticker) surfaces as DATA_INVALID.
+    11. `legacy_lists_preserved`: all 12 required top-level keys present (7 legacy + 5 B3 new).
+    12. `summary_fields`: summary has all 7 required fields.
+    13. `data_quality_enum`: data_quality_status values in {OK, STALE, INVALID, UNAVAILABLE}.
+  * `scripts/test_b3_api_contract.js` (NEW, 12 assertions):
+    - Mirrors the route.ts mapping logic. Verifies `response.results` is array, `response.summary` has all 7 fields, `len(response.results) == summary.scanned_count`, `source_count == scanned_count`, counts add up, every stock has B3 fields, DATA_INVALID stocks are surfaced (not dropped), unclassified stocks NOT displayed as dead_trap, ADP surfaces as DATA_INVALID, `scanned_count == summary.scanned_count`, `response.results === response.stocks`.
+  * Test results (RUN — not claimed):
+    - Python: 13/13 PASS — `python3 scripts/test_b3_radar_contract.py`
+    - Node: 12/12 PASS — `node scripts/test_b3_api_contract.js`
+  * Scan stats from the test run (--limit 30 EGX):
+    - source_count = 30 (real source — not hardcoded).
+    - scanned_count = 30 (no vanishing).
+    - classified_count = 14.
+    - unclassified_count = 6.
+    - data_error_count = 10 (B1 sanity flagged 10 tickers as DATA_INVALID — mostly `open_out_of_range` in price_history + 1 ADP contamination with `currency_market_mismatch` + `history_current_mismatch ratio=73.7x`).
+    - NEW lists: dead_trap=0, liquidity_drought=3, rule80_downtrend=2.
+
+Stage Summary:
+- Current contract fields (preserved, 15 top-level keys):
+  * generated_at, market, market_regime, min_quiet_signals, min_price, db_source, db_file, db_table, total_scanned, under_microscope_count, quiet_count, pre_surge_count, explosive_count, early_break_count, distribution_count, quiet_list, pre_surge_list, explosive_list, early_break_list, distribution_list, incubator_candidates, under_microscope, all_results.
+- NEW additive fields (16 new top-level keys):
+  * `results`: array of ALL scanned tickers (no drop). Each entry has all existing metric fields PLUS: ticker, company, market, currency, classification, reasons (array), data_quality (lowercase legacy: fresh/stale/very_stale/unknown/invalid/unavailable), data_quality_status (uppercase enum: OK/STALE/INVALID/UNAVAILABLE), scan_timestamp, sanity_status, sanity_reasons.
+  * `summary`: { source_count, scanned_count, valid_data_count, classified_count, unclassified_count, data_error_count, scan_timestamp }.
+  * `dead_trap_list`, `liquidity_drought_list`, `rule80_downtrend_list`: subsets of `results` whose classification matches (NEW list keys).
+  * `dead_trap_count`, `liquidity_drought_count`, `rule80_downtrend_count`: integer counts (NEW).
+- Classification enum (B3 contract — Task 2-a): `quiet_accumulation` | `distribution` | `dead_trap` | `liquidity_drought` | `rule80_downtrend` | `unclassified` | `DATA_INVALID` | `INSUFFICIENT_DATA`.
+- Files modified:
+  * `scripts/maker_radar.py` (+~290 lines): db_manager fix (6 sites), B3 helper functions (5 functions, ~200 LOC), scan loop refactor (no-drop), B1 price_sanity integration, JSON dump (results + summary + 3 new lists).
+  * `src/app/api/v2/liquidity-radar/route.ts` (+~75 lines): RadarStock + RadarSummary + RadarResponse interfaces, GET handler reads `results` (full set) + legacy union, builds summary block, surfaces B3 fields per stock, scanned_count now prefers summary.scanned_count.
+- Files created (NEW):
+  * `scripts/test_b3_radar_contract.py` (370 LOC, 13 tests — all PASS).
+  * `scripts/test_b3_api_contract.js` (230 LOC, 12 assertions — all PASS).
+- Test results:
+  * Python: 13/13 PASS (`python3 scripts/test_b3_radar_contract.py`).
+  * Node: 12/12 PASS (`node scripts/test_b3_api_contract.js`).
+  * TypeScript: 0 new errors in `src/app/api/v2/liquidity-radar/route.ts` (verified via `tsc --noEmit`).
+- Scanned vs classified counts (real run, --limit 30 EGX):
+  * source_count = 30 (from stocks.db active EGX tickers).
+  * scanned_count = 30 (every ticker in contract_results).
+  * classified_count = 14 (quiet_accumulation + distribution + dead_trap + liquidity_drought + rule80_downtrend).
+  * unclassified_count = 6.
+  * data_error_count = 10 (B1 DATA_INVALID — 9 `open_out_of_range` + 1 ADP contamination).
+  * 14 + 6 + 10 = 30 ✓ (no vanishing).
+- NEW field names for A1 (Alpha radar UI) — hand these to the Alpha agent:
+  * Top-level: `response.results` (array, full scanned set), `response.summary` (block), `response.source_count` (int), `response.scanned_count` (int).
+  * Per-stock: `stock.classification` (enum string), `stock.data_quality_status` ('OK'|'STALE'|'INVALID'|'UNAVAILABLE'), `stock.reasons` (string[]), `stock.sanity_status` ('OK'|'DATA_INVALID'|'STALE'|'DATA_UNAVAILABLE'), `stock.scan_timestamp` (ISO), `stock.company` (string), `stock.market` (string), `stock.currency` (string).
+  * Summary block: `summary.source_count`, `summary.scanned_count`, `summary.valid_data_count`, `summary.classified_count`, `summary.unclassified_count`, `summary.data_error_count`, `summary.scan_timestamp`.
+  * NEW list keys (subsets of `results`): `dead_trap_list`, `liquidity_drought_list`, `rule80_downtrend_list` (+ their `*_count` integer fields).
+  * Constraint: do NOT treat `classification ∈ {'unclassified', 'INSUFFICIENT_DATA', 'DATA_INVALID'}` as a trade signal — these stocks have NO actionable classification. Display them as "no signal" / "data unavailable", NOT as "dead" or "distribution".
+- Local commits: see git log (will be committed after this worklog append — see below).
+- Ready for merge: YES للـ B3 deliverables (results + summary + B1 integration + tests + API route update). NO للـ deployment حتى:
+  * (a) owner يوافق على الـ min_price filter removal من `all_results` — حاليًا `all_results` لسه price-filtered (backward compat مع unified-stock-data.ts). الأسهم تحت min_price بقت موجودة في `results` الجديد بس مش في `all_results` القديم. لو الـ owner عايز `all_results` يبقى full set too، محتاج موافقته.
+  * (b) TS consumer `src/modules/predictions/components/maker-radar/types.ts:81` لسه بيعلن `data_quality?: 'fresh'|'stale'|'very_stale'|'unknown'|null` — ما بـ يدعمش الـ new lowercase values (`'invalid'`, `'unavailable'`). ممكن Alpha agent يـ update الـ TS interface في مرحلة UI integration.

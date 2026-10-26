@@ -47,6 +47,27 @@ interface RadarStock {
   accumulation?: string | null;
   expected?: string | null;
   roc_10d?: number | null;
+  // ─── B3 (Task 2-a): new additive contract fields ──────────────────
+  // Normalized classification — never fabricated. Consumers should treat
+  // 'unclassified' / 'INSUFFICIENT_DATA' / 'DATA_INVALID' as "no signal"
+  // (do NOT display as a trade opportunity, but also do NOT display as a
+  // dead trap — they simply have no actionable classification).
+  classification?: string | null;
+  data_quality?: string | null;
+  data_quality_status?: 'OK' | 'STALE' | 'INVALID' | 'UNAVAILABLE' | null;
+  scan_timestamp?: string | null;
+  reasons?: string[] | null;
+  sanity_status?: string | null;
+}
+
+interface RadarSummary {
+  source_count: number;
+  scanned_count: number;
+  valid_data_count: number;
+  classified_count: number;
+  unclassified_count: number;
+  data_error_count: number;
+  scan_timestamp: string | null;
 }
 
 interface RadarResponse {
@@ -54,8 +75,11 @@ interface RadarResponse {
   market: string;
   market_regime: MarketRegime | null;
   scanned_count?: number;
+  source_count?: number;       // B3: source list size (no vanishing check)
+  summary?: RadarSummary | null; // B3: full summary block
   phases_breakdown?: Record<string, number>;
   stocks: RadarStock[];
+  results?: RadarStock[];       // B3: full scanned set (every ticker)
   error?: string | null;
   message?: string | null;
 }
@@ -110,6 +134,9 @@ export async function GET(req: NextRequest) {
         market,
         market_regime: regime,
         scanned_count: 0,
+        source_count: 0,
+        summary: null,
+        results: [],
         stocks: [],
         message: 'لا توجد بيانات رادار مخزنة لهذا السوق بعد',
       };
@@ -125,7 +152,17 @@ export async function GET(req: NextRequest) {
       is_bull: rawRegime.regime === 'AGGRESSIVE' || rawRegime.effective_regime === 'AGGRESSIVE',
     };
 
-    const rawStocks: any[] = [
+    // ─── B3 (Task 2-a): build the full scanned set from `results` ────────
+    // The cache JSON now contains a NEW `results` array with EVERY scanned
+    // ticker (including ones that didn't meet any classification criteria
+    // or had B1 DATA_INVALID prices). The legacy list keys (quiet_list,
+    // pre_surge_list, ...) are preserved as subsets — we still read them
+    // for backward compatibility with Alpha's in-flight UI work, but we
+    // ALSO read `results` so the UI can show the full picture (no vanishing).
+    const fullResultsRaw: any[] = Array.isArray(data.results) ? data.results : [];
+
+    // Legacy union of list keys — the stocks the UI previously saw.
+    const legacyListUnion: any[] = [
       ...(data.quiet_list ?? []),
       ...(data.pre_surge_list ?? []),
       ...(data.explosive_list ?? []),
@@ -137,6 +174,26 @@ export async function GET(req: NextRequest) {
       // deduplicate by ticker
       i === arr.findIndex(x => (x.ticker || x.symbol) === (s.ticker || s.symbol))
     );
+
+    // Build the canonical full set: prefer `results` entries; fall back to
+    // legacy list entries for tickers not in `results` (defensive — should
+    // be a no-op once maker_radar.py emits `results`).
+    const seenTickers = new Set<string>();
+    const rawStocks: any[] = [];
+    for (const r of fullResultsRaw) {
+      const t = (r?.ticker || r?.symbol || '').toString().toUpperCase();
+      if (!t) continue;
+      if (seenTickers.has(t)) continue;
+      seenTickers.add(t);
+      rawStocks.push(r);
+    }
+    for (const s of legacyListUnion) {
+      const t = (s?.ticker || s?.symbol || '').toString().toUpperCase();
+      if (!t || seenTickers.has(t)) continue;
+      seenTickers.add(t);
+      rawStocks.push(s);
+    }
+
     // ALPHA-UX-FIX-8: support/resistance map من stocks.db (fallback لـ defense/resistance)
     const srMap = buildSupportResistanceMap();
     const stocks: RadarStock[] = rawStocks.map((s) => {
@@ -149,8 +206,22 @@ export async function GET(req: NextRequest) {
         sell_pct: s.sell_pct ?? null,
       };
 
-      const phase: string = s.path ?? s.life_cycle ?? s.pattern ?? 'غير معروفة';
-      const phaseReason: string | null = s.reason ?? s.quiet_details?.signals_met?.join(' ، ') ?? null;
+      // B3: classification drives the `phase` display. The legacy `path`
+      // value is preserved as a fallback. We do NOT fabricate a phase for
+      // stocks whose classification is 'unclassified' / 'INSUFFICIENT_DATA'
+      // / 'DATA_INVALID' — those should surface as "—" / "no signal"
+      // rather than be misclassified as "dead" or "accumulation".
+      const classification: string | null = s.classification ?? null;
+      const phase: string = classification
+        ?? s.path
+        ?? s.life_cycle
+        ?? s.pattern
+        ?? 'غير معروفة';
+      const phaseReason: string | null =
+        s.reason
+        ?? (Array.isArray(s.reasons) && s.reasons.length ? s.reasons.join(' | ') : null)
+        ?? s.quiet_details?.signals_met?.join(' ، ')
+        ?? null;
 
       // ISSUE-3 FIX: removed fabricated entry*0.97 / entry+1.5*risk fallback.
       // Only return real values from cache or stocks.db. NULL if unavailable.
@@ -164,7 +235,7 @@ export async function GET(req: NextRequest) {
 
       return {
         ticker: s.ticker ?? '',
-        name: s.name ?? null,
+        name: s.name ?? s.company ?? null,
         sector: s.sector ?? null,
         current_price: s.current_price ?? s.live_price ?? null,
         change_percent: s.change_percent ?? s.live_change_percent ?? s.change_1d ?? null,
@@ -184,16 +255,46 @@ export async function GET(req: NextRequest) {
         accumulation: s.accumulation ?? null,
         expected: s.expected ?? null,
         roc_10d: s.roc_10d ?? null,
+        // ─── B3: new additive fields ──────────────────────────────────
+        classification: classification,
+        data_quality: s.data_quality ?? null,
+        data_quality_status: s.data_quality_status ?? null,
+        scan_timestamp: s.scan_timestamp ?? null,
+        reasons: Array.isArray(s.reasons) ? s.reasons : null,
+        sanity_status: s.sanity_status ?? null,
       };
     });
+
+    // B3: build the summary block. Use the cache's `summary` if present;
+    // otherwise derive a minimal one from `stocks` (defensive — older
+    // cache files won't have `summary`).
+    const cacheSummary: any = data.summary ?? null;
+    const summary: RadarSummary | null = cacheSummary
+      ? {
+          source_count: Number(cacheSummary.source_count ?? stocks.length),
+          scanned_count: Number(cacheSummary.scanned_count ?? stocks.length),
+          valid_data_count: Number(cacheSummary.valid_data_count ?? 0),
+          classified_count: Number(cacheSummary.classified_count ?? 0),
+          unclassified_count: Number(cacheSummary.unclassified_count ?? 0),
+          data_error_count: Number(cacheSummary.data_error_count ?? 0),
+          scan_timestamp: cacheSummary.scan_timestamp ?? null,
+        }
+      : null;
 
     const response: RadarResponse = {
       success: true,
       market,
       market_regime: marketRegime,
-      scanned_count: data.total_scanned ?? data.scanned_count ?? stocks.length,
+      // B3: prefer summary.scanned_count (all scanned tickers, no filter)
+      // over the legacy data.total_scanned (which is price-filtered and
+      // would under-report the actual scan size).
+      scanned_count: cacheSummary?.scanned_count ?? data.total_scanned ?? data.scanned_count ?? stocks.length,
+      source_count: cacheSummary?.source_count ?? data.total_scanned ?? stocks.length,
+      summary,
       phases_breakdown: data.phases_breakdown ?? null,
       stocks,
+      // B3: expose the full scanned set as `results` too (every ticker).
+      results: stocks,
       error: null,
       message: null,
     };

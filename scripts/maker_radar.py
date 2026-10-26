@@ -191,9 +191,12 @@ def _find_radar_db(market: str = 'EGX'):
         if not db_path.exists():
             continue
         try:
-            # Phase 7.1: migrated to db_manager (writable=False)
+            # Phase 7.1 / B3-fix: use get_connection() (raw, lifecycle managed by caller).
+            # The previous `db_manager.connection(...).__enter__()` pattern leaks the
+            # contextmanager object — Python GC closes the underlying conn before the
+            # caller can use it ("Cannot operate on a closed database").
             from core.db_manager import db_manager
-            conn = db_manager.connection(str(db_path), writable=False).__enter__()
+            conn = db_manager.get_connection(str(db_path), writable=False)
             # تحقق إن الـ table موجود
             cur = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -700,9 +703,11 @@ def _track_signals_to_db(under_microscope: list, scan_date: str, market_code: st
         return
 
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
-    # Phase 7.1: migrated to db_manager (writable=True)
+    # Phase 7.1 / B3-fix: use get_connection() (raw). The previous
+    # `db_manager.connection(...).__enter__()` pattern leaks the contextmanager
+    # object → GC closes the conn mid-function ("Cannot operate on a closed database").
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(db_path), writable=True).__enter__()
+    conn = db_manager.get_connection(str(db_path), writable=True)
 
     # تأكد إن الجدول موجود
     conn.execute("""
@@ -1077,6 +1082,282 @@ def build_incubator_candidates(results: list) -> list:
     return candidates
 
 
+# ============================================================================
+# B3 — JSON DATA CONTRACT (Task 2-a)
+# ============================================================================
+# Problem: the legacy scan loop dropped tickers whose scan_ticker() returned
+# None (insufficient history) OR whose current_price was below --min-price.
+# The final JSON carried only the categorized lists (quiet_list, etc.) plus
+# `all_results` (which was already filtered by min_price). The API route
+# (route.ts) read only the categorized lists — so ~316 of 347 scanned
+# stocks vanished from the UI.
+#
+# Fix: every scanned ticker now produces a `contract_result` entry with:
+#   - classification: one of
+#       quiet_accumulation | distribution | dead_trap | liquidity_drought |
+#       rule80_downtrend | unclassified | DATA_INVALID | INSUFFICIENT_DATA
+#   - reasons: list[str] (machine+human readable)
+#   - data_quality: lowercase enum (existing convention — backward compat
+#       with src/modules/predictions/components/maker-radar/types.ts):
+#       'fresh' | 'stale' | 'very_stale' | 'unknown'
+#       extended with NEW values: 'invalid' | 'unavailable'
+#   - data_quality_status: uppercase enum (NEW field — normalized):
+#       'OK' | 'STALE' | 'INVALID' | 'UNAVAILABLE'
+#   - scan_timestamp: ISO datetime
+#   - ticker, company, market, currency, plus existing metric fields
+# The legacy list keys (quiet_list, pre_surge_list, explosive_list,
+# early_break_list, distribution_list, under_microscope, all_results) are
+# PRESERVED as-is for backward compatibility.
+# NEW list keys (dead_trap_list, liquidity_drought_list, rule80_downtrend_list)
+# are subsets of `results` whose classification matches.
+# ============================================================================
+
+# Allowed classification values (B3 contract — Task 2-a)
+B3_CLASSIFICATIONS = (
+    'quiet_accumulation',
+    'distribution',
+    'dead_trap',
+    'liquidity_drought',
+    'rule80_downtrend',
+    'unclassified',
+    'DATA_INVALID',
+    'INSUFFICIENT_DATA',
+)
+
+# Allowed data_quality (lowercase — backward compat with existing TS consumer)
+B3_DATA_QUALITY_LEGACY = ('fresh', 'stale', 'very_stale', 'unknown', 'invalid', 'unavailable')
+
+# Allowed data_quality_status (uppercase — new normalized enum)
+B3_DATA_QUALITY_STATUS = ('OK', 'STALE', 'INVALID', 'UNAVAILABLE')
+
+
+def _normalize_data_quality_status(legacy_dq: str) -> str:
+    """Map the legacy lowercase data_quality value to the new uppercase enum."""
+    if legacy_dq == 'fresh':
+        return 'OK'
+    if legacy_dq in ('stale', 'very_stale'):
+        return 'STALE'
+    if legacy_dq == 'invalid':
+        return 'INVALID'
+    if legacy_dq == 'unavailable':
+        return 'UNAVAILABLE'
+    # unknown / unmapped → OK (fail-open; do not fabricate invalidity)
+    return 'OK'
+
+
+def _build_insufficient_result(
+    ticker: str,
+    identity: dict,
+    scan_timestamp: str,
+    reason: str,
+    *,
+    data_quality: str = 'unavailable',
+    data_quality_status: str = 'UNAVAILABLE',
+    extra_reasons: list = None,
+) -> dict:
+    """Build a minimal result entry for a ticker that could NOT be classified
+    (insufficient history, scan failure, or B1 price sanity failure).
+
+    These entries surface as classification='INSUFFICIENT_DATA' or 'DATA_INVALID'
+    so the UI can show "DATA UNAVAILABLE" instead of silently dropping the stock.
+    """
+    reasons = [reason] + (extra_reasons or [])
+    return {
+        'ticker': ticker,
+        'company': identity.get('name_ar') or identity.get('name') or ticker,
+        'name_ar': identity.get('name_ar') or identity.get('name') or ticker,
+        'market': identity.get('market') or '',
+        'currency': identity.get('currency') or '',
+        'scan_timestamp': scan_timestamp,
+        'classification': 'DATA_INVALID' if data_quality == 'invalid' else 'INSUFFICIENT_DATA',
+        'reasons': reasons,
+        'data_quality': data_quality,
+        'data_quality_status': data_quality_status,
+        # Existing metric fields set to None (so the shape is consistent)
+        'current_price': None,
+        'entry_price': None,
+        'stop_loss': None,
+        'target_price': None,
+        'change_1d': None,
+        'change_percent': None,
+        'price_bucket': None,
+        'last_close_date': '',
+        'staleness_days': None,
+        'data_stale': False,
+        'avg_turnover_20d': 0,
+        'avg_volume_20d': 0,
+        'avg_volume_10d': 0,
+        'volume_ratio_10d_vs_20d': 0,
+        'turnover_egp': 0,
+        'volume': 0,
+        'price_stability': 0,
+        'range_10d_pct': 0,
+        'roc_10d': None,
+        'roc_30d': None,
+        'maker_activity': None,
+        'accumulation': None,
+        'correction_status': None,
+        'drop_from_peak': None,
+        'expected': None,
+        'buy_days': 0,
+        'sell_days': 0,
+        'buy_pct': 0,
+        'sell_pct': 0,
+        'net_flow_egp': 0,
+        'buy_value_m': 0,
+        'sell_value_m': 0,
+        'liquidity_state': None,
+        'money_flow_state': None,
+        'life_cycle': None,
+        'limit_up_trap': False,
+        'kill_switch': False,
+        'kill_reason': None,
+        'under_microscope': False,
+        'path': None,
+        'position_size': 0.0,
+        'reason': reason,
+        'distribution_flag': False,
+        'pre_surge_details': None,
+        'quiet_details': None,
+        'explosive_details': None,
+        'break_reason': None,
+        'data_date': '',
+        'price_source': None,
+        'live_price': None,
+        'live_change_percent': None,
+        'live_last_update': None,
+        'daily_price': None,
+        'sanity_status': data_quality_status,
+    }
+
+
+def _classify_scanned_result(result: dict, args) -> str:
+    """Assign a B3 classification to a successfully-scanned stock.
+
+    Priority order (most severe first):
+      1. distribution_flag / path=='distribution' → 'distribution'
+      2. limit_up_trap → 'dead_trap'
+      3. kill_switch → 'dead_trap'
+      4. severe liquidity drought (avg_turnover_20d below floor) → 'liquidity_drought'
+      5. strong downtrend (drop_from_peak < -20%) → 'rule80_downtrend'
+      6. accumulation path (any of A_pre_surge, B/C/A_quiet_accumulation,
+         D/B_explosive_surge, E/C_early_break) → 'quiet_accumulation'
+      7. otherwise → 'unclassified'
+    """
+    path = result.get('path') or ''
+    # 1. distribution
+    if path == 'distribution' or result.get('distribution_flag'):
+        return 'distribution'
+    # 2. limit-up trap (pump-and-dump pattern)
+    if result.get('limit_up_trap'):
+        return 'dead_trap'
+    # 3. kill switch (severe candle contamination)
+    if result.get('kill_switch'):
+        return 'dead_trap'
+    # 4. liquidity drought — very low 20d turnover (below 100k EGP/USD floor)
+    avg_turnover = result.get('avg_turnover_20d') or 0
+    if avg_turnover < 100_000:
+        return 'liquidity_drought'
+    # 5. rule80 downtrend — fell > 20% from 20-day peak
+    drop = result.get('drop_from_peak')
+    if drop is not None and drop < -20:
+        return 'rule80_downtrend'
+    # 6. accumulation (any bullish path)
+    if path in (
+        'A_pre_surge',
+        'B_quiet_accumulation_strong', 'C_quiet_accumulation_weak', 'A_quiet_accumulation',
+        'D_explosive_surge', 'B_explosive_surge',
+        'E_early_break', 'C_early_break',
+    ):
+        return 'quiet_accumulation'
+    # 7. unclassified (scanned OK, no condition met)
+    return 'unclassified'
+
+
+def _enrich_result_with_b3_fields(
+    result: dict,
+    identity: dict,
+    args,
+    scan_timestamp: str,
+) -> dict:
+    """Add B3 fields (classification, reasons, data_quality_status, scan_timestamp,
+    company, market, currency) to a scan_ticker result dict IN-PLACE.
+
+    Returns the same dict (for chaining).
+    """
+    ticker = result.get('ticker', '')
+    # Identity enrichment
+    result['company'] = identity.get('name_ar') or identity.get('name') or ticker
+    result['name_ar'] = identity.get('name_ar') or identity.get('name') or ticker
+    result['market'] = identity.get('market') or (args.market.upper() if args else 'EGX')
+    result['currency'] = identity.get('currency') or ''
+    result['scan_timestamp'] = scan_timestamp
+    # Classification
+    classification = _classify_scanned_result(result, args)
+    result['classification'] = classification
+    # Reasons (array)
+    reasons = []
+    if result.get('reason'):
+        reasons.append(str(result['reason']))
+    if result.get('distribution_flag'):
+        reasons.append(f'distribution_flag:net_flow_egp={result.get("net_flow_egp", 0):.0f}')
+    if result.get('limit_up_trap'):
+        reasons.append('limit_up_trap')
+    if result.get('kill_switch'):
+        reasons.append(f'kill_switch:{result.get("kill_reason", "") or "triggered"}')
+    if classification == 'liquidity_drought':
+        reasons.append(f'low_turnover_20d:{result.get("avg_turnover_20d", 0):.0f}')
+    if classification == 'rule80_downtrend':
+        reasons.append(f'drop_from_peak:{result.get("drop_from_peak", 0):.1f}%')
+    if classification == 'quiet_accumulation':
+        reasons.append(f'path:{result.get("path", "")}')
+    if classification == 'unclassified':
+        reasons.append('no_path_matched')
+    result['reasons'] = reasons
+    # data_quality_status (uppercase, normalized)
+    legacy_dq = result.get('data_quality', 'unknown') or 'unknown'
+    if legacy_dq not in B3_DATA_QUALITY_LEGACY:
+        # Map new lowercase values too
+        legacy_dq = legacy_dq.lower() if legacy_dq.lower() in B3_DATA_QUALITY_LEGACY else 'unknown'
+    result['data_quality'] = legacy_dq
+    result['data_quality_status'] = _normalize_data_quality_status(legacy_dq)
+    return result
+
+
+def _build_summary(
+    results: list,
+    source_count: int,
+    scan_timestamp: str,
+) -> dict:
+    """Build the B3 `summary` block."""
+    scanned_count = len(results)
+    valid_data_count = sum(
+        1 for r in results
+        if r.get('classification') not in ('DATA_INVALID', 'INSUFFICIENT_DATA')
+    )
+    data_error_count = sum(
+        1 for r in results
+        if r.get('classification') in ('DATA_INVALID', 'INSUFFICIENT_DATA')
+    )
+    classified_count = sum(
+        1 for r in results
+        if r.get('classification') not in ('unclassified', 'DATA_INVALID', 'INSUFFICIENT_DATA')
+    )
+    unclassified_count = sum(
+        1 for r in results
+        if r.get('classification') == 'unclassified'
+    )
+    return {
+        'source_count': source_count,
+        'scanned_count': scanned_count,
+        'valid_data_count': valid_data_count,
+        'classified_count': classified_count,
+        'unclassified_count': unclassified_count,
+        'data_error_count': data_error_count,
+        'scan_timestamp': scan_timestamp,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description='رادار الميكرز اليومي')
     parser.add_argument('--limit', type=int, default=0, help='0 = كل الأسهم')
@@ -1119,9 +1400,11 @@ def main():
     log(f"  DB: {PROD_DB.name} (table: {PROD_TABLE})")
     log(f"  DB source id: {DB_SOURCE_ID}")
 
-    # Phase 7.1: migrated to db_manager (writable=False)
+    # Phase 7.1 / B3-fix: use get_connection() (raw). The previous
+    # `db_manager.connection(...).__enter__()` pattern leaks the contextmanager
+    # object → GC closes the conn mid-function ("Cannot operate on a closed database").
     from core.db_manager import db_manager
-    conn = db_manager.connection(str(PROD_DB), writable=False).__enter__()
+    conn = db_manager.get_connection(str(PROD_DB), writable=False)
     conn.row_factory = sqlite3.Row
 
     # Rule 67 (Task 35-A): تحقق إن الجدول المطلوب موجود فعلاً. ممكن الـ DB
@@ -1202,9 +1485,9 @@ def main():
         if not stocks_db_path.exists():
             return []
         try:
-            # Phase 7.1: migrated to db_manager (writable=False)
+            # Phase 7.1 / B3-fix: use get_connection() (raw).
             from core.db_manager import db_manager
-            sconn = db_manager.connection(str(stocks_db_path), writable=False).__enter__()
+            sconn = db_manager.get_connection(str(stocks_db_path), writable=False)
             sconn.row_factory = sqlite3.Row
             # اكتشف ticker col (ticker أو symbol)
             cols = [r[1] for r in sconn.execute("PRAGMA table_info(stocks)").fetchall()]
@@ -1324,6 +1607,12 @@ def main():
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")
 
+    # ─── B3 (Task 2-a): capture the SOURCE count BEFORE any filtering. ──
+    # The owner's hard constraint: "DO NOT assume 347 is fixed — the count
+    # must come from the actual source scanned in the current run."
+    source_count = len(tickers)
+    scan_timestamp = datetime.now().isoformat()
+
     # ─── إحساس وضع السوق عبر MarketRegimeEngine الموجود ─────────────────
     regime_name = "NORMAL"
     regime_details = {}
@@ -1357,9 +1646,9 @@ def main():
     # الرادار كان بيشوف أمس بس → دلوقتي بيجيب current_price + change_percent + last_update
     live_prices = {}
     try:
-        # Phase 7.1: migrated to db_manager (writable=False)
+        # Phase 7.1 / B3-fix: use get_connection() (raw).
         from core.db_manager import db_manager
-        live_conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
+        live_conn = db_manager.get_connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False)
         live_conn.row_factory = sqlite3.Row
         # PURGE-FIX (2026-10-22): filter is_active=1 — skip corrupted/deactivated tickers
         live_rows = live_conn.execute("""
@@ -1382,9 +1671,9 @@ def main():
     # Task IMPROVEMENT-26: آخر تاريخ في daily prices
     last_daily_date = ''
     try:
-        # Phase 7.1: migrated to db_manager (writable=False)
+        # Phase 7.1 / B3-fix: use get_connection() (raw).
         from core.db_manager import db_manager
-        date_conn = db_manager.connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False).__enter__()
+        date_conn = db_manager.get_connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False)
         r = date_conn.execute("SELECT MAX(price_date) FROM stock_daily_prices").fetchone()
         last_daily_date = r[0] if r and r[0] else ''
         date_conn.close()
@@ -1392,92 +1681,280 @@ def main():
     except:
         pass
 
+    # ─── B3 (Task 2-a): identity lookup (ticker → market/currency/name). ──
+    # Used for (a) B1 price_sanity.validate_price_data market/currency check,
+    # (b) the new `results[].company/market/currency` fields.
+    identity_map: dict = {}
+    try:
+        from core.db_manager import db_manager
+        ident_conn = db_manager.get_connection(str(PROJECT_ROOT / 'db' / 'stocks.db'), writable=False)
+        ident_conn.row_factory = sqlite3.Row
+        ident_rows = ident_conn.execute(
+            "SELECT ticker, market, currency, name, name_ar FROM stocks"
+        ).fetchall()
+        for r in ident_rows:
+            if r['ticker']:
+                identity_map[r['ticker']] = {
+                    'market': r['market'] or '',
+                    'currency': r['currency'] or '',
+                    'name': r['name'] or '',
+                    'name_ar': r['name_ar'] or '',
+                }
+        ident_conn.close()
+        log(f"  🪪 Identity lookup loaded: {len(identity_map)} tickers")
+    except Exception as e:
+        log(f"  ⚠️ Identity lookup failed (B1 sanity will skip market/currency checks): {e}")
+
+    # ─── B3 (Task 2-a): contract_results — ALL scanned tickers (no drop). ──
+    # The legacy `results` list (built below) drops tickers that fail scan_ticker
+    # or fall below --min-price. The new `contract_results` list keeps EVERY
+    # scanned ticker, marking failures as classification='INSUFFICIENT_DATA'
+    # or 'DATA_INVALID'. The owner's hard constraint:
+    #   "DO NOT restrict the final file to only stocks that meet certain conditions."
+    contract_results: list = []
+
     for i, ticker in enumerate(tickers, 1):
         rows = fetch_ticker_series(conn, ticker, days=40)
+
+        # ─── B3: insufficient history → INSUFFICIENT_DATA (NOT dropped) ──
+        if not rows or len(rows) < 15:
+            identity = identity_map.get(ticker, {})
+            contract_results.append(_build_insufficient_result(
+                ticker=ticker,
+                identity=identity,
+                scan_timestamp=scan_timestamp,
+                reason=f'insufficient_history:rows={len(rows) if rows else 0},min=15',
+                data_quality='unavailable',
+                data_quality_status='UNAVAILABLE',
+            ))
+            if i % 100 == 0:
+                log(f"    {i}/{len(tickers)} — contract_results={len(contract_results)}")
+            continue
+
         result = scan_ticker(rows, ticker, regime=regime_name)
-        if result:
-            # Task IMPROVEMENT-26: إضافة data_date + live_price + price_source
-            # Task FIX-STALE-DTPP-2026-10-07: use the FRESHEST source as
-            # authoritative for current_price. Previously the radar always
-            # trusted `closes[-1]` from the historical table — even when
-            # that row was 10 days stale. Now we compare the date of the
-            # last historical close vs the live price's last_update and
-            # use whichever is more recent.
-            result['data_date'] = result.get('last_close_date') or last_daily_date
-            result['price_source'] = 'daily'
+        # ─── B3: scan_ticker returned None → INSUFFICIENT_DATA ──
+        if not result:
+            identity = identity_map.get(ticker, {})
+            contract_results.append(_build_insufficient_result(
+                ticker=ticker,
+                identity=identity,
+                scan_timestamp=scan_timestamp,
+                reason='scan_ticker_returned_none:insufficient_valid_closes',
+                data_quality='unavailable',
+                data_quality_status='UNAVAILABLE',
+            ))
+            if i % 100 == 0:
+                log(f"    {i}/{len(tickers)} — contract_results={len(contract_results)}")
+            continue
 
-            # ─── FRESHNESS GUARD: compute live price freshness ─────────────
-            live = live_prices.get(ticker)
-            live_freshness_days = None
-            if live and live['price'] > 0:
-                result['live_price'] = round(live['price'], 2)
-                result['live_change_percent'] = round(live['change_percent'], 2)
-                result['live_last_update'] = live['last_update']
-                live_freshness_days = _compute_staleness_days(live['last_update'])
+        # Task IMPROVEMENT-26: إضافة data_date + live_price + price_source
+        # Task FIX-STALE-DTPP-2026-10-07: use the FRESHEST source as
+        # authoritative for current_price. Previously the radar always
+        # trusted `closes[-1]` from the historical table — even when
+        # that row was 10 days stale. Now we compare the date of the
+        # last historical close vs the live price's last_update and
+        # use whichever is more recent.
+        result['data_date'] = result.get('last_close_date') or last_daily_date
+        result['price_source'] = 'daily'
 
-            # Decide authoritative current_price + data_date + data_quality
-            hist_price = result.get('current_price', 0) or 0
-            hist_date = result.get('last_close_date', '')
-            hist_stale_days = result.get('staleness_days')
+        # ─── FRESHNESS GUARD: compute live price freshness ─────────────
+        live = live_prices.get(ticker)
+        live_freshness_days = None
+        if live and live['price'] > 0:
+            result['live_price'] = round(live['price'], 2)
+            result['live_change_percent'] = round(live['change_percent'], 2)
+            result['live_last_update'] = live['last_update']
+            live_freshness_days = _compute_staleness_days(live['last_update'])
 
-            if live and live['price'] > 0:
-                # Pick the freshest source by date comparison
-                use_live = True
-                if hist_date and live_freshness_days is not None and hist_stale_days is not None:
-                    # Use the source with the more recent date
-                    use_live = (live_freshness_days <= hist_stale_days)
+        # Decide authoritative current_price + data_date + data_quality
+        hist_price = result.get('current_price', 0) or 0
+        hist_date = result.get('last_close_date', '')
+        hist_stale_days = result.get('staleness_days')
 
-                if use_live:
-                    result['price_source'] = 'live'
-                    result['data_date'] = live['last_update'][:10] if live['last_update'] else result['data_date']
-                    # Override current_price with live value
-                    if hist_price > 0 and abs(live['price'] - hist_price) > 0.01:
-                        result['daily_price'] = round(hist_price, 2)  # حفظ القديم
-                    result['current_price'] = round(live['price'], 2)
-                    result['change_1d'] = round(live['change_percent'], 2)
-                    result['change_percent'] = round(live['change_percent'], 2)
-                    # Re-evaluate data_quality based on live freshness
-                    if live_freshness_days is not None:
-                        result['staleness_days'] = live_freshness_days
-                        if live_freshness_days <= 1:
-                            result['data_quality'] = 'fresh'
-                            result['data_stale'] = False
-                        elif live_freshness_days <= 3:
-                            result['data_quality'] = 'stale'
-                            result['data_stale'] = True
-                        else:
-                            result['data_quality'] = 'very_stale'
-                            result['data_stale'] = True
-                else:
-                    # Historical is fresher than live (rare) — keep hist
-                    result['price_source'] = 'daily'
+        if live and live['price'] > 0:
+            # Pick the freshest source by date comparison
+            use_live = True
+            if hist_date and live_freshness_days is not None and hist_stale_days is not None:
+                # Use the source with the more recent date
+                use_live = (live_freshness_days <= hist_stale_days)
+
+            if use_live:
+                result['price_source'] = 'live'
+                result['data_date'] = live['last_update'][:10] if live['last_update'] else result['data_date']
+                # Override current_price with live value
+                if hist_price > 0 and abs(live['price'] - hist_price) > 0.01:
+                    result['daily_price'] = round(hist_price, 2)  # حفظ القديم
+                result['current_price'] = round(live['price'], 2)
+                result['change_1d'] = round(live['change_percent'], 2)
+                result['change_percent'] = round(live['change_percent'], 2)
+                # Re-evaluate data_quality based on live freshness
+                if live_freshness_days is not None:
+                    result['staleness_days'] = live_freshness_days
+                    if live_freshness_days <= 1:
+                        result['data_quality'] = 'fresh'
+                        result['data_stale'] = False
+                    elif live_freshness_days <= 3:
+                        result['data_quality'] = 'stale'
+                        result['data_stale'] = True
+                    else:
+                        result['data_quality'] = 'very_stale'
+                        result['data_stale'] = True
             else:
-                result['live_price'] = None
-                result['live_change_percent'] = None
-                result['live_last_update'] = None
-                # No live price → rely on historical; data_quality already set in scan_ticker
+                # Historical is fresher than live (rare) — keep hist
+                result['price_source'] = 'daily'
+        else:
+            result['live_price'] = None
+            result['live_change_percent'] = None
+            result['live_last_update'] = None
+            # No live price → rely on historical; data_quality already set in scan_ticker
 
-            # ─── STALE SIGNAL FILTER (Task FIX-STALE-DTPP) ────────────────
-            # If BOTH sources are stale (>3 days), the entry_price is meaningless.
-            # Drop the ticker from "under_microscope" so we never tell the customer
-            # to "buy at" a stale price.
-            if result.get('data_stale') and result.get('staleness_days', 0) and result['staleness_days'] > 3:
-                stale_drop_warn = (f'⛔ SKIPPED — بيانات قديمة جداً ({result["staleness_days"]}d). '
-                                    f'آخر تحديث: {result.get("data_date")}. لازم تتأكد إن data_engine محدث قبل التوصية.')
-                log(f"  {stale_drop_warn}  [{ticker}]")
-                result['under_microscope'] = False
-                # BRAVO-FIX: لو السهم distribution_flag=True، خلي path='distribution' (مش None)
-                # عشان الـ distribution_list تـ catchه صح.
-                if result.get('distribution_flag'):
-                    result['path'] = 'distribution'
-                else:
-                    result['path'] = None
-                result['position_size'] = 0.0
-                # keep result for diagnostics but exclude from microscope list
+        # ─── STALE SIGNAL FILTER (Task FIX-STALE-DTPP) ────────────────
+        # If BOTH sources are stale (>3 days), the entry_price is meaningless.
+        # Drop the ticker from "under_microscope" so we never tell the customer
+        # to "buy at" a stale price. NOTE (B3): we do NOT drop the ticker from
+        # `contract_results` — only from the legacy `under_microscope` list.
+        if result.get('data_stale') and result.get('staleness_days', 0) and result['staleness_days'] > 3:
+            stale_drop_warn = (f'⛔ SKIPPED — بيانات قديمة جداً ({result["staleness_days"]}d). '
+                                f'آخر تحديث: {result.get("data_date")}. لازم تتأكد إن data_engine محدث قبل التوصية.')
+            log(f"  {stale_drop_warn}  [{ticker}]")
+            result['under_microscope'] = False
+            # BRAVO-FIX: لو السهم distribution_flag=True، خلي path='distribution' (مش None)
+            # عشان الـ distribution_list تـ catchه صح.
+            if result.get('distribution_flag'):
+                result['path'] = 'distribution'
+            else:
+                result['path'] = None
+            result['position_size'] = 0.0
+            # keep result for diagnostics but exclude from microscope list
 
-            results.append(result)
+        # ─── B3 (Task 2-a): integrate B1 price_sanity.validate_price_data ──
+        # Run the B1 sanity gate BEFORE classification. If DATA_INVALID →
+        # classification='DATA_INVALID' (NO force-classification). If STALE
+        # → classification='INSUFFICIENT_DATA'. The owner's hard constraint:
+        #   "a stock with `DATA_INVALID` prices must NOT be force-classified;
+        #    it must surface as `DATA_INVALID` in the radar output."
+        identity = identity_map.get(ticker, {})
+        sanity_status = 'OK'
+        sanity_reasons: list = []
+        try:
+            from core.price_sanity import validate_price_data
+            latest_row = rows[-1] if rows else {}
+            ohlc_dict = {
+                'open': latest_row.get('open'),
+                'high': latest_row.get('high'),
+                'low': latest_row.get('low'),
+                'close': latest_row.get('close'),
+            }
+            prices_seq = [r.get('close') for r in rows if r.get('close') and r['close'] > 0]
+            sanity = validate_price_data(
+                prices=prices_seq,
+                ohlc=ohlc_dict,
+                ticker=ticker,
+                market=identity.get('market') or args.market.upper(),
+                currency=identity.get('currency') or None,
+                latest_date=result.get('last_close_date') or None,
+                max_age_days=4,
+                entry_price=result.get('entry_price'),
+                support=result.get('stop_loss'),
+                resistance=result.get('target_price'),
+            )
+            sanity_status = sanity.status
+            sanity_reasons = list(sanity.reasons or [])
+            # B1 sanity gate — fail-closed for invalid data
+            if sanity_status == 'DATA_INVALID':
+                # Mark + append an insufficient-style entry (overrides any
+                # path that scan_ticker might have set — do NOT classify
+                # invalid-price stocks as quiet/distribution/etc.).
+                insuf = _build_insufficient_result(
+                    ticker=ticker,
+                    identity=identity,
+                    scan_timestamp=scan_timestamp,
+                    reason=f'B1_price_sanity:DATA_INVALID',
+                    data_quality='invalid',
+                    data_quality_status='INVALID',
+                    extra_reasons=sanity_reasons,
+                )
+                # Preserve scan_ticker metrics (current_price, etc.) so the
+                # UI can show "DATA_INVALID" alongside the actual price (the
+                # owner's UI may want to display the contaminated value with
+                # a red flag rather than a blank).
+                for k in ('current_price', 'entry_price', 'stop_loss', 'target_price',
+                          'change_1d', 'change_percent', 'price_bucket', 'avg_turnover_20d',
+                          'avg_volume_20d', 'last_close_date', 'staleness_days',
+                          'live_price', 'live_change_percent', 'live_last_update',
+                          'data_date', 'price_source'):
+                    if k in result:
+                        insuf[k] = result[k]
+                insuf['sanity_status'] = 'DATA_INVALID'
+                insuf['sanity_reasons'] = sanity_reasons
+                contract_results.append(insuf)
+                log(f"  ⛔ B1 DATA_INVALID [{ticker}]: {', '.join(sanity_reasons[:2])}")
+                if i % 100 == 0:
+                    log(f"    {i}/{len(tickers)} — contract_results={len(contract_results)}")
+                continue
+            elif sanity_status == 'STALE':
+                # Stale data → INSUFFICIENT_DATA (not DATA_INVALID).
+                insuf = _build_insufficient_result(
+                    ticker=ticker,
+                    identity=identity,
+                    scan_timestamp=scan_timestamp,
+                    reason=f'B1_price_sanity:STALE',
+                    data_quality='stale' if (result.get('staleness_days') or 0) <= 3 else 'very_stale',
+                    data_quality_status='STALE',
+                    extra_reasons=sanity_reasons,
+                )
+                # Preserve metrics
+                for k in ('current_price', 'entry_price', 'stop_loss', 'target_price',
+                          'change_1d', 'change_percent', 'price_bucket', 'avg_turnover_20d',
+                          'avg_volume_20d', 'last_close_date', 'staleness_days',
+                          'live_price', 'live_change_percent', 'live_last_update',
+                          'data_date', 'price_source', 'path', 'distribution_flag',
+                          'under_microscope', 'position_size', 'net_flow_egp'):
+                    if k in result:
+                        insuf[k] = result[k]
+                insuf['sanity_status'] = 'STALE'
+                insuf['sanity_reasons'] = sanity_reasons
+                contract_results.append(insuf)
+                if i % 100 == 0:
+                    log(f"    {i}/{len(tickers)} — contract_results={len(contract_results)}")
+                continue
+            elif sanity_status == 'DATA_UNAVAILABLE':
+                insuf = _build_insufficient_result(
+                    ticker=ticker,
+                    identity=identity,
+                    scan_timestamp=scan_timestamp,
+                    reason=f'B1_price_sanity:DATA_UNAVAILABLE',
+                    data_quality='unavailable',
+                    data_quality_status='UNAVAILABLE',
+                    extra_reasons=sanity_reasons,
+                )
+                insuf['sanity_status'] = 'DATA_UNAVAILABLE'
+                insuf['sanity_reasons'] = sanity_reasons
+                contract_results.append(insuf)
+                if i % 100 == 0:
+                    log(f"    {i}/{len(tickers)} — contract_results={len(contract_results)}")
+                continue
+            # else: sanity_status == 'OK' → fall through to classification
+        except ImportError:
+            # B1 price_sanity module not available — fail-open (log + continue
+            # with normal classification). Do NOT break the radar.
+            log(f"  ⚠️ B1 price_sanity module not available — skipping sanity gate for {ticker}")
+        except Exception as sanity_err:
+            # FAIL-OPEN: any sanity-gate crash → log + continue with classification.
+            log(f"  ⚠️ B1 price_sanity crashed for {ticker}: {sanity_err}")
+
+        # ─── B3 (Task 2-a): enrich with classification + reasons + data_quality_status ──
+        _enrich_result_with_b3_fields(result, identity, args, scan_timestamp)
+        result['sanity_status'] = sanity_status
+        result['sanity_reasons'] = sanity_reasons
+
+        # Append to BOTH the new contract_results (all scanned) AND the legacy
+        # `results` list (which gets price-filtered below for the legacy list keys).
+        contract_results.append(result)
+        results.append(result)
+
         if i % 100 == 0:
-            log(f"    {i}/{len(tickers)} — {sum(1 for r in results if r['under_microscope'])} تحت الميكروسكوب")
+            log(f"    {i}/{len(tickers)} — contract={len(contract_results)} legacy={len(results)}")
     conn.close()
 
     # ─── تصنيف + تنظيف النتايج ────────────────────────────────────────
@@ -1588,6 +2065,36 @@ def main():
     # pattern for the EGX default.
     market_code = (args.market or "EGX").strip().upper()
     json_path = OUTPUT_DIR / f"maker_radar_{market_code}_{today_str}.json"
+
+    # ─── B3 (Task 2-a): build new list keys (subsets of contract_results) ──
+    # dead_trap_list / liquidity_drought_list / rule80_downtrend_list are NEW
+    # keys. They are subsets of `results` (=contract_results) whose
+    # classification matches. Legacy list keys (quiet_list, pre_surge_list,
+    # explosive_list, early_break_list, distribution_list) keep their existing
+    # shape — populated from the price-filtered `results` (legacy list).
+    dead_trap_list = [
+        r for r in contract_results
+        if r.get('classification') == 'dead_trap'
+    ]
+    liquidity_drought_list = [
+        r for r in contract_results
+        if r.get('classification') == 'liquidity_drought'
+    ]
+    rule80_downtrend_list = [
+        r for r in contract_results
+        if r.get('classification') == 'rule80_downtrend'
+    ]
+
+    # ─── B3 (Task 2-a): build the summary block ──
+    b3_summary = _build_summary(contract_results, source_count, scan_timestamp)
+
+    # Sanity: contract_results MUST contain every scanned ticker (no vanishing).
+    # If a ticker was dropped (defensive — should not happen given the loop
+    # above appends to contract_results for every code path), log loudly.
+    if len(contract_results) != source_count:
+        log(f"  ⚠️ B3 CONTRACT VIOLATION: source_count={source_count} but "
+            f"contract_results={len(contract_results)} — some tickers vanished!")
+
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             'generated_at': datetime.now().isoformat(),
@@ -1605,6 +2112,16 @@ def main():
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
             'distribution_count': len(distribution_list),
+            # ─── B3 (Task 2-a): NEW additive keys ──────────────────────
+            'results': contract_results,            # ALL scanned tickers (no filter)
+            'summary': b3_summary,                  # source/scanned/classified/...
+            'dead_trap_list': dead_trap_list,       # NEW list key
+            'liquidity_drought_list': liquidity_drought_list,  # NEW list key
+            'rule80_downtrend_list': rule80_downtrend_list,     # NEW list key
+            'dead_trap_count': len(dead_trap_list),
+            'liquidity_drought_count': len(liquidity_drought_list),
+            'rule80_downtrend_count': len(rule80_downtrend_list),
+            # ─── Legacy keys (PRESERVED for backward compat) ───────────
             'quiet_list': quiet_list,
             'pre_surge_list': pre_surge_list,
             'explosive_list': explosive_list,
@@ -1615,6 +2132,14 @@ def main():
             'all_results': results,
         }, f, ensure_ascii=False, indent=2, default=str)
     log(f"\n✅ JSON saved: {json_path}")
+    log(f"    📋 B3 contract: source={b3_summary['source_count']} "
+        f"scanned={b3_summary['scanned_count']} "
+        f"classified={b3_summary['classified_count']} "
+        f"unclassified={b3_summary['unclassified_count']} "
+        f"data_error={b3_summary['data_error_count']}")
+    log(f"    🆕 B3 new lists: dead_trap={len(dead_trap_list)} "
+        f"liquidity_drought={len(liquidity_drought_list)} "
+        f"rule80_downtrend={len(rule80_downtrend_list)}")
 
     incubator_count = len(build_incubator_candidates(results))
     log(f"    🔭 Incubator Candidates (heating up): {incubator_count}")
