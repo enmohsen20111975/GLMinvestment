@@ -9818,3 +9818,57 @@ Stage Summary:
 ## 12. Ready for merge?
 **YES — code is ready.** 172 tests pass, lint clean, working tree clean. 
 **BUT NOT MERGED** — per owner constraint "لا Deploy أو Merge دون موافقة". 9 local commits await owner approval to push. Blockers in section 11 are decisions, not code defects.
+
+---
+Task ID: S-2-Alpha
+Agent: Alpha (Frontend Engineer — Targeted Fixes)
+Task: Execute owner-authorized Tasks A/B/C/D — route.ts syntax verification, Liquidity Radar guest-vs-auth count, ADP/ADPC backend-defect evidence, honest test report
+
+Work Log:
+- Step 1 (Pre-flight): Verified 8341a28 preserved (git log -1 8341a28 OK). Read worklog tail (Task 5 Final Acceptance Report). Confirmed Python backend RUNNING on port 8010 (curl /health → {"status":"ok"}). Confirmed Next.js NOT running (started it in background; repeatedly OOM-killed in 4GB sandbox — environmental, documented).
+- Step 2 (Task A — route.ts typos): Owner asked me to verify the 3 reported typos:
+    * line 285: `MARKET_MAParketRaw0]`
+    * line 305: `MARKET_MAParketRaw]`
+    * line 452: `MARKET_MAParketRawErr]`
+  Verification method: `od -c` byte-level dump on each line. Result:
+    * line 285 actual bytes: `M A R K E T _ M A P [ m a r k e t R a w 0 ]` ← CORRECT
+    * line 305 actual bytes: `M A R K E T _ M A P [ m a r k e t R a w ]` ← CORRECT
+    * line 452 actual bytes: `M A R K E T _ M A P [ m a r k e t R a w E r r ]` ← CORRECT
+  CONCLUSION: The "typos" reported in my earlier inventory were TERMINAL DISPLAY ARTIFACTS — the `[` character was being interpreted/hidden by the terminal when displayed via `grep`/`sed`/`cat -A`. The file is syntactically correct.
+  Verification: `bunx tsc --noEmit` on the file → exit 0 (0 errors). `bunx eslint` on the file → exit 0 (only a config warning, no errors). Live API call to `/api/predictions/daily-picks?market=EGX` returned HTTP 200 with valid JSON containing `market_regime_info: {market_regime: "DEFENSIVE", no_trade_reason: "..."}`. No ReferenceError thrown.
+- Step 3 (Task B — Liquidity Radar guest vs authenticated):
+  Inspected code at src/components/shared/LiquidityRadarView.tsx:
+    * line 271: `isGuest = authStatus === 'unauthenticated'`
+    * line 278: `GUEST_MAX_ROWS = 5`
+    * line 374: `if (isGuest) out = out.slice(0, GUEST_MAX_ROWS)` ← slicing
+    * line 392: `pagedStocks = isGuest ? filteredStocks : filteredStocks.slice(page*25, ...)` ← PAGE_SIZE=25 for auth
+  Inspected src/app/api/v2/liquidity-radar/route.ts:
+    * line 297: `results: stocks` (returns FULL set, no API-side slicing)
+    * line 199: builds rawStocks from `data.results` (no limit)
+  API live test (Python primary, port 8010): endpoint does NOT exist on Python (/api/v2/liquidity-radar → 404). The radar is served by Next.js wrapper at /api/v2/liquidity-radar reading db/radar_cache_status.json + scripts/output/ JSON.
+  Live API test (Next.js wrapper, port 3000): returned `success: true, stocks: [], results: [], scanned_count: 0, message: "لا توجد بيانات رادار مخزنة لهذا السوق بعد"`. CAUSE: radar cache is EMPTY — the warmup script (scripts/maker_radar.py) has NOT been run in this sandbox. Triggering /api/maker-radar/warmup caused Next.js OOM-kill (4GB sandbox).
+  CONCLUSION for Task B: When cache IS populated, the API returns the FULL set. The "5 stocks only" behavior is FRONTEND slicing for GUESTS (GUEST_MAX_ROWS=5) — by design, not a bug. For authenticated users, 25/page with pagination. CANNOT verify live with real cache because warmup OOM-kills the dev server. Owner decision needed if guests should see more than 5.
+- Step 4 (Task C — ADP/ADPC backend defect evidence):
+  Query db/stocks.db: `SELECT ticker, market, currency FROM stocks WHERE ticker IN ('ADP','ADPC')` → returns:
+    * ('ADP', 'EGX', 'USD')  ← CONTAMINATED (USD on EGX market — the B1 documented bug)
+    * ('ADPC', 'EGX', 'EGP') ← VALID (real EGX stock)
+  Query db/predictions.db:
+    * `SELECT COUNT(*) FROM predictions WHERE ticker='ADP'` → 0
+    * `SELECT COUNT(*) FROM predictions WHERE ticker='ADPC'` → 0
+    * Total predictions: 0 (fresh DB, no predictions written yet — Python started but no scanner run)
+    * `data_isolation` table: NOT PRESENT in predictions.db (Bravo's B1 worklog claimed 117 records, but table is missing — likely in a different DB or not restored)
+  CONCLUSION for Task C: The ADP contamination is in stocks.db (the source). The frontend displays what the API returns. If the predictions API query joins stocks.db without filtering ADP-USD, the UI will show ADP with USD price. This is a BACKEND query filter gap — Alpha will NOT add a frontend filter to hide ADP (per owner directive). Handoff to Bravo: add `AND NOT (ticker='ADP' AND market='EGX' AND currency='USD')` to the predictions query SQL, OR restore the data_isolation table and join on it.
+- Step 5 (Task D — tests + honest report):
+  * `bun run lint` → exit 0 (clean)
+  * `bunx tsc --noEmit` on daily-picks/route.ts → exit 0 (no errors)
+  * Live API tests: Python /api/predictions/daily-picks → 200 OK with market_regime_info. Next.js wrapper → 200 OK (forwards Python response).
+  * Browser test (agent-browser): NOT RUN — dev server OOM-kills on any heavy request (radar warmup, page compilation). Environmental, documented in prior worklog entries.
+  * Vitest component suites: NOT re-run in this session (owner's FREEZE→targeted-fix directive; prior 88/88 PASS documented).
+
+Stage Summary:
+- Task A: NO CODE CHANGES NEEDED. The 3 "typos" were terminal display artifacts. File verified correct via `od -c` byte dump + tsc + lint + live API 200 OK.
+- Task B: Frontend slicing for guests (GUEST_MAX_ROWS=5) confirmed by code reading. API returns full set (no slicing). Live verification blocked by radar cache empty + Next.js OOM on warmup. Owner decision needed for guest policy change.
+- Task C: ADP-USD contamination confirmed in stocks.db (the source). predictions.db has 0 ADP rows (fresh DB, no scanner run yet). data_isolation table MISSING from predictions.db — Bravo's B1 worklog claim of "117 records" needs verification (table not restored, OR in a different DB). Handoff evidence prepared for Bravo. Alpha did NOT add any frontend filter.
+- Task D: lint clean, tsc clean, API live tests pass. Browser test NOT RUN (OOM). Worklog updated.
+- Files modified: NONE (no code changes were needed — Task A typos were false alarm; B/C are decision/handoff items).
+- Git state: unchanged. 8341a28 preserved. No commits added. No push.
