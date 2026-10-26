@@ -77,8 +77,7 @@ def get_latest_prices():
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            iconn = db_manager.connection(INTRADAY_DB, writable=False).__enter__()
-            try:
+            with db_manager.connection(INTRADAY_DB, writable=False) as iconn:
                 intra_rows = iconn.execute("""
                     SELECT ticker, price, timestamp
                     FROM stock_intraday
@@ -86,8 +85,6 @@ def get_latest_prices():
                     GROUP BY ticker
                     HAVING timestamp = MAX(timestamp)
                 """).fetchall()
-            finally:
-                iconn.close()
 
             today = datetime.now().strftime('%Y-%m-%d')
             for ticker, price, ts in intra_rows:
@@ -116,13 +113,12 @@ def get_latest_index_close(db_path, symbol):
         today = _dt.now().strftime('%Y-%m-%d')
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(db_path), writable=False).__enter__()
-        row = conn.execute(
-            "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
-            "AND price_date < ? ORDER BY price_date DESC LIMIT 1", (symbol, today)
-        ).fetchone()
-        conn.close()
-        return float(row[0]) if row else None
+        with db_manager.connection(str(db_path), writable=False) as conn:
+            row = conn.execute(
+                "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
+                "AND price_date < ? ORDER BY price_date DESC LIMIT 1", (symbol, today)
+            ).fetchone()
+            return float(row[0]) if row else None
     except Exception:
         return None
 
@@ -406,8 +402,7 @@ def main():
         today = datetime.now().strftime('%Y-%m-%d')
         # Phase 7.1: migrated to db_manager (writable=True)
         from core.db_manager import db_manager
-        conn = db_manager.connection(str(STOCKS_DB), writable=True).__enter__()
-        try:
+        with db_manager.connection(str(STOCKS_DB), writable=True) as conn:
             # 4a. تأكد إن index_daily_prices موجود
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS index_daily_prices (
@@ -444,8 +439,6 @@ def main():
                 ))
             conn.commit()
             print(f"  ✅ upserted {len(indices)} indices into market_indices + index_daily_prices")
-        finally:
-            conn.close()
     else:
         print(f"  [DRY RUN] would upsert {len(indices)} indices")
 

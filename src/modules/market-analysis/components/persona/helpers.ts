@@ -265,11 +265,17 @@ export function getPersonaDataFallback(
 }
 
 /** Clean a ticker by stripping market suffixes (.CA / .SR / .KW / .AE / .BH / .QA). */
-export function cleanTicker(ticker: string): string {
-  return ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
+export function cleanTicker(ticker: unknown): string {
+  if (!ticker) return '';
+  if (typeof ticker === 'object') {
+    const obj = ticker as Record<string, unknown>;
+    const raw = obj.ticker || obj.symbol || obj.canonical_ticker || '';
+    return cleanTicker(raw);
+  }
+  return String(ticker).trim().replace(/\.(CA|SR|KW|AE|BH|QA)$/i, '');
 }
 
 /** Uppercase clean ticker (used as map key for stocks lookup). */
-export function cleanTickerUpper(ticker: string): string {
+export function cleanTickerUpper(ticker: unknown): string {
   return cleanTicker(ticker).toUpperCase();
 }

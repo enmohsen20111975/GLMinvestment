@@ -22,6 +22,4 @@ export const DEFAULT_VISIBLE_INDICATORS = ['sma', 'ema', 'volume'] as string[];
 export type ChartEngine = unknown;
 export type VisibleIndicatorsMap = Record<string, boolean>;
 
-export function buildAnalysisUrl(ticker: string, market: string): string {
-  return `/api/stocks/${encodeURIComponent(ticker)}/unified?market=${encodeURIComponent(market)}`;
-}
+export { buildAnalysisUrl } from './helpers';

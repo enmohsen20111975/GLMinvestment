@@ -67,9 +67,7 @@ def main():
 
     # 2. Phase 1 & 2: Create ticker_registry and restore Arabic names
     print("🔧 [Phase 1 & 2] Building `ticker_registry` and Restoring Arabic Names...")
-    # Phase 7.1: migrated to db_manager (writable=True)
-    from core.db_manager import db_manager
-    conn_stocks = db_manager.connection(stocks_db_path, writable=True).__enter__()
+    conn_stocks = sqlite3.connect(str(stocks_db_path), timeout=30.0)
     cur_s = conn_stocks.cursor()
 
     cur_s.execute("""
@@ -124,10 +122,7 @@ def main():
     except Exception as e:
         print(f"  Note: stocks_backup check: {e}")
 
-    # Source 3: sharia_metrics (data_engine.db)
-    # Phase 7.1: migrated to db_manager (writable=False)
-    from core.db_manager import db_manager
-    conn_de = db_manager.connection(de_db_path, writable=False).__enter__()
+    conn_de = sqlite3.connect(str(de_db_path), timeout=30.0)
     cur_de = conn_de.cursor()
     try:
         rows = cur_de.execute("SELECT symbol, name_ar FROM sharia_metrics WHERE name_ar GLOB '*[ا-ي]*'").fetchall()
@@ -181,9 +176,7 @@ def main():
 
     # 3. Phase 3: Clean Contaminated Tickers in price_history.db (Collision-Safe)
     print("🔧 [Phase 3] Cleaning Contaminated Tickers in `price_history.db`...")
-    # Phase 7.1: migrated to db_manager (writable=False)
-    from core.db_manager import db_manager
-    conn_ph = db_manager.connection(ph_db_path, writable=False).__enter__()
+    conn_ph = sqlite3.connect(str(ph_db_path), timeout=30.0)
     cur_ph = conn_ph.cursor()
 
     # Query tickers that contain lowercase or spaces

@@ -575,21 +575,25 @@ export function usePersonaTabData(
   const handleSelectItem = useCallback((item: StoredAnalysisItem) => {
     // COHERENCE-FIX: بنبني selectedContext من بيانات الـ PersonaData + StoredAnalysisItem
     // عشان النافذة الشاملة تقدر تعرض التوقّع الأصلي جنب التحليل الفني.
-    const pd: PersonaData = item.analysisJson?.[_personaKey] || {};
-    setSelectedItem(item);
-    setSelectedTicker(item.ticker);
+    const rawTicker = typeof item === 'string' ? item : (item?.ticker || (item as any)?.symbol || '');
+    const cleanTk = cleanTicker(rawTicker);
+    const pd: PersonaData = (typeof item === 'object' && item) ? (item.analysisJson?.[_personaKey] || {}) : {};
+    
+    // إزالة setSelectedItem(item) نهائياً لمنع ظهور الشاشة المكررة ذات الـ 3 تبويبات
+    // الاعتماد فقط على نافذة التحليل الشامل (UnifiedAnalysisModal)
+    setSelectedTicker(cleanTk);
     setSelectedContext({
-      ticker: item.ticker,
-      score: pd.score ?? item.maestroScore ?? 0,
-      rating: pd.verdict || item.recommendationAr || '',
-      entryPrice: pd.entry ?? item.entry?.price ?? undefined,
-      targetPrice: pd.target ?? item.entry?.target ?? undefined,
-      stopLoss: pd.stop ?? item.entry?.stopLoss ?? undefined,
-      riskReward: pd.risk_reward ?? item.entry?.riskReward ?? undefined,
+      ticker: cleanTk,
+      score: pd.score ?? item?.maestroScore ?? 0,
+      rating: pd.verdict || item?.recommendationAr || '',
+      entryPrice: pd.entry ?? item?.entry?.price ?? undefined,
+      targetPrice: pd.target ?? item?.entry?.target ?? undefined,
+      stopLoss: pd.stop ?? item?.entry?.stopLoss ?? undefined,
+      riskReward: pd.risk_reward ?? item?.entry?.riskReward ?? undefined,
       horizon: pd.timeframe || '',
       reason: pd.reason || '',
-      signal: pd.signal || item.recommendation || 'HOLD',
-      confidence: item.confidence ?? pd.score ?? 0,
+      signal: pd.signal || item?.recommendation || 'HOLD',
+      confidence: item?.confidence ?? pd.score ?? 0,
       source: 'stored',
     });
   }, [_personaKey]);

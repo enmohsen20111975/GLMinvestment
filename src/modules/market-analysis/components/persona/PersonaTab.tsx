@@ -44,7 +44,7 @@ import { PreviousPredictionsArchive } from '../PredictionsTab';
 // Local sub-components (extracted in this Phase 3 task).
 import { PersonaCard } from './PersonaCard';
 import { PersonaTableView } from './PersonaTableView';
-import { StockDetailPanel } from './StockDetailPanel';
+
 import { PersonaEmptyStates } from './PersonaEmptyStates';
 import { PersonaTextView } from './PersonaTextView';
 import { WhaleRadarSection } from './WhaleRadarSection';
@@ -198,19 +198,7 @@ export function PersonaTab({
 
   return (
     <div className="space-y-3">
-      {selectedItem ? (
-        <StockDetailPanel
-          item={selectedItem}
-          persona={persona}
-          market={market}
-          subTab={subTab}
-          onSubTabChange={setSubTab}
-          onBack={handleBack}
-          stockDetail={stockDetail}
-        />
-      ) : (
-        <>
-          {viewSelector}
+      {viewSelector}
 
           {/* Fallback warning + sector heat banners (gambler-only sector heat). */}
           <PersonaBanners
@@ -408,8 +396,6 @@ export function PersonaTab({
               )}
             </div>
           )}
-        </>
-      )}
 
       {/* ════════════════════════════════════════════════════════════════════
           🪟 نافذة التحليل الشامل (Unified Analysis Modal) — يفتح فوق الشاشة.

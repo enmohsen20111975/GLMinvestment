@@ -1,6 +1,46 @@
-// SingleStockAnalysis helpers (Phase 3)
-export function buildAnalysisUrl(ticker: string, market: string): string {
-  return `/api/stocks/${encodeURIComponent(ticker)}/unified?market=${encodeURIComponent(market)}`;
+export interface BuildAnalysisUrlOptions {
+  ticker?: string;
+  timeframe?: string;
+  userState?: 'buyer' | 'owner' | string;
+  isCrypto?: boolean;
+  userId?: string;
+  entryPrice?: number;
+  entryQty?: number;
+  market?: string;
+}
+
+export function buildAnalysisUrl(
+  arg: string | BuildAnalysisUrlOptions,
+  marketFallback?: string
+): string {
+  if (typeof arg === 'string') {
+    const cleanTk = arg.trim().toUpperCase();
+    const mkt = marketFallback || 'EGX';
+    return `/api/stocks/${encodeURIComponent(cleanTk)}/unified?market=${encodeURIComponent(mkt)}`;
+  }
+  const opts = arg || {};
+  const tk = String(opts.ticker || '').trim().toUpperCase();
+  const tf = opts.timeframe || '1D';
+  if (opts.isCrypto) {
+    const p = new URLSearchParams({
+      symbol: tk,
+      timeframe: tf,
+      limit: '120',
+      _t: String(Date.now()),
+    });
+    return `/api/crypto/full-analysis?${p.toString()}`;
+  }
+  const p = new URLSearchParams({
+    ticker: tk,
+    timeframe: tf,
+    limit: '120',
+    state: opts.userState || 'buyer',
+    _t: String(Date.now()),
+  });
+  if (opts.userId) p.set('user_id', opts.userId);
+  if (opts.entryPrice != null && opts.entryPrice > 0) p.set('entry_price', String(opts.entryPrice));
+  if (opts.entryQty != null && opts.entryQty > 0) p.set('entry_qty', String(opts.entryQty));
+  return `/api/v2/chart/full-analysis?${p.toString()}`;
 }
 export function buildTvSymbol(ticker: string, market: string): string {
   if (market === 'CRYPTO' || ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'].includes(ticker)) return `BINANCE:${ticker}USDT`;
