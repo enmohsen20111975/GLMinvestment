@@ -988,6 +988,60 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         if len(closes) < MIN_TICKER_DAYS:
             continue
 
+        # ─── B1 PRICE SANITY GATE (Task 1-a / Bravo) ─────────────────────
+        # Single, well-placed validation before ANY analysis touches this ticker.
+        # Catches: USD contamination on EGX tickers (ADP/ADPC), impossible OHLC
+        # (low>high, open out of range), large candle range (split/corporate-action
+        # note), stale data, history-vs-current mismatch, negative support.
+        # DATA_INVALID → refuse to analyze (NO_TRADE/DATA_INVALID), log_decision,
+        # and `continue`. Never emit a trade recommendation on invalid data.
+        # Pure validation — no DB writes; the data_isolation side-table is the
+        # audit trail (created by scripts/b1_isolate_adp.py, not here).
+        try:
+            from core.price_sanity import validate_price_data, lookup_stock_identity
+            if not hasattr(run_generator, '_b1_identity_cache'):
+                run_generator._b1_identity_cache = {}
+            _ident = run_generator._b1_identity_cache.get(ticker)
+            if _ident is None:
+                _ident = lookup_stock_identity(ticker)
+                run_generator._b1_identity_cache[ticker] = _ident
+            _b1_ohlc = None
+            if opens and highs and lows and closes:
+                _b1_ohlc = (opens[-1], highs[-1], lows[-1], closes[-1])
+            _b1_res = validate_price_data(
+                prices=closes,
+                ohlc=_b1_ohlc,
+                ticker=ticker,
+                market=_ident.get('market'),
+                currency=_ident.get('currency'),
+                latest_date=dates[-1] if dates else None,
+            )
+            if not _b1_res.valid:
+                try:
+                    from analyzers.decision_logger import log_decision as _b1_log
+                    _b1_log(
+                        symbol=ticker,
+                        decision_type='reject_entry',
+                        reason_code='data_invalid',
+                        reason_text=' | '.join(_b1_res.reasons)[:500],
+                        flag_active='B1_PRICE_SANITY',
+                        scan_date=(scan_dates[0] if scan_dates else ''),
+                    )
+                except Exception:
+                    pass  # never let logging crash the run
+                if processed % 25 == 0 or ticker in ('ADP', 'ADPC'):
+                    print(f"  🚫 [B1] {ticker} skipped ({_b1_res.status}): "
+                          f"{'; '.join(_b1_res.reasons)[:120]}", flush=True)
+                continue  # refuse to analyze — NO_TRADE/DATA_INVALID
+        except Exception as _b1_err:
+            # FAIL-OPEN with WARNING: never let the sanity gate crash the run.
+            # If the gate itself errors, log and proceed (the analyzer's own
+            # >10000 sanity check at line ~2527 is the last-resort backstop).
+            if not hasattr(run_generator, '_b1_warned'):
+                run_generator._b1_warned = True
+                print(f"  ⚠️  [B1] price_sanity gate error for {ticker}: "
+                      f"{type(_b1_err).__name__}: {_b1_err} — FAIL-OPEN", flush=True)
+
         # ─── PHASE-B: محرك السيولة كبوابة أولى ──────────────────────────
         # فحص السيولة قبل أي تحليل — يوفر 30-50% من الـ CPU
         # يرفض الأسهم غير القابلة للتداول (penny stocks + dead volume)

@@ -92,6 +92,8 @@ REASON_CODES = {
     'news_veto': 'خبر سلبي VETO',
     'crypto_disclosure_veto': 'حدث كريبتو VETO',
     'crypto_news_veto': 'خبر كريبتو VETO',
+    # B1 (Task 1-a — Bravo): price-data sanity gate
+    'data_invalid': 'بيانات سعرية غير صالحة (B1 Price Sanity)',
     # Force exits
     'distribution_exit': 'شمعة توزيع',
     'max_holding': 'تجاوز المدة القصوى',

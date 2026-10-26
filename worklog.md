@@ -9135,3 +9135,83 @@ Stage Summary:
 - الـ fix بيحمي rows بتاعة owners تانيين (canonical_state + frontend) من المسح.
 - لا تعديل على الإنتاج ولا migration — كل الاختبارات على نسخة temp.
 - يحتاج موافقة المالك قبل: (1) deployment على VPS، (2) الـ schema migration على production DB.
+
+
+---
+Task ID: 1-a
+Agent: Bravo (B1 — ADP/ADPC + Price Sanity)
+Task: ADP/ADPC identity & price contamination investigation + Price Sanity Validation gate
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md لفهم سياق P0-DELETE-OWNERSHIP-FIX + decision_log shim.
+- Step 1 (INVESTIGATION): استعلمت db/stocks.db.stocks + db/price_history.db.price_history + db/stocks.db.stock_daily_prices + predictions.db.predictions لكلا Ticker. النتائج موثّقة في agent-ctx/B1-ADP-ADPC-INVESTIGATION.md.
+- Step 2 (ISOLATE — NO DELETE): أنشأت scripts/b1_isolate_adp.py الذي ينشئ side-table اسمها data_isolation في stocks.db ويسجّل 117 isolation entry للسجل الملوّث ADP (1 stocks row + 36 stock_daily_prices + 80 price_history) مع snapshot JSON للقيمة الأصلية + reason_code + reason_text. لا حذف. الـ side-table للـ audit trail فقط.
+- Step 3 (Price Sanity Module): أنشأت vps-service/core/price_sanity.py بـ validate_price_data(prices, ohlc, ticker, market, currency) -> SanityResult. يفحص: price>0+finite, OHLC consistency (low<=high, open/close في النطاق), currency/market consistency (EGX→EGP), data freshness (configurable), history-vs-current mismatch (50× spread), entry_price/support/resistance sanity (no negative support). large_candle_range يُعلَّم DATA_INVALID + note "check_corporate_actions_or_splits" (لا رفض صامت).
+- Step 4 (Wiring — minimal): أضفت B1 PRICE SANITY GATE واحد في daily_predictor.py (بعد engine.get_price_data، قبل أي تحليل). DATA_INVALID → log_decision(reject_entry/data_invalid) + continue. FAIL-OPEN: لو الـ gate نفسه رمى استثناء، يطبع warning ويكمل (لا يكسر الإنتاج). أضفت 'data_invalid' لـ REASON_CODES في decision_logger.py (additive).
+- Step 5 (Tests): أنشأت scripts/test_b1_price_sanity.py بـ 12 test case (6 required + 6 regression). شغّلته فعلياً: 42/42 PASS. النتيجة موثّقة في التقرير.
+
+Stage Summary:
+- ROOT CAUSE (ADP vs ADPC): ADPC (id=167) هو السهم المصري الحقيقي "العربية لمنتجات الألبان" — currency=EGP، 4677 price_history row من 2007-12-26، 2 prediction records (entry_price=3.75 EGP)، stock_adaptive_profiles row. ADP (id=882) سجل ملوّث: currency=USD على market=EGX (مستحيل). price_history فيه 80 row بـ source='intraday_aggregated' + market='US' (تلوّث من US-source)، stock_daily_prices فيه 36 row بـ OHLC flat=3.7 (تسريب من ADPC القديم) + 17 row بـ OHLC=$264 (US ADP — Automatic Data Processing Inc.). الـ stocks.stocks row للـ ADP يمزج: low_price=3.7 (من تسريب ADPC) + high_price=269.94 (من US source). الـ owner's symptom "3.98 entry next to 263.86 current" = ADPC.resistance=3.97 ظهرت بجوار ADP.current_price=263.855 في UI مختلط. الـ negative support لم يعد ممكناً لأن الـ gate يرفض ADP قبل أي تحليل.
+- Files created: vps-service/core/price_sanity.py (new), scripts/b1_isolate_adp.py (new), scripts/test_b1_price_sanity.py (new), agent-ctx/B1-ADP-ADPC-INVESTIGATION.md (new).
+- Files modified (minimal): vps-service/analyzers/decision_logger.py (+2 lines: 'data_invalid' reason code), vps-service/jobs/daily_predictor.py (+54 lines: B1 gate block at line 991-1043).
+- Test results: 42/42 PASS (run: python3 scripts/test_b1_price_sanity.py). كل الـ 6 acceptance test cases required + 6 regression tests.
+- Isolated records: 117 entries في data_isolation side-table (1 stocks row + 36 stock_daily_prices + 80 price_history)، 5 reason codes: ticker_collision_usd_contamination, cross_ticker_leakage_from_adpc, us_market_source_contamination, intraday_aggregated_us_contamination, historical_migration_cross_regime. لا حذف.
+- BLOCKER (owner decision needed): (1) تأكيد أن ADP سجل ملوّث يجب إزالته من ticker list المستخدمة في أي analyzer/route — مقترحي: إبقاء الـ row في stocks.db للـ audit + استخدام data_isolation side-table لاستبعاده في الـ query layer. (2) parallel agent (Task B4 1-c) عدّل daily_predictor.py + prediction_tracker.py + misc_routes.py + picks_management_routes.py + intraday_scanner.py — هذه التعديلات ليست مني ولم ألتزم بها. (3) prediction_tracker.py في working tree فيه SyntaxError (line 626: try بدون except) — ليس من تعديلي ولا يكسر B1 gate (الـ gate يعمل قبل استدعاء PredictionTracker).
+- Ready for merge: YES للـ B1 deliverables (price_sanity + isolation + tests + gate wiring). NO للـ deployment حتى يوافق المالك على إزالة ADP من ticker list + إصلاح prediction_tracker.py syntax من parallel agent.
+
+
+---
+Task ID: 1-c
+Agent: Bravo (B4 — Market Regime & NO_TRADE)
+Task: Decision-integrity audit of market regime flow + remove counter-trend opportunity fabrication + expose explicit NO_TRADE in the API contract.
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md لفهم سياق P0-DELETE-OWNERSHIP-FIX + decision_log shim + REGIME-ENGINE (2026-09-27) + CASCADING-FALLBACK-031.
+- Step 1 (INVESTIGATION): traced the full decision pipeline from regime source → predictor → risk_gate → decision_log → API → frontend.
+  * regime source: `analyzers/market_regime_engine.py` (MarketRegimeEngine.update_regime() — 1381 LOC) يكتب regime لـ stocks.db.system_settings key=`current_regime_<MARKET>` + market_regime_log.
+  * predictor: `jobs/daily_predictor.py` lines 867-919 يقرأ regime + يطبّق REGIME_CONFIG override (DEFENSIVE→min_score=65/min_rr=1.8/max_picks=5). خط 3761 بـ يفلتر للـ BUY signals فقط — NO_TRADE بيُسقط صامتًا ولا يصل للـ DB أصلاً.
+  * risk_gate: `core/risk_gate.py` موجود لكن مش مستخدم في الـ V40.2 live path — مستخدم فقط في orchestrator_v3/executor_v3 (separate pipeline). الـ V40.2 بـ يستخدم BRAVO-EVALUATE-RISK + HARD-QUANT-KILL خاصة فيه (lines 3880-4040).
+  * decision_log: `analyzers/decision_logger.py` + `core/decision_log.py` (shim) — audit-only، ما بـ يقودش الـ predictions table.
+  * API: `/api/daily/rebuild-predictions` + `/api/unified/predictions` (misc_routes.py) + `/api/predictions/daily-picks` (picks_management_routes.py) — كلها بتقرأ من stored_analyses + predictions.
+- Step 2 (DEFECTS FOUND): حددت 4 defects تسبب ظهور counter-trend opportunities في BEAR/DEFENSIVE:
+  * D1: `daily_predictor.py:3777-3832` RADAR FALLBACK — بيحقن BUY signals (source='radar_fallback', position_size_mult=0.5) لما DEFENSIVE + 0 picks.
+  * D2: `daily_predictor.py:3761` — بـ يفلتر للـ BUY فقط، فـ NO_TRADE مابيوصلش للـ DB أصلاً.
+  * D3: `misc_routes.py:2442-2543` (CASCADING-FALLBACK-031) — Tier 4 last_resort (min_score=0, min_rr=0) بيضمن 5 picks دايماً حتى لو مفيش شيء مؤهل. التعليق حرفيًا: "ضمان إن الشاشة متفضيش أبداً".
+  * D4: الـ API response shapes مفيهاش `market_regime` ولا `no_trade_reason` fields — الـ frontend مابيقدرش يعرف إن السوق DEFENSIVE.
+- Step 3 (MINIMAL FIX): طبّقت 3 إصلاحات بدون أي تعديل في thresholds/weights/strategy:
+  * Fix A: شيلت RADAR FALLBACK block كامل (56 lines) من daily_predictor.py و استبدلته بـ B4-MARKET-REGIME-FIX comment + NO_TRADE log line (11 lines).
+  * Fix B: شيلت Tier 4 (last_resort) من `_cascading_fallback_select` في misc_routes.py — الـ function دلوقتي بترجع strict/moderate/survival فقط (ممكن فاضية). الـ Blood Filter + Penny Stock filters لسه شغالة.
+  * Fix C: أضفت 3 helpers جديدة في misc_routes.py: `_b4_read_regime_from_settings` (read-only من system_settings), `_b4_get_market_regime_info` (يبني الـ regime info dict + no_trade_reason), `_b4_annotate_picks_with_decision` (يضيف `decision` field لكل pick: BUY/NO_TRADE/etc.). أضفت `market_regime_info` field للـ response بتاع 3 endpoints: `/api/daily/rebuild-predictions`, `/api/unified/predictions`, `/api/predictions/daily-picks`.
+- Step 4 (TESTS): أنشأت `scripts/test_b4_market_regime.py` بـ 23 assertion في 5 categories:
+  * TEST 0: AST syntax validation للـ 3 modified files.
+  * TEST 1: RADAR FALLBACK removed (no 'source': 'radar_fallback' literal in active code).
+  * TEST 2: CASCADING Tier 4 (last_resort) removed.
+  * TEST 3: API response exposes market_regime_info + per-pick decision field.
+  * TEST 4: B4 helpers against temp stocks.db fixture — BEAR/DEFENSIVE + 0 picks → no_trade_reason non-empty + mentions BEAR/DEFENSIVE + source=MarketRegimeEngine. BEAR/DEFENSIVE + 3 picks → no_trade_reason empty (real exception path). decision field per pick correct. cascade returns [] when only dead stocks qualify. real BUY passes through unchanged. API shape (empty picks + market_regime + no_trade_reason) satisfies owner acceptance criterion.
+  * TEST 5: REGIME_CONFIG values preserved (no threshold/weight changes — DEFENSIVE min_rr=1.8, min_score=65, max_picks=5 still match market_regime_engine.py).
+
+Stage Summary:
+- Pipeline finding: الـ regime فعليًا بيحسب صح في `market_regime_engine.py` (DEFENSIVE/NORMAL/AGGRESSIVE + 2-3 day hysteresis + persist to system_settings) — لكن الـ predictor بيحقن BUY signals في DEFENSIVE regime عبر RADAR FALLBACK، والـ API بيحقن 5 picks دايماً عبر CASCADING Tier 4 last_resort، والـ API response مكنش فيه market_regime/no_trade_reason fields. النتيجة: الـ frontend كان بيشوف BUY opportunities خلال BEAR market بدون أي إشارة إن السوق DEFENSIVE.
+- Defect found: YES — 4 defects (D1 RADAR FALLBACK fabrication + D2 NO_TRADE filter + D3 CASCADING Tier 4 last_resort fabrication + D4 missing API fields). كلهم موثّقين بـ file:line في `agent-ctx/B4-PIPELINE-INVESTIGATION.md`.
+- Files modified:
+  * `vps-service/jobs/daily_predictor.py` — removed RADAR FALLBACK block (lines 3777-3832 → 11-line B4 comment + NO_TRADE log). NO thresholds/weights changes.
+  * `vps-service/api/misc_routes.py` — removed CASCADING Tier 4 last_resort; added `_b4_read_regime_from_settings` + `_b4_get_market_regime_info` + `_b4_annotate_picks_with_decision` helpers; added `market_regime_info` field to `/api/daily/rebuild-predictions` and `/api/unified/predictions` responses; added per-pick `decision` annotation.
+  * `vps-service/api/picks_management_routes.py` — added `market_regime_info` field to `/api/predictions/daily-picks` response; added per-pick `decision` annotation.
+  * `scripts/test_b4_market_regime.py` — NEW (23 assertions, all PASS).
+  * `agent-ctx/B4-PIPELINE-INVESTIGATION.md` — NEW (full pipeline diagram + defect table + verdict).
+- Test results: 23/23 PASS (run: `python3 scripts/test_b4_market_regime.py`). كل الـ 4 acceptance criteria بتوع الـ owner متحققين:
+  * BEAR market test: real decision reaches the surface ✅ (TEST 4a + 4f).
+  * No-valid-opportunities test: NO_TRADE reaches the user clearly ✅ (TEST 4a + 4d + 4f).
+  * Real-exception test: an approved genuine opportunity passes through ✅ (TEST 4b + 4e).
+  * Frontend is NOT independently generating recommendations ✅ (TEST 3 + TEST 5 — backend supplies market_regime_info + per-pick decision field).
+  * Explicit NO_TRADE present in the API contract ✅ (TEST 3 + TEST 5 — `no_trade_reason` field + `decision='NO_TRADE'` per pick).
+- API contract fields now exposed (per response):
+  * `market_regime_info.market_regime` — DEFENSIVE/NORMAL/AGGRESSIVE (from system_settings).
+  * `market_regime_info.market_regime_source` — 'MarketRegimeEngine' | 'system_settings_missing'.
+  * `market_regime_info.market_regime_reasons` — list of human-readable bullets.
+  * `market_regime_info.market_regime_last_update` — ISO timestamp.
+  * `market_regime_info.no_trade_reason` — non-empty string when picks is empty, '' otherwise.
+  * Per-pick `decision` field — BUY/STRONG_BUY/ACCUMULATE/NO_TRADE (never fabricated; NO_TRADE only when signal empty/HOLD).
+- REGIME_CONFIG untouched: DEFENSIVE min_rr=1.8 / min_score=65 / max_picks=5 / pos_mult=0.5 (same as market_regime_engine.py). لا تعديل على thresholds أو weights.
+- BLOCKER (owner decision needed): (1) تأكيد إن الـ RADAR FALLBACK removal مقصود — الـ block كان added في 2026-10-05 بـ comment "لو DEFENSIVE regime و مفيش picks → استخدم radar candidates" لكن مفيش mention له في worklog.md (مفيش owner approval موثّق). لو الـ owner اعتبره approved strategy، لازم يُسترجع بطريقة مختلفة (e.g. كـ 'NEEDS_CONFIRMATION' tier بدل BUY). (2) parallel agents B1 (Task 1-a) + B2 (Task 1-b) عدّلوا نفس الـ files (daily_predictor.py + prediction_tracker.py + intraday_scanner.py) — تعديلاتهم مش مني. (3) prediction_tracker.py في working tree فيه SyntaxError (line ~626: try بدون except) — من تعديل B2، مش من B4.
+- Ready for merge: YES للـ B4 deliverables (regime surfacing + NO_TRADE contract + fabrication removal + tests). NO للـ deployment حتى: (a) owner يوافق على RADAR FALLBACK removal، (b) prediction_tracker.py syntax يتعمل fix من B2 owner، (c) توافقون مع B1 على ADP isolation approach.
