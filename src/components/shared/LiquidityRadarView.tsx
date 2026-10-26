@@ -274,7 +274,14 @@ export function LiquidityRadarView({
  const storeMarket = useAppStore((s) => s.currentMarket);
  const storeStocks = useAppStore((s) => s.stocks);
  const { status: authStatus } = useSession();
- const isGuest = authStatus === 'unauthenticated';
+ // FIX (2026-10-26): isGuest كان بيعتمد على useSession() اللي بترجع 'unauthenticated'
+ // دائمًا في الـ sandbox (next-auth-shim.ts hardcoded). ده خلى كل المستخدمين — حتى
+ // الأدمن — يتعرضوا كـ guest → GUEST_MAX_ROWS=5 بيقطعهم لـ 5 أسهم بس.
+ // الحل: isGuest يعتمد على useAppStore.isAuthenticated (اللي بيتحدد عبر useAuthCheck
+ // polling لـ /api/auth/me). كده أي مستخدم مسجل دخول بنجاح هيتعامل كـ authenticated
+ // وهايشوف 25 سهم/صفحة بدل 5.
+ const isAuthenticatedInStore = useAppStore((s) => s.isAuthenticated);
+ const isGuest = !isAuthenticatedInStore && authStatus === 'unauthenticated';
  const GUEST_MAX_ROWS = 5;
  const [showLockModal, setShowLockModal] = useState(false);
  const [activeMarket, setActiveMarket] = useState(
