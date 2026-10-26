@@ -193,18 +193,19 @@ def run_advanced_scan():
             _advanced_scan_state['current_stock'] = ticker
             
             try:
-                # تشغيل التحليل الشامل مع Risk Gate + Decision Log
-                # (Production integration: master_analyzer → risk_gate → decision_log)
+                # تشغيل التحليل الشامل
                 analysis = analyzer.analyze(ticker)
                 
                 # BRAVO-PRODUCTION-INTEGRATION: apply Risk Gate after analysis
+                # Risk Gate is independent — cannot be bypassed by high score.
+                # Uses EXISTING decision_logger.py (not a new DB).
                 try:
                     import sys as _sys
                     _vps_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '')
                     if _vps_path not in _sys.path:
                         _sys.path.insert(0, _vps_path)
                     from core.risk_gate import apply_risk_gate
-                    from core.decision_log import log_decision as _log_decision
+                    from analyzers.decision_logger import log_decision as _log_decision
                     
                     _raw_sig = getattr(analysis, 'signal', 'HOLD')
                     _score = getattr(analysis, 'master_score', 0)
@@ -219,9 +220,31 @@ def run_advanced_scan():
                         position_size_pct=_pos,
                     )
                     
+                    # Risk Gate overrides signal if it rejects
                     if _final_sig == 'NO_TRADE':
                         analysis.signal = 'NO_TRADE'
                         analysis.signal_ar = 'لا تتداول'
+                        # Log rejection using EXISTING decision_logger
+                        _log_decision(
+                            symbol=ticker,
+                            decision_type='reject_entry',
+                            reason_code='risk_gate_blocked',
+                            reason_text='; '.join(_risk_warns),
+                            flag_active='RISK_GATE',
+                            score_before=_score,
+                            score_after=0,
+                        )
+                    else:
+                        # Log accepted decision
+                        _log_decision(
+                            symbol=ticker,
+                            decision_type='accept_entry',
+                            reason_code='risk_gate_passed',
+                            reason_text=f'signal={_final_sig} score={_score}',
+                            flag_active='RISK_GATE',
+                            score_before=_score,
+                            score_after=_score,
+                        )
                     
                     if _risk_warns:
                         _old_reason = getattr(analysis, 'reason', '') or ''
@@ -230,21 +253,8 @@ def run_advanced_scan():
                     if _final_pos != _pos:
                         analysis.suggested_position_size = _final_pos
                     
-                    _eid = _log_decision(
-                        ticker=ticker,
-                        market_state=getattr(analysis, 'market_regime_ar', 'unknown'),
-                        selected_engines=['master_analyzer'],
-                        engine_results={'signal': getattr(analysis, 'signal', 'HOLD'), 'score': _score},
-                        final_signal=getattr(analysis, 'signal', 'HOLD'),
-                        master_score=_score,
-                        risk_profile={'entry_price': getattr(analysis, 'entry_price', 0),
-                                      'stop_loss': getattr(analysis, 'stop_loss', 0),
-                                      'target_price': getattr(analysis, 'target_price', 0)},
-                        code_version=os.environ.get('GIT_COMMIT', '4128d87'),
-                        warnings=_risk_warns, errors=[],
-                    )
                 except Exception:
-                    pass  # Risk gate/decision log optional — don't break scan if unavailable
+                    pass  # Risk gate optional — don't break scan if unavailable
                 
                 # تصفية الأسهم غير الصالحة للتداول
                 if not include_dead_stocks and not analysis.is_tradeable:
