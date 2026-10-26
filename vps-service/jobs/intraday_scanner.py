@@ -618,33 +618,136 @@ def promote_incubator_candidates(market: str = 'EGX') -> list:
                 continue
 
             # سجّل التوقع في predictions.db
+            # B2 FIX (Task 1-b, Bravo): replace `INSERT OR IGNORE` (which silently
+            # dropped updates AND created one row per 5-min scan = up to 60 dup
+            # rows per ticker per day) with explicit check-then-update.
+            #
+            # Identity model (see scripts/b2_dedup_migration.py):
+            #   (ticker, date(prediction_date), persona, market, track)
+            # = ONE prediction per day per persona per market per track.
+            #
+            # If a matching row already exists for today (same ticker+persona+market+track),
+            # UPDATE only the mutable analysis fields — PRESERVE the original
+            # entry_price / stop_loss / target_price / prediction_date / persona
+            # (owner constraint #2 + #6: do NOT overwrite the original Entry Price;
+            # the FIRST row holds the original).
             try:
                 # Phase 7.1: migrated to db_manager (writable=True)
                 from core.db_manager import db_manager
                 pred_conn = db_manager.get_connection(str(predictions_db), writable=True)
-                pred_conn.execute("""
-                    INSERT OR IGNORE INTO predictions (
-                        ticker, signal, signal_type, entry_price, stop_loss, target_price,
-                        risk_reward, confidence, track, notes, prediction_date, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    ticker,
-                    'BUY',
-                    'BUY',
-                    cand.get('current_price', live_price),
-                    cand.get('stop_loss_if_promoted'),
-                    cand.get('target_if_promoted'),
-                    cand.get('risk_reward'),
-                    cand.get('readiness_pct', 80),
-                    'RADAR_PROMOTED',
-                    f"تمت الترقية لايف من رادار التربص بعد تحقيق شرط {trigger.get('condition_ar', trigger_type)}",
-                    _dt.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    _dt.now().isoformat(),
-                ))
+                pred_cur = pred_conn.cursor()
+
+                _today_str = _dt.now().strftime('%Y-%m-%d')
+                _track_val = 'RADAR_PROMOTED'
+                _market_val = 'EGX'  # promote_incubator_candidates is EGX-only by design
+                _persona_val = 'balanced'
+
+                # Look up any existing row for today's identity.
+                _existing = pred_cur.execute("""
+                    SELECT id, entry_price, stop_loss, target_price, prediction_date
+                    FROM predictions
+                    WHERE ticker = ?
+                      AND substr(prediction_date,1,10) = ?
+                      AND persona = ?
+                      AND market = ?
+                      AND track = ?
+                    ORDER BY prediction_date ASC, rowid ASC
+                    LIMIT 1
+                """, (ticker, _today_str, _persona_val, _market_val, _track_val)).fetchone()
+
+                _now_iso = _dt.now().isoformat()
+                _now_full = _dt.now().strftime('%Y-%m-%d %H:%M:%S')
+                _notes_val = (
+                    f"تمت الترقية لايف من رادار التربص بعد تحقيق شرط "
+                    f"{trigger.get('condition_ar', trigger_type)}"
+                )
+
+                if _existing:
+                    # UPDATE mutable fields only — preserve original prices + dates + persona.
+                    # The UNIQUE INDEX idx_predictions_dedup (created by B2 migration)
+                    # would otherwise ABORT a bare INSERT; we avoid that by going through
+                    # this UPDATE path explicitly.
+                    _orig_id = _existing[0]
+                    try:
+                        pred_cur.execute("""
+                            UPDATE predictions SET
+                                signal = 'BUY',
+                                signal_type = 'BUY',
+                                risk_reward = ?,
+                                confidence = ?,
+                                notes = ?,
+                                updated_at = ?,
+                                update_count = COALESCE(update_count, 0) + 1,
+                                kill_filter_result = COALESCE(kill_filter_result, '') || ' | re-triggered ' || ?
+                            WHERE id = ?
+                        """, (
+                            cand.get('risk_reward'),
+                            cand.get('readiness_pct', 80),
+                            _notes_val,
+                            _now_iso,
+                            _now_full,
+                            _orig_id,
+                        ))
+                        logger.info(
+                            f"🚀 INCUBATOR PROMOTED (UPDATE existing): {ticker} — "
+                            f"trigger={trigger_type}, live_price={live_price}, "
+                            f"existing_id={_orig_id}, original_entry={_existing[1]} "
+                            f"(PRESERVED), update_count→COALESCE+1"
+                        )
+                    except Exception as _upde:
+                        # Fallback: if update_count column missing (old schema),
+                        # retry without it. Idempotent ALTER handles future runs.
+                        try:
+                            pred_cur.execute("""
+                                UPDATE predictions SET
+                                    signal = 'BUY',
+                                    signal_type = 'BUY',
+                                    risk_reward = ?,
+                                    confidence = ?,
+                                    notes = ?,
+                                    updated_at = ?
+                                WHERE id = ?
+                            """, (
+                                cand.get('risk_reward'),
+                                cand.get('readiness_pct', 80),
+                                _notes_val,
+                                _now_iso,
+                                _orig_id,
+                            ))
+                        except Exception:
+                            raise
+                    promoted.append(ticker)
+                else:
+                    # No existing row for today → INSERT a new one.
+                    pred_cur.execute("""
+                        INSERT INTO predictions (
+                            ticker, signal, signal_type, entry_price, stop_loss, target_price,
+                            risk_reward, confidence, track, notes, prediction_date, created_at,
+                            persona, market, updated_at, update_count
+                        ) VALUES (?, 'BUY', 'BUY', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    """, (
+                        ticker,
+                        cand.get('current_price', live_price),
+                        cand.get('stop_loss_if_promoted'),
+                        cand.get('target_if_promoted'),
+                        cand.get('risk_reward'),
+                        cand.get('readiness_pct', 80),
+                        _track_val,
+                        _notes_val,
+                        _now_full,
+                        _now_iso,
+                        _persona_val,
+                        _market_val,
+                        _now_iso,
+                    ))
+                    logger.info(
+                        f"🚀 INCUBATOR PROMOTED (NEW INSERT): {ticker} — "
+                        f"trigger={trigger_type}, live_price={live_price}"
+                    )
+                    promoted.append(ticker)
+
                 pred_conn.commit()
                 pred_conn.close()
-                promoted.append(ticker)
-                logger.info(f"🚀 INCUBATOR PROMOTED: {ticker} — trigger={trigger_type}, live_price={live_price}")
             except Exception as e:
                 logger.error(f"Failed to promote {ticker}: {e}")
 

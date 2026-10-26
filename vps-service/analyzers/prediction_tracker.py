@@ -616,67 +616,6 @@ class PredictionTracker:
                 with _open_db(self.db_path, writable=True) as _chk_conn:
                     _chk_cur = _chk_conn.cursor()
 
-                    # (1) DEDUP: check existing PENDING for same (ticker, persona)
-                    _existing = _chk_cur.execute(
-                        "SELECT id FROM predictions WHERE ticker = ? AND persona = ? "
-                        "AND outcome_date IS NULL ORDER BY created_at DESC LIMIT 1",
-                        (ticker, _persona)
-                    ).fetchone()
-
-                    if _existing:
-                        _existing_id = _existing['id']
-                        # Update instead of insert — keep the latest analysis
-                        # RL-FIX-18: include target_price_2 + explosive fields in dedup-UPDATE
-                        try:
-                            _chk_cur.execute('''
-                                UPDATE predictions SET
-                                    signal = ?, signal_type = ?,
-                                    entry_price = ?, target_price = ?, stop_loss = ?,
-                                    master_score = ?, updated_at = ?,
-                                    technical_score = ?, fundamental_score = ?,
-                                    ai_pattern_score = ?, sentiment_score = ?,
-                                    notes = ?, atr_at_entry = ?,
-                                    target_price_2 = ?, explosive_score = ?, explosive_label = ?
-                                WHERE id = ?
-                            ''', (
-                                signal, signal_type,
-                                entry_price, target_price, stop_loss,
-                                master_score, datetime.now().isoformat(),
-                                technical_score, fundamental_score,
-                                ai_pattern_score, sentiment_score,
-                                notes, atr_at_entry,
-                                target_price_2 or 0, explosive_score or 0.0, explosive_label or '',
-                                _existing_id
-                            ))
-                            _chk_conn.commit()
-                            print(
-                                f"[PRED_DEDUP_UPDATE] ticker={ticker} persona={_persona} "
-                                f"existing_id={_existing_id} → updated (no duplicate insert) "
-                                f"T2={target_price_2 or 0} expl={explosive_label or '-'}/{explosive_score or 0}",
-                                flush=True
-                            )
-                        except Exception as _upde:
-                            # لو العمود مش موجود (schema قديم) → fallback بدون atr_at_entry/T2
-                            _chk_cur.execute('''
-                                UPDATE predictions SET
-                                    signal = ?, signal_type = ?,
-                                    entry_price = ?, target_price = ?, stop_loss = ?,
-                                    master_score = ?, updated_at = ?,
-                                    technical_score = ?, fundamental_score = ?,
-                                    ai_pattern_score = ?, sentiment_score = ?,
-                                    notes = ?
-                                WHERE id = ?
-                            ''', (
-                                signal, signal_type,
-                                entry_price, target_price, stop_loss,
-                                master_score, datetime.now().isoformat(),
-                                technical_score, fundamental_score,
-                                ai_pattern_score, sentiment_score,
-                                notes, _existing_id
-                            ))
-                            _chk_conn.commit()
-                        return _existing_id
-
                     # (2) CAP: count PENDING for this persona
                     _pending_count = _chk_cur.execute(
                         "SELECT COUNT(*) FROM predictions WHERE persona = ? "
@@ -698,6 +637,126 @@ class PredictionTracker:
                     f"[PRED_CAP_WARN] cap check failed ({_cap_err}) → proceeding with INSERT",
                     flush=True
                 )
+
+        # ── B2 FIX (Task 1-b, Bravo): ALWAYS-ON DEDUP ──────────────────────
+        # The original RL-FIX-17 dedup was gated behind `if not _BYPASS_CAP:`,
+        # so when intraday_scanner.py / daily_predictor.py set BYPASS_PRED_CAP=1
+        # (to skip the 5-pending cap), the dedup was bypassed TOO. The result
+        # was up to 60 duplicate rows per ticker per day from intraday scans.
+        #
+        # Now: dedup ALWAYS runs (independent of cap bypass). The dedup
+        # identity matches the B2 migration's UNIQUE INDEX:
+        #   (ticker, substr(prediction_date,1,10), persona, market, track)
+        #
+        # CRITICAL (owner constraint #2 + #6): when an existing match is found
+        # we UPDATE ONLY the mutable analysis fields — we DO NOT overwrite
+        # entry_price / target_price / stop_loss / prediction_date / persona.
+        # The FIRST row holds the original Entry Price; re-analyses bump
+        # update_count + update mutable metadata (scores, notes, atr, etc.).
+        try:
+            with _open_db(self.db_path, writable=True) as _b2_conn:
+                _b2_cur = _b2_conn.cursor()
+
+                # Normalize today's date string (handles 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS').
+                # NOTE: `_pred_date` is only assigned LATER in this function (around line 728),
+                # so compute the day string directly here from the `prediction_date` argument.
+                _b2_pred_day = (prediction_date or '')[:10] if (prediction_date or '') else get_prediction_date_str(datetime.now())[:10]
+                _b2_market = 'EGX'  # record_prediction default — callers can refine via separate path
+                _b2_track = 'full_analysis'  # default per schema; promoted_candidates uses 'RADAR_PROMOTED' on its own INSERT path
+
+                _b2_existing = _b2_cur.execute("""
+                    SELECT id, entry_price, target_price, stop_loss
+                    FROM predictions
+                    WHERE ticker = ?
+                      AND substr(prediction_date,1,10) = ?
+                      AND persona = ?
+                      AND COALESCE(market, 'EGX') = ?
+                      AND COALESCE(track, 'full_analysis') = ?
+                    ORDER BY prediction_date ASC, rowid ASC
+                    LIMIT 1
+                """, (ticker, _b2_pred_day, _persona, _b2_market, _b2_track)).fetchone()
+
+                if _b2_existing:
+                    _b2_orig_id = _b2_existing[0]
+                    _b2_orig_entry = _b2_existing[1]
+                    # Preserve: entry_price, target_price, stop_loss, prediction_date, persona, market, track.
+                    # Update ONLY mutable analysis fields + bump update_count.
+                    # NOTE: `_kill_filter_result` is only assigned LATER in this function;
+                    # compute it locally here from the raw `kill_filter_result` arg.
+                    _b2_kfr = (kill_filter_result or '').strip()
+                    try:
+                        _b2_cur.execute("""
+                            UPDATE predictions SET
+                                signal = ?, signal_type = ?,
+                                master_score = ?, updated_at = ?,
+                                technical_score = ?, fundamental_score = ?,
+                                ai_pattern_score = ?, sentiment_score = ?,
+                                notes = ?, atr_at_entry = COALESCE(?, atr_at_entry),
+                                target_price_2 = ?, explosive_score = ?, explosive_label = ?,
+                                risk_reward = COALESCE(?, risk_reward),
+                                who_is_buying = COALESCE(?, who_is_buying),
+                                kill_filter_result = COALESCE(?, kill_filter_result),
+                                update_count = COALESCE(update_count, 0) + 1
+                            WHERE id = ?
+                        """, (
+                            signal, signal_type,
+                            master_score, datetime.now().isoformat(),
+                            technical_score, fundamental_score,
+                            ai_pattern_score, sentiment_score,
+                            notes, atr_at_entry,
+                            (target_price_2 or 0), (explosive_score or 0.0), (explosive_label or ''),
+                            risk_reward,
+                            who_is_buying_state,
+                            _b2_kfr,
+                            _b2_orig_id,
+                        ))
+                    except Exception:
+                        # Fallback: schema missing update_count → retry without it.
+                        _b2_cur.execute("""
+                            UPDATE predictions SET
+                                signal = ?, signal_type = ?,
+                                master_score = ?, updated_at = ?,
+                                technical_score = ?, fundamental_score = ?,
+                                ai_pattern_score = ?, sentiment_score = ?,
+                                notes = ?, atr_at_entry = COALESCE(?, atr_at_entry),
+                                target_price_2 = ?, explosive_score = ?, explosive_label = ?,
+                                risk_reward = COALESCE(?, risk_reward),
+                                who_is_buying = COALESCE(?, who_is_buying),
+                                kill_filter_result = COALESCE(?, kill_filter_result)
+                            WHERE id = ?
+                        """, (
+                            signal, signal_type,
+                            master_score, datetime.now().isoformat(),
+                            technical_score, fundamental_score,
+                            ai_pattern_score, sentiment_score,
+                            notes, atr_at_entry,
+                            (target_price_2 or 0), (explosive_score or 0.0), (explosive_label or ''),
+                            risk_reward,
+                            who_is_buying_state,
+                            _b2_kfr,
+                            _b2_orig_id,
+                        ))
+                    _b2_conn.commit()
+                    print(
+                        f"[B2_DEDUP_UPDATE] ticker={ticker} persona={_persona} "
+                        f"track={_b2_track} market={_b2_market} day={_b2_pred_day} "
+                        f"existing_id={_b2_orig_id} → updated (no duplicate insert) "
+                        f"| ORIGINAL entry_price PRESERVED = {_b2_orig_entry} "
+                        f"| update_count→COALESCE+1",
+                        flush=True
+                    )
+                    return _b2_orig_id
+        except Exception as _b2_dedup_err:
+            # safe fallback: NEVER break production if dedup check fails —
+            # fall through to the normal INSERT path. The UNIQUE INDEX
+            # (if present) will then either: (a) raise IntegrityError if a true
+            # duplicate exists (caught by the primary INSERT's except branch),
+            # or (b) succeed if no duplicate exists.
+            print(
+                f"[B2_DEDUP_WARN] dedup pre-check failed ({_b2_dedup_err}) "
+                f"→ falling through to INSERT path",
+                flush=True
+            )
 
         # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect.
         # ملاحظة: بنفتح الـ connection بدون `with` عشان الـ function طويلة وفيها multiple
