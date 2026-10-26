@@ -38,26 +38,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const authChecked = useAppStore((s) => s.authChecked);
 
-  let status: 'loading' | 'authenticated' | 'unauthenticated' = 'loading';
-  let data: Session | null = null;
-
-  if (isAuthenticated && user) {
-    status = 'authenticated';
-    data = {
-      user: {
-        id: user.id,
-        name: user.username || user.name || user.email?.split('@')[0],
-        email: user.email,
-        image: (user as any).image || null,
-        is_admin: user.is_admin,
-        subscription_tier: user.subscription_tier,
-        username: user.username,
-      },
-      expires: '2099-01-01',
-    };
-  } else if (authChecked) {
-    status = 'unauthenticated';
-  }
+  const status: 'authenticated' | 'unauthenticated' = (isAuthenticated && user) ? 'authenticated' : 'unauthenticated';
+  const data: Session | null = (isAuthenticated && user) ? {
+    user: {
+      id: user.id,
+      name: user.username || user.name || user.email?.split('@')[0],
+      email: user.email,
+      image: (user as any).image || null,
+      is_admin: user.is_admin,
+      subscription_tier: user.subscription_tier,
+      username: user.username,
+    },
+    expires: '2099-01-01',
+  } : null;
 
   const value = {
     data,
@@ -92,9 +85,8 @@ export function useSession() {
     };
   }
 
-  if (!authChecked) {
-    return { data: null, status: 'loading' as const, update: async () => null };
-  }
+  // Never return 'loading' to prevent chicken-and-egg deadlocks on page load
+  return { data: null, status: 'unauthenticated' as const, update: async () => null };
 
   return { data: null, status: 'unauthenticated' as const, update: async () => null };
 }
