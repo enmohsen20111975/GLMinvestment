@@ -314,6 +314,7 @@ def main():
     cur.execute(
         f"SELECT DISTINCT ticker FROM price_history WHERE market='EGX' "
         f"AND date BETWEEN '{WINDOW_START}' AND '{WINDOW_END}' AND close_price>0 "
+        f"AND ticker GLOB '[A-Za-z]*' "  # فقط أسهم مصرية حقيقية (أبجدية)
         f"ORDER BY ticker LIMIT {SAMPLE_TICKERS}"
     )
     tickers = [r[0] for r in cur.fetchall()]

@@ -68,7 +68,7 @@ def wk(d):
 
 def get_data():
     c=sqlite3.connect(f'file:{DB}?mode=ro',uri=True); cur=c.cursor()
-    cur.execute(f"SELECT DISTINCT ticker FROM price_history WHERE market='EGX' AND date BETWEEN '{WINDOW_START}' AND '{WINDOW_END}' AND close_price>0 ORDER BY ticker LIMIT {SAMPLE_TICKERS}")
+    cur.execute(f"SELECT DISTINCT ticker FROM price_history WHERE market='EGX' AND date BETWEEN '{WINDOW_START}' AND '{WINDOW_END}' AND close_price>0 AND ticker GLOB '[A-Za-z]*' ORDER BY ticker LIMIT {SAMPLE_TICKERS}")
     tickers=[r[0] for r in cur.fetchall()]
     cur.execute(f"SELECT DISTINCT date FROM price_history WHERE market='EGX' AND date BETWEEN '{WINDOW_START}' AND '{WINDOW_END}' ORDER BY date")
     dates=[r[0] for r in cur.fetchall()]; c.close()
@@ -294,8 +294,14 @@ def main():
 
     # Find best by PF (or P&L if PF=∞)
     def score_key(m):
-        pf = float(m['pf']) if m['pf'] != '∞' else 999
-        pnl = m['pnl']
+        try:
+            pf = float(m['pf']) if m['pf'] not in ('∞', 'N/A') else (999 if m['pf'] == '∞' else 0)
+        except (ValueError, TypeError):
+            pf = 0
+        try:
+            pnl = float(m['pnl']) if m['pnl'] not in ('N/A',) else 0
+        except (ValueError, TypeError):
+            pnl = 0
         return (pf, pnl)
     best_p2 = max(phase2_results, key=lambda x: score_key(x[1]))
     best_name, best_m, best_w = best_p2
