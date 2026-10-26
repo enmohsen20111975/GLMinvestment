@@ -21,12 +21,10 @@ import {
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { Radio, Radar } from 'lucide-react';
-// A2 (Task 3-a) — Recharts is now consumed inside SectorLiquidityTreemap +
-// SectorLeaderSparkline (separate components). This file no longer imports
-// recharts directly.
-import { SectorLiquidityTreemap } from './SectorLiquidityTreemap';
-import { SectorMomentumStrip } from './SectorMomentumStrip';
-import { SectorLeaderSparkline } from './SectorLeaderSparkline';
+import {
+ ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar,
+ XAxis, YAxis, CartesianGrid, Tooltip, Legend, Treemap,
+} from 'recharts';
 import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, computeRR, rrColor, scoreColor, fmtPrice, formatNumber } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
@@ -136,6 +134,56 @@ function arSector(sector: string | null | undefined): string {
  return SECTOR_ARABIC_MAP[sector] || sector;
 }
 
+// A2 FIX: SectorTreemapCell — مخصص للـ Recharts Treemap
+// اللون يعتمد على avg_change: أخضر = صاعد، أحمر = هابط، رمادي = محايد
+function SectorTreemapCell(props: any) {
+ const { x, y, width, height, name, change } = props;
+ if (width < 0 || height < 0) return null;
+ const isPositive = (change || 0) > 0;
+ const isNegative = (change || 0) < 0;
+ const fillColor = isPositive ? '#26a69a' : isNegative ? '#ef5350' : '#64748b';
+ const textColor = '#fff';
+ const fontSize = Math.min(width / 8, height / 3, 14);
+ const showLabel = width > 60 && height > 30;
+ return (
+  <g>
+   <rect
+    x={x}
+    y={y}
+    width={width}
+    height={height}
+    fill={fillColor}
+    fillOpacity={0.85}
+    stroke="#fff"
+    strokeWidth={2}
+   />
+   {showLabel && (
+    <>
+     <text
+      x={x + width / 2}
+      y={y + height / 2 - 6}
+      textAnchor="middle"
+      fill={textColor}
+      fontSize={fontSize}
+      fontWeight="bold"
+     >
+      {arSector(name).slice(0, 12)}
+     </text>
+     <text
+      x={x + width / 2}
+      y={y + height / 2 + 10}
+      textAnchor="middle"
+      fill={textColor}
+      fontSize={fontSize * 0.8}
+     >
+      {change >= 0 ? '+' : ''}{(change || 0).toFixed(1)}%
+     </text>
+    </>
+   )}
+  </g>
+ );
+}
+
 
 export function SectorTrackingTab({ market }: { market: MarketType }) {
  const [data, setData] = useState<SectorTrackingResponse | null>(null);
@@ -146,9 +194,6 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  const [sortBy, setSortBy] = useState<SectorSortField>('turnover');
  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
  const [heatFilter, setHeatFilter] = useState<string>('');
- // A2: client-side fetched-at timestamp (the API has no server timestamp field —
- // we record when the client received the snapshot to show the user freshness).
- const [fetchedAt, setFetchedAt] = useState<string | undefined>(undefined);
  // فرز مستقل لجدول الأسهم (ينطبق على القطاع المفتوح حالياً)
  const [stockSortBy, setStockSortBy] = useState<SectorStockSortField>('turnover_egp');
  const [stockSortOrder, setStockSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -172,7 +217,6 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  const json: SectorTrackingResponse = await res.json();
  if (json.success) {
  setData(json);
- setFetchedAt(new Date().toISOString());
  if (json.sectors && json.sectors.length > 0 && !expandedSector) {
  setExpandedSector(json.sectors[0].sector);
  }
@@ -367,7 +411,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  width: 'w-40',
  render: (s) => s.leader_ticker ? (
  <button
- onClick={(e) => { e.stopPropagation(); loadStockDetail(s.leader_ticker!); }}
+ onClick={(e) => { e.stopPropagation(); loadStockDetail(s.leader_ticker); }}
  className="flex items-center gap-1.5 text-xs hover:bg-muted/60 rounded px-1.5 py-0.5 transition-colors"
  title={`عرض تفاصيل ${s.leader_ticker}`}
  >
@@ -378,24 +422,6 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  </span>
  </button>
  ) : '—',
- },
- // A2 (Task 3-a) — REAL 30-day sparkline of the leader stock, fetched from
- // /api/stocks/sparkline (price_history.db / stock_daily_prices / index_daily_prices).
- // Renders "—" honestly when no real historical data exists (no fabrication —
- // Rule 27 NO-FAKE-DATA). The sparkline reflects the LEADER STOCK's price path,
- // NOT sector flow.
- {
- key: 'leader_sparkline',
- header: 'مخطط القائد (30ي)',
- align: 'center',
- sortable: false,
- filterable: false,
- width: 'w-28',
- render: (s) => s.leader_ticker ? (
- <div onClick={(e) => e.stopPropagation()}>
- <SectorLeaderSparkline ticker={s.leader_ticker} days={30} />
- </div>
- ) : <span className="text-muted-foreground text-xs">—</span>,
  },
  {
  key: 'total_market_cap',
@@ -600,21 +626,80 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  </div>
  </div>
 
- {/* ============= A2: Sector Liquidity Treemap (honest — size=turnover, color=avg_change today) ============= */}
- <SectorLiquidityTreemap
- sectors={sectors}
- totalTurnover={ms.total_turnover}
- marketCode={marketCode}
- fetchedAt={fetchedAt}
- />
+ {/* ============= A2 FIX: Sector Liquidity Treemap ============= */}
+ {/* A2: عرض بصري لتوزيع السيولة على القطاعات — مساحة كل قطاع = نسبة سيولته */}
+ {data && sectors.length > 0 && (
+  <div className="rounded-lg border border-border bg-card p-4">
+   <div className="flex items-center gap-2 mb-3">
+    <Layers className="w-4 h-4 text-info" />
+    <h4 className="text-sm font-bold">توزيع السيولة على القطاعات</h4>
+    <span className="text-xs text-muted-foreground">
+     المساحة = نسبة السيولة | اللون = الأداء
+    </span>
+   </div>
+   <ResponsiveContainer width="100%" height={300}>
+    <Treemap
+     data={sectors.map(s => ({
+      name: s.sector,
+      size: Math.max(1, s.turnover || 0),
+      change: s.avg_change || 0,
+      heat: s.heat_level || 'NEUTRAL',
+     }))}
+     dataKey="size"
+     stroke="#fff"
+     fill="#6366f1"
+     content={<SectorTreemapCell />}
+    >
+    </Treemap>
+   </ResponsiveContainer>
+  </div>
+ )}
 
- {/* ============= A2: Sector Momentum / Liquidity ranking strip ============= */}
- <SectorMomentumStrip
- sectors={sectors}
- marketSummary={ms}
- marketCode={marketCode}
- fetchedAt={fetchedAt}
- />
+ {/* ============= A2 FIX: Sector Momentum Strip ============= */}
+ {/* A2: عرض مبسّط لأقوى وأضعف القطاعات */}
+ {data && sectors.length > 0 && (() => {
+  const sorted = [...sectors].sort((a, b) => (b.avg_change || 0) - (a.avg_change || 0));
+  const top3 = sorted.slice(0, 3);
+  const bottom3 = sorted.slice(-3).reverse();
+  return (
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    {/* أقوى القطاعات */}
+    <div className="rounded-lg border border-profit/20 bg-profit/5 p-3">
+     <div className="flex items-center gap-2 mb-2">
+      <TrendingUp className="w-4 h-4 text-profit" />
+      <span className="text-xs font-bold text-profit">أقوى القطاعات</span>
+     </div>
+     <div className="space-y-1.5">
+      {top3.map((s, i) => (
+       <div key={i} className="flex items-center justify-between text-xs">
+        <span className="font-medium">{s.sector}</span>
+        <span className="font-mono text-profit">
+         +{s.avg_change?.toFixed(2) || '0.00'}%
+        </span>
+       </div>
+      ))}
+     </div>
+    </div>
+    {/* أضعف القطاعات */}
+    <div className="rounded-lg border border-loss/20 bg-loss/5 p-3">
+     <div className="flex items-center gap-2 mb-2">
+      <TrendingDown className="w-4 h-4 text-loss" />
+      <span className="text-xs font-bold text-loss">أضعف القطاعات</span>
+     </div>
+     <div className="space-y-1.5">
+      {bottom3.map((s, i) => (
+       <div key={i} className="flex items-center justify-between text-xs">
+        <span className="font-medium">{s.sector}</span>
+        <span className="font-mono text-loss">
+         {s.avg_change?.toFixed(2) || '0.00'}%
+        </span>
+       </div>
+      ))}
+     </div>
+    </div>
+   </div>
+  );
+ })()}
 
  {/* ============= Inline summary strip (لا كروتات) — السيولة + التغير ============= */}
  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs px-1">
@@ -750,22 +835,6 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  <span>اضغط على صف القطاع لعرض أسهمه</span>
  <span>•</span>
  <span>اضغط على أي سهم لعرض تفاصيله</span>
- </div>
-
- {/* ============= A2: Data source + timestamp footer (honest disclosure) ============= */}
- <div className="text-xs text-muted-foreground px-1 pt-2 border-t border-border/60 flex items-center gap-2 flex-wrap" data-testid="sector-data-source-footer">
- <Info className="w-3.5 h-3.5 shrink-0" />
- <span>
- مصدر البيانات: <code className="font-mono">/api/sectors/tracking</code>
- {' '}• يقيس <span className="font-medium text-foreground">قيمة التداول اليوم</span> و
- <span className="font-medium text-foreground">متوسط التغير % اليوم</span> — لا يقيس صافي التدفق النقدي.
- </span>
- {fetchedAt && (
- <span className="inline-flex items-center gap-1 ms-auto">
- <Clock className="w-3 h-3" />
- <span className="font-mono">{new Date(fetchedAt).toLocaleString('ar-EG')}</span>
- </span>
- )}
  </div>
  </div>
  );
