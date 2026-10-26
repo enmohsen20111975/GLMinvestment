@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import React from 'react';
 import dynamicImport from 'next/dynamic';
 import { useSession } from '@/lib/next-auth-shim';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { motion } from 'framer-motion';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
@@ -496,7 +497,7 @@ function AppShell() {
   // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
   // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
   const { status: authStatus } = useSession();
-  const isGuest = authStatus === 'unauthenticated' || isGuestUser(user, isAuthenticated);
+  const isGuest = isGuestUser(user, isAuthenticated) && authStatus !== 'authenticated';
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
@@ -929,20 +930,7 @@ function AppShell() {
     // LoginPromptModal بيتفتح تلقائياً لو Guest ضغط view مقفول (عبر AuthGate route guard).
   }
 
-  // لو الـ session لسه بيتحمّل → skeleton
-  if (authStatus === 'loading') {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center from-emerald-50 via-background to-emerald-50/30 dark:from-emerald-950/25 dark:via-background dark:to-background"
-        dir="rtl"
-      >
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-          <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>
-        </div>
-      </div>
-    );
-  }
+  // Non-blocking auth status check
 
   return (
     <AuthGate>
