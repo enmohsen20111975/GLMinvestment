@@ -2009,7 +2009,7 @@ def rebuild_predictions():
             # TOP-TRADES-037: أفضل صفقات الشهر (للـ Image Card الإعلانية)
             'predictions_count': total_predictions or len(active_predictions) or today or 0,
             'top_monthly_trades': top_monthly_trades,
-            'activePredictions': active_predictions,
+            'activePredictions': _b4_annotate_picks_with_decision(active_predictions),
             'closedPredictions': closed_predictions,
             # BRAVO-TESTING-CANDIDATES (2026-10-20, owner directive):
             # أسهم تحت الاختبار (lifecycle_status='testing') — R/R ≥ 1.8 + نشطة
@@ -2017,6 +2017,13 @@ def rebuild_predictions():
             'testing_candidates': _get_testing_candidates(),
             # BRAVO-STALE-FIX (جيمي directive): لو مفيش توقعات طازة → رسالة واضحة
             'market_status': 'كاش وانتظار — لا توجد إشارات شراء جديدة في آخر 48 ساعة' if not active_predictions else 'نشط',
+            # B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+            # Surface the real market regime + NO_TRADE reason so the frontend
+            # (Alpha A4) has nothing to fabricate. Reads from
+            # stocks.db.system_settings (written by MarketRegimeEngine).
+            'market_regime_info': _b4_get_market_regime_info(
+                market='EGX', picks_count=len(active_predictions),
+            ),
             'stats': {
                 'today': today,
                 'weekly': weekly,
@@ -2440,21 +2447,188 @@ def monthly_league():
 
 
 # ============================================================================
-# CASCADING-FALLBACK-031: التدرج في القبول عشان الشاشة ماتفضيش أبداً
+# B4-MARKET-REGIME-FIX (Task 1-c, owner directive)
 # ============================================================================
-# المشكلة: بعد القوانين الصارمة (R/R>1.5, confidence>70), الأسهم القيادية
-# الهادية (زي COMI, TAQA, CIRA) بتيجي بدرجة 55-60% → العقل بيرفضها →
-# الشاشة بتفضي فاضية والعميل بيفقد الثقة في المنصة.
+# Helper that reads the persisted market regime from
+# `stocks.db.system_settings` (key = `current_regime_<MARKET>`).
+# The regime is written by `analyzers/market_regime_engine.py`
+# (MarketRegimeEngine.update_regime() — invoked at the start of every
+# daily_predictor run). This helper is READ-ONLY: it never computes or
+# writes a regime — it just surfaces what the regime engine already
+# persisted, so the API contract can include `market_regime` +
+# `no_trade_reason` and the frontend (Alpha A4) has nothing to fabricate.
 #
-# الحل (Cascading Confidence Fallback):
+# Returned dict shape (always present, never None):
+#   {
+#     "market_regime": "DEFENSIVE" | "NORMAL" | "AGGRESSIVE",
+#     "market_regime_source": "MarketRegimeEngine" | "system_settings_missing",
+#     "market_regime_reasons": [str, ...],   # human-readable bullets
+#     "no_trade_reason": str | "",            # non-empty only when picks is empty
+#   }
+# ============================================================================
+
+# Map Next.js market code → MarketRegimeEngine market key
+_B4_REGIME_MARKET_MAP = {
+    'EGX': 'EGX', 'EGYPT': 'EGX', 'مصر': 'EGX',
+    'TADAWUL': 'TADAWUL', 'KSA': 'TADAWUL', 'SAUDI': 'TADAWUL', 'السعودية': 'TADAWUL',
+    'KSE': 'KSE', 'KUWAIT': 'KSE', 'الكويت': 'KSE',
+    'QSE': 'QSE', 'QATAR': 'QSE', 'قطر': 'QSE',
+    'CRYPTO': 'CRYPTO', 'BINANCE': 'CRYPTO',
+}
+
+# Cache the regime read for 60 seconds (avoid re-querying system_settings on
+# every API call — the regime only changes on day-rollover).
+_B4_REGIME_CACHE: dict = {}  # {market_key: (timestamp, regime_dict)}
+_B4_REGIME_CACHE_TTL = 60.0  # seconds
+
+
+def _b4_read_regime_from_settings(market_key: str) -> dict:
+    """Read the persisted regime dict from stocks.db.system_settings.
+
+    Returns {} if the table/row is missing (caller falls back to NORMAL).
+    """
+    import sqlite3 as _sqlite3
+    from pathlib import Path as _Path
+    _root = _Path(__file__).resolve().parent.parent.parent
+    _stocks_db = str(_root / 'db' / 'stocks.db')
+    settings_key = f"current_regime_{market_key}"
+    try:
+        conn = _sqlite3.connect(_stocks_db, timeout=5.0)
+        conn.row_factory = _sqlite3.Row
+        # Idempotent: ensure table exists (no-op if already present).
+        try:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    value_type TEXT DEFAULT 'string',
+                    description TEXT,
+                    category TEXT DEFAULT 'general',
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_by TEXT DEFAULT 'system'
+                )
+            """)
+        except Exception:
+            pass
+        row = conn.execute(
+            "SELECT value FROM system_settings WHERE key = ?",
+            (settings_key,),
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            try:
+                return json.loads(row[0])
+            except Exception:
+                return {}
+        return {}
+    except Exception as _e:
+        _logger.debug(f"[B4] regime read failed for {market_key}: {_e}")
+        return {}
+
+
+def _b4_get_market_regime_info(market: str = 'EGX', picks_count: int = 0) -> dict:
+    """Build the regime info dict to inject into the API response.
+
+    Args:
+        market: the market code from the request (EGX/TADAWUL/KSE/QSE/CRYPTO/...).
+        picks_count: how many active picks survived the gate (used to compute
+            `no_trade_reason` — non-empty only when picks_count == 0).
+    """
+    market_key = _B4_REGIME_MARKET_MAP.get((market or 'EGX').upper().strip(), 'EGX')
+
+    # Cache lookup
+    import time as _time
+    _now = _time.time()
+    cached = _B4_REGIME_CACHE.get(market_key)
+    if cached and (_now - cached[0]) < _B4_REGIME_CACHE_TTL:
+        regime_dict = cached[1]
+    else:
+        regime_dict = _b4_read_regime_from_settings(market_key)
+        _B4_REGIME_CACHE[market_key] = (_now, regime_dict)
+
+    regime_value = (regime_dict.get('current_regime') or 'NORMAL').upper()
+    # Defensive: only accept the 3 known regime values.
+    if regime_value not in ('DEFENSIVE', 'NORMAL', 'AGGRESSIVE'):
+        regime_value = 'NORMAL'
+
+    reasons = regime_dict.get('reasons') or []
+    if not isinstance(reasons, list):
+        reasons = []
+    last_update = regime_dict.get('last_update') or ''
+
+    # Compute no_trade_reason
+    no_trade_reason = ''
+    if picks_count == 0:
+        if regime_value == 'DEFENSIVE':
+            no_trade_reason = (
+                'BEAR/DEFENSIVE market regime — no qualifying BUY signals '
+                'passed the regime-aware min_score + min_rr gates. '
+                'Hold cash; NO_TRADE decision preserved.'
+            )
+        elif regime_value == 'NORMAL':
+            no_trade_reason = (
+                'NORMAL market regime — no BUY signals currently qualify. '
+                'Cash/wait position.'
+            )
+        elif regime_value == 'AGGRESSIVE':
+            no_trade_reason = (
+                'AGGRESSIVE market regime — no BUY signals currently qualify. '
+                'Unusual; verify data freshness.'
+            )
+        else:
+            no_trade_reason = 'No qualifying BUY signals — cash/wait.'
+
+    source = 'MarketRegimeEngine' if regime_dict else 'system_settings_missing'
+
+    return {
+        'market_regime': regime_value,
+        'market_regime_source': source,
+        'market_regime_reasons': reasons,
+        'market_regime_last_update': last_update,
+        'no_trade_reason': no_trade_reason,
+    }
+
+
+def _b4_annotate_picks_with_decision(picks: list) -> list:
+    """Add a `decision` field to each pick dict (BUY/NO_TRADE/HOLD/etc.).
+
+    The `signal` field already exists on each pick. `decision` is a derived
+    field that mirrors the v3 `final_decision()` vocabulary so the frontend
+    has a single source of truth. NO_TRADE is emitted when signal is empty
+    or HOLD — never fabricated BUY.
+    """
+    for p in picks:
+        sig = str(p.get('signal') or '').upper()
+        if not sig or sig == 'HOLD':
+            p['decision'] = 'NO_TRADE'
+        else:
+            p['decision'] = sig
+    return picks
+
+
+# ============================================================================
+# CASCADING-FALLBACK-031: التدرج في القبول (Tier 4 removed — B4 fix)
+# ============================================================================
+# المشكلة الأصلية: بعد القوانين الصارمة (R/R>1.5, confidence>70), الأسهم
+# القيادية الهادية (زي COMI, TAQA, CIRA) بتيجي بدرجة 55-60% → العقل بيرفضها
+# → الشاشة بتفضي فاضية والعميل بيفقد الثقة في المنصة.
+#
+# الحل الأصلي (Cascading Confidence Fallback):
 #   Tier 1 (Strict):       score>=70, R/R>=1.5  — أعلى جودة
 #   Tier 2 (Moderate):     score>=60, R/R>=1.3  — أسهم قيادية هادية
 #   Tier 3 (Survival):     score>=50, R/R>=1.2  — الحد الأدنى المقبول
 #   Tier 4 (Last-Resort):  أعلى المتبقين         — ضمان 5 عناصر (أقل ثقة)
 #
-# القاعدة الذهبية: حتى في الـ Fallback، فلاتر الـ "Blood Filter" (السيولة<3M)
-# والـ "Penny Stock" (<1 جنيه) لازم تفضل شغالة. إحنا بنخفف درجة الثقة
-# والـ R/R، بس إحنا مش بنفتح باب الأسهم الميتة تاني!
+# B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+#   Tier 4 (Last-Resort) was REMOVED. It was a fabrication path that
+#   injected up to 5 picks whenever nothing qualified (min_score=0,
+#   min_rr=0). That fabricated exactly the counter-trend opportunities
+#   the owner reported during BEAR/DEFENSIVE market. The screen may now
+#   go empty when nothing qualifies — the API surfaces NO_TRADE +
+#   `no_trade_reason` instead. NO thresholds/weights were changed.
+#
+# القاعدة الذهبية (لاتزال سارية): فلاتر الـ "Blood Filter" (السيولة<3M)
+# والـ "Penny Stock" (<1 جنيه) لازم تفضل شغالة في كل الـ tiers.
 # ============================================================================
 
 _CASCADE_PENNY_THRESHOLD = 1.0  # جنيه مصري — تحتها سهم بنسة
@@ -2480,13 +2654,22 @@ def _is_dead_stock(item):
 
 
 def _cascading_fallback_select(items, target=5):
-    """التدرج في القبول: Strict → Moderate → Survival → Last-Resort.
+    """التدرج في القبول: Strict → Moderate → Survival (no last_resort).
 
-    بيرجع لحد target عنصر. كل عنصر بيتعمله tag بـ _fallback_tier
-    ('strict' | 'moderate' | 'survival' | 'last_resort') عشان الواجهة
-    تقدر تعرض شارة الثقة المناسبة.
+    بيرجع حتى target عنصر. كل عنصر بيتعمله tag بـ _fallback_tier
+    ('strict' | 'moderate' | 'survival') عشان الواجهة تقدر تعرض شارة
+    الثقة المناسبة. الأسهم الميتة (penny / rejected_liquidity) بتتطفى في
+    كل الـ tiers.
 
-    الأسهم الميتة (penny / rejected_liquidity) بتتطفى في كل الـ tiers.
+    B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+    The previous "Tier 4: Last-Resort" fill (min_score=0, min_rr=0) was REMOVED
+    because it FABRICATED 5 picks whenever nothing qualified — exactly the
+    counter-trend opportunities the owner saw during BEAR/DEFENSIVE market.
+    The function now returns whatever Strict/Moderate/Survival produced
+    (possibly fewer than target, possibly empty). The caller is responsible
+    for surfacing NO_TRADE + no_trade_reason when the list is empty.
+    NO thresholds/weights/strategy were changed — only the fabrication path
+    was removed.
     """
     # 1) فلتر الأسهم الميتة دايماً (القاعدة الذهبية)
     alive = [it for it in items if not _is_dead_stock(it)]
@@ -2527,18 +2710,9 @@ def _cascading_fallback_select(items, target=5):
     # Tier 3: Survival (score>=50, R/R>=1.2) — الحد الأدنى المقبول
     if len(selected) < target:
         _tier_pass(50, 1.2, 'survival')
-    # Tier 4: Last-Resort fill — أعلى المتبقين (بس مش أسهم ميتة)
-    # ده ضمان إن الشاشة متفضيش أبداً (حتى لو السوق هادي جداً)
-    if len(selected) < target:
-        for it in alive:
-            if len(selected) >= target:
-                break
-            tkr = (it.get('ticker') or '').upper()
-            if tkr in seen_tickers:
-                continue
-            it['_fallback_tier'] = 'last_resort'
-            selected.append(it)
-            seen_tickers.add(tkr)
+    # B4-FIX: Tier 4 (last_resort, min_score=0, min_rr=0) was REMOVED.
+    # If we still have fewer than target, we return what we have (possibly
+    # empty). The caller surfaces NO_TRADE + no_trade_reason for the user.
 
     return selected[:target]
 
@@ -2547,7 +2721,7 @@ _CASCADE_TIER_LABELS_AR = {
     'strict':      '🏆 جودة عالية (ثقة صارمة)',
     'moderate':    '🥈 جودة متوسطة (زخم هادي)',
     'survival':    '🥉 الحد الأدنى (سوق هادي)',
-    'last_resort': '⚠️ أعلى المتاح (ثقة منخفضة)',
+    # 'last_resort' intentionally removed (B4-MARKET-REGIME-FIX).
 }
 
 
@@ -3365,6 +3539,11 @@ def unified_predictions():
             _tier = p.pop('_fallback_tier', 'strict')
             p['fallback_tier'] = _tier
             p['fallback_tier_ar'] = _CASCADE_TIER_LABELS_AR.get(_tier, _tier)
+        # B4-MARKET-REGIME-FIX (Task 1-c): annotate each pick with a `decision`
+        # field so the frontend has a single source of truth (BUY/NO_TRADE/etc.)
+        # — never fabricated. Surviving picks still pass through unchanged;
+        # NO_TRADE is only emitted for empty/HOLD signal entries.
+        _b4_annotate_picks_with_decision(open_predictions)
 
         closed_predictions = [p for p in predictions if p.get('status') in ('TARGET_HIT', 'STOPPED', 'EXPIRED')][:5]
 
@@ -3670,6 +3849,13 @@ def unified_predictions():
             'previous_count': len(previous_predictions),
             'testing_candidates': _get_testing_candidates(),
             'market': market or 'ALL',
+            # B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+            # Surface the real market regime + NO_TRADE reason so the
+            # frontend (Alpha A4) has nothing to fabricate. Reads from
+            # stocks.db.system_settings (written by MarketRegimeEngine).
+            'market_regime_info': _b4_get_market_regime_info(
+                market=market or 'EGX', picks_count=len(open_predictions),
+            ),
             'cascade': {
                 'dominant_tier': _dominant_tier,
                 'tier_counts': _tier_counts,
@@ -3678,7 +3864,7 @@ def unified_predictions():
                     'strict':      {'min_score': 70, 'min_rr': 1.5, 'label_ar': '🏆 جودة عالية'},
                     'moderate':    {'min_score': 60, 'min_rr': 1.3, 'label_ar': '🥈 جودة متوسطة'},
                     'survival':    {'min_score': 50, 'min_rr': 1.2, 'label_ar': '🥉 الحد الأدنى'},
-                    'last_resort': {'min_score': 0,  'min_rr': 0,   'label_ar': '⚠️ أعلى المتاح'},
+                    # 'last_resort' intentionally removed (B4-MARKET-REGIME-FIX).
                 },
             },
             'stats': {

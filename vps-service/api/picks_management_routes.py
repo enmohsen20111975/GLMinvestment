@@ -42,6 +42,41 @@ picks_mgmt_bp = Blueprint('picks_management', __name__)
 
 
 # ----------------------------------------------------------------------------
+# B4-MARKET-REGIME-FIX (Task 1-c) — shared helpers from misc_routes
+# ----------------------------------------------------------------------------
+# These helpers read the persisted market regime from
+# stocks.db.system_settings (key = current_regime_<MARKET>) and annotate
+# picks with a `decision` field. They are defined in misc_routes.py and
+# re-imported here so the predictions API contract is uniform across
+# endpoints. NO thresholds/weights/strategy were changed.
+def _b4_get_market_regime_info(market='EGX', picks_count=0):
+    try:
+        from api.misc_routes import _b4_get_market_regime_info as _impl
+        return _impl(market=market, picks_count=picks_count)
+    except Exception:
+        # Safe fallback: never break the route if regime read fails.
+        return {
+            'market_regime': 'NORMAL',
+            'market_regime_source': 'import_failed',
+            'market_regime_reasons': [],
+            'market_regime_last_update': '',
+            'no_trade_reason': ('No qualifying BUY signals — cash/wait.'
+                                if picks_count == 0 else ''),
+        }
+
+
+def _b4_annotate_picks_with_decision(picks):
+    """Annotate each pick with `decision` field (BUY/NO_TRADE/HOLD/etc.)."""
+    for p in picks:
+        sig = str(p.get('signal') or '').upper()
+        if not sig or sig == 'HOLD':
+            p['decision'] = 'NO_TRADE'
+        else:
+            p['decision'] = sig
+    return picks
+
+
+# ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------
 def _get_db_conn():
@@ -262,7 +297,14 @@ def get_daily_picks():
             'success': True,
             'date': target_date,
             'persona': persona,
-            'picks': picks,
+            'picks': _b4_annotate_picks_with_decision(picks),
+            # B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+            # Surface the real market regime + NO_TRADE reason so the
+            # frontend has nothing to fabricate. Reads from
+            # stocks.db.system_settings (written by MarketRegimeEngine).
+            'market_regime_info': _b4_get_market_regime_info(
+                market=market or 'EGX', picks_count=len(picks),
+            ),
             'stats': stats,
             'limit': limit,
         })

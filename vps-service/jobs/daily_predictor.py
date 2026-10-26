@@ -3828,62 +3828,22 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 print(f"🌐 [REGIME] {scan_date}: dropped {_picks_before - len(picks)} picks "
                       f"(score < {_regime_min_score} for {_regime_name} regime)", flush=True)
 
-        # RADAR FALLBACK (2026-10-05): لو DEFENSIVE regime و مفيش picks → استخدم radar candidates
+        # B4-MARKET-REGIME-FIX (Task 1-c, owner directive):
+        # The previous RADAR-FALLBACK (2026-10-05) block was REMOVED because it
+        # fabricated BUY signals (source='radar_fallback', position_size_mult=0.5)
+        # when DEFENSIVE regime produced 0 picks. This bypassed the V40.2 engine
+        # decision and injected counter-trend opportunities during BEAR market —
+        # exactly the symptom the owner reported. We now emit an explicit
+        # NO_TRADE message instead so the API can surface the real decision.
+        # NO thresholds, weights, or trading rules were changed — only the
+        # fabrication path was removed.
         if len(picks) == 0 and _regime_cfg is not None and _regime_name == 'DEFENSIVE':
-            try:
-                from utils.shared_liquidity import detect_pre_surge, detect_quiet_accumulation
-                # Get tickers with radar signals for this date
-                _radar_candidates = []
-                for sig in all_day_signals:
-                    ticker = sig['ticker']
-                    # Re-check radar for this ticker
-                    _ticker_closes = sig.get('_closes_for_radar')
-                    _ticker_volumes = sig.get('_volumes_for_radar')
-                    _ticker_highs = sig.get('_highs_for_radar')
-                    _ticker_lows = sig.get('_lows_for_radar')
-                    if _ticker_closes and _ticker_volumes and len(_ticker_closes) >= 18:
-                        _is_pre, _, _ = detect_pre_surge(_ticker_closes, _ticker_volumes, _ticker_highs, _ticker_lows, regime='DEFENSIVE')
-                        _is_quiet, _, _ = detect_quiet_accumulation(_ticker_closes, _ticker_volumes, _ticker_highs, _ticker_lows, regime='DEFENSIVE')
-                        if _is_pre or _is_quiet:
-                            _radar_candidates.append({
-                                'ticker': ticker,
-                                'signal': 'BUY',
-                                'source': 'radar_fallback',
-                                'pre_surge': _is_pre,
-                                'quiet_accum': _is_quiet,
-                                'entry': sig['entry'],
-                                'target': sig['target'],
-                                'stop': sig['stop'],
-                                'tech_score': sig['tech_score'],
-                                'evidence': sig['evidence'],
-                                'r_multiple': sig['r_multiple'],
-                                'atr': sig.get('atr', 0),
-                                'target_2': sig.get('target_2') or (round(sig['target'] * 1.5, 2) if sig.get('target') else 0),
-                                'exit_price': sig['exit_price'],
-                                'exit_date': sig['exit_date'],
-                                'exit_reason': sig['exit_reason'],
-                                'return_pct': sig['return_pct'],
-                                'is_win': sig['is_win'],
-                                'pnl_pct': sig['pnl_pct'],
-                                'r_multiple_actual': sig['r_multiple_actual'],
-                                'persona_fit': sig.get('persona_fit', 'balanced'),
-                                'persona_fit_scores': sig.get('persona_fit_scores', {}),
-                                'proofs': sig.get('proofs', {}),
-                                'liquidity_type': sig.get('liquidity_type', 'neutral'),
-                                'liquidity_score': sig.get('liquidity_score', 50),
-                                'liquidity_pos_mult': sig.get('liquidity_pos_mult', 1.0),
-                                'liquidity_hold_mult': sig.get('liquidity_hold_mult', 1.0),
-                                'position_size_mult': 0.5,  # حماية رأس المال
-                                'volatility_class': 'NORMAL',
-                                'atr_pct': 0.0,
-                            })
-                if _radar_candidates:
-                    # Sort by evidence/r_multiple/tech_score and take top max_picks
-                    _radar_candidates.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
-                    picks = _radar_candidates[:max_picks]
-                    print(f"🎯 [RADAR-FALLBACK] {scan_date}: {len(picks)} picks from radar (pre_surge/quiet_accum) in DEFENSIVE regime", flush=True)
-            except Exception as _radar_fb_err:
-                print(f"[RADAR-FALLBACK] {scan_date}: error {_radar_fb_err}", flush=True)
+            print(
+                f"🛑 [B4-NO-TRADE] {scan_date}: DEFENSIVE regime — 0 qualifying BUY picks "
+                f"(min_score={_regime_cfg.get('min_score', 65)}, min_rr={_regime_cfg.get('min_rr', 1.8)}). "
+                f"NO_TRADE decision preserved — no fabricated opportunities.",
+                flush=True,
+            )
 
         for rank, sig in enumerate(picks):
             # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل morning_bell ──
