@@ -1,15 +1,13 @@
 'use client';
 
 /**
- * next-auth shim for sandbox/development & client-side reactivity
+ * next-auth shim for development & client-side reactivity
  * =====================================================================
- * المشكلة: next-auth v4 بيستخدم CommonJS (require) اللي بيكسر Turbopack
- * في Next.js 16. الـ shim ده بيربط مباشرة مع Zustand Store (useAppStore)
- * بحيث أي مكون في الـ frontend يستدعي useSession() يحصل على حالة الـ session
- * الحقيقية والمحدثة فورًا (authenticated للمستخدم المسجل / unauthenticated للزائر).
+ * Reads directly from useAppStore so any component calling useSession()
+ * gets the correct authenticated user or unauthenticated guest status.
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 
 export interface Session {
@@ -31,64 +29,43 @@ interface SessionContextValue {
   update: (data?: any) => Promise<Session | null>;
 }
 
-const SessionContext = createContext<SessionContextValue | null>(null);
+const defaultSession: SessionContextValue = {
+  data: null,
+  status: 'unauthenticated',
+  update: async () => null,
+};
+
+const SessionContext = createContext<SessionContextValue>(defaultSession);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const user = useAppStore((s) => s.user);
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const authChecked = useAppStore((s) => s.authChecked);
-
-  const status: 'authenticated' | 'unauthenticated' = (isAuthenticated && user) ? 'authenticated' : 'unauthenticated';
-  const data: Session | null = (isAuthenticated && user) ? {
-    user: {
-      id: user.id,
-      name: user.username || user.name || user.email?.split('@')[0],
-      email: user.email,
-      image: (user as any).image || null,
-      is_admin: user.is_admin,
-      subscription_tier: user.subscription_tier,
-      username: user.username,
-    },
-    expires: '2099-01-01',
-  } : null;
-
-  const value = {
-    data,
-    status,
-    update: async () => data,
-  };
-
-  return React.createElement(SessionContext.Provider, { value }, children);
+  return React.createElement(SessionContext.Provider, { value: defaultSession }, children);
 }
 
 export function useSession() {
   const user = useAppStore((s) => s.user);
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  const authChecked = useAppStore((s) => s.authChecked);
 
-  if (isAuthenticated && user) {
-    return {
-      data: {
-        user: {
-          id: user.id,
-          name: user.username || user.name || user.email?.split('@')[0],
-          email: user.email,
-          image: (user as any).image || null,
-          is_admin: user.is_admin,
-          subscription_tier: user.subscription_tier,
-          username: user.username,
+  return useMemo(() => {
+    if (isAuthenticated && user) {
+      return {
+        data: {
+          user: {
+            id: user.id,
+            name: user.username || user.name || user.email?.split('@')[0],
+            email: user.email,
+            image: (user as any).image || null,
+            is_admin: user.is_admin,
+            subscription_tier: user.subscription_tier,
+            username: user.username,
+          },
+          expires: '2099-01-01',
         },
-        expires: '2099-01-01',
-      },
-      status: 'authenticated' as const,
-      update: async () => null,
-    };
-  }
-
-  // Never return 'loading' to prevent chicken-and-egg deadlocks on page load
-  return { data: null, status: 'unauthenticated' as const, update: async () => null };
-
-  return { data: null, status: 'unauthenticated' as const, update: async () => null };
+        status: 'authenticated' as const,
+        update: async () => null,
+      };
+    }
+    return defaultSession;
+  }, [isAuthenticated, user?.id, user?.email, user?.is_admin, user?.subscription_tier, user?.username]);
 }
 
 export async function signIn(provider?: string, options?: any) {
@@ -109,9 +86,7 @@ export async function signIn(provider?: string, options?: any) {
       if (token && typeof window !== 'undefined') {
         try {
           localStorage.setItem('egx_api_key', token);
-        } catch {
-          // localStorage may be disabled in private mode
-        }
+        } catch {}
       }
       if (user) {
         useAppStore.getState().setUser(user);
@@ -160,10 +135,5 @@ export async function getSession() {
   return null;
 }
 
-export async function getCsrfToken() {
-  return null;
-}
-
-export async function getProviders() {
-  return {};
-}
+export async function getCsrfToken() { return null; }
+export async function getProviders() { return {}; }

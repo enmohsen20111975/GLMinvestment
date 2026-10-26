@@ -49,36 +49,10 @@ export function useAuthCheck(): void {
   const setAuthChecked = useAppStore((s) => s.setAuthChecked);
   const apiKey = useAppStore((s) => s.apiKey);
 
-  // Proactive Session Sync: immediately set user if next-auth session is authenticated
-  useEffect(() => {
-    if (sessionStatus === 'authenticated' && sessionData?.user) {
-      const sUser = sessionData.user as Record<string, unknown>;
-      const sEmail = (sUser.email as string || '').toLowerCase();
-      const sUsername = (sUser.username as string || sUser.name as string || '').toLowerCase();
-      const isAdmin =
-        sUser.is_admin === true ||
-        sUser.subscription_tier === 'admin' ||
-        ['mohseny', 'admin'].includes(sUsername) ||
-        ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(sEmail);
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const authChecked = useAppStore((s) => s.authChecked);
 
-      setAuthenticated(true);
-      setAuthChecked(true);
-
-      if (!user || (!user.is_admin && isAdmin)) {
-        setUser({
-          id: (sUser.id as string) || 'mohseny-admin-cuid',
-          email: (sUser.email as string) || 'mohseny@m2y.net',
-          username: (sUser.username as string) || (sUser.name as string) || 'mohseny',
-          is_active: true,
-          is_admin: isAdmin,
-          subscription_tier: (sUser.subscription_tier as string) || (isAdmin ? 'admin' : 'free'),
-          default_risk_tolerance: (sUser.default_risk_tolerance as string) || 'medium',
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString(),
-        });
-      }
-    }
-  }, [sessionStatus, sessionData, user, setAuthenticated, setAuthChecked, setUser]);
+  // Proactive sync removed: useSession is derived from store (avoid circular loop)
 
   // Avoid duplicate polls overlapping
   const inFlightRef = useRef(false);
@@ -199,9 +173,7 @@ export function useAuthCheck(): void {
 
     // Initial check (skip if next-auth already says authenticated, the
     // SessionSync component handles that path). We still poll periodically.
-    if (sessionStatus !== 'loading') {
-      checkAuth();
-    }
+    checkAuth();
 
     const interval = setInterval(() => {
       // Only poll when the tab is visible — avoids wasting requests
@@ -227,5 +199,5 @@ export function useAuthCheck(): void {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionStatus, apiKey]);
+  }, [apiKey]);
 }

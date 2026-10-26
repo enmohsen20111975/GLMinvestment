@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 import React from 'react';
 import dynamicImport from 'next/dynamic';
 import { useSession } from '@/lib/next-auth-shim';
-import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { motion } from 'framer-motion';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
@@ -401,35 +400,17 @@ function UrlHashSync() {
  * so every component that reads `useAppStore().user` sees real auth data.
  */
 function SessionSync() {
-  const { data: session, status } = useSession();
-  const syncFromSession = useAppStore((s) => s.syncFromSession);
   const user = useAppStore((s) => s.user);
+  const currentView = useAppStore((s) => s.currentView);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
 
   React.useEffect(() => {
-    if (status === 'authenticated') {
-      // Only sync if session changed (avoid infinite loops)
-      const sessionUser = session?.user as Record<string, unknown> | undefined;
-      if (!user || user.id !== session?.user?.id) {
-        syncFromSession(session ?? null);
-      }
-    } else if (status === 'unauthenticated' && user && !user.is_admin && user.subscription_tier !== 'admin') {
-      // Session was cleared — reset store (preserve admin if authenticated via admin_session cookie)
-      syncFromSession(null);
+    if (user && currentView === 'auth') {
+      setCurrentView('dashboard');
     }
-  }, [status, session, syncFromSession, user]);
+  }, [user, currentView, setCurrentView]);
 
-  // If user just authenticated via OAuth redirect, go to dashboard
-  React.useEffect(() => {
-    if (status === 'authenticated' && user) {
-      const { currentView } = useAppStore.getState();
-      if (currentView === 'auth') {
-        setCurrentView('dashboard');
-      }
-    }
-  }, [status, user, setCurrentView]);
-
-  return null; // no UI
+  return null;
 }
 
 // ============================================================================
@@ -497,7 +478,7 @@ function AppShell() {
   // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
   // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
   const { status: authStatus } = useSession();
-  const isGuest = isGuestUser(user, isAuthenticated) && authStatus !== 'authenticated';
+  const isGuest = isGuestUser(user, isAuthenticated);
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)

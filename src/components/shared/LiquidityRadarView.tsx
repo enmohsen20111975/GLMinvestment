@@ -34,6 +34,7 @@ import {
  TrendingUp, TrendingDown, Layers, Lock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { isGuestUser } from '@/lib/subscription-gate';
 import { useSession } from '@/lib/next-auth-shim';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
@@ -276,7 +277,7 @@ export function LiquidityRadarView({
  const user = useAppStore((s) => s.user);
  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
  const { status: authStatus } = useSession();
-  const isGuest = (!isAuthenticated || !user) && authStatus !== 'authenticated';
+  const isGuest = isGuestUser(user, isAuthenticated);
   // PAYWALL-RELAX (owner directive 2026-10-26): GUEST_MAX_ROWS raised from 5 to 0 (= no slicing).
   const GUEST_MAX_ROWS = 0; // 0 = no slicing (ب + ج)
  const [showLockModal, setShowLockModal] = useState(false);
