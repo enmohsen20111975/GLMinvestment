@@ -56,6 +56,12 @@ export function PredictionTrackingDashboard({
  const s = usePredictionTrackingState(market);
  const session = s.data?.market_session;
 
+ // A4 FIX: Market regime — إذا كان السوق هابط/دفاعي وكلش مفيش فرص، اعرض NO_TRADE
+ const predictions = s.filteredPredictions ?? [];
+ const isBearMarket = session?.market_regime === 'DEFENSIVE' || session?.market_regime === 'BEAR';
+ const hasNoPredictions = predictions.length === 0;
+ const showNoTradeBanner = isBearMarket && hasNoPredictions;
+
  // "تحقق من المعلقة" — POST to /api/predictions/honest-tracking/verify-pending
  // to re-evaluate pending predictions, then refresh the data.
  const handleVerifyPending = useCallback(async () => {
@@ -80,6 +86,22 @@ export function PredictionTrackingDashboard({
 
  return (
  <div className={cn('space-y-5 dir-rtl', className)}>
+ {/* A4 FIX: NO_TRADE Banner — يظهر لما السوق هابط ومفيش فرص */}
+ {showNoTradeBanner && (
+  <div className="rounded-xl border-2 border-warning/30 bg-warning/5 p-4 text-center">
+   <p className="text-sm font-bold text-warning">
+    لا توجد فرص شراء مستوفية لشروط النظام حاليًا.
+   </p>
+   <p className="text-xs text-muted-foreground mt-1">
+    الحفاظ على السيولة هو القرار المعتمد في هذه الحالة.
+   </p>
+   {session?.market_regime && (
+    <p className="text-[10px] text-muted-foreground mt-1 font-mono">
+     حالة السوق: {session.market_regime} | آخر تحديث: {session.last_update || '—'}
+    </p>
+   )}
+  </div>
+ )}
  {/* ─── 1. Luxury Header & Timeframe Control Bar ─── */}
  <HeaderBar
  session={session}

@@ -212,16 +212,16 @@ export function usePredictionTrackingState(
  }, [data?.predictions]);
 
  // FIX-5B: Dedup client-side — توقع واحد لكل (ticker, persona, entryDate).
- // المشكلة: live-tracking endpoint (Python) بيرجع نفس التوقع مرتين أحياناً (مثلاً
- // ARVA تظهر مرتين لنفس اليوم والشخصية). الـ dedup بيضمن إن الـ stats والـ table
- // ما يحسبوش نفس الصفقة مرتين. الـ pattern نفسه موجود في ExecutiveReportView:590
- // (uniqueStocks) — بس هنا بنـ dedup على (ticker, persona, entryDate) بدل (ticker,
- // entryDate) علشان شخصيات مختلفة لنفس السهم ممكن تـ count بشكل مستقل.
+ // A3 FIX: Dedup على (ticker, persona, prediction_date) — استخدام prediction_date
+ // بدل entryDate (اللي بيتضمن ثواني ويسمح بتكرار نفس التوقع).
+ // لو prediction_date مش متاحة، نرجع لـ entryDate.slice(0, 10) كـ fallback.
  const dedupedPredictions = useMemo<LivePrediction[]>(() => {
  const seen = new Set<string>();
  const out: LivePrediction[] = [];
  for (const p of allRawPredictions) {
- const key = `${p.ticker}__${p.persona || 'unknown'}__${String(p.entryDate || '').slice(0, 10)}`;
+ // A3 FIX: dedup on date (not datetime) — slice(0,10) removes time component
+ const dateKey = (p.predictionDate || p.entryDate || '').slice(0, 10);
+ const key = `${p.ticker}__${p.persona || 'unknown'}__${dateKey}`;
  if (seen.has(key)) continue;
  seen.add(key);
  out.push(p);

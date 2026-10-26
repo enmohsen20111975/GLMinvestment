@@ -96,7 +96,7 @@ interface RadarStock {
 
 // ─── TASK-ALPHA-C: Tactical liquidity-bucket filters + pagination ─────────
 // ALPHA-RESTORE: BucketKey محدّث ليتطابق مع classification من Python RVOL engine
-type BucketKey = 'all' | 'dry_accumulation' | 'accumulation_confirmed' | 'distribution_risk' | 'illiquid_trap' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion';
+type BucketKey = 'all' | 'dry_accumulation' | 'accumulation_confirmed' | 'distribution_risk' | 'illiquid_trap' | 'quiet_accumulation' | 'whale_inflow' | 'whale_outflow' | 'bottom_absorption' | 'correction_exhaustion' | 'unclassified' | 'data_invalid';
 const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: string }> = [
  { key: 'all', label: 'الكل', icon: '📋', cls: 'bg-muted text-muted-foreground' },
  // RVOL classifications (from Python engine)
@@ -110,6 +110,9 @@ const BUCKET_FILTERS: Array<{ key: BucketKey; label: string; icon: string; cls: 
  { key: 'whale_outflow', label: 'تصريف صريح', icon: '🩸', cls: 'bg-loss/10 text-loss border-loss/20' },
  { key: 'bottom_absorption', label: 'تجميع قيعان', icon: '💎', cls: 'bg-whale/10 text-whale border-whale/20' },
  { key: 'correction_exhaustion', label: 'نهاية تصحيح', icon: '🛡️', cls: 'bg-warning/10 text-warning border-warning/20' },
+ // A1 FIX: unclassified + data_invalid filters
+ { key: 'unclassified', label: 'غير مصنّف', icon: '❓', cls: 'bg-muted/40 text-muted-foreground border-transparent' },
+ { key: 'data_invalid', label: 'بيانات ناقصة', icon: '⚠️', cls: 'bg-loss/5 text-loss/70 border-transparent' },
 ];
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
@@ -213,7 +216,7 @@ function getPhaseInfo(rawPhase?: string | null, netFlow?: number | null): { labe
  * الـ phase هو الـ signal الحقيقي (تجميع هادئ / صعود / تصريف / ...) — بنشتغل بيه.
  */
 function phaseToBucket(phase?: string | null): string {
- if (!phase) return 'neutral';
+ if (!phase) return 'unclassified'; // A1 FIX: was 'neutral' → now 'unclassified'
  const p = phase.toLowerCase().trim();
  if (p.includes('quiet_accumulation') || p.includes('b_quiet') || p.includes('بيبلع') || p.includes('تجميع هادئ')) return 'quiet_accumulation';
  if (p.includes('inflow') || p.includes('بيتحضر') || p.includes('صعود') || p.includes('surge')) return 'whale_inflow';
@@ -221,7 +224,8 @@ function phaseToBucket(phase?: string | null): string {
  if (p.includes('absorption') || p.includes('قيعان')) return 'bottom_absorption';
  if (p.includes('correction') || p.includes('تصحيح')) return 'correction_exhaustion';
  if (p.includes('accumulation') || p.includes('تجميع')) return 'quiet_accumulation';
- return 'neutral';
+ if (p.includes('data_invalid') || p.includes('invalid') || p.includes('ناقصة')) return 'data_invalid';
+ return 'unclassified'; // A1 FIX: was 'neutral' → now 'unclassified'
 }
 
 const MARKET_OPTIONS = [
@@ -655,6 +659,27 @@ export function LiquidityRadarView({
  {/* ─── TAB 1: رادار السيولة ─── */}
  <TabsContent value="radar" className="space-y-4 mt-0">
  <PulseRibbon market={market} scannedCount={data?.scanned_count ?? data?.stocks?.length ?? 0} />
+
+ {/* A1 FIX: Scan stats display — إجمالي الأسهم المفحوصة + المصنّفة + غير المصنّفة */}
+ {data && data.stocks && data.stocks.length > 0 && (
+  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+   <Badge variant="outline" className="font-mono">
+    المفحوصة: {data.scanned_count ?? data.stocks.length}
+   </Badge>
+   <Badge variant="outline" className="font-mono">
+    المعروضة: {data.stocks.length}
+   </Badge>
+   <Badge variant="outline" className="font-mono text-profit">
+    مصنّفة: {data.stocks.filter(s => phaseToBucket(s.phase) !== 'unclassified' && phaseToBucket(s.phase) !== 'data_invalid').length}
+   </Badge>
+   <Badge variant="outline" className="font-mono text-muted-foreground">
+    غير مصنّفة: {data.stocks.filter(s => phaseToBucket(s.phase) === 'unclassified').length}
+   </Badge>
+   <Badge variant="outline" className="font-mono text-loss/70">
+    بيانات ناقصة: {data.stocks.filter(s => phaseToBucket(s.phase) === 'data_invalid').length}
+   </Badge>
+  </div>
+ )}
 
  {loading ? (
  <div className="space-y-4">
