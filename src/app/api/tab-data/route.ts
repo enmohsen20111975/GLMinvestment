@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     }
 
     const tableName = `tab_${tab}`;
-    const dbPath = path.join(process.cwd(), 'data-engine', 'data', 'data_engine.db');
+    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
     const db = new Database(dbPath, { readonly: true });
 
     // Get columns

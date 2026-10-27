@@ -47,9 +47,11 @@ export async function GET(req: NextRequest) {
 
     for (const table of TAB_TABLES) {
       try {
-        // The tab_* tables use 'ticker+arabic_name' format (e.g., 'COMIالبنك')
-        // So we search with LIKE 'TICKER%' to match
-        const row = db.prepare(`SELECT * FROM ${table} WHERE symbol LIKE ? LIMIT 1`).get(ticker + '%') as Record<string, unknown> | undefined;
+        // Try clean exact symbol first, fallback to prefix match
+        const row = (
+          db.prepare(`SELECT * FROM ${table} WHERE symbol = ? LIMIT 1`).get(ticker) ||
+          db.prepare(`SELECT * FROM ${table} WHERE symbol LIKE ? LIMIT 1`).get(ticker + '%')
+        ) as Record<string, unknown> | undefined;
         if (row) {
           const cleaned: Record<string, string | null> = {};
           for (const [k, v] of Object.entries(row)) {

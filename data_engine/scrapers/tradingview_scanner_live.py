@@ -52,7 +52,7 @@ DB_PATH = REPO_ROOT / "db" / "stocks.db"
 # Markets: (slug, arabic_label)
 MARKETS = [
     ("egypt", "مصر"),
-    ("saudi", "السعودية"),
+    ("ksa", "السعودية"),
     ("kuwait", "الكويت"),
     ("qatar", "قطر"),
     ("america", "أمريكا"),
@@ -285,7 +285,7 @@ def fetch_market(market_slug: str) -> Tuple[List[Dict[str, Any]], float]:
             continue
 
         # Build the mapped row
-        record: Dict[str, Any] = {"symbol": symbol}
+        record: Dict[str, Any] = {"symbol": symbol, "ticker": symbol}
         for api_field, db_col in FIELD_MAP.items():
             if api_field == "name":
                 continue  # already set as symbol
@@ -356,12 +356,13 @@ def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
     sample_keys = [k for k in rows[0].keys() if k in db_cols_set]
     placeholders = ", ".join(["?"] * len(sample_keys))
     col_list = ", ".join(f'"{k}"' for k in sample_keys)
-    update_set = ", ".join(f'"{k}" = excluded."{k}"' for k in sample_keys if k != "symbol")
+    conflict_col = "ticker" if "ticker" in db_cols_set else "symbol"
+    update_set = ", ".join(f'"{k}" = excluded."{k}"' for k in sample_keys if k not in ("symbol", "ticker", "id"))
 
     sql = f'''
         INSERT INTO stocks ({col_list})
         VALUES ({placeholders})
-        ON CONFLICT(symbol) DO UPDATE SET
+        ON CONFLICT({conflict_col}) DO UPDATE SET
             {update_set}
     '''
     saved = 0

@@ -29,12 +29,12 @@ export function getLogoLookup(): Map<string, string> {
 
   const cache = new Map<string, string>();
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
+    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const db = new Database(dbPath, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
 
     const rows = db.prepare(
-      'SELECT UPPER(symbol) as sym, logo_url FROM stocks WHERE logo_url IS NOT NULL AND logo_url != ?'
+      'SELECT UPPER(COALESCE(symbol, ticker)) as sym, logo_url FROM stocks WHERE logo_url IS NOT NULL AND logo_url != ?'
     ).all('') as Array<{ sym: string; logo_url: string }>;
 
     for (const r of rows) {
