@@ -304,8 +304,20 @@ export function LiquidityRadarView({
  const [page, setPage] = useState(0);
  const currency = marketCurrency(market);
 
+ // FIX (2026-10-27): فصل حالات التحميل الثلاث:
+ // - isInitialLoading: أول تحميل (نعرض skeleton)
+ // - isBackgroundRefreshing: تحديث دوري (نحتفظ بالبيانات القديمة)
+ // - error: تعذر التحديث (نحتفظ بالبيانات القديمة + نعرض الخطأ بشكل غير مزعج)
+ const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+
  const fetchData = useCallback(async () => {
- setLoading(true);
+ const hasUsableData = data !== null && (data.results?.length ?? 0) > 0;
+ // FIX: لو فيه بيانات موجودة، ما نعرضش loading كامل — نعتبر ده تحديث خلفي
+ if (hasUsableData) {
+   setIsBackgroundRefreshing(true);
+ } else {
+   setLoading(true);
+ }
  setError(null);
  try {
  // FRONTEND-2 Phase 1: switch to /api/v2/liquidity-radar (cache reader, 20+ fields, all markets)
@@ -314,17 +326,29 @@ export function LiquidityRadarView({
  `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
  { cache: 'no-store' },
  );
- if (!res.ok) { setError('تعذّر الاتصال بالخادم'); setData(null); return; }
+ if (!res.ok) {
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   setError('تعذّر الاتصال بالخادم');
+   if (!hasUsableData) setData(null);
+   return;
+ }
  const json: RadarResponse = await res.json();
- if (!json.success) { setError(json.message || json.error || 'فشل المحرك'); setData(json); return; }
+ if (!json.success) {
+   setError(json.message || json.error || 'فشل المحرك');
+   // FIX: لو فيه بيانات قديمة، احتفظ بيها
+   if (!hasUsableData) setData(json);
+   return;
+ }
  setData(json);
  } catch {
  setError('تعذّر الاتصال بالخادم');
- setData(null);
+ // FIX: لا نمسح البيانات القديمة عند الخطأ
+ if (!hasUsableData) setData(null);
  } finally {
  setLoading(false);
+ setIsBackgroundRefreshing(false);
  }
- }, [market]);
+ }, [market, data]);
 
  useEffect(() => { fetchData(); }, [fetchData]);
 

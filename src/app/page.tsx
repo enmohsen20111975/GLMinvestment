@@ -90,8 +90,8 @@ const IndexDetailView = withErrorBoundary(
   'تفاصيل المؤشر',
 );
 const IncubatorStandaloneView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="حاضنة الأسهم" /> }),
-  'حاضنة الأسهم',
+  dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="الفحص الحي للأسهم" /> }),
+  'الفحص الحي للأسهم',
 );
 const HistoricalTradesView = withErrorBoundary(
   dynamicImport(() => import('@/modules/market-analysis/components/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })), { ssr: false, loading: () => <LazyTabLoader label="الصفقات التاريخية" /> }),
@@ -614,7 +614,7 @@ function AppShell() {
       case 'incubator':
         return (
           <div className="min-h-screen flex flex-col bg-background">
-            <Header title="حاضنة الأسهم" subtitle={`أسهم تحت المراقبة والتسخين والتجميع الهادئ — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+            <Header title="الفحص الحي للأسهم" subtitle={`أسهم تحت المراقبة والفحص المستمر — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
             <main className="flex-1 p-3 md:p-4 page-transition" dir="rtl">
               <IncubatorStandaloneView market={currentMarket} />
             </main>

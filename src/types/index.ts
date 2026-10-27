@@ -382,7 +382,7 @@ export type AppView =
   | 'stock-detail'       // تفاصيل السهم
   | 'trading-chart'      // الشارت التفاعلي (Task 40-B: added to AppView union)
   | 'liquidity-radar'    // رادار السيولة (Task 40-B: added to AppView union)
-  | 'incubator'          // حاضنة الأسهم — أسهم تحت المراقبة والتجميع
+  | 'incubator'          // الفحص الحي للأسهم — أسهم تحت المراقبة والتجميع
   | 'sectors'            // حركة القطاعات — شاشة تتبع القطاعات المنفصلة
   | 'market-depth'       // عمق السوق — عملات/ذهب + سيولة + مستثمرون + ضغط جلسة (MARKET-DEPTH-VIEW)
   | 'market-status'      // حالة السوق (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)
