@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * IncubatorSection — "فحص السوق" (Live Stock Scan UI)
+ * IncubatorSection — "خلية فحص الأسهم" (Live Stock Scan UI)
  * ============================================================================
  * Financial Design System Compliant (Clean, High Contrast, Compact).
  * - Matches platform tokens (bg-card, border-border, text-foreground).
@@ -743,7 +743,7 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setSubscribed(true);
-        new Notification('🔭 فحص السوق', {
+        new Notification('🔭 خلية فحص الأسهم', {
           body: `تم تفعيل التنبيه لـ ${c.ticker} — ستصلك إشارة فور اكتمال الشروط.`,
           icon: '/logo.svg',
         });
@@ -982,7 +982,7 @@ function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
 export function IncubatorSection({
   market = 'EGX',
   refreshIntervalMs = 60_000,
-  maxDisplay = 6,
+  maxDisplay = 0, // 0 = اعرض كل المرشحين (مش محدود بـ 6)
   className,
   defaultViewMode = 'panel',
   autoAdvanceMs = 4000,
@@ -1012,7 +1012,8 @@ export function IncubatorSection({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: IncubatorResponse = await res.json();
       if (data.success) {
-        setCandidates(data.candidates.slice(0, maxDisplay));
+        // FIX: maxDisplay=0 يعني اعرض الكل (مش محدود)
+        setCandidates(maxDisplay > 0 ? data.candidates.slice(0, maxDisplay) : data.candidates);
         setLastTimestamp(data.timestamp || null);
       } else {
         // FIX: لا نمسح البيانات القديمة لو الـ API رجع success=false.
@@ -1061,7 +1062,7 @@ export function IncubatorSection({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm md:text-base font-bold text-foreground">
-                فحص السوق
+                خلية فحص الأسهم
               </h3>
               <Badge
                 variant="outline"
@@ -1132,9 +1133,9 @@ export function IncubatorSection({
       {/* ============= Live Scan Status Bar ============= */}
       {/* A2 FIX (2026-10-27): شريط حالة الفحص الحي — بيانات فعلية فقط من الـ API */}
       {!isCollapsed && (
-        <div className="flex items-center justify-between flex-wrap gap-2 mt-2 px-3 py-1.5 rounded-lg bg-muted/20 border border-border/40">
+        <div className="flex items-center justify-between flex-wrap gap-2 mt-2 px-3 py-2 rounded-lg bg-muted/20 border border-border/40">
           <div className="flex items-center gap-3 flex-wrap text-[11px]">
-            {/* Scan count + status */}
+            {/* Scan status indicator */}
             <div className="flex items-center gap-1.5">
               <span className={cn(
                 'size-2 rounded-full',
@@ -1142,32 +1143,54 @@ export function IncubatorSection({
                 error ? 'bg-loss' :
                 candidates.length > 0 ? 'bg-profit' : 'bg-muted-foreground'
               )} />
-              <span className="text-muted-foreground">
-                {isBackgroundRefreshing ? 'جارٍ التحديث...' :
+              <span className="text-muted-foreground font-medium">
+                {isBackgroundRefreshing ? 'جارٍ فحص السوق...' :
                  error ? 'تعذّر التحديث' :
-                 candidates.length > 0 ? 'تم الفحص' : 'بيانات الفحص غير متاحة'}
+                 candidates.length > 0 ? 'اكتمل الفحص' : 'بانتظار الفحص'}
               </span>
             </div>
-            {/* Candidate count (from API — not fabricated) */}
+
+            {/* Candidates count (from API — not fabricated) */}
             {candidates.length > 0 && (
               <div className="flex items-center gap-1">
-                <span className="font-mono text-foreground font-semibold">{candidates.length}</span>
+                <span className="font-mono text-foreground font-bold text-sm">{candidates.length}</span>
                 <span className="text-muted-foreground">سهم اجتاز الشروط</span>
               </div>
             )}
+
             {/* Last scan timestamp (from API — not fabricated) */}
             {lastTimestamp && (
               <div className="text-muted-foreground font-mono">
                 آخر فحص: {new Date(lastTimestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
+
             {/* Error indicator (non-intrusive) */}
             {error && candidates.length > 0 && (
               <div className="text-[10px] text-loss/70">
                 ⚠️ عرض آخر بيانات صالحة
               </div>
             )}
+
+            {/* Auto-refresh indicator */}
+            {refreshIntervalMs > 0 && (
+              <div className="text-[10px] text-muted-foreground/60">
+                🔄 تحديث كل {Math.round(refreshIntervalMs / 1000)} ثانية
+              </div>
+            )}
           </div>
+
+          {/* Manual refresh button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => fetchIncubator()}
+            disabled={isBackgroundRefreshing}
+            className="h-7 w-7 p-0"
+            title="تحديث الآن"
+          >
+            <RefreshCw className={cn('size-3', isBackgroundRefreshing && 'animate-spin')} />
+          </Button>
         </div>
       )}
 
