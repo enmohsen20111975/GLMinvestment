@@ -1002,6 +1002,27 @@ function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
   );
 }
 
+function RadarScannerSweep({ active = true }: { active?: boolean }) {
+  return (
+    <div className="relative size-6 flex items-center justify-center shrink-0" title="رادار المسح اللحظي نشط">
+      <svg className="size-6 text-primary/30" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </svg>
+      {active && (
+        <div className="absolute inset-0 animate-spin [animation-duration:4s]">
+          <svg className="size-6 text-primary" viewBox="0 0 24 24" fill="none">
+            <line x1="12" y1="12" x2="12" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 2 A10 10 0 0 1 20 8" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+          </svg>
+        </div>
+      )}
+      <span className="absolute size-1.5 rounded-full bg-profit animate-ping" />
+    </div>
+  );
+}
+
 // ============================================================================
 // Main IncubatorSection Component
 // ============================================================================
@@ -1085,7 +1106,7 @@ export function IncubatorSection({
       {/* Header Bar */}
       <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🔭</span>
+          <RadarScannerSweep active={!isCollapsed} />
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm md:text-base font-bold text-foreground">

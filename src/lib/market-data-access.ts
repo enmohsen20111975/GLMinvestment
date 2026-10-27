@@ -668,7 +668,9 @@ async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
       return rows
         .filter((idx: any) => idx.symbol && String(idx.symbol).includes('EGX'))
         .map((idx: any) => {
-          const value = Number(idx.current_value) || 0;
+          const rawValue = Number(idx.value) || 0;
+          const synthValue = Number(idx.current_value) || 0;
+          const value = rawValue > 0 ? rawValue : synthValue;
           const previousClose = Number(idx.previous_close) || 0;
           const storedChange = Number(idx.change) || 0;
           const storedChangePct = Number(idx.change_percent) || 0;
