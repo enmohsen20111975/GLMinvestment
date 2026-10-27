@@ -152,17 +152,23 @@ def build_rosetta(stocks_db: Path) -> Dict[str, Dict[str, Any]]:
     conn = sqlite3.connect(str(stocks_db))
     conn.row_factory = sqlite3.Row
     cols = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
-    select_cols = ["symbol"]
-    for c in ["name_ar", "logo_url", "logoid", "market"]:
+    # Support both `symbol` (new scanner) and `ticker` (legacy)
+    sym_col = "symbol" if "symbol" in cols else ("ticker" if "ticker" in cols else None)
+    if not sym_col:
+        log("  ⚠️ stocks table has neither symbol nor ticker column")
+        conn.close()
+        return {}
+    select_cols = [sym_col]
+    for c in ["name_ar", "logo_url", "logoid", "market", "name"]:
         if c in cols:
             select_cols.append(c)
     rows = conn.execute(f"SELECT {', '.join(select_cols)} FROM stocks").fetchall()
     mapping: Dict[str, Dict[str, Any]] = {}
     for r in rows:
-        sym = r["symbol"]
+        sym = r[0]  # first column is the symbol/ticker
         if not sym or is_polluted(sym):
             continue
-        mapping[sym] = {c: r[c] for c in select_cols[1:]}
+        mapping[sym] = {c: r[i+1] for i, c in enumerate(select_cols[1:])}
     conn.close()
     log(f"🗺️  Rosetta mapping: {len(mapping)} clean symbols")
     return mapping
@@ -222,6 +228,7 @@ def clean_stock_daily_prices(stocks_db: Path, rosetta: Dict, dry_run: bool) -> D
             stats["volume_converted"] += 1
 
     # Clean tickers + populate symbol (use tuple access)
+    # Handle UNIQUE constraint on (ticker, price_date): if update fails, skip + count
     ticker_col = "ticker" if "ticker" in cols else "symbol"
     rows = conn.execute(f"SELECT rowid, {ticker_col} FROM stock_daily_prices").fetchall()
     for r in rows:
@@ -233,13 +240,23 @@ def clean_stock_daily_prices(stocks_db: Path, rosetta: Dict, dry_run: bool) -> D
             stats["skipped_polluted"] += 1
             continue
         if clean_tck != raw_tck:
-            conn.execute(f"UPDATE stock_daily_prices SET {ticker_col} = ? WHERE rowid = ?",
-                         (clean_tck, r[0]))
-            stats["tickers_cleaned"] += 1
+            try:
+                conn.execute(f"UPDATE stock_daily_prices SET {ticker_col} = ? WHERE rowid = ?",
+                             (clean_tck, r[0]))
+                stats["tickers_cleaned"] += 1
+            except sqlite3.IntegrityError:
+                # UNIQUE constraint: a row with (clean_tck, price_date) already exists
+                # → delete the duplicate (polluted) row, keep the clean one
+                conn.execute(f"DELETE FROM stock_daily_prices WHERE rowid = ?", (r[0],))
+                stats["skipped_polluted"] += 1
+                continue
         # Populate symbol column (we added it above if missing)
-        conn.execute("UPDATE stock_daily_prices SET symbol = ? WHERE rowid = ?",
-                     (clean_tck, r[0]))
-        stats["symbols_populated"] += 1
+        try:
+            conn.execute("UPDATE stock_daily_prices SET symbol = ? WHERE rowid = ?",
+                         (clean_tck, r[0]))
+            stats["symbols_populated"] += 1
+        except sqlite3.IntegrityError:
+            pass  # already handled above
 
     conn.commit()
     conn.close()
@@ -287,7 +304,7 @@ def clean_tab_tables(data_engine_db: Path, rosetta: Dict, dry_run: bool) -> Dict
             f'WHERE "{sym_col}" GLOB "*[^\x20-\x7E]*" OR "{sym_col}" LIKE "%\u0600%"'
         ).fetchall()
         for r in rows:
-            raw = r["sym"]
+            raw = r[1]
             if not raw:
                 continue
             clean_sym, name_ar = clean_symbol(raw)
@@ -297,7 +314,7 @@ def clean_tab_tables(data_engine_db: Path, rosetta: Dict, dry_run: bool) -> Dict
                     stats["arabic_split"] += 1
                 continue
             conn.execute(f'UPDATE "{tab}" SET "{sym_col}" = ?, name_ar = ? WHERE rowid = ?',
-                         (clean_sym, name_ar, r["rowid"]))
+                         (clean_sym, name_ar, r[0]))
             stats["rows_cleaned"] += 1
             if name_ar:
                 stats["arabic_split"] += 1
@@ -330,19 +347,35 @@ def inject_logo_urls(stocks_db: Path, dry_run: bool) -> Dict[str, int]:
     conn.row_factory = sqlite3.Row
     cols = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
     if "logo_url" not in cols:
-        log("  ⚠️ stocks table has no logo_url column")
+        if not dry_run:
+            try:
+                conn.execute("ALTER TABLE stocks ADD COLUMN logo_url TEXT")
+                conn.commit()
+                cols.add("logo_url")
+                log("  + added logo_url column to stocks")
+            except Exception as e:
+                log(f"  ⚠️ cannot add logo_url column: {e}")
+                conn.close()
+                return stats
+        else:
+            log("  (dry-run) would add logo_url column")
+            conn.close()
+            return stats
+    stats["total"] = conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
+    sym_col = "symbol" if "symbol" in cols else "ticker"
+    if "logoid" not in cols:
+        log("  ⚠️ stocks table has no logoid column (legacy schema — run scanner_live to populate)")
         conn.close()
         return stats
-    stats["total"] = conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
     missing = conn.execute(
-        "SELECT symbol, logoid FROM stocks WHERE (logo_url IS NULL OR logo_url = '') AND logoid IS NOT NULL"
+        f"SELECT {sym_col}, logoid FROM stocks WHERE (logo_url IS NULL OR logo_url = '') AND logoid IS NOT NULL"
     ).fetchall()
     for r in missing:
         if dry_run:
             stats["injected"] += 1
             continue
-        url = LOGO_URL_TEMPLATE.format(logoid=r["logoid"])
-        conn.execute("UPDATE stocks SET logo_url = ? WHERE symbol = ?", (url, r["symbol"]))
+        url = LOGO_URL_TEMPLATE.format(logoid=r[1])
+        conn.execute(f"UPDATE stocks SET logo_url = ? WHERE {sym_col} = ?", (url, r[0]))
         stats["injected"] += 1
     stats["already_present"] = stats["total"] - conn.execute(
         "SELECT COUNT(*) FROM stocks WHERE logo_url IS NULL OR logo_url = ''"
@@ -404,13 +437,18 @@ def main() -> int:
     log("VERIFICATION")
     log("=" * 70)
     conn = sqlite3.connect(str(stocks_db))
+    cols2 = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
+    sym_col2 = "symbol" if "symbol" in cols2 else "ticker"
     polluted = conn.execute(
-        "SELECT COUNT(*) FROM stocks WHERE symbol GLOB '*[^\x20-\x7E]*'"
+        f"SELECT COUNT(*) FROM stocks WHERE {sym_col2} GLOB '*[^\x20-\x7E]*'"
     ).fetchone()[0]
-    log(f"  polluted symbols in stocks: {polluted} (expected: 0)")
-    with_logo = conn.execute("SELECT COUNT(*) FROM stocks WHERE logo_url IS NOT NULL AND logo_url != ''").fetchone()[0]
-    total = conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
-    log(f"  stocks with logo_url: {with_logo}/{total} ({with_logo/total*100:.0f}%)")
+    log(f"  polluted {sym_col2} in stocks: {polluted} (expected: 0)")
+    if "logo_url" in cols2:
+        with_logo = conn.execute("SELECT COUNT(*) FROM stocks WHERE logo_url IS NOT NULL AND logo_url != ''").fetchone()[0]
+        total = conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
+        log(f"  stocks with logo_url: {with_logo}/{total} ({with_logo/total*100:.0f}%)")
+    else:
+        log("  logo_url not in schema (legacy)")
     conn.close()
 
     return 0

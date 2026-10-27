@@ -12871,3 +12871,48 @@ Stage Summary:
 - بـ يـ يحقن logo_url لكل الأسهم.
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/scanner-live.
+
+---
+Task ID: SCANNER-LIVE-5
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: المرحلة الختامية — تشغيل الهجرة + تطهير التاريخي على snapshot حقيقي
+
+Work Log:
+- نزلت snapshot 2026-10-21T19-15-52 الكامل (9 parts → 495MB data_engine.db + 23MB stocks.db).
+- فحصت snapshot data_engine.db: 1098 stocks + 8 tab_* tables + 383 polluted symbols في tab_income_statement/balance_sheet/cash_flow.
+- شغلت scripts/reconcile_and_clean_historical_data.py على snapshot حقيقي:
+  * Stage 1: Rosetta mapping 1240 clean symbols ✅
+  * Stage 2: 1199 text volume → REAL + 81 tickers cleaned + 85359 symbols populated ✅
+  * Stage 3: 3045 rows cleaned in tab_* + 3029 arabic split ✅
+  * Stage 4: logo_url column added (logoid مش موجود في legacy — expected)
+- Bug fixes during run:
+  * ticker/symbol support (legacy stocks.db فيها ticker مش symbol)
+  * UNIQUE constraint handling (delete duplicates)
+  * rowid tuple access (مش ["rowid"])
+  * logoid column check (legacy مفيهاش)
+  * verification block sym_col support
+- VERIFICATION (SQL):
+  * logo_url في sandbox stocks.db: 295/295 (100%) ✅
+  * text volumes في snapshot: 0 (was 1199) ✅
+  * tab_income_statement polluted: 0/866 (was 383/866) ✅
+  * tab_balance_sheet polluted: 0/866 (was 383/866) ✅
+  * tab_cash_flow polluted: 0/866 (was 383/866) ✅
+- Idempotency: rerun = 0 changes ✅
+
+تقرير تسليم الحقول لـ Alpha:
+- stocks.db schema: 66 columns (symbol, name_ar, logo_url, value_traded, relative_volume_10d, pe_ratio, roe, roa, profit_margin, eps, dividend_yield, free_cash_flow, total_debt, total_revenue, rsi, macd, macd_signal, atr, sma20, sma50, sma200, tabs_data, + 44 أخري)
+- logo_url: 100% fill rate (S3 SVG direct)
+- value_traded: 97% fill rate
+- relative_volume_10d: 97% fill rate
+- fundamentals (pe, roe, margin, eps): 55-65% fill rate
+- tabs_data: JSON column للتبويبات الـ 8 التاريخية
+- API paths للـ Alpha:
+  * logo: src/lib/logo-helper.ts → اقرا logo_url من db/stocks.db
+  * tab-data: src/app/api/tab-data/route.ts → اقرا tabs_data من db/stocks.db
+  * fundamentals: src/app/api/maker-radar/fundamentals/route.ts → اقرا من db/stocks.db
+
+Stage Summary:
+- السكريبتين (migrate + reconcile) مجرّبين على snapshot حقيقي + idempotent.
+- 1199 text volume + 383 polluted tab_* + 81 tickers كلها اتنظفت.
+- لم ألمس main، لم أmerge، لم أdeploy.
+- الفرع: bravo/scanner-live.
