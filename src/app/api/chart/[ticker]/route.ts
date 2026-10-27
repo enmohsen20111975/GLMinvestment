@@ -433,7 +433,7 @@ function getLocalDailyData(
             date: dateKey,
             open, high, low, close,
             volume: Number(r.volume || 0),
-            priority: 3,
+            priority: 1,  // WAVE-1: price_history.db LOWEST (stale)
           });
         }
       }
@@ -546,7 +546,7 @@ function getLocalDailyData(
               date: dateKey,
               open, high, low, close,
               volume: Number(r.volume || 0),
-              priority: 1,
+              priority: 3,  // WAVE-1: stocks.db HIGHEST (live)
             });
           }
         }

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     // فتح قواعد البيانات
     const predictionsDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    const priceHistoryPath = path.join(process.cwd(), 'db', 'price_history.db');
+    const priceHistoryPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
     
     const predictionsDb = new Database(predictionsDbPath);
     let priceHistoryDb: Database.Database | null = null;
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     try {
       priceHistoryDb = new Database(priceHistoryPath, { readonly: true });
     } catch (e) {
-      console.error('[Retroactive] Cannot open price_history.db:', e);
+      console.error('[Retroactive] Cannot open stocks.db:', e);
     }
 
     const results = {
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
           try {
             priceData = priceHistoryDb.prepare(`
               SELECT date, close, high, low
-              FROM price_history 
+              FROM stock_daily_prices 
               WHERE ticker = ? 
-              ORDER BY date DESC 
+              ORDER BY price_date DESC 
               LIMIT 60
             `).all(ticker.toUpperCase()) as any[];
           } catch {
@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
             try {
               priceData = priceHistoryDb.prepare(`
                 SELECT date, close_price as close, high_price as high, low_price as low
-                FROM price_history 
+                FROM stock_daily_prices 
                 WHERE ticker = ? 
-                ORDER BY date DESC 
+                ORDER BY price_date DESC 
                 LIMIT 60
               `).all(ticker.toUpperCase()) as any[];
             } catch {

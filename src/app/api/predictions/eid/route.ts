@@ -123,14 +123,14 @@ function getEgxPriceFromDb(symbol: string): number | null {
 
 // EGX stock price from price_history.db (most recent close, real data)
 function getEgxStockPriceFromHistory(ticker: string): number | null {
-  const phPath = path.join(process.cwd(), 'db', 'price_history.db');
+  const phPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
   if (!existsSync(phPath)) return null;
   let db: Database.Database | null = null;
   try {
     db = new Database(phPath, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
     const row = db
-      .prepare('SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1')
+      .prepare('SELECT close_price FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 1')
       .get(ticker) as { close_price: number } | undefined;
     return row && typeof row.close_price === 'number' && row.close_price > 0 ? row.close_price : null;
   } catch {

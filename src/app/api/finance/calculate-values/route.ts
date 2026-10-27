@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
           if (livePrice <= 0) {
             try {
               const histRow = db.prepare(
-                "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
+                "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY price_date DESC LIMIT 1"
               ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) {
                 livePrice = Number(histRow.close_price);
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
 
           // ── P31 TASK 1: Fallback 3.5 — price_history.db (yahoo_clean → egksco → any) ──
           // THE MISSING LINK: stocks.db is frequently empty/stale (TradingView feed gaps).
-          // price_history.db holds the yahoo_clean 5-year history that we backfilled.
+          // WAVE-1: stocks.db.stock_daily_prices is the LIVE source (price_history.db was stale Sept 2026).
           // Without this step, livePrice stays 0 and P&L shows 0% (or -100% if avg_buy used).
           if (livePrice <= 0) {
             try {
