@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
       market,
       total_candidates: incubator.total_candidates,
       candidates: incubator.candidates,
+      // (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+      // تنبيهات السكانر — نشاط غير معتاد (مش توصية شراء).
+      scanner_alerts: incubator.scanner_alerts || [],
+      under_microscope: incubator.under_microscope || [],
       timestamp: incubator.timestamp,
       source,
       is_fresh: incubator.is_fresh,

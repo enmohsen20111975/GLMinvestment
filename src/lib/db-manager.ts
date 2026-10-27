@@ -60,12 +60,61 @@ export interface IncubatorCandidate {
   path?: string;
   /** ISO date of the price snapshot this candidate was built from. */
   data_date?: string;
+  // ─── (ALPHA-SCANNER-ALERTS، owner directive 2026-10-27): enrichment fields ──
+  volume_surge?: boolean;
+  change_percent?: number;
+  rsi_scanner?: number | null;
+  value_traded_official?: number | null;
+  relative_volume_10d_official?: number | null;
+  turnover_egp?: number;
+  logo_url?: string | null;
+  logoUrl?: string | null;
+  classification?: string;
+}
+
+/**
+ * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+ * تنبيه من بيانات السكانر الحية — نشاط غير معتاد (مش توصية شراء).
+ */
+export interface ScannerAlert {
+  ticker: string;
+  classification: 'SCANNER_ALERT';
+  path: 'F_scanner_alert';
+  name_ar?: string;
+
+  // الحركة
+  movement_type: 'SURGE_UP' | 'SURGE_DOWN' | 'UP' | 'DOWN' | 'FLAT';
+  movement_desc?: string;
+  change_percent: number;
+  volume_surge: boolean;
+
+  // المؤشرات الحية
+  current_price: number;
+  relative_volume_10d_official?: number | null;
+  value_traded_official?: number | null;
+  rsi_scanner?: number | null;
+  turnover_egp?: number;
+
+  // مهم: مش توصية شراء
+  signal: 'HOLD';
+  signal_ar?: 'مراقبة';
+  readiness_pct: 0;
+  under_microscope: false;
+  score?: number;
+
+  // الأيقونة
+  logo_url?: string | null;
+  logoUrl?: string | null;
 }
 
 export interface IncubatorData {
   market: string;
   total_candidates: number;
   candidates: IncubatorCandidate[];
+  /** (ALPHA-SCANNER-ALERTS): تنبيهات السكانر — نشاط غير معتاد. */
+  scanner_alerts?: ScannerAlert[];
+  /** (ALPHA-SCANNER-ALERTS): مرشحو الحاضنة تحت الميكروسكوب (quiet_accumulation). */
+  under_microscope?: IncubatorCandidate[];
   timestamp: string;
   /** false لو أحدث سهم فيه سعر أقدم من اليوم (radar بـ يحتاج re-run). */
   is_fresh: boolean;
@@ -378,6 +427,8 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
     market,
     total_candidates: 0,
     candidates: [],
+    scanner_alerts: [],
+    under_microscope: [],
     timestamp: new Date().toISOString(),
     is_fresh: false,
   };
@@ -409,10 +460,28 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
       filtered as unknown as Record<string, unknown>[],
     ) as unknown as IncubatorCandidate[];
 
+    // (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+    // اقرا scanner_alerts + under_microscope من الـ JSON.
+    // الـ JSON فيه `results` (كل النتائج) — نصفي منها الـ SCANNER_ALERT.
+    const allResults = (parsed.results || parsed.all_results || []) as Array<Record<string, unknown>>;
+    const rawScannerAlerts = allResults.filter(
+      (r) => r.classification === 'SCANNER_ALERT' || r.path === 'F_scanner_alert',
+    ) as unknown as ScannerAlert[];
+    const enrichedScannerAlerts = enrichWithUnifiedLogos(
+      rawScannerAlerts as unknown as Record<string, unknown>[],
+    ) as unknown as ScannerAlert[];
+
+    const rawUnderMicroscope = (parsed.under_microscope || []) as IncubatorCandidate[];
+    const enrichedUnderMicroscope = enrichWithUnifiedLogos(
+      rawUnderMicroscope as unknown as Record<string, unknown>[],
+    ) as unknown as IncubatorCandidate[];
+
     return {
       market,
       total_candidates: enrichedCandidates.length,
       candidates: enrichedCandidates,
+      scanner_alerts: enrichedScannerAlerts,
+      under_microscope: enrichedUnderMicroscope,
       timestamp: scanTs ? String(scanTs) : new Date().toISOString(),
       is_fresh: isFresh,
     };

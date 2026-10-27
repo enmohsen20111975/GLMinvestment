@@ -40,6 +40,8 @@ import {
   Clock,
   Circle,
   AlertTriangle,
+  Radio,
+  TrendingDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +75,42 @@ export interface IncubatorCandidate {
   logo_url?: string;
   /** Optional path classification from maker_radar (e.g., 'B_quiet_accumulation_strong') */
   path?: string | null;
+  // (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27): enrichment fields
+  volume_surge?: boolean;
+  change_percent?: number;
+  rsi_scanner?: number | null;
+  value_traded_official?: number | null;
+  relative_volume_10d_official?: number | null;
+  turnover_egp?: number;
+  logoUrl?: string | null;
+  classification?: string;
+}
+
+/**
+ * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+ * تنبيه من بيانات السكانر الحية — نشاط غير معتاد (مش توصية شراء).
+ */
+export interface ScannerAlert {
+  ticker: string;
+  classification: 'SCANNER_ALERT';
+  path: 'F_scanner_alert';
+  name_ar?: string;
+  movement_type: 'SURGE_UP' | 'SURGE_DOWN' | 'UP' | 'DOWN' | 'FLAT';
+  movement_desc?: string;
+  change_percent: number;
+  volume_surge: boolean;
+  current_price: number;
+  relative_volume_10d_official?: number | null;
+  value_traded_official?: number | null;
+  rsi_scanner?: number | null;
+  turnover_egp?: number;
+  signal: 'HOLD';
+  signal_ar?: 'مراقبة';
+  readiness_pct: 0;
+  under_microscope: false;
+  score?: number;
+  logo_url?: string | null;
+  logoUrl?: string | null;
 }
 
 export interface IncubatorResponse {
@@ -80,6 +118,10 @@ export interface IncubatorResponse {
   market: string;
   total_candidates: number;
   candidates: IncubatorCandidate[];
+  /** (ALPHA-SCANNER-ALERTS): تنبيهات السكانر — نشاط غير معتاد. */
+  scanner_alerts?: ScannerAlert[];
+  /** (ALPHA-SCANNER-ALERTS): مرشحو الحاضنة تحت الميكروسكوب. */
+  under_microscope?: IncubatorCandidate[];
   timestamp: string;
   source?: string;
   message?: string;
@@ -789,6 +831,10 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
   }, [c.trigger.distance_to_trigger_pct, c.trigger.type]);
 
   const isHot = c.stage === 'APPROACHING_TRIGGER' || c.readiness_pct >= 80;
+  // (ALPHA-SCANNER-ALERTS): enrichment fields من scanner.
+  const logo = c.logo_url || c.logoUrl || null;
+  const changePct = c.change_percent;
+  const hasVolumeSurge = c.volume_surge === true;
 
   return (
     <div
@@ -802,7 +848,7 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
       <div>
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <StockIconMini ticker={c.ticker} className="size-6 shrink-0" />
+            <StockIconMini ticker={c.ticker} name={c.name_ar} logoUrl={logo} className="size-6 shrink-0" />
             <div className="truncate">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-foreground font-mono">{c.ticker}</span>
@@ -817,6 +863,13 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
                 >
                   {isHot ? '⚡ جاهز للاختراق' : '🔍 قيد الفحص'}
                 </Badge>
+                {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
+                {hasVolumeSurge && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+                    <Zap className="size-2.5" />
+                    حجم
+                  </Badge>
+                )}
               </div>
               {c.name_ar && (
                 <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
@@ -830,7 +883,24 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
             <div className="font-mono font-bold text-sm text-foreground">
               {c.current_price > 0 ? c.current_price.toFixed(2) : '—'}
             </div>
-            <div className="text-[10px] text-muted-foreground">السعر الحالي</div>
+            {/* (ALPHA-SCANNER-ALERTS): عرض change_percent اليومي لو موجود */}
+            {changePct != null && (
+              <div className={cn(
+                'text-[10px] font-mono font-bold',
+                changePct > 0 ? 'text-profit' : changePct < 0 ? 'text-loss' : 'text-muted-foreground',
+              )}>
+                {changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%
+              </div>
+            )}
+            {/* (ALPHA-SCANNER-ALERTS): عرض RSI من scanner لو موجود */}
+            {c.rsi_scanner != null && (
+              <div className="text-[9px] text-muted-foreground font-mono">
+                RSI: {c.rsi_scanner.toFixed(1)}
+              </div>
+            )}
+            {changePct == null && c.rsi_scanner == null && (
+              <div className="text-[10px] text-muted-foreground">السعر الحالي</div>
+            )}
           </div>
         </div>
 
@@ -1002,6 +1072,129 @@ function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
   );
 }
 
+/**
+ * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+ * قسم "تنبيهات السكانر" — نشاط غير معتاد (مش توصية شراء).
+ * يعرض الأسهم اللي فيها حركة سع/حجم غير اعتيادية حسب SCANNER_ALERT.
+ */
+function ScannerAlertsSection({ alerts }: { alerts: ScannerAlert[] }) {
+  if (!alerts || alerts.length === 0) {
+    return null; // ما تعرضش القسم لو مفيش تنبيهات (no noise).
+  }
+
+  return (
+    <div className="rounded-lg border border-warning/20 bg-warning/5 overflow-hidden">
+      <div className="flex items-center gap-2 p-2.5 border-b border-warning/20 bg-warning/10">
+        <Radio className="size-4 text-warning" />
+        <h3 className="text-sm font-bold text-warning">📡 تنبيهات السكانر</h3>
+        <Badge variant="outline" className="text-[10px] ml-auto border-warning/30 text-warning">
+          {alerts.length} نشاط
+        </Badge>
+      </div>
+      <div className="text-[10px] text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border/40">
+        ⚠️ نشاط غير معتاد — <strong>مش توصية شراء</strong>. للمراقبة فقط.
+      </div>
+      <div className="divide-y divide-border/30 max-h-80 overflow-y-auto">
+        {alerts.map((alert, idx) => {
+          const logo = alert.logo_url || alert.logoUrl || null;
+          // (ALPHA-SCANNER-ALERTS): شارة الحركة حسب movement_type.
+          const movement = alert.movement_type;
+          const isSurgeUp = movement === 'SURGE_UP';
+          const isSurgeDown = movement === 'SURGE_DOWN';
+          const isUp = movement === 'UP' || isSurgeUp;
+          const isDown = movement === 'DOWN' || isSurgeDown;
+
+          const movementBadgeClass = isSurgeUp
+            ? 'border-profit/30 bg-profit/15 text-profit'
+            : isSurgeDown
+              ? 'border-loss/30 bg-loss/15 text-loss'
+              : isUp
+                ? 'border-profit/20 bg-profit/5 text-profit'
+                : isDown
+                  ? 'border-loss/20 bg-loss/5 text-loss'
+                  : 'border-border bg-muted/30 text-muted-foreground';
+
+          const movementArrow = isSurgeUp ? '↑↑' : isSurgeDown ? '↓↓' : isUp ? '↑' : isDown ? '↓' : '→';
+
+          // (ALPHA-SCANNER-ALERTS): value_traded بالمليون.
+          const cashMillions = alert.value_traded_official != null
+            ? (alert.value_traded_official / 1_000_000).toFixed(1) + 'M'
+            : alert.turnover_egp != null
+              ? (alert.turnover_egp / 1_000_000).toFixed(1) + 'M'
+              : null;
+
+          return (
+            <div
+              key={`${alert.ticker}-${idx}`}
+              className="flex items-center gap-2 p-2 hover:bg-muted/30 transition-colors"
+              title={alert.movement_desc || `${alert.ticker} — ${movement}`}
+            >
+              {/* الأيقونة */}
+              <StockIconMini
+                ticker={alert.ticker}
+                name={alert.name_ar}
+                logoUrl={logo}
+                className="size-7 shrink-0"
+              />
+
+              {/* التيكر + السعر */}
+              <div className="flex flex-col min-w-0 flex-shrink-0">
+                <span className="text-xs font-bold font-mono">{alert.ticker}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {alert.current_price?.toFixed(2) || '—'} EGP
+                </span>
+              </div>
+
+              {/* شارة الحركة */}
+              <div className={cn(
+                'flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[10px] font-bold',
+                movementBadgeClass,
+              )}>
+                <span>{movementArrow}</span>
+                <span>{(alert.change_percent ?? 0) > 0 ? '+' : ''}{(alert.change_percent ?? 0).toFixed(2)}%</span>
+              </div>
+
+              {/* شارة volume_surge ⚡ */}
+              {alert.volume_surge && (
+                <Badge variant="outline" className="text-[9px] gap-0.5 border-warning/30 bg-warning/10 text-warning px-1 py-0 shrink-0">
+                  <Zap className="size-2.5" />
+                  حجم غير اعتيادي
+                </Badge>
+              )}
+
+              {/* السيولة الكاش */}
+              {cashMillions && (
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                  <span>💰</span>
+                  <span className="font-mono">{cashMillions}</span>
+                </div>
+              )}
+
+              {/* RSI من scanner */}
+              {alert.rsi_scanner != null && (
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                  <span>RSI:</span>
+                  <span className={cn(
+                    'font-mono font-bold',
+                    alert.rsi_scanner < 30 ? 'text-profit' : alert.rsi_scanner > 70 ? 'text-loss' : 'text-foreground',
+                  )}>
+                    {alert.rsi_scanner.toFixed(1)}
+                  </span>
+                </div>
+              )}
+
+              {/* شارة "مراقبة" (مش شراء) */}
+              <Badge variant="outline" className="text-[9px] ml-auto border-muted-foreground/30 bg-muted/20 text-muted-foreground shrink-0">
+                👁️ مراقبة
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RadarScannerSweep({ active = true }: { active?: boolean }) {
   return (
     <div className="relative size-6 flex items-center justify-center shrink-0" title="رادار المسح اللحظي نشط">
@@ -1036,6 +1229,8 @@ export function IncubatorSection({
   autoAdvanceMs = 4000,
 }: IncubatorSectionProps) {
   const [candidates, setCandidates] = useState<IncubatorCandidate[]>([]);
+  // (ALPHA-SCANNER-ALERTS): state لتنبيهات السكانر (نشاط غير معتاد — مش توصية).
+  const [scannerAlerts, setScannerAlerts] = useState<ScannerAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
@@ -1062,12 +1257,15 @@ export function IncubatorSection({
       if (data.success) {
         // FIX: maxDisplay=0 يعني اعرض الكل (مش محدود)
         setCandidates(maxDisplay > 0 ? data.candidates.slice(0, maxDisplay) : data.candidates);
+        // (ALPHA-SCANNER-ALERTS): خزّن تنبيهات السكانر (نشاط غير معتاد — مش توصية).
+        setScannerAlerts(data.scanner_alerts || []);
         setLastTimestamp(data.timestamp || null);
       } else {
         // FIX: لا نمسح البيانات القديمة لو الـ API رجع success=false.
         // فقط لو مفيش بيانات قديمة نعرض القائمة الفارغة.
         if (!hasUsableData) {
           setCandidates([]);
+          setScannerAlerts([]);
         }
         setLastTimestamp(null);
       }
@@ -1276,6 +1474,11 @@ export function IncubatorSection({
           )}
         </div>
       )}
+
+      {/* (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+          قسم "تنبيهات السكانر" — نشاط غير معتاد (مش توصية شراء).
+          بيظهر بشكل منفصل تحت الحاضنة. لو مفيش تنبيهات → لا يظهر (no noise). */}
+      <ScannerAlertsSection alerts={scannerAlerts} />
     </div>
   );
 }

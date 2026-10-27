@@ -10471,3 +10471,29 @@ Stage Summary:
 - Files modified (1): src/modules/admin/components/SystemTopologyView.tsx (370 → 600 LOC)
 - المميزات الجديدة: KPI bar + live log + node modal + refresh selector + pulsing dots + enriched metrics
 - Git state: branch alpha/topology-deep-monitoring, unstaged.
+
+---
+Task ID: ALPHA-SCANNER-ALERTS
+Agent: Alpha
+Task: شاشة الرادار — قسم SCANNER_ALERT جديد + enrichment للحاضنة.
+
+Work Log:
+- أضفت ScannerAlert interface في DbManager (db-manager.ts) + IncubatorSection.
+- أعدّلت getIncubatorData عشان يقرا scanner_alerts + under_microscope من results JSON.
+- أعدّلت incubator/route.ts عشان يرجع scanner_alerts + under_microscope في الـ response.
+- بنيت ScannerAlertsSection component (~120 LOC):
+  - قسم منفصل تحت الحاضنة بعنوان "📡 تنبيهات السكانر"
+  - تحذير واضح: "نشاط غير معتاد — مش توصية شراء"
+  - لكل alert: أيقونة + ticker + سعر + شارة حركة (SURGE_UP/DOWN/UP/DOWN/FLAT) + volume_surge ⚡ + value_traded بالمليون + RSI + شارة "👁️ مراقبة"
+  - لو مفيش تنبيهات → لا يظهر (no noise)
+- أضفت enrichment للـ CandidateCard (الحاضنة):
+  - logo_url || logoUrl defensive read
+  - volume_surge → شارة ⚡ "حجم"
+  - change_percent → عرض نسبة التغير اليومي (أخضر/أحمر)
+  - rsi_scanner → عرض RSI لو موجود
+- Lint نظيف. tsc نظيف على ملفاتي.
+
+Stage Summary:
+- Files modified (3): db-manager.ts (ScannerAlert type + getIncubatorData enrichment), incubator/route.ts (response fields), IncubatorSection.tsx (ScannerAlertsSection + CandidateCard enrichment).
+- المحظورات: ممنوع عرض SCANNER_ALERT كـ "شراء" (شارة "مراقبة" فقط) + ممنوع حساب مؤشرات في frontend + ممنوع price_history.db.
+- Git state: branch alpha/scanner-alerts-section, unstaged.
