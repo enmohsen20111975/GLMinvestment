@@ -54,7 +54,7 @@ export type PositionState = 'OPEN' | 'CLOSED' | 'NONE' | null;
 export interface ExitReason {
   code: string;
   text: string;
-  evidence?: string | null; // بيانات تدعم السبب (مثلاً: "volume=2.5x avg")
+  evidence?: Record<string, unknown> | null; // كائن مهيكل (مثلاً: {volume_ratio: 2.5, lower_highs_count: 3})
 }
 
 export interface ExitSignalData {
@@ -65,11 +65,13 @@ export interface ExitSignalData {
   trailing_stop?: number | null;
   reference_price?: number | null;
   data_timestamp?: string | null;
-  data_basis?: string | null;        // مصدر البيانات (مثلاً: "price_history.db")
+  data_basis?: string | null;
   status?: SignalStatus;
-  confidence?: 'high' | 'medium' | 'low' | null; // مقياس الثقة — مش "high" لمجرد تعدد الشروط
-  position_state?: PositionState;    // حالة المركز (مستقل عن signal)
-  ruleset_version?: string | null;  // إصدار قواعد الإشارة
+  confidence?: 'high' | 'medium' | 'low' | null;
+  position_state?: PositionState;
+  ruleset_version?: string | null;
+  /** TEST FIXTURE flag — true = بيانات تجريبية، ليست بيانات سوق حقيقية */
+  fixture?: boolean;
 }
 
 // ============================================================================
@@ -190,8 +192,8 @@ export function ExitSignalBadge({
         </div>
       )}
 
-      {/* Confidence — لو معرّف ومتاح (مش "high" لمجرد تعدد الشروط) */}
-      {data.confidence && (
+      {/* Confidence — مخفي مؤقتًا حتى يعرف الباك إند كيفية حسابه (owner directive) */}
+      {/* {data.confidence && (
         <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
           <span>الثقة: </span>
           <span className={cn(
@@ -203,7 +205,7 @@ export function ExitSignalBadge({
             {data.confidence === 'high' ? 'عالية' : data.confidence === 'medium' ? 'متوسطة' : 'منخفضة'}
           </span>
         </div>
-      )}
+      )} */}
 
       {/* Reasons — لو موجودة وصالحة + evidence */}
       {data.reasons && data.reasons.length > 0 && (
@@ -214,10 +216,10 @@ export function ExitSignalBadge({
                 <span className="text-current opacity-50">•</span>
                 <span>{reason.text}</span>
               </div>
-              {/* Evidence — بيانات تدعم السبب (لو موجودة) */}
-              {reason.evidence && (
+              {/* Evidence — كائن مهيكل (لو موجود) */}
+              {reason.evidence && typeof reason.evidence === 'object' && (
                 <span className="text-[9px] text-muted-foreground/60 mr-3 font-mono">
-                  📊 {reason.evidence}
+                  📊 {JSON.stringify(reason.evidence)}
                 </span>
               )}
             </div>
@@ -278,6 +280,13 @@ export function ExitSignalBadge({
       {data.ruleset_version && (
         <div className="text-[9px] text-muted-foreground/40 font-mono">
           إصدار القواعد: {data.ruleset_version}
+        </div>
+      )}
+
+      {/* TEST FIXTURE badge — تمييز واضح للبيانات التجريبية */}
+      {data.fixture === true && (
+        <div className="text-[9px] font-mono font-bold text-warning bg-warning/10 px-1.5 py-0.5 rounded inline-block">
+          ⚠️ TEST FIXTURE — بيانات تجريبية
         </div>
       )}
     </div>
