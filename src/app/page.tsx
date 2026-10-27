@@ -400,15 +400,30 @@ function UrlHashSync() {
  * so every component that reads `useAppStore().user` sees real auth data.
  */
 function SessionSync() {
+  const { data: session, status } = useSession();
+  const syncFromSession = useAppStore((s) => s.syncFromSession);
   const user = useAppStore((s) => s.user);
-  const currentView = useAppStore((s) => s.currentView);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
 
   React.useEffect(() => {
-    if (user && currentView === 'auth') {
-      setCurrentView('dashboard');
+    if (status === 'authenticated') {
+      const sessionUser = session?.user as Record<string, unknown> | undefined;
+      if (!user || user.id !== session?.user?.id || user.email !== session?.user?.email) {
+        syncFromSession(session ?? null);
+      }
+    } else if (status === 'unauthenticated' && user) {
+      syncFromSession(null);
     }
-  }, [user, currentView, setCurrentView]);
+  }, [status, session, syncFromSession, user]);
+
+  React.useEffect(() => {
+    if (status === 'authenticated' && user) {
+      const { currentView } = useAppStore.getState();
+      if (currentView === 'auth') {
+        setCurrentView('dashboard');
+      }
+    }
+  }, [status, user, setCurrentView]);
 
   return null;
 }
@@ -477,8 +492,21 @@ function AppShell() {
   // Guest (unauthenticated) بيوصل لـ AppShell محدود (market + radar-limited + news).
   // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
   // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
-  const { status: authStatus } = useSession();
-  const isGuest = isGuestUser(user, isAuthenticated);
+  const { status: authStatus, data: session } = useSession();
+  const sessionUser = session?.user as Record<string, unknown> | undefined;
+  const isAuth = isAuthenticated || (authStatus === 'authenticated' && !!session?.user);
+
+  const uEmail = ((session?.user?.email as string) || user?.email || '').toLowerCase().trim();
+  const uName = ((session?.user?.name as string) || (sessionUser?.username as string) || user?.username || '').toLowerCase().trim();
+  const isUserAdmin =
+    user?.is_admin === true ||
+    user?.subscription_tier === 'admin' ||
+    sessionUser?.is_admin === true ||
+    sessionUser?.subscription_tier === 'admin' ||
+    ['mohseny', 'admin', 'enmohsen20111975'].includes(uName) ||
+    ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
+
+  const isGuest = !isUserAdmin && isGuestUser(user, isAuth);
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)

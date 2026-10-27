@@ -276,8 +276,21 @@ export function LiquidityRadarView({
  const storeStocks = useAppStore((s) => s.stocks);
  const user = useAppStore((s) => s.user);
  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
- const { status: authStatus } = useSession();
-  const isGuest = isGuestUser(user, isAuthenticated);
+ const { status: authStatus, data: session } = useSession();
+ const isAuth = isAuthenticated || (authStatus === 'authenticated' && !!session?.user);
+
+ const sessionUser = session?.user as Record<string, unknown> | undefined;
+ const uEmail = ((session?.user?.email as string) || user?.email || '').toLowerCase().trim();
+ const uName = ((session?.user?.name as string) || (sessionUser?.username as string) || user?.username || '').toLowerCase().trim();
+ const isUserAdmin =
+   user?.is_admin === true ||
+   user?.subscription_tier === 'admin' ||
+   sessionUser?.is_admin === true ||
+   sessionUser?.subscription_tier === 'admin' ||
+   ['mohseny', 'admin', 'enmohsen20111975'].includes(uName) ||
+   ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
+
+ const isGuest = !isUserAdmin && isGuestUser(user, isAuth);
   // PAYWALL-RELAX (owner directive 2026-10-26): GUEST_MAX_ROWS raised from 5 to 0 (= no slicing).
   const GUEST_MAX_ROWS = 0; // 0 = no slicing (ب + ج)
  const [showLockModal, setShowLockModal] = useState(false);
