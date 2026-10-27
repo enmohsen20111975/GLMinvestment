@@ -601,7 +601,7 @@ def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
         movement_type = 'FLAT'
         movement_desc = 'حركة محدودة'
 
-    return {
+    result = {
         'ticker': ticker,
         'current_price': round(current_price, 2),
         'path': 'F_scanner_alert',
@@ -663,6 +663,196 @@ def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
         'position_size': 0,
         'final_reason': f'SCANNER_ALERT: {movement_desc}',
     }
+
+    _add_intelligence_layers(
+        result,
+        closes=None, volumes=None,
+        vol_ratio=relvol,
+        value_traded=value_traded,
+        change_percent=change_pct,
+        staleness_days=0,
+        last_close_date=datetime.now().strftime('%Y-%m-%d'),
+        rows=None,
+    )
+    return result
+
+
+# ============================================================================
+# RADAR-INTELLIGENCE: Independent classification layers
+# These describe what's happening — they do NOT change buy/sell signals.
+# ============================================================================
+
+def _classify_price_action(closes, volumes, highs=None, lows=None, change_percent=None):
+    """Classify the price action into a movement type."""
+    evidence = {'change_pct': change_percent, 'history_len': len(closes) if closes else 0}
+    if not closes or len(closes) < 2:
+        return 'INSUFFICIENT_DATA', evidence
+    last_close = closes[-1]
+    prev_close = closes[-2]
+    daily_change = ((last_close - prev_close) / prev_close * 100) if prev_close > 0 else 0
+    evidence['daily_change_pct'] = round(daily_change, 2)
+    effective_change = change_percent if change_percent is not None else daily_change
+    vol_ratio = 1.0
+    if volumes and len(volumes) >= 20:
+        avg_20 = sum(volumes[-20:]) / 20
+        vol_ratio = volumes[-1] / avg_20 if avg_20 > 0 else 0
+    elif volumes and len(volumes) >= 5:
+        avg_5 = sum(volumes[-5:]) / 5
+        vol_ratio = volumes[-1] / avg_5 if avg_5 > 0 else 0
+    evidence['volume_ratio'] = round(vol_ratio, 2)
+    if effective_change is not None and effective_change > 5 and vol_ratio > 1.5:
+        return 'SURGE_UP', evidence
+    if effective_change is not None and effective_change < -5 and vol_ratio > 1.5:
+        return 'SURGE_DOWN', evidence
+    if len(closes) < 5:
+        if effective_change is not None and effective_change > 2:
+            return 'BULLISH_WAVE_START', evidence
+        if effective_change is not None and effective_change < -2:
+            return 'BEARISH_WAVE_START', evidence
+        return 'UNCONFIRMED', evidence
+    last_7 = closes[-7:] if len(closes) >= 7 else closes
+    roc_7d = ((last_close - last_7[0]) / last_7[0] * 100) if last_7[0] > 0 else 0
+    evidence['roc_7d'] = round(roc_7d, 2)
+    if len(closes) >= 10:
+        prev_7 = closes[-10:-3]
+        decline = ((prev_7[-1] - prev_7[0]) / prev_7[0] * 100) if prev_7[0] > 0 else 0
+        recovery = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if decline < -5 and recovery > 2:
+            evidence['bounce'] = True
+            return 'BOUNCE_AFTER_DECLINE', evidence
+        rally = ((prev_7[-1] - prev_7[0]) / prev_7[0] * 100) if prev_7[0] > 0 else 0
+        pullback = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if rally > 5 and pullback < -2:
+            evidence['pullback'] = True
+            return 'PULLBACK_AFTER_RALLY', evidence
+    if roc_7d > 3 and effective_change is not None and effective_change > 0:
+        return 'BULLISH_CONTINUATION', evidence
+    if roc_7d < -3 and effective_change is not None and effective_change < 0:
+        return 'BEARISH_CONTINUATION', evidence
+    if len(closes) >= 20:
+        max_20 = max(closes[-21:-1]) if len(closes) >= 21 else max(closes[:-1])
+        if last_close > max_20 and vol_ratio > 1.2:
+            evidence['breakout_level'] = round(max_20, 2)
+            return 'BREAKOUT', evidence
+        min_20 = min(closes[-21:-1]) if len(closes) >= 21 else min(closes[:-1])
+        if last_close < min_20 and vol_ratio > 1.2:
+            evidence['breakdown_level'] = round(min_20, 2)
+            return 'BREAKDOWN', evidence
+    if len(closes) >= 7:
+        range_7 = (max(last_7) - min(last_7)) / min(last_7) * 100 if min(last_7) > 0 else 0
+        if range_7 < 3 and abs(effective_change or 0) < 1:
+            evidence['range_7d'] = round(range_7, 2)
+            return 'SIDEWAYS', evidence
+    if len(closes) >= 10:
+        prev_5 = ((closes[-5] - closes[-10]) / closes[-10] * 100) if closes[-10] > 0 else 0
+        last_3 = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if prev_5 > 8 and last_3 < prev_5 * 0.3:
+            evidence['exhaustion'] = True
+            return 'MOMENTUM_EXHAUSTION', evidence
+    return 'UNCONFIRMED', evidence
+
+
+def _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent):
+    """Assess institutional vs speculative participation. NO direct data available."""
+    evidence = {'vol_ratio': vol_ratio, 'value_traded': value_traded}
+    if not volumes or len(volumes) < 5:
+        return 'UNAVAILABLE', 'UNAVAILABLE', evidence
+    sustained_vol = False
+    if len(volumes) >= 10:
+        r5 = sum(volumes[-5:]) / 5
+        p5 = sum(volumes[-10:-5]) / 5
+        if p5 > 0 and r5 > p5 * 1.3:
+            sustained_vol = True
+            evidence['sustained_volume'] = True
+    sharp_move = change_percent is not None and abs(change_percent) > 5
+    one_day_spike = vol_ratio and vol_ratio > 2.0 and not sustained_vol
+    if sharp_move and one_day_spike:
+        return 'SPECULATIVE_PATTERN', 'INDIRECT', evidence
+    if sustained_vol:
+        return 'MIXED_PARTICIPATION', 'INDIRECT', evidence
+    return 'UNCONFIRMED', 'WEAK', evidence
+
+
+def _assess_continuation(closes, volumes, vol_ratio, price_action):
+    """Assess continuation likelihood."""
+    if not closes or len(closes) < 3:
+        return 'INSUFFICIENT_DATA'
+    signals = []
+    if vol_ratio and vol_ratio > 1.5:
+        signals.append('vol_support')
+    if price_action in ('BULLISH_CONTINUATION', 'BREAKOUT'):
+        signals.append('trend_aligned')
+    if price_action == 'MOMENTUM_EXHAUSTION':
+        signals.append('fading')
+    if len(closes) >= 5:
+        green = sum(1 for i in range(1, 5) if closes[-i] > closes[-i-1])
+        if green >= 3:
+            signals.append('majority_green')
+        elif green <= 1:
+            signals.append('majority_red')
+    pos = sum(1 for s in signals if s in ('vol_support', 'trend_aligned', 'majority_green'))
+    neg = sum(1 for s in signals if s in ('fading', 'majority_red'))
+    if pos >= 2 and neg == 0:
+        return 'SUPPORTIVE'
+    if pos >= 1 and neg <= 1:
+        return 'MIXED'
+    if neg >= 2:
+        return 'WEAK'
+    return 'UNCONFIRMED'
+
+
+def _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date):
+    """Assess data quality with specific reasons."""
+    reasons = []
+    if not rows or not closes:
+        return 'UNAVAILABLE', ['no_price_data']
+    if len(closes) < 15:
+        reasons.append(f'insufficient_history:{len(closes)}<15')
+        return 'INSUFFICIENT_HISTORY', reasons
+    if staleness_days is not None and staleness_days > 3:
+        reasons.append(f'very_stale:{staleness_days}d')
+        return 'VERY_STALE', reasons
+    if staleness_days is not None and staleness_days > 1:
+        reasons.append(f'stale:{staleness_days}d')
+    if not volumes or all(v == 0 for v in volumes[-5:]):
+        reasons.append('volume_unavailable')
+    if reasons:
+        return 'STALE', reasons
+    return 'FRESH', reasons
+
+
+def _add_intelligence_layers(result, closes=None, volumes=None, highs=None, lows=None,
+                              vol_ratio=None, value_traded=None, change_percent=None,
+                              staleness_days=None, last_close_date=None, rows=None):
+    """Add 4 intelligence layers to result dict. Does NOT change buy/sell signals."""
+    try:
+        pa, pa_ev = _classify_price_action(closes, volumes, highs, lows, change_percent)
+        result['price_action'] = pa
+        result['price_action_evidence'] = pa_ev
+        pf, pfl, pf_ev = _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent)
+        result['participant_flow_assessment'] = pf
+        result['participant_evidence_level'] = pfl
+        result['participant_evidence'] = pf_ev
+        cont = _assess_continuation(closes, volumes, vol_ratio, pa)
+        result['continuation_assessment'] = cont
+        dq, dq_r = _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date)
+        result['data_quality_status'] = dq
+        result['data_quality_reasons'] = dq_r
+        result['classification_timestamp'] = datetime.now().isoformat()
+    except Exception as e:
+        import traceback
+        print(f'[INTELLIGENCE-ERROR] {result.get("ticker", "?")}: {e}', flush=True)
+        traceback.print_exc()
+        result['price_action'] = 'ERROR'
+        result['price_action_evidence'] = {'error': str(e)}
+        result['participant_flow_assessment'] = 'UNAVAILABLE'
+        result['participant_evidence_level'] = 'UNAVAILABLE'
+        result['participant_evidence'] = {'error': str(e)}
+        result['continuation_assessment'] = 'INSUFFICIENT_DATA'
+        result['data_quality_status'] = 'ERROR'
+        result['data_quality_reasons'] = [str(e)]
+        result['classification_timestamp'] = datetime.now().isoformat()
+    return result
 
 
 def scan_ticker(rows, ticker, regime='NORMAL'):
@@ -949,6 +1139,18 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
     }
+
+    # RADAR-INTELLIGENCE: add 4 independent classification layers
+    _add_intelligence_layers(
+        result,
+        closes=closes, volumes=volumes, highs=highs, lows=lows,
+        vol_ratio=volume_ratio_10d_vs_20d if volume_ratio_10d_vs_20d else None,
+        value_traded=result.get('turnover_egp'),
+        change_percent=result.get('change_percent') or result.get('change_1d'),
+        staleness_days=staleness_days,
+        last_close_date=last_close_date_str,
+        rows=rows,
+    )
 
     # SCANNER-LIVE-2 (2026-10-27): enrich with official value_traded +
     # relative_volume_10d from TradingView Scanner API (stored in stocks.db).
@@ -1458,6 +1660,15 @@ def _build_insufficient_result(
         'avg_volume_10d': 0,
         'volume_ratio_10d_vs_20d': 0,
         'turnover_egp': 0,
+        'price_action': 'INSUFFICIENT_DATA',
+        'price_action_evidence': {'reason': reason},
+        'participant_flow_assessment': 'UNAVAILABLE',
+        'participant_evidence_level': 'UNAVAILABLE',
+        'participant_evidence': {'reason': 'no_data'},
+        'continuation_assessment': 'INSUFFICIENT_DATA',
+        'data_quality_status': data_quality_status,
+        'data_quality_reasons': reasons,
+        'classification_timestamp': scan_timestamp,
         'volume': 0,
         'price_stability': 0,
         'range_10d_pct': 0,
