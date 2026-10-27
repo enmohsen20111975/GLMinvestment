@@ -98,7 +98,16 @@ function dbPath(name: string): string {
   return path.join(DB_DIR, name);
 }
 
-function openDb(file: string): Database.Database | null {
+/**
+ * Open a DB connection through the DAL gatekeeper (readonly + busy_timeout).
+ * This is the ONLY sanctioned way to open a SQLite DB in src/modules/ or src/app/api/.
+ *
+ * (ALPHA-DAL-WAVE1 — owner directive 2026-10-27):
+ * «ممنوع كتابة new Database() داخل أي ملف تم تعديله. استدعِ openDb من db-manager.ts.»
+ *
+ * Returns null if the DB file doesn't exist (defensive — callers handle gracefully).
+ */
+export function openDb(file: string): Database.Database | null {
   const p = dbPath(file);
   if (!existsSync(p)) return null;
   try {
@@ -110,7 +119,30 @@ function openDb(file: string): Database.Database | null {
   }
 }
 
-function columnExists(db: Database.Database, table: string, column: string): boolean {
+/**
+ * Open a DB connection in WRITABLE mode (for radar-signal-tracker + admin routes
+ * that need to INSERT/UPDATE). WAL journal mode enabled for concurrency.
+ *
+ * Returns null if the DB file doesn't exist or can't be opened writable.
+ */
+export function openDbWritable(file: string): Database.Database | null {
+  const p = dbPath(file);
+  if (!existsSync(p)) return null;
+  try {
+    const db = new Database(p, { timeout: 5000 });
+    db.pragma('busy_timeout = 5000');
+    db.pragma('journal_mode = WAL');
+    return db;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a column exists in a table (defensive — pre-merge schema varies).
+ * Exported so modules can use it without re-implementing.
+ */
+export function columnExists(db: Database.Database, table: string, column: string): boolean {
   try {
     const info = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
     return info.some((c) => c.name === column);
@@ -628,6 +660,330 @@ export function getActivePredictions(
   }
 }
 
+// ─── 5. fmtVal + getCompanyFundamentals ─────────────────────────────────────
+// (ALPHA-DAL-WAVE1 — المرحلة 2.1، owner directive 2026-10-27):
+// «أضف دالة موحدة داخل src/lib/db-manager.ts اسمها getCompanyFundamentals
+//  وانقل إليها منطق قراءة الـ 66 عمود من stocks.db.stocks والـ 8 تبويبات.»
+
+/** Format a value for display: null → null, 0 → null, numbers → toFixed(2). */
+function fmtVal(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === 'number') {
+    if (isNaN(v) || v === 0) return null;
+    return v.toFixed(2);
+  }
+  const s = v.toString().trim();
+  if (!s || s === '—' || s === 'null' || s === '0') return null;
+  return s;
+}
+
+export interface CompanyFundamentals {
+  ticker: string;
+  name_ar?: string;
+  logo_url?: string | null;
+  fundamentals: Record<string, { label: string; data: Record<string, string | null> | null }>;
+}
+
+/**
+ * Fetch company fundamentals (8 tabs) from stocks.db + data_engine fallback.
+ *
+ * Source 1: stocks.db.stocks WHERE ticker = ? (direct, pure — no LIKE).
+ *   Reads the 66 columns populated by TradingView Scanner (bravo's work).
+ * Source 2 (fallback): data_engine.db.tab_* tables WHERE symbol = ? OR ticker = ?.
+ *
+ * Owner directive (المرحلة 2.1): «ابحث بالرمز النقي الصريح دون LIKE».
+ * Returns null if the stock is not found in stocks.db.
+ */
+export function getCompanyFundamentals(ticker: string): CompanyFundamentals | null {
+  if (!ticker) return null;
+  const upper = ticker.toUpperCase();
+
+  // ─── Source 1: stocks.db.stocks (PRIMARY) ────────────────────────────────
+  const stocksDb = openDb('stocks.db');
+  if (!stocksDb) return null;
+
+  let stock: Record<string, unknown> | undefined;
+  try {
+    stock = stocksDb.prepare('SELECT * FROM stocks WHERE ticker = ? LIMIT 1').get(upper) as Record<string, unknown> | undefined;
+  } catch {
+    stocksDb.close();
+    return null;
+  }
+  stocksDb.close();
+
+  if (!stock) return null;
+
+  const logo_url = fmtVal(stock.logo_url) ?? null;
+
+  const fundamentals: Record<string, { label: string; data: Record<string, string | null> | null }> = {
+    tab_valuation: {
+      label: 'التقييم',
+      data: {
+        'P/E (مكرر الربحية)': fmtVal(stock.pe_ratio),
+        'P/B (مكرر القيمة الدفترية)': fmtVal(stock.pb_ratio),
+        'P/S (مكرر المبيعات)': fmtVal(stock.ps_ratio),
+        'القيمة السوقية': fmtVal(stock.market_cap),
+        'EV/EBITDA': fmtVal(stock.ev_ebitda),
+        'EPS (ربحية السهم)': fmtVal(stock.eps),
+        'عائد التوزيعات %': fmtVal(stock.dividend_yield),
+      },
+    },
+    tab_profitability: {
+      label: 'الربحية',
+      data: {
+        'ROE (العائد على حقوق الملكية)': fmtVal(stock.roe),
+        'ROA (العائد على الأصول)': fmtVal(stock.roa),
+        'صافي هامش الربح %': fmtVal(stock.profit_margin),
+        'هامش الربح الإجمالي %': fmtVal(stock.gross_margin) ?? fmtVal(stock.profit_margin),
+        'هامش التشغيل %': fmtVal(stock.operating_margin),
+      },
+    },
+    tab_balance_sheet: {
+      label: 'المركز المالي',
+      data: {
+        'إجمالي النقد': fmtVal(stock.total_cash),
+        'إجمالي الديون': fmtVal(stock.total_debt),
+        'إجمالي حقوق الملكية': fmtVal(stock.total_equity),
+        'إجمالي الأصول': fmtVal(stock.total_assets),
+        'الديون/حقوق الملكية': fmtVal(stock.debt_to_equity),
+        'النسبة المتداولة': fmtVal(stock.current_ratio),
+        'القيمة الدفترية/السهم': fmtVal(stock.book_value_per_share),
+      },
+    },
+    tab_income_statement: {
+      label: 'قائمة الدخل',
+      data: {
+        'إجمالي الإيرادات': fmtVal(stock.total_revenue),
+        'صافي الربح': fmtVal(stock.net_income),
+        'EPS (ربحية السهم)': fmtVal(stock.eps),
+        'هامش الربح الإجمالي %': fmtVal(stock.gross_margin),
+        'هامش صافي الربح %': fmtVal(stock.profit_margin),
+        'P/E (مكرر الربحية)': fmtVal(stock.pe_ratio),
+      },
+    },
+    tab_cash_flow: {
+      label: 'التدفقات النقدية',
+      data: {
+        'التدفق النقدي التشغيلي': fmtVal(stock.operating_cash_flow),
+        'التدفق النقدي الاستثماري': fmtVal(stock.investing_cash_flow),
+        'التدفق النقدي الحر (FCF)': fmtVal(stock.free_cash_flow),
+        'DPS (توزيع السهم)': fmtVal(stock.dps_ttm),
+      },
+    },
+    tab_dividends: {
+      label: 'التوزيعات',
+      data: {
+        'عائد التوزيعات %': fmtVal(stock.dividend_yield),
+        'DPS (توزيع السهم التراكمي)': fmtVal(stock.dps_ttm),
+        'نسبة التوزيع (Payout)': fmtVal(stock.payout_ratio),
+      },
+    },
+    tab_performance: {
+      label: 'الأداء',
+      data: {
+        'أعلى 52 أسبوع': fmtVal(stock.high_52w),
+        'أدنى 52 أسبوع': fmtVal(stock.low_52w),
+        'التغير %': fmtVal(stock.change_percent),
+        'الحجم': fmtVal(stock.volume),
+        'متوسط الحجم': fmtVal(stock.avg_volume),
+        'السيولة المتداولة (Cash)': fmtVal(stock.value_traded) ?? fmtVal(stock.turnover_egp),
+        'الحجم النسبي 10 أيام': fmtVal(stock.relative_volume_10d),
+        'Beta': fmtVal(stock.beta),
+      },
+    },
+    tab_technical_analysis: {
+      label: 'التحليل الفني',
+      data: {
+        'RSI (14)': fmtVal(stock.rsi),
+        'MACD': fmtVal(stock.macd),
+        'إشارة MACD': fmtVal(stock.macd_signal),
+        'SMA20 (متوسط 20 يوم)': fmtVal(stock.sma20),
+        'SMA50 (متوسط 50 يوم)': fmtVal(stock.sma50),
+        'SMA200 (متوسط 200 يوم)': fmtVal(stock.sma200),
+        'EMA20 (متوسط أسي 20 يوم)': fmtVal(stock.ema20),
+        'ATR (مدى حقيقي متوسط)': fmtVal(stock.atr),
+        'الدعم': fmtVal(stock.support),
+        'المقاومة': fmtVal(stock.resistance),
+        'الاتجاه': fmtVal(stock.trend),
+        'الإشارة': fmtVal(stock.signal),
+      },
+    },
+  };
+
+  // ─── Source 2 (fallback): data_engine.db.tab_* tables ────────────────────
+  // Direct WHERE (no LIKE) per owner directive.
+  const deDb = openDb('data_engine.db');
+  if (deDb) {
+    const TAB_TABLES = ['tab_valuation', 'tab_profitability', 'tab_balance_sheet', 'tab_income_statement', 'tab_cash_flow', 'tab_dividends', 'tab_performance', 'tab_technical_analysis'];
+    const TAB_LABELS_AR: Record<string, string> = {
+      tab_valuation: 'التقييم', tab_profitability: 'الربحية', tab_balance_sheet: 'المركز المالي',
+      tab_income_statement: 'قائمة الدخل', tab_cash_flow: 'التدفقات النقدية', tab_dividends: 'التوزيعات',
+      tab_performance: 'الأداء', tab_technical_analysis: 'التحليل الفني',
+    };
+    for (const table of TAB_TABLES) {
+      try {
+        let row: Record<string, unknown> | undefined;
+        if (columnExists(deDb, table, 'symbol')) {
+          row = deDb.prepare(`SELECT * FROM ${table} WHERE symbol = ? LIMIT 1`).get(upper) as Record<string, unknown> | undefined;
+        } else if (columnExists(deDb, table, 'ticker')) {
+          row = deDb.prepare(`SELECT * FROM ${table} WHERE ticker = ? LIMIT 1`).get(upper) as Record<string, unknown> | undefined;
+        }
+        if (row) {
+          const cleaned: Record<string, string | null> = {};
+          for (const [k, v] of Object.entries(row)) {
+            if (['id', 'symbol', 'ticker', 'market', 'data', 'fiscal_period', 'fiscal_end'].includes(k)) continue;
+            cleaned[k] = fmtVal(v);
+          }
+          if (fundamentals[table]?.data) {
+            fundamentals[table].data = { ...cleaned, ...fundamentals[table].data };
+          } else {
+            fundamentals[table] = { label: TAB_LABELS_AR[table], data: cleaned };
+          }
+        }
+      } catch { /* table not found — skip */ }
+    }
+    deDb.close();
+  }
+
+  return {
+    ticker: upper,
+    name_ar: (stock.name_ar as string) || (stock.name as string) || undefined,
+    logo_url,
+    fundamentals,
+  };
+}
+
+// ─── 6. getMarketTabData ─────────────────────────────────────────────────────
+// (ALPHA-DAL-WAVE1 — المرحلة 2.2، owner directive 2026-10-27):
+// «أضف دالة داخل src/lib/db-manager.ts: getMarketTabData(market, tab)».
+
+const ALLOWED_TABS = new Set([
+  'performance', 'valuation', 'dividends', 'profitability',
+  'income_statement', 'balance_sheet', 'cash_flow', 'technical_analysis',
+]);
+
+export interface MarketTabData {
+  tab: string;
+  source: string;
+  columns: string[];
+  data: unknown[];
+  total: number;
+  message?: string;
+}
+
+/**
+ * Fetch market-wide tab data.
+ *
+ * Owner directive (المرحلة 2.2): «حوّل المسار لـ Thin Wrapper يستدعي getMarketTabData(market, tab)».
+ *
+ * Strategy (defensive, pre/post-merge):
+ *   1. Read tabs_data (JSON) from stocks.db.stocks WHERE ticker = ? (if ticker provided).
+ *   2. Fallback: data_engine.db.tab_* tables WHERE symbol = ? (direct, no LIKE).
+ *   3. Graceful empty if both unavailable (Rule 27: no fabrication).
+ *
+ * @param tab - one of ALLOWED_TABS
+ * @param market - optional market filter (EGX, TADAWUL, etc.)
+ * @param ticker - optional ticker filter (direct WHERE, no LIKE)
+ * @param limit - max rows (default 50, max 1000)
+ * @param offset - pagination offset
+ */
+export function getMarketTabData(
+  tab: string,
+  market?: string,
+  ticker?: string,
+  limit: number = 50,
+  offset: number = 0,
+): MarketTabData {
+  if (!ALLOWED_TABS.has(tab)) {
+    return { tab, source: 'invalid', columns: [], data: [], total: 0, message: `Invalid tab: ${tab}` };
+  }
+
+  const tableName = `tab_${tab}`;
+  const safeLimit = Math.min(Math.max(limit, 1), 1000);
+  const safeOffset = Math.max(offset, 0);
+  const upperTicker = ticker?.toUpperCase();
+
+  // ─── Source 1: stocks.db.stocks.tabs_data (JSON, post-merge) ──────────────
+  if (upperTicker) {
+    const stocksDb = openDb('stocks.db');
+    if (stocksDb && columnExists(stocksDb, 'stocks', 'tabs_data')) {
+      const row = stocksDb.prepare(
+        'SELECT ticker, name_ar, tabs_data FROM stocks WHERE ticker = ? LIMIT 1'
+      ).get(upperTicker) as { ticker: string; name_ar?: string; tabs_data?: string | null } | undefined;
+      if (row?.tabs_data) {
+        try {
+          const parsed = JSON.parse(row.tabs_data) as Record<string, unknown>;
+          const tabData = parsed[tableName] ?? parsed[tab];
+          if (tabData && typeof tabData === 'object') {
+            stocksDb.close();
+            const cols = Object.keys(tabData as Record<string, unknown>);
+            return {
+              tab,
+              source: 'stocks.db.tabs_data',
+              columns: cols,
+              data: [tabData],
+              total: 1,
+            };
+          }
+        } catch {
+          // JSON corrupt → fallback.
+        }
+      }
+    }
+    if (stocksDb) stocksDb.close();
+  }
+
+  // ─── Source 2 (fallback): data_engine.db.tab_* tables ─────────────────────
+  // Direct WHERE (no LIKE) per owner directive.
+  const deDb = openDb('data_engine.db');
+  if (deDb) {
+    try {
+      const columnsInfo = deDb.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+      const columns = columnsInfo.map((c) => c.name);
+
+      let query = `SELECT * FROM ${tableName}`;
+      const params: (string | number)[] = [];
+      const whereParts: string[] = [];
+      if (market) {
+        whereParts.push('market = ?');
+        params.push(market);
+      }
+      if (upperTicker) {
+        whereParts.push('(symbol = ? OR symbol = ? COLLATE NOCASE)');
+        params.push(upperTicker, upperTicker);
+      }
+      if (whereParts.length > 0) query += ` WHERE ${whereParts.join(' AND ')}`;
+      query += ` ORDER BY id LIMIT ? OFFSET ?`;
+      params.push(safeLimit, safeOffset);
+
+      const data = deDb.prepare(query).all(...params);
+
+      let countQuery = `SELECT COUNT(*) as count FROM ${tableName}`;
+      const countParams: string[] = [];
+      const countWhere: string[] = [];
+      if (market) { countWhere.push('market = ?'); countParams.push(market); }
+      if (upperTicker) { countWhere.push('(symbol = ? OR symbol = ? COLLATE NOCASE)'); countParams.push(upperTicker, upperTicker); }
+      if (countWhere.length > 0) countQuery += ` WHERE ${countWhere.join(' AND ')}`;
+      const total = deDb.prepare(countQuery).get(...countParams) as { count: number };
+
+      deDb.close();
+      return { tab, source: 'data_engine.db', columns, data, total: total.count };
+    } catch {
+      deDb.close();
+    }
+  }
+
+  // Graceful empty (Rule 27: no fabrication).
+  return {
+    tab,
+    source: 'none',
+    columns: [],
+    data: [],
+    total: 0,
+    message: 'لا توجد بيانات تبويبات متاحة حاليًا (ستتوفر بعد اكتمال الهجرة)',
+  };
+}
+
 // ─── Default export (barrel) ────────────────────────────────────────────────
 
 export default {
@@ -638,4 +994,9 @@ export default {
   getLogoUrl,
   enrichWithUnifiedLogos,
   getActivePredictions,
+  getCompanyFundamentals,
+  getMarketTabData,
+  openDb,
+  openDbWritable,
+  columnExists,
 };

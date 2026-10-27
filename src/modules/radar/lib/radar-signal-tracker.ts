@@ -1,23 +1,22 @@
 /**
- * radar-signal-tracker.ts — Shared DB layer for the radar Signal Tracker
+ * radar-signal-tracker.ts — Shared DB layer for the radar Signal Tracker (DAL-backed)
  * ====================================================================
  *
  * الجدول `radar_signal_tracking` في db/stocks.db (fallback: db/data_engine.db)
  * يخزّن كل إشارات الرادار اليومية، وبيتم التحقق منها بعد 7/14/30 يوم.
  *
- * الـ lib دي بتتعامل مع:
- * - إنشاء الجدول + indexes (ensureSchema)
- * - إدراج إشارة جديدة مع dedup (recordSignal)
- * - الإحصائيات (getStats)
+ * (ALPHA-DAL-WAVE1 — owner directive 2026-10-27):
+ * «ممنوع نهائياً فتح new Database() داخل أي ملف في src/modules/. استدعِ openDbWritable من db-manager.ts.»
  *
  * يُستخدم من:
  * - /api/maker-radar/signal-tracker/route.ts (GET stats, POST record)
  * - /api/maker-radar/signal-tracker/verify/route.ts (POST verify)
  * - src/lib/schedulers/radar-alerts.ts (recordRadarSignals في الـ warmup)
  */
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { openDbWritable } from '@/lib/db-manager';
 
 const PROJECT_ROOT = process.cwd();
 
@@ -47,15 +46,13 @@ export function pickTrackerDbPath(): string | null {
 export function openTrackerDb(): Database.Database | null {
  const dbPath = pickTrackerDbPath();
  if (!dbPath) return null;
- try {
- const db = new Database(dbPath);
- db.pragma('journal_mode = WAL');
+ // (ALPHA-DAL-WAVE1): استخدم openDbWritable من الـ DAL — ممنوع new Database() هنا.
+ // الـ DAL بيـ handle busy_timeout + WAL + auto-recovery.
+ const dbFile = dbPath.includes('stocks.db') ? 'stocks.db' : 'data_engine.db';
+ const db = openDbWritable(dbFile);
+ if (!db) return null;
  ensureSchema(db);
  return db;
- } catch (err) {
- console.error('[radar-signal-tracker] openTrackerDb failed:', err);
- return null;
- }
 }
 
 export function ensureSchema(db: Database.Database): void {

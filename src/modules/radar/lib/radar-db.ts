@@ -1,16 +1,18 @@
 /**
- * radar-db.ts — Portable DB detection for Maker Radar
- * ====================================================
- * يكتشف الـ DB المتاح تلقائياً (sandbox / laptop / production).
- * Fallback chain:
- * 1. db/production_snapshot.db (sandbox — بيانات مسحوبة)
- * 2. db/vps_real/stocks.db (sandbox — نسخة VPS)
- * 3. db/stocks.db (production)
- * 4. db/data_engine.db (historical_data table) — fallback أخير
+ * radar-db.ts — Portable DB detection for Maker Radar (DAL-backed)
+ * ====================================================================
+ * (ALPHA-DAL-WAVE1 — owner directive 2026-10-27):
+ * «ممنوع نهائياً فتح new Database() داخل أي ملف في src/modules/. استدعِ openDb من db-manager.ts.»
+ *
+ * Fallback chain (simplified — production_snapshot/vps_real REMOVED per owner directive):
+ * 1. stocks.db.stock_daily_prices — الـ source of truth المحدث يومياً (PRIMARY)
+ * 2. data_engine.db.egksco_price_history — أرشيف تاريخي (fallback للـ EGX)
+ * 3. data_engine.db.historical_data — fallback للأسواق التانية (سعودي/أمريكي)
  */
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { existsSync, statSync } from 'fs';
 import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export interface RadarDbConfig {
  dbPath: string;
@@ -28,20 +30,21 @@ export interface RadarDbConfig {
 const PROJECT_ROOT = process.cwd();
 
 const CANDIDATES: RadarDbConfig[] = [
- // 1. stocks.db.stock_daily_prices — الـ source of truth المحدث يومياً في الإنتاج
+ // 1. stocks.db.stock_daily_prices — الـ source of truth المحدث يومياً في الإنتاج.
+ // (ALPHA-DAL-WAVE1): الأعمدة المطابقة لـ schema برافو (close_price, open_price, ...).
  {
  dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
  table: 'stock_daily_prices',
  tickerCol: 'ticker',
- priceCol: 'close',
+ priceCol: 'close_price',
  volumeCol: 'volume',
  turnoverCol: 'turnover',
  dateCol: 'price_date',
- openCol: 'open',
- highCol: 'high',
- lowCol: 'low',
+ openCol: 'open_price',
+ highCol: 'high_price',
+ lowCol: 'low_price',
  },
- // 2. data_engine.db.egksco_price_history — أرشيف تاريخي
+ // 2. data_engine.db.egksco_price_history — أرشيف تاريخي (762 EGX ticker migrated)
  {
  dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
  table: 'egksco_price_history',
@@ -68,31 +71,8 @@ const CANDIDATES: RadarDbConfig[] = [
  highCol: 'high',
  lowCol: 'low',
  },
- // 4. sandbox fallbacks
- {
- dbPath: path.join(PROJECT_ROOT, 'db', 'production_snapshot.db'),
- table: 'stock_daily_prices',
- tickerCol: 'ticker',
- priceCol: 'close',
- volumeCol: 'volume',
- turnoverCol: 'turnover',
- dateCol: 'price_date',
- openCol: 'open',
- highCol: 'high',
- lowCol: 'low',
- },
- {
- dbPath: path.join(PROJECT_ROOT, 'db', 'vps_real', 'stocks.db'),
- table: 'stock_daily_prices',
- tickerCol: 'ticker',
- priceCol: 'close',
- volumeCol: 'volume',
- turnoverCol: 'turnover',
- dateCol: 'price_date',
- openCol: 'open',
- highCol: 'high',
- lowCol: 'low',
- },
+ // NOTE (ALPHA-DAL-WAVE1): production_snapshot.db + vps_real/stocks.db REMOVED per
+ // owner directive. stocks.db هو المصدر الرسمي الوحيد دلوقتي. fallback على data_engine بس.
 ];
 
 let cachedConfig: RadarDbConfig | null = null;
@@ -103,7 +83,9 @@ export function getRadarDbConfig(): RadarDbConfig | null {
  for (const cfg of CANDIDATES) {
  try {
  if (!existsSync(cfg.dbPath)) continue;
- const db = new Database(cfg.dbPath, { readonly: true, fileMustExist: true });
+ // (ALPHA-DAL-WAVE1): استخدم openDb من الـ DAL (busy_timeout + auto-recovery).
+ const db = openDb(cfg.dbPath.includes('stocks.db') ? 'stocks.db' : 'data_engine.db');
+ if (!db) continue;
  // تحقق إن الـ table موجود
  const row = db.prepare(
  "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
@@ -132,12 +114,9 @@ export function getRadarDbConfig(): RadarDbConfig | null {
 export function getRadarDb(): Database.Database | null {
  const cfg = getRadarDbConfig();
  if (!cfg) return null;
- try {
- return new Database(cfg.dbPath, { readonly: true, fileMustExist: true });
- } catch (e) {
- console.error('[radar-db] open error:', e);
- return null;
- }
+ // (ALPHA-DAL-WAVE1): استخدم openDb من الـ DAL — ممنوع new Database() هنا.
+ const dbFile = cfg.dbPath.includes('stocks.db') ? 'stocks.db' : 'data_engine.db';
+ return openDb(dbFile);
 }
 
 /** حجم الـ DB الحالي بالـ MB */

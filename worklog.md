@@ -10201,3 +10201,66 @@ Stage Summary:
   * ممنوع كسر اختبارات — lint + tsc clean.
 - Git state: branch `alpha/dal-incubator-predictions`, changes unstaged (awaiting owner review).
 - NO push, NO merge, NO deploy.
+
+---
+Task ID: ALPHA-DAL-WAVE1
+Agent: Alpha (Frontend Engineer — DAL Wave 1 purge)
+Task: تكليف الـ owner المغلق — تطهير الـ 3 modules + ترحيل fundamentals + tab-data للـ DbManager.
+
+Work Log:
+- Step 0 (Branch): أنشأت `alpha/dal-wave1-purge` من main (متزامن 0/0).
+
+- Step 1 (DbManager exports): أضفت `openDb`, `openDbWritable`, `columnExists` كـ exported functions
+  في db-manager.ts عشان الـ modules تقدر تستخدمهم بدون ما تفتح SQLite مباشر.
+
+- Step 2 (Task 1.1 — radar-db.ts):
+  * شيلت `import Database from 'better-sqlite3'` → `import type Database` + `import { openDb } from '@/lib/db-manager'`.
+  * شيلت `new Database()` في getRadarDbConfig (line 106) + getRadarDb (line 136) → استبدلت بـ openDb.
+  * شيلت production_snapshot.db + vps_real/stocks.db candidates per owner directive (stocks.db هو المصدر الوحيد).
+  * حدّثت الأعمدة لـ schema برافو (close_price, open_price, high_price, low_price بدل close/open/high/low).
+
+- Step 3 (Task 1.2 — radar-signal-tracker.ts):
+  * شيلت `import Database` → `import type Database` + `import { openDbWritable }`.
+  * شيلت `new Database(dbPath)` + `db.pragma('journal_mode = WAL')` في openTrackerDb → استبدلت بـ openDbWritable (الـ DAL بيـ handle WAL + busy_timeout).
+
+- Step 4 (Task 1.3 — personalized-radar.ts):
+  * شيلت `import Database` → `import type Database` + `import { openDb }`.
+  * استبدلت 3 `new Database()` calls:
+    1. lookupSector (line 148): stocksDb → openDb('stocks.db')
+    2. fetchPortfolioAssets (line 245): authDb → openDb('auth.db')
+    3. fetchPredictionsForTickers (line 295): predictions.db → openDb('predictions.db')
+  * أصلحت syntax error (missing closing brace من الـ edit الأول).
+
+- Step 5 (Task 2.1 — getCompanyFundamentals in DbManager):
+  * أضفت `getCompanyFundamentals(ticker)` function (~160 LOC) لـ db-manager.ts.
+  * نقلت منطق قراءة الـ 8 تبويبات + 66 عمود من stocks.db + data_engine fallback.
+  * direct WHERE (no LIKE) per owner directive.
+  * أضفت CompanyFundamentals interface + fmtVal helper (internal).
+  * أعدت كتابة fundamentals/route.ts كـ thin wrapper (~35 LOC، كان ~217 LOC).
+
+- Step 6 (Task 2.2 — getMarketTabData in DbManager):
+  * أضفت `getMarketTabData(tab, market, ticker, limit, offset)` function (~95 LOC).
+  * نقلت منطق tabs_data JSON من stocks.db + data_engine.db.tab_* fallback.
+  * direct WHERE (no LIKE) per owner directive + ALLOWED_TABS whitelist.
+  * أعدت كتابة tab-data/route.ts كـ thin wrapper (~25 LOC، كان ~168 LOC).
+
+- Step 7 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي → 0 errors.
+  * grep check: `rg "new Database\(" src/modules/` → 0 REAL matches (comments only).
+  * grep check: `rg "new Database\(" src/app/api/maker-radar/fundamentals/ src/app/api/tab-data/` → 0 REAL.
+  * Live API test:
+    - GET /api/maker-radar/fundamentals?ticker=COMI → 404 (stocks.db missing in sandbox — defensive صح).
+    - GET /api/tab-data?tab=valuation&market=EGX → source: 'none' (data_engine.db missing — graceful empty).
+
+Stage Summary:
+- Files modified (6):
+  * src/lib/db-manager.ts: +openDb/openDbWritable/columnExists exports + getCompanyFundamentals + getMarketTabData.
+  * src/modules/radar/lib/radar-db.ts: DAL-backed, production_snapshot/vps_real removed.
+  * src/modules/radar/lib/radar-signal-tracker.ts: DAL-backed (openDbWritable).
+  * src/modules/personalized/lib/personalized-radar.ts: 3 DB opens → openDb.
+  * src/app/api/maker-radar/fundamentals/route.ts: thin wrapper (~35 LOC, was ~217).
+  * src/app/api/tab-data/route.ts: thin wrapper (~25 LOC, was ~168).
+- grep verification: 0 REAL `new Database()` in src/modules/ + the 2 routes.
+- Lint + tsc clean.
+- Git state: branch `alpha/dal-wave1-purge`, unstaged (awaiting commit + push).

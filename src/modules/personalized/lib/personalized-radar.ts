@@ -42,7 +42,11 @@
 import { authDb } from '@/lib/db-auth';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
+// (ALPHA-DAL-WAVE1 — owner directive 2026-10-27):
+// «استبدل استدعاءات predictions.db المباشرة بالدالة المعيارية + استخدم openDb من الـ DAL».
+// Database type used for typing only; openDb is the gatekeeper (no new Database()).
+import { openDb } from '@/lib/db-manager';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -145,7 +149,9 @@ function lookupSector(ticker: string): string | null {
  try {
  const stocksDbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
  if (existsSync(stocksDbPath)) {
- const db = new Database(stocksDbPath, { readonly: true, fileMustExist: true });
+ // (ALPHA-DAL-WAVE1): استخدم openDb من الـ DAL — ممنوع new Database().
+ const db = openDb('stocks.db');
+ if (db) {
  try {
  const row = db.prepare(
  'SELECT sector FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1'
@@ -153,6 +159,7 @@ function lookupSector(ticker: string): string | null {
  sector = row?.sector ?? null;
  } finally {
  db.close();
+ }
  }
  }
  } catch (e) {
@@ -242,7 +249,9 @@ function fetchPortfolioAssets(userId: string): PortfolioAssetRow[] {
  try {
  const authDbPath = path.join(PROJECT_ROOT, 'db', 'auth.db');
  if (!existsSync(authDbPath)) return [];
- const db = new Database(authDbPath, { readonly: true, fileMustExist: true });
+ // (ALPHA-DAL-WAVE1): استخدم openDb من الـ DAL — ممنوع new Database().
+ const db = openDb('auth.db');
+ if (!db) return [];
  try {
  // Check if portfolio_assets table exists
  const tables = db.prepare(
@@ -292,7 +301,9 @@ function fetchPredictionsForTickers(tickers: string[]): PredictionRow[] {
  for (const c of candidates) {
  if (!existsSync(c.path)) continue;
  try {
- const db = new Database(c.path, { readonly: true, fileMustExist: true });
+ // (ALPHA-DAL-WAVE1): استخدم openDb من الـ DAL — ممنوع new Database().
+ const db = openDb(c.path.endsWith('predictions.db.original') ? 'predictions.db.original' : 'predictions.db');
+ if (!db) continue;
  try {
  const tables = db.prepare(
  "SELECT name FROM sqlite_master WHERE type='table' AND name='predictions'"
