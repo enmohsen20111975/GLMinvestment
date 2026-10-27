@@ -25,7 +25,6 @@ import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { LockModal } from '@/components/auth/LockModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StockDetailDrawer } from '@/modules/predictions/components/MakerRadarTab';
-import { RefreshCw, AlertTriangle } from 'lucide-react';
 // ALPHA-UX-FIX-6: guest CTA + sectors tracking (moved from #recommendations)
 import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
 import { SectorTrackingTab } from '@/modules/market-analysis/components/SectorTrackingTab';
@@ -806,12 +805,16 @@ export function LiquidityRadarView({
  actionLabel="إعادة المحاولة"
  onAction={fetchData}
  />
- ) : !data ? (
-   // أول تحميل — مفيش بيانات ولا خطأ (لسه بيتحم)
+ ) : !data || allScanned.length === 0 ? (
+   // أول تحميل — مفيش بيانات أو لم يتم رصد أسهم
  <UnifiedEmptyState
  variant="empty"
  title="لا توجد إشارات رادار حالياً"
- description="المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها"
+ description={
+   (data?.summary && (data.summary.scanned_count ?? 0) > 0)
+     ? 'تم الفحص لكن لا توجد تصنيفات — تحقق من سجلات المحرك'
+     : 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'
+ }
  />
  ) : (
  <>
