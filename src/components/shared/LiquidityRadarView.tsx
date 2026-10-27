@@ -785,6 +785,42 @@ export function LiquidityRadarView({
   </div>
  )}
 
+ {/* P1-C: خريطة حرارية مصغّرة — Heatmap Strip لتوزيع التصنيفات */}
+ {data && allScanned.length > 0 && (() => {
+   const counts = filterCounts;
+   const total = counts.all || 1;
+   const segments = [
+     { key: 'quiet_accumulation', label: 'تجميع', color: 'bg-profit', count: counts.quiet_accumulation || 0 },
+     { key: 'distribution', label: 'تصريف', color: 'bg-loss', count: counts.distribution || 0 },
+     { key: 'dead_trap', label: 'فخ', color: 'bg-loss/60', count: counts.dead_trap || 0 },
+     { key: 'liquidity_drought', label: 'جفاف', color: 'bg-warning/60', count: counts.liquidity_drought || 0 },
+     { key: 'rule80_downtrend', label: 'هبوط', color: 'bg-warning/40', count: counts.rule80_downtrend || 0 },
+     { key: 'unclassified', label: 'غير مصنف', color: 'bg-muted-foreground/30', count: counts.unclassified || 0 },
+     { key: 'data_invalid', label: 'بيانات خاطئة', color: 'bg-loss/30', count: counts.data_invalid || 0 },
+   ].filter(s => s.count > 0);
+   return (
+     <div className="flex items-center gap-1 h-6 w-full rounded-lg overflow-hidden border border-border/40">
+       {segments.map((seg) => {
+         const pct = (seg.count / total) * 100;
+         return (
+           <div
+             key={seg.key}
+             className={cn('h-full transition-all duration-500 ease-out flex items-center justify-center', seg.color)}
+             style={{ width: `${pct}%`, minWidth: '20px' }}
+             title={`${seg.label}: ${seg.count} سهم (${pct.toFixed(1)}%)`}
+           >
+             {pct > 8 && (
+               <span className="text-[9px] font-mono font-bold text-white/90 px-0.5">
+                 {seg.count}
+               </span>
+             )}
+           </div>
+         );
+       })}
+     </div>
+   );
+ })()}
+
  {/* FIX (Blueprint Rule 1): Never unmount UnifiedTable after first mount.
      - isInitialLoading (data === null && !error): skeleton فقط أول مرة
      - بعد أول mount ناجح: الجدول يفضل في الـ DOM للأبد
