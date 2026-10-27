@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 # ── Paths ──
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 INTRADAY_DB = str(_PROJECT_ROOT / 'db' / 'intraday.db')
-PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
+PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')  # WAVE-3: was price_history.db
 BACKUP_DIR = _PROJECT_ROOT / 'db' / 'backups'
 
 SOURCE = 'intraday_aggregated'
@@ -107,7 +107,7 @@ def _get_max_date_for_ticker(ph_conn: sqlite3.Connection, ticker: str) -> Option
     """آخر تاريخ مسجّل لسهم معيّن في price_history.db (أي source)."""
     try:
         row = ph_conn.execute(
-            "SELECT MAX(date) FROM price_history WHERE ticker = ?",
+            "SELECT MAX(price_date) FROM stock_daily_prices WHERE ticker = ?",
             (ticker,)
         ).fetchone()
         return row[0] if row and row[0] else None
@@ -241,7 +241,7 @@ def aggregate_intraday_to_daily(
 
     # ── 3. الفجوة الكلية قبل ──
     try:
-        row = ph_conn.execute("SELECT MAX(date) FROM price_history").fetchone()
+        row = ph_conn.execute("SELECT MAX(price_date) FROM stock_daily_prices").fetchone()
         result['gap_before_max'] = row[0] if row and row[0] else None
     except Exception:
         pass
@@ -352,7 +352,7 @@ def aggregate_intraday_to_daily(
 
     # ── 7. الفجوة الكلية بعد ──
     try:
-        row = ph_conn.execute("SELECT MAX(date) FROM price_history").fetchone()
+        row = ph_conn.execute("SELECT MAX(price_date) FROM stock_daily_prices").fetchone()
         result['gap_after_max'] = row[0] if row and row[0] else None
     except Exception:
         pass
