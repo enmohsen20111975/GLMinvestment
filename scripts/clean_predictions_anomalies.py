@@ -101,8 +101,8 @@ def clean_anomalies(conn: sqlite3.Connection, apply: bool) -> dict:
     if not apply:
         return stats
 
-    # 1. Delete ADP
-    cur = conn.execute("DELETE FROM predictions WHERE ticker = 'ADP'")
+    # 1. Delete ADP and phantom/corrupted tickers (TAQATA, TWSATA, NNFCIE, OOCAPO, EGS65861C014)
+    cur = conn.execute("DELETE FROM predictions WHERE ticker IN ('ADP', 'TAQATA', 'TWSATA', 'NNFCIE', 'OOCAPO', 'EGS65861C014')")
     stats["deleted_adp"] = cur.rowcount
 
     # 2. Delete negative stop_loss
