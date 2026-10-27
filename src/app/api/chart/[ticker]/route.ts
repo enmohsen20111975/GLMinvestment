@@ -433,6 +433,7 @@ function getLocalDailyData(
     } finally {
       try { db.close(); } catch { /* ignore */ }
     }
+    }
   }
 
   // 2. egksco_price_history (data_engine.db)
@@ -500,6 +501,7 @@ function getLocalDailyData(
     } finally {
       try { db.close(); } catch { /* ignore */ }
     }
+    }
   }
 
   // 3. stock_daily_prices (stocks.db)
@@ -552,6 +554,7 @@ function getLocalDailyData(
       console.warn(`[chart] stock_daily_prices query failed for ${ticker}:`, e);
     } finally {
       try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 
@@ -954,6 +957,7 @@ export async function GET(
     } catch (e) {
       console.warn(`[chart] stocks table fallback failed for ${resolvedTicker}:`, e);
       try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 
