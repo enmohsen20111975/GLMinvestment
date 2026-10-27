@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
+import { openDb } from '@/lib/db-manager';
 import { fetchMarketIndices, MARKET_NAMES_AR, MARKET_ALIASES } from '@/lib/market-data-access';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
@@ -33,8 +32,10 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback — compute from stocks.db dynamically per market
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDb('stocks.db');
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'stocks.db unavailable' }, { status: 500 });
+    }
 
     // Get ALL stocks for this market (not just EGX)
     const marketMap: Record<string, string> = {

@@ -27,6 +27,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import type Database from 'better-sqlite3';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -176,17 +177,13 @@ export async function GET(req: NextRequest) {
   // ── Read from stocks.db directly ──
   let db: Database.Database | null = null;
   try {
-    const path = require('path') as typeof import('path');
-    const fs = require('fs') as typeof import('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    db = openDbDal('stocks.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'stocks.db not found' },
         { status: 500 },
       );
     }
-    const Database = require('better-sqlite3') as typeof import('better-sqlite3');
-    db = new Database(stocksDbPath, { readonly: true, fileMustExist: true });
 
     // 1) Read current state from system_settings
     const settingsKey = `current_regime_${market}`;

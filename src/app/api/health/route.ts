@@ -6,7 +6,7 @@ import { existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import Database from 'better-sqlite3';
+import { openDb } from '@/lib/db-manager';
 import { logger } from '@/lib/logger';
 
 const execAsync = promisify(exec);
@@ -86,10 +86,19 @@ interface HealthReport {
  * table, and close it. Returns null on success or the error message.
  */
 function checkDb(
-  dbPath: string,
+  dbFile: string,
   mainTable?: string,
   dateColumn?: string
 ): DbCheck {
+  // Resolve dbFile (which may be a relative name like 'stocks.db' OR an absolute path
+  // passed by legacy callers) to an absolute path for the size + existence check.
+  const dbPath = dbFile.includes('/') || dbFile.includes('\\')
+    ? dbFile
+    : join(process.cwd(), 'db', dbFile);
+  const dbFileForDal = dbFile.includes('/') || dbFile.includes('\\')
+    ? dbFile.split('/').pop()!.split('\\').pop()!
+    : dbFile;
+
   if (!existsSync(dbPath)) {
     return { status: 'down', size_mb: 0, error: 'file missing' };
   }
@@ -102,10 +111,10 @@ function checkDb(
   }
   const sizeMb = Math.max(0, +(sizeBytes / 1024 / 1024).toFixed(1));
 
-  let db: Database.Database | null = null;
+  let db: ReturnType<typeof openDb> = null;
   try {
-    // readonly + fileMustExist → throws immediately if missing or corrupted
-    db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    db = openDb(dbFileForDal);
+    if (!db) throw new Error('db open returned null');
     // Quick integrity check
     db.prepare('SELECT 1').get();
     // Optional row count

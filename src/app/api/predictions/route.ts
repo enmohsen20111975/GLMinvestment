@@ -11,8 +11,7 @@ import { getSessionUserId } from '@/lib/auth-helper';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { applyValidatedTargets } from '@/lib/targets-validator';
 import { trialExpiredResponse } from '@/lib/subscription-gate';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const revalidate = 30; // Cache for 30s
 
@@ -109,13 +108,8 @@ export async function GET(request: NextRequest) {
   // 8010 is down. Rule 67: maker-radar/stock + predictions.db are canonical.
   if (ticker) {
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      let db: Database.Database;
-      try {
-        db = new Database(dbPath, { readonly: true, timeout: 3000 });
-      } catch (e) {
-        db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-      }
+      const db = openDbDal('predictions.db');
+      if (!db) throw new Error('predictions.db unavailable');
       const tickerLimit = Math.min(Math.max(parseInt(requestedLimit, 10) || 10, 1), 20);
       // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
       // قبل كده: `WHERE ticker = ?` بس → كان بـ يرجع predictions من كل الأسواق
@@ -335,13 +329,8 @@ export async function GET(request: NextRequest) {
 
   // 2. Fallback: query predictions.db directly
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    let db: Database.Database;
-    try {
-      db = new Database(dbPath, { readonly: true, timeout: 3000 });
-    } catch (e) {
-      db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-    }
+    const db = openDbDal('predictions.db');
+    if (!db) throw new Error('predictions.db unavailable');
 
     // FIX (Aug 2026): aiPrediction table فاضي (0 صفوف) — استخدم predictions table
     // الـ schema: ticker, signal, prediction_date, entry_price, target_price, stop_loss,

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -48,20 +47,15 @@ interface PredictionOut {
   created_at: string;
 }
 
-// Candidate DB paths — first one that exists wins. We prefer the current
-// working directory (Next.js process.cwd()), then fall back to the env-configured
-// PREDICTIONS_DB_PATH if set. Per Rule 17 + Rule 61, no hardcoded absolute paths.
+// Candidate DB paths — first one that exists wins. Per Rule 17 + Rule 61,
+// no hardcoded absolute paths. The DAL probes via dbPath() under the hood.
 function resolveDbPath(): string | null {
-  const candidates = [
-    path.join(process.cwd(), 'db', 'predictions.db'),
-    process.env.PREDICTIONS_DB_PATH ?? '',
-  ].filter(Boolean);
-  for (const c of candidates) {
-    try {
-      if (fs.existsSync(c)) return c;
-    } catch {
-      /* ignore */
-    }
+  // Try predictions.db first (canonical location for crypto_predictions_log).
+  // openDb returns null if the file is missing.
+  const probe = openDb('predictions.db');
+  if (probe) {
+    probe.close();
+    return 'predictions.db';
   }
   return null;
 }
@@ -80,8 +74,8 @@ function safeParseAnalysis(raw: string | null): Record<string, unknown> | null {
 
 export async function GET() {
   try {
-    const dbPath = resolveDbPath();
-    if (!dbPath) {
+    const dbFile = resolveDbPath();
+    if (!dbFile) {
       // No DB file found — return empty success (scheduler may not have run yet)
       return NextResponse.json({
         success: true,
@@ -91,10 +85,15 @@ export async function GET() {
       });
     }
 
-    // Lazy-load better-sqlite3 (native module) so we never crash the route
-    // handler on import-time failure.
-    const Database = (await import('better-sqlite3')).default;
-    const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    const db = openDb(dbFile);
+    if (!db) {
+      return NextResponse.json({
+        success: true,
+        predictions: [],
+        last_updated: null,
+        note: 'predictions.db not readable',
+      });
+    }
 
     // Check whether the table exists — if not, return empty success.
     let tableExists = false;

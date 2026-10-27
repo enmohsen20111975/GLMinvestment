@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import type Database from 'better-sqlite3';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 // DB_PATH: news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
 // news.db → market_news table holds all news (from News Agent + legacy news_articles merged 2026-09-02).
-const DB_PATH = path.join(process.cwd(), 'db', 'news.db');
+const DB_PATH = 'news.db';
 const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8010';
 const AGENT_API_KEY = process.env.NEWS_AGENT_API_KEY || process.env.PRODUCTION_API_KEY;
 
@@ -59,7 +58,7 @@ function stripHtml(raw: unknown): string {
   ).trim();
 }
 
-function ensureNewsTable(db: InstanceType<typeof Database>) {
+function ensureNewsTable(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS market_news (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,7 +119,10 @@ export async function GET(request: Request) {
       .map(t => t.trim().toUpperCase().replace(/[^A-Z0-9._-]/g, ''))
       .filter(t => t.length > 0 && t.length <= 20);
 
-    const db = new Database(DB_PATH, { readonly: true });
+    const db = openDb(DB_PATH);
+    if (!db) {
+      return NextResponse.json({ error: 'news.db unavailable' }, { status: 200 });
+    }
 
     let query = 'SELECT * FROM market_news';
     const params: any[] = [];
@@ -266,8 +268,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Direct persistent save to news.db
-    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-    const db = new Database(DB_PATH);
+    const db = openDbWritable(DB_PATH);
+    if (!db) {
+      return NextResponse.json({ ok: false, success: false, error: 'news.db not writable' }, { status: 500 });
+    }
     ensureNewsTable(db);
 
     const result = db.prepare(`

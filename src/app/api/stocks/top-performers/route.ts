@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -67,17 +68,13 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback — read from stocks.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    const db = openDb('stocks.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'stocks.db not found' },
         { status: 500 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
 
     const marketRaw = (url.searchParams.get('market') || 'EGX').toUpperCase();
     const market = MARKET_MAP[marketRaw] || 'EGX';

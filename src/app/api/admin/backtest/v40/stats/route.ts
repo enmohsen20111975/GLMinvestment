@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import Database from 'better-sqlite3';
-import { join } from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,8 +55,16 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    const dbPath = join(process.cwd(), 'db', 'predictions.db');
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDb('predictions.db');
+    if (!db) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          summary: { total: 0, message: 'predictions.db unavailable. Run the backtest first.' },
+          by_month: [], by_ticker: [], explosive_stocks: [], out_of_sample: {},
+        },
+      });
+    }
 
     // Check if predictions table exists
     const tableExists = db.prepare(

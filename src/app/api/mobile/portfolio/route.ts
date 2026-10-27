@@ -23,6 +23,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { db } from '@/lib/db';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -78,14 +79,7 @@ export async function GET(req: NextRequest) {
     let totalValue = 0;
     let totalCost = 0;
     try {
-      const path = require('path');
-      const fs = require('fs');
-      const Database = require('better-sqlite3');
-      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-      let sdb: any = null;
-      if (fs.existsSync(stocksDbPath)) {
-        sdb = new Database(stocksDbPath, { readonly: true });
-      }
+      const sdb = openDb('stocks.db');
       holdings = items.map((it: any) => {
         let livePrice = it.current_price;
         if (it.asset_type === 'stock' && it.symbol && sdb) {

@@ -18,24 +18,25 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type Database from 'better-sqlite3';
+import { openDb as openDbDal, openDbWritable as openDbWritableDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const PREDICTIONS_DB_PATH = `${process.cwd()}/db/predictions.db`;
-const fs = require('fs');
 
 function dbExists(path: string): boolean {
-  try {
-    return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
-    return false;
-  }
+  const file = path.split('/').pop()!.split('\\').pop()!;
+  const db = openDbDal(file);
+  if (db) { db.close(); return true; }
+  return false;
 }
 
-function openDb(path: string, readonly = true): Database.Database {
-  const Database = require('better-sqlite3');
-  return new Database(path, { readonly }) as Database.Database;
+function openDb(absolutePath: string, readonly = true): Database.Database {
+  const file = absolutePath.split('/').pop()!.split('\\').pop()!;
+  const db = readonly ? openDbDal(file) : openDbWritableDal(file);
+  if (!db) throw new Error(`${file} unavailable`);
+  return db;
 }
 
 const WIN_STATUSES = new Set(['TARGET_HIT', 'closed_win']);

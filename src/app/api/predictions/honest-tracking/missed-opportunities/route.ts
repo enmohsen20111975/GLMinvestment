@@ -23,17 +23,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import path from 'path';
+// (ALPHA-DAL-WAVE4): استخدم openDb من الـ DAL — ممنوع new Database().
+import { openDb as dalOpenDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 function openDb(dbPath: string): Database.Database {
-  try {
-    return new Database(dbPath, { readonly: true, timeout: 5000, fileMustExist: true });
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { readonly: true, timeout: 5000 });
-  }
+  // (ALPHA-DAL-WAVE4): استخرج اسم الملف من المسار الكامل + استخدم DAL gatekeeper.
+  const filename = dbPath.split('/db/').pop() || dbPath;
+  const db = dalOpenDb(filename);
+  if (!db) throw new Error(`${filename} not found`);
+  return db;
 }
 
 interface PredictionRow {

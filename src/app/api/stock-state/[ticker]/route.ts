@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
+import { openDb } from '@/lib/db-manager';
+
 /**
  * /api/stock-state/[ticker]
  *
@@ -22,16 +24,10 @@ export async function GET(
     return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
   }
 
-  const path = require('path');
-  const fs = require('fs');
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-
-  if (!fs.existsSync(stocksDbPath)) {
+  const db = openDb('stocks.db');
+  if (!db) {
     return NextResponse.json({ success: false, error: 'stocks.db not found' }, { status: 500 });
   }
-
-  const Database = require('better-sqlite3');
-  const db = new Database(stocksDbPath, { readonly: true });
 
   try {
     // Get latest state

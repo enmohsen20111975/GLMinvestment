@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import path from 'path';
 // P0-14-ASYNC fix (2026-09-27): replaced sync existsSync with async access
 // from fs/promises so the repair POST handler never blocks the event loop
@@ -7,6 +7,7 @@ import path from 'path';
 // imports were unused — removed.)
 import { access } from 'fs/promises';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,12 +26,9 @@ interface RepairStep {
   details?: string;
 }
 
-function openSafely(dbPath: string, mode: 'readonly' | 'write' = 'readonly'): Database.Database | null {
+function openSafely(dbFile: string, mode: 'readonly' | 'write' = 'readonly'): Database.Database | null {
   try {
-    if (mode === 'readonly') {
-      return new Database(dbPath, { readonly: true, fileMustExist: false });
-    }
-    return new Database(dbPath, { fileMustExist: false });
+    return mode === 'readonly' ? openDb(dbFile) : openDbWritable(dbFile);
   } catch {
     return null;
   }
@@ -86,13 +84,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: `Database file not found: ${safeName}` }, { status: 404 });
     }
 
+    const dbFile = safeName;
+
     const log: RepairStep[] = [];
     const allSteps = ['integrity', 'wal_checkpoint', 'recreate_tables', 'reindex', 'vacuum', 'sync_analysis'];
     const steps = requestedSteps?.length ? requestedSteps.filter(s => allSteps.includes(s)) : allSteps;
 
     // ═══ Step 1: Integrity Check ═══
     if (steps.includes('integrity')) {
-      const db = openSafely(dbPath, 'readonly');
+      const db = openSafely(dbFile, 'readonly');
       if (db) {
         try {
           const rows = db.pragma('integrity_check') as { integrity_check: string }[];
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     // ═══ Step 2: WAL Checkpoint ═══
     if (steps.includes('wal_checkpoint')) {
-      const db = openSafely(dbPath, 'write');
+      const db = openSafely(dbFile, 'write');
       if (db) {
         try {
           db.pragma('journal_mode = WAL');
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // ═══ Step 3: Recreate Missing Tables ═══
     if (steps.includes('recreate_tables')) {
-      const db = openSafely(dbPath, 'write');
+      const db = openSafely(dbFile, 'write');
       if (db) {
         try {
           let recreated = 0;
@@ -424,7 +424,7 @@ export async function POST(request: NextRequest) {
 
     // ═══ Step 4: Reindex ═══
     if (steps.includes('reindex')) {
-      const db = openSafely(dbPath, 'write');
+      const db = openSafely(dbFile, 'write');
       if (db) {
         try {
           db.exec('REINDEX');
@@ -445,7 +445,7 @@ export async function POST(request: NextRequest) {
 
     // ═══ Step 5: VACUUM ═══
     if (steps.includes('vacuum')) {
-      const db = openSafely(dbPath, 'write');
+      const db = openSafely(dbFile, 'write');
       if (db) {
         try {
           // Switch to DELETE mode first to remove WAL artifacts, then VACUUM
@@ -469,9 +469,9 @@ export async function POST(request: NextRequest) {
 
     // ═══ Step 6: Sync Analysis (stocks.db only) ═══
     if (steps.includes('sync_analysis') && safeName === 'stocks.db') {
-      const stocksDb = openSafely(dbPath, 'write');
+      const stocksDb = openSafely(dbFile, 'write');
       const predPath = path.join(DB_DIR, 'predictions.db');
-      const predDb = (await pathExists(predPath)) ? openSafely(predPath, 'readonly') : null;
+      const predDb = (await pathExists(predPath)) ? openSafely('predictions.db', 'readonly') : null;
 
       if (stocksDb && predDb) {
         try {

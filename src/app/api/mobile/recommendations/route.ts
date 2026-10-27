@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { openDb } from '@/lib/db-manager';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
@@ -28,20 +29,14 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback — read from stocks.db + predictions.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const Database = require('better-sqlite3');
-
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    const sdb = openDb('stocks.db');
+    if (!sdb) {
       return NextResponse.json(
         { success: false, error: 'stocks.db not found' },
         { status: 500 }
       );
     }
 
-    const sdb = new Database(stocksDbPath, { readonly: true });
     const marketMap: Record<string, string> = {
       EGX: 'EGX',
       TADAWUL: 'TADAWUL',
@@ -86,8 +81,8 @@ export async function GET(req: NextRequest) {
 
     // Latest BUY recommendations from predictions.db
     let recommendations: any[] = [];
-    if (fs.existsSync(predDbPath)) {
-      const pdb = new Database(predDbPath, { readonly: true });
+    const pdb = openDb('predictions.db');
+    if (pdb) {
       try {
         recommendations = pdb
           .prepare(

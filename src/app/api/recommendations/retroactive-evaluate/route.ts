@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 /**
  * Retroactive Evaluate API
@@ -16,17 +15,14 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     // فتح قواعد البيانات
-    const predictionsDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    const priceHistoryPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
-    
-    const predictionsDb = new Database(predictionsDbPath);
-    let priceHistoryDb: Database.Database | null = null;
-    
-    try {
-      priceHistoryDb = new Database(priceHistoryPath, { readonly: true });
-    } catch (e) {
-      console.error('[Retroactive] Cannot open stocks.db:', e);
+    const predictionsDb = openDbWritable('predictions.db');
+    if (!predictionsDb) {
+      return NextResponse.json(
+        { success: false, error: 'predictions.db unavailable' },
+        { status: 200 }
+      );
     }
+    const priceHistoryDb = openDb('stocks.db');  // WAVE-1: stocks.db (live)
 
     const results = {
       evaluated: 0,

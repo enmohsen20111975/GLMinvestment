@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+import { openDbWritable } from '@/lib/db-manager';
 import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS_SHORT } from '@/modules/publishing/lib/official-links';
 
 export const dynamic = 'force-dynamic';
@@ -164,9 +164,8 @@ export async function POST(req: NextRequest) {
     // published. Multiple rows can match (e.g., balanced + morning_bell +
     // persona variants) — they should ALL be flagged as published.
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      predDb = new Database(dbPath, { timeout: 3000 });
-      predDb.pragma('journal_mode = WAL');
+      predDb = openDbWritable('predictions.db');
+      if (!predDb) throw new Error('predictions.db unavailable');
 
       // The predictions table stores prediction_date as TEXT (ISO date or
       // "YYYY-MM-DD HH:MM:SS"). Use SQLite's date() to normalize both sides

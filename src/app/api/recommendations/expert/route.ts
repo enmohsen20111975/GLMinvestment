@@ -28,9 +28,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import { openDb } from '@/lib/db-manager';
 import { getSessionUserId } from '@/lib/auth-helper';
 
 function unauthorized() {
@@ -58,8 +56,10 @@ export async function GET(req: NextRequest) {
     const expert = searchParams.get('expert') || '';
     const symbol = (searchParams.get('symbol') || '').toUpperCase();
 
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(dbPath)) {
+    const dbPath = 'stocks.db';
+
+    let db = openDb(dbPath);
+    if (!db) {
       return NextResponse.json({
         success: true,
         source: 'sqlite_fallback_empty',
@@ -67,20 +67,6 @@ export async function GET(req: NextRequest) {
         returned: 0,
         recommendations: [],
         message: 'stocks.db غير متاح',
-      });
-    }
-
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch {
-      return NextResponse.json({
-        success: true,
-        source: 'sqlite_fallback_empty',
-        total: 0,
-        returned: 0,
-        recommendations: [],
-        message: 'تعذّر فتح stocks.db',
       });
     }
 

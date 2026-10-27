@@ -16,20 +16,15 @@ export const dynamic = "force-dynamic";
 import { randomUUID } from 'crypto';
 import { ensureInitialized, getWritableStocksDb, ensureExpertRecommendationSchema } from '@/lib/egx-db';
 import { requireAdminAsync } from '@/lib/admin-guard'; // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #1)
+import { openDb } from '@/lib/db-manager';
 
 // GET /api/expert-recommendations - جلب تحليلات الخبراء
 export async function GET(request: NextRequest) {
   try {
-    // Use better-sqlite3 directly for faster access
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    
-    let db: any = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch (dbError) {
-      console.error('[Expert Recommendations] DB open error:', dbError);
+    // Use DAL for faster access
+    const db = openDb('stocks.db');
+    if (!db) {
+      console.error('[Expert Recommendations] stocks.db unavailable');
       return NextResponse.json({
         success: true,
         data: [],

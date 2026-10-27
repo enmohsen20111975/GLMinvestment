@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRadarCache } from '@/modules/radar/lib/radar-cache';
 import { applyValidatedTargets } from '@/lib/targets-validator';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,19 +84,20 @@ export async function GET(req: NextRequest) {
     // Enrich with prediction data if available
     let predictionsMap: Record<string, any> = {};
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      const db = new Database(dbPath, { readonly: true });
-      const activePreds = db.prepare(
-        // LIFECYCLE-MIGRATION: open/active predictions now detected via
-        // `lifecycle_status IN ('proven', 'testing')` instead of the
-        // legacy `status IN ('active','ACTIVE')`. The `status` column is
-        // also SELECTed for outcome display (kept by the API response).
-        "SELECT ticker, entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date, status, lifecycle_status FROM predictions WHERE lifecycle_status IN ('proven', 'testing') ORDER BY id DESC"
-      ).all() as any[];
-      for (const p of activePreds) {
-        predictionsMap[p.ticker] = p;
+      const db = openDb('predictions.db');
+      if (db) {
+        const activePreds = db.prepare(
+          // LIFECYCLE-MIGRATION: open/active predictions now detected via
+          // `lifecycle_status IN ('proven', 'testing')` instead of the
+          // legacy `status IN ('active','ACTIVE')`. The `status` column is
+          // also SELECTed for outcome display (kept by the API response).
+          "SELECT ticker, entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date, status, lifecycle_status FROM predictions WHERE lifecycle_status IN ('proven', 'testing') ORDER BY id DESC"
+        ).all() as any[];
+        for (const p of activePreds) {
+          predictionsMap[p.ticker] = p;
+        }
+        db.close();
       }
-      db.close();
     } catch {}
 
     // Build enriched picks

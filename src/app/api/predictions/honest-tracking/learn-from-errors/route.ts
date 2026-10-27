@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+import { openDb as dalOpenDb, openDbWritable } from '@/lib/db-manager';
 import type { PredictionLesson } from '@/lib/honest-tracking/maestro';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
 
 function openDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  try {
-    return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-  }
+  // (ALPHA-DAL-WAVE4): DAL gatekeeper — ممنوع new Database().
+  const db = dalOpenDb('predictions.db');
+  if (!db) throw new Error('predictions.db not found');
+  return db;
 }
 
 /** Generic SQL row. */
@@ -140,7 +138,9 @@ function extractLessonsFromDb(): PredictionLesson[] {
     }
 
     // Save lessons to prediction_lessons table
-    const writeDb = new Database(path.join(process.cwd(), 'db', 'predictions.db'));
+    // (ALPHA-DAL-WAVE4): استخدم openDbWritable من الـ DAL — ممنوع new Database().
+    const writeDb = openDbWritable('predictions.db');
+    if (!writeDb) throw new Error('predictions.db not found for writing');
     writeDb.exec(`CREATE TABLE IF NOT EXISTS prediction_lessons (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT, category TEXT, rule TEXT, evidence TEXT,

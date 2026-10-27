@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { applyValidatedTargets } from '@/lib/targets-validator';
+import { openDb } from '@/lib/db-manager';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
@@ -55,17 +56,13 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback — predictions.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const Database = require('better-sqlite3');
-    const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(predDbPath)) {
+    const pdb = openDb('predictions.db');
+    if (!pdb) {
       return NextResponse.json(
         { success: false, error: 'predictions.db not found' },
         { status: 500 }
       );
     }
-    const pdb = new Database(predDbPath, { readonly: true });
 
     const rows: any[] = pdb
       .prepare(

@@ -18,23 +18,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { getStockBySymbol, marketCodeToArabic } from '@/lib/data-engine-db';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const fs = require('fs');
-const path = require('path');
-
-const PREDICTIONS_DB_PATH = path.join(process.cwd(), 'db', 'predictions.db');
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
-
-function dbExists(p: string): boolean {
-  try {
-    return fs.existsSync(p) && fs.statSync(p).size > 0;
-  } catch {
-    return false;
-  }
-}
 
 function safeNum(v: unknown): number {
   const n = Number(v);
@@ -202,7 +191,8 @@ export async function POST(req: NextRequest) {
     // Canonical: predictions.db stored_analyses + predictions (V40.2).
 
     // 1) predictions.db (stored_analyses + predictions)
-    if (!dbExists(PREDICTIONS_DB_PATH)) {
+    const db = openDb('predictions.db');
+    if (!db) {
       return NextResponse.json(
         {
           success: false,
@@ -212,23 +202,6 @@ export async function POST(req: NextRequest) {
           reason: 'predictions.db not found and Python maestro unavailable',
         },
         { status: 404 }
-      );
-    }
-
-    let db: any;
-    try {
-      const Database = require('better-sqlite3');
-      db = new Database(PREDICTIONS_DB_PATH, { readonly: true });
-    } catch (e) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'no analysis available',
-          ticker,
-          market,
-          reason: 'Cannot open predictions.db: ' + String(e),
-        },
-        { status: 500 }
       );
     }
 

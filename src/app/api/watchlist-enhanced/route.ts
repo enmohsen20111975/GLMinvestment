@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +18,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, items: [], total: 0, enhanced: true });
     }
 
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb = new Database(stocksDbPath, { readonly: true });
+    const stocksDb = openDb('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json({
+        success: true,
+        items: [],
+        total: 0,
+        enhanced: true,
+        message: 'stocks.db unavailable',
+      });
+    }
 
     const { clause, params } = buildUserIdClause(userIds, 'w.user_id');
 
@@ -40,15 +47,17 @@ export async function GET(request: NextRequest) {
       const deDb = getDataEngineDb();
       enrichedItems = rows.map((row: Record<string, unknown>) => {
         let stockInfo: Record<string, unknown> = { ticker: '', name: '', price: 0, change_percent: 0 };
-        try {
-          const sdb = new Database(stocksDbPath, { readonly: true });
-          const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as Record<string, unknown>;
-          if (stockRow) {
-            stockInfo.ticker = stockRow.ticker || '';
-            stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
-          }
+        const sdb = openDb('stocks.db');
+        if (sdb) {
+          try {
+            const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as Record<string, unknown>;
+            if (stockRow) {
+              stockInfo.ticker = stockRow.ticker || '';
+              stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
+            }
+          } catch {}
           sdb.close();
-        } catch {}
+        }
         if (stockInfo.ticker) {
           try {
             const deRow = deDb.prepare('SELECT name, price, change_percent FROM stocks WHERE symbol = ? COLLATE NOCASE LIMIT 1').get(stockInfo.ticker) as Record<string, unknown>;

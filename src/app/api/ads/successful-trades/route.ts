@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { applyValidatedTargets } from '@/lib/targets-validator';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 /**
  * GET /api/ads/successful-trades?limit=10
@@ -18,8 +17,13 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '10', 10), 50);
 
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDb('predictions.db');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'predictions.db unavailable', trades: [] },
+        { status: 200 }
+      );
+    }
 
     // نجاوب الصفقات الناجحة (actual_return > 0 أو hit_target = 1)
     const trades = db.prepare(`

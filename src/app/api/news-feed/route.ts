@@ -11,9 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { openDb } from '@/lib/db-manager';
 
 const CACHE_DURATION = 300;
 let newsCache: { timestamp: number; data: any[] } | null = null;
@@ -38,12 +36,12 @@ interface NewsItem {
 }
 
 function getPredictionsDbPath() {
-  return path.join(process.cwd(), 'db', 'predictions.db');
+  return 'predictions.db';
 }
 
 // news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
 function getDataEngineDbPath() {
-  return path.join(process.cwd(), 'db', 'news.db');
+  return 'news.db';
 }
 
 function safeParseJson<T>(val: any, fallback: T): T {
@@ -74,8 +72,8 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
   // 1. Fetch from news.db -> market_news (single source of truth — News Agent posts here)
   try {
     const dePath = getDataEngineDbPath();
-    if (fs.existsSync(dePath)) {
-      const db = new Database(dePath, { readonly: true, timeout: 3000 });
+    const db = openDb(dePath);
+    if (db) {
       const rows = db.prepare(`
         SELECT id, title, content, summary_ar, summary_en, source, url,
                tickers, importance, sentiment, impact_type, image_paths, ocr_text,
@@ -126,8 +124,8 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
   // 2. Fetch from predictions.db -> news_signals (local agent signal table)
   try {
     const predPath = getPredictionsDbPath();
-    if (fs.existsSync(predPath)) {
-      const db = new Database(predPath, { readonly: true, timeout: 3000 });
+    const db = openDb(predPath);
+    if (db) {
       // RESTRUCT-TEST-FIX-1: guard against missing news_signals table (schema varies).
       const hasNewsSignals = (
         db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='news_signals'").get() as

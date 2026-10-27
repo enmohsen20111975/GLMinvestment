@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile, access } from 'fs/promises';
 import path from 'path';
-import Database from 'better-sqlite3';
 import {
   getRadarDb,
   getRadarDbConfig,
   parseVolume,
   type RadarDbConfig,
 } from '@/modules/radar/lib/radar-db';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -125,13 +125,8 @@ interface PredictionRow {
 }
 
 function readLatestPrediction(ticker: string): PredictionRow | null {
-  let db: Database.Database | null = null;
-  try {
-    // Lazy require so the route never crashes if better-sqlite3 fails on this DB
-    db = new Database(PREDICTIONS_DB, { readonly: true, timeout: 1500 });
-  } catch {
-    return null;
-  }
+  const db = openDbDal('predictions.db');
+  if (!db) return null;
   try {
     // Check the predictions table exists
     const row = db
@@ -148,10 +143,10 @@ function readLatestPrediction(ticker: string): PredictionRow | null {
       )
       .get(ticker) as any;
     return pred || null;
-  } catch (e) {
+  } catch {
     return null;
   } finally {
-    try { db?.close(); } catch {}
+    try { db.close(); } catch {}
   }
 }
 
@@ -166,12 +161,8 @@ interface SignalEvent {
 }
 
 function readSignalEvents(ticker: string, sinceDate: string): SignalEvent[] {
-  let db: Database.Database | null = null;
-  try {
-    db = new Database(PREDICTIONS_DB, { readonly: true, timeout: 1500 });
-  } catch {
-    return [];
-  }
+  const db = openDbDal('predictions.db');
+  if (!db) return [];
   try {
     const row = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='radar_signal_tracking'")
@@ -194,7 +185,7 @@ function readSignalEvents(ticker: string, sinceDate: string): SignalEvent[] {
   } catch {
     return [];
   } finally {
-    try { db?.close(); } catch {}
+    try { db.close(); } catch {}
   }
 }
 

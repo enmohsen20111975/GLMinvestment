@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,65 +54,71 @@ export async function POST(request: NextRequest) {
 
     // 1. Purge stocks.db
     if (fs.existsSync(stocksDbPath)) {
-      try {
-        const db = new Database(stocksDbPath, { timeout: 5000 });
-        db.pragma('busy_timeout = 5000');
+      const db = openDbWritable('stocks.db');
+      if (db) {
+        try {
+          db.pragma('busy_timeout = 5000');
 
-        if (scope === 'all' || scope === 'cache_only') {
-          try {
-            const r = db.prepare('DELETE FROM cached_analysis').run();
-            results.cached_analysis += r.changes || 0;
-          } catch {}
+          if (scope === 'all' || scope === 'cache_only') {
+            try {
+              const r = db.prepare('DELETE FROM cached_analysis').run();
+              results.cached_analysis += r.changes || 0;
+            } catch {}
+          }
+
+          if (scope === 'all' || scope === 'predictions_only') {
+            try {
+              const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
+              results.prediction_logs += r.changes || 0;
+            } catch {}
+            try {
+              const r = db.prepare("DELETE FROM signal_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
+              results.signal_logs += r.changes || 0;
+            } catch {}
+          }
+
+          try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
+          try { db.exec('VACUUM'); } catch {}
+        } catch (err) {
+          console.warn('Error purging stocks.db:', err);
+        } finally {
+          try { db.close(); } catch { /* ignore */ }
         }
-
-        if (scope === 'all' || scope === 'predictions_only') {
-          try {
-            const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
-            results.prediction_logs += r.changes || 0;
-          } catch {}
-          try {
-            const r = db.prepare("DELETE FROM signal_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
-            results.signal_logs += r.changes || 0;
-          } catch {}
-        }
-
-        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
-        try { db.exec('VACUUM'); } catch {}
-        db.close();
-      } catch (err) {
-        console.warn('Error purging stocks.db:', err);
       }
     }
 
     // 2. Purge predictions.db
     if (fs.existsSync(predDbPath)) {
-      try {
-        const db = new Database(predDbPath, { timeout: 5000 });
-        db.pragma('busy_timeout = 5000');
+      const db = openDbWritable('predictions.db');
+      if (db) {
+        try {
+          db.pragma('busy_timeout = 5000');
 
-        if (scope === 'all' || scope === 'cache_only') {
-          try {
-            const r = db.prepare('DELETE FROM cached_analysis').run();
-            results.cached_analysis += r.changes || 0;
-          } catch {}
-          try {
-            const r = db.prepare('DELETE FROM stored_analyses').run();
-            results.stored_analyses += r.changes || 0;
-          } catch {}
+          if (scope === 'all' || scope === 'cache_only') {
+            try {
+              const r = db.prepare('DELETE FROM cached_analysis').run();
+              results.cached_analysis += r.changes || 0;
+            } catch {}
+            try {
+              const r = db.prepare('DELETE FROM stored_analyses').run();
+              results.stored_analyses += r.changes || 0;
+            } catch {}
+          }
+
+          if (scope === 'all' || scope === 'predictions_only') {
+            try {
+              const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
+              results.prediction_logs += r.changes || 0;
+            } catch {}
+          }
+
+          try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
+          try { db.exec('VACUUM'); } catch {}
+        } catch (err) {
+          console.warn('Error purging predictions.db:', err);
+        } finally {
+          try { db.close(); } catch { /* ignore */ }
         }
-
-        if (scope === 'all' || scope === 'predictions_only') {
-          try {
-            const r = db.prepare("DELETE FROM prediction_logs WHERE DATE(created_at) < DATE('now', '-7 days')").run();
-            results.prediction_logs += r.changes || 0;
-          } catch {}
-        }
-
-        try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
-        try { db.exec('VACUUM'); } catch {}
-        db.close();
-      } catch (err) {
-        console.warn('Error purging predictions.db:', err);
       }
     }
 
@@ -152,41 +158,45 @@ export async function GET(request: Request) {
 
     let latestDates: string[] = [];
 
-    if (fs.existsSync(stocksDbPath)) {
-      try {
-        const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
+    {
+      const db = openDb('stocks.db');
+      if (db) {
         try {
-          const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
-          stats.cached_analysis += c?.count || 0;
-          if (c?.latest) latestDates.push(c.latest);
+          try {
+            const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
+            stats.cached_analysis += c?.count || 0;
+            if (c?.latest) latestDates.push(c.latest);
+          } catch {}
+          try {
+            const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
+            stats.prediction_logs += c?.count || 0;
+          } catch {}
         } catch {}
-        try {
-          const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
-          stats.prediction_logs += c?.count || 0;
-        } catch {}
-        db.close();
-      } catch {}
+        try { db.close(); } catch { /* ignore */ }
+      }
     }
 
-    if (fs.existsSync(predDbPath)) {
-      try {
-        const db = new Database(predDbPath, { readonly: true, timeout: 3000 });
+    {
+      const db = openDb('predictions.db');
+      if (db) {
         try {
-          const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
-          stats.cached_analysis += c?.count || 0;
-          if (c?.latest) latestDates.push(c.latest);
+          try {
+            const c = db.prepare('SELECT COUNT(*) as count, MAX(created_at) as latest FROM cached_analysis').get() as any;
+            stats.cached_analysis += c?.count || 0;
+            if (c?.latest) latestDates.push(c.latest);
+          } catch {}
+          try {
+            const c = db.prepare('SELECT COUNT(*) as count, MAX(updated_at) as latest FROM stored_analyses').get() as any;
+            stats.stored_analyses += c?.count || 0;
+            if (c?.latest) latestDates.push(c.latest);
+          } catch {}
+          try {
+            const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
+            stats.prediction_logs += c?.count || 0;
+          } catch {}
         } catch {}
-        try {
-          const c = db.prepare('SELECT COUNT(*) as count, MAX(updated_at) as latest FROM stored_analyses').get() as any;
-          stats.stored_analyses += c?.count || 0;
-          if (c?.latest) latestDates.push(c.latest);
-        } catch {}
-        try {
-          const c = db.prepare('SELECT COUNT(*) as count FROM prediction_logs').get() as any;
-          stats.prediction_logs += c?.count || 0;
-        } catch {}
-        db.close();
-      } catch {}
+        try { db.close(); } catch { /* ignore */ }
+      }
     }
 
     latestDates.sort();

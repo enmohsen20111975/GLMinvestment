@@ -16,14 +16,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import Database from 'better-sqlite3';
-import path from 'path';
 import { parse } from 'csv-parse/sync';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 const PROJECT_ROOT = process.cwd();
-const DB_PATH = path.join(PROJECT_ROOT, 'db', 'stocks.db');
+const DB_PATH = 'stocks.db';
 
 function detectSymbol(filename: string): string {
   const name = filename.toLowerCase();
@@ -115,8 +114,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
+    const db = openDbWritable(DB_PATH);
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
 
     db.exec(`
       CREATE TABLE IF NOT EXISTS market_indices_history (
@@ -223,7 +227,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const db = new Database(DB_PATH, { readonly: true });
+    const db = openDb(DB_PATH);
+    if (!db) {
+      return NextResponse.json({
+        success: true,
+        indices: [],
+        message: 'stocks.db unavailable',
+      });
+    }
 
     try {
       const stats = db

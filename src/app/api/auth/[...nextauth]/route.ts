@@ -290,10 +290,9 @@ export const authOptions: NextAuthOptions = {
             const googleNumericId = account?.providerAccountId;
             if (googleNumericId && googleNumericId !== dbUser.id) {
               try {
-                const path = require('path');
-                const Database = require('better-sqlite3');
-                const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-                const stocksDb = new Database(stocksDbPath, { readonly: false });
+                const { openDbWritable } = await import('@/lib/db-manager');
+                const stocksDb = openDbWritable('stocks.db');
+                if (!stocksDb) throw new Error('stocks.db unavailable');
 
                 // تحديث portfolio_assets
                 try {

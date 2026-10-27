@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/existsSync with
-// async fs/promises equivalents in loadTracking so the maker-radar stock GET
-// handler never blocks the event loop.
 import { readFile, access } from 'fs/promises';
 import path from 'path';
 import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/modules/radar/lib/radar-db';
-// FIX-P4-TARGETS: validator for prediction enrichment (if a prediction exists
-// for this ticker in predictions.db, we validate it before returning).
 import { applyValidatedTargets } from '@/lib/targets-validator';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,18 +139,8 @@ export async function GET(req: NextRequest) {
     // لو مفيش predictions.db أو مفيش توقع، الـ field بـ يكون null.
     let predictionEnrichment: any = null;
     try {
-      const fs = await import('fs/promises');
-      const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      let predDbExists = true;
-      try {
-        await fs.access(predDbPath);
-      } catch {
-        // predictions.db غير موجود — نـ skip الـ enrichment بصمت.
-        predDbExists = false;
-      }
-      if (predDbExists) {
-        const Database = (await import('better-sqlite3')).default;
-        const pdb = new Database(predDbPath, { readonly: true, timeout: 2000 });
+      const pdb = openDbDal('predictions.db');
+      if (pdb) {
         try {
           const pred = pdb.prepare(
             `SELECT ticker, signal, signal_type, prediction_date, entry_price,
@@ -216,7 +202,7 @@ export async function GET(req: NextRequest) {
             };
           }
         } finally {
-          pdb.close();
+          try { pdb.close(); } catch { /* ignore */ }
         }
       }
     } catch (predErr) {

@@ -26,22 +26,19 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const fs = require('fs');
-const path = require('path');
+import { openDb as openDbDal } from '@/lib/db-manager';
 
-const STOCKS_DB_PATH = path.join(process.cwd(), 'db', 'stocks.db');
+const STOCKS_DB_PATH = 'stocks.db';
 
 function dbExists(p: string): boolean {
+  // openDb returns null if file doesn't exist — so just probe it.
   try {
-    return fs.existsSync(p) && fs.statSync(p).size > 0;
+    const db = openDbDal(p);
+    if (db) { db.close(); return true; }
+    return false;
   } catch {
     return false;
   }
-}
-
-function openDb(p: string): any {
-  const Database = require('better-sqlite3');
-  return new Database(p, { readonly: true });
 }
 
 function safeNum(v: unknown): number {
@@ -138,7 +135,21 @@ export async function GET(req: NextRequest) {
     const market = ['EGX', 'TADAWUL', 'KSE', 'QSE'].includes(marketParam) ? marketParam : 'EGX';
     const days = Math.max(1, Math.min(180, parseInt(url.searchParams.get('days') || '30', 10) || 30));
 
-    const db = openDb(STOCKS_DB_PATH);
+    const db = openDbDal(STOCKS_DB_PATH);
+    if (!db) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'stocks.db unavailable',
+          sector_flow: [],
+          top_inflow_stocks: [],
+          top_outflow_stocks: [],
+          investor_type_estimate: null,
+          summary: null,
+        },
+        { status: 200 }
+      );
+    }
 
     // 1) tickers + metadata للسوق ده
     const stockRows = db.prepare(`

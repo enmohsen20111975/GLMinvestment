@@ -12,6 +12,7 @@ import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = "force-dynamic";
 
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const revalidate = 30; // Cache for 30s
 
@@ -36,10 +37,15 @@ export async function GET(request: NextRequest) {
     }
 
     // استخدم stocks.db للـ watchlist entries
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb = new Database(stocksDbPath, { readonly: true });
+    const stocksDb = openDb('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json({
+        success: true,
+        items: [],
+        total: 0,
+        message: 'stocks.db unavailable',
+      });
+    }
 
     // بناء WHERE clause لكل الـ user IDs
     const { clause, params } = buildUserIdClause(userIds, 'w.user_id');
@@ -87,15 +93,17 @@ export async function GET(request: NextRequest) {
         // محاولة جلب الـ ticker من stocks.db عن طريق stock_id
         // لو مفيش، نستخدم الـ stock_id كـ ticker
         try {
-          const stocksDb2 = new Database(stocksDbPath, { readonly: true });
-          const stockRow = stocksDb2.prepare(
-            'SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1'
-          ).get(row.stock_id) as Record<string, unknown>;
-          if (stockRow) {
-            stockInfo.ticker = stockRow.ticker || '';
-            stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
+          const stocksDb2 = openDb('stocks.db');
+          if (stocksDb2) {
+            const stockRow = stocksDb2.prepare(
+              'SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1'
+            ).get(row.stock_id) as Record<string, unknown>;
+            if (stockRow) {
+              stockInfo.ticker = stockRow.ticker || '';
+              stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
+            }
+            stocksDb2.close();
           }
-          stocksDb2.close();
         } catch {}
 
         // جلب السعر من data_engine.db
@@ -195,10 +203,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb = new Database(stocksDbPath, { readonly: false });
+    const stocksDb = openDbWritable('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json(
+        { success: false, error: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
 
     // إيجاد stock_id من ticker
     let stockId: number | null = null;
@@ -267,10 +278,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb = new Database(stocksDbPath, { readonly: false });
+    const stocksDb = openDbWritable('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json(
+        { success: false, error: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
 
     stocksDb.prepare(
       'DELETE FROM user_stock_watchlists WHERE id = ? AND user_id = ?'

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 /**
  * GET /api/maker-radar/market-intelligence?ticker=COMI
@@ -25,9 +24,9 @@ export async function GET(req: NextRequest) {
 
     // ═══ 1. INTRADAY ═══
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'intraday.db');
-      const db = new Database(dbPath, { readonly: true });
-      const latest = db.prepare('SELECT MAX(DATE(timestamp)) as d FROM stock_intraday WHERE ticker = ?').get(ticker);
+      const db = openDb('intraday.db');
+      if (db) {
+        const latest = db.prepare('SELECT MAX(DATE(timestamp)) as d FROM stock_intraday WHERE ticker = ?').get(ticker);
 
       if (latest?.d) {
         const date = latest.d;
@@ -91,13 +90,14 @@ export async function GET(req: NextRequest) {
           };
         }
       }
+      }
       db.close();
     } catch { result.sections.intraday = { error: 'intraday.db not available' }; }
 
     // ═══ 2. FUNDAMENTALS ═══
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-      const db = new Database(dbPath, { readonly: true });
+      const db = openDb('data_engine.db');
+      if (!db) throw new Error('data_engine.db unavailable');
 
       // البحث بـ LIKE لأن الرموز في data_engine.db بتكون زي "COMIالبنك" (ticker + اسم عربي)
       const likePattern = `%${ticker}%`;
@@ -142,8 +142,8 @@ export async function GET(req: NextRequest) {
 
     // ═══ 4. PRICE HISTORY ═══
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
-      const db = new Database(dbPath, { readonly: true });
+      const db = openDb('stocks.db');  // WAVE-1: stocks.db (live)
+      if (!db) throw new Error('stocks.db unavailable');
       const last30 = db.prepare('SELECT price_date as date, close_price, volume FROM stock_daily_prices WHERE ticker = ? AND close_price > 0 ORDER BY price_date DESC LIMIT 30').all(ticker);
 
       if (last30.length > 0) {

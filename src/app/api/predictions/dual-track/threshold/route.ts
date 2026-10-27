@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type Database from 'better-sqlite3';
+import { openDb as openDbDal, openDbWritable as openDbWritableDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -43,18 +44,20 @@ interface ThresholdResult {
   p90?: number;
 }
 
-function openDb(path: string, readonly = true): Database.Database {
-  const Database = require('better-sqlite3');
-  return new Database(path, { readonly }) as Database.Database;
+function openDb(absolutePath: string, readonly = true): Database.Database {
+  // DAL takes a bare filename (e.g. 'predictions.db'). Extract the basename
+  // from the legacy absolute path and delegate.
+  const file = absolutePath.split('/').pop()!.split('\\').pop()!;
+  const db = readonly ? openDbDal(file) : openDbWritableDal(file);
+  if (!db) throw new Error(`${file} unavailable`);
+  return db;
 }
 
 function dbExists(path: string): boolean {
-  const fs = require('fs');
-  try {
-    return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
-    return false;
-  }
+  const file = path.split('/').pop()!.split('\\').pop()!;
+  const db = openDbDal(file);
+  if (db) { db.close(); return true; }
+  return false;
 }
 
 function percentile(sorted: number[], p: number): number {

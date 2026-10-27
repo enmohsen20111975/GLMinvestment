@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { readExitRadarCache } from '@/modules/radar/lib/radar-cache';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,20 +65,8 @@ export async function GET(req: NextRequest) {
     // concurrent writer can momentarily lock. Degrading the enrichment is
     // better than a 500, so these are guarded (unlike the holdings/watchlist
     // reads below, whose failure is a real bug and must surface).
-    if (existsSync(stocksDbPath)) {
-      try {
-        stocksDb = new Database(stocksDbPath, { readonly: true });
-      } catch (e) {
-        console.error('[portfolio:unified-watch] stocks.db open failed:', e);
-      }
-    }
-    if (existsSync(predictionsDbPath)) {
-      try {
-        predDb = new Database(predictionsDbPath, { readonly: true });
-      } catch (e) {
-        console.error('[portfolio:unified-watch] predictions.db open failed:', e);
-      }
-    }
+    stocksDb = openDb('stocks.db');
+    predDb = openDb('predictions.db');
 
     // ─── FOCUS-5-TASKS Task 2: Load exit-radar cache ONCE, build a ticker→entry
     // map so we can attach exit_radar_signal to each portfolio stock in O(1).

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRadarCache } from '@/modules/radar/lib/radar-cache';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +12,20 @@ export async function GET(req: NextRequest) {
     const data = cache.data;
     const allStocks = [...(data.quiet_list || []), ...(data.pre_surge_list || []), ...(data.explosive_list || []), ...(data.early_break_list || [])];
 
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
     let sectorMap: Record<string, any[]> = {};
     try {
-      const db = new Database(dbPath, { readonly: true });
-      for (const s of allStocks) {
-        const stock = db.prepare("SELECT sector, name_ar FROM stocks WHERE ticker = ?").get(s.ticker) as any;
-        const sector = stock?.sector || 'غير مُصنّف';
-        if (!sectorMap[sector]) sectorMap[sector] = [];
-        sectorMap[sector].push({ ...s, name_ar: stock?.name_ar, sector });
+      const db = openDb('stocks.db');
+      if (db) {
+        for (const s of allStocks) {
+          const stock = db.prepare("SELECT sector, name_ar FROM stocks WHERE ticker = ?").get(s.ticker) as any;
+          const sector = stock?.sector || 'غير مُصنّف';
+          if (!sectorMap[sector]) sectorMap[sector] = [];
+          sectorMap[sector].push({ ...s, name_ar: stock?.name_ar, sector });
+        }
+        db.close();
+      } else {
+        sectorMap = { 'غير مُصنّف': allStocks };
       }
-      db.close();
     } catch {
       sectorMap = { 'غير مُصنّف': allStocks };
     }

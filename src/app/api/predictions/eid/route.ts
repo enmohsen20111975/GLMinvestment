@@ -11,9 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import { existsSync } from 'fs';
+import type Database from 'better-sqlite3';
+import { openDb as openDbDal } from '@/lib/db-manager';
 import { getUnifiedStockData } from '@/lib/unified-stock-data';
 
 // Task FINALIZE-UNIFICATION (Rule 20 + Rule 27 + Rule 73):
@@ -32,7 +31,7 @@ import { getUnifiedStockData } from '@/lib/unified-stock-data';
 
 export const revalidate = 30; // Cache for 30s
 
-const DATA_ENGINE_DB = path.join(process.cwd(), 'db', 'data_engine.db');
+const DATA_ENGINE_DB = 'data_engine.db';
 
 // Fear & Greed Index (real external API)
 async function getFearGreedIndex(): Promise<{ value: number; classification: string } | null> {
@@ -64,10 +63,9 @@ async function getFearGreedIndex(): Promise<{ value: number; classification: str
 
 // Crypto price from data_engine.db crypto_prices table (real, fresh)
 function getCryptoPriceFromDb(symbol: string): number | null {
-  if (!existsSync(DATA_ENGINE_DB)) return null;
-  let db: Database.Database | null = null;
+  let db: Database.Database | null = openDbDal(DATA_ENGINE_DB);
+  if (!db) return null;
   try {
-    db = new Database(DATA_ENGINE_DB, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
     const row = db
       .prepare('SELECT price_usd FROM crypto_prices WHERE UPPER(symbol) = UPPER(?) ORDER BY timestamp DESC LIMIT 1')
@@ -82,10 +80,9 @@ function getCryptoPriceFromDb(symbol: string): number | null {
 
 // Gold price from data_engine.db gold_prices table (real)
 function getGoldPriceFromDb(): number | null {
-  if (!existsSync(DATA_ENGINE_DB)) return null;
-  let db: Database.Database | null = null;
+  let db: Database.Database | null = openDbDal(DATA_ENGINE_DB);
+  if (!db) return null;
   try {
-    db = new Database(DATA_ENGINE_DB, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
     // price_per_ounce is the international spot price (USD)
     const row = db
@@ -103,10 +100,9 @@ function getGoldPriceFromDb(): number | null {
 
 // EGX index / COMI stock price from data_engine.db stocks table (real)
 function getEgxPriceFromDb(symbol: string): number | null {
-  if (!existsSync(DATA_ENGINE_DB)) return null;
-  let db: Database.Database | null = null;
+  let db: Database.Database | null = openDbDal(DATA_ENGINE_DB);
+  if (!db) return null;
   try {
-    db = new Database(DATA_ENGINE_DB, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
     const row = db
       .prepare("SELECT price FROM stocks WHERE UPPER(symbol) = UPPER(?) AND market = 'السعودية' OR UPPER(symbol) = UPPER(?) ORDER BY created_at DESC LIMIT 1")
@@ -123,11 +119,9 @@ function getEgxPriceFromDb(symbol: string): number | null {
 
 // EGX stock price from price_history.db (most recent close, real data)
 function getEgxStockPriceFromHistory(ticker: string): number | null {
-  const phPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
-  if (!existsSync(phPath)) return null;
-  let db: Database.Database | null = null;
+  let db: Database.Database | null = openDbDal('stocks.db');  // WAVE-1: stocks.db (live)
+  if (!db) return null;
   try {
-    db = new Database(phPath, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
     const row = db
       .prepare('SELECT close_price FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 1')

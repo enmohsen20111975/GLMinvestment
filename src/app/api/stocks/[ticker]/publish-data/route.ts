@@ -41,8 +41,8 @@ import {
   computeTurnover,
 } from '@/modules/radar/lib/radar-db';
 import Database from 'better-sqlite3';
-import { existsSync } from 'fs';
-import path from 'path';
+// (ALPHA-DAL-WAVE4): استخدم openDb من الـ DAL — ممنوع new Database().
+import { openDb as dalOpenDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -137,11 +137,11 @@ interface PredictionRow {
 }
 
 function fetchLatestPrediction(ticker: string): PredictionRow | null {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  if (!existsSync(dbPath)) return null;
+  // (ALPHA-DAL-WAVE4): استخدم dalOpenDb من الـ DAL — ممنوع new Database().
   let db: Database.Database | null = null;
   try {
-    db = new Database(dbPath, { readonly: true, timeout: 3000 });
+    db = dalOpenDb('predictions.db');
+    if (!db) return null;
     const row = db
       .prepare(
         `SELECT ticker, signal, signal_type, signal_ar, prediction_date,

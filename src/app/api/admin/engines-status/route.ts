@@ -15,21 +15,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
 // P0-14-ASYNC fix (2026-09-27): replaced sync fs.existsSync/fs.readFileSync with
 // async fs/promises equivalents in loadJsonFile so the engines-status handlers
 // never block the event loop on JSON status file reads.
 import { access, readFile } from 'fs/promises';
 import path from 'path';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 // ============== Config ==============
 const DB_DIR = path.join(process.cwd(), 'db');
-const STOCKS_DB = path.join(DB_DIR, 'stocks.db');
-const PREDICTIONS_DB = path.join(DB_DIR, 'predictions.db');
-const DATA_ENGINE_DB = path.join(DB_DIR, 'data_engine.db');
+const STOCKS_DB = 'stocks.db';
+const PREDICTIONS_DB = 'predictions.db';
+const DATA_ENGINE_DB = 'data_engine.db';
 const ENGINE_STATUS_FILE = path.join(DB_DIR, 'engine_status.json');
 const AUTO_REFRESH_STATUS_FILE = path.join(DB_DIR, 'auto_refresh_status.json');
 
@@ -54,27 +54,31 @@ async function fetchWithTimeout(url: string, timeoutMs = 3000): Promise<{ ok: bo
     }
 }
 
-function safeDbQuery<T>(dbPath: string, query: string, params: any[] = []): T | null {
+function safeDbQuery<T>(dbFile: string, query: string, params: any[] = []): T | null {
+    const db = openDb(dbFile);
+    if (!db) return null;
     try {
-        const db = new Database(dbPath, { readonly: true, timeout: 3000 });
         db.pragma('busy_timeout = 3000');
         const result = db.prepare(query).get(...params) as T;
-        db.close();
         return result;
     } catch {
         return null;
+    } finally {
+        try { db.close(); } catch { /* ignore */ }
     }
 }
 
-function safeDbQueryAll<T>(dbPath: string, query: string, params: any[] = []): T[] {
+function safeDbQueryAll<T>(dbFile: string, query: string, params: any[] = []): T[] {
+    const db = openDb(dbFile);
+    if (!db) return [];
     try {
-        const db = new Database(dbPath, { readonly: true, timeout: 3000 });
         db.pragma('busy_timeout = 3000');
         const result = db.prepare(query).all(...params) as T[];
-        db.close();
         return result;
     } catch {
         return [];
+    } finally {
+        try { db.close(); } catch { /* ignore */ }
     }
 }
 

@@ -17,6 +17,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+import { openDb } from '@/lib/db-manager';
+
 const PY = process.env.EGXPY_SERVICE_URL || process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
 
 const MARKET_MAP: Record<string, string> = {
@@ -91,19 +93,15 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback — read from predictions.db + stocks.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-
-    const predictionsDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(predictionsDbPath)) {
+    const predictionsDbPath = `${process.cwd()}/db/predictions.db`;
+    void predictionsDbPath; // legacy reference; openDb resolves the file.
+    const db = openDb('predictions.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'predictions.db not found' },
         { status: 500 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(predictionsDbPath, { readonly: true });
 
     const marketRaw = (url.searchParams.get('market') || 'EGX').toUpperCase();
     const market = MARKET_MAP[marketRaw] || 'EGX';
@@ -141,21 +139,23 @@ export async function GET(req: NextRequest) {
 
     // Join current_price + name_ar + sector from stocks.db
     let stocksLookup: Map<string, { current_price: number; sector: string; name_ar: string }> = new Map();
-    if (fs.existsSync(stocksDbPath)) {
-      try {
-        const stocksDb = new Database(stocksDbPath, { readonly: true });
-        const stockRows = stocksDb
-          .prepare(`SELECT ticker, current_price, sector, name_ar FROM stocks`)
-          .all() as Array<Record<string, unknown>>;
-        for (const r of stockRows) {
-          stocksLookup.set(String(r.ticker), {
-            current_price: Number(r.current_price || 0),
-            sector: String(r.sector || ''),
-            name_ar: String(r.name_ar || r.ticker || ''),
-          });
-        }
+    {
+      const stocksDb = openDb('stocks.db');
+      if (stocksDb) {
+        try {
+          const stockRows = stocksDb
+            .prepare(`SELECT ticker, current_price, sector, name_ar FROM stocks`)
+            .all() as Array<Record<string, unknown>>;
+          for (const r of stockRows) {
+            stocksLookup.set(String(r.ticker), {
+              current_price: Number(r.current_price || 0),
+              sector: String(r.sector || ''),
+              name_ar: String(r.name_ar || r.ticker || ''),
+            });
+          }
+        } catch {}
         stocksDb.close();
-      } catch {}
+      }
     }
 
     const positions: ActivePosition[] = rows.map((r) => {

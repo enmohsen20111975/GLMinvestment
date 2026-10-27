@@ -10,10 +10,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaywallUser, applyPaywallToChartAnalysis } from '@/lib/paywall';
-import Database from 'better-sqlite3';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { openDb } from '@/lib/db-manager';
 
 const PYTHON_PORT = process.env.PYTHON_PORT || '8010';
 export const dynamic = 'force-dynamic';
@@ -35,10 +33,9 @@ function _toUnix(raw: unknown): number {
 }
 
 function readStockOHLC(ticker: string, limit: number): Record<string, unknown>[] {
-  const stocksDbPath = join(process.cwd(), 'db', 'stocks.db');
-  if (!existsSync(stocksDbPath)) return [];
+  const db = openDb('stocks.db');
+  if (!db) return [];
   try {
-    const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
     const rows = db
       .prepare(
         `SELECT price_date as date,

@@ -7,7 +7,7 @@ import { access } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import Database from 'better-sqlite3';
+import { openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -40,12 +40,15 @@ export async function POST(req: NextRequest) {
 
     // Clear predictions if requested
     if (clearExisting && await pathExists(predsDbPath)) {
-      try {
-        const db = new Database(predsDbPath);
-        db.prepare('DELETE FROM predictions').run();
-        db.close();
-      } catch {
-        // Table might not exist — ignore
+      const db = openDbWritable('predictions.db');
+      if (db) {
+        try {
+          db.prepare('DELETE FROM predictions').run();
+        } catch {
+          // Table might not exist — ignore
+        } finally {
+          try { db.close(); } catch { /* ignore */ }
+        }
       }
     }
 

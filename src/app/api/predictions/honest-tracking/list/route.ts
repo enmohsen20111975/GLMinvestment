@@ -8,8 +8,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+// (ALPHA-DAL-WAVE4): استخدم openDbWritable من الـ DAL — ممنوع new Database().
+import { openDbWritable } from '@/lib/db-manager';
 import { ensureSchema } from '@/lib/honest-tracking/maestro';
 import { applyProtectionFilter, isProtectionActive, getProtectionDescription, getProtectionSqlFilter } from '@/lib/protection/display-protection';
 import { normalizeEgxSymbol } from '@/lib/stock-names';
@@ -20,18 +21,12 @@ import { normalizeMarket, buildMarketFilter, NO_PREDICTIONS_MESSAGE_AR, INTERNAL
 export const dynamic = 'force-dynamic';
 
 function openDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  // HONEST-V2: open writable so we can ensure the schema (predictions table
-  // + exit_reason column) exists. The route itself only reads, but creating
-  // the table on first call avoids a 500 error when predictions.db is empty.
-  try {
-    const db = new Database(dbPath, { timeout: 3000 });
-    ensureSchema(db);
-    return db;
-  } catch {
-    // Fallback: open immutable (read-only) if writable open fails
-    return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-  }
+  // (ALPHA-DAL-WAVE4): DAL gatekeeper — ممنوع new Database(). الـ DAL بيـ handle
+  // busy_timeout + WAL. ensureSchema بيـ create predictions table لو مش موجودة.
+  const db = openDbWritable('predictions.db');
+  if (!db) throw new Error('predictions.db not found');
+  ensureSchema(db);
+  return db;
 }
 
 function inferMarket(ticker: string, marketCol: string | null): string {
