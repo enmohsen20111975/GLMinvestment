@@ -10382,3 +10382,248 @@ Stage Summary:
   * ممنوع تغيير أسماء حقول الاستجابة — response schema محفوظ.
   * try/catch + 200 graceful (مش 500) لو stock/DB not found.
 - Git state: branch `alpha/dal-wave3-final-sanitization`, unstaged (awaiting commit + push).
+
+---
+Task ID: DOCS-3
+Agent: Bravo V2 (Sub Agent — Docs Consolidation)
+Task: كتابة ملف توثيق للشاشات والمكونات مبني على الكود الفعلي.
+
+Work Log:
+- Step 0 (Branch + Context): قرأت آخر 100 سطر من worklog.md عشان أفهم سياق الـ DAL waves (1+2+3) اللي عملها ألفا. الـ DbManager namespace جاهز وكل الـ routes بتستعمله.
+
+- Step 1 (Exploration):
+  * LS src/modules/ → لقيت 19 module بـ 351 tsx component (مطابق للتكليف).
+  * Read src/app/page.tsx (1,200+ LOC) → فهمت الـ hash routes + الـ switch الكامل (40+ case) + UI-Mirror Protocol للكريبتو.
+  * Read src/lib/db-manager.ts (1,000+ LOC) → فهمت الـ DAL namespace + 5 دوال رئيسية (getLiveSparkline, getIncubatorData, getUnifiedLogos, getActivePredictions, getCompanyFundamentals) + getMarketTabData.
+  * Read src/lib/logo-helper.ts → فهمت الـ ROOT FIX (logo_url + logoUrl casing mismatch).
+  * Read src/lib/stock-icon.ts → فهمت أولوية عرض الأيقونات (API → local SVG → TradingView CDN → fallback badge).
+  * Read src/lib/canonical-rsi.ts → فهمت computeRSI (Wilder) + classifyRSIState + computeRSISeries.
+  * Read src/lib/canonical-signal.ts → فهمت classifySignal + classifyAccumulation + classifyMoneyFlow + classifyStockPhase + Consistency Gate + Falling Knife Guard.
+  * Read src/app/api/stocks/sparkline/route.ts → فهمت إنه thin wrapper لـ DbManager.getLiveSparkline.
+  * Read IncubatorSection.tsx → فهمت الـ 3-zone layout (status bar + candidate list + analysis panel) + auto-advance + real sparkline.
+  * Read CompanyFundamentalsCard.tsx → فهمت الـ 8 تبويبات المالية (valuation/profitability/balance_sheet/income_statement/cash_flow/dividends/performance/technical_analysis).
+  * Read PersonaTableView.tsx → فهمت الـ 3 شخصيات (conservative/balanced/gambler) + DEDUP + ANOMALY FILTER (10%) + Stage filter chips.
+  * Read ExitSignalBadge.tsx → فهمت الـ 3 حالات (EXIT/TAKE_PROFIT/CAUTION) + إنه معزول ومش مفعّل (Alpha scope).
+  * Read src/lib/persona-config.ts (grep) → فهمت mapping: conservative→investor, balanced→gambler (approximation).
+  * Read src/lib/valid-views.ts → فهمت VALID_VIEWS + CRYPTO_VIEW_REDIRECTS + LEGACY_VIEW_REDIRECTS.
+  * Read DashboardView.tsx + IndexDetailView.tsx + PersonaTab.tsx + ExitRadarTab.tsx → أكدت تفاصيل الـ components.
+
+- Step 2 (Documentation writing):
+  * كتبت Documentation/01-SCREENS-AND-COMPONENTS.md (686 سطر).
+  * الأقسام: (1) إحصائيات + توزيع المكونات، (2) الشاشة الرئيسية + hash routes، (3) DAL layer، (4) logo-helper + StockIcon، (5) الـ modules الرئيسية (radar/market-analysis/predictions/portfolio/stock-analysis/dashboard/admin + مختصر للباقي)، (6) deep dive على IncubatorSection + CompanyFundamentalsCard + PersonaTableView + ExitSignalBadge، (7) canonical libraries، (8) القواعد الحاكمة، (9) UI-Mirror Protocol، (10) ملاحظات للمطوّرين، (11) Index سريع.
+  * لكل module مهم: المكونات الرئيسية + الوصف + الـ API اللي بـ يستهلكه.
+  * الـ DAL: DbManager namespace + 5 دوال رئيسية + الأولويات + sparkline route.
+  * الـ canonical libs: computeRSI (Wilder) + classifySignal + classifyAccumulation + classifyMoneyFlow + Consistency Gate + Falling Knife Guard.
+  * القواعد: لا حسابات مالية في الـ frontend (Rule 27 + 67 + 20).
+
+Stage Summary:
+- File created (1):
+  * Documentation/01-SCREENS-AND-COMPONENTS.md (686 سطر) — توثيق شامل لكل الشاشات والمكونات.
+- Files read (12): page.tsx, db-manager.ts, logo-helper.ts, stock-icon.ts, canonical-rsi.ts, canonical-signal.ts, sparkline/route.ts, IncubatorSection.tsx, CompanyFundamentalsCard.tsx, PersonaTableView.tsx, ExitSignalBadge.tsx, valid-views.ts + LS src/modules/*.
+- المحظورات الالتزام:
+  * ما عدّلتش أي ملفات أخرى (Write tool على ملف واحد بس).
+  * كل الوصف مبني على الكود الفعلي (مش copy-paste من توثيق قديم).
+  * الـ token budget التزام: 686 سطر في ملف واحد.
+- Git state: branch `bravo/docs-consolidation`, unstaged (awaiting commit + push).
+
+---
+Task ID: DOCS-1
+Agent: برافو V2 (subagent — Docs Consolidation)
+Task: كتابة دستور محدّث + قاموس API مبنيّين على الكود الفعلي.
+
+Work Log:
+- Step 0 (Branch): اتشيك على `bravo/docs-consolidation` (كان موجود بالفعل، clean working tree، على commit ec41f61).
+
+- Step 1 (Context read):
+  * قرأت آخر 100 سطر من worklog.md (سياق WAVE 1-3 DAL purge).
+  * قرأت `Documentation/00-CONSTITUTION.md` (الدستور القديم — 8 ملفات structure، 7 rules).
+  * قرأت `Agent.md` (بوابة الدخول — كانت بترجع لـ 76 قاعدة + structure قديم).
+  * فحصت `src/app/api/` بـ LS + عدّ routes: **466 route.ts** مؤكّد.
+  * فحصت `src/lib/db-manager.ts`: `DbManager` namespace object (13 functions) موجود في line 1010.
+  * فحصت `Documentation/02-DATABASES-AND-DATA.md`: stocks.db هو الـ synced tier + price_history.db معزول.
+
+- Step 2 (File 1 — Documentation/00-CONSTITUTION.md):
+  * كتبت دستور جديد 256 سطر يتضمن:
+    - Header مع المالك (`enmohsen20111975`) + المستودع + الإنتاج + آخر تحديث (2026-10-27) + commit مرجعي.
+    - Section 1: هيكل التوثيق الجديد (5 ملفات فقط: 00-CONSTITUTION, 01-SCREENS-AND-COMPONENTS, 02-HOW-IT-THINKS, 02-API-DICTIONARY, 02-DATABASES-AND-DATA). ملاحظة إن باقي الملفات في archive/ = مراجع تاريخية.
+    - Section 2: القواعد الأساسية (8 rules: NO-FAKE-DATA, PYTHON=BRAIN, SINGLE-DISPLAY-SOURCE, NO-DUPLICATION, CLIENT-FACING-STYLE, GIT-PUSH-DISCIPLINE, NO-DESTRUCTIVE-OPERATIONS, NO-SILENT-FAILURES).
+    - Section 3: قواعد البيانات (Rule 10 SINGLE-PRICE-SOURCE لـ stocks.db.stock_daily_prices، Rule 11 PRICE-HISTORY-DB-ISOLATED، Rule 12 DB-OWNERSHIP، Rule 13 DB-LIST).
+    - Section 4: قواعد DAL (Rule 20 DBMANAGER-IS-THE-ONLY-GATE بـ quote الـ owner directive، Rule 21 NO-NEW-DATABASE-IMPORT، Rule 22 GRACEFUL-NULL، Rule 23 NAMED-EXPORTS-COMPAT).
+    - Section 5: قواعد الفريق (Owner + Alpha + Bravo + Gemini + Rule 30 ONE-BRANCH-PER-TASK + Rule 31 NO-COMMIT-ON-MAIN).
+    - Section 6: قواعد Git (Rule 40-43: startup sequence, commit format, push after commit, rebase before merge).
+    - Section 7: قواعد الأمان (Rule 50 NO-FORCE-PUSH-ON-MAIN، Rule 51 NO-DEPLOY-WITHOUT-APPROVAL، Rule 52 PROTECTED-FILES، Rule 53 NO-RESET-HARD).
+    - Section 8: الملفات المحمية (Agent.md, الدستور نفسه, 02-DATABASES-AND-DATA, 02-API-DICTIONARY).
+    - Section 9: معايير القبول (85% target).
+    - Section 10: المراجع.
+
+- Step 3 (File 2 — Documentation/02-API-DICTIONARY.md):
+  * كتبت قاموس جديد 503 سطر مبني على فحص فعلي لـ src/app/api/.
+  * Section 1 (Overview): 466 route، Next.js 16 + Bun، DbManager كبوابة، Python backend كـ brain، price_history.db معزول. المبدأ المعماري: thin proxy OR direct read via DbManager.
+  * Section 2: جدول توزيع الـ routes حسب القسم (أعلى 20 قسم + باقي). المجموع = 466.
+  * Sections 3-11: تفصيل الأقسام الرئيسية مع جدول لكل endpoint (Method + Endpoint + الوصف + Source DB):
+    - auth (8 routes), predictions (29), stocks (20), market (30), portfolio (15), maker-radar (17), admin (88 — مقسّم لـ 6 أقسام فرعية), mobile (19).
+    - باقي الأقسام: finance (17), crypto (14), v2 (14), subscription (12), data-engine (9), radar (5), alerts (5), recommendations (5), paper-trading-v2 (6), ai (3), + قائمة الـ 1-4 route sections.
+  * Section 12: DAL Gateway — جدول بكل دوال `DbManager` الـ 13 + القاعدة (لو محتاج DB access جديد → أضفه في db-manager.ts مش في الـ route).
+  * Section 13: price_history.db isolation — جدول موجات WAVE 1-3 (المتأثرة + الحالة) + المصدر الأساسي (stock_daily_prices) + الـ fallback المسموح (egksco_price_history).
+  * Section 14: Auth & Caching (NextAuth + admin auth + bot linking + subscription gate + AnalysisCache + ApiResponseCache).
+  * Section 15: See Also (المراجع).
+
+- Step 4 (Verification):
+  * `wc -l` → 00-CONSTITUTION.md = 256 سطر، 02-API-DICTIONARY.md = 503 سطر.
+  * `find src/app/api -name "route.ts" | wc -l` → 466 (مطابق للرقم المذكور في القاموس).
+  * مفيش تعديل في أي ملفات تانية (الـ task directive: "اكتب الملفين مباشرة. لا تعدل أي ملفات أخرى").
+
+Stage Summary:
+- Files written (2):
+  * `Documentation/00-CONSTITUTION.md` — دستور محدّث (256 سطر) — 5 ملفات structure + 8 core rules + 4 DB rules + 4 DAL rules + 4 team rules + 4 git rules + 4 safety rules.
+  * `Documentation/02-API-DICTIONARY.md` — قاموس API (503 سطر) — 466 route موثّق + 11 قسم رئيسي مفصّل + DbManager table + price_history isolation map.
+- المحظورات الالتزام:
+  * مفيش تعديل في أي ملف خارج الـ 2 المطلوبين.
+  * مفيش `new Database()` جديد (القاموس بيشير لـ DbManager كبوابة موحدة فقط).
+  * الأرقام مبنية على فحص فعلي (466 route عبر `find`، DbManager functions عبر grep على db-manager.ts).
+- Git state: branch `bravo/docs-consolidation`, 2 files unstaged (awaiting commit + push).
+
+---
+Task ID: DOCS-2
+Agent: Bravo V2 (subagent — Documentation consolidation)
+Task: كتابة ملفي توثيق مبنيين على الكود الفعلي للمشروع GLMinvestment.
+
+Work Log:
+- Step 0 (Context): قرأت آخر 150 سطر من worklog.md (DAL WAVE 1-3 من Alpha).
+  فهمت إن الـ architecture بقت: `stocks.db` = PRIMARY للأسعار،
+  `price_history.db` معزول WAVE 1-3، `db_manager._DB_ALIASES` بيعمل redirect شفاف.
+
+- Step 1 (DB Inspection): فحصت `db/` فعلياً + `vps-service/utils/db_paths.py`
+  + `vps-service/core/db_manager.py`. لقيت:
+  * 10 DBs في `db/`: auth, stocks (180KB), predictions (290MB), data_engine (0KB sandbox),
+    intraday (0KB), metrics (127KB), news, crypto, decision_log, price_history (0KB — معزول).
+  * `predictions.db`: 33 جدول، `predictions` (1349 row, 75 col بعد التنظيف) + 6 indexes
+    (لا idx_predictions_dedup على الساندبوكس — بس موثق في الكود).
+  * `stocks.db`: 4 جداول — `stocks` (295 row, 66 col), `stock_daily_prices` (202 row, 12 col),
+    `analytics_events` (15 row, 11 col), `sqlite_sequence`.
+  * `metrics.db`: 6 جداول — pm2_process_snapshot, resource_snapshot_*, resource_alert.
+
+- Step 2 (Engines Inspection): فحصت `vps-service/`:
+  * `analyzers/master_analyzer.py` (5794 LOC) — 14 sub-analyzer + MASTER_WEIGHTS (smc=0.26,
+    fundamental=0.40, technical=0.042, ...). Thresholds: STRONG_BUY=78, BUY=65, ACCUMULATE=55.
+  * `analyzers/indicators/` — 11 ملف: atr (Wilder's), rsi (Wilder's), srsi, bollinger, mfi,
+    adx, vwap, volume_profile, ma (sma+ema+macd), flow_indicators. كلها Rule 67 canonical.
+  * `core/risk_gate.py` — 6 rules (liquidity/R:R/position/conviction/stale/critical).
+  * `core/risk_gate_wrapper.py` — fail-closed wrapper + `_ACTIONABLE_SIGNALS`.
+  * `analyzers/decision_logger.py` — 19 REASON_CODES + log_decision() + defensive writer.
+  * `analyzers/short_holding_exit.py` — distribution_exit + max_holding_7d + no_move_3d + early_drop.
+  * `analyzers/market_regime_engine.py` — DEFENSIVE/NORMAL/AGGRESSIVE + 6 indicators
+    + hysteresis (2-3 days) + multi-market (EGX/TADAWUL/KSE/QATAR/US/CRYPTO/GOLD).
+  * `engines/persona_engine.py` — 7 personas (CONSERVATIVE → GAMBLER) + RiskParameters
+    + DecisionThresholds + PersonaScoringWeights + threshold_multiplier (0.85-1.15).
+  * `engines/flow_system.py` — 4 layers (macro/sector/stock/cross-validation) + V55 Money Flow.
+  * `core/real_liquidity_radar.py` — 5 classifications (ACCUMULATION_CONFIRMED, ...).
+  * `scripts/maker_radar.py` (2367 LOC) — 5 paths (A_pre_surge / B_quiet_strong /
+    C_quiet_weak / D_explosive / E_early_break) + B3 contract (8 classifications).
+  * `core/price_sanity.py` — B1 Price Sanity Gate (5 contamination patterns).
+  * `portfolio/smart_exit_engine.py` — ExitReason enum (9 values) + TrajectoryType (7 values).
+  * `data_engine/scrapers/tradingview_scanner_live.py` (451 LOC) — 60 field من Scanner API
+    + 5 markets + 3.3s للأكله كلها + pollution guard.
+  * `data_engine/scrapers/fallback_chain.py` — TV REST → EGKSCO → DB read.
+  * `scripts/migrate_data_engine_to_stocks.py` + `scripts/reconcile_and_clean_historical_data.py`
+    — 4-stage Rosetta Stone pipeline (idempotent).
+  * `scripts/test_regime_parity.py` — 13 regime implementations + 11 vocabularies متبادلة.
+  * `ORCHESTRATOR_EXECUTOR_FIX_REPORT.md` — 13 ATR implementations + 13 regime implementations.
+
+- Step 3 (File 1 — 02-DATABASES-AND-DATA.md): كتبت 17 section شاملة (~430 LOC):
+  * TL;DR — قاعدة السعر الواحد (stocks.db.stock_daily_prices = PRIMARY، price_history.db معزول).
+  * Tiered Strategy (5 tiers: Write-Heavy / Read-Heavy / Brain Output / User State / Archive).
+  * 12 DBs في القائمة الكاملة (auth, stocks, predictions, data_engine, intraday, metrics,
+    news, crypto, decision_log, price_history, historical_snapshot_*, custom).
+  * stocks.db تفصيلياً: stocks (66 col — 60 field من TV Scanner API في 10 مجموعات)،
+    stock_daily_prices (12 col + 4 writers مع/بدون bug)، analytics_events (11 col).
+  * predictions.db تفصيلياً: 33 جدول، predictions (75 col) + idx_predictions_dedup (B2 UNIQUE)
+    + IntegrityError retry logic + predictions_duplicates_archive + radar_signal_tracking.
+  * data_engine.db: 27+ جدول (tab_* + egksco_price_history DEPRECATED + historical_data +
+    metals/forex + crypto + macro + screener).
+  * price_history.db معزول WAVE 1-3 — مع _DB_ALIASES['price_history'] → STOCKS_DB redirect.
+  * decision_log.db — 19 REASON_CODES + 12 col + 2 indexes.
+  * metrics.db — 6 جداول (pm2_process_snapshot, resource_snapshot_*, resource_alert).
+  * news.db + crypto.db + intraday.db + auth.db.
+  * TradingView Scanner Live (60 field, 5 markets, 3.3s, pollution guard, CLI).
+  * Migration scripts (migrate_data_engine_to_stocks + reconcile_and_clean_historical_data — 4-stage).
+  * Canonical indicators (11 functions — Wilder's smoothing for ATR/RSI).
+  * Fallback chain (scanner_live → rest → egksco → DB read) + circuit breaker.
+  * Ownership rules + Backups + Canonical Sources Registry.
+
+- Step 4 (File 2 — 02-HOW-IT-THINKS.md): كتبت 17 section شاملة (~520 LOC):
+  * TL;DR — المسار التنفيذي (daily_predictor → 7 gates → predictions.db).
+  * الفلسفة (3 ركائز: Rule-Based + Statistical، Multi-Layer Confluence، Reality-Based Fail-Closed).
+  * المسار التنفيذي الكامل: daily_predictor phases (6) + per-ticker flow (7 gates)
+    + daily_closer exit flow.
+  * MasterAnalyzer — THE BRAIN: 14 sub-analyzer جدول كامل (name + file + role + weight)
+    + MASTER_WEIGHTS (smc=0.26, fundamental=0.40, ...) + Adaptive Weights (P24) overlay
+    + Thresholds (canonical Rule 72) + 8-Layer Confluence + Momentum Override (P14+P24)
+    + Pump & Dump Guard (P15).
+  * Canonical Indicators: 12 functions + Wilder's smoothing explanation + backward-compat wrappers.
+  * محركات السيولة: maker_radar (5 paths + 8 B3 classifications) + real_liquidity_radar
+    (5 classifications) + flow_system (4 layers + V55 Money Flow + 6-layer compute_money_flow)
+    + explosive_scanner.
+  * Risk Gate: 6 rules + safe_apply_risk_gate (fail-closed) + _ACTIONABLE_SIGNALS.
+  * Decision Log: log_decision signature + 19 REASON_CODES (13 entry rejections + 6 force exits)
+    + 13 call sites table + get_decision_stats.
+  * Exit Logic: short_holding_exit (distribution_exit/max_holding_7d/no_move_3d/early_drop)
+    + daily_closer (EXIT_POLICY_MODE + 7 exit types) + smart_exit_engine (ExitReason 9 values
+    + TrajectoryType 7 values).
+  * Market Regime Engine: 3 regimes + REGIME_CONFIG (8 params per regime) + Detection rules
+    (DEFENSIVE 7 triggers ANY + AGGRESSIVE 7 conditions ALL) + Hysteresis (2-3 days)
+    + Persistence + Multi-market (7 markets) + 13 implementations legacy divergence.
+  * Persona Engine: 7 personas + RiskParameters (2.5% cap) + DecisionThresholds (per persona)
+    + PersonaScoringWeights + threshold_multiplier (0.85-1.15) + 3 personas أساسية في التوقعات.
+  * الرادار: B3 contract (8 classifications) + Incubator (sync_scanner_to_db) +
+    radar_signal_tracking (state_history_tracker).
+  * Data Freshness + B1 Price Sanity: 5 contamination patterns + SanityResult + policy
+    + 48h filter on stored_analyses (date('now','-2 days')) + source_authority.
+  * TradingView Scanner Live (5 markets, 60 fields, 3.3s, CLI).
+  * Fallback chain (scanner_live → rest → egksco → DB read) + circuit breaker.
+  * ATR Canonical — Wilder's smoothing (Rule 67) + 13 ATR implementations reference.
+  * Cron Jobs table (12 jobs with time + file).
+  * مراجع خارجية (10+ documents).
+
+- Step 5 (Verification):
+  * الفحص الكامل اتأكد إن كل رقم/اسم في الـ docs مبني على كود فعلي (مش من نسخة قديمة).
+  * الـ canonical indicators موثقة من analyzers/indicators/__init__.py + كل ملف منفصل.
+  * الـ 14 sub-analyzer موثقة من master_analyzer.py:1960-1995 (self.<name> = ...).
+  * الـ 13 regime implementations موثقة من scripts/test_regime_parity.py:606-619.
+  * الـ 8 B3 classifications موثقة من scripts/maker_radar.py:1254-1264.
+  * الـ 5 maker_radar paths موثقة من scripts/maker_radar.py:611-635.
+  * الـ 19 REASON_CODES موثقة من analyzers/decision_logger.py:85-110.
+  * الـ 13 call sites موثقة بـ grep على log_decision\( في vps-service/.
+  * الـ 6 risk_gate rules موثقة من core/risk_gate.py:1-15 + apply_risk_gate().
+  * الـ 3 regimes + REGIME_CONFIG موثقة من analyzers/market_regime_engine.py:55-246.
+  * الـ 7 personas موثقة من engines/persona_engine.py:21-29 + 630+.
+  * الـ 9 ExitReason values موثقة من portfolio/smart_exit_engine.py:31-41.
+  * الـ 60 TV Scanner fields موثقة من data_engine/scrapers/tradingview_scanner_live.py:64-95.
+  * الـ _DB_ALIASES موثقة من vps-service/core/db_manager.py:96-117.
+  * الـ 4 writers on stock_daily_prices موثقة من Documentation/DATA_LINEAGE.md (موجود في الأصل).
+  * الـ 48h filter موثقة من vps-service/api/misc_routes.py:1765-1773.
+
+Stage Summary:
+- Files written (2):
+  * Documentation/02-DATABASES-AND-DATA.md — 17 section، ~430 LOC (شامل: 12 DBs + جداول
+    + ترتيب الأسعار + migrations + canonical indicators + fallback chain + ownership rules).
+  * Documentation/02-HOW-IT-THINKS.md — 17 section، ~520 LOC (شامل: المسار التنفيذي
+    + 14 sub-analyzer + canonical indicators (Wilder's) + 5 liquidity engines + risk_gate
+    + decision_log (19 REASON_CODES, 13 call sites) + 3 exit engines + market_regime
+    (3 regimes + 13 implementations) + 7 personas + radar (B3 contract) + B1 price sanity
+    + 48h filter + TV Scanner Live + fallback chain + ATR canonical (Rule 67) + cron jobs).
+- مفيش تعديلات على أي ملفات تانية (الـ task كان "اكتب الملفين مباشرة").
+- الـ docs مبنية بالكامل على فحص فعلي للكود (مش تخمين ولا نسخ من docs قديمة).
+- Git state: branch `bravo/docs-consolidation`، unstaged (awaiting commit + push).
+
+Notes:
+- الـ sandbox مفيهوش data_engine.db / intraday.db / auth.db / news.db / price_history.db
+  معبأة (0 bytes) — بس الـ schema موثق في db_paths.py + DATA_LINEAGE.md + الـ production
+  state موثق في نفس الملفات. ذكرت ده صراحةً في كل جدول.
+- الـ `idx_predictions_dedup` UNIQUE index مش موجود على الساندبوكس (الـ predictions.db
+  هنا نسخة قديمة قبل الـ B2 migration) — بس الـ dedup logic موجود في prediction_tracker.py:640-759
+  وموثق في الـ doc.
+- الـ `predictions_duplicates_archive` و `radar_signal_tracking` tables مش موجودة في
+  sandbox predictions.db — بس موثقة في الكود (state_history_tracker.py).
+- في الـ 13 call sites table، السطور الـ 11/12/13 (crypto paths) في daily_predictor.py
+  عند `4636 / 4657 / 4681` (موثقة بـ grep).
