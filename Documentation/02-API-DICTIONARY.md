@@ -1,413 +1,503 @@
-# 02 — API Dictionary
+# 02 — API Dictionary (قاموس الـ API)
 
-> Every HTTP endpoint exposed by the Python backend (Flask).
-> Part of Phase 7.4 architecture documentation.
+> **المصدر الوحيد للحقيقة لكل HTTP endpoint في الـ Next.js layer.**
+> كل الـ routes موجودة في `src/app/api/` (App Router). الإحصاء النهائي:
+> **466 route** موزعة على ~100 section.
+> **آخر تحديث:** 2026-10-27 | **Commit:** `ec41f61`
+
+---
 
 ## 1. Overview
 
-The backend exposes ~80 endpoints across **5 domains**. All routes are
-registered as Flask Blueprints in `vps-service/api/*.py` and mounted by
-`vps-service/app.py` (the Flask entry point).
+| | |
+|---|---|
+| **إجمالي الـ routes** | 466 (`src/app/api/**/route.ts`) |
+| **الـ runtime** | Next.js 16 (App Router) + Bun |
+| **البوابة الموحدة للـ DBs** | `src/lib/db-manager.ts` (`DbManager` namespace) |
+| **الـ Brain** | Python backend (`vps-service/` + `data_engine/`) عبر `PYTHON_BACKEND_URL` |
+| **الـ DBs المعزولة** | `price_history.db` (WAVE 1-3 purged) |
 
-Endpoints are grouped by domain:
+### المبدأ المعماري
+الـ Next.js API routes بتلعب دورين:
+1. **Thin proxy** → تحوّل الطلب للـ Python backend (`/api/python/[...path]`, `/api/proxy/[...path]`).
+2. **Direct read** → بتقرأ من الـ DBs عبر `DbManager` (DAL المغلق).
 
-| Domain | # Endpoints | Primary Files |
-|--------|-------------|---------------|
-| **Market** | 12 | `public_routes.py`, `market_routes.py`, `market_master_endpoints.py`, `chart_routes.py` |
-| **Predictions** | 14 | `prediction_tracking_routes.py`, `historical_predictions_v2_routes.py`, `ai_predictions_routes.py`, `picks_management_routes.py`, `stored_analysis_routes.py`, `v38_backtest_routes.py` |
-| **Portfolio** | 10 | `portfolio_routes.py`, `risk_routes.py`, `top_performers_routes.py`, `sector_tracking_routes.py` |
-| **Analysis** | 18 | `professional_analysis_routes.py`, `stock_analysis_routes.py`, `confluence_routes.py`, `screener_routes.py`, `advanced_screener_routes.py`, `scanner_routes.py`, `sniper_routes.py`, `v2_routes.py`, `unified_v2_routes.py`, `unified_learning_routes.py`, `regime_routes.py`, `persona_routes.py` |
-| **Admin** | 8 | `admin_routes.py`, `admin_engine_settings_routes.py`, `optimizer_params_routes.py`, `learning_routes.py`, `notifications_routes.py`, `news_routes.py`, `reports_routes.py`, `notebook_routes.py`, `misc_routes.py`, `telegram_routes.py` |
-
----
-
-## 2. Market Domain
-
-### `GET /api/stocks`
-- **File**: `vps-service/api/public_routes.py::get_stocks`
-- **Auth**: None
-- **Params**: `market` (optional — EGX, KSA, KSE, QSE)
-- **Returns**: List of all stocks with current prices + indicators
-
-### `GET /api/stocks/<ticker>`
-- **File**: `vps-service/api/public_routes.py::get_stock`
-- **Auth**: None
-- **Returns**: Single stock detail (price, change, RSI, MA50, MA200, trend)
-
-### `GET /api/stocks/<ticker>/history`
-- **File**: `vps-service/api/public_routes.py::get_history`
-- **Params**: `period` (1M/3M/6M/1Y/5Y), `interval` (1d/1w)
-- **Returns**: OHLCV history for charting
-
-### `GET /api/stocks/<ticker>/prices`
-- **File**: `vps-service/api/public_routes.py::get_prices`
-- **Returns**: Recent price ticks (last 100)
-
-### `GET /api/stocks/<ticker>/local-history`
-- **File**: `vps-service/api/public_routes.py::get_local_history`
-- **Returns**: Local (cached) historical data
-
-### `GET /api/market/overview`
-- **File**: `vps-service/api/public_routes.py::market_overview`
-- **Auth**: None
-- **Params**: `market` (EGX, KSA, KSE, DFM, BSE, QSE, CRYPTO)
-- **Cache**: ApiResponseCache TTL=300s (Phase 8.4), params=`{market or 'all'}`
-- **Returns**: `{success, timestamp, data: {total_stocks, advancers, decliners, ...}, market_filter}`
-
-### `GET /api/market/intraday-pressure`
-- **File**: `vps-service/api/market_master_endpoints.py::intraday_pressure`
-- **Auth**: None
-- **Cache**: ApiResponseCache TTL=60s (Phase 8.4) — intraday data changes fast
-- **Returns**: `{success, market, timestamp, cumulative_pressure: {total_buy_egp, total_sell_egp, net_pressure_egp, direction, buy_pct, sell_pct}, top_stocks: [{ticker, price, change_pct, buy_pct, sell_pct, net_pressure_egp, volume}]}`
-
-### `GET /api/market/investor-flows`
-- **File**: `vps-service/api/market_master_endpoints.py::investor_flows`
-- **Auth**: None
-- **Params**: `market` (defaults to EGX — other markets return `available: false`)
-- **Cache**: ApiResponseCache TTL=300s (Phase 8.4), params=`{market}`
-- **Returns**: `{success, market, available, date, total_buys_egp, total_sells_egp, total_net_egp, flows: {by_investor_type, by_nationality}, source}`
-
-### `GET /api/market/metals-forex/summary`
-- **File**: `vps-service/api/market_master_endpoints.py::metals_forex_summary`
-- **Returns**: Gold (24/21/18 + gold pound) + USD/EGP, EUR/EGP, SAR/EGP exchange rates
-
-### `GET /api/market/liquidity-radar`
-- **File**: `vps-service/api/market_master_endpoints.py::liquidity_radar`
-- **Returns**: Real liquidity radar — pre-surge + quiet accumulation signals
-
-### `GET /api/market/indices`
-- **File**: `vps-service/api/market_master_endpoints.py::indices_constituents`
-- **Returns**: EGX30 / EGX70 / EGX100 constituents + last values
-
-### `GET /api/sectors/tracking`
-- **File**: `vps-service/api/sector_tracking_routes.py::get_sector_tracking`
-- **Auth**: None
-- **Params**: `market`, `with_rotation`, `with_stocks`, `sort`, `order`, `min_avg_change`, `heat_level`
-- **Cache**: ApiResponseCache TTL=300s (Phase 8.4), params=ALL filter params
-- **Returns**: `{success, market, sectors: [...], market_summary: {...}, rotation (optional), filters, cached, cache_ttl}`
-
-### `GET /api/sectors/<sector_name>/stocks`
-- **File**: `vps-service/api/sector_tracking_routes.py::get_sector_stocks`
-- **Params**: `market`, `limit` (max 500), `sort`, `order`
-- **Returns**: Stocks in the specified sector
+> **Rule 20 (CONSTITUTION):** ممنوع `import Database from 'better-sqlite3'`
+> في أي route. الـ DAL الوحيد هو `DbManager`. الـ route اللي بيكسر القاعدة
+> بيُرفض في الـ review.
 
 ---
 
-## 3. Predictions Domain
+## 2. توزيع الـ Routes حسب القسم
 
-### `GET /api/predictions`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Auth**: None
-- **Params**: `ticker`, `date`, `signal`, `limit`
-- **Returns**: List of predictions (filtered by V40.2 canonical)
+| القسم | # Routes | الـ DB الأساسي | الدور |
+|------|---------|---------------|-------|
+| `admin/` | 88 | multiple (admin ops) | لوحة تحكم الإدارة |
+| `market/` | 30 | stocks.db + Python proxy | بيانات السوق + المؤشرات |
+| `predictions/` | 29 | predictions.db | التوقعات + honest tracking |
+| `stocks/` | 20 | stocks.db | بيانات الأسهم + history |
+| `mobile/` | 19 | proxy + stocks.db | API للموبايل (Flutter) |
+| `maker-radar/` | 17 | maker_radar_*.json + stocks.db | رادار صانع السوق |
+| `finance/` | 17 | finance.db (Prisma) | المالية + الالتزامات |
+| `portfolio/` | 15 | stocks.db (stock_daily_prices) | المحفظة + rescue |
+| `v2/` | 14 | Python proxy (unified engine) | V2 unified analysis |
+| `crypto/` | 14 | data_engine.db.crypto_prices | العملات الرقمية |
+| `subscription/` | 12 | auth.db + Paymob/Instapay | الاشتراكات + البوابات |
+| `data-engine/` | 9 | data_engine.db | حالة محرك البيانات |
+| `auth/` | 8 | auth.db | المصادقة (NextAuth) |
+| `unified-learning/` | 6 | predictions.db | التعلّم الموحّد |
+| `paper-trading-v2/` | 6 | paper-trading.db | تداول ورقي |
+| `recommendations/` | 5 | predictions.db | التوصيات + backtest |
+| `radar/` | 5 | predictions.db + json | رادار التوقعات |
+| `alerts/` | 5 | alerts store | التنبيهات |
+| `telegram/` | 4 | telegram.db | تكامل تيليجرام |
+| `sniper/` | 4 | predictions.db | سكنابر فرص دقيقة |
+| `ads/` | 4 | — | توليد إعلانات + screenshots |
+| `persona/`, `paymob/`, `money/`, `maestro/`, `live-monitor/`, `expert-recommendations/`, `currency/`, `confluence/`, `bot/`, `ai/` | 3 each | mixed | أقسام مساعدة |
+| باقي الأقسام (1–2 routes each) | ~85 | mixed | utilities + proxies |
 
-### `GET /api/predictions/<ticker>`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Returns**: All predictions for a single ticker
-
-### `POST /api/predictions/<id>/close`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Auth**: Admin
-- **Body**: `exit_price`, `exit_date`, `exit_reason`
-- **Returns**: Closed prediction
-
-### `GET /api/predictions/v2/historical`
-- **File**: `vps-service/api/historical_predictions_v2_routes.py`
-- **Params**: `start_date`, `end_date`, `signal`, `min_evidence`
-- **Returns**: Historical predictions with outcomes
-
-### `GET /api/predictions/ai`
-- **File**: `vps-service/api/ai_predictions_routes.py`
-- **Returns**: AI-generated predictions (model v2)
-
-### `GET /api/picks`
-- **File**: `vps-service/api/picks_management_routes.py`
-- **Params**: `date`, `market`, `persona`
-- **Returns**: Top picks for a given date
-
-### `GET /api/picks/morning-bell`
-- **File**: `vps-service/api/picks_management_routes.py`
-- **Returns**: Today's morning bell (top pick)
-
-### `GET /api/stored-analyses`
-- **File**: `vps-service/api/stored_analysis_routes.py`
-- **Returns**: Stored analyses (used by Telegram auto-poster)
-
-### `POST /api/v38-backtest/run`
-- **File**: `vps-service/api/v38_backtest_routes.py`
-- **Auth**: Admin
-- **Body**: `ticker`, `start_date`, `end_date`, `params`
-- **Returns**: Backtest results
-
-### `GET /api/predictions/stats`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Params**: `start_date`, `end_date`
-- **Returns**: Aggregated stats (win rate, PF, total predictions)
-
-### `POST /api/predictions/<id>/outcome`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Auth**: Admin (called by daily_closer cron)
-- **Body**: `exit_price`, `is_win`, `pnl_pct`, `r_multiple`
-- **Returns**: Updated prediction with outcome
-
-### `GET /api/predictions/lessons`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Returns**: Learned lessons (from prediction_lessons table)
-
-### `GET /api/predictions/persona`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Params**: `persona` (gambler/balanced/conservative)
-- **Returns**: Persona-filtered predictions
-
-### `GET /api/predictions/export`
-- **File**: `vps-service/api/prediction_tracking_routes.py`
-- **Returns**: CSV export of predictions
+> المجموع = 466 route.
 
 ---
 
-## 4. Portfolio Domain
+## 3. Auth (`/api/auth/*`) — 8 routes
 
-### `GET /api/portfolio`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Auth**: Required
-- **Returns**: User's portfolio (positions, cash, equity, exposure)
-
-### `POST /api/portfolio/position`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Auth**: Required
-- **Body**: `ticker`, `quantity`, `entry_price`, `side`
-- **Returns**: New position
-
-### `DELETE /api/portfolio/position/<id>`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Auth**: Required
-- **Returns**: Closed position
-
-### `GET /api/portfolio/pnl-history`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Returns**: Daily PnL history (equity curve)
-
-### `GET /api/portfolio/risk`
-- **File**: `vps-service/api/risk_routes.py`
-- **Returns**: Risk metrics (VaR, max drawdown, Sharpe)
-
-### `GET /api/top-performers`
-- **File**: `vps-service/api/top_performers_routes.py`
-- **Params**: `period` (1D/1W/1M/3M/1Y)
-- **Returns**: Top performing stocks
-
-### `GET /api/portfolio/snapshot`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Returns**: Current portfolio snapshot (equity, exposure, PnL)
-
-### `POST /api/portfolio/cash`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Body**: `amount`, `type` (deposit/withdraw)
-- **Returns**: Updated cash balance
-
-### `GET /api/portfolio/equity-curve`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Returns**: Equity curve (for charting)
-
-### `GET /api/portfolio/positions/open`
-- **File**: `vps-service/api/portfolio_routes.py`
-- **Returns**: All open positions
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `POST` | `/api/auth/login` | تسجيل دخول (email + password) | `auth.db.User` |
+| `POST` | `/api/auth/register` | إنشاء حساب جديد | `auth.db.User` |
+| `GET` | `/api/auth/me` | بيانات المستخدم الحالي (JWT) | `auth.db.Session` |
+| `GET`/`POST` | `/api/auth/[...nextauth]` | NextAuth catch-all | `auth.db` |
+| `POST` | `/api/auth/google-signin` | Google OAuth | `auth.db` |
+| `GET` | `/api/auth/google` | بدء Google OAuth flow | `auth.db` |
+| `POST` | `/api/auth/logout` | تسجيل خروج + حذف session | `auth.db.Session` |
+| `GET`/`PATCH` | `/api/auth/profile` | بيانات + تعديل الملف الشخصي | `auth.db.User` |
 
 ---
 
-## 5. Analysis Domain
+## 4. Predictions (`/api/predictions/*`) — 29 routes
 
-### `GET /api/analyze/<ticker>`
-- **File**: `vps-service/api/public_routes.py::analyze_stock`
-- **Auth**: None
-- **Params**: `intent` (live/daily/full/auto), `persona`
-- **Cache**: AnalysisCache (per-ticker, TTL=60s) — see `core/cache_manager.py`
-- **Returns**: `{success, ticker, signal, evidence, tech_score, entry, target, stop, proofs, persona_fit, ...}`
-
-### `GET /api/analysis/professional/<ticker>`
-- **File**: `vps-service/api/professional_analysis_routes.py`
-- **Returns**: Professional-grade analysis (multi-timeframe + risk)
-
-### `GET /api/analysis/stock/<ticker>`
-- **File**: `vps-service/api/stock_analysis_routes.py`
-- **Returns**: Standard stock analysis (technical + fundamental)
-
-### `GET /api/indicators/<ticker>`
-- **File**: `vps-service/api/public_routes.py::get_indicators`
-- **Returns**: All technical indicators (RSI, MACD, MA, ATR, etc.)
-
-### `GET /api/patterns/<ticker>`
-- **File**: `vps-service/api/public_routes.py::detect_patterns`
-- **Returns**: Detected candlestick + chart patterns
-
-### `GET /api/fibonacci/<ticker>`
-- **File**: `vps-service/api/public_routes.py::fibonacci_levels`
-- **Returns**: Fibonacci retracement + extension levels
-
-### `GET /api/timing/<ticker>`
-- **File**: `vps-service/api/public_routes.py::get_timing`
-- **Returns**: Timing analysis (entry/exit timing signals)
-
-### `GET /api/live-analysis/<ticker>`
-- **File**: `vps-service/api/public_routes.py::get_live_analysis`
-- **Returns**: Live (real-time) analysis
-
-### `GET /api/scan/live`
-- **File**: `vps-service/api/public_routes.py::scan_live_opportunities`
-- **Returns**: Live scan results (intraday)
-
-### `GET /api/confluence/<ticker>`
-- **File**: `vps-service/api/confluence_routes.py`
-- **Returns**: Multi-factor confluence score
-
-### `GET /api/screener`
-- **File**: `vps-service/api/screener_routes.py`
-- **Params**: `min_score`, `signal`, `sector`
-- **Returns**: Screener results (filtered stocks)
-
-### `GET /api/screener/advanced`
-- **File**: `vps-service/api/advanced_screener_routes.py`
-- **Params**: `filters` (JSON)
-- **Returns**: Advanced screener results (multi-condition filters)
-
-### `GET /api/scanner/sniper`
-- **File**: `vps-service/api/sniper_routes.py`
-- **Returns**: Sniper scanner results (high-precision picks)
-
-### `GET /api/scanner/unified`
-- **File**: `vps-service/api/scanner_routes.py`
-- **Returns**: Unified scanner results (consolidates all scanners)
-
-### `GET /api/v2/analyze/<ticker>`
-- **File**: `vps-service/api/v2_routes.py`
-- **Returns**: V2 analysis (newer engine output)
-
-### `GET /api/unified-v2/<ticker>`
-- **File**: `vps-service/api/unified_v2_routes.py`
-- **Returns**: Unified V2 (merges V2 + professional + fundamental)
-
-### `GET /api/regime`
-- **File**: `vps-service/api/regime_routes.py`
-- **Returns**: Current market regime (BULL/BEAR/SIDEWAYS/DEFENSIVE)
-
-### `GET /api/persona/<ticker>`
-- **File**: `vps-service/api/persona_routes.py`
-- **Returns**: Persona classification for ticker (gambler/balanced/conservative)
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/predictions` | قائمة التوقعات (filter: ticker, date, signal) | `predictions.db` |
+| `POST` | `/api/predictions` | إنشاء توقع جديد | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking` | التتبّع الصادق (thin wrapper) | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking/list` | قائمة التتبّع | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking/stats` | إحصائيات الأداء | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking/live-tracking` | تتبّع لحظي | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking/missed-opportunities` | فرص ضائعة | `predictions.db` |
+| `GET` | `/api/predictions/honest-tracking/verify-pending` | تحقّق من المعلّقة | `predictions.db` |
+| `POST` | `/api/predictions/honest-tracking/learn-from-errors` | تعلّم من الأخطاء | `predictions.db` |
+| `GET` | `/api/predictions/tracking` | تتبّع عام | `predictions.db` |
+| `GET` | `/api/predictions/tracking/list` | قائمة التتبّع | `predictions.db` |
+| `GET` | `/api/predictions/tracking/stats` | إحصائيات | `predictions.db` |
+| `POST` | `/api/predictions/tracking/verify` | تحقّق | `predictions.db` |
+| `GET` | `/api/predictions/daily-picks` | أفضل اختيارات اليوم (DAL: predictions + stocks + regime) | `predictions.db` + `stocks.db` |
+| `GET` | `/api/predictions/performance` | أداء التوقعات | `predictions.db` |
+| `GET` | `/api/predictions/performance-dashboard` | لوحة الأداء | `predictions.db` |
+| `GET` | `/api/predictions/expert-consensus` | إجماع الخبراء | `predictions.db` |
+| `GET` | `/api/predictions/learned-lessons` | دروس متعلّمة | `predictions.db` |
+| `POST` | `/api/predictions/refresh-v40` | تحديث V40 | `predictions.db` |
+| `GET` | `/api/predictions/backtest-list` | قائمة backtests | `predictions.db` |
+| `GET` | `/api/predictions/league-report` | تقرير الدوري الشهري | `predictions.db` |
+| `GET` | `/api/predictions/monthly-league` | الدوري الشهري | `predictions.db` |
+| `GET` | `/api/predictions/historical-trades` | صفقات تاريخية | `predictions.db` |
+| `GET` | `/api/predictions/active-management` | إدارة نشطة | `predictions.db` |
+| `GET` | `/api/predictions/eid` | توقعات موسمية | `predictions.db` |
+| `GET`/`POST` | `/api/predictions/dual-track/*` | مسار مزدوج (list, stats, threshold, backtest) | `predictions.db` |
+| `POST` | `/api/predictions/generate-all` | توليد كامل (admin) | `predictions.db` |
 
 ---
 
-## 6. Admin Domain
+## 5. Stocks (`/api/stocks/*`) — 20 routes
 
-### `GET /api/admin/health`
-- **File**: `vps-service/api/admin_routes.py`
-- **Auth**: Admin
-- **Returns**: System health (DB integrity, engine status, queue depth)
-
-### `GET /api/admin/engines`
-- **File**: `vps-service/api/admin_engine_settings_routes.py`
-- **Returns**: Engine settings (buy_threshold, regime config, etc.)
-
-### `POST /api/admin/engines/<engine>`
-- **File**: `vps-service/api/admin_engine_settings_routes.py`
-- **Auth**: Admin
-- **Body**: `key`, `value`
-- **Returns**: Updated engine setting
-
-### `GET /api/optimizer/params`
-- **File**: `vps-service/api/optimizer_params_routes.py`
-- **Returns**: Current optimizer parameters
-
-### `POST /api/optimizer/params`
-- **File**: `vps-service/api/optimizer_params_routes.py`
-- **Auth**: Admin
-- **Body**: `param_name`, `value`, `ab_group` (A/B testing)
-- **Returns**: Updated parameter
-
-### `GET /api/learning/lessons`
-- **File**: `vps-service/api/learning_routes.py`
-- **Returns**: Learned lessons (from learning_engine)
-
-### `POST /api/learning/lessons`
-- **File**: `vps-service/api/learning_routes.py`
-- **Auth**: Admin
-- **Body**: `lesson_text`, `category`, `confidence`
-- **Returns**: New lesson
-
-### `GET /api/notifications`
-- **File**: `vps-service/api/notifications_routes.py`
-- **Auth**: Required
-- **Returns**: User notifications
-
-### `GET /api/news`
-- **File**: `vps-service/api/news_routes.py`
-- **Params**: `ticker`, `category`, `limit`
-- **Returns**: News articles (from news.db.market_news)
-
-### `GET /api/reports/<type>`
-- **File**: `vps-service/api/reports_routes.py`
-- **Params**: `start_date`, `end_date`
-- **Returns**: Generated report (HTML/JSON)
-
-### `GET /api/notebook/<ticker>`
-- **File**: `vps-service/api/notebook_routes.py`
-- **Returns**: Jupyter notebook for ticker analysis
-
-### `POST /api/telegram/test`
-- **File**: `vps-service/api/telegram_routes.py`
-- **Auth**: Admin
-- **Body**: `message`
-- **Returns**: Test message send status
-
-### `GET /api/admin/db-health`
-- **File**: `vps-service/api/admin_routes.py`
-- **Auth**: Admin
-- **Returns**: DB health check for all 9 databases
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/stocks` | قائمة كل الأسهم + الأسعار الحالية | `stocks.db` (via DbManager) |
+| `GET` | `/api/stocks/search` | بحث بالـ ticker/الاسم | `stocks.db` |
+| `GET` | `/api/stocks/[ticker]` | تفاصيل سهم (proxy للـ Python) | Python backend |
+| `GET` | `/api/stocks/[ticker]/history` | OHLCV تاريخي (fallback: `stocks.db`) | `stocks.db.stock_daily_prices` |
+| `GET` | `/api/stocks/[ticker]/depth` | عمق السوق (DAL: stocks + intraday) | `stocks.db` + `intraday.db` |
+| `GET` | `/api/stocks/[ticker]/comprehensive` | تحليل شامل | Python proxy |
+| `GET` | `/api/stocks/[ticker]/unified` | تحليل موحّد | Python proxy |
+| `GET` | `/api/stocks/[ticker]/recommendation` | توصية | Python proxy |
+| `GET` | `/api/stocks/[ticker]/professional-analysis` | تحليل احترافي | Python proxy |
+| `GET` | `/api/stocks/[ticker]/expert-analysis` | تحليل خبراء | Python proxy |
+| `GET` | `/api/stocks/[ticker]/news` | أخبار السهم | `news.db` |
+| `GET` | `/api/stocks/[ticker]/orderbook` | دفتر الأوامر | `intraday.db` |
+| `POST` | `/api/stocks/[ticker]/publish-data` | نشر بيانات (admin) | `stocks.db` |
+| `GET` | `/api/stocks/delta-volume` | حجم الدلتا (thin wrapper: `data_engine.db`) | `data_engine.db` |
+| `GET` | `/api/stocks/sparkline` | Sparkline (DAL: stock_daily_prices FIRST) | `stocks.db` |
+| `GET` | `/api/stocks/advanced-analysis` | تحليل متقدم | Python proxy |
+| `GET` | `/api/stocks/top-performers` | الأفضل أداءً | `stocks.db` |
+| `GET` | `/api/stocks/data-coverage` | تغطية البيانات | `stocks.db` |
+| `GET` | `/api/stocks/presets` | إعدادات مسبقة | `stocks.db` |
+| `GET` | `/api/stocks/dual-persona/[ticker]` | شخصية مزدوجة | Python proxy |
 
 ---
 
-## 7. Auth Middleware
+## 6. Market (`/api/market/*`) — 30 routes
 
-Authentication is enforced by `vps-service/core/auth_middleware.py` which
-decorates protected endpoints:
-
-```python
-from core.auth_middleware import require_auth, require_admin
-
-@public_bp.route('/api/portfolio', methods=['GET'])
-@require_auth
-def get_portfolio():
-    user = request.user  # injected by middleware
-    ...
-```
-
-JWT tokens are validated against `auth.db.Session`. Admin role is checked
-via `auth.db.User.role`.
-
----
-
-## 8. Caching Layer (Phase 8.4)
-
-Two caches work together:
-
-1. **AnalysisCache** (per-ticker, TTL=60s) — caches analysis results from
-   the DecisionRouter. Lives in `core/cache_manager.py` as `analysis_cache`.
-
-2. **ApiResponseCache** (per-endpoint, TTL=60-300s) — caches full HTTP
-   responses. Lives in `core/cache_manager.py` as `api_cache`. Currently
-   applied to 4 endpoints:
-   - `/api/market/overview` (TTL=300s)
-   - `/api/market/intraday-pressure` (TTL=60s)
-   - `/api/market/investor-flows` (TTL=300s)
-   - `/api/sectors/tracking` (TTL=300s)
-
-Cached responses include `cached: true/false` and `cache_ttl` so clients
-can show freshness.
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/market/overview` | نظرة عامة على السوق (cached) | Python proxy |
+| `GET` | `/api/market/summary` | ملخّص السوق | Python proxy |
+| `GET` | `/api/market/status` | حالة السوق (مفتوح/مغلق) | `stocks.db` |
+| `GET` | `/api/market/indices` | مؤشرات EGX30/70/100 | `stocks.db` |
+| `GET` | `/api/market/indices/[symbol]/history` | تاريخ مؤشر | `stocks.db` |
+| `GET` | `/api/market/indices/[symbol]/breakdown` | تفصيل مكوّنات المؤشر | `stocks.db` |
+| `GET` | `/api/market/sectors` | القطاعات | `stocks.db` |
+| `GET` | `/api/market/sectors/intelligence` | ذكاء القطاعات | Python proxy |
+| `GET` | `/api/market/top-movers` | الأكثر تحرّكًا | `stocks.db` |
+| `GET` | `/api/market/intraday-pressure` | ضغط جلسة اليوم | Python proxy |
+| `GET` | `/api/market/investor-flows` | تدفقات المستثمرين | Python proxy |
+| `GET` | `/api/market/liquidity-radar` | رادار السيولة | Python proxy |
+| `GET` | `/api/market/liquidity-flow` | تدفّق السيولة | Python proxy |
+| `GET` | `/api/market/regime` | نظام السوق (BULL/BEAR/SIDEWAYS) | Python proxy |
+| `GET` | `/api/market/continuation/[ticker]` | استمرارية | Python proxy |
+| `GET` | `/api/market/exit-status` | حالة الخروج | Python proxy |
+| `GET` | `/api/market/gold` | سعر الذهب | `data_engine.db.gold_prices` |
+| `GET` | `/api/market/metals-forex/summary` | معادن + فوركس | `data_engine.db` |
+| `GET` | `/api/market/investing` | استثمار | Python proxy |
+| `GET` | `/api/market/morning-bell` | جرس الصباح | Python proxy |
+| `GET` | `/api/market/live-data` | بيانات لحظية | Python proxy |
+| `GET` | `/api/market/report/daily` | تقرير يومي | Python proxy |
+| `GET` | `/api/market/report/weekly` | تقرير أسبوعي | Python proxy |
+| `GET` | `/api/market/recommendations/ai-insights` | رؤى AI | Python proxy |
+| `GET` | `/api/market/connections` | ارتباطات | Python proxy |
+| `GET` | `/api/market/sync` | مزامنة | `stocks.db` |
+| `GET` | `/api/market/sync-live` | مزامنة لحظية | `stocks.db` |
+| `GET` | `/api/market/incremental-sync` | مزامنة تزايدية | `stocks.db` |
+| `GET` | `/api/market/scheduled-sync` | مزامنة مجدولة | `stocks.db` |
+| `GET` | `/api/market/publish-status-image` | صورة حالة السوق | generated |
 
 ---
 
-## 9. See Also
+## 7. Portfolio (`/api/portfolio/*`) — 15 routes
 
-- `01-DATABASES-COMPLETE.md` — every DB these endpoints read from
-- `03-HOW-IT-THINKS.md` — system flow (which engines feed which endpoints)
-- `04-ENGINES-ARCHITECTURE.md` — the 4 engines behind these endpoints
-- `vps-service/app.py` — the Flask entry point that mounts all blueprints
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/portfolio` | المحفظة الكاملة | `portfolio-store` |
+| `GET` | `/api/portfolio/holdings` | الحيازات | `portfolio-store` |
+| `GET` | `/api/portfolio/master` | محفظة ماستر (DAL: stock_daily_prices PRIMARY) | `stocks.db.stock_daily_prices` |
+| `GET` | `/api/portfolio/equity-curve` | منحنى Equity | `portfolio-store` |
+| `GET` | `/api/portfolio/risk-summary` | ملخّص المخاطر | `portfolio-store` |
+| `GET` | `/api/portfolio/cashflow` | التدفّق النقدي | `portfolio-store` |
+| `GET` | `/api/portfolio/intelligence` | ذكاء المحفظة | Python proxy |
+| `GET` | `/api/portfolio/accounts` | الحسابات | `portfolio-store` |
+| `GET` | `/api/portfolio/accounts/[id]/equity-curve` | منحنى equity لحساب | `portfolio-store` |
+| `GET`/`PATCH` | `/api/portfolio/accounts/[id]/state` | حالة الحساب | `portfolio-store` |
+| `GET` | `/api/portfolio/watchlists` | قوائم المراقبة | `portfolio-store` |
+| `GET` | `/api/portfolio/unified-watch` | مراقبة موحّدة | `portfolio-store` |
+| `GET` | `/api/portfolio/smart-monitor/signals` | إشارات مراقبة ذكية | Python proxy |
+| `GET` | `/api/portfolio/bag-holder-rescue` | إنقاذ الحيازات الخاسرة | Python proxy |
+| `GET` | `/api/portfolio/rescue` | إنقاذ (DAL: stock_daily_prices + sharia via openDb) | `stocks.db` |
+
+---
+
+## 8. Maker-Radar (`/api/maker-radar/*`) — 17 routes
+
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/maker-radar` | الرادار الرئيسي | `maker_radar_*.json` + `stocks.db` |
+| `GET` | `/api/maker-radar/stock` | سهم واحد | json + `stocks.db` |
+| `GET` | `/api/maker-radar/stock-analysis` | تحليل سهم | json + `stocks.db` |
+| `GET` | `/api/maker-radar/sector-treemap` | خريطة القطاعات | json |
+| `GET` | `/api/maker-radar/net-picks` | أفضل اختيارات صافية | json + `stocks.db` |
+| `GET` | `/api/maker-radar/signal-tracker` | متتبّع إشارات | `predictions.db` |
+| `GET` | `/api/maker-radar/signal-tracker/verify` | تحقّق إشارة | `predictions.db` |
+| `GET` | `/api/maker-radar/entry-timing` | توقيت الدخول | json + `stocks.db` |
+| `GET` | `/api/maker-radar/exit-radar` | رادار الخروج | `predictions.db` |
+| `GET` | `/api/maker-radar/footprint` | أثر صانع السوق | json |
+| `GET` | `/api/maker-radar/fundamentals` | الأساسيات | `stocks.db` |
+| `GET` | `/api/maker-radar/market-intelligence` | ذكاء السوق | json |
+| `GET` | `/api/maker-radar/timeline` | الخط الزمني | json |
+| `GET` | `/api/maker-radar/multi-market` | أسواق متعددة | json |
+| `GET` | `/api/maker-radar/live-watch` | مراقبة لحظية | json + `stocks.db` |
+| `GET` | `/api/maker-radar/track` | تتبّع | `predictions.db` |
+| `POST` | `/api/maker-radar/warmup` | تسخين الكاش | json |
+
+---
+
+## 9. Admin (`/api/admin/*`) — 88 routes
+
+أكبر قسم. لوحة تحكم الإدارة الكاملة. الأقسام الفرعية الرئيسية:
+
+### 9.1 المصادقة + المستخدمين
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `POST`/`DELETE` | `/api/admin/auth` | login/logout للأدمن | `auth.db` |
+| `POST` | `/api/admin/auth/token` | توليد token | `auth.db` |
+| `GET` | `/api/admin/auth/auto-cookie` | cookie تلقائي | `auth.db` |
+| `GET` | `/api/admin/users` | قائمة المستخدمين | `auth.db` |
+| `PATCH`/`DELETE` | `/api/admin/users/[id]` | تعديل/حذف مستخدم | `auth.db` |
+| `POST` | `/api/admin/users/[id]/promo` | ترقية | `auth.db` |
+| `POST` | `/api/admin/users/cleanup-expired` | تنظيف منتهي الصلاحية | `auth.db` |
+
+### 9.2 إدارة الـ DBs (db-manager)
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/admin/db` | قائمة الـ DBs | filesystem |
+| `GET` | `/api/admin/db/[db]` | جداول DB | selected DB |
+| `GET`/`POST` | `/api/admin/db/[db]/[table]` | صفوف جدول | selected DB |
+| `DELETE` | `/api/admin/db/[db]/[table]/[row]` | حذف صف | selected DB |
+| `GET`/`POST` | `/api/admin/db-manager` | حالة DbManager | `DbManager` |
+| `GET`/`POST` | `/api/admin/db-manager/query` | استعلام | `DbManager` |
+| `POST` | `/api/admin/db-manager/repair` | إصلاح | `DbManager` |
+| `POST` | `/api/admin/db-manager/recover` | استرجاع | `DbManager` |
+| `POST` | `/api/admin/db-manager/recover-all` | استرجاع الكل | `DbManager` |
+| `GET` | `/api/admin/db-manager/schema` | schema | `DbManager` |
+| `GET` | `/api/admin/db-manager/export` | تصدير | `DbManager` |
+| `GET` | `/api/admin/db-manager/export-all` | تصدير الكل | `DbManager` |
+| `POST` | `/api/admin/db-manager/import-all` | استيراد | `DbManager` |
+| `POST` | `/api/admin/db-manager/backup` | نسخ احتياطي | `DbManager` |
+| `POST` | `/api/admin/db-manager/restore` | استرجاع نسخة | `DbManager` |
+| `DELETE` | `/api/admin/db-manager/delete-backup` | حذف نسخة | `DbManager` |
+| `GET` | `/api/admin/db-manager/historical-backups` | نسخ تاريخية | `DbManager` |
+| `POST` | `/api/admin/db-manager/reindex` | إعادة فهرسة | `DbManager` |
+| `POST` | `/api/admin/db-manager/checkpoint-all` | WAL checkpoint | `DbManager.openDbWritable` |
+| `POST` | `/api/admin/db-manager/truncate-table` | تفريغ جدول | `DbManager` |
+| `POST` | `/api/admin/db-manager/drop-table` | حذف جدول | `DbManager` |
+
+### 9.3 المحركات + النظام
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET`/`POST` | `/api/admin/engines/control` | تحكّم بالمحركات | Python proxy |
+| `POST` | `/api/admin/engines/start-all` | تشغيل الكل | Python proxy |
+| `POST` | `/api/admin/engines/stop-all` | إيقاف الكل | Python proxy |
+| `GET` | `/api/admin/engines-status` | حالة المحركات | Python proxy |
+| `GET`/`POST` | `/api/admin/engine-settings` | إعدادات المحركات | `predictions.db` |
+| `POST` | `/api/admin/engine-settings/reset` | إعادة ضبط | `predictions.db` |
+| `GET` | `/api/admin/system-health` | صحة النظام | multiple |
+| `GET` | `/api/admin/system-topology` | طوبولوجيا النظام | multiple |
+| `GET` | `/api/admin/system-resources` | موارد النظام (VACUUM via `openDbWritable`) | multiple |
+| `GET` | `/api/admin/system-resources/history` | تاريخ الموارد | metrics |
+| `GET` | `/api/admin/system-resources/anomalies` | شذوذ | metrics |
+| `GET` | `/api/admin/system-resources/process-history` | تاريخ العمليات | metrics |
+| `GET`/`POST` | `/api/admin/pm2-control` | تحكّم PM2 | PM2 |
+| `GET` | `/api/admin/cron-health` | صحة الـ cron | crontab |
+
+### 9.4 التوقعات + التحليل
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `POST` | `/api/admin/clean-predictions` | تنظيف التوقعات | `predictions.db` |
+| `POST` | `/api/admin/close-predictions` | إغلاق توقعات | `predictions.db` |
+| `POST` | `/api/admin/generate-predictions` | توليد توقعات | `predictions.db` |
+| `POST` | `/api/admin/generate-historical-predictions` | توليد تاريخي | `predictions.db` |
+| `POST` | `/api/admin/ai-analyze` | تحليل AI | Ollama/DeepSeek |
+| `POST` | `/api/admin/ai-predictions/generate` | توليد AI predictions | `predictions.db` |
+| `GET` | `/api/admin/daily-analysis` | تحليل يومي | Python proxy |
+| `GET` | `/api/admin/validation` | تحقّق | multiple |
+| `POST` | `/api/admin/ab-test` | A/B test | `predictions.db` |
+| `GET` | `/api/admin/backtest/v40/run` | تشغيل backtest V40 | `predictions.db` |
+| `GET` | `/api/admin/backtest/v40/status/[jobId]` | حالة job | `predictions.db` |
+| `GET` | `/api/admin/backtest/v40/stats` | إحصائيات backtest | `predictions.db` |
+
+### 9.5 البيانات + المزامنة
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `POST` | `/api/admin/sync-stocks-db` | مزامنة stocks.db | `stocks.db` |
+| `POST` | `/api/admin/sync-vps` | مزامنة VPS | remote |
+| `GET`/`POST` | `/api/admin/data-sources` | مصادر البيانات | `data_engine.db` |
+| `GET` | `/api/admin/data-health` | صحة البيانات | multiple |
+| `GET` | `/api/admin/news-health` | صحة الأخبار | `news.db` |
+| `GET` | `/api/admin/investors-data` | بيانات المستثمرين | `data_engine.db` |
+| `POST` | `/api/admin/import-indices-csv` | استيراد مؤشرات CSV | `stocks.db` |
+| `POST` | `/api/admin/import-stocks` | استيراد أسهم | `stocks.db` |
+| `POST` | `/api/admin/scrape-stocks` | scrape أسهم | `data_engine.db` |
+| `POST` | `/api/admin/refresh-historical-data` | تحديث تاريخي | `stocks.db` |
+| `GET` | `/api/admin/sources` | المصادر | `data_engine.db` |
+| `GET` | `/api/admin/export-data` | تصدير بيانات | multiple |
+| `GET` | `/api/admin/export-vps` | تصدير VPS | remote |
+| `POST` | `/api/admin/fix-dates` | إصلاح تواريخ | `stocks.db` |
+| `GET`/`POST` | `/api/admin/db-backup` | نسخ احتياطي DB | filesystem |
+| `GET` | `/api/admin/db-backup/status` | حالة النسخ | filesystem |
+| `POST` | `/api/admin/code-backup` | نسخ كود | git |
+| `GET` | `/api/admin/code-backup/download` | تنزيل نسخة كود | git |
+| `POST` | `/api/admin/purge-cache` | تنظيف الكاش | in-memory |
+
+### 9.6 الباقي (~20 routes)
+`/api/admin/analytics`, `/api/admin/news`, `/api/admin/platform-performance`,
+`/api/admin/telegram-predictions`, `/api/admin/stats`, `/api/admin/promo-codes`,
+`/api/admin/sharia/run`, `/api/admin/educational-cards/*`, `/api/admin/reports/*`.
+
+---
+
+## 10. Mobile (`/api/mobile/*`) — 19 routes
+
+API مخصّص لتطبيق Flutter. أغلبها proxy أو thin read.
+
+| Method | Endpoint | الوصف | Source DB |
+|--------|----------|-------|-----------|
+| `GET` | `/api/mobile/dashboard` | لوحة الموبايل الرئيسية | proxy + `stocks.db` |
+| `GET` | `/api/mobile/portfolio` | المحفظة | `portfolio-store` |
+| `GET` | `/api/mobile/portfolio/analyze` | تحليل المحفظة | Python proxy |
+| `GET` | `/api/mobile/portfolio/intelligence` | ذكاء المحفظة | Python proxy |
+| `GET` | `/api/mobile/watchlist` | قائمة المراقبة | `portfolio-store` |
+| `GET` | `/api/mobile/watchlist/intelligence` | ذكاء القائمة | Python proxy |
+| `GET` | `/api/mobile/stocks/[ticker]` | تفاصيل سهم | Python proxy |
+| `GET` | `/api/mobile/stocks/[ticker]/professional-analysis` | تحليل احترافي | Python proxy |
+| `GET` | `/api/mobile/stocks/[ticker]/recommendation` | توصية | Python proxy |
+| `GET` | `/api/mobile/recommendations` | توصيات | `predictions.db` |
+| `GET` | `/api/mobile/predictions` | توقعات | `predictions.db` |
+| `GET` | `/api/mobile/news` | أخبار | `news.db` |
+| `GET` | `/api/mobile/notifications` | إشعارات | `auth.db` |
+| `GET`/`POST` | `/api/mobile/alerts/settings` | إعدادات تنبيهات | alerts store |
+| `GET` | `/api/mobile/gold` | ذهب | `data_engine.db` |
+| `GET` | `/api/mobile/gold/history` | تاريخ الذهب | `data_engine.db` |
+| `GET` | `/api/mobile/crypto` | عملات رقمية | `data_engine.db` |
+| `GET` | `/api/mobile/crypto/[id]` | تفاصيل عملة | `data_engine.db` |
+| `GET` | `/api/mobile/zakat-calculator` | حاسبة الزكاة | computed |
+
+---
+
+## 11. باقي الأقسام المهمة
+
+### 11.1 Finance (`/api/finance/*`) — 17 routes
+إدارة مالية شخصية. الـ DB الأساسي: `finance.db` (Prisma).
+- `/api/finance/assets`, `/api/finance/assets/[id]`
+- `/api/finance/transactions`, `/api/finance/transactions/[id]`
+- `/api/finance/obligations`, `/api/finance/obligations/payments`
+- `/api/finance/reports`, `/api/finance/schema`, `/api/finance/projection`
+- `/api/finance/screener`, `/api/finance/smart-analysis`, `/api/finance/smart-alerts`
+- `/api/finance/smart-confluence`, `/api/finance/smart-watchlist`
+- `/api/finance/calculate-values`, `/api/finance/real-return`, `/api/finance/inflation`
+
+### 11.2 Crypto (`/api/crypto/*`) — 14 routes
+الـ DB الأساسي: `data_engine.db.crypto_prices`.
+- `/api/crypto`, `/api/crypto/coins`, `/api/crypto/[id]`, `/api/crypto/[id]/history`
+- `/api/crypto/live`, `/api/crypto/stop`, `/api/crypto/simulation`, `/api/crypto/full-analysis`
+- `/api/crypto/watchlist`, `/api/crypto/portfolio`, `/api/crypto/flow`, `/api/crypto/flow/[symbol]`
+- `/api/crypto/explosive`, `/api/crypto/explosive/[symbol]`
+
+### 11.3 V2 Unified (`/api/v2/*`) — 14 routes
+Proxy للمحرك الموحّد V2 في Python.
+- `/api/v2/unified/analyze`, `/api/v2/unified/scan`, `/api/v2/unified/config`
+- `/api/v2/recommend`, `/api/v2/live-analysis`, `/api/v2/chart/full-analysis`
+- `/api/v2/engines`, `/api/v2/presets`, `/api/v2/pipelines`
+- `/api/v2/pipeline/[name]/summary`, `/api/v2/pipeline/[name]/engine/[engine]/toggle`
+- `/api/v2/pipeline/[name]/engine/[engine]/weight`, `/api/v2/liquidity-radar`, `/api/v2/feedback/run`
+
+### 11.4 Subscription (`/api/subscription/*`) — 12 routes
+الـ DB الأساسي: `auth.db` + بوابات دفع (Paymob/Instapay/Google Play).
+- `/api/subscription/plans`, `/api/subscription/status`, `/api/subscription/current`
+- `/api/subscription/checkout`, `/api/subscription/activate`, `/api/subscription/verify`
+- `/api/subscription/trial`, `/api/subscription/start-trial`, `/api/subscription/subscribe`
+- `/api/subscription/upgrade`, `/api/subscription/check-access`, `/api/subscription/developer-request`
+
+### 11.5 Data-Engine (`/api/data-engine/*`) — 9 routes
+مراقبة + تحكّم في `data_engine.db`.
+- `/api/data-engine/health`, `/api/data-engine/status`, `/api/data-engine/control`
+- `/api/data-engine/stocks`, `/api/data-engine/gold`, `/api/data-engine/silver`
+- `/api/data-engine/metals`, `/api/data-engine/forex`, `/api/data-engine/crypto`
+
+### 11.6 Radar (`/api/radar/*`) — 5 routes
+- `/api/radar/personalized`, `/api/radar/incubator`, `/api/radar/accuracy`
+- `/api/radar/weekly-report`, `/api/radar/weekly-report/pdf`
+
+### 11.7 Alerts (`/api/alerts/*`) — 5 routes
+- `GET`/`POST` `/api/alerts`, `/api/alerts/[id]`, `/api/alerts/create`, `/api/alerts/quick-add`, `/api/alerts/scheduler`
+
+### 11.8 Recommendations (`/api/recommendations/*`) — 5 routes
+- `/api/recommendations`, `/api/recommendations/expert`, `/api/recommendations/backtest`
+- `/api/recommendations/retroactive-evaluate`, `/api/recommendations/verify`
+
+### 11.9 Paper-Trading-V2 (`/api/paper-trading-v2/*`) — 6 routes
+- `/api/paper-trading-v2/account`, `/api/paper-trading-v2/positions`, `/api/paper-trading-v2/orders`
+- `/api/paper-trading-v2/order`, `/api/paper-trading-v2/orders/[id]/close`, `/api/paper-trading-v2/reset`
+
+### 11.10 AI (`/api/ai/*`) — 3 routes
+- `POST` `/api/ai/chat` — محادثة AI (Ollama/DeepSeek)
+- `POST` `/api/ai/analyze-stock` — تحليل سهم بالـ LLM
+- `GET` `/api/ai/models` — النماذج المتاحة
+
+### 11.11 باقي الأقسام (1–4 routes each)
+`/api/telegram/*` (4), `/api/sniper/*` (4), `/api/ads/*` (4),
+`/api/persona/*` (3), `/api/paymob/*` (3), `/api/money/*` (3),
+`/api/maestro/*` (3), `/api/live-monitor/*` (3), `/api/expert-recommendations/*` (3),
+`/api/currency/*` (3), `/api/confluence/*` (3), `/api/bot/*` (3),
+`/api/user-posts/*` (3), `/api/unified-learning/*` (6),
+`/api/watchlist/*` (2), `/api/unified/*` (2), `/api/trading-journal/*` (2),
+`/api/sharia/*` (2), `/api/sectors/*` (2), `/api/risk/*` (2),
+`/api/stored-analysis/*` (2), `/api/trade-results/*` (2),
+وأقسام utility مفردة: `/api/health`, `/api/keepalive`, `/api/track`,
+`/api/features`, `/api/feedback`, `/api/points`, `/api/zakat/calculate`,
+`/api/i18n/set-locale`, `/api/push/register`, `/api/notifications`,
+`/api/redeem-promo`, `/api/b2b/signup`, `/api/instapay`, `/api/google-play/verify-receipt`,
+`/api/python/[...path]` (catch-all proxy), `/api/proxy/[...path]`, `/api/proxy-prod/[...path]`,
+`/api/[...slug]` (404 fallback), وغيرها.
+
+---
+
+## 12. DAL Gateway (DbManager)
+
+كل الـ routes اللي بتقرأ DB مباشرة لازم تمرّ عبر `src/lib/db-manager.ts`.
+الـ namespace `DbManager` بيوفّر:
+
+| Method | الوصف |
+|--------|-------|
+| `DbManager.openDb(file)` | فتح DB readonly — يرجع `null` لو مش موجود |
+| `DbManager.openDbWritable(file)` | فتح DB writable (للـ VACUUM, UPDATE) |
+| `DbManager.columnExists(db, table, col)` | فحص وجود column |
+| `DbManager.getLiveSparkline(ticker)` | sparkline — أولوية `stock_daily_prices` |
+| `DbManager.getLiveSparklines(tickers[])` | نسخة batch |
+| `DbManager.getIncubatorData(market)` | بيانات الـ incubator (آخر json + فلترة قدم البيانات) |
+| `DbManager.getUnifiedLogos(tickers[])` | كاش الأيقونات (logo_url + logoUrl) |
+| `DbManager.getLogoUrl(ticker)` | أيقونة سهم واحد |
+| `DbManager.enrichWithUnifiedLogos(rows)` | إضافة logos لصفوف |
+| `DbManager.getActivePredictions()` | توقعات نشطة بدون تكرار ticker |
+| `DbManager.getCompanyFundamentals(ticker)` | أساسيات شركة |
+| `DbManager.getMarketTabData(market)` | بيانات تبويب السوق |
+
+> **القاعدة:** لو الـ route محتاج DB access و`DbManager` مش فيه function مناسب →
+> أضف function جديد في `db-manager.ts` (مش في الـ route).
+
+---
+
+## 13. الـ DBs المعزولة (price_history.db)
+
+`price_history.db` **معزول** بعد WAVE 1-3. لا route جديد يقرأه.
+الـ fallback labels في الـ comments مسموحة، لكن `new Database('price_history.db')`
+ممنوع. التطهير شمل:
+
+| الموجة | الملفات المتأثرة | الحالة |
+|-------|------------------|--------|
+| WAVE 1 | `hunting/`, `sniper/`, `jobs/` (Python) | ✅ مُنظّف |
+| WAVE 2 | `portfolio/` (rescue, master), `predictions/` (daily-picks, honest-tracking), `stocks/[ticker]/history`, `stocks/delta-volume` | ✅ 6 routes مُنظّفة |
+| WAVE 3 | `screener/advanced`, `stocks/[ticker]/depth`, `admin/system-resources` + `DbManager` namespace | ✅ مُختوم |
+
+المصدر الأساسي الحالي للأسعار اليومية: **`stocks.db.stock_daily_prices`**
+(Rule 10 — CONSTITUTION). الـ fallback الوحيد المسموح: `data_engine.db.egksco_price_history`.
+
+---
+
+## 14. Auth & Caching
+
+### 14.1 Auth
+- **User auth:** NextAuth (`/api/auth/[...nextauth]`) + JWT في `auth.db.Session`.
+- **Admin auth:** `/api/admin/auth` (login/token) + cookie-based session.
+- **Bot linking:** `/api/bot/link-token` + `/api/bot/check-subscription` (Telegram bot gate).
+- **Subscription gate:** `src/lib/subscription-gate.ts` — يتحقّق من `auth.db.User.subscription_status`.
+
+### 14.2 Caching
+- **AnalysisCache** (per-ticker, TTL=60s) — في Python backend.
+- **ApiResponseCache** (per-endpoint, TTL=60-300s) — في Python backend.
+- **Next.js Data Cache** — `fetch()` مع `next: { revalidate }` في بعض routes.
+
+---
+
+## 15. See Also
+
+| المرجع | المحتوى |
+|--------|---------|
+| `Documentation/00-CONSTITUTION.md` | الدستور (Rules 20–23 للـ DAL) |
+| `Documentation/02-DATABASES-AND-DATA.md` | تفاصيل كل DB + ownership |
+| `Documentation/02-HOW-IT-THINKS.md` | كيف يفكر النظام (الـ engines) |
+| `Documentation/01-SCREENS-AND-COMPONENTS.md` | الشاشات اللي بتستهلك الـ APIs دي |
+| `src/lib/db-manager.ts` | الـ DAL layer (البوابة الوحيدة للـ DBs) |
+| `src/lib/python-backend.ts` | helper للـ Python proxy |
+| `vps-service/api/` | الـ Python backend routes (Flask) |
+
+---
+
+*آخر تحديث: 2026-10-27 — 466 route موثّق. لو أضفت route جديد، حدّث القاموس ده.*
