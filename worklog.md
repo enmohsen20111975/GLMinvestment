@@ -12788,3 +12788,46 @@ Stage Summary:
 - cron job 7 محدّث (scanner_live كل دقيقتين).
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/scanner-live.
+
+---
+Task ID: SCANNER-LIVE-3
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: ضبط logo_url + كتابة سكريبت الهجرة الشامل (data_engine.db → stocks.db)
+
+Work Log:
+- STEP 1: ضبط logo_url في tradingview_scanner_live.py:
+  * أضفت عمود logo_url + tabs_data لـ COLUMN_TYPES
+  * LOGO_URL_TEMPLATE = "https://s3-symbol-logo.tradingview.com/{logoid}.svg"
+  * في fetch_market: بـ يـ build logo_url من logoid لكل سهم
+  * اختبار: 283/295 EGX (96%) ليهم logo_url
+- STEP 2: كتابة scripts/migrate_data_engine_to_stocks.py (217 سطر):
+  * بينقل logo_url + name_ar + sector + tabs_data من data_engine.db → stocks.db
+  * بينضف الرموز الملوثة (LUTSL→LUTS, FWRYF→FWRY, COMIالبنك→COMI)
+  * بـ يـ merge tabs_data (JSON) بدون فقدان التاريخ
+  * idempotent (INSERT OR IGNORE + UPDATE لو NULL بس)
+  * production-safe (مفيش DELETE)
+- STEP 3: اختبار الهجرة بـ simulated source (5 rows: 3 clean + 2 polluted):
+  * LUTSL → LUTS (تنظيف + new insert + logo_url من scanner)
+  * FWRYF → FWRY (تنظيف + new insert + logo_url من scanner)
+  * COMI: tabs_data مدموجة من المصدر
+  * SWDY: tabs_data مدموجة
+  * 2 new_stocks_added + 2 tabs_merged + 1 cleaned_symbols
+- STEP 4: اختبار idempotency:
+  * rerun = 0 new_stocks + 0 logos_migrated (صح — ما فيش تكرار)
+  * tabs_merged = 3 (الـ merge بـ يـ skip لو موجود بالفعل)
+- STEP 5: إثباتات SQL:
+  * logo_url fill rate: 96% (284/297)
+  * COMI logo_url: https://s3-symbol-logo.tradingview.com/commercial-international-bank-egypt.svg ✅
+  * LUTS (cleaned from LUTSL): logo_url + name نظيف ✅
+  * FWRY (cleaned from FWRYF): logo_url + name نظيف ✅
+  * ACAMD/EFID/EMFD = رموز EGX شرعية بتـ تنتهي بـ D (مش تلوث)
+  * مفيش رموز ملوثة عربية (COMIالبنك) في DB
+
+Stage Summary:
+- logo_url شغّال في السكرابر (96% fill rate).
+- سكريبت الهجرة جاهز + مجرّب + idempotent.
+- tabs_data بـ يـ merge بدون فقدان تاريخ.
+- رموز LUTSL/FWRYF/COMIالبنك بـ تـ تتظبط تلقائيًا.
+- 66 column في stocks table (كانت 64 + logo_url + tabs_data).
+- لم ألمس main، لم أmerge، لم أdeploy.
+- الفرع: bravo/scanner-live.

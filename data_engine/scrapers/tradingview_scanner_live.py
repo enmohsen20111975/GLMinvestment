@@ -179,10 +179,15 @@ COLUMN_TYPES: Dict[str, str] = {
     "macd_signal": "REAL", "atr": "REAL", "sma20": "REAL", "sma50": "REAL",
     "sma200": "REAL", "name_ar": "TEXT", "sector": "TEXT", "industry": "TEXT",
     "currency": "TEXT", "exchange": "TEXT", "logoid": "TEXT",
+    "logo_url": "TEXT",
+    "tabs_data": "TEXT",  # JSON: merged historical tab data (from migration)
     # meta columns (not from API)
     "market": "TEXT", "turnover_egp": "REAL", "last_updated": "TEXT",
     "is_active": "INTEGER DEFAULT 1",
 }
+
+# TradingView S3 logo URL template (official, used by tradingview.com itself)
+LOGO_URL_TEMPLATE = "https://s3-symbol-logo.tradingview.com/{logoid}.svg"
 
 HTTP_TIMEOUT = 20
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -286,6 +291,12 @@ def fetch_market(market_slug: str) -> Tuple[List[Dict[str, Any]], float]:
                 continue  # already set as symbol
             val = vals.get(api_field)
             record[db_col] = val
+        # SCANNER-LIVE-3 (2026-10-27): build logo_url from logoid
+        logoid = record.get("logoid")
+        if logoid:
+            record["logo_url"] = LOGO_URL_TEMPLATE.format(logoid=logoid)
+        else:
+            record["logo_url"] = None
         record["market"] = market_slug
         # value_traded = turnover_egp (same thing, EGX cash value)
         if record.get("value_traded") is not None:
