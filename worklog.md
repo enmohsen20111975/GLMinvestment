@@ -12752,3 +12752,39 @@ Stage Summary:
 - لم ألمس cron job 7 (محتاج موافقة المالك على استبدال Playwright).
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/scanner-live (معزول).
+
+---
+Task ID: SCANNER-LIVE-2
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: المرحلة 2 — دمج الرادار + fallback_chain + أرشفة Dead Code + تحديث cron
+
+Work Log:
+- STEP 1: أرشفة Dead Code → archive/dead_scrapers_20261027/
+  * tradingview_market_movers.py (ZERO callers + Playwright)
+  * tradingview_screener_lists.py (ZERO callers + Playwright)
+  * README.md موثّق بالسبب + البديل
+- STEP 2: تحديث fallback_chain.py::_try_tradingview
+  * tradingview_scanner_live كمصدر أساسي (fetch_market + save_to_db)
+  * tradingview_rest كـ fallback لو الـ unified engine فشل
+  * بيحفظ في stocks.db + _ensure_schema (idempotent)
+- STEP 3: تحديث scripts/maker_radar.py
+  * أضفت _load_scanner_enrichment() — بـ تقرا value_traded + relative_volume_10d + fundamentals من stocks.db
+  * أضفت _enrich_result_with_scanner() — بـ تدمج القيم الرسمية في الـ result dict
+  * الـ enrichment بـ override turnover_egp بـ value_traded الرسمي
+  * بـ يحدد volume_surge = True لو relative_volume_10d > 1.2 (per owner directive)
+  * backward compat: لو stocks.db مش موجود أو الـ columns مش موجودة، بـ يـ skip
+- STEP 4: تحديث crontab.txt job 7
+  * استبدال tradingview_scraper.py (Playwright) بـ tradingview_scanner_live.py (HTTP)
+  * كل دقيقتين (بدل 5) + 8-14 UTC (بدل 8-12)
+  * 3.3 ثوانٍ بدل 120 ثانية
+- اختبار الـ enrichment (standalone):
+  * COMI: value_traded_official=767M, relvol=1.307, volume_surge=True, pe/roe/margin/eps/div كلها موجودة ✅
+  * KORA: value_traded=625M, relvol=1.09, pe/roe=None (مش bug — TradingView نفسه مفيهوش)
+
+Stage Summary:
+- Dead Code أُرشف (2 ملفات + README).
+- fallback_chain.py بـ يستخدم scanner_live كأولوية أولى.
+- maker_radar.py بـ يـ enrich النتائج بـ value_traded + relative_volume_10d الرسمية.
+- cron job 7 محدّث (scanner_live كل دقيقتين).
+- لم ألمس main، لم أmerge، لم أdeploy.
+- الفرع: bravo/scanner-live.
