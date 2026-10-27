@@ -12964,3 +12964,131 @@ Stage Summary:
 - 1199 text volume + 383 polluted tab_* + 81 tickers كلها اتنظفت.
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/scanner-live.
+
+- Commit: 28187ac
+- NOT merged to main, NOT deployed to production
+
+---
+Task ID: ALPHA-SCANNER-LIVE
+Agent: Alpha (Frontend Engineer — Scanner Live integration)
+Task: تنفيذ مهام ألفا الـ 5 بعد اكتمال برافو V2 للمرحلة 2 (stocks.db 64 columns).
+
+Work Log:
+- Step 0 (State verification):
+  * قرأت worklog.md tail + git status (clean, main branch, 5 commits ahead).
+  * اكتشفت إن المهام 1 و 2 (tab-data path fix + fundamentals route) موجودة بالفعل في الكود
+    (committed سابقًا — line 38-39 في tab-data فيه comment "FIX (Jimmy directive 2026-10-27"
+    + fundamentals route بيقرا من stocks.db وبيبني 8 تبويبات).
+  * تحققت من stocks.db schema: فيه 60 عمود (مش 64 — برافو شغله على bravo/scanner-live،
+    مش merged). الأعمدة الموجودة: value_traded ✅, turnover_egp ✅, pe_ratio ✅, roe ✅.
+    الأعمدة الناقصة (relative_volume_10d, free_cash_flow, macd, sma20/50/200) — مش موجودة
+    لحد ما bravo/scanner-live يـ merge.
+  * النتيجة: المهام 1+2 done. المهام 3+4+5 لسه محتاجة شغل. بنيت كل المكوّنات defensive
+    (optional fields + null handling) عشان تشتغل دلوقتي AND بعد الـ merge.
+
+- Step 1 (Task 4 — Highest Cash filter preset):
+  * أضفت مفتاح ترجمة `highestCash` في messages/ar.json + messages/en.json.
+  * ar.json: "highestCash": "أعلى سيولة نقدية"
+  * en.json: "highestCash": "Highest Cash Traded"
+  * أضفت `Banknote` icon لـ imports في AdvancedFiltersTab.tsx.
+  * أضفت preset جديد (primary=true) في presets array: يفرز حسب value_traded desc +
+    min_turnover=50M EGP + min_volume=100k.
+  * اكتشفت إن الـ screener API بيقبل 3 sorts فقط (change_percent/volume/market_cap)،
+    فأضفت `setClientSortField('value_traded')` + `setClientSortDir('desc')` للـ preset
+    عشان يفرز client-side فعليًا (نفس نمط highLiquidity بس بحقل الكاش الرسمي).
+  * أضفت `'value_traded'` لـ SortField type في types.ts.
+  * أضفت `value_traded` لـ SELECT + row mapping في screener/advanced/route.ts (مع has() check
+    + fallback على `current_price * volume`).
+
+- Step 2 (Task 5 — Relative Volume badge):
+  * أنشأت `src/components/shared/RelativeVolumeBadge.tsx` — مكوّن مشترك.
+  * مصادر القيمة (بالأولوية): (1) relative_volume_10d [برافو، optional]، (2) volume_ratio_10d_vs_20d
+    [maker-radar موجود]، (3) volume_surge boolean [fallback بدون رقم].
+  * يظهر الشارة لما value > 1.2 (threshold default per owner directive). intensity: med (1.2-2x),
+    high (≥2x). لو كل المصادر null → لا يعرض شيئًا (no fabrication, Rule 27).
+  * Rule 20: لا حساب في الـ frontend — فقط عرض ما يصل من الـ backend.
+  * أضفت `relative_volume_10d?: number | null` لـ ScreenerStock type (useScreenerData.ts).
+  * أضفت `relative_volume_10d`, `volume_surge`, `volume_ratio_10d_vs_20d` لـ Stock type (types/index.ts).
+  * أضفت `relative_volume_10d` لـ SELECT + row mapping في screener API (NULL AS relative_volume_10d
+    لو العمود مش موجود — defensive pre-merge).
+  * دمجت الشارة في screenerColumns.tsx (عمود الحجم — تحت رقم الحجم).
+  * دمجت الشارة في StockDetail.tsx (بجوار بطاقة الحجم في price info cards).
+
+- Step 3 (Task 3 — CompanyFundamentalsCard):
+  * أنشأت `src/components/shared/CompanyFundamentalsCard.tsx` (~290 LOC).
+  * بيقرأ من /api/maker-radar/fundamentals?ticker=X (stocks.db 64 columns + data_engine fallback).
+  * 8 تبويبات: التقييم / الربحية / المركز المالي / قائمة الدخل / التدفقات النقدية /
+    التوزيعات / الأداء / التحليل الفني.
+  * In-Place Patching: useRef للبيانات + 3-state (isInitialLoading/isBackgroundRefreshing/error).
+    أول mount بس skeleton؛ التحديث الخلفي بيفضي البيانات ظاهرة + indicator خفيف. لو خطأ في
+    التحديث الخلفي → لا نمسح البيانات القديمة.
+  * Rule 27: null → «—» (مش 0 أو رقم مزيف). badge بعدّاد القيم الموجودة.
+  * ErrorBoundary + retry button لو فشل التحميل. max-h-72 overflow-y-auto للقوائم الطويلة.
+  * دمجت المكوّن في StockDetail.tsx بعد Financial & Technical Metrics grid + قبل AI Analysis Widget.
+
+- Step 4 (Pre-existing fix — BagHolderRescuePanel syntax):
+  * الـ dev server مش بيقدر يبدأ بسبب stray `</div>` في BagHolderRescuePanel.tsx line 545
+    (commit 8bfd47c — مش من تغييراتي، pre-existing broken).
+  * التحليل: div#3 (selector wrapper L404) اتقفل في L518. الـ `</div>` في L545 stray (ما فيش
+    open div يقابلها). tsc error: "Expected corresponding JSX closing tag for 'CardContent'".
+  * الإصلاح: شيلت الـ stray `</div>` (safe, unambiguous — ما فيش matching open tag).
+  * ده خلّى الـ dev server يقدر يبدأ + الـ API routes تـ compile.
+
+- Step 5 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي (RelativeVolumeBadge, CompanyFundamentalsCard,
+    screenerColumns, AdvancedFiltersTab, types, useScreenerData, screener/route,
+    StockDetail, fundamentals/route, tab-data/route) → 0 errors.
+    (pre-existing errors في ملفات مش بتاعتي: render-helpers, flow-score, chart-config,
+    indicators, overlay-config — كلها pre-existing ومش متأثرة بتغييراتي).
+  * Live API test (dev server port 3000):
+    - GET /api/maker-radar/fundamentals?ticker=COMI → 200 OK. رجع 8 تبويبات ببيانات حقيقية:
+      P/E=21.15, P/B=1.70, EPS=5.77, ROE=18.00. الـ null fields (P/S, market_cap, ROA,
+      profit_margin) بترجع null صح (الساندبوكس مش فيه أعمدة برافو بعد).
+    - GET /api/screener/advanced?market=EGX&limit=3 → 200 OK. Fields CONFIRMED in response:
+      value_traded + relative_volume_10d موجودين. القيم 0/None ل stocks ناقصة (defensive —
+      صح تمامًا، هتتملأ بعد merge برافو).
+  * Browser test (agent-browser / full / page): BLOCKED by 4GB sandbox OOM.
+    next-server OOM-killed (anon-rss:2.4GB) أثناء compile صفحة / (Turbopack).
+    ده نفس القيد البيئي الموثق في كل Alpha worklog entries السابقة
+    (S-2-Alpha-Browser, Incubator-Redesign-Alpha, alpha-live-scan-screen).
+    الـ API routes compile بنجاح (أخف من الصفحة الكاملة)، لكن الـ / page بتـ OOM-kill.
+
+Stage Summary:
+- Files created (2):
+  * src/components/shared/RelativeVolumeBadge.tsx (~130 LOC): شارة الحجم النسبي > 1.2x.
+    defensive: relative_volume_10d [برافو] → volume_ratio_10d_vs_20d [موجود] → volume_surge [fallback].
+  * src/components/shared/CompanyFundamentalsCard.tsx (~290 LOC): 8 تبويبات مالية + In-Place Patching.
+- Files modified (8):
+  * messages/ar.json + messages/en.json: أضفت `highestCash` translation key.
+  * src/modules/screener/components/screener-advanced/AdvancedFiltersTab.tsx: Banknote import + highestCash preset (sort by value_traded desc, client-side).
+  * src/modules/screener/components/screener-advanced/types.ts: أضفت 'value_traded' لـ SortField.
+  * src/modules/screener/components/screener-advanced/screenerColumns.tsx: RelativeVolumeBadge في عمود الحجم.
+  * src/hooks/useScreenerData.ts: أضفت relative_volume_10d? لـ ScreenerStock.
+  * src/types/index.ts: أضفت relative_volume_10d?, volume_surge?, volume_ratio_10d_vs_20d? لـ Stock.
+  * src/app/api/screener/advanced/route.ts: value_traded + relative_volume_10d في SELECT + row mapping (defensive has() checks).
+  * src/modules/stock-analysis/components/StockDetail.tsx: RelativeVolumeBadge + CompanyFundamentalsCard imports + integration.
+- Files fixed (1, pre-existing):
+  * src/modules/portfolio/components/BagHolderRescuePanel.tsx: شيلت stray `</div>` line 545 (كان بـ يكسر compilation).
+- Verification:
+  * Lint: exit 0 (clean).
+  * tsc on my files: 0 errors (pre-existing errors في ملفات تانية مش متأثرة).
+  * fundamentals API live test: 200 OK, 8 tabs, COMI real data (P/E=21.15, ROE=18.00).
+  * screener API live test: 200 OK, value_traded + relative_volume_10d fields CONFIRMED present.
+  * Browser: BLOCKED by OOM (environmental, documented). API-level verification passed.
+- Git state: changes unstaged (NOT committed) — awaiting owner review. main محمي.
+- NO push, NO merge, NO deploy.
+
+---
+Task ID: ALPHA-SCANNER-LIVE (handoff)
+Agent: Alpha
+Task: ملخص التسليم لـ Jimmy/owner
+
+- المهام 1+2 (tab-data path + fundamentals route) كانت موجودة بالفعل (committed سابقًا).
+- المهام 3+4+5 اكتملت: CompanyFundamentalsCard (8 تبويبات) + Highest Cash preset + Relative Volume badge.
+- كل المكوّنات defensive: تشتغل دلوقتي (مع null/0 لما البيانات ناقصة) AND بعد merge برافو
+  (relative_volume_10d + value_traded الرسمية هتتدفق تلقائيًا).
+- الـ fundamentals API متحقق منه live (COMI: P/E=21.15, ROE=18.00, EPS=5.77).
+- الـ screener API متحقق منه (value_traded + relative_volume_10d في response).
+- Browser verification محظور بيئيًا (OOM 4GB sandbox) — موثق في كل Alpha worklog سابق.
+- أنتظر: مراجعة Jimmy + موافقة owner على commit + merge.

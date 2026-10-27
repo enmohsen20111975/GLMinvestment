@@ -41,6 +41,8 @@ import { TradingViewChart } from './TradingViewChart';
 // ChartToggle removed — only one chart (TradingViewChart)
 import { TradingChartView } from '@/modules/market-analysis/components/TradingChartView';
 import { StockFeelCard } from '@/components/shared/StockFeelCard';
+import { RelativeVolumeBadge } from '@/components/shared/RelativeVolumeBadge';
+import { CompanyFundamentalsCard } from '@/components/shared/CompanyFundamentalsCard';
 import { DeepAnalysis } from './DeepAnalysis';
 import { StockNews } from './StockNews';
 import { CalculationBreakdown } from './CalculationBreakdown';
@@ -1451,6 +1453,19 @@ export function StockDetail() {
  value={formatVolume(stock.volume)}
  icon={<Zap className="w-4 h-4" />}
  />
+ {/* (ALPHA-SCANNER-LIVE, Task 5): شارة الحجم النسبي > 1.2x.
+     تظهر بجوار بطاقة الحجم. تأخذ relative_volume_10d الرسمي (برافو) أو
+     volume_ratio_10d_vs_20d أو volume_surge كـ fallback. لو القيمة طبيعية أو
+     غير متاحة → لا تظهر (no fabrication). */}
+ <div className="flex items-center justify-center pt-1">
+ <RelativeVolumeBadge
+ relativeVolume10d={stock.relative_volume_10d}
+ volumeRatio10dVs20d={stock.volume_ratio_10d_vs_20d}
+ volumeSurge={stock.volume_surge}
+ threshold={1.2}
+ size="md"
+ />
+ </div>
  <PriceInfoCard
  label="القيمة السوقية"
  value={formatNumber(stock.market_cap) + ' EGP'}
@@ -1650,6 +1665,17 @@ export function StockDetail() {
  />
  </WidgetCard>
  </div>
+
+ {/* (ALPHA-SCANNER-LIVE, Task 3): بطاقة الأساسيات المالية للشركة — 8 تبويبات.
+     تقرأ من /api/maker-radar/fundamentals (stocks.db 64 عمود + data_engine fallback).
+     التبويبات: التقييم / الربحية / المركز المالي / قائمة الدخل /
+     التدفقات النقدية / التوزيعات / الأداء / التحليل الفني. */}
+ <ErrorBoundary title="الأساسيات المالية للشركة">
+ <CompanyFundamentalsCard
+ ticker={stock.ticker}
+ stockName={stock.name_ar}
+ />
+ </ErrorBoundary>
 
  {/* AI Analysis Widget - Automatic Background Analysis */}
  <ErrorBoundary title="تحليل المساعد الذكي">

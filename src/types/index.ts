@@ -96,6 +96,11 @@ export interface Stock extends StockMini {
   // ─── 52-Week Range (Single Source of Truth) ───
   high_52w?: number | null;
   low_52w?: number | null;
+  // (ALPHA-SCANNER-LIVE, Task 5): حقول الحجم النسبي من TradingView Scanner.
+  // optional — تُملأ بعد دمج bravo/scanner-live. لو null → الشارة تختفي (no fabrication).
+  relative_volume_10d?: number | null;
+  volume_surge?: boolean | null;
+  volume_ratio_10d_vs_20d?: number | null;
 }
 
 export interface StockListResponse {

@@ -542,7 +542,6 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LifeBuoy className="h-4 w-4" />}
  حلّل
  </Button>
- </div>
 
  {/* Result */}
  {result && (
