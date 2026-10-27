@@ -58,7 +58,6 @@ import { ComprehensiveStockAnalysis } from './ComprehensiveStockAnalysis';
 import { DeltaVolumeBar } from './DeltaVolumeBar';
 import GateAnalysisView from './GateAnalysisView';
 // P-FUNDAMENTALS: CompanyFundamentalsCard — 8 تبويبات مالية من stocks.db (TradingView data)
-import { CompanyFundamentalsCard } from '@/modules/radar/components/CompanyFundamentalsCard';
 // Task 23-C Deliverable 2 — inline Sharia badge next to stock price.
 import { ShariaBadge } from '@/modules/sharia/components/ShariaBadge';
 

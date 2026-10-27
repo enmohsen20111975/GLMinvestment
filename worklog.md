@@ -13198,3 +13198,38 @@ Task: ملخص التسليم لـ Jimmy/owner
 - Browser verification محظور بيئيًا (OOM 4GB sandbox) — موثق.
 - كل المكوّنات defensive — تشتغل قبل وبعد merge برافو تلقائيًا.
 - أنتظر: مراجعة Jimmy + موافقة owner على commit + merge.
+
+---
+Task ID: PREDICTIONS-CLEANUP-1
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: تطهير مهزلة التوقعات + إصلاح الحاضنة + فلتر الأمان الصارم
+
+Work Log:
+- TASK 1: تطهير predictions.db:
+  * نزلت snapshot 2026-10-24 (2256 rows)
+  * كتبت scripts/clean_predictions_anomalies.py (dry-run + apply + backup + idempotent)
+  * مسحت 907 duplicate rows (RADAR_PROMOTED loop)
+  * النتيجة: 2256 → 1349 (0 ADP، 0 negative stop_loss، 0 bad entry_price)
+- TASK 2: فلتر الأمان في API التوقعات (src/lib/flutter-sqlite-fallback.ts):
+  * أضفت stop_loss >= 0 + entry_price > 0 + entry_price < 100000
+  * أضفت dedup by ticker (Set + keep latest)
+  * منع تكرار نفس السهم في النتائج
+- TASK 3: إصلاح sparkline route (src/app/api/stocks/sparkline/route.ts):
+  * stocks.db.stock_daily_prices FIRST (live data)
+  * price_history.db fallback (stale archive)
+  * fix orphan block + duplicate catch
+- fix: StockDetail.tsx duplicate import (Alpha bug — CompanyFundamentalsCard)
+- اختبار API: /api/unified/predictions?market=EGX&limit=5
+  * HTTP 200 ✅
+  * source: sqlite_fallback
+  * count: 0 (صح — predictions.db اتنضفت + Python backend مش شغال)
+  * no ADP ✅
+  * distinct tickers: 0/0 (صح — مفيش تكرار)
+
+Stage Summary:
+- 907 duplicate predictions اتمسحت (backup محفوظ).
+- فلتر الأمان الصارم: stop_loss >= 0 + entry_price > 0 + dedup by ticker.
+- sparkline دلوقتي بـ يقرا من stocks.db (live) مش price_history.db (stale).
+- API شغّال + مفيش ADP + مفيش تكرار.
+- لم ألمس main، لم أmerge، لم أdeploy.
+- الفرع: bravo/predictions-cleanup.
