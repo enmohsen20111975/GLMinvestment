@@ -82,6 +82,10 @@ export interface ScreenerStock {
   support: number | null;
   resistance: number | null;
   volume_surge: boolean;
+  // (ALPHA-SCANNER-LIVE, Task 5): relative_volume_10d — الحجم النسبي الرسمي
+  // من TradingView Scanner (يملأه برافو في stocks.db بعد دمج bravo/scanner-live).
+  // optional عشان الساندبوكس الحالي مش فيه العمود بعد.
+  relative_volume_10d?: number | null;
   above_ma_50: boolean;
   above_ma_200: boolean;
   distance_from_52w_high: number | null;

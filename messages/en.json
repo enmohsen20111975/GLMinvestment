@@ -713,6 +713,7 @@
         "stable": "Stable (Low Volatility)",
         "highMomentum": "High Momentum",
         "strongAccumulation": "Strong Accumulation",
+        "highestCash": "Highest Cash Traded",
         "more": "More"
       },
       "columns": {

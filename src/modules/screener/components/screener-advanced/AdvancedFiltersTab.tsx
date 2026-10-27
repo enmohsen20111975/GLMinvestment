@@ -49,6 +49,7 @@ import {
   Shield,
   Crown,
   Lock,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
@@ -252,6 +253,28 @@ export function AdvancedFiltersTab({ initialMarket }: AdvancedFiltersTabProps) {
         setSort('momentum_score');
         setOrder('desc');
         setLimit(100);
+      },
+    },
+    {
+      // (ALPHA-SCANNER-LIVE, Task 4 — owner directive 2026-10-27): «أعلى سيولة
+      // نقدية» — رتّب حسب value_traded (الكاش المنفّذ فعليًا) تنازليًا + حد أدنى
+      // للسيولة 50M EGP. يعتمد على عمود value_traded الرسمي من TradingView
+      // Scanner (الذي يملأه برافو في stocks.db). primary = true ليظهر كزر inline.
+      // NOTE: الـ API screener بيقبل 3 sorts فقط (change_percent/volume/market_cap)،
+      // فبنطبّق الفرز client-side عبر clientSortField لضمان ترتيب فعلي حسب
+      // value_traded — ده نفس نمط highLiquidity بس بحقل الكاش الرسمي.
+      label: t('screener.advanced.presets.highestCash'),
+      icon: Banknote,
+      color: 'emerald',
+      primary: true,
+      apply: () => {
+        setMinTurnover('50000000');
+        setMinVolume('100000');
+        setSort('value_traded');
+        setOrder('desc');
+        setLimit(100);
+        setClientSortField('value_traded');
+        setClientSortDir('desc');
       },
     },
   ];

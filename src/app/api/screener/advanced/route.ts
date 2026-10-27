@@ -161,6 +161,15 @@ export async function GET(req: NextRequest) {
     if (has('change_percent')) selectParts.push('change_percent AS change_percent_raw');
     if (has('turnover_egp')) selectParts.push('turnover_egp');
     else selectParts.push('(current_price * volume) AS turnover_egp');
+    // (ALPHA-SCANNER-LIVE, Task 4): value_traded — الكاش المنفّذ فعليًا من
+    // TradingView Scanner (يملأه برافو في stocks.db). لو العمود موجود نستخدمه،
+    // وإلا نعتمد على turnover_egp المحسوب.
+    if (has('value_traded')) selectParts.push('value_traded');
+    else selectParts.push('(current_price * volume) AS value_traded');
+    // (ALPHA-SCANNER-LIVE, Task 5): relative_volume_10d — الحجم النسبي الرسمي.
+    // optional: لو العمود مش موجود (pre-merge) نرجع NULL والـ UI بـ يخفي الشارة.
+    if (has('relative_volume_10d')) selectParts.push('relative_volume_10d');
+    else selectParts.push('NULL AS relative_volume_10d');
     if (has('market_cap')) selectParts.push('market_cap');
     else selectParts.push('0 AS market_cap');
     if (has('signal')) selectParts.push('signal');
@@ -226,6 +235,8 @@ export async function GET(req: NextRequest) {
       change_percent: Number(r.chg_pct ?? r.change_percent_raw ?? 0),
       volume: Number(r.volume || 0),
       turnover_egp: Number(r.turnover_egp || 0),
+      value_traded: Number(r.value_traded || 0),
+      relative_volume_10d: r.relative_volume_10d === null || r.relative_volume_10d === undefined ? null : Number(r.relative_volume_10d),
       market_cap: Number(r.market_cap || 0),
       signal: Number(r.signal || 0),
       rsi: r.rsi === null ? null : Number(r.rsi),

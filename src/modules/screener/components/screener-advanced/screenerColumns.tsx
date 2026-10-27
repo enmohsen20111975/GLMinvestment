@@ -10,6 +10,7 @@ import { Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { RelativeVolumeBadge } from '@/components/shared/RelativeVolumeBadge';
 import { cn } from '@/lib/utils';
 import type { ScreenerStock } from '@/hooks/useScreenerData';
 import {
@@ -172,10 +173,22 @@ export function buildScreenerColumns(t: TFunc): Column<ScreenerStock>[] {
       // (UNIFIED-TABLE-UPGRADE) sortValue: volume (-1 if invalid)
       sortValue: (s) => (s.volume > 0 ? s.volume : -1),
       render: (s) => (
-        <span className="font-mono text-xs text-muted-foreground">
-          {formatVolume(s.volume)}
-          {s.volume_surge && <Zap className="inline w-3 h-3 text-warning mr-1" />}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-mono text-xs text-muted-foreground">
+            {formatVolume(s.volume)}
+            {s.volume_surge && <Zap className="inline w-3 h-3 text-warning mr-1" />}
+          </span>
+          {/* (ALPHA-SCANNER-LIVE, Task 5): شارة الحجم النسبي > 1.2x.
+              تأخذ relative_volume_10d الرسمي (برافو) أو volume_ratio_10d_vs_20d
+              أو volume_surge كـ fallback. لو القيمة طبيعية → لا تظهر. */}
+          <RelativeVolumeBadge
+            relativeVolume10d={s.relative_volume_10d}
+            volumeRatio10dVs20d={s.volume_ratio_10d_vs_20d}
+            volumeSurge={s.volume_surge}
+            threshold={1.2}
+            size="sm"
+          />
+        </div>
       ),
     },
     {
