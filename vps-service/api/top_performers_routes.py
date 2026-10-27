@@ -50,7 +50,7 @@ def _get_price_history_conn():
     - price_history.db.price_history: 1,248,257 rows, 1,267 tickers, 25 سنة بيانات
     - schema: ticker, date, open_price, high_price, low_price, close_price, volume, source
     """
-    ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+    ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')  # WAVE-2: was price_history.db (stale)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
     conn = db_manager.get_connection(ph_db, writable=False)
@@ -120,7 +120,7 @@ def get_top_performers():
         try:
             ph_conn = _get_price_history_conn()
             latest_date_row = ph_conn.execute(
-                'SELECT MAX(date) as max_date FROM price_history'
+                'SELECT MAX(price_date) as max_date FROM stock_daily_prices'
             ).fetchone()
             latest_date = latest_date_row['max_date'] if latest_date_row else None
 
@@ -151,8 +151,8 @@ def get_top_performers():
                                 PARTITION BY ticker
                                 ORDER BY date DESC
                             ) as end_rank
-                        FROM price_history
-                        WHERE date <= ?
+                        FROM stock_daily_prices
+                        WHERE price_date <= ?
                     )
                     SELECT
                         s.ticker as start_symbol,
