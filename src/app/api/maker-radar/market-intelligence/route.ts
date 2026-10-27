@@ -142,9 +142,9 @@ export async function GET(req: NextRequest) {
 
     // ═══ 4. PRICE HISTORY ═══
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'price_history.db');
+      const dbPath = path.join(process.cwd(), 'db', 'stocks.db');  // WAVE-1: stocks.db (live)
       const db = new Database(dbPath, { readonly: true });
-      const last30 = db.prepare('SELECT date, close_price, volume FROM price_history WHERE ticker = ? AND close_price > 0 ORDER BY date DESC LIMIT 30').all(ticker);
+      const last30 = db.prepare('SELECT price_date as date, close_price, volume FROM stock_daily_prices WHERE ticker = ? AND close_price > 0 ORDER BY price_date DESC LIMIT 30').all(ticker);
 
       if (last30.length > 0) {
         const prices = last30.map(r => r.close_price).reverse();
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
         };
       }
       db.close();
-    } catch { result.sections.priceHistory = { error: 'price_history.db not available' }; }
+    } catch { result.sections.priceHistory = { error: 'stocks.db not available' }; }
 
     return NextResponse.json(result);
   } catch (err: any) {
