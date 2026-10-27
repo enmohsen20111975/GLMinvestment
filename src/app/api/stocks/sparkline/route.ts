@@ -90,41 +90,10 @@ function fetchSingleSparkline(t: string, days: number) {
     } catch {}
   }
 
-  // 2. price_history.db (canonical for regular stocks)
-  try {
-    const phDb = new Database(phPath, { readonly: true, timeout: 3000 });
-    for (const cand of candidates) {
-      const rows = phDb.prepare(`
-        SELECT date, close_price
-        FROM price_history
-        WHERE ticker = ? AND close_price > 0
-        ORDER BY date DESC
-        LIMIT ?
-      `).all(cand, days) as { date: string; close_price: number }[];
-      if (rows.length > 0) {
-        phDb.close();
-        const prices = rows.reverse().map(r => Number(r.close_price));
-        const first = prices[0];
-        const last = prices[prices.length - 1];
-        const result = {
-          ticker: t,
-          prices,
-          min: Math.min(...prices),
-          max: Math.max(...prices),
-          first,
-          last,
-          change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
-          days: prices.length,
-          source: 'price_history.db',
-        };
-        setCache(key, result);
-        return result;
-      }
-    }
-    phDb.close();
-  } catch {}
-
-  // 2. stocks.db.stock_daily_prices
+  // PREDICTIONS-CLEANUP-1 (2026-10-27): stocks.db.stock_daily_prices FIRST (live data
+  // from tradingview_scanner_live + daily_price_updater). price_history.db is stale
+  // (last update Sept 2026) — keep as fallback only.
+  // 2. stocks.db.stock_daily_prices (LIVE — primary)
   try {
     const stocksDb = new Database(stocksPath, { readonly: true, timeout: 3000 });
     for (const cand of candidates) {
@@ -149,23 +118,60 @@ function fetchSingleSparkline(t: string, days: number) {
           last,
           change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
           days: prices.length,
-          source: 'stocks.db',
+          source: 'stocks.db.stock_daily_prices (live)',
         };
         setCache(key, result);
         return result;
       }
     }
+    stocksDb.close();
+  } catch {}
+
+  // 3. price_history.db (stale archive — fallback only)
+  try {
+    const phDb = new Database(phPath, { readonly: true, timeout: 3000 });
+    for (const cand of candidates) {
+      const rows = phDb.prepare(`
+        SELECT date, close_price
+        FROM price_history
+        WHERE ticker = ? AND close_price > 0
+        ORDER BY date DESC
+        LIMIT ?
+      `).all(cand, days) as { date: string; close_price: number }[];
+      if (rows.length > 0) {
+        phDb.close();
+        const prices = rows.reverse().map(r => Number(r.close_price));
+        const first = prices[0];
+        const last = prices[prices.length - 1];
+        const result = {
+          ticker: t,
+          prices,
+          min: Math.min(...prices),
+          max: Math.max(...prices),
+          first,
+          last,
+          change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
+          days: prices.length,
+          source: 'price_history.db (stale archive)',
+        };
+        setCache(key, result);
+        return result;
+      }
+    }
+    phDb.close();
+  } catch {}
 
     // ALPHA-FAB-FIX-SPARKLINE-001: removed market_indices fabrication block.
     // كان بيخترع 15 نقطة سعر من current_value واحد + Math.sin() noise (Rule 27 violation).
     // لو مفيش OHLCV حقيقي → empty (سياسة الفراغ Rule 27 NO-FAKE-DATA).
 
-    // 3. stocks.db.index_daily_prices — for INDEX symbols (EGX30/EGX70/EGX100/EGX33/TASI).
+    // 4. stocks.db.index_daily_prices — for INDEX symbols (EGX30/EGX70/EGX100/EGX33/TASI).
     // These have 21,616 historical rows (built by scripts/backfill_indices_history.py +
     // scripts/sync_market_indices_live.py). Without this source, index sparklines were empty.
     try {
+      const stocksDb2 = new Database(stocksPath, { readonly: true, timeout: 3000 });
       for (const cand of candidates) {
-        const rows = stocksDb.prepare(`
+        const rows = stocksDb2.prepare(`
           SELECT price_date, close
           FROM index_daily_prices
           WHERE symbol = ? AND close > 0
@@ -173,7 +179,7 @@ function fetchSingleSparkline(t: string, days: number) {
           LIMIT ?
         `).all(cand, days) as { price_date: string; close: number }[];
         if (rows.length > 0) {
-          stocksDb.close();
+          stocksDb2.close();
           const prices = rows.reverse().map(r => Number(r.close));
           const first = prices[0];
           const last = prices[prices.length - 1];
@@ -192,10 +198,8 @@ function fetchSingleSparkline(t: string, days: number) {
           return result;
         }
       }
+      stocksDb2.close();
     } catch {}
-
-    stocksDb.close();
-  } catch {}
 
   const empty = {
     ticker: t,

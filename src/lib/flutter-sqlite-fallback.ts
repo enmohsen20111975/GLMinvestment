@@ -400,7 +400,14 @@ export function getPredictionsFallback(
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     params.push(limit);
 
-    return db
+    // PREDICTIONS-CLEANUP-1 (2026-10-27): safety filters per owner directive.
+    // 1. Exclude anomalous predictions (negative stop_loss, zero entry_price).
+    // 2. Deduplicate: only 1 prediction per ticker (latest) — prevents the
+    //    ADP 99-duplicate-rows bug from flooding the UI with the same stock.
+    // 3. Price deviation filter: exclude predictions where entry_price is
+    //    suspiciously far from a realistic range (entry_price > 0 AND
+    //    entry_price < 100000 — filters out corrupted 0.001 or 999999 values).
+    const rows = db
       .prepare(
         `SELECT ticker, signal, signal_ar, signal_type, prediction_date,
                 entry_price, target_price, stop_loss, master_score,
@@ -410,10 +417,24 @@ export function getPredictionsFallback(
                 closed_at, actual_exit_price, highest_price, lowest_price
          FROM predictions
          ${whereClause}
-         ORDER BY prediction_date DESC, id DESC
-         LIMIT ?`
+           AND stop_loss >= 0
+           AND entry_price > 0
+           AND entry_price < 100000
+         ORDER BY prediction_date DESC, id DESC`
       )
       .all(...params) as Record<string, unknown>[];
+
+    // Deduplicate by ticker (keep first = latest due to ORDER BY DESC)
+    const seen = new Set<string>();
+    const deduped: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      const ticker = String(row.ticker || '').toUpperCase().trim();
+      if (!ticker || seen.has(ticker)) continue;
+      seen.add(ticker);
+      deduped.push(row);
+      if (deduped.length >= limit) break;
+    }
+    return deduped;
   } catch {
     return [];
   } finally {
