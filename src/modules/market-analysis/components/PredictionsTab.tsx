@@ -493,8 +493,17 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  const [timeFrame, setTimeFrame] = useState<'all' | 'today' | 'week' | 'month'>('all');
  const [filterType, setFilterType] = useState<'smart' | 'successful' | 'completed' | 'stopped' | 'active' | 'all'>('all');
 
- const fetchPredictions = useCallback(async () => {
- setLoading(true);
+ const [isRefreshing, setIsRefreshing] = useState(false);
+
+ const fetchPredictions = useCallback(async (silent = false) => {
+ // FIX (2026-10-27): لا نعرض loading كامل أثناء التحديث الدوري.
+ // لو فيه بيانات موجودة + silent=true، نستخدم refreshing indicator بدلاً من skeleton.
+ const hasUsableData = stocks.length > 0 || closedStocks.length > 0;
+ if (silent && hasUsableData) {
+   setIsRefreshing(true);
+ } else {
+   setLoading(true);
+ }
  setError(null);
  try {
  const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
@@ -525,22 +534,25 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  });
  }
  } else {
- setError('فشل في تحميل التوقعات');
+ // FIX: لا نمسح البيانات القديمة عند الخطأ لو موجودة
+ if (!hasUsableData) setError('فشل في تحميل التوقعات');
  }
  } catch (err) {
- setError('فشل في الاتصال بالخادم');
+ // FIX: لا نمسح البيانات القديمة عند الخطأ لو موجودة
+ if (!hasUsableData) setError('فشل في الاتصال بالخادم');
  console.error(err);
  } finally {
  setLoading(false);
+ setIsRefreshing(false);
  }
- }, [market]);
+ }, [market, stocks.length, closedStocks.length]);
 
  useEffect(() => {
  fetchPredictions();
  // 🔥 P14: polling بيتوقف لو liveMode مش مفعّل (افتراضي). المستخدم يفعّله يدوياً.
  const interval = setInterval(() => {
  if (!useAnalysisStore.getState().liveMode) return;
- fetchPredictions();
+ fetchPredictions(true); // silent=true — لا تعيد رسم الشاشة
  }, 300_000);
  return () => clearInterval(interval);
  }, [market, fetchPredictions]);

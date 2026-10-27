@@ -335,7 +335,7 @@ export function PersonaTab({
             <IncubatorSection
               market={MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market]}
               refreshIntervalMs={60_000}
-              maxDisplay={6}
+              maxDisplay={0}
             />
           </div>
 

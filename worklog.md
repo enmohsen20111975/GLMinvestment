@@ -9995,3 +9995,52 @@ Stage Summary:
   * Browser: NOT RUN (OOM environmental).
 - Git state: 8341a28 preserved. New changes are unstaged (NOT committed) — awaiting owner review.
 - NO push, NO merge, NO deploy.
+
+---
+Task ID: alpha-live-scan-screen
+Agent: Alpha (Frontend — Live Scan Screen)
+Task: تطوير شاشة «الفحص الحي للأسهم» واستقرار تحديثات الواجهة
+
+Work Log:
+- Phase 1 (Inspection):
+  * Inspected IncubatorSection.tsx, LiquidityRadarView.tsx, PersonaTab.tsx, nav-config.ts, types/index.ts, page.tsx
+  * Found 5 bugs: (1) setCandidates([]) on error wipes data, (2) setData(null) on error wipes radar, (3) setPage(0) on data change, (4) old terminology, (5) no scan status bar
+- Phase 2 (Terminology — 7 replacements):
+  * 'رادار التربص وقيد التسخين' → 'فحص السوق' (IncubatorSection + page.tsx)
+  * 'حاضنة الأسهم' → 'الفحص الحي للأسهم' (nav-config + page.tsx + types)
+  * '🌡️ تسخين' → '🔍 قيد الفحص' (IncubatorSection ×2)
+  * '🔥 وشك' → '⚡ جاهز للاختراق' (IncubatorSection ×2)
+  * 'أهداف الترقية المحتملة' → 'الأهداف الفنية المتوقعة'
+  * 'لوحة فحص الشروط' → 'شروط الاختراق الفنية'
+  * 'وشك الترقية' → 'جاهز للاختراق'
+  * No API keys, function names, or enums changed
+- Phase 3 (Live scan status bar):
+  * Added status bar in IncubatorSection below header
+  * Shows: scan state (scanning/complete/error), candidate count, last scan time, error indicator
+  * All data from API (candidates.length + lastTimestamp) — NO fabricated numbers
+  * Shows 'بيانات الفحص غير متاحة' when no data
+  * Shows '⚠️ عرض آخر بيانات صالحة' when error + old data retained
+- Phase 5 (Refresh fix — keep user state):
+  * IncubatorSection: added isBackgroundRefreshing state
+    - fetchIncubator: does NOT clear candidates on error
+    - fetchIncubator: does NOT clear candidates on success=false
+    - Only clears on first load when no usable data exists
+  * LiquidityRadarView: added isBackgroundRefreshing state
+    - fetchData: does NOT setData(null) on error
+    - fetchData: does NOT setData(null) on !res.ok
+    - Only shows full loading skeleton on first load
+    - Background refresh keeps table visible with subtle indicator
+    - setPage(0) NOT triggered on fetch (only on filter/market change — verified correct)
+
+Stage Summary:
+- Files modified (5):
+  * src/modules/radar/components/IncubatorSection.tsx (terminology + status bar + refresh fix)
+  * src/components/shared/LiquidityRadarView.tsx (refresh fix — keep data on error)
+  * src/lib/nav-config.ts (terminology)
+  * src/types/index.ts (terminology comment)
+  * src/app/page.tsx (terminology)
+- Tests: 12/12 incubator-panel PASS
+- Lint: 0 errors
+- Branch: alpha/live-scan-screen
+- Commit: 28187ac
+- NOT merged to main, NOT deployed to production

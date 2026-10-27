@@ -201,8 +201,16 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
  const loadStockDetail = useAppStore((s) => s.loadStockDetail);
 
- const fetchData = useCallback(async () => {
- setLoading(true);
+ const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+
+ const fetchData = useCallback(async (silent = false) => {
+ // FIX (2026-10-27): لا نعرض loading كامل أثناء التحديث الدوري.
+ const hasUsableData = data !== null;
+ if (silent && hasUsableData) {
+   setIsBackgroundRefreshing(true);
+ } else {
+   setLoading(true);
+ }
  setError(null);
  try {
  const params = new URLSearchParams({
@@ -221,12 +229,15 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  setExpandedSector(json.sectors[0].sector);
  }
  } else {
- setError(json.error || json.hint || 'فشل في تحميل البيانات');
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!hasUsableData) setError(json.error || json.hint || 'فشل في تحميل البيانات');
  }
  } catch (e) {
- setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!hasUsableData) setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
  } finally {
  setLoading(false);
+ setIsBackgroundRefreshing(false);
  }
  }, [marketCode, withRotation, sortBy, sortOrder, heatFilter, expandedSector]);
 

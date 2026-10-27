@@ -50,6 +50,7 @@ import {
   pickPersonaDiverged,
   PERSONA_DISPLAY_LIMIT,
 } from '@/modules/market-analysis/components/helpers';
+import { cleanTicker } from '@/modules/market-analysis/components/persona/helpers';
 
 // ============================================================
 // Types (response shapes — loose, backend may attach extra fields)
