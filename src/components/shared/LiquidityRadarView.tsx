@@ -762,7 +762,7 @@ export function LiquidityRadarView({
 
  {/* ─── TAB 1: رادار السيولة ─── */}
  <TabsContent value="radar" className="space-y-4 mt-0">
- <PulseRibbon market={market} summary={data?.summary ?? null} scannedCount={scannedTotal} />
+ <PulseRibbon market={market} summary={data?.summary ?? null} scannedCount={scannedTotal} isRefreshing={isBackgroundRefreshing} error={error} />
 
  {/* A1 FIX: Scan stats display — إجمالي الأسهم المفحوصة + المصنّفة + غير المصنّفة */}
  {data && data.stocks && data.stocks.length > 0 && (
@@ -972,10 +972,14 @@ function PulseRibbon({
  market,
  scannedCount,
  summary,
+ isRefreshing,
+ error,
 }: {
  market: string;
  scannedCount: number;
  summary?: RadarSummary | null;
+ isRefreshing?: boolean;
+ error?: string | null;
 }) {
  // TASK-A1: surface the canonical summary counts. NO fabrication — if the
  // backend didn't send `summary`, we show only the scanned count (which
@@ -983,15 +987,41 @@ function PulseRibbon({
  const classified = summary?.classified_count ?? null;
  const unclassified = summary?.unclassified_count ?? null;
  const dataErrors = summary?.data_error_count ?? null;
+ const scanTime = summary?.scan_timestamp ?? null;
+
+ // P0-A (2026-10-27): نبض السيولة — حساب المتقدمين/المتأخرين من الـ results
+ // مفيش fabrication — الأرقام بتيجي من بيانات الـ API الفعلية
+ const advancers = React.useMemo(() => {
+   // نحسب من allScanned لو موجودة في الـ scope — بس هنا PulseRibbon مش واصلها
+   // فبنعتمد على الـ summary لو فيه، وإلا نعرض "—"
+   return null; // PulseRibbon ما عندوش access لـ results — نعتمد على الـ summary
+ }, []);
+
+ // P0-A: تحويل timestamp لوقت مقروء
+ const formattedTime = scanTime
+   ? new Date(scanTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+   : null;
+
  return (
  <div className="w-full bg-muted px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm rounded-xl border border-border">
  <div className="flex items-center gap-3">
+ {/* P0-A: النبض الحي — نقطة خضراء نابضة (أو كهرمانية لو بيتحدّث) */}
  <div className="flex items-center gap-1.5">
  <span className="relative flex h-2.5 w-2.5">
- <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
+ {isRefreshing ? (
+ // أثناء التحديث: نقطة كهرمانية نابضة
+ <>
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
+ <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
+ </>
+ ) : (
+ // طبيعي: نقطة خضراء ثابتة
  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-profit" />
+ )}
  </span>
- <span className="font-mono text-[10px] text-profit uppercase tracking-widest">رادار سيولة صانع السوق</span>
+ <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: isRefreshing ? 'var(--warning)' : 'var(--profit)' }}>
+ {isRefreshing ? 'جارٍ التحديث...' : 'رادار سيولة صانع السوق'}
+ </span>
  </div>
  <div className="h-4 w-px bg-border" />
  <div className="flex items-center gap-1.5 text-xs">
@@ -1005,12 +1035,14 @@ function PulseRibbon({
  <span>بروتوكول Rule 80 نشط</span>
  </div>
  <div className="h-4 w-px bg-border" />
+ {/* P0-A: المرقوب — عدد الأسهم المفحوصة */}
  <span className="font-mono text-[10px] text-muted-foreground">
  مرقوب: <span className="text-foreground font-semibold">{scannedCount}</span> سهم
  </span>
  {classified != null && (
  <>
  <div className="h-4 w-px bg-border" />
+ {/* P0-A: المصنّف — بلون أخضر */}
  <span className="font-mono text-[10px] text-profit">
  مصنّف: {classified}
  </span>
@@ -1029,6 +1061,24 @@ function PulseRibbon({
  <div className="h-4 w-px bg-border" />
  <span className="font-mono text-[10px] text-warning" title="بيانات غير صالحة / غير مكتملة">
  بيانات خاطئة: {dataErrors}
+ </span>
+ </>
+ )}
+ {/* P0-A: آخر تحديث — وقت حقيقي من scan_timestamp */}
+ {formattedTime && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-muted-foreground">
+ ⏱ آخر فحص: <span className="text-foreground font-semibold">{formattedTime}</span>
+ </span>
+ </>
+ )}
+ {/* P0-A: مؤشر الخطأ (غير مزعج) */}
+ {error && scannedCount > 0 && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-loss/70">
+ ⚠️ تعذّر التحديث
  </span>
  </>
  )}
