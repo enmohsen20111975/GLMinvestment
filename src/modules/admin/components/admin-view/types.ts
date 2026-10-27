@@ -119,7 +119,9 @@ export type AdminTab =
  // Task 28-B (Fix 7) — Fix Battalion: Telegram published predictions audit.
  | 'telegram-predictions'
  // Task 31-B (Engine Monitor Battalion) — unified engine control room.
- | 'engine-control-room';
+ | 'engine-control-room'
+ // (ALPHA-SYSTEM-TOPOLOGY): خريطة النظام الحية — رسم هندسي تفاعلي + حالة كل node.
+ | 'system-topology';
 
 // Stream C: 6 Core Admin Hubs — consolidates the flat tabs into 6 logical sectors.
 export type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';

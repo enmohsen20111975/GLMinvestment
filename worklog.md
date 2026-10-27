@@ -10423,3 +10423,28 @@ Stage Summary:
 - 85 routes refactored (0 new Database() in src/app/api/).
 - Documentation: 163 files → 5 files (158 deleted).
 - Git state: branch alpha/docs-consolidation-wave4, unstaged.
+
+---
+Task ID: ALPHA-SYSTEM-TOPOLOGY
+Agent: Alpha
+Task: شاشة "خريطة النظام الحية" في الادمن — رسم هندسي تفاعلي + حالة كل node.
+
+Work Log:
+- أنشأت src/modules/admin/components/SystemTopologyView.tsx (~370 LOC):
+  - رسمين هندسيين: تدفق القرار (Decision Flow) + المعمارية الكاملة (5 طبقات)
+  - كل node فيها: لون حسب حالتها (healthy/stale/error/unknown) + badge بعدّاد + tooltip
+  - تحديث تلقائي كل 30 ثانية (fetchStats من 4 APIs: health, market/status, engines-status, predictions/honest-tracking)
+  - defensive: Promise.allSettled — لو API فشل → status: 'unknown' (مش fabricated)
+  - زرار toggle بين الرسمين + زر تحديث يدوي
+  - Legend في الآخر يوضّح الألوان
+- أضفت 'system-topology' لـ AdminTab type في types.ts
+- أضفت tab في admin-hubs.tsx (تحت hub 'health' — المراقبة وصحة النظام)
+- ربطته في AdminView.tsx (line 272-275)
+- Lint نظيف. tsc نظيف على ملفاتي (pre-existing errors في card-types.ts/state-types.ts مش متأثرة).
+- Live test: الـ APIs بترد (503/403/200) — المكوّن defensive تمامًا.
+
+Stage Summary:
+- Files created (1): src/modules/admin/components/SystemTopologyView.tsx
+- Files modified (3): types.ts (added 'system-topology' tab), admin-hubs.tsx (tab entry + Network icon), AdminView.tsx (render + import)
+- الوصول: #admin → المراقبة → 🗺️ خريطة النظام الحية
+- Git state: branch alpha/admin-system-topology, unstaged.

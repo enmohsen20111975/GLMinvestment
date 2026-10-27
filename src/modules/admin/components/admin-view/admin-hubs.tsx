@@ -33,6 +33,7 @@ import {
  HeartPulse,
  MessageSquareText,
  Monitor,
+ Network,
  Newspaper,
  Send,
  Settings,
@@ -60,6 +61,8 @@ export function buildAdminHubs(feedbackCount?: number): AdminHub[] {
  { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" />, desc: 'نظرة عامة + صحة + مشاكل النظام' },
  // دمج: system-monitor + cron-health → system-monitor (CPU/RAM/DB + cron)
  { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" />, desc: 'CPU/RAM/DB + حالة المهام' },
+ // (ALPHA-SYSTEM-TOPOLOGY): خريطة النظام الحية — رسم هندسي تفاعلي.
+ { id: 'system-topology', label: '🗺️ خريطة النظام الحية', icon: <Network className="w-3.5 h-3.5" />, desc: 'رسم هندسي تفاعلي + حالة كل node' },
  ],
  },
  {
