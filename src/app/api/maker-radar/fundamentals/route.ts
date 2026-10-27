@@ -47,9 +47,12 @@ export async function GET(req: NextRequest) {
 
     for (const table of TAB_TABLES) {
       try {
-        // The tab_* tables use 'ticker+arabic_name' format (e.g., 'COMIالبنك')
-        // So we search with LIKE 'TICKER%' to match
-        const row = db.prepare(`SELECT * FROM ${table} WHERE symbol LIKE ? LIMIT 1`).get(ticker + '%') as Record<string, unknown> | undefined;
+        // FIX (Jimmy directive 2026-10-27): دعم الرموز النقية (Direct lookup أولاً)
+        let row = db.prepare(`SELECT * FROM ${table} WHERE symbol = ? LIMIT 1`).get(ticker) as Record<string, unknown> | undefined;
+        // Fallback: بحث جزئي (لو الرمز مدموج مع الاسم العربي)
+        if (!row) {
+          row = db.prepare(`SELECT * FROM ${table} WHERE symbol LIKE ? LIMIT 1`).get(ticker + '%') as Record<string, unknown> | undefined;
+        }
         if (row) {
           const cleaned: Record<string, string | null> = {};
           for (const [k, v] of Object.entries(row)) {

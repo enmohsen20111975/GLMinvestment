@@ -966,6 +966,25 @@ export function LiquidityRadarView({
  />
  إخفاء الأسهم الخاملة (&lt;100K)
  </label>
+ {/* P-HIGHEST-CASH: زر تصفية الأعلى سيولة كاش (يطابق TradingView) */}
+ <button
+   onClick={() => {
+     if (bucketFilter !== 'highest_cash') {
+       setBucketFilter('highest_cash' as RadarFilterKey);
+     } else {
+       setBucketFilter('all');
+     }
+   }}
+   className={cn(
+     'px-2 py-1 rounded-lg text-xs font-semibold transition-all border',
+     bucketFilter === 'highest_cash'
+       ? 'bg-profit/15 text-profit border-profit/30 shadow-sm'
+       : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
+   )}
+   title="الأعلى سيولة كاش (Value.Traded) — يطابق شاشة TradingView"
+ >
+   💰 الأعلى كاش
+ </button>
  </div>
 
  {/* ─── UnifiedTable (paginated) ─── */}
