@@ -601,7 +601,7 @@ def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
         movement_type = 'FLAT'
         movement_desc = 'حركة محدودة'
 
-    return {
+    result = {
         'ticker': ticker,
         'current_price': round(current_price, 2),
         'path': 'F_scanner_alert',
@@ -664,6 +664,17 @@ def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
         'final_reason': f'SCANNER_ALERT: {movement_desc}',
     }
 
+    _add_intelligence_layers(
+        result,
+        closes=None, volumes=None,
+        vol_ratio=relvol,
+        value_traded=value_traded,
+        change_percent=change_pct,
+        staleness_days=0,
+        last_close_date=datetime.now().strftime('%Y-%m-%d'),
+        rows=None,
+    )
+    return result
 
 
 # ============================================================================
@@ -814,19 +825,33 @@ def _add_intelligence_layers(result, closes=None, volumes=None, highs=None, lows
                               vol_ratio=None, value_traded=None, change_percent=None,
                               staleness_days=None, last_close_date=None, rows=None):
     """Add 4 intelligence layers to result dict. Does NOT change buy/sell signals."""
-    pa, pa_ev = _classify_price_action(closes, volumes, highs, lows, change_percent)
-    result['price_action'] = pa
-    result['price_action_evidence'] = pa_ev
-    pf, pfl, pf_ev = _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent)
-    result['participant_flow_assessment'] = pf
-    result['participant_evidence_level'] = pfl
-    result['participant_evidence'] = pf_ev
-    cont = _assess_continuation(closes, volumes, vol_ratio, pa)
-    result['continuation_assessment'] = cont
-    dq, dq_r = _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date)
-    result['data_quality_status'] = dq
-    result['data_quality_reasons'] = dq_r
-    result['classification_timestamp'] = datetime.now().isoformat()
+    try:
+        pa, pa_ev = _classify_price_action(closes, volumes, highs, lows, change_percent)
+        result['price_action'] = pa
+        result['price_action_evidence'] = pa_ev
+        pf, pfl, pf_ev = _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent)
+        result['participant_flow_assessment'] = pf
+        result['participant_evidence_level'] = pfl
+        result['participant_evidence'] = pf_ev
+        cont = _assess_continuation(closes, volumes, vol_ratio, pa)
+        result['continuation_assessment'] = cont
+        dq, dq_r = _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date)
+        result['data_quality_status'] = dq
+        result['data_quality_reasons'] = dq_r
+        result['classification_timestamp'] = datetime.now().isoformat()
+    except Exception as e:
+        import traceback
+        print(f'[INTELLIGENCE-ERROR] {result.get("ticker", "?")}: {e}', flush=True)
+        traceback.print_exc()
+        result['price_action'] = 'ERROR'
+        result['price_action_evidence'] = {'error': str(e)}
+        result['participant_flow_assessment'] = 'UNAVAILABLE'
+        result['participant_evidence_level'] = 'UNAVAILABLE'
+        result['participant_evidence'] = {'error': str(e)}
+        result['continuation_assessment'] = 'INSUFFICIENT_DATA'
+        result['data_quality_status'] = 'ERROR'
+        result['data_quality_reasons'] = [str(e)]
+        result['classification_timestamp'] = datetime.now().isoformat()
     return result
 
 
