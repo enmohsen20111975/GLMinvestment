@@ -9995,3 +9995,39 @@ Stage Summary:
   * Browser: NOT RUN (OOM environmental).
 - Git state: 8341a28 preserved. New changes are unstaged (NOT committed) — awaiting owner review.
 - NO push, NO merge, NO deploy.
+
+---
+Task ID: NTP-1 (Nakl/Transfer-1)
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: نقل مستودع GLMinvestment من GitHub إلى /home/z/my-project وتشغيله داخل الـ sandbox.
+
+Work Log:
+- استنسخت المستودع (shallow clone --depth 1) من github.com/enmohsen20111975/GLMinvestment إلى /tmp/glminvestment (185MB، فرع main، آخر commit 382f23f).
+- فحصت package.json: Next.js 16.1.3 (مطابق لنسخة الـ sandbox)، Prisma 5.22، better-sqlite3 13 (native)، z-ai-web-dev-sdk موجود. Stack متوافق.
+- فحصت Caddyfile بتاع المستودع: مطابق لـ Caddyfile بتاع الـ sandbox (port 81 + XTransformPort). لا تعارض مع الـ gateway.
+- أوقفت الـ dev server القديم (PID 1139 + next-server 1160) بأمان قبل النقل.
+- حفظت .env الخاص بالـ sandbox (DATABASE_URL=file:/home/z/my-project/db/custom.db).
+- نقلت محتوى المستودع (بما فيه .git) إلى /home/z/my-project عبر cp -a /tmp/glminvestment/. .
+- أعدت .env الخاص بالـ sandbox (المستودع لا يتتبع .env في git).
+- شغّلت bun install: نجح في 20.26 ثانية، 1109 packages، better-sqlite3 native compile نجح.
+- شغّلت prisma generate للـ schemas الثلاثة (schema.prisma + auth-schema.prisma + predictions-schema.prisma): نجح.
+- محاولة تشغيل bun run dev بـ nohup / setsid / disown فشلت: الـ sandbox يقتل كل الـ children بعد انتهاء كل أمر bash (تأكدت بتجربة sleep 300 — مات بعد انتهاء الأمر).
+- الحل المعتمد: تشغيل bun run dev عبر pm2 (daemon منفصل بـ double-fork). نجح: pm2 God Daemon (PID 1999) + glm-dev (PID 2395) online.
+- curl http://localhost:3000/ → HTTP 200، حجم 164KB، الصفحة الرئيسية تعمل.
+- فحص HTML: <title>دليل الاستثمار | تحليلات الأسهم والعملات الرقمية</title>، <html lang="ar">، محتوى عربي موجود (الأسهم، البورصة المصرية، العملات، رادار).
+- git status: On branch main، up to date with origin/main. تعديل تلقائي واحد على tsconfig.json (من Next.js reconfiguration). لا تعديلات مني على الكود.
+
+Stage Summary:
+- النقل نجح بالكامل. المشروع يعمل على port 3000 عبر pm2 (glm-dev).
+- .env: DATABASE_URL=file:/home/z/my-project/db/custom.db (يخدم schema.prisma الرئيسي).
+- لم أمسح أو أعدّل أي كود. لم أعمل commit أو push أو deploy.
+- تحذيرات معروفة (ليست أخطاء نقل):
+  * الـ DBs (stocks.db, predictions.db, auth.db, price_history.db وغيرها) غير موجودة — ليست متتبعة في git (حجمها ~500MB)، تحتاج تنزيل من GitHub Releases.
+  * i18n missing keys في الـ footer (footer.rights, footer.privacy, footer.terms, footer.disclaimer, common.appName).
+  * من worklog السابق: browser testing كان environmental blocked بسبب OOM + Turbopack CJS leak في sandbox 4GB.
+- قرأت BRAVO-HANDOFF.md (تسليم ألفا لبرافو): 10 issues منتظرة، أحرجها:
+  * Issue #9 (CRITICAL): User.last_active_at يخزن numeric ms بدل ISO DateTime → Prisma P2023 → تسجيل خروج كل 60 ثانية (شكوى المالك الأولى).
+  * Issue #10 (HIGH): ADMIN_USERNAME=admin بينما المالك (mohseny) لا يستطيع تسجيل الدخول.
+  * Issue #1 (HIGH): ADP/ADPC filter gap — سهم ADP يُعرض بـ USD في EGX.
+  * Issue #2 (HIGH): data_isolation table مفقودة من predictions.db.
+- الخطوة التالية: انتظر تعليمات المالك — هل يبدأ في حل الـ issues الحرجة (#9, #10) أم ينزّل الـ DBs أولاً؟
