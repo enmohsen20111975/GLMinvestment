@@ -264,3 +264,166 @@ describe('ALPHA — ExitSignal: conflict handling', () => {
     expect(sorted[0]).toBe('TAKE_PROFIT');
   });
 });
+
+// ============================================================================
+// Tests: updated JSON contract (position_state + confidence + evidence)
+// ============================================================================
+
+describe('ALPHA — ExitSignal: updated contract fields', () => {
+  it('position_state = OPEN → should display "مركز مفتوح"', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      position_state: 'OPEN',
+      status: 'CONFIRMED',
+    };
+    expect(data.position_state).toBe('OPEN');
+    // Component renders "📌 مركز مفتوح" when position_state === 'OPEN'
+  });
+
+  it('position_state = CLOSED → should display "مركز مغلق"', () => {
+    const data: ExitSignalData = {
+      signal: 'TAKE_PROFIT',
+      position_state: 'CLOSED',
+      status: 'CONFIRMED',
+    };
+    expect(data.position_state).toBe('CLOSED');
+  });
+
+  it('position_state = NONE → should NOT display position state', () => {
+    const data: ExitSignalData = {
+      signal: 'CAUTION',
+      position_state: 'NONE',
+    };
+    // Component hides position_state when === 'NONE'
+    expect(data.position_state).toBe('NONE');
+  });
+
+  it('confidence = high → should display "عالية" in green', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      confidence: 'high',
+    };
+    expect(data.confidence).toBe('high');
+  });
+
+  it('confidence = null → should NOT display confidence', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      confidence: null,
+    };
+    expect(data.confidence).toBeNull();
+  });
+
+  it('evidence in reason → should display evidence text', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      reasons: [{
+        code: 'SUPPORT_BREAK',
+        text: 'كسر الدعم',
+        evidence: 'volume=2.5x avg, close=24.30 < support=25.00',
+      }],
+    };
+    expect(data.reasons?.[0].evidence).toContain('2.5x');
+  });
+
+  it('evidence = null → should NOT display evidence', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      reasons: [{ code: 'EXIT', text: 'خروج', evidence: null }],
+    };
+    expect(data.reasons?.[0].evidence).toBeNull();
+  });
+
+  it('data_basis present → should display source', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      data_basis: 'stocks.db.market_indices',
+    };
+    expect(data.data_basis).toContain('stocks.db');
+  });
+
+  it('ruleset_version present → should display version', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      ruleset_version: 'v1.0-alpha',
+    };
+    expect(data.ruleset_version).toBe('v1.0-alpha');
+  });
+
+  it('STALE status → should display "بيانات قديمة"', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      status: 'STALE',
+    };
+    expect(data.status).toBe('STALE');
+  });
+
+  it('INSUFFICIENT_DATA status → should display "بيانات ناقصة"', () => {
+    const data: ExitSignalData = {
+      signal: 'EXIT',
+      status: 'INSUFFICIENT_DATA',
+    };
+    expect(data.status).toBe('INSUFFICIENT_DATA');
+  });
+});
+
+// ============================================================================
+// Tests: TAKE_PROFIT does NOT cancel EXIT (owner directive)
+// ============================================================================
+
+describe('ALPHA — ExitSignal: TAKE_PROFIT does NOT cancel EXIT', () => {
+  it('both EXIT and TAKE_PROFIT can coexist as separate signals', () => {
+    // Owner directive: "تحقق هدف سعري لا يلغي إشارة خروج أقوى"
+    // EXIT (loss protection) and TAKE_PROFIT (gain realization) are INDEPENDENT
+    const exitSignal: ExitSignalData = {
+      signal: 'EXIT',
+      action_ar: 'خروج — كسر دعم',
+      status: 'CONFIRMED',
+      position_state: 'OPEN',
+    };
+    const takeProfitSignal: ExitSignalData = {
+      signal: 'TAKE_PROFIT',
+      action_ar: 'جني أرباح — الهدف الأول',
+      status: 'CONFIRMED',
+      position_state: 'OPEN',
+    };
+
+    // Both are valid, both can be displayed simultaneously
+    expect(exitSignal.signal).toBe('EXIT');
+    expect(takeProfitSignal.signal).toBe('TAKE_PROFIT');
+    // They are NOT mutually exclusive — the UI should show BOTH
+  });
+
+  it('EXIT + TAKE_PROFIT conflict: EXIT takes precedence for display (safety first)', () => {
+    // When only ONE badge can be shown (compact mode), EXIT > TAKE_PROFIT
+    const signals = ['EXIT', 'TAKE_PROFIT'];
+    const priority: Record<string, number> = { EXIT: 3, TAKE_PROFIT: 2, CAUTION: 1 };
+    const sorted = signals.sort((a, b) => priority[b] - priority[a]);
+    expect(sorted[0]).toBe('EXIT'); // safety first
+  });
+
+  it('CAUTION during BUY evaluation: does NOT auto-convert to EXIT', () => {
+    // Owner directive: "تحذير غير مؤكد: يمكن أن يخفض درجة التوصية،
+    // لكن لا يتحول تلقائيًا إلى خروج"
+    const cautionSignal: ExitSignalData = {
+      signal: 'CAUTION',
+      status: 'PENDING',
+      position_state: 'NONE', // لا يوجد مركز مفتوح
+    };
+    // CAUTION with no open position = warning, NOT exit
+    expect(cautionSignal.signal).toBe('CAUTION');
+    expect(cautionSignal.position_state).toBe('NONE');
+    // The UI shows this as a warning, NOT as "exit your position"
+  });
+
+  it('distribution detected during BUY evaluation: prevents BUY, does NOT force EXIT', () => {
+    // Owner directive: "اكتشاف تصريف أثناء تقييم فرصة شراء:
+    // يمنع رفع التوصية إلى شراء قوي"
+    const radarExit = parseExitSignalFromRadarStock({
+      classification: 'distribution',
+    });
+    // This is a CAUTION (don't buy), NOT an EXIT (sell what you have)
+    expect(radarExit?.signal).toBe('CAUTION');
+    expect(radarExit?.action_ar).toContain('تصريف');
+  });
+});

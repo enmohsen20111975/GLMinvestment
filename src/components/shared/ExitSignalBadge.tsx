@@ -37,24 +37,39 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
-// Types — matching the proposed contract (no fabrication)
+// Types — matching owner's updated JSON contract (2026-10-27)
 // ============================================================================
+// Owner directive: فصل 3 أنواع من المعلومات:
+// 1. signal: التوصية الحالية (BUY/HOLD/EXIT/TAKE_PROFIT/CAUTION)
+// 2. status: صلاحية البيانات (CONFIRMED/STALE/INSUFFICIENT_DATA)
+// 3. position_state: هل فيه مركز مفتوح؟ (OPEN/CLOSED/None)
+// KEY: TAKE_PROFIT لا يلغي EXIT تلقائيًا — دول حدثين مستقلين
 
 export type ExitSignalType = 'EXIT' | 'TAKE_PROFIT' | 'CAUTION' | null;
+
+export type SignalStatus = 'CONFIRMED' | 'STALE' | 'INSUFFICIENT_DATA' | 'PENDING' | null;
+
+export type PositionState = 'OPEN' | 'CLOSED' | 'NONE' | null;
 
 export interface ExitReason {
   code: string;
   text: string;
+  evidence?: string | null; // بيانات تدعم السبب (مثلاً: "volume=2.5x avg")
 }
 
 export interface ExitSignalData {
+  symbol?: string | null;
   signal?: ExitSignalType;
   action_ar?: string | null;
   reasons?: ExitReason[] | null;
   trailing_stop?: number | null;
   reference_price?: number | null;
   data_timestamp?: string | null;
-  status?: 'CONFIRMED' | 'PENDING' | null;
+  data_basis?: string | null;        // مصدر البيانات (مثلاً: "price_history.db")
+  status?: SignalStatus;
+  confidence?: 'high' | 'medium' | 'low' | null; // مقياس الثقة — مش "high" لمجرد تعدد الشروط
+  position_state?: PositionState;    // حالة المركز (مستقل عن signal)
+  ruleset_version?: string | null;  // إصدار قواعد الإشارة
 }
 
 // ============================================================================
@@ -141,7 +156,8 @@ export function ExitSignalBadge({
       <div className="flex items-center gap-2">
         <Icon className={cn('size-4', config.color)} />
         <span className={cn('text-xs font-bold', config.color)}>{actionText}</span>
-        {isConfirmed && (
+        {/* Status: صلاحية البيانات (مستقل عن signal) */}
+        {data.status === 'CONFIRMED' && (
           <span className={cn('text-[9px] font-mono px-1 py-0.5 rounded', config.bg, config.color)}>
             مؤكد
           </span>
@@ -151,15 +167,59 @@ export function ExitSignalBadge({
             قيد المراجعة
           </span>
         )}
+        {data.status === 'STALE' && (
+          <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-warning/10 text-warning">
+            بيانات قديمة
+          </span>
+        )}
+        {data.status === 'INSUFFICIENT_DATA' && (
+          <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-muted text-muted-foreground">
+            بيانات ناقصة
+          </span>
+        )}
       </div>
 
-      {/* Reasons — لو موجودة وصالحة */}
+      {/* Position state — مستقل عن signal (owner directive) */}
+      {data.position_state && data.position_state !== 'NONE' && (
+        <div className="flex items-center gap-1 text-[10px]">
+          {data.position_state === 'OPEN' ? (
+            <span className="text-info">📌 مركز مفتوح</span>
+          ) : (
+            <span className="text-muted-foreground">مركز مغلق</span>
+          )}
+        </div>
+      )}
+
+      {/* Confidence — لو معرّف ومتاح (مش "high" لمجرد تعدد الشروط) */}
+      {data.confidence && (
+        <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+          <span>الثقة: </span>
+          <span className={cn(
+            'font-mono font-semibold',
+            data.confidence === 'high' ? 'text-profit' :
+            data.confidence === 'medium' ? 'text-warning' :
+            'text-muted-foreground'
+          )}>
+            {data.confidence === 'high' ? 'عالية' : data.confidence === 'medium' ? 'متوسطة' : 'منخفضة'}
+          </span>
+        </div>
+      )}
+
+      {/* Reasons — لو موجودة وصالحة + evidence */}
       {data.reasons && data.reasons.length > 0 && (
         <div className="space-y-0.5">
           {data.reasons.slice(0, 3).map((reason, i) => (
-            <div key={i} className="flex items-start gap-1 text-[10px] text-muted-foreground">
-              <span className="text-current opacity-50">•</span>
-              <span>{reason.text}</span>
+            <div key={i} className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+              <div className="flex items-start gap-1">
+                <span className="text-current opacity-50">•</span>
+                <span>{reason.text}</span>
+              </div>
+              {/* Evidence — بيانات تدعم السبب (لو موجودة) */}
+              {reason.evidence && (
+                <span className="text-[9px] text-muted-foreground/60 mr-3 font-mono">
+                  📊 {reason.evidence}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -204,6 +264,20 @@ export function ExitSignalBadge({
       {data.data_timestamp && isStale(data.data_timestamp) && (
         <div className="text-[9px] text-warning/70">
           ⚠️ بيانات قديمة — تحقق من التحديث
+        </div>
+      )}
+
+      {/* Data basis — مصدر البيانات (لو موجود) */}
+      {data.data_basis && (
+        <div className="text-[9px] text-muted-foreground/50 font-mono">
+          المصدر: {data.data_basis}
+        </div>
+      )}
+
+      {/* Ruleset version — إصدار القواعد (لو موجود) */}
+      {data.ruleset_version && (
+        <div className="text-[9px] text-muted-foreground/40 font-mono">
+          إصدار القواعد: {data.ruleset_version}
         </div>
       )}
     </div>
