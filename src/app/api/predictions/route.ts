@@ -168,14 +168,15 @@ export async function GET(request: NextRequest) {
 
       // TASK-C: Fetch latest stored_analyses rows for this ticker in one shot
       // (so we can attach ai_reason / ai_narrative to each prediction).
-      // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-      // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
+      // BRAVO-FIX-D (freshness filter, Task PHASE-3 Rule 72): exclude analyses older
+      // than 48h so stale signals don't get attached to live predictions.
       let storedByTicker: any = null;
       try {
         const storedRows = db.prepare(
           `SELECT ticker, ai_reason, ai_narrative
            FROM stored_analyses
            WHERE ticker = ?
+             AND updated_at >= datetime('now', '-2 days')
            ORDER BY updated_at DESC
            LIMIT 1`
         ).all(ticker) as any[];
@@ -399,8 +400,7 @@ export async function GET(request: NextRequest) {
     const predictions = db.prepare(query).all(...fbMarketParams, parseInt(limit)) as any[];
 
     // TASK-C: Batch-fetch the latest stored_analyses row per ticker (for ai_reason / ai_narrative)
-    // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-    // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
+    // BRAVO-FIX-D (freshness filter, Task PHASE-3 Rule 72): exclude analyses older than 48h.
     let storedByTicker: Record<string, any> = {};
     try {
       const tickers = Array.from(new Set(predictions.map((p) => p.ticker).filter(Boolean))) as string[];
@@ -410,6 +410,7 @@ export async function GET(request: NextRequest) {
           `SELECT ticker, ai_reason, ai_narrative
            FROM stored_analyses
            WHERE ticker IN (${placeholders})
+             AND updated_at >= datetime('now', '-2 days')
            ORDER BY updated_at DESC`
         ).all(...tickers) as any[];
         for (const r of rows) {

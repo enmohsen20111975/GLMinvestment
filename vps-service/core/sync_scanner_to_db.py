@@ -251,9 +251,12 @@ def purge_stale_predictions(db_path: Path = None) -> dict:
         logger.error(f"DB not found: {db_path}")
         return {'error': 'DB not found'}
 
-    # Phase 7.1: migrated to db_manager (writable=False)
+    # BRAVO-FIX-D (purge_stale_predictions disabled): writable=False made every
+    # UPDATE in this function fail with "attempt to write a readonly database"
+    # (PRAGMA query_only=1). This function is the canonical stale-purge utility
+    # — it MUST be writable to do its job.
     from core.db_manager import db_manager
-    conn = db_manager.get_connection(str(db_path), writable=False)
+    conn = db_manager.get_connection(str(db_path), writable=True)
     cur = conn.cursor()
     stats = {}
 

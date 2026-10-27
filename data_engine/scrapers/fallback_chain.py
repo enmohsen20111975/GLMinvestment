@@ -105,19 +105,50 @@ def log(msg: str, level: str = 'info') -> None:
 
 def _try_tradingview() -> Tuple[List[Dict], str]:
     """
-    المحاولة الأولى: TradingView REST (NO Playwright).
-    - بنستخدم الـ scanner REST endpoint مباشرة (urllib POST).
+    المحاولة الأولى: TradingView Scanner Live (NO Playwright).
+    - بنستخدم الـ unified scanner engine (tradingview_scanner_live.py).
     - خفيف وسريع (~1-3 ثواني) بدل ما كان Playwright بـ 60-120 ثانية.
-    - الـ fetcher بيحفظ في data_engine.db بنفسه كمان (via save_to_db).
+    - بيجيب 60 حقل (value_traded, relative_volume_10d, fundamentals, technicals).
+    - الـ fetcher بيحفظ في stocks.db بنفسه كمان (via save_to_db).
+
+    SCANNER-LIVE-2 (2026-10-27): tradingview_scanner_live هو المصدر الأساسي.
+    tradingview_rest بقا كـ fallback لو الـ unified engine فشل.
     """
-    log("📡 [1/2] محاولة TradingView REST (no Playwright)...", 'info')
+    log("📡 [1/2] محاولة TradingView Scanner Live (unified, no Playwright)...", 'info')
     try:
-        from tradingview_rest import fetch_tradingview_stocks
-        return fetch_tradingview_stocks(market='egypt')
+        from tradingview_scanner_live import fetch_market, save_to_db
+        # Fetch egypt only (fallback_chain is EGX-focused per docstring)
+        rows, elapsed = fetch_market('egypt')
+        if rows:
+            # Save to stocks.db (unified schema)
+            db_path = Path(__file__).parent.parent.parent / 'db' / 'stocks.db'
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(str(db_path))
+            from tradingview_scanner_live import _ensure_schema
+            _ensure_schema(conn)
+            saved = save_to_db(conn, rows)
+            conn.close()
+            log(f"  ✅ Scanner Live: {len(rows)} stocks in {elapsed:.0f}ms (saved {saved})", 'info')
+            # Return in the unified dict shape expected by callers
+            return rows, f"TradingView Scanner Live: {len(rows)} stocks"
+        return [], "TradingView Scanner Live: 0 rows returned"
     except ImportError as e:
-        return [], f"TradingView REST: ImportError - {e}"
+        log(f"  ⚠️ Scanner Live ImportError, falling back to REST: {e}", 'warning')
+        # Fallback to the older REST module
+        try:
+            from tradingview_rest import fetch_tradingview_stocks
+            return fetch_tradingview_stocks(market='egypt')
+        except ImportError as e2:
+            return [], f"TradingView (scanner+rest): ImportError - {e2}"
+        except Exception as e2:
+            return [], f"TradingView REST fallback: خطأ غير متوقع {str(e2)[:100]}"
     except Exception as e:
-        return [], f"TradingView REST: خطأ غير متوقع {str(e)[:100]}"
+        log(f"  ⚠️ Scanner Live error, falling back to REST: {e}", 'warning')
+        try:
+            from tradingview_rest import fetch_tradingview_stocks
+            return fetch_tradingview_stocks(market='egypt')
+        except Exception as e2:
+            return [], f"TradingView Scanner Live: خطأ غير متوقع {str(e)[:100]}, REST fallback: {e2}"
 
 
 def _try_egksco() -> Tuple[List[Dict], str]:

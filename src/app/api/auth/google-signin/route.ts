@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
           email_verified: googleUser.email_verified ? new Date() : null,
           subscription_tier: 'free',
           is_active: true,
-          last_login: new Date(),
+          last_login: new Date().toISOString(),
           updated_at: new Date(),
           trial_ends_at: trialEndsAt,
         },
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
       await db.user.update({
         where: { id: user.id },
         data: { 
-          last_login: new Date(),
+          last_login: new Date().toISOString(),
           image: user.image || image,
           name: user.name || name,
         },

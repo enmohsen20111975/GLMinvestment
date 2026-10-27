@@ -67,8 +67,10 @@
 0 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_evening.log 2>&1
 
 # ─── 7. سكرابر TradingView (المسار الصحيح: data_engine/scrapers/) ──────
-# كل 5 دقائق أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
-*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scraper.py >> /tmp/tradingview.log 2>&1
+# SCANNER-LIVE-2 (2026-10-27): استبدال Playwright بـ unified Scanner API.
+# كل دقيقتين أثناء جلسة السوق (08:00-14:00 UTC = 10:00-16:00 Cairo).
+# السرعة: 3.3 ثوانٍ بدل 120 ثانية. لا Playwright، لا استهلاك رام.
+*/2 8-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scanner_live.py >> /tmp/tradingview_scanner.log 2>&1
 
 # ─── 8. SafetyNet لتحديث الأسعار (Yahoo Finance fallback) ───────────────
 # يومياً 06:00 UTC (08:00 Cairo) — يسد أي فجوات في price_history.db
