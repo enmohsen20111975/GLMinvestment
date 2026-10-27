@@ -10322,3 +10322,63 @@ Stage Summary:
   * ممنوع إرجاع `[]` فارغة بدون fallback — كل الـ routes بترجع graceful 200 مع `source: "fallback"` لو الـ DB مش موجود.
   * ممنوع كسر TypeScript — tsc clean على ملفاتي.
 - Git state: branch `alpha/dal-wave2-portfolio-predictions`, unstaged (awaiting commit + push).
+
+---
+Task ID: ALPHA-DAL-WAVE3
+Agent: Alpha (Frontend Engineer — DAL Wave 3 final sanitization)
+Task: تكليف الـ owner WAVE 3 — الضربة القاضية. تحويل screener + stocks/depth + admin لـ DbManager.
+
+Work Log:
+- Step 0 (Branch + rebase): أنشأت `alpha/dal-wave3-final-sanitization` من main (rebased onto origin/main بعد ما برافو دفع 2 commits).
+
+- Step 1 (Task 0 — DbManager namespace export):
+  * أضفت `export const DbManager = { openDb, openDbWritable, columnExists, ... }` لـ db-manager.ts.
+  * ده عشان أطابق pattern اللي الـ owner طلبه: `import { DbManager } from '@/lib/db-manager'; DbManager.openDb('stocks.db')`.
+  * الـ named exports لسه شغّالة للـ backward compat مع شغل WAVE 1+2.
+
+- Step 2 (Task 1a — screener/advanced/route.ts):
+  * استبدلت `new Database(stocksDbPath)` (line 89) بـ `DbManager.openDb('stocks.db')`.
+  * أضفت `import { DbManager }` + أزلت `require('better-sqlite3')` + `require('path')` + `require('fs')`.
+  * defensive: لو stocks.db مش موجود → 200 graceful (مش 500) per owner directive.
+
+- Step 3 (Task 1b — stocks/[ticker]/route.ts):
+  * أتأكدت: الـ route بيـ proxy للـ Python backend (PYTHON_BACKEND_URL) — مفيهوش DB access مباشر.
+  * قرار: لا تعديل مطلوب (التكليف: "ممنوع تغيير أسماء حقول الاستجابة").
+
+- Step 4 (Task 1c — stocks/[ticker]/depth/route.ts):
+  * أزلت `import Database` (runtime) + `import path` + `import { existsSync }` + الـ local `openDb()` function (كانت shadowing).
+  * استبدلت 2 `new Database()` (stocks.db readonly + writable fallback) بـ `DbManager.openDb('stocks.db')` + `DbManager.openDb('intraday.db')`.
+  * أضفت `import type Database` (type-only للـ Database.Database type).
+  * defensive: لو stocks.db null → skip silently. لو intraday.db null → throw مع رسالة واضحة.
+
+- Step 5 (Task 2a — admin/clean-predictions + generate-predictions):
+  * أتأكدت: الاتنين مفيهمش violations (0 `new Database()`).
+  * قرار: لا تعديل مطلوب.
+
+- Step 6 (Task 2b — admin/system-resources/route.ts):
+  * استبدلت `import Database` (runtime) بـ `import { DbManager }`.
+  * استبدلت `new Database(dbPath)` في الـ VACUUM loop بـ `DbManager.openDbWritable(dbFile)` (VACUUM + wal_checkpoint عمليات تعديلية).
+  * defensive: لو openDbWritable رجع null → error message واضح بدل 500.
+
+- Step 7 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي → 0 errors.
+  * grep check: 0 real `new Database()` في screener/advanced + stocks/depth + system-resources.
+  * (db-manager.ts نفسه فيه `new Database` في openDb/openDbWritable — ده مسموح لأنه الـ DAL layer نفسه).
+  * Live API test: GET /api/screener/advanced?market=EGX&limit=3 → success: false (stocks.db missing in sandbox — defensive صح).
+
+Stage Summary:
+- Files modified (4):
+  * src/lib/db-manager.ts: + DbManager namespace export (13 functions).
+  * src/app/api/screener/advanced/route.ts: new Database() → DbManager.openDb('stocks.db').
+  * src/app/api/stocks/[ticker]/depth/route.ts: 2 new Database() → DbManager.openDb + أزالت local openDb().
+  * src/app/api/admin/system-resources/route.ts: new Database() in VACUUM loop → DbManager.openDbWritable.
+- Files skipped (3, no violations):
+  * src/app/api/stocks/[ticker]/route.ts (proxies to Python, no DB access).
+  * src/app/api/admin/clean-predictions/route.ts (no violations).
+  * src/app/api/admin/generate-predictions/route.ts (no violations).
+- المحظورات الالتزام:
+  * ممنوع `better-sqlite3` خارج db-manager.ts — استخدمت DbManager في كل الـ routes.
+  * ممنوع تغيير أسماء حقول الاستجابة — response schema محفوظ.
+  * try/catch + 200 graceful (مش 500) لو stock/DB not found.
+- Git state: branch `alpha/dal-wave3-final-sanitization`, unstaged (awaiting commit + push).

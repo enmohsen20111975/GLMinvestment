@@ -5,7 +5,10 @@ import { promisify } from 'util';
 import { readFile, readdir, stat, truncate, unlink } from 'fs/promises';
 import { join } from 'path';
 import os from 'os';
-import Database from 'better-sqlite3';
+// (ALPHA-DAL-WAVE3 — owner directive 2026-10-27):
+// «استخدام DbManager.openDb('predictions.db') و openDbWritable للعمليات التعديلية.»
+// شيلنا import Database (runtime) — كل الـ DB access عبر DbManager.
+import { DbManager } from '@/lib/db-manager';
 import { collectSnapshot } from '@/lib/metrics-collector';
 import { insertSnapshot } from '@/lib/metrics-db';
 
@@ -472,15 +475,22 @@ export async function POST(req: NextRequest) {
 
       for (const f of files) {
         if (f.endsWith('.db')) {
-          const dbPath = join(dbDir, f);
-          try {
-            const db = new Database(dbPath, { timeout: 5000 });
-            db.pragma('wal_checkpoint(TRUNCATE)');
-            db.exec('VACUUM;');
-            db.close();
-            optimized.push(f);
-          } catch (err: any) {
-            errors.push(`${f}: ${err?.message || 'خطأ'}`);
+          // (ALPHA-DAL-WAVE3): استخدم DbManager.openDbWritable — ممنوع new Database().
+          // VACUUM + wal_checkpoint عمليات تعديلية → writable connection.
+          const dbFile = f.replace(/\.db$/, '.db'); // normalize (no .original/.bak in db dir)
+          const db = DbManager.openDbWritable(dbFile);
+          if (db) {
+            try {
+              db.pragma('wal_checkpoint(TRUNCATE)');
+              db.exec('VACUUM;');
+              optimized.push(f);
+            } catch (err: any) {
+              errors.push(`${f}: ${err?.message || 'خطأ'}`);
+            } finally {
+              try { db.close(); } catch { /* noop */ }
+            }
+          } else {
+            errors.push(`${f}: لا يمكن فتح قاعدة البيانات`);
           }
         }
       }

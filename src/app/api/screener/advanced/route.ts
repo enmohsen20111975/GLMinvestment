@@ -29,6 +29,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
+// (ALPHA-DAL-WAVE3 — owner directive 2026-10-27):
+// «إزالة new Database(path) اليدوي. استبداله بـ: import { DbManager } from '@/lib/db-manager';
+//     const db = DbManager.openDb('stocks.db');»
+import { DbManager } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -74,19 +78,16 @@ export async function GET(req: NextRequest) {
     }
   } catch {}
 
-  // 2) Fallback — read from stocks.db
+  // 2) Fallback — read from stocks.db (via DbManager DAL gatekeeper)
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    // (ALPHA-DAL-WAVE3): استخدم DbManager.openDb — ممنوع new Database().
+    const db = DbManager.openDb('stocks.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'stocks.db not found' },
-        { status: 500 }
+        { status: 200 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
 
     // اكتشف الأعمدة المتاحة (الـ schema يختلف بين الإنتاج والـ init)
     const tableInfo = db.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;

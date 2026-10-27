@@ -1000,3 +1000,25 @@ export default {
   openDbWritable,
   columnExists,
 };
+
+// ─── DbManager namespace (owner directive WAVE 3 — 2026-10-27) ──────────────
+// «استبداله بـ: import { DbManager } from '@/lib/db-manager';
+//     const db = DbManager.openDb('stocks.db');»
+// ده namespace object عشان يطابق pattern اللي الـ owner طلب فيه.
+// الـ named exports لسه شغّالة للـ backward compat مع شغل WAVE 1+2.
+
+export const DbManager = {
+  openDb,
+  openDbWritable,
+  columnExists,
+  getLiveSparkline,
+  getLiveSparklines,
+  getIncubatorData,
+  getUnifiedLogos,
+  getLogoUrl,
+  enrichWithUnifiedLogos,
+  getActivePredictions,
+  getCompanyFundamentals,
+  getMarketTabData,
+};
+
