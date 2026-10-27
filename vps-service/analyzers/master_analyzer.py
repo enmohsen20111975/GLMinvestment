@@ -1275,7 +1275,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     
     # 1. تحديد مسارات قواعد البيانات
     db_dir = Path(db_path).parent
-    price_history_db = str(db_dir / 'price_history.db')
+    price_history_db = str(db_dir / 'stocks.db')  # WAVE-2: was price_history.db (stale)
     intraday_db = str(db_dir / 'intraday.db')
     stocks_db = str(db_dir / 'stocks.db')
     
@@ -1313,7 +1313,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                     # جلب آخر `limit` سجل من egksco (المرجع الصحيح)
                     cursor.execute('''
                         SELECT date, open_price, high_price, low_price, close_price, volume
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ? AND source = 'egksco'
                         ORDER BY date DESC
                         LIMIT ?
@@ -1323,7 +1323,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                     # جلب آخر `limit` سجل من egx_investment_migration (المرجع المشكوك فيه)
                     cursor.execute('''
                         SELECT date, open_price, high_price, low_price, close_price, volume
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ? AND source = 'egx_investment_migration'
                         ORDER BY date DESC
                         LIMIT ?
@@ -1334,7 +1334,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                     # DATA-SURGERY: استثنينا yahoo_clean من other_rows عشان نعالجه لوحده بالأولوية الأولى
                     cursor.execute('''
                         SELECT date, open_price, high_price, low_price, close_price, volume, source
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ? AND source NOT IN ('egksco', 'egx_investment_migration', 'yahoo_clean')
                         ORDER BY date DESC
                         LIMIT ?
@@ -1345,7 +1345,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                     # ── DATA-SURGERY: Priority 1 — yahoo_clean (تاريخ ياهو النظيف، period=max + auto_adjust=False) ──
                     cursor.execute('''
                         SELECT date, open_price, high_price, low_price, close_price, volume
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ? AND source = 'yahoo_clean'
                         ORDER BY date DESC
                         LIMIT ?
@@ -1355,7 +1355,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                     # لا يوجد عمود source — سلوك قديم (نأخذ آخر limit سجل)
                     cursor.execute('''
                         SELECT date, open_price, high_price, low_price, close_price, volume
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ?
                         ORDER BY date DESC
                         LIMIT ?
@@ -1366,7 +1366,7 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
                 try:
                     cursor.execute('''
                         SELECT date, open, high, low, close, volume
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ?
                         ORDER BY date DESC
                         LIMIT ?

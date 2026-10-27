@@ -246,7 +246,7 @@ def _get_current_price(ticker: str) -> float:
 # ونرتب بـ fair_value_upside DESC.
 #
 # لو stocks.db مفيهوش change_1m مباشرة، نحسبه من stock_daily_prices (آخر 30 يوم).
-# لو مفيهوش volatility، نحسبه من stdev(close_price) لآخر 20 يوم.
+# لو مفيهوش volatility، نحسبه من stdev(close) لآخر 20 يوم.
 _STOCKS_FUNDAMENTALS_CACHE: dict = {'data': {}, 'ts': 0.0}
 _STOCKS_FUNDAMENTALS_TTL = 300  # 5 دقايق
 
@@ -271,7 +271,7 @@ def _load_price_history_metrics_batch() -> dict:
     result: dict = {}
     try:
         # price_history.db path
-        _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+        _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')  # WAVE-2: was price_history.db (stale)
         if not os.path.exists(_ph_db):
             # لا price_history.db → رجّع فاضي (الـ fallback هيستخدم stocks.db)
             return result
@@ -291,8 +291,8 @@ def _load_price_history_metrics_batch() -> dict:
             WITH ranked AS (
                 SELECT ticker, date, close_price, volume,
                        ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY date DESC) AS rn
-                FROM price_history
-                WHERE close_price > 0 AND volume > 0
+                FROM stock_daily_prices
+                WHERE close > 0 AND volume > 0
             )
             SELECT ticker,
                    MAX(CASE WHEN rn = 1 THEN close_price END) AS last_close,
