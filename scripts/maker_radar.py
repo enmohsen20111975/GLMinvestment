@@ -874,17 +874,6 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     if len(closes) < 15 or len(volumes) < 15:
         return None
 
-    # RADAR-INTEL-V2: detect if history is mostly duplicates (1 real day repeated)
-    # This happens when scanner_live persists the same day's data multiple times
-    unique_dates = set()
-    for r in rows:
-        d = r.get('price_date') or r.get('date') or ''
-        if d:
-            unique_dates.add(str(d)[:10])
-    if len(unique_dates) < 3:
-        # Not enough unique trading days for meaningful analysis
-        return None
-
     current_price = closes[-1]
     # ─── FRESHNESS GUARD (Task FIX-STALE-DTPP-2026-10-07) ─────────────────
     # Capture the date of closes[-1] so we can:
@@ -1161,7 +1150,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         closes=closes, volumes=volumes, highs=highs, lows=lows,
         vol_ratio=volume_ratio_10d_vs_20d if volume_ratio_10d_vs_20d else None,
         value_traded=result.get('turnover_egp'),
-        change_percent=result.get('change_percent') or result.get('change_1d'),
+        change_percent=result.get('change_percent') if result.get('change_percent') is not None else result.get('change_1d'),
         staleness_days=staleness_days,
         last_close_date=last_close_date_str,
         rows=rows,
