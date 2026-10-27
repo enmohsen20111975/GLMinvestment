@@ -13233,3 +13233,33 @@ Stage Summary:
 - API شغّال + مفيش ADP + مفيش تكرار.
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/predictions-cleanup.
+
+---
+Task ID: PREDICTIONS-CLEANUP-2
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: إعدام price_history.db من الرادار + دمج predictions-cleanup + تشغيل الرادار بالأسعار الحية
+
+Work Log:
+- TASK 1: دمج bravo/predictions-cleanup → main:
+  * merge --no-ff (no conflicts)
+  * commit 4e7492c pushed to remote main
+  * يشمل: 907 duplicate مسحت + فلتر الأمان + sparkline live + fix StockDetail
+- TASK 2: تعديل scripts/maker_radar.py:
+  * stocks.db.stock_daily_prices FIRST (live data from scanner)
+  * price_history.db LAST fallback (stale Sept 2026)
+  * كل الأسواق (EGX, TADAWUL, KSE, QSE, US) اتعادلت
+  * fix: turnover column → None (stocks.db مفيهوش turnover column)
+- TASK 3: تشغيل maker_radar.py --market EGX --json-only:
+  * DB config: stocks.db (table: stock_daily_prices) ✅
+  * DB source id: stocks.db::stock_daily_prices ✅
+  * Last daily price date: 2026-10-07 (sandbox data — الإنتاج هيكون اليوم)
+  * JSON saved: scripts/output/maker_radar_EGX_20261027.json
+  * generated_at: 2026-10-27T16:30:11 ✅
+
+Stage Summary:
+- price_history.db اتعزل (LAST fallback فقط) في كل الأسواق.
+- stocks.db.stock_daily_prices هو المصدر الأساسي الحي.
+- الرادار شغّال + بـ يقرا من stocks.db + JSON بتاريخ اليوم.
+- predictions-cleanup مدموج في main.
+- لم ألمس main بـ reset، لم أforce-push.
+- الفرع: main @ 4e7492c + تعديل maker_radar.py pending commit.

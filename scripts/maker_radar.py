@@ -121,11 +121,13 @@ def _find_radar_db(market: str = 'EGX'):
 
     MARKET_CANDIDATES: dict = {
         'EGX': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
-            # 1. stocks.db.stock_daily_prices — production source-of-truth المحدث يومياً
+            # PREDICTIONS-CLEANUP-2 (2026-10-27): stocks.db FIRST (live data from
+            # tradingview_scanner_live + daily_price_updater). price_history.db is
+            # stale (last update 24 Sept 2026) — moved to LAST fallback only.
+            # 1. stocks.db.stock_daily_prices — LIVE production source-of-truth
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             # 2. data_engine.db.egksco_price_history — fallback (archive)
@@ -136,7 +138,9 @@ def _find_radar_db(market: str = 'EGX'):
             ),
             # 3. data_engine.db.historical_data — last-resort (mixed markets)
             HISTORICAL_DATA_TUPLE,
-            # 4. sandbox fallbacks
+            # 4. price_history.db — STALE ARCHIVE (last resort only, Sept 2026)
+            PRICE_HISTORY_TUPLE,
+            # 5. sandbox fallbacks
             (
                 'db/production_snapshot.db', 'stock_daily_prices',
                 'ticker', 'close', 'volume', 'turnover',
@@ -150,33 +154,49 @@ def _find_radar_db(market: str = 'EGX'):
         ],
         # الأسواق الخليجية — stocks.db.stock_daily_prices الأول ثم historical_data
         'TADAWUL': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
         'KSE': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
         'QSE': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
-        'US':      [PRICE_HISTORY_TUPLE, HISTORICAL_DATA_TUPLE],  # Phase 3: price_history PRIMARY
+        'US':      [
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live US data from scanner)
+            (
+                'db/stocks.db', 'stock_daily_prices',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
+                'price_date', 'open', 'high', 'low',
+            ),
+            # price_history.db — fallback (US archive)
+            PRICE_HISTORY_TUPLE,
+            HISTORICAL_DATA_TUPLE,
+        ],
         # CRYPTO + GOLD — جداول منفصلة في data_engine.db
         'CRYPTO':  [CRYPTO_PRICES_TUPLE],
         'GOLD':    [GOLD_PRICES_TUPLE],
