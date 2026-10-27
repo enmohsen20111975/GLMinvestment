@@ -12831,3 +12831,43 @@ Stage Summary:
 - 66 column في stocks table (كانت 64 + logo_url + tabs_data).
 - لم ألمس main، لم أmerge، لم أdeploy.
 - الفرع: bravo/scanner-live.
+
+---
+Task ID: SCANNER-LIVE-4
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: حجر رشيد — تنظيف ومطابقة كل البيانات التاريخية القديمة
+
+Work Log:
+- أكّدت اكتشافات المالك:
+  * stocks.db stock_daily_prices فيها ticker (مش symbol)
+  * volume كـ text: 1199 row في snapshot (نصوص زي "1.36 M")
+  * مفيش tab_* tables في snapshot (بس موجودة في production data_engine.db)
+- كتبت scripts/reconcile_and_clean_historical_data.py (446 سطر):
+  * Stage 1: build_rosetta() — بـ يقرا الـ Ground Truth من stocks.db (295 clean symbol)
+  * Stage 2: clean_stock_daily_prices() — تحويل text volume → REAL + تنظيف tickers + populate symbol
+  * Stage 3: clean_tab_tables() — تنظيف tab_* في data_engine.db (لو موجودة)
+  * Stage 4: inject_logo_urls() — حقن logo_url لكل الأسهم
+- Bug fix: rowid access (Row object ما بـ يدعمش ["rowid"] — استخدمت tuple access)
+- اختبار بـ 202 rows (134 text volume + 2 polluted tickers: COMIالبنك + LUTSL):
+  * volume_converted: 134 ✅
+  * tickers_cleaned: 4 ✅ (COMIالبنك + LUTSL + 2 تانيين)
+  * symbols_populated: 202 ✅
+  * injected logo_url: 12 ✅
+  * polluted symbols بعد: 0 ✅
+- اختبار idempotency:
+  * rerun: volume_converted=0, tickers_cleaned=0, injected=0 ✅
+
+VERIFICATION (SQL):
+- polluted symbols in stocks: 0 (expected 0) ✅
+- polluted tickers in stock_daily_prices: 0 (expected 0) ✅
+- COMI: ticker=COMI, symbol=COMI, volume=3350000.0 (real) ✅
+- text volume: 0 | real/integer: 202 | total: 202 ✅
+- stocks with logo_url: 295/295 (100%) ✅
+
+Stage Summary:
+- سكريبت "حجر رشيد" جاهز + مجرّب + idempotent.
+- بـ ينظف: text volume → REAL، tickers مشوهة → نقية، symbol column متاحة.
+- بـ يـ يدعم tab_* tables (لو موجودة في production).
+- بـ يـ يحقن logo_url لكل الأسهم.
+- لم ألمس main، لم أmerge، لم أdeploy.
+- الفرع: bravo/scanner-live.
