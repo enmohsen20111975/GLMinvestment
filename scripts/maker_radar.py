@@ -343,13 +343,19 @@ def _load_scanner_enrichment(market_code: str = 'EGX'):
         if not needed.issubset(cols):
             log(f"  ℹ️ stocks.db missing scanner columns {needed - cols}, skipping enrichment")
             conn.close()
-            _SCANNER_ENRICHMENT_CACHE = cache
+            _SCANNER_ENRICHMENT_CACHE[market_code] = cache  # P2 FIX: per-market key
             return cache
 
         # Map market_code → scanner market slug
         market_slug_map = {'EGX': 'egypt', 'TADAWUL': 'saudi', 'KSE': 'kuwait',
                            'QSE': 'qatar', 'US': 'america', 'CRYPTO': None}
         market_slug = market_slug_map.get(market_code, 'egypt')
+
+        # P2 FIX: CRYPTO maps to None — skip query (crypto not in stocks.db)
+        if market_slug is None:
+            conn.close()
+            _SCANNER_ENRICHMENT_CACHE[market_code] = cache
+            return cache
 
         rows = conn.execute(
             "SELECT symbol, value_traded, relative_volume_10d, turnover_egp, "
@@ -553,12 +559,15 @@ def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
     rsi = e.get('rsi_scanner') or e.get('rsi')
     volume = e.get('volume')
 
-    if not value_traded or value_traded <= 0:
-        return None
-
+    # P1 FIX: require current_price (not value_traded) — don't hide price movements
+    # due to missing liquidity data
     try:
         conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
-        r = conn.execute("SELECT current_price, change_percent, volume FROM stocks WHERE symbol = ?", (ticker,)).fetchone()
+        # P1 FIX: filter by market to avoid cross-market ticker collision
+        market_slug_map = {'EGX': 'egypt', 'TADAWUL': 'saudi', 'KSE': 'kuwait',
+                           'QSE': 'qatar', 'US': 'america'}
+        market_slug = market_slug_map.get(market_code, 'egypt')
+        r = conn.execute("SELECT current_price, change_percent, volume FROM stocks WHERE symbol = ? AND market = ?", (ticker, market_slug)).fetchone()
         conn.close()
         if r:
             current_price = r[0]
@@ -2024,11 +2033,12 @@ def main():
         if not rows or len(rows) < 15:
             result = _scanner_fallback(ticker, regime=regime_name, market_code=args.market.upper())
             if result and result.get('classification') == 'SCANNER_ALERT':
-                # Scanner fallback worked — enrich + add to results
+                # Scanner fallback worked — enrich + add to BOTH lists
                 identity = identity_map.get(ticker, {})
                 result = _enrich_result_with_scanner(result, ticker)
                 result = _enrich_result_with_b3_fields(result, identity, args, scan_timestamp)
                 contract_results.append(result)
+                results.append(result)  # P1 FIX: also add to legacy results (UI reads this)
                 continue
             # Scanner fallback also failed → truly insufficient
             identity = identity_map.get(ticker, {})
