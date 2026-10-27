@@ -395,8 +395,8 @@ export function LiquidityRadarView({
 
  React.useEffect(() => { setPage(0); }, [bucketFilter, hideInactive, activeMarket]);
 
- // ─── Build UnifiedTable columns ───
- const columns: Column<RadarStock>[] = [
+ // ─── Build UnifiedTable columns (Blueprint Rule 4: memoized) ───
+ const columns: Column<RadarStock>[] = React.useMemo(() => [
  {
  key: 'ticker',
  header: 'السهم',
@@ -704,7 +704,7 @@ export function LiquidityRadarView({
  },
  },
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
- ];
+ ], []); // Blueprint Rule 4: stable deps — لا تتغير إلا عند mount
 
  return (
  <div className="space-y-4 p-4" dir="rtl">
