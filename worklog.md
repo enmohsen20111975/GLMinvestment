@@ -10031,3 +10031,1151 @@ Stage Summary:
   * Issue #1 (HIGH): ADP/ADPC filter gap — سهم ADP يُعرض بـ USD في EGX.
   * Issue #2 (HIGH): data_isolation table مفقودة من predictions.db.
 - الخطوة التالية: انتظر تعليمات المالك — هل يبدأ في حل الـ issues الحرجة (#9, #10) أم ينزّل الـ DBs أولاً؟
+
+---
+Task ID: AUDIT-1
+Agent: برافو V2 (subagent) — Read-only Forensic Audit
+Task: تدقيق ساكن لمسار التشغيل التنفيذي Orchestrator → Executor → Risk Gate → Decision Log في vps-service (بدون كتابة كود أو تشغيل builds).
+
+Work Log:
+- قرأت آخر 150 سطر من worklog.md عشان أفهم السياق (آخر task كان NTP-1: نقل المستودع وتشغيله على pm2 + قائمة 10 issues من BRAVO-HANDOFF.md).
+- أثبتّ وجود كل الملفات المطلوبة في `/home/z/my-project/vps-service/` (orchestrator_v3.py, orchestrator_v2.py, orchestrator.py, executor_v3.py, executor.py, risk_gate.py, decision_log.py, main.py, analysis_runner.py).
+- قرأت الملفات التسعة كاملة + الملف الكنسي `analyzers/decision_logger.py` (لأن decision_log.py مجرد shim ليه) + `lightweight_server.py` (لأنه مكان تسجيل الـ Flask blueprints).
+- تتبّعت الاستدعاءات عبر Grep على vps-service كله: `from core.orchestrator`, `from core.orchestrator_v2`, `from core.orchestrator_v3`, `from core.executor`, `from core.executor_v3`, `apply_risk_gate`, `from core.decision_log`, `from analyzers.decision_logger`, `log_decision`, `run_analysis_batch`, `execute_v3`, `execute_plan`, `V3Plan`, `create_v3_plan`, `final_decision`, `resolve_conflict`.
+- تتبّعت الـ git history: المستودع shallow clone (depth=1) — كل الملفات ظاهرة في commit واحد (382f23f) بس. ما فيش تاريخ أقدم متاح.
+
+Stage Summary:
+
+== 1) ملخص تنفيذي (Executive Summary) ==
+
+1. المسار المُتوقع `orchestrator_v3 → executor_v3 → risk_gate → decision_log` **مش موجود فعلياً على الإنتاج**. الأربع طبقات موجودة كملفات لكن مفكوكة (decoupled) — مفيش سطر كود بيربطهم في تسلسل واحد.
+2. `orchestrator_v3.py` (282 سطر) بيصدّر دوال تخطيط/قرار بس (V3Plan, create_v3_plan, final_decision, resolve_conflict) ومحدش بيستدعيها كـ plan creator في أي مسار إنتاج. الوحيد اللي بياخد منه حاجة هو `executor_v3.py` (بيستورد `resolve_conflict` فقط).
+3. `executor_v3.py` (268 سطر) فيه `execute_v3()` بس **محدش بيستورده** في أي مكان في vps-service كله. DEAD CODE.
+4. `orchestrator.py` (v1) و `orchestrator_v2.py` و `executor.py` (v1) — كلهم **ZERO imports** في vps-service. DEAD CODE بالكامل.
+5. `risk_gate.py::apply_risk_gate()` ليه **caller واحد بس** على الإنتاج: `api/scanner_routes.py:217` جوه endpoint `POST /api/advanced-scanner/run` (admin-only). مفيش orchestrator ولا executor بيستدعيه.
+6. `decision_log.py` هو **compatibility shim** بـ re-export من `analyzers/decision_logger.py`. محدش في vps-service بيستورد الـ shim. الـ shim لسه مستهلك بس من **scripts خارج vps-service** (`/home/z/my-project/scripts/run_b0b4_full.py`, `run_backtest_new_architecture.py`, `test_integration_behavioral.py`).
+7. المسار الفعلي للقرار على الإنتاج: `MasterAnalyzer.analyze() → apply_risk_gate() → log_decision()` (داخل scanner_routes فقط) + مسار الـ scheduled: `MarketScheduler.tick → subprocess daily_predictor.py → INSERT INTO stored_analyses + log_decision (للرفض فقط)`.
+8. `analysis_runner.run_analysis_batch()` هو "single write path" مفترض، بس فيه early-return معطّل: لو `orchestrator=None` (وهو default ومحدش بيمرّر غيره) بيرجع فوراً برسالة `"MaestroOrchestrator DISABLED — V40.2 is the only engine"`. الـ caller اللي بيفلتر trigger_analysis_manual (misc_routes.py:1404) بينفّذ بدون orchestrator → الـ batch دايماً بيرجع فاضي.
+
+== 2) جدول المسار التنفيذي (Verified Trace) ==
+
+| المرحلة | الملف/الدالة | سطر | الدليل | مستوى الثقة |
+|---|---|---|---|---|
+| Entry (scheduled) | `jobs/market_scheduler.py::MarketScheduler.tick` | 985 | `subprocess` بينادي `daily_predictor.py` | VERIFIED |
+| Entry (on-demand admin) | `api/scanner_routes.py::run_advanced_scan` | 125-197 | route `POST /api/advanced-scanner/run` مسجل في lightweight_server.py:89 | VERIFIED |
+| Entry (on-demand user) | `api/misc_routes.py::trigger_analysis_manual` | 1403-1414 | بينادي `run_analysis_batch` بدون orchestrator | VERIFIED |
+| Plan (v3) | `core/orchestrator_v3.py::create_v3_plan` | 164-229 | معرّف بس — ZERO callers في vps-service | VERIFIED (dead) |
+| Plan (v2) | `core/orchestrator_v2.py::create_regime_plan` | 179-255 | معرّف بس — ZERO callers | VERIFIED (dead) |
+| Plan (v1) | `core/orchestrator.py::create_plan` | 64-106 | معرّف بس — ZERO callers | VERIFIED (dead) |
+| Execute (v3) | `core/executor_v3.py::execute_v3` | 56-135 | معرّف بس — ZERO importers | VERIFIED (dead) |
+| Execute (v1) | `core/executor.py::execute_plan` | 45-107 | معرّف بس — ZERO importers | VERIFIED (dead) |
+| Execute (actual) | `analyzers/master_analyzer.py::MasterAnalyzer.analyze` | — | مستدعى مباشرة في scanner_routes.py:197 | VERIFIED |
+| Risk Gate | `core/risk_gate.py::apply_risk_gate` | 22-78 | مستدعى في scanner_routes.py:217 بس | VERIFIED |
+| Decision Log (shim) | `core/decision_log.py` (re-export) | 28-33 | ZERO importers في vps-service؛ مستورد من scripts خارجية | PARTIALLY VERIFIED |
+| Decision Log (canonical) | `analyzers/decision_logger.py::log_decision` | 105-162 | مستدعى في scanner_routes.py:228,239 + daily_predictor.py (10+ مواقع) + daily_closer.py:735 | VERIFIED |
+| Final Rec Write | `jobs/daily_predictor.py` `INSERT INTO stored_analyses` | 779, 4165 | التوصية النهائية بتتكتب في predictions.db (مش decision_log.db) | VERIFIED |
+| Orchestrator→Executor link | `core/executor_v3.py:127` | 127 | `from core.orchestrator_v3 import resolve_conflict` — الوصلة الوحيدة بينهم | VERIFIED |
+| Executor→RiskGate link | — | — | **مفيش** — executor_v3 مش بـ import risk_gate ولا بيستدعيه | VERIFIED (broken) |
+| RiskGate→DecisionLog link | — | — | **مفيش** — risk_gate مش بـ import decision_log. الربط بيحصل في scanner_routes بس | VERIFIED (broken) |
+| main.py schedulers | `main.py::startup_event` | 251-342 | MarketScheduler كل 60s + EgyptScheduler + WAL hourly + Crypto Lab كل 15min | VERIFIED |
+| main.py direct orchestrator import | — | — | **مفيش** — main.py مش بـ import ولا orchestrator ولا executor ولا risk_gate | VERIFIED |
+
+== 3) إجابات الأسئلة السبعة ==
+
+**Q1: orchestrator_v3.py بيستدعي executor_v3.py فعليًا؟ في أي سطر؟**
+→ **لا.** العكس هو اللي بيحصل: `executor_v3.py` line 127 بـ import `resolve_conflict` من `orchestrator_v3`. `orchestrator_v3.py` نفسه ما بيستدعي أي حاجة — هو مجرد مكتبة دوال (pure functions). الاتنين مع بعض مش بيتستدعوا من أي مسار إنتاج. **VERIFIED — مسار مكسور.**
+
+**Q2: executor_v3.py بيستدعي risk_gate.py فعليًا؟ في أي سطر؟**
+→ **لا.** `executor_v3.py` مش بـ import ولا بـ يستدعي `risk_gate`. الـ import الوحيد من `core.` فيه هو line 127 (`orchestrator_v3.resolve_conflict`). فيه `result.risk_profile` dataclass field بس مفيش أي استدعاء لـ `apply_risk_gate`. **VERIFIED — مسار مكسور.**
+
+**Q3: risk_gate.py بيستدعي decision_log.py فعليًا؟ في أي سطر؟**
+→ **لا.** `risk_gate.py` (109 سطر) خالص ما بـ import ولا `decision_log` ولا `decision_logger`. بيرجع `(final_signal, warnings, final_position_size)` tuple بس. اللي بيربطهم هو `api/scanner_routes.py` (lines 207-247) — هو اللي بـ import الاتنين وبيستدعيهم بالتوالي. **VERIFIED — risk_gate و decision_log مش مربوطين ببعض مباشرة.**
+
+**Q4: هل القرار النهائي (final recommendation) بيتكتب في DB عبر decision_log؟**
+→ **جزئياً.** الـ decision_log.db بيتكتب فيه:
+  - `reject_entry` (للرفض) — من daily_predictor.py في 10+ مواقع (news_veto, expert_veto, danger_level_5, bearish_regime, disclosure_veto, crypto_*) + scanner_routes.py:228 + daily_closer.py:735
+  - `accept_entry` — من scanner_routes.py:239 بس
+  - `force_exit` — من daily_closer.py:737
+  - أما **التوصية النهائية (BUY/SELL/HOLD + target/stop)** فبتتكتب في `predictions.db.stored_analyses` عبر `daily_predictor.py` (lines 779, 4165) و مش بتمرّ بـ decision_log. **VERIFIED — log_decision للـ audit trail بتاع الرفض/القبول بس، مش للتوصية النهائية.**
+
+**Q5: هل في routes بتنفّذ قرارات مباشرة بدون ما تمرّ على risk_gate؟**
+→ **آه، كل الـ routes تقريباً.** grep على `api/` لـ `apply_risk_gate` رجع match واحد بس (scanner_routes.py:207). كل بقية الـ routes (misc_routes, stock_analysis_routes, professional_analysis_routes, ai_predictions_routes, sniper_routes, confluence_routes, v2_routes, unified_v2_routes، إلخ) بتـ bypass risk_gate تماماً. حتى misc_routes.py:1403 (`trigger_analysis_manual`) بـ يستدعي `run_analysis_batch` اللي معطّل (MaestroOrchestrator DISABLED) فبيرجع فاضي. **VERIFIED — risk_gate معطّل فعلياً لكل المسارات ما عدا /api/advanced-scanner/run.**
+
+**Q6: main.py بيشغّل orchestration بشكل مجدول (scheduler) ولا عبر API request فقط؟**
+→ **الاتنين.** main.py بيعمل scheduled jobs عبر `core.scheduler_manager`:
+  - `MarketScheduler.tick` كل 60s (line 167) — بيشغّل `daily_predictor.py` كـ subprocess (market_scheduler.py:985)
+  - `EgyptScheduler.tick_once` كل 60s (line 230)
+  - `nightly_quant_job` 03:00 Cairo (line 200)
+  - `egksco_sync` 9:00-14:30 Cairo (line 206)
+  - `wal_checkpoint_hourly` كل ساعة (line 277)
+  - `crypto_lab_scheduler` كل 15min (line 317)
+  - وبيعمل API routes عبر mount Flask `lightweight_server` (line 355).
+  
+  **بس** — ولا scheduler واحد من دول بـ import `orchestrator_v3` أو `executor_v3` أو `risk_gate`. الـ orchestration المُجدوَل هو `daily_predictor.py` subprocess (V40.2 pipeline)، **مش** الـ orchestrator_v3/executor_v3 stack. **VERIFIED — schedulers موجودة بس الـ stack المدروس مش اللي بيشتغل فيها.**
+
+**Q7: هل orchestrator_v2 أو orchestrator (v1) لسه بيتستوردوا في أي مكان نشط؟**
+→ **لا.** grep على vps-service كله لـ:
+  - `from core.orchestrator import` → **ZERO matches**
+  - `from core.orchestrator_v2 import` → **ZERO matches**
+  - `from core.orchestrator_v3 import` → match واحد بس (`executor_v3.py:127` بـ import `resolve_conflict`)
+  - `import orchestrator\b` / `import orchestrator_v2` / `import orchestrator_v3` → **ZERO matches**
+  
+  **VERIFIED — orchestrator.py و orchestrator_v2.py DEAD CODE بالكامل. orchestrator_v3.py ليه استيراد واحد داخلي من executor_v3 (نفسه dead).**
+
+== 4) قائمة المسارات البديلة/القديمة المكتشفة ==
+
+| الملف | الحالة | الدليل |
+|---|---|---|
+| `core/orchestrator.py` (v1.0) | DEAD CODE | ZERO imports في vps-service |
+| `core/orchestrator_v2.py` (v2.0) | DEAD CODE | ZERO imports |
+| `core/orchestrator_v3.py` (v3.0-owner-policy) | شبه-DEAD | مستورد بس عبر `executor_v3.py:127` (نفسه dead) |
+| `core/executor.py` (v1) | DEAD CODE | ZERO imports |
+| `core/executor_v3.py` (v3) | DEAD CODE | ZERO imports |
+| `core/decision_log.py` | shim — مستورد فقط من scripts خارجية | grep على vps-service رجع ZERO؛ grep على /home/z/my-project رجع 3 scripts في `/home/z/my-project/scripts/` |
+| `core/analysis_runner.py::run_analysis_batch` | معطّل (early-return) | lines 213-221: لو orchestrator=None بيرجع فوراً برسالة DISABLED |
+| `analyzers/master_analyzer.py::MasterAnalyzer` | **المنفّذ الفعلي** على الإنتاج | scanner_routes.py:182,197 |
+| `jobs/daily_predictor.py` | **المسار المُجدوَل الفعلي** | market_scheduler.py:985 بـ subprocess |
+| `api/maestro_routes.py` | DISABLED في lightweight_server.py:55 | comment: "BRAVO MAESTRO-CANCER-1 STEP 4: maestro_bp DISABLED" |
+
+== 5) التعارضات والتكرارات المُلاحَظة ==
+
+1. **تعارض معماري كبير**: العنوان (orchestrator_v3 → executor_v3 → risk_gate → decision_log) موجود كـ design intent في الـ docstrings (orchestrator_v3.py lines 1-11 بيقول "تنفيذ سياسة المالك المحددة") بس **مفيش wiring فعلي**. التنفيذ الفعلي بـ uses `MasterAnalyzer.analyze()` مباشرة. الـ stack الجديد اتكتب بس ما اتوصّلش بالإنتاج.
+
+2. **تكرار بين risk_gate و orchestrator_v3.final_decision()**: `orchestrator_v3.py:235-255` فيه دالة `final_decision()` بتاخد `risk_blocked: bool` كـ parameter — ده بيـ duplicate منطق `risk_gate.apply_risk_gate()` بس في صيغة مختلفة. الاتنين معاً dead.
+
+3. **تكرار decision logging paths**: 
+   - `analyzers/decision_logger.py::log_decision` (الكنسي)
+   - `core/decision_log.py` (shim)
+   - + فيه إشارات في الكود إن `log_decision` بـ يتكتب من 10+ أماكن مختلفة في `daily_predictor.py` (lines 1021, 2666, 2752, 2809, 2851, 2900, 2945, 4635, 4657, 4681) — يعني الـ reject logic موزّع بدل ما يكون مركزي.
+
+4. **analysis_runner معطّل بس لسه مستدعى**: `misc_routes.py:1403` بـ يستدعي `run_analysis_batch` (اللي بيرجع فوراً مع رسالة DISABLED). ده بيعني إن endpoint `/api/admin/trigger-analysis` (أو similar) بيرجّع success=False دائماً أو بأقل نتائج — محتاج تحقق من المالك.
+
+5. **SIGNAL_ORDER mismatch**: `risk_gate.py:20` بيستخدم `['STRONG_BUY', 'BUY', 'ACCUMULATE', 'HOLD', 'REDUCE', 'SELL', 'STRONG_SELL', 'NO_TRADE']`، بس `orchestrator_v3.py::final_decision()` (line 246-255) بيرجع `['NO_TRADE', 'BUY_CANDIDATE', 'NEEDS_CONFIRMATION', 'NEGATIVE_SIGNAL', 'STRONG_NEGATIVE']` — **vocabularies مختلفة تماماً**. لو حد حاول يربطهم هتطلع bugs.
+
+6. **مسار الـ entry price/target/stop متناثر**: `daily_predictor.py` بيستخدم `getattr(analysis, 'entry_price', 0)` و `target` و `stop_loss` بس `executor_v3.py` بيرجع `signal_score` و `confidence` فقط (مفيش entry/target/stop في V3Result dataclass). يعني حتى لو اتوصّلوا، الـ risk_gate مش هيلاقي `risk_profile` صحيح (هيقعد فاضي).
+
+== ملاحظات ختامية ==
+
+- مفيش كود اتعدّل ولا تشغيل build حصل. ده audit ساكن read-only زي ما اتطلب.
+- أعلى أولوية للمالك: يقرر إما (أ) يكمّل wiring الـ orchestrator_v3 → executor_v3 → risk_gate → decision_log ويعطّل `MasterAnalyzer` المباشر، أو (ب) يشيل الـ dead stack (orchestrator.py, orchestrator_v2.py, orchestrator_v3.py, executor.py, executor_v3.py) لو قراره إنه يفضل الـ V40.2/MasterAnalyzer path.
+- المستودع shallow clone (depth=1) فما قدرتش أتتبّع تاريخ الملفات بـ `git log --follow`. كل الملفات ظاهرة في commit واحد (382f23f). لو محتاج تاريخ أعمق، محتاج `git fetch --unshallow`.
+
+---
+Task ID: AUDIT-3
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات (تدقيق ساكن للقراءة فقط)
+Task: تدقيق قراءة فقط (read-only forensic audit) لرادار السيولة (Liquidity Radar) والماسحات (Scanners). هدف مزدوج: (1) فهم السلوك الحالي للرادار، (2) تقييم إمكانية Fast Scanner من الموجود.
+
+المنهجية: Read + Grep + Glob فقط — لا تعديل ملفات، لا تشغيل builds، لا كتابة كود. كل الأرقام بمصادرها (file:line). مستويات الثقة: VERIFIED / PARTIALLY VERIFIED / INFERRED / UNKNOWN.
+
+Files Audited:
+  1. scripts/maker_radar.py (2228 LOC) — رادار الميكرز اليومي (CLI terminal script)
+  2. vps-service/core/real_liquidity_radar.py (231 LOC) — محرك سيولة واقعي (pure function)
+  3. vps-service/core/unified_scanner.py (533 LOC) — محرك الفحص الموحد
+  4. vps-service/jobs/intraday_scanner.py (771 LOC) — ماسح الـ 5 دقائق
+  5. vps-service/jobs/hot_candidate_detector.py (294 LOC) — كاشف المرشحين الساخنين
+  6. vps-service/api/scanner_routes.py (388 LOC) — quick + advanced-scanner endpoints
+  7. vps-service/api/screener_routes.py (221 LOC) — preset screener (5 presets)
+  8. vps-service/api/advanced_screener_routes.py (441 LOC) — TradingView-style screener
+  9. src/app/api/radar/incubator/route.ts (130 LOC) — wrapper لـ incubator_candidates من JSON
+ 10. src/app/api/v2/liquidity-radar/route.ts (313 LOC) — wrapper لرادار السيولة (cache reader)
+ + مساعد: src/modules/radar/lib/radar-cache.ts (624 LOC) — cache layer + bg warmup spawn
+
+Work Log:
+- قرأت آخر 150 سطر من worklog.md (entries Alpha عن radar 9883-9927 + incubator redesign 9929-9997 + NTP-1 9999-10033) — السياق: Alpha اكتشف إن الرادار CLI شغّال وبيـ populate JSON صحيح، والـ "5 stocks only" issue ده GUEST_MAX_ROWS paywall مش bug. الـ browser test محظور بـ OOM في sandbox 4GB (معلّم documented).
+- قرأت maker_radar.py بالكامل (2228 سطر). الـ scan logic الرئيسي في scan_ticker() (سطر 405-688) + _classify_scanned_result() (سطر 1234-1274) + _enrich_result_with_b3_fields() (سطر 1277-1324). تعقّبت مصادر البيانات في _find_radar_db() (سطر 72-230) + live prices (سطر 1647-1667) + identity map (سطر 1688-1703).
+- قرأت real_liquidity_radar.py بالكامل (231 سطر) — pure function library. الـ classification logic في سطر 165-230 (5 حالات: FALLING_KNIFE / DIRTY_DISTRIBUTION / ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / SUSPICIOUS_WATCH). ما بيلمس أي DB وما بيـ cache.
+- قرأت unified_scanner.py بالكامل (533 سطر). _scan_single_stock() (سطر 126-503) بـ يستخدم canonical indicators من analyzers.indicators + بـستدعي real_liquidity_radar.analyze_liquidity (سطر 357-371) كـ 20% من الـ BRAVO-QUAD-SCORE (30/30/20/20).
+- قرأت intraday_scanner.py بالكامل (771 سطر). الفحص اللحظي في analyze_intraday_opportunity() (سطر 106-268) بـستخدم analyzers.intraday_reader + golden_hunter + trader_levels_engine + ai.market_news_reader. الـ promote_incubator_candidates() (سطر 524-757) بـقرأ maker_radar JSON + بـكتب predictions بـ track='RADAR_PROMOTED' بعد check-then-update (B2 dedup fix).
+- قرأت hot_candidate_detector.py بالكامل (294 سطر) — standalone CLI. بـقرأ intraday.db.stock_intraday (5-min bars) + بـكتب JSON file بس (data/hot_candidates_<date>.json) + بـحدّث stock_notebook.json. ما بـكتبش في predictions و لا stored_analyses.
+- قرأت scanner_routes.py / screener_routes.py / advanced_screener_routes.py بالكامل — الـ 3 ماسحات في الـ API بـستخدموا logic مستقل تماماً عن unified_scanner (TechnicalAnalyzer / screener.run_all / compute_stock_state + analyze_stock_unified على الترتيب). مفيش أي مسار منهم بـستدعي unified_scanner.
+- قرأت radar/incubator/route.ts + v2/liquidity-radar/route.ts + radar-cache.ts. الاتنين wrappers بـقرأوا scripts/output/maker_radar_{MARKET}_{date}.json بس — ما بـستدعوش Python على الـ hot path. الـ warmup بـحصل via background spawn في radar-cache.ts:376-469.
+- Grep على كل المشروع لـ real_liquidity_radar|analyze_liquidity → مستهلك واحد بس: unified_scanner.py:357 + (dataclass field default في core/stock_rescue_engine.py:51). مفيش API route بـستخدمه مباشرة.
+- Grep على unified_scanner|run_market_scanner → مستهلكين: daily_predictor.py:617 (_scan_single_stock للـ veto enrichment) + core/sync_scanner_to_db.py:76 (run_market_scanner → stored_analyses). الأخير بـتشغّله /api/predictions/refresh-v40 route.ts عبر spawn.
+- Grep على hot_candidate_detector → مش بـستخدمه ولا API route ولا job تاني. الـ cron الـ standalone في crontab.txt:159 (*/15 8-12 * * 0-4) بيـشغّله. النتايج بتـتكتب في JSON بس (data/hot_candidates_<date>.json) + notebook.
+- Grep على maker_radar.py consumers في src/ → 17 API route.ts files تحت src/app/api/maker-radar/* (multi-market, entry-timing, market-intelligence, signal-tracker, footprint, track, stock-analysis, live-watch, fundamentals, net-picks, sector-treemap, exit-radar, timeline, stock, warmup). كلهم بـقرأوا cache JSON.
+- قرأت crontab.txt (209 سطر). الـ radar بيـشتغل كل 5 دقائق لـ EGX/TADAWUL/KSE/QSE/US (08:00-14:00 UTC) + كل 5 دقائق 24/7 لـ CRYPTO/GOLD (سطر 201-208). intraday_scanner كل 5 دقائق (سطر 43). hot_candidate_detector كل 15 دقيقة (سطر 159).
+- Grep على orchestrator|executor في maker_radar.py + unified_scanner.py + intraday_scanner.py → 0 matches. الـ 3 ملفات standalone بالكامل. الـ orchestrator_v3/executor_v3 في core/ بـستخدمهم فقط executor_v3.py:127 (resolve_conflict) — مفيش scanner بيمر بـ orchestrator.
+
+---
+
+Executive Summary (الملخص التنفيذي):
+1. الرادار (maker_radar.py) standalone CLI محترم: بـختار الأسهم عبر 5 paths (A_pre_surge → B_quiet_accumulation_strong → C_quiet_accumulation_weak → D_explosive_surge → E_early_break) بأولوية ثابتة + position sizes 1.5%/1.5%/1.5%/2%/2.5% (سطر 472-501). الـ source بياناته: price_history.db (PRIMARY) → stocks.db.stock_daily_prices → data_engine.db.egksco_price_history → production_snapshot.db (سطر 103-150). VERIFIED.
+2. الرادار بـيعيد حساب كل المؤشرات (ATR / SMA / volume_ratio / money_flow / life_cycle / kill_switch) من الصفر في كل run — مفيش cache بين الـ runs. بـستدعي utils.shared_liquidity + analyzers.market_regime_engine + core.price_sanity (B1 sanity gate) + utils.canonical_signal. VERIFIED.
+3. الرادار بـ يكتشف النشاط + بـيصدر توصيات. الـ classification logic (B3 contract، سطر 1234-1274) بـيخرج 8 حالات: quiet_accumulation / distribution / dead_trap / liquidity_drought / rule80_downtrend / unclassified / DATA_INVALID / INSUFFICIENT_DATA. كمان بـحسب entry/stop/target (ATR-based, R/R=1.8, سطر 612-630) لكل سهم. VERIFIED.
+4. الرادار بـ يميّز بين صعود/هبوط/مش مؤكد عبر 3 آليات: (أ) distribution_flag لو net_flow_egp < 0 (سطر 515-530 — BRAVO-FLOW-GATE-ALL)؛ (ب) limit_up_trap + kill_switch (سطر 506-507) → dead_trap classification؛ (ج) drop_from_peak < -20% → rule80_downtrend (سطر 1262-1264). VERIFIED.
+5. تخزين الرادار: ملف JSON يومي scripts/output/maker_radar_{MARKET}_{YYYYMMDD}.json (سطر 2067) + DB table radar_signal_tracking في stocks.db (سطر 714-731، source='maker_radar'). الـ JSON بـقرأه: 17 Next.js API route.ts + daily_predictor.py:539 + intraday_scanner.py:545 (promote_incubator_candidates). الـ DB table بـقرأها /api/maker-radar/signal-tracker/* + radar-signal-tracker.ts. VERIFIED.
+6. الرادار standalone — ما بـستدعيش orchestrator ولا executor ولا unified_scanner. بيـشتغل عبر cron (crontab.txt:201-208) أو bg warmup من radar-cache.ts:376. النتايج بتـتقري via Next.js wrappers. مفيش مسار تاني بـنتج نفس الإشارات (ما عدا promote_incubator_candidates اللي بـقرأ نفس JSON + بـكتب track='RADAR_PROMOTED' في predictions — ده تفعيل مش مسح/إعادة إنتاج). VERIFIED.
+7. الماسحات الأربعة بـتغطي مراحل مختلفة وما بـستخدموش نفس الحسابات: unified_scanner = deep analysis (30/30/20/20 quad-score + canonical indicators + real_liquidity_radar)؛ intraday_scanner = intraday discovery على 5-min (V76 + maker_flow + news bias)؛ hot_candidate_detector = intraday volume surge detection بسيط (vol_surge + delta + absorption)؛ scanner_routes/screener_routes/advanced_screener = SQL filters على stocks.db + compute_stock_state (في advanced_screener). مفيش dedup صريح — كل ماسح بـكتب في مكانه. VERIFIED.
+8. Fast Scanner feasibility: الموجود القابل لإعادة الاستخدام = (أ) unified_scanner.run_market_scanner (بيقفل على 200 ticker، سطر 123) + (ب) _scan_single_stock كـ unit per-ticker (سطر 126) + (ج) real_liquidity_radar.analyze_liquidity كـ pure function (سطر 62) + (د) price_sanity.validate_price_data (B1 sanity، pure function) + (هـ) shared_liquidity.detect_quiet_accumulation/pre_surge/life_cycle. النقص الحقيقي = (1) الـ unified_scanner بـعمل 7 مؤشرات لكل سهم (RSI/ATR/BB/SMA/EMA/MACD/MFI/ADX) + analyze_liquidity → ~50ms لكل سهم × 200 = 10s، مش "fast" بما يكفي لـ 1000+ سهم في طلب API؛ (2) مفيش pre-filter سريع (volume + price فقط) قبل الـ deep scan؛ (3) مفيش shared cache layer بين الماسحات. INFERRED.
+
+---
+
+جدول الرادار (Radar Table):
+| الملف | القواعد (بأرقام سطور) | مصدر البيانات | التخزين | المستهلكون | الثقة |
+|-------|------|------|------|------|------|
+| scripts/maker_radar.py | 5 paths بأولوية: A_pre_surge (1.5%) → B_quiet_accumulation_strong (1.5%) → C_quiet_accumulation_weak (1.5%) → D_explosive_surge (2%) → E_early_break (2.5%) (سطر 472-501). distribution_flag لو net_flow_egp<0 (سطر 515-530). kill_switch بـنصّ الحجم (سطر 533-535). B3 classification 8 حالات (سطر 1234-1274). Incubator = 4/6 أو 5/6 signals + ليس 100% + ليس distribution (سطر 964-1082). Freshness guard staleness_days (سطر 421-445) + B1 price_sanity gate (سطر 1839-1944). Min 15 يوم history (سطر 408). | PRIMARY: db/price_history.db.price_history (سطر 103-107). Fallbacks per-market: stocks.db.stock_daily_prices → data_engine.db.egksco_price_history → data_engine.db.historical_data → production_snapshot.db → vps_real/stocks.db (سطر 122-183). Live prices: stocks.db.stocks.current_price (سطر 1651-1667). Identity (market/currency/name): stocks.db.stocks (سطر 1688-1703). | (1) JSON يومي: scripts/output/maker_radar_{MARKET}_{YYYYMMDD}.json (سطر 2067) — بـحتوي results[] + summary + incubator_candidates + quiet_list/pre_surge_list/explosive_list/early_break_list/distribution_list + dead_trap_list/liquidity_drought_list/rule80_downtrend_list. (2) DB table: stocks.db.radar_signal_tracking (سطر 714-731، source='maker_radar') — تحت الميكروسكوب بس، بـ scoped DELETE (سطر 766-769 — P0-DELETE-OWNERSHIP-FIX). (3) MD report اختياري. | (أ) 17 Next.js API route.ts تحت src/app/api/maker-radar/* + src/app/api/v2/liquidity-radar/route.ts + src/app/api/radar/incubator/route.ts — كلهم بـقرأوا JSON. (ب) daily_predictor.py:539 (_integrate_whale_radar_predictions بـقرأ quiet_list). (ج) intraday_scanner.py:545 (promote_incubator_candidates بـقرأ incubator_candidates + بـكتب track='RADAR_PROMOTED'). (د) analyzers.radar_integration.py (HARD GATE في daily_predictor). (هـ) UI: src/components/shared/LiquidityRadarView.tsx + src/modules/radar/components/IncubatorSection.tsx. | VERIFIED |
+| vps-service/core/real_liquidity_radar.py | Pure function: 5 حالات (FALLING_KNIFE / DIRTY_DISTRIBUTION / ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / SUSPICIOUS_WATCH) بـأولوية ثابتة (سطر 165-230). شروط numeric: FALLING_KNIFE = chg<-3% + dryness>1.5 + LOWER_LOWS (سطر 170) أو MLR>=0.15 + chg<-2% (سطر 176). DIRTY_DISTRIBUTION = upper_wick>40% + dryness>1.3 + close_location<40 (سطر 184). ACCUMULATION_CONFIRMED = lower_wick>30% + close_location>60 + 0.8≤dryness≤1.5 (سطر 198) أو contraction + close>55 + dryness<1.2 (سطر 204). | مفيش — بـستلم daily_data + intraday_data من caller (unified_scanner.py:357). | مفيش — بيرجع LiquidityResult dataclass. | مستهلك واحد فقط: unified_scanner.py:357 (_scan_single_stock). + dataclass field default في core/stock_rescue_engine.py:51 (مش runtime call). | VERIFIED |
+
+---
+
+جدول الماسحات (Scanners Table):
+| الملف | المرحلة | الحسابات المستخدمة | المستهلكون | الثقة |
+|-------|------|------|------|------|
+| vps-service/core/unified_scanner.py | Deep analysis (daily timeframe) — بـختار top 5 picks بعد scoring | canonical indicators من analyzers.indicators: calc_rsi/calc_atr/calc_bollinger/calc_mfi/calc_adx/sma/ema/macd (سطر 189-201). Wick anatomy inline (سطر 250-262). BRAVO-QUAD-SCORE 30/30/20/20: VP score (سطر 325-339) + SMC score (سطر 341-349) + Liq score من real_liquidity_radar.analyze_liquidity (سطر 351-381) + Season score (سطر 383-396). RVOL thresholds: dryness 0.60 large-cap / 0.50 small-cap + explosion 1.80 (سطر 213-242). ATR stop clamped [5%,9%] + R/R=1.8 (سطر 309-316). Exit protocol TP1=+6.5% + TP2=+15% (سطر 448-449). | (أ) core/sync_scanner_to_db.py:76 (run_market_scanner → stored_analyses). (ب) daily_predictor.py:617 (_scan_single_stock للـ veto enrichment). (ج) /api/predictions/refresh-v40 route.ts بـ spawn sync_scanner_to_db.py. مفيش API route بـستدعيه مباشرة في request path. | VERIFIED |
+| vps-service/jobs/intraday_scanner.py | Intraday discovery (5-min timeframe) — بـكتشف الاختراقات اللحظية + V76 golden + maker flow | analyzers.intraday_reader.get_intraday_data/detect_intraday_breakout/detect_maker_flow (سطر 43-48). analyzers.golden_hunter.analyze_v76 (سطر 49). analyzers.trader_levels_engine.get_unified_trader_levels (سطر 52). ai.market_news_reader.get_news_bias (سطر 197-209). Score = 50 + V76 (+25/+20) + maker flow (+12-22 / -25) + breakout (+10-22) + sector (+8 / -10) + news bias. Threshold: score>=70 + maker!='selling' → BUY/STRONG_BUY (سطر 212-214). promote_incubator_candidates بـقرأ maker_radar JSON + بـكتب predictions بـ track='RADAR_PROMOTED' بعد check-then-update (B2 dedup fix, سطر 620-757). | (أ) cron كل 5 دقائق (crontab.txt:43). (ب) CLI مباشر. النتايج بـتـكتب في: predictions.db.predictions (track='INTRADAY-5M') + predictions.db.stored_analyses (DISABLED — SINGLE-WRITER skip, سطر 347-352) + stocks.db.cached_analysis (سطر 454-487). | VERIFIED |
+| vps-service/jobs/hot_candidate_detector.py | Intraday discovery (5-min) — كاشف نشاط الميكرز البسيط | Inline metrics على بيانات stock_intraday: vol_surge (latest_vol/avg_vol, سطر 107), delta = price_change × vol / 1000 (سطر 113), absorption = vol_surge>=2.0 + |change|<=2% + vol>avg*1.5 (سطر 116), vol_acceleration = second_half/first_half (سطر 119-122), recent_change = prices[-1] vs prices[-3] (سطر 127-130). Hot score = sum of 4 conditions: vol_surge>=2 + delta>0 (+40), absorption (+30), vol_accel>=1.5 + momentum>1% (+25), price_change>=5% (+20). | (أ) cron كل 15 دقيقة (crontab.txt:159). (ب) CLI مباشر. النتايج بـتـكتب في: data/hot_candidates_<date>.json (سطر 285-287) + data/stock_notebook.json (سطر 194-241). مفيش كتابة في predictions ولا stored_analyses. | VERIFIED |
+| vps-service/api/scanner_routes.py | Endpoint-level scanning (request-time) | /api/scanner/quick: TechnicalAnalyzer.generate_prediction(closes, ticker) (سطر 22-72) — logic مستقل تماماً عن unified_scanner. /api/advanced-scanner/run: MasterAnalyzer.analyze(ticker) (سطر 197) + analyzers.core_scoring_engine.calc_rsi/calc_macd/calc_sma/calc_bollinger (سطر 279-308) + core.risk_gate.apply_risk_gate (سطر 217). State machine في _advanced_scan_state (سطر 95-106). | /api/scanner/quick + /api/advanced-scanner/status + /api/advanced-scanner/run (Flask blueprint). بـستخدمها Next.js admin dashboard. | VERIFIED |
+| vps-service/api/screener_routes.py | Preset-based screening (read pre-computed) | /api/screener/scan = SELECT من stocks.db.screener_results (سطر 110-182) — مفيش computation في request. /api/screener/run-all بـستدعي analyzers.screener.run_all(market) (سطر 192-198) — preset logic منفصل (day_trader / daily_speculator / value / momentum / thermometer). | /api/screener/presets + /api/screener/scan + /api/screener/run-all (Flask blueprint). | VERIFIED |
+| vps-service/api/advanced_screener_routes.py | TradingView-style screener (request-time SQL filter + Python post-process) | SQL filter على stocks.db.stocks (سطر 160-253) — 16+ WHERE conditions (price/volume/turnover/RSI/MA/52w/PE/ROE/dividend/market_cap). Python post-process: compute_stock_state + get_state_order من utils.stock_state (سطر 269-283) + momentum_score. UNIFIED_ENGINE_ENRICHMENT: analyze_stock_unified من analyzers.unified_analysis (سطر 385-403) — بـضيف V68/V72/V73 verdict. | /api/screener/advanced (Flask blueprint) — TradingView-style UI. | VERIFIED |
+
+ملاحظة على dedup: مفيش dedup صريح بين الماسحات الأربعة. كل ماسح بـكتب في مكانه:
+  - unified_scanner → stored_analyses (via sync_scanner_to_db.py)
+  - intraday_scanner → predictions (track='INTRADAY-5M') + cached_analysis
+  - hot_candidate_detector → JSON files + notebook
+  - scanner_routes → response مباشر (no persistence)
+  - screener_routes → screener_results table (run-all only)
+  - advanced_screener → response مباشر (no persistence)
+نفس السهم مممكن يظهر في أكتر من ماسح في نفس اليوم (مثلاً COMI في unified_scanner BUY + intraday_scanner STRONG_BUY + advanced_screener top turnover) — الـ dedup الوحيد موجود في predictions.db عبر idx_predictions_dedup UNIQUE(ticker,date(prediction_date),persona,market,track) (B2 migration) اللي بـمنع تكرار نفس (ticker+persona+market+track) في نفس اليوم. VERIFIED.
+
+---
+
+إجابات الأسئلة الستة المحددة:
+
+س1: maker_radar.py بيستدعي orchestrator/executor ولا standalone؟
+→ **standalone بالكامل.** Grep على `orchestrator|executor|from engines` في maker_radar.py = 0 matches. الـ main() (سطر 1361-2165) بـعمل كل المنطق inline: فحص الأسهم + تصنيف + كتابة JSON + كتابة radar_signal_tracking. ملهاش علاقة بـ core/orchestrator.py أو core/executor.py. الثقة: VERIFIED.
+
+س2: real_liquidity_radar.py بيستخدمه API route نشط؟
+→ **لا — مفيش أي API route بـستخدمه مباشرة.** Grep على `real_liquidity_radar|analyze_liquidity` في كل المشروع → مستهلك runtime واحد بس: `vps-service/core/unified_scanner.py:357` (داخل _scan_single_stock). الـ stock_rescue_engine.py:51 بـذكره كـ dataclass field default (مش runtime call). الـ API routes بتاعة Flask (scanner_routes / screener_routes / advanced_screener_routes) ما بـستخدموش real_liquidity_radar. الثقة: VERIFIED.
+
+س3: unified_scanner.py بيستخدمه jobs/ (مجدول) ولا api/ (request) ولا الاتنين؟
+→ **الاتنين، بس بشكل غير مباشر.** (أ) jobs: daily_predictor.py:617 بـستدعي `_scan_single_stock` للـ veto enrichment + daily_predictor.py:4304 بـستدعي `sync_scanner_to_stored_analyses` (اللي بـستدعي run_market_scanner). (ب) api: /api/predictions/refresh-v40/route.ts بـspawn `sync_scanner_to_db.py` (سطر 16) اللي بـستدعي run_market_scanner. مفيش API route بـستدعيه مباشرة في request handler — كلها عبر spawn أو import من daily_predictor. الثقة: VERIFIED.
+
+س4: intraday_scanner.py بيستدعي engines/ ولا analyzers/ ولا الاتنين؟
+→ **analyzers/ فقط.** Grep على `engines\.|from engines|orchestrator|executor` في intraday_scanner.py = 0 matches. الـ imports (سطر 43-52): analyzers.intraday_reader + analyzers.golden_hunter + analyzers.prediction_tracker + analyzers.trader_levels_engine + core.opportunity_quality + ai.market_news_reader. مفيش أي import من engines/. الثقة: VERIFIED.
+
+س5: هل hot_candidate_detector.py لسه نشط ولا معزول؟
+→ **نشط (active) — مش معزول.** (أ) مدخل في crontab.txt:159: `*/15 8-12 * * 0-4 ... vps-service/jobs/hot_candidate_detector.py >> /tmp/hot_candidate.log 2>&1` (كل 15 دقيقة أثناء جلسة EGX). (ب) بـكتب نتايجه في data/hot_candidates_<date>.json + data/stock_notebook.json. (ج) ليه __main__ block (سطر 293-294). لكن — مفيش API route ولا job تاني بـستهلك نتايجه برقم الـ JSON. الـ notebook بـتـقرأه notebook_routes.py بس كـ "observations" history. فـ نظرياً نشط، عملياً مخرجاته معزولة عن الـ predictions pipeline. الثقة: VERIFIED.
+
+س6: من بين الماسحات الأربعة، أيهم بيكتب في predictions table (التي هي مصدر التوصيات النهائية)؟
+→ **واحد فقط: intraday_scanner.py.** بطريقتين:
+  (أ) scan_intraday() → PredictionTracker.record_prediction (سطر 301-317) بـ track='INTRADAY-5M' + persona='balanced'.
+  (ب) promote_incubator_candidates() → direct INSERT/UPDATE على predictions (سطر 722-742) بـ track='RADAR_PROMOTED' + persona='balanced' + check-then-update (B2 dedup fix).
+  - hot_candidate_detector.py: مفيش كتابة في predictions (JSON + notebook بس).
+  - unified_scanner.py: مفيش كتابة في predictions. النتايج بـتـكتب في stored_analyses عبر sync_scanner_to_db.py (جدول مختلف).
+  - scanner_routes.py (advanced-scanner/run): بـرجع response، مفيش كتابة.
+  - screener_routes.py (run-all): بـكتب في screener_results (جدول مختلف).
+  - advanced_screener_routes.py: مفيش كتابة.
+  ملاحظة: maker_radar.py نفسه (مش من الماسحات الأربعة) بـكتب في radar_signal_tracking (جدول مختلف) — التأثير على predictions بـيحصل بشكل غير مباشر عبر promote_incubator_candidates. الثقة: VERIFIED.
+
+---
+
+تقييم Fast Scanner (feasibility):
+
+(أ) ما الموجود القابل لإعادة الاستخدام:
+1. **real_liquidity_radar.analyze_liquidity(ticker, daily_data, intraday_data=None)** (core/real_liquidity_radar.py:62) — pure function، 231 LOC، بـرجع LiquidityResult dataclass. لا DB، لا cache. جاهز لإعادة الاستخدام مباشرة في أي ماسح سريع. VERIFIED.
+2. **unified_scanner._scan_single_stock(ticker, ScanConfig)** (core/unified_scanner.py:126) — unit per-ticker complete analysis (RSI/ATR/BB/SMA/EMA/MACD/MFI/ADX + wick anatomy + quad-score + liquidity radar + exit protocol). 377 LOC. ممكن يتـ re-uses كـ building block بس heavy: بـعمل 7 مؤشرات + analyze_liquidity لكل سهم. VERIFIED.
+3. **core.price_sanity.validate_price_data** (core/price_sanity.py:265) — pure function B1 sanity gate. مستخدم بالفعل في maker_radar.py:1840 + daily_predictor.py:1001. جاهز لإعادة الاستخدام. VERIFIED.
+4. **utils.shared_liquidity.detect_quiet_accumulation / detect_pre_surge / detect_life_cycle / compute_money_flow / check_limit_up_trap / check_kill_switch / is_explosive_surge** (utils/shared_liquidity.py، 1160 LOC) — مستخدم بالفعل في maker_radar.py:34-47. Pure functions. VERIFIED.
+5. **utils.canonical_signal.classify_accumulation** (utils/canonical_signal.py) — single-source-of-truth لتصنيف التجميع. VERIFIED.
+6. **db_manager.get_connection** (core/db_manager.py) — connection pooling pattern (writable=False read-only). VERIFIED.
+
+(ب) ما يمكن إعادة استخدامه مباشرة لـ Fast Scanner:
+- الـ price_sanity.validate_price_data = الـ "B1 price validity + freshness" check المطلوب — ممكن يتـ re-use كـ pre-filter.
+- real_liquidity_radar.analyze_liquidity = الـ "liquidity classification" المطلوب — ممكن يتـ re-use كـ phase 2 بعد الـ pre-filter.
+- _scan_single_stock = الـ "deep analysis" الكامل — ممكن يتـ re-use كـ phase 3 للأسهم اللي عدّت الـ pre-filter.
+- الـ pattern "cache JSON + bg warmup spawn" من radar-cache.ts = نمط جاهز لـ Fast Scanner cache layer.
+
+(ج) النقص الحقيقي (gaps):
+1. **مفيش pre-filter سريع على volume + price + turnover بس.** الـ unified_scanner بـبدأ بـ _get_market_tickers (سطر 90-123) اللي بـ select كل tickers is_active=1 ثم بـعمل deep scan لكل واحد. مفيش "fast scan" اللي بـعمل SQL filter على turnover_egp + volume + price بس قبل الـ Python loop. VERIFIED.
+2. **الـ unified_scanner بـ cap على 200 ticker (سطر 123)** — `tickers[:200]` هارد-كود. ده مش fast scanner، ده hard cap. لو السوق فيه 400+ سهم، نصفهم بـتـ skip. VERIFIED.
+3. **مفيش shared cache layer بين الماسحات.** كل ماسح بـعمل الـ indicator computations من الصفر في كل run. maker_radar بـحسب ATR/SMA/volume_ratio، unified_scanner بـحسب نفسهم + RSI/BB/MACD، intraday_scanner بـحسب V76/maker_flow. مفيش "indicator cache" مشترك. INFERRED.
+4. **مفيش "fast scan" endpoint في API.** الـ /api/scanner/quick بـستخدم TechnicalAnalyzer مختلف (مش unified_scanner). الـ /api/advanced-scanner/run بـستخدم MasterAnalyzer مختلف. مفيش endpoint بـستخدم unified_scanner + real_liquidity_radar في request path. VERIFIED.
+5. **hot_candidate_detector بـكتب JSON + notebook بس** — مفيش integration مع predictions أو stored_analyses. لو عايز Fast Scanner يستفيد من نتايجه كـ "hot list" pre-filter، محتاج bridge new. VERIFIED.
+6. **مفيش dedup بين الماسحات.** نفس السهم ممكن يظهر في unified_scanner + intraday_scanner + hot_candidate_detector في نفس الوقت. الـ dedup الوحيد = idx_predictions_dedup UNIQUE على (ticker,date,persona,market,track) في predictions.db — بس ده بعد الكتابة، مش قبل. VERIFIED.
+
+الخلاصة: الـ building blocks لموجودين (real_liquidity_radar + price_sanity + shared_liquidity + unified_scanner._scan_single_stock). النقص = (1) pre-filter SQL سريع على stocks.db (turnover + volume + price + is_active) قبل الـ Python loop، (2) shared indicator cache layer، (3) endpoint /api/scanner/fast بـ uses الـ pattern ده. التقدير: Fast Scanner feasibility = **HIGH** — مفيش حاجة لـ rewrite، بس wiring + pre-filter + cache.
+
+---
+
+التوصية النهائية: هل الرادار يحتاج إعادة كتابة، أم إعادة تنظيم، أم تصحيح توصيل فقط؟
+
+→ **تصحيح توصيل + إعادة تنظيم جزئي (لا إعادة كتابة).** التبرير:
+
+(أ) الرادار نفسه (maker_radar.py) شغّال ومحترم ومستقر:
+  - بـنتج JSON يومي بصيغة B3 contract واضحة (results[] + summary + 8 classifications).
+  - بـمر بـ B1 price_sanity gate + freshness guard + canonical_signal + flow gate.
+  - بـكتب في radar_signal_tracking بـ scoped DELETE (P0-DELETE-OWNERSHIP-FIX موجود).
+  - بـتـ consumed من 17 Next.js API route + daily_predictor + intraday_scanner + UI.
+  - آخر تشغيل في sandbox: 30/30 scanned، 13 classified، 7 unclassified، 10 data_error (worklog 9884-9892) — سلوك سليم.
+  - إعادة كتابته = كسر 17 API route + إعادة اختبار الـ B3 contract + خطر regression. مفيش مبرر.
+
+(ب) المشاكل الحقيقية مش في الرادار، في الـ wiring حواليه:
+  1. **real_liquidity_radar.py معزول** — مستهلك runtime واحد بس (unified_scanner:357). ما بـستخدمه API route ولا maker_radar. ده waste — ممكن يتـ wire كـ enrichment layer للـ maker_radar classifications (يستخدم ACCUMULATION_CONFIRMED / DIRTY_DISTRIBUTION بدل الـ quiet/distribution classification المبسطة).
+  2. **مفيش Fast Scanner endpoint** — لو المالك عايز "فحص سريع لعدد كبير من الأسهم بتكلفة منخفضة"، الحل = endpoint جديد /api/scanner/fast بـ: (step 1) SQL pre-filter على stocks.db (is_active=1 + turnover_egp>=1.5M + current_price>=1.0 + volume>=1000)، (step 2) price_sanity.validate_price_data للـ survivors، (step 3) real_liquidity_radar.analyze_liquidity للـ OK، (step 4) cache JSON + return. الـ building blocks كلها موجودة.
+  3. **hot_candidate_detector معزول** — بـكتب JSON + notebook بس. ممكن يتـ wire كـ "hot list" pre-filter للـ intraday_scanner (بدل ما intraday_scanner بـفحص كل الأسهم النشطة، بـفحص الـ hot list بس).
+  4. **dedup بنيوي ضعيف** — idx_predictions_dedup بـمنع تكرار (ticker+persona+market+track) في نفس اليوم، بس مفيش dedup بين الماسحات (نفس السهم ممكن يظهر في unified_scanner BUY + intraday_scanner STRONG_BUY في نفس اليوم). الحل = canonical "signal owner" column في predictions بتاع أي ماسح أصدر الإشارة الأولى.
+  5. **unified_scanner._scan_single_stock بـعمل 7 مؤشرات لكل سهم** — ثقيل للـ request path. ممكن يتـ split لـ "fast indicators" (RSI/ATR/SMA — 3 مؤشرات بس) + "deep indicators" (BB/MACD/MFI/ADX — للـ top candidates بس).
+
+(ج) التوصية الموصى بها (ترتيب الأولويات):
+  1. **P1 — تصحيح توصيل**: wire real_liquidity_radar داخل maker_radar.py كـ enrichment layer للـ classifications (يستخدم الـ 5 حالات بدل quiet/distribution المبسطة). ده بـربط الـ "real liquidity engine" بالرادار الرئيسي بدون rewrite.
+  2. **P2 — تصحيح توصيل**: wire hot_candidate_detector كـ pre-filter للـ intraday_scanner (بدل فحص كل الأسهم النشطة، بـفحص الـ hot list بس).
+  3. **P3 — إعادة تنظيم جزئي**: اعمل /api/scanner/fast endpoint جديد بـ pattern: SQL pre-filter → price_sanity → real_liquidity_radar → cache JSON. مفيش rewrite لـ unified_scanner، بس wrapper جديد.
+  4. **P4 — إعادة تنظيم جزئي**: اعمل shared indicator cache layer (stocks.db.indicator_cache أو Redis) بـخدم unified_scanner + maker_radar + intraday_scanner.
+  5. **لا rewrite للرادار** — maker_radar.py في حالته الحالية يحترم: B3 contract + B1 sanity + freshness guard + scoped DELETE + canonical signal + flow gate. إعادة كتابته = خطر regression عالي بلا مبرر.
+
+Stage Summary:
+- Files modified: NONE (read-only audit).
+- Files read: 10 primary + 6 supporting (radar-cache.ts, daily_predictor.py:490-589, sync_scanner_to_db.py:60-139, radar_integration.py:1-80, price_sanity.py:260-310, crontab.txt, ecosystem.config.js path, refresh-v40/route.ts:1-60).
+- Verifications: 18 Grep queries + 4 Glob + 1 LS + multiple Read calls. كل claim موثّق بـ file:line.
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change.
+- Next actions (لو المالك وافق): انتظر تعليمات المالك — هل يبدأ بـ P1 (wire real_liquidity_radar داخل maker_radar) ولا P3 (Fast Scanner endpoint جديد) ولا P2 (hot_candidate pre-filter)؟ كلها منفذة على مراحل بدون rewrite.
+
+---
+Task ID: AUDIT-2
+Agent: Bravo V2 (subagent — Read-only forensic audit, engines & shared calculations)
+Task: تدقيق ساكن للمحركات والحسابات المشتركة في vps-service (16 ملف محدد). تحديد التكرارات والتعارضات بدون تعديل أي ملف.
+
+Work Log:
+- قرأت آخر ~150 سطر من worklog.md (السياق: AUDIT-RESTORE-1 + Phase G audit لقاعدة التوقعات).
+- قرأت كل الـ 16 ملف محدد (engines/* + core/* + jobs/*) + الملفات المرتبطة الجوهرية (analyzers/indicators/{atr,ma,rsi,adx}.py، glminvestment_engines/core/indicators.py، confluence_scorer.py).
+- استخدمت Grep على مستوى vps-service كله للبحث عن:
+  * `def (calc_atr|atr|true_range)` — 7 hits
+  * `def (calc_)?rsi` — 12 hits
+  * `def (calc_)?adx` — 4 hits
+  * `def (calc_)?macd` — 6 hits
+  * `def (calc_)?sma|def (calc_)?ema` — 12 hits
+  * `def (get_regime|classify_stage|detect_regime|compute_regime|market_regime)` — 8 hits
+  * `validate_price_data|freshness|max_age_days|stale_data` — 50+ hits
+  * `def compute_risk_reward|compute_r_multiple` — 3 hits
+  * `def (compute_dynamic_target|calculate_target|calculate_targets|get_unified_trader_levels)` — 4 hits
+  * `analysis_cache.invalidate` (للتأكد من مكان الـ manual invalidation)
+- استخدمت Grep لرسم خريطة الاستيرادات: مين بيستدعي `engines.market_regime`؟ `core.price_sanity`؟ `core.cache_manager`؟ `engines.flow_system`؟
+- ما عدّلت أي ملف. ما شغّلتش builds. ما كتبت كود.
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **فيه مصدران كنسيان (canonical) للمؤشرات الفنية، مش واحد** — رغم Rule 67 (CALCULATION-CANONICAL). الأول: `analyzers/indicators/{atr,ma,rsi,adx}.py` (Wilder's smoothing، بيرجّع float/List[float]، فيه توثيق "Rule 67"). التاني: `glminvestment_engines/core/indicators.py` (Wilder's smoothing عبر pandas ewm، بيرجّع Series/DataFrame، مستخدم بـ `from glminvestment_engines.core.indicators import ...` في atr_risk_engine + stage2_filter + donchian_breakout + confluence_scorer). الاتنين يحسبوا نفس الشي رياضيا بس بـ signatures/types مختلفة → ما يقدروش يتداخلوا، وفيه خطر drift مستقبلي. **VERIFIED**.
+
+2. **ATR بيتحسب في 7 أماكن**، 4 منها فعلاً independent (مش مجرد delegating wrapper): `analyzers/indicators/atr.py` (canonical)، `glminvestment_engines/core/indicators.py:atr` (canonical تاني!)، `camp/orchestrator.py:474` (SMA-based — غلط رياضياً، مش Wilder's)، `analyzers/regime_detector.py:42 calculate_adx` (SMA-based كمان). والباقي (`engines/backtest_engine.py:272 calc_atr`، `analyzers/core_scoring_engine.py:79`، `analyzers/enhanced_indicators.py:173`) كلها wrappers بتـ delegate للـ canonical. **VERIFIED**.
+
+3. **فيه محركان بنفس الاسم `MarketRegimeEngine` بيرجّعوا نتيجة مختلفة تماماً**: 
+   - `engines/market_regime.py:MarketRegimeEngine` → Minervini Stage 1-4 (Consolidation/Bull/Distribution/Bear) — بياخد EGX30 من `price_history.db`، بيتشاف من `confluence_scorer` + `market_scheduler.morning_check`.
+   - `analyzers/market_regime_engine.py:MarketRegimeEngine` → DEFENSIVE/NORMAL/AGGRESSIVE enum + بيستمر في `system_settings` + `market_regime_log` — بياخد بيانات من `data_engine.db`/`stocks.db`، بيتشاف من `daily_predictor` للـ thresholds override.
+   الاثنين بيحسبوا SMA20/50/200 + ATR للـ EGX30، بس الناتج مختلف → **collision خطير**. **VERIFIED**.
+
+4. **`market_scheduler.py` بيستخدم 3 أنظمة regime في نفس الوقت**: (a) `engines.market_regime.MarketRegimeEngine.get_regime()` (مره واحدة صباحاً)، (b) `_classify_regime_5` inline (5 regimes: strong_bull/weak_bull/range/weak_bear/strong_bear) داخل `compute_market_pulse` (بيشتغل كل شوية)، (c) بيقرأ من `analyzers.market_regime_engine` كمان في الـ daily_predictor. النظام الـ inline بيحسب ATR بـ **SMA مش Wilder's** (`sum(tr_values)/len(tr_values)` في السطر 361). **VERIFIED**.
+
+5. **`price_sanity.py` (B1 checks) بيُستخدم في مكان واحد فقط**: `jobs/daily_predictor.py:1001`. مش بيُستخدم من: `intraday_scanner`، `market_scheduler`، `flow_system`، `confluence_scorer`، `backtest_engine`. الـ docstring بتاعه بيقول إنه بيشتغل "before any analyzer touches a ticker's price data" بس عملياً مفيش enforce. **VERIFIED**.
+
+6. **`cache_manager.py` بيستخدم TTL بس (60s لـ analysis_cache + 300s لـ api_cache)** — ومفيش أي caller بيستدعي `invalidate()` رغم إن الميثود معرّفة والـ docstring بتقول إنها لازم تتنادى بعد كل analyze جديد. يعني لو تحليل جديد اتكتب في DB خلال الـ 60 ثانية، الـ API هيـ return stale data لحد ما الـ TTL يخلص. + فيه 3 TTL caches تانية independent في `data/prices.py` (300s) + `utils/live_price.py` (60s) + `jobs/crypto_lab_scheduler.py` (21600s) — مش موحدين تحت `cache_manager`. **VERIFIED**.
+
+7. **الحسابات الفنية (RSI/MACD/SMA/EMA/ADX) متكررة في 5+ ملفات**: `analyzers/technical.py` فيه `sma/ema/macd/adx` مستقلة (بعضها بـ delegate للـ canonical، بعضها لأ)، `analyzers/technical_weighted.py` فيه `sma/ema/rsi/macd`، `analyzers/sniper_engine.py` فيه `calc_atr/calc_ema/calc_sma/calc_macd`، `analyzers/enhanced_indicators.py` فيه `calc_atr/calc_adx/calc_ema/calc_macd`. كلهم تقريباً بـ delegate للـ canonical بس بعضهم ليه fallback محلي بيحسب بـ SMA (غلط) لو الـ canonical import فشل. **VERIFIED**.
+
+8. **حسابات Entry/Stop/Target/R:R متفرقة في 6+ أماكن**: `engines/atr_risk_engine.py:compute_risk_plan` (canonical داخل حزمة glminvestment_engines)، `core/opportunity_quality.py:compute_dynamic_target + compute_planned_rr + enforce_min_rr + enforce_atr_based_stop` (independent)، `engines/flow_system.py:evaluate_risk` (inline R/R بدون delegation)، `utils/risk_reward.py:compute_risk_reward` (canonical)، `api/ai_predictions_routes.py:253 calculate_target` (independent)، `risk_management_advanced.py:373 calculate_targets` (independent)، `analyzers/trader_levels_engine.py:get_unified_trader_levels` (بيستخدمه intraday_scanner). **VERIFIED**.
+
+=====================================================================
+2) جدول المحركات (Engine Inventory)
+=====================================================================
+
+| # | المحرك | الموقع (file:line) | مصدر البيانات | التخزين | TTL / Freshness | إعادة الحساب (Trigger) | تكرار؟ | الثقة |
+|---|--------|--------------------|---------------|---------|-----------------|------------------------|--------|-------|
+| 1 | Flow System (V55 Money Flow) | `engines/flow_system.py:204 FlowSystemEngine` | `stocks.db` (stocks, stock_daily_prices) | In-memory (لا تخزين دائم) | لا (بيحسب كل call) | كل call لـ `FlowSystemEngine.analyze_stock()` | RSI بياخده جاهز من `stocks.rsi` (محسوب في مكان تاني). volume_ratio بيحسبه inline (مكرر). `evaluate_risk` inline R/R (مكرر). | VERIFIED |
+| 2 | ATR Risk Engine | `engines/atr_risk_engine.py:68 compute_risk_plan` | DataFrame (OHLCV) — بيتقرأ من caller | In-memory (بيرجّع RiskPlan) | لا | كل call | بيشغل ATR من `glminvestment_engines.core.indicators.atr` (canonical ثاني، مش analyzers/indicators/atr). Stop/Targets/Tiers كلها inline. | VERIFIED |
+| 3 | Market Regime (Minervini) | `engines/market_regime.py:80 MarketRegimeEngine.get_regime` | `price_history.db` (EGX30 ticker) | لا تخزين دائم (بيحسب كل call) | لا | كل call | **مكرر** — فيه `analyzers/market_regime_engine.py` بنفس الاسم وناتج مختلف. + `market_scheduler._classify_regime_5` regime تالت inline. | VERIFIED |
+| 4 | Backtest Engine (V38) | `engines/backtest_engine.py:272 calc_atr` + class V38BacktestEngine | `data_engine.db` (egksco_price_history) + `stocks.db` fallback | Between calls (in-memory cache للـ fundamentals) | لا | كل backtest run | ATR/SMA/EMA/RSI/Bollinger كلها wrappers بتـ delegate للـ canonical `analyzers/indicators/*`. | VERIFIED |
+| 5 | Persona Engine | `engines/persona_engine.py:622 PersonaEngine` | Hardcoded dataclass config (لا DB) | In-memory (singleton) | لا | كل call | مفيش حساب فني خالص — pure config. الـ `RiskParameters` بـ cap `max_position_pct` لـ 2.5% (Rule 19). | VERIFIED |
+| 6 | Stage2 Filter (Minervini) | `engines/stage2_filter.py:64 classify_stage` | DataFrame (OHLCV) — caller | In-memory | لا | كل call | بيستخدم `glminvestment_engines.core.indicators.{sma, adx}` (canonical ثاني). منطق Stage 1-4 مكرر مع `engines/market_regime._determine_stage`. | VERIFIED |
+| 7 | VCP Detector | `engines/vcp_detector.py:103 detect_vcp` | DataFrame (OHLCV) — caller | In-memory | لا | كل call | مفيش — منطق VCP unique. بس بيشغل swing detection inline. | VERIFIED |
+| 8 | Donchian Breakout | `engines/donchian_breakout.py:52 detect_breakout` | DataFrame (OHLCV) — caller | In-memory | لا | كل call | بيستخدم `glminvestment_engines.core.indicators.{donchian_channels, sma}`. SMA للحجم مكرر. | VERIFIED |
+| 9 | Explosive Scanner v2 | `engines/explosive_scanner.py:118 ExplosiveScanner` | `stocks.db` (stocks, stock_daily_prices, market_indices) | In-memory | لا | كل call | volume_ratio + 20d avg + RSI كلها inline (مكرر مع flow_system). | VERIFIED |
+| 10 | Macro State Engine | `core/macro_state_engine.py:38 MacroStateEngine` | `price_history.db` (cold boot) + `stocks.db` fallback | In-memory singleton (`_state_cache` dict) — **docstring بيقول "+ جدول في stocks.db" بس الكود ما بيعملش INSERT/UPDATE** | Cold boot مرة واحدة (lazy) | `cold_boot(force=True)` أو أول call لو مش initialized | 52W high/low + vol_avg_20d — SQL inline (مكرر في مؤشرات تانية). | PARTIALLY VERIFIED |
+| 11 | Price Sanity (B1) | `core/price_sanity.py:265 validate_price_data` | Caller بيمرر prices/ohlc + `stocks.db` للـ identity lookup | لا تخزين (pure function) | `max_age_days=4` (EGX holiday buffer) | كل call | مفيش تكرار في الحساب، بس **محدود الاستخدام** (call site واحد فقط: `daily_predictor.py:1001`). | VERIFIED |
+| 12 | Opportunity Quality | `core/opportunity_quality.py` (30+ functions) | Fund/stored dicts (caller بيمررها) | لا تخزين (pure) | `LIVE_STRICT_MAX_AGE_HOURS=24` / `LIVE_LOOSE_MAX_AGE_DAYS=7` | كل call | **تكرار كبير**: compute_dynamic_target + compute_planned_rr + enforce_min_rr + enforce_atr_based_stop كلها independent عن atr_risk_engine و utils/risk_reward و flow_system.evaluate_risk. | VERIFIED |
+| 13 | Cache Manager | `core/cache_manager.py:73 AnalysisCache` + `:439 ApiResponseCache` | In-memory TTLCache | In-memory (singleton) | `DEFAULT_TTL_SECONDS=60` (analysis) + `300` (api) + maxsize 512/256 | TTL auto-expire + `invalidate()` موجودة بس **مفيش caller بيستخدمها** | فيه 3 TTL caches تانية independent: `data/prices.py:_CACHE_TTL_SECONDS=300`، `utils/live_price.py:_CACHE_TTL_SECONDS=60`، `jobs/crypto_lab_scheduler.py:COINS_CACHE_TTL_SECONDS=21600`. | VERIFIED |
+| 14 | Market Scheduler | `jobs/market_scheduler.py:100 MarketScheduler` (class) | `stocks.db` + `price_history.db` + `data_engine.db` | `self.current_regime` (in-memory) + `system_settings` DB (عن طريق analyzers.market_regime_engine) | Minervini: لا TTL (كل call). Pulse: لا TTL (كل 15 دقيقة). | Cron-based (morning_check + 15-min loop) | **3 أنظمة regime في نفس الملف**: engines.market_regime.MarketRegimeEngine + _classify_regime_5 inline + قراءة من analyzers.market_regime_engine. + ATR inline بـ SMA (غلط). | VERIFIED |
+| 15 | Daily Predictor (V40.2) | `jobs/daily_predictor.py:825 run_generator` | `data_engine.db` (price_history) + `predictions.db` (writes) + `stocks.db` | `predictions` + `stored_analyses` + `cached_analysis` tables | B1 sanity gate قبل كل ticker | كل scan_date × ticker | بيستخدم `engines.backtest_engine.V38BacktestEngine` (اللي بـ delegate للـ canonical) + `analyzers.market_regime_engine.MarketRegimeEngine` (مش الـ engines/ واحد!) + `core.price_sanity.validate_price_data` (call site وحيد) + `utils.risk_reward.compute_risk_reward` (عن طريق compute_r_multiple). | VERIFIED |
+| 16 | Intraday Scanner | `jobs/intraday_scanner.py:55 get_active_intraday_tickers` + `:271 scan_intraday` | `intraday.db` (5-min bars) + `stocks.db` + `predictions.db` | `predictions` + `cached_analysis` (writes) | لا | كل 5 دقائق (cron) | بيستخدم `analyzers/` بس (intraday_reader, golden_hunter, prediction_tracker, trader_levels_engine) + `core.opportunity_quality.compute_dynamic_target`. **ما بيستخدمش engines/ خالص**. | VERIFIED |
+
+=====================================================================
+3) جدول الحسابات المكررة (Duplicate Calculations)
+=====================================================================
+
+| الحساب | المواقع المتكررة | سبب الاختلاف المحتمل |
+|--------|------------------|------------------------|
+| **ATR (Average True Range)** | 1) `analyzers/indicators/atr.py:26 calc_atr` (canonical — Wilder's، float) ‖ 2) `glminvestment_engines/core/indicators.py:66 atr` (canonical ثاني — Wilder's، pandas Series) ‖ 3) `camp/orchestrator.py:474 atr` (SMA-based، غلط) ‖ 4) `analyzers/regime_detector.py:42 calculate_adx` (SMA-based، غلط) ‖ 5) `engines/backtest_engine.py:272 calc_atr` (wrapper يـ delegate) ‖ 6) `analyzers/core_scoring_engine.py:79 calc_atr` (wrapper + fallback SMA) ‖ 7) `analyzers/enhanced_indicators.py:173 calc_atr` (wrapper) ‖ 8) `jobs/market_scheduler.py:361` inline (SMA-based، غلط) | (a) Wilder's smoothing vs SMA — فرق رياضي حقيقي بـ ~10-20% في القيم. (b) Signature مختلفة (list vs DataFrame vs DataFrame-with-HLC). (c) الـ fallback في core_scoring_engine بيحسب بـ SMA لو canonical import فشل → نتائج مختلفة بين environments. (d) `jobs/market_scheduler.compute_market_pulse` بيحسب ATR للـ EGX30 بـ SMA — فلو الـ morning_regime_check (اللي بيستخدم engines.market_regime الكنسي Wilder's) قال Stage 2، والـ pulse ممكن في نفس اللحظة يقول atr_pct مختلف → تصنيف regime مختلف. |
+| **RSI** | 1) `analyzers/indicators/rsi.py:31 calc_rsi` (canonical — Wilder's) ‖ 2) `glminvestment_engines/core/indicators.py:107 rsi` (Wilder's، Series) ‖ 3) `analyzers/technical.py:139 rsi` (delegate) ‖ 4) `analyzers/technical_weighted.py:154 rsi` (مستقل؟) ‖ 5) `camp/orchestrator.py:464 rsi` (SMA-based — غلط) ‖ 6) `scripts/migrate_calc_indicators.py:46 calc_rsi` (script، مستقل) ‖ 7) flow_system.py بياخده جاهز من `stocks.rsi` (محسوب في مكان تاني) | (a) Wilder's vs SMA — Bug #1 موثّق في analyzers/indicators/rsi.py (فرق 10-20 نقطة). (b) flow_system.py بياخده من `stocks.rsi` (precomputed) — ما نعرفش إيه اللي حسبه originally. |
+| **MACD** | 1) `analyzers/indicators/ma.py:71 macd` (canonical) ‖ 2) `analyzers/core_scoring_engine.py:55 calc_macd` (مستقل) ‖ 3) `analyzers/technical.py:227 macd` (مستقل بـ fallback) ‖ 4) `analyzers/technical_weighted.py:169 macd` (مستقل) ‖ 5) `analyzers/sniper_engine.py:311 calc_macd` (مستقل) ‖ 6) `analyzers/enhanced_indicators.py:102 calc_macd` (delegate) | (a) EMA seed مختلف (SMA seed vs first-value seed) → قيم أول فترة مختلفة. (b) بعضها بيرجّع dict، بعضها tuple. (c) Bug #9 موثّق في ma.py (SMA200 vs EMA200 mislabeling). |
+| **ADX** | 1) `analyzers/indicators/adx.py:49 calc_adx` (canonical — Wilder's) ‖ 2) `glminvestment_engines/core/indicators.py:171 adx` (Wilder's، DataFrame) ‖ 3) `analyzers/regime_detector.py:42 calculate_adx` (SMA-based — غلط) ‖ 4) `analyzers/technical.py:345 adx` (مستقل) ‖ 5) `analyzers/enhanced_indicators.py:186 calc_adx` (delegate) | (a) Wilder's vs SMA — الـ docstring بتاع adx.py بيقول صراحةً "كان فيه 8 implementations مختلفة ... كل واحدة بتحسب ADX بطريقة مختلفة" — تم توحيد الـ canonical بس الباقي لسه موجود. (b) `engines/market_regime._calc_adx` بيستخدم canonical بس بيمرّر `closes` كـ highs/lows (proxy hack — comment موجود) → قيم ADX مغلوطة للـ EGX30 (لأنه مفيهوش highs/lows حقيقية). |
+| **SMA / EMA** | 1) `analyzers/indicators/ma.py:31 sma` + `:46 ema` (canonical) ‖ 2) `glminvestment_engines/core/indicators.py:93 sma` + `:98 ema` (canonical ثاني، pandas) ‖ 3) `engines/backtest_engine.py:232 calc_sma` + `:244 calc_ema` (wrappers) ‖ 4) `analyzers/core_scoring_engine.py:74 calc_sma` (wrapper + fallback) ‖ 5) `analyzers/technical.py:103 sma` + `:109 ema` (مستقل، inline) ‖ 6) `analyzers/technical_weighted.py:131 sma` + `:137 ema` (مستقل) ‖ 7) `analyzers/sniper_engine.py:295 calc_ema` + `:372 calc_sma` (مستقل) ‖ 8) `analyzers/enhanced_indicators.py:79 calc_ema` (delegate) ‖ 9) `camp/orchestrator.py:429 sma` (مستقل) ‖ 10) `jobs/market_scheduler.py:345-349` inline `sum(closes[:20])/20` | (a) SMA seed مختلف. (b) EMA recursive vs pandas ewm — تفسير مختلف لـ min_periods. (c) `market_scheduler` بيحسب SMA20/50/200 inline مباشرة من `closes[:20]` بدل ما يستدعي canonical → مستحيل يكون فيه cache/shared state. |
+| **Entry / Stop / Target / R:R** | 1) `engines/atr_risk_engine.py:68 compute_risk_plan` (ATR-based، canonical داخل glminvestment_engines) ‖ 2) `engines/flow_system.py:110 evaluate_risk` (inline R/R، مش بـ delegate) ‖ 3) `core/opportunity_quality.py:456 compute_planned_rr` + `:489 enforce_min_rr` + `:610 enforce_atr_based_stop` + `:720 compute_dynamic_target` ‖ 4) `utils/risk_reward.py:31 compute_risk_reward` (canonical Rule 54) ‖ 5) `api/ai_predictions_routes.py:253 calculate_target` ‖ 6) `risk_management_advanced.py:373 calculate_targets` ‖ 7) `analyzers/trader_levels_engine.py:196 get_unified_trader_levels` ‖ 8) `jobs/daily_predictor.py:252 compute_r_multiple` (delegate لـ utils/risk_reward) | (a) Rule 18 (RR_FLOOR=1.8) في flow_system.evaluate_risk — مستقل عن utils/risk_reward. (b) Rule 19 (MAX_POSITION_SIZE=2.5%) مكرر في flow_system + persona_engine.RiskParameters. (c) atr_risk_engine بيستخدم ATR-based stop، بس flow_system.evaluate_risk بتاخد stop جاهز من caller (مش بتحسبه). (d) intraday_scanner بيستخدم `get_unified_trader_levels` (analyzers/) — مختلف تماماً عن atr_risk_engine. |
+| **Market Regime** | 1) `engines/market_regime.py:80 get_regime` (Minervini Stage 1-4) ‖ 2) `engines/stage2_filter.py:64 classify_stage` (Minervini Stage 1-4 — على مستوى السهم مش السوق) ‖ 3) `analyzers/market_regime_engine.py:833 detect_regime` (DEFENSIVE/NORMAL/AGGRESSIVE) ‖ 4) `analyzers/regime_detector.py:113 detect_regime` (Bull/Bear/Ranging) ‖ 5) `analyzers/adaptive_weights.py:605 detect_regime` ‖ 6) `camp/orchestrator.py:371 detect_regime` ‖ 7) `analyzers/crypto_regime.py:137 detect_regime` (للـ crypto) ‖ 8) `jobs/market_scheduler.py:383 _classify_regime_5` inline (strong_bull/weak_bull/range/weak_bear/strong_bear) ‖ 9) `scripts/run_backtest*.py:get_regime` (3 scripts) | (a) 4 schemes مختلفة: Minervini 4-stage / 3-regime (DEFENSIVE/NORMAL/AGGRESSIVE) / 3-state (Bull/Bear/Ranging) / 5-state. (b) كل واحد بياخد بيانات مختلفة (EGX30 من price_history.db / EGX30 من data_engine.db / مؤشرات متعددة). (c) كل واحد بـ trigger مختلف (morning check / per-ticker analysis / per-batch). (d) `engines/market_regime.py:MarketRegimeEngine` و `analyzers/market_regime_engine.py:MarketRegimeEngine` **نفس الاسم تماماً** → import conflict محتمل. |
+| **OHLCV Freshness / Data Validity** | 1) `core/price_sanity.py:265 validate_price_data` (canonical B1 — `max_age_days=4`) ‖ 2) `camp/canonical_stock_state.py:286 _is_data_stale` (مستقل) ‖ 3) `camp/state_history_tracker.py` (data_freshness column) ‖ 4) `camp/canonical_state_shadow.py:199` (canonical_data_freshness) ‖ 5) `analyzers/support_resistance_calculator.py:256 _calculate_freshness` (مستقل — fresh/recent/stale) ‖ 6) `api/stored_analysis_routes.py:1768 _calc_freshness_minutes` (مستقل) ‖ 7) `data/source_authority.py:105 write_guarded` (primary freshness check) ‖ 8) `core/opportunity_quality.py:1100 _parse_last_update_age_hours` + `:1126 _newest_age_hours` (independent) | (a) Thresholds مختلفة: 4 days (price_sanity) / 24h (opportunity_quality strict) / 7d (opportunity_quality loose) / "recent" غير معرّف (support_resistance). (b) بعضها بيقارن بـ `date.today()` (محلي)، بعضها بـ `cairo_now()`. (c) الـ price_sanity الـ canonical مفيش بـ يستخدمه إلا daily_predictor — باقي المسارات بتـ skip الـ B1 check كله. |
+| **Volume / Turnover / Avg 20d** | 1) `engines/flow_system.py:404-410` (inline SQL `AVG(volume) ... -20 days`) ‖ 2) `engines/explosive_scanner.py:192 _get_avg_volume_20d` (inline SQL) ‖ 3) `engines/market_regime.py` (لا — بياخد closes بس) ‖ 4) `jobs/market_scheduler.py:263` (inline SQL `value_traded`) ‖ 5) `core/macro_state_engine.py:73` (SQL `AVG(volume) ... -365 days` — كده سنوي مش 20 يوم) ‖ 6) `core/opportunity_quality.py` (بياخد turnover من fund dict — محسوب في مكان تاني) | (a) كل واحد بيحسب الـ avg من نافذة مختلفة (20d / 7d / 365d). (b) بعضها بيتجاهل volume≤100 (explosive_scanner) والبعض لا. (c) macro_state بيـ cache الـ 365d avg في RAM singleton — بس الـ 20d avg بيتحسب في كل call من تاني. |
+
+=====================================================================
+4) إجابات الأسئلة السبعة المحددة
+=====================================================================
+
+**س1: هل ATR بيتحسب في أكتر من مكان؟ لو آه، هل النتائج بتتختلف بسبب مصدر بيانات مختلف؟**
+**VERIFIED — آه، بيتحسب في 7 أماكن.** النتائج بتتختلف لسببين: (a) صيغة الحساب نفسها مختلفة — canonicalين (`analyzers/indicators/atr.py` + `glminvestment_engines/core/indicators.py`) بيستخدموا Wilder's smoothing (RMA)، بس `camp/orchestrator.py` + `jobs/market_scheduler.compute_market_pulse` + `analyzers/regime_detector.calculate_adx` بيستخدموا **SMA** (غلط رياضياً — Bug #1 موثّق). الفرق النموذجي 10-20%. (b) مصدر البيانات: `engines/market_regime` بيقرأ EGX30 من `price_history.db`، بس `market_scheduler.compute_market_pulse` بيقرأ EGX30 من `data.prices.load_price_history` (اللي بياخد من `data_engine.db` أساساً مع fallback)، و`analyzers/market_regime_engine` بيقرأ من `data_engine.db.egksco_price_history` مباشرة. فـ حتى لو الصيغة واحدة، الـ closes list ممكن تكون مختلفة بين الـ 3 sources → ATR مختلف → regime مختلف.
+
+**س2: هل flow_system.py (V55 Money Flow) بيستدعي محركات تانية ولا بيحسب كل حاجة لوحده؟**
+**VERIFIED — بيحسب كل حاجة لوحده.** مفيش أي `from engines.* import` ولا `from analyzers.* import` جوه flow_system.py. الـ RSI بياخده جاهز من `stocks.rsi` (DB column محسوب في مكان تاني). الـ volume_ratio بيحسبه inline بـ SQL. الـ sector_turnover_ratio بيحسبه inline. الـ `evaluate_risk` بتحسب R/R inline (`rr = round(reward / risk, 4)`) — مش بتـ delegate لـ `utils.risk_reward.compute_risk_reward`. الـ `MAX_POSITION_SIZE = 0.025` (Rule 19) مكرر محلياً. الـ stop_loss + target بتيجي من caller مش بيتحسبوا. **الخلاصة**: flow_system = standalone silo.
+
+**س3: هل market_regime.py بيخزن النتيجة ولا بيحسبها في كل مرة؟**
+**VERIFIED — بيحسبها في كل مرة (stateless).** مفيش INSERT/UPDATE/UPSERT في `engines/market_regime.py`. كل call لـ `MarketRegimeEngine.get_regime()` بيقرأ من `price_history.db` ويحسب SMA50/SMA200/slope/ADX من الصفر. **بالعكس**: `analyzers/market_regime_engine.py` (الـ second engine بنفس الاسم) بيتخزن في `system_settings` (key=`current_regime_<MARKET>`) + `market_regime_log` table للـ audit history. يعني فيه engine بيحسب والـ engine التاني بـ persist — والاتنين بنفس الاسم.
+
+**س4: cache_manager.py بيستخدم TTL ولا manual invalidation؟**
+**VERIFIED — بيستخدم TTL بس (60s للـ analysis + 300s للـ api).** الـ `invalidate()` method معرّفة في الاتنين بس **محدش بيستدعيها** (grep علي `analysis_cache.invalidate|api_cache.invalidate` رجع 0 hits من خارج cache_manager.py نفسه). الـ docstring بتاع cache_manager.py بيقول صراحةً "لو فيه تحليل جديد اتعمل (analyze + store)، الـ caller لازم ينادي `analysis_cache.invalidate(ticker)`" — بس مفيش caller بيعمل ده. يعني فيه خطر stale data لمدة 60 ثانية بعد كل تحليل جديد (مثلاً: daily_predictor كتب prediction جديد في DB، بس API لسه بيرجّع القديمة لحد ما TTL يخلص). + فيه 3 TTL caches independent تانية (`data/prices.py`, `utils/live_price.py`, `jobs/crypto_lab_scheduler.py`) — مش موحدين.
+
+**س5: daily_predictor.py بيستدعي orchestrator ولا بينفّذ منطق مستقل؟**
+**VERIFIED — بينفّذ منطق مستقل تماماً (مش بيستدعي orchestrator).** مفيش `from core.orchestrator* import` في daily_predictor.py. بدلاً منه:
+- بيستورد `engines.backtest_engine.V38BacktestEngine` (محرك الـ V38 backtest) وبيـ instantiate واحد (line 962: `engine = V38BacktestEngine(buy_threshold=_buy_thresh, use_v393=True, market_code=market_code)`).
+- بيشغّل `pre_cache_price_history(tickers, engine)` (batch pre-cache).
+- بيلف على tickers × scan_dates وبيـ invoke `engine.get_price_data(ticker)` + `engine.evaluate_signals(...)` يدوياً.
+- الـ regime بيجي من `analyzers.market_regime_engine.MarketRegimeEngine` (مش من engines/market_regime).
+- الـ persona_fit بيجي من `predictor_modules.persona_fit.compute_persona_fit` (مستخرج في Phase 7.2 Strangler).
+الـ orchestrator موجود (`core/orchestrator.py`, `core/orchestrator_v2.py`, `core/orchestrator_v3.py`) بس daily_predictor ما بيستخدمهوش — ده silo مستقل بـ logic خاص فيه (V40.2 DNA winner flags + V68/V72/V73 toggles).
+
+**س6: intraday_scanner.py بيستدعي engines/ ولا analyzers/ ولا الاتنين؟**
+**VERIFIED — بيستدعي analyzers/ + core/ بس (مش engines/ خالص).** imports:
+- `analyzers.intraday_reader` (get_intraday_data, detect_intraday_breakout, detect_maker_flow, get_sector_performance)
+- `analyzers.golden_hunter.analyze_v76`
+- `analyzers.prediction_tracker.PredictionTracker`
+- `analyzers.trader_levels_engine.get_unified_trader_levels`
+- `core.opportunity_quality.compute_dynamic_target`
+- `ai.market_news_reader.get_news_bias` (lazy)
+- `core.db_manager.db_manager` (DB access)
+مفيش أي `from engines.* import`. يعني intraday_scanner ماشي على مسار مختلف تماماً عن daily_predictor (اللي بيستخدم engines/backtest_engine). الـ levels (entry/stop/targets) بتيجي من `analyzers.trader_levels_engine.get_unified_trader_levels` — مش من `engines.atr_risk_engine`. ده تفرّع حقيقي في الـ pipeline.
+
+**س7: هل price_sanity.py (B1 checks) بيستخدمه أكتر من مسار؟**
+**VERIFIED — لا، بيستخدمه مسار واحد بس: `jobs/daily_predictor.py:1001`.** grep علي `from core.price_sanity import|import core.price_sanity` رجع hit واحد بس. الـ docstring بتاع price_sanity.py بيقول: "A single, well-scoped validation gate that runs *before* any analyzer touches a ticker's price data" — بس عملياً:
+- `jobs/intraday_scanner.py` — مفيش B1 check (بيـ skipها).
+- `engines/flow_system.py` — مفيش B1 check.
+- `engines/backtest_engine.py` — مفيش B1 check (لها fallback محلي `>10000 sanity check` في السطر ~2527 حسب comment في daily_predictor).
+- `engines/explosive_scanner.py` — مفيش B1 check.
+- `engines/market_regime.py` — مفيش B1 check.
+- `glminvestment_engines/confluence/confluence_scorer.py` — مفيش B1 check.
+يعني الـ B1 gate اللي صُمّم عشان يمنع الـ ADP/ADPC contamination وبيانات USD-في-EGX، بيشتغل بس في الـ daily path. الـ intraday + flow + confluence + backtest كلها exposed للتلوث ده.
+
+=====================================================================
+5) أكبر 3 مصادر للتكرار أو التعارض
+=====================================================================
+
+### 🔴 #1: ازدواجية canonical libraries للمؤشرات الفنية (`analyzers/indicators/*` vs `glminvestment_engines/core/indicators.py`)
+- **المشكلة**: Rule 67 (CALCULATION-CANONICAL) بيقول إن `analyzers/indicators/` هو المصدر الوحيد، بس فعلياً فيه canonical تاني كامل في `glminvestment_engines/core/indicators.py` بيقدّم نفس الدوال (atr, sma, ema, rsi, adx, donchian_channels) بـ signatures/types مختلفة (pd.Series بدل float).
+- **التأثير**: 4 engines تابعين لـ glminvestment_engines (atr_risk_engine, stage2_filter, donchian_breakout, confluence_scorer) بيستخدموا الـ canonical التاني، بينما daily_predictor + market_scheduler + analyzers/technical.py بيستخدموا الـ canonical الأول. نتايج ATR/RSI/ADX ممكن تختلف بين المسارين بـ rounding + min_periods handling. + مفيش way لـ share cache بينهم.
+- **الحل المقترح**: استبدال imports في glminvestment_engines/* لـ تشير لـ analyzers/indicators/* (أو العكس)، + إنهاء الـ duplicating في الـ fallback logic. بس محتاج owner approval لأنه بيأثر على 4 engines.
+
+### 🔴 #2: 3 أنظمة regime مختلفة بتشتغل في نفس الوقت (collision على اسم `MarketRegimeEngine`)
+- **المشكلة**: 3+ engines بنفس الاسم تقريباً وبيحسبوا regime بناءً على نفس الـ EGX30 بس بـ schemes مختلفة:
+  - `engines/market_regime.py:MarketRegimeEngine` → Minervini Stage 1-4 (لا persistence، بيتحسب كل call)
+  - `analyzers/market_regime_engine.py:MarketRegimeEngine` → DEFENSIVE/NORMAL/AGGRESSIVE (بيـ persist في `system_settings` + `market_regime_log`)
+  - `jobs/market_scheduler.py:_classify_regime_5` → 5 regimes inline (بيـ compute كل 15 دقيقة بـ ATR-based SMA — غلط رياضياً)
+  - + `engines/stage2_filter.py:classify_stage` → Minervini Stage 1-4 على مستوى السهم (مش السوق)
+  - + `analyzers/regime_detector.py:detect_regime` (Bull/Bear/Ranging)
+- **التأثير**: لو morning_check قال Stage 2 (سمح بالتداول) بس pulse قال strong_bear (وقف التداول)، الـ scheduler ممكن يبعت signals متضاربة. الـ daily_predictor بيستخدم الـ analyzers.market_regime_engine (DEFENSIVE/NORMAL/AGGRESSIVE) لـ thresholds، بس confluence_scorer بيستخدم engines.market_regime (Stage 1-4) لـ veto — فلو الـ engines قالوا حاجات مختلفة، الـ prediction final signal ممكن يكون غلط.
+- **الحل المقترح**: توحيد على نظام واحد (الأرجح: `engines/market_regime.py` لـ Minervini + `analyzers/market_regime_engine.py` لـ thresholds). إزالة الـ inline `_classify_regime_5` + الـ ATR-based SMA من market_scheduler.
+
+### 🔴 #3: B1 Price Sanity gate + freshness checks متفرقة في 7+ أماكن، بس canonical واحد بيشتغل
+- **المشكلة**: `core/price_sanity.py:validate_price_data` هو الـ canonical للـ B1 checks (USD contamination + impossible OHLC + stale data + history mismatch). بس:
+  - بيُستخدم في call site واحد فقط (`jobs/daily_predictor.py:1001`)
+  - باقي المسارات (intraday_scanner, flow_system, confluence_scorer, backtest_engine, explosive_scanner) كلها بـ skipه
+  - فيه 6+ implementations independent للـ freshness: `camp/canonical_stock_state._is_data_stale`، `analyzers/support_resistance_calculator._calculate_freshness`، `api/stored_analysis_routes._calc_freshness_minutes`، `camp/state_history_tracker.data_freshness` column، `camp/canonical_state_shadow.canonical_data_freshness`، `core/opportunity_quality._parse_last_update_age_hours`
+  - thresholds مختلفة: 4 days (price_sanity) / 24h strict / 7d loose / "recent" غير معرّف / minutes-based (api).
+- **التأثير**: سهم زي ADP (الـ USD-في-EGX contamination case) ممكن يظهر في intraday picks أو flow signals أو confluence BUY بدون ما يـ intercepted. ده عكس الـ design intent. + الـ freshness checks الـ independent مفيش بينها تنسيق → سهم ممكن يتعتبر "fresh" في cache و"stale" في analysis.
+- **الحل المقترح**: فرض B1 check في كل مسار تحليل (import + validate_price_data قبل أي computation). توحيد الـ freshness على `price_sanity` كـ single-source + إلغاء الـ 6 independent implementations.
+
+=====================================================================
+6) ثقة الاستنتاجات (Confidence Roll-up)
+=====================================================================
+- كل الاستنتاجات اللي فوق marked VERIFIED معناها إنها اتثبتّت بـ قراءة مباشرة للكود + grep بحث عن الـ imports/calls.
+- الاستنتاج الوحيد PARTIALLY VERIFIED هو #10 (macro_state_engine) — السبب: docstring بيقول إن فيه "+ جدول خفيف في stocks.db" بس grep ما لقيش INSERT/UPDATE/UPSERT في الكود → إما إن الـ docstring outdated أو إن الـ write بيتعمل في مكان تاني ما قرأتهوش. محتاج verify أعمق.
+
+Stage Summary:
+- اتقرأ 16 ملف محدد + 6 ملفات مرتبطة (indicators canonicals + confluence_scorer). ما عدّلتش أي ملف. ما شغّلتش builds.
+- أكبر 3 مصادر للتعارض (مفصّلة فوق): (1) ازدواجية canonical libraries للمؤشرات، (2) 3 أنظمة regime متصارعة في نفس الوقت + collision على اسم `MarketRegimeEngine`، (3) B1 price sanity gate بيشتغل في call site واحد بس رغم تصميمه كـ universal gate.
+- فيه 7+ مكررات حسابية (ATR / RSI / MACD / ADX / SMA / EMA / regime / freshness / R:R / target) — معظمها بـ delegate للـ canonical، بس فيه 4 instances بتستخدم صيغة غلط (SMA بدل Wilder's).
+- cache_manager.py بيشتغل بـ TTL بس — `invalidate()` معرّفة بس محدش بيستدعيها → خطر stale data 60s بعد كل تحليل جديد.
+- daily_predictor + intraday_scanner ماشيين على pipelines مختلفة تماماً (daily بـ engines/backtest_engine + analyzers/market_regime_engine؛ intraday بـ analyzers/ بس + core/opportunity_quality) — مفيش shared calculations بينهم.
+- الخطوة التالية: انتظر تعليمات المالك — هل يبدأ في توحيد canonical indicators (الحل الأعلى impact) ولا في توحيد الـ regime engines (الحل الأعلى risk reduction) ولا في فرض B1 gate على كل المسارات (الحل الأعلى data integrity)؟
+---
+Task ID: AUDIT-4
+Agent: برافو V2 (subagent) — Read-only Forensic Audit (Legacy Isolation + OOP Design)
+Task: تدقيق ساكن لحالة عزل النظام القديم (Legacy Isolation) وتصميم OOP في مشروع GLMinvestment. لا كتابة كود، لا تعديل ملفات، لا تشغيل builds.
+
+Work Log:
+- قرأت آخر ~300 سطر من worklog.md عشان أفهم تقارير AUDIT-1 (المسار التنفيذي orchestrator_v3→executor_v3→risk_gate→decision_log) + AUDIT-2 (المحركات والحسابات المشتركة) + AUDIT-3 (الرادار والماسحات).
+- استخدمت LS على `/home/z/my-project/archive/` كامل + قرأت `archive/INDEX.md` + `archive/garage/INDEX.md` + `archive/engines/SKIPPED_NOT_ARCHIVED.md` + `archive/components/SKIPPED_NOT_DEDUPLICATED.md`.
+- عدّيت `find archive -type f` → **629 ملف مؤرشف** (169 .py + 436 .ts/.tsx + 24 md/json/etc).
+- استخدمت Grep على كل المشروع (ما عدا archive/) لـ `from archive|import archive|archive\.` → **ZERO runtime imports من archive/**. الـ 16 match اللي طلع كلها: comments (مثل src/modules/market-analysis/index.ts:8) + DB table names (predictions_duplicates_archive) + .zip file names في scripts restore + متغيرات backup. ما فيش أي import بيـ activate كود من archive/.
+- استخدمت Grep على كل المشروع لـ `from core.orchestrator|from core.orchestrator_v2|from core.orchestrator_v3|from core.executor|from core.executor_v3` → 
+  * **vps-service**: 1 match بس (executor_v3.py:127 بـ import resolve_conflict من orchestrator_v3 — والاتنين DEAD).
+  * **scripts/** (خارج vps-service): 9 matches (run_abcd_comparison.py + test_integration_behavioral.py + run_backtest_new_architecture.py + run_staged_optimization.py + run_b0b4_full.py + run_b0b4_v3.py + run_b0b4_comparison.py + run_b0b4_fast.py + test_orchestrator_v3.py).
+- استخدمت Grep على كل المشروع لـ `from core.decision_log|from analyzers.decision_logger` →
+  * **vps-service**: ZERO imports للـ shim (core/decision_log.py). 13 imports للـ canonical (analyzers/decision_logger.py) في scanner_routes.py:208 + daily_predictor.py (10 مواقع) + daily_closer.py:735.
+  * **scripts/**: 3 imports للـ shim (test_integration_behavioral.py + run_backtest_new_architecture.py + run_b0b4_full.py).
+- قرأت `crontab.txt` كامل (209 سطر) → 25+ cron jobs.
+- قرأت `ecosystem.config.js` كامل (424 سطر) → 8 PM2 processes (python-backend:8010 + data-engine:5000 + nextjs:3000 + ws-service:3005 + telegram-poster + telegram-interactive-bot + telegram-events:3003 + news-agent).
+- استخدمت Grep على vps-service لـ `@scheduler|scheduler.add_job|APScheduler|BackgroundScheduler|AsyncIOScheduler` → SchedulerManager مركزي واحد في `core/scheduler_manager.py` (BackgroundScheduler من APScheduler) + consumer واحد في `main.py`. كمان `jobs/crypto_lab_scheduler.py` بيستخدمه.
+- قرأت `main.py` كامل (371 سطر) → عند startup بـ register: MarketScheduler.tick (60s) + EgyptScheduler.tick_once (60s) + wal_checkpoint_hourly (3600s) + crypto_lab_scheduler (900s, gated بـ SKIP_CRYPTO_LAB).
+- استخدمت Grep على كل المشروع لـ `INSERT INTO predictions|INSERT INTO stored_analyses|INSERT INTO decisions|INSERT INTO decision_log|INSERT INTO radar_signal_tracking` → 47 matches في الكود النشط + scripts + tests + docs.
+- قرأت كل GATED writers للتأكد من حالتهم:
+  * `vps-service/api/ai_predictions_routes.py:544-560` → early-return `DISABLED — Rule 35: V40.2 (daily_predictor.py) is the ONLY writer`. INSERT في سطر 860 unreachable (preserved block).
+  * `vps-service/api/historical_predictions_v2_routes.py:438-447` → early-return `DISABLED`. INSERT في 491+510 unreachable.
+  * `src/app/api/sniper/track/route.ts:19-32` → HTTP 410 Gone. INSERT في 65 unreachable (preserved block).
+  * `vps-service/api/ai_routes.py:110-111` → `SKIP_STORED_ANALYSES_WRITE = True` — INSERT في 128 gated.
+  * `vps-service/jobs/intraday_scanner.py:347` → `SKIP_STORED_ANALYSES_WRITE = True` — INSERT في 414 + 443 gated.
+  * `vps-service/ai/nightly_analysis.py:248` → `SKIP_STORED_ANALYSES_WRITE = True` — INSERT في 281 gated.
+  * `vps-service/core/persona_db.py:441` → `# stored_analyses — PHASE-C0: SKIPPED`. INSERT في 188 unreachable.
+  * `vps-service/analyzers/background_analyzer.py:889-891` + `:1027-1028` → early-return لو `not self.orchestrator and not self.unified_maestro` (الاتنين None). INSERT في 1955 + 2244 unreachable.
+- قرأت بنية `vps-service/glminvestment_engines/` كامل + README.md (375 سطر) → حزمة "أساطير التداول" (Minervini/Covel/Wilder/Douglas) — core/{base,indicators}.py + engines/{stage2_filter,vcp_detector,donchian_breakout,atr_risk_engine,take_profit_tiers} (في vps-service/engines/) + confluence/confluence_scorer + backtest/strategy_backtester + integration/{expert_gate_patch,risk_engine_patch}.
+- استخدمت Grep على vps-service لـ `from glminvestment_engines|import glminvestment_engines|glminvestment_engines\.` →
+  * vps-service/engines/{donchian_breakout, vcp_detector, stage2_filter, atr_risk_engine, take_profit_tiers}.py بـ import من glminvestment_engines.core.{base,indicators} (base types).
+  * analyzers/background_analyzer.py:81 بـ import risk_engine_patch (لكن bg_analyzer معطّل).
+  * analyzers/expert_quality_gate.py:62 بـ import expert_gate_patch.
+  * glminvestment_engines/confluence/confluence_scorer.py مستهلك بس داخل glminvestment_engines/{cli_analyze, backtest, examples} — **مفيش production code بيستهلكه**.
+- قرأت `vps-service/analyzer_modules/__init__.py` + `vps-service/analyzers/analyzer_modules/__init__.py` → الاتين متطابقين 100% (diff = 0 لكل 6 ملفات). الـ active consumer هو `analyzers/master_analyzer.py:215-219` اللي بـ import من `analyzer_modules.X` (بدون `analyzers.` prefix) — فبيـ resolve لـ `/vps-service/analyzer_modules/`. الـ nested duplicate مش مستورد.
+- قرأت `vps-service/config/__init__.py` + active_settings.json + optimizer_params.json + unified_config.py (head). استخدمت `wc -l` على كل ملفات config/.
+- قرأت `vps-service/core/orchestrator_v3.py` كامل (282 سطر) — فيه STATIC `ENGINE_FAMILIES` (line 21) + `RAW_WEIGHTS` (line 34) + `create_v3_plan` + `final_decision` + `resolve_conflict`. مفيش `register_strategy()` أو plugin registry.
+- استخدمت Grep على vps-service لـ `STRATEGY_REGISTRY|strategy_registry|StrategyRegistry|register_strategy|@register|plugin_registry|PluginRegistry|register_plugin|class StrategyBase|class BaseStrategy|abstract.*[Ss]trategy` → **ZERO matches**.
+- قرأت `vps-service/analyzers/master_analyzer.py:1929-2002` (MasterAnalyzer class) → hardcoded instantiation لـ 14 sub-analyzer في __init__. مفيش registry، مفيش dynamic loading.
+- استخدمت Grep على vps-service لـ `apply_risk_gate|from core.risk_gate|from .risk_gate` → 1 caller بس: `api/scanner_routes.py:207,217` (admin endpoint). confirmed AUDIT-1.
+- قرأت `vps-service/core/risk_gate.py` كامل (109 سطر) → 6 rules، SIGNAL_ORDER = ['STRONG_BUY','BUY','ACCUMULATE','HOLD','REDUCE','SELL','STRONG_SELL','NO_TRADE'].
+- قرأت `vps-service/analyzers/decision_logger.py` كامل (351 سطر) → log_decision() + REASON_CODES. active.
+- استخدمت Grep على vps-service لـ `log_decision\b` (باستثناء التعريف والتعليقات) → callers في daily_predictor.py (10+ مواقع) + daily_closer.py:735,737 + scanner_routes.py:228,239.
+- استخدمت Grep على vps-service لـ `from engines.donchian_breakout|from engines.vcp_detector|from engines.stage2_filter|from engines.atr_risk_engine|from engines.take_profit_tiers` → ZERO active consumers. الـ engines الخمسة دي standalone — محدش بيـ orchestrate بينهم في الـ runtime.
+- استخدمت Grep على vps-service لـ `confluence_scorer|ConfluenceScorer` → ZERO production consumers (only glminvestment_engines/{cli_analyze, backtest, examples}).
+- استخدمت Grep على vps-service لـ `ConfluenceEngineV3` → 4 matches في `analyzers/confluence_engine_v3.py` + 4 في `api/confluence_routes.py`. بس `confluence_engine_v3.py:473` فيه `if SUB_ENGINE_DISABLED: return None` — معطّل.
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **archive/ معزول بالكامل فعلياً.** 629 ملف مؤرشف عبر 12 subdirectory. Grep على كل المشروع لـ `from archive|import archive|archive\.` رجع **ZERO runtime imports**. كل الـ 16 match اللي طلعوا = comments + DB table names + .zip file names. **VERIFIED — العزل فعّال 100%.**
+
+2. **Dead stack (orchestrator/executor) معزول من الإنتاج بس مش من CLI.** AUDIT-1 قال "ZERO imports في vps-service" — **VERIFIED**. بس اكتشفت إن 9 scripts في `/home/z/my-project/scripts/` لسه بـ import من `core.orchestrator{,_v2,_v3}` + `core.executor{,_v3}` + `core.decision_log` shim عبر `sys.path.insert`. **NONE من دول مجدول في cron ولا PM2** — فـ reachable فقط عبر manual CLI. AUDIT-1 قولها "DEAD CODE" دقيقة لو قصدنا "production path". **PARTIALLY VERIFIED — معزول من الإنتاج، قابل للاستدعاء عبر scripts يدوية.**
+
+3. **decision_log shim معزول فعلياً.** `core/decision_log.py` (shim بـ re-export من analyzers/decision_logger.py) — ZERO imports في vps-service. مستورد فقط من 3 scripts بره vps-service (test_integration_behavioral.py + run_backtest_new_architecture.py + run_b0b4_full.py). الـ canonical `analyzers/decision_logger.py::log_decision` ليه 13 active caller. **VERIFIED.**
+
+4. **25+ cron jobs + 8 PM2 processes + 4 APScheduler jobs = 3 طبقات جدولة.** cron يشغّل V40.2 (daily_predictor.py) + intraday_scanner + maker_radar + hot_candidate_detector + daily_closer + learning_engine + data scrapers + backups. PM2 يشغّل python-backend (8010) + data-engine (5000) + nextjs (3000) + ws-service (3005) + telegram-poster + telegram-interactive-bot + telegram-events (3003) + news-agent. APScheduler داخل python-backend يشغّل MarketScheduler.tick (60s) + EgyptScheduler.tick_once (60s) + wal_checkpoint (1h) + crypto_lab (15min). في **تداخل**: cron بـ يشغّل daily_predictor.py + APScheduler (عبر MarketScheduler.tick→run_v40_2_generation→subprocess) بيـشغّله كمان. **VERIFIED.**
+
+5. **3 active writers لـ predictions table + 1 canonical writer لـ stored_analyses + 1 canonical لـ decision_log.** بعد التحقق من كل GATED writers:
+   - **predictions (active)**: `daily_predictor.py → analyzers/prediction_tracker.py::record_prediction` (canonical V40.2) + `intraday_scanner.py:723` direct INSERT (track='RADAR_PROMOTED') + `intraday_scanner.py` via PredictionTracker (track='INTRADAY-5M').
+   - **predictions (GATED OFF, unreachable)**: ai_predictions_routes.py:860 + historical_predictions_v2_routes.py:491,510 + sniper/track/route.ts:65.
+   - **stored_analyses (active)**: `daily_predictor.py:779, 4165` فقط.
+   - **stored_analyses (GATED OFF)**: ai_routes.py:128 + nightly_analysis.py:281 + persona_db.py:188 + intraday_scanner.py:414,443 + background_analyzer.py:1955,2244.
+   - **decision_log (active)**: `analyzers/decision_logger.py::log_decision` — 13 caller.
+   **VERIFIED — SINGLE-WRITER principle شغال فعلياً لـ predictions + stored_analyses (بعد تعطيل 8 مخالفات).**
+
+6. **risk_gate.py معزول عملياً — caller واحد بس.** `apply_risk_gate()` ليه caller واحد فقط: `api/scanner_routes.py:207,217` جوه `/api/advanced-scanner/run` (admin-only). **مش بـ يمر فيه** الـ V40.2 canonical path (daily_predictor.py) ولا intraday_scanner ولا master_analyzer ولا أي API route تاني. ده يعني إن الـ 6 risk rules (liquidity + R:R + position_size + conviction + stale + critical_failure) بـ تطبق فقط على admin-triggered scans، مش على التوقعات اللي بيشوفها المستخدم. **VERIFIED.**
+
+7. **glminvestment_engines/ مش layer منفصلة — هي base types + backtest showcase.** الموجود:
+   - `glminvestment_engines/core/{base.py, indicators.py}` = base types + canonical indicators (الـ source التاني حسب AUDIT-2).
+   - `vps-service/engines/{donchian_breakout, vcp_detector, stage2_filter, atr_risk_engine, take_profit_tiers}.py` = implementations بتـ import base types من glminvestment_engines.core.
+   - `glminvestment_engines/confluence/confluence_scorer.py` = "Confluence v3" showcase — ZERO production consumers (بـ يستهلكه بس cli_analyze + backtest + examples).
+   - `glminvestment_engines/integration/{expert_gate_patch, risk_engine_patch}` = patches — الأول مستورد من analyzers/expert_quality_gate.py:62، التاني من background_analyzer.py:81 (معطّل).
+   - `analyzers/confluence_engine_v3.py::ConfluenceEngineV3` = PRODUCTION confluence engine منفصل تماماً — DISABLED بـ `SUB_ENGINE_DISABLED=True` (سطر 473).
+   **VERIFIED — في 3 محركات confluence متصارعة (confluence_scorer + ConfluenceEngineV3 + confluence_engine_v3) بدون توحيد.**
+
+8. **مفيش Strategy Pattern ولا Plugin Registry في أي مكان نشط.** الـ "registry" الوحيد الموجود = STATIC dicts في `core/orchestrator_v3.py` (ENGINE_FAMILIES + RAW_WEIGHTS) — لكن orchestrator_v3 DEAD. الـ de-facto orchestrator النشط = `analyzers/master_analyzer.py` بـ hardcoded instantiation لـ 14 sub-analyzer في __init__. لإضافة استراتيجية متخصصة جديدة لازم تعدّل master_analyzer.py + unified_scanner.py + daily_predictor.py + unified_config.py. مفيش extensibility point. **VERIFIED.**
+
+9. **analyzer_modules/ مكررة (DUPLICATE) في موقعين.** `/vps-service/analyzer_modules/` (top-level — ACTIVE، مستوردة من master_analyzer.py:215-219) + `/vps-service/analyzers/analyzer_modules/` (nested — DUPLICATE، 100% identical، ZERO consumers). الـ duplicate مش بـ cause مشاكل في الـ runtime لأن sys.path بيـ prefer الـ top-level، بس ده maintenance burden + خطر drift. **VERIFIED.**
+
+10. **config/ مظبوط global + per-market + per-persona، مفيش per-strategy.** unified_config.py (936 LOC) فيه MarketProfile + PersonaProfile + UnifiedConfig + load_active_settings() من active_settings.json (admin-tunable per-market + per-persona overrides). optimizer_params.json (31 LOC) = global RL-tuned thresholds. مفيش config خاص بـ donchian_breakout أو vcp_detector أو stage2_filter — كل واحد بيقرا من الـ global config. **VERIFIED.**
+
+=====================================================================
+2) جدول Legacy: الملف/المسار | معزول؟ | قابل للاستدعاء؟ | دليل | الثقة
+=====================================================================
+
+| الملف/المسار | معزول؟ | قابل للاستدعاء؟ | دليل | الثقة |
+|---|---|---|---|---|
+| `archive/` (كامل، 629 ملف) | معزول فعلياً | لا — ZERO runtime imports | Grep على `from archive\|import archive\|archive\.` رجع 16 match كلها comments + DB table names | VERIFIED |
+| `archive/engines/{unified_analyzer, v4_predictive_detector, cache_orphaned, _legacy_stage2_*}` (5 ملفات) | معزول فعلياً | لا — ZERO importers | PHASE-5 archive note + Grep على `from v4_predictive_detector\|from unified_analyzer\|from cache_orphaned` = ZERO | VERIFIED |
+| `archive/garage/` (88 ملف) | معزول فعلياً | لا — ZERO importers | garage/INDEX.md بيقول "ORPHAN: not imported in any live file" لكل ملف + acceptance test في الـ INDEX | VERIFIED |
+| `archive/wave-2-cleanup-2026-10-01/` (434 ملف) | معزول فعلياً | لا — كلها obsolete Next.js routes/components | الـ dir structure بـ يـ mirror src/app/api/* القديم | VERIFIED |
+| `archive/old-scripts/backtest/` (15 script) + `archive/old-scripts/backfill/` (8 script) | معزول فعلياً | لا — استُبدلت بـ unified_scanner | archive/INDEX.md بيقول "استبدلت بـ core/unified_scanner.py" | VERIFIED |
+| `vps-service/core/orchestrator.py` (v1) | DEAD in vps-service | **نعم عبر scripts/** | ZERO imports في vps-service؛ 1 import في scripts/run_backtest_new_architecture.py:58 + 1 في scripts/test_integration_behavioral.py:28 | PARTIALLY VERIFIED |
+| `vps-service/core/orchestrator_v2.py` (v2) | DEAD in vps-service | **نعم عبر scripts/** | ZERO imports في vps-service؛ 1 import في scripts/run_abcd_comparison.py:36 | PARTIALLY VERIFIED |
+| `vps-service/core/orchestrator_v3.py` (v3) | DEAD in vps-service | **نعم عبر scripts/** | 1 import في vps-service (executor_v3.py:127 — نفسه dead) + 5 imports في scripts/ (run_b0b4_*, run_staged_optimization, test_orchestrator_v3) | PARTIALLY VERIFIED |
+| `vps-service/core/executor.py` (v1) | DEAD in vps-service | **نعم عبر scripts/** | ZERO imports في vps-service؛ 2 imports في scripts/ | PARTIALLY VERIFIED |
+| `vps-service/core/executor_v3.py` (v3) | DEAD in vps-service | **نعم عبر scripts/** | ZERO imports في vps-service؛ 5 imports في scripts/ | PARTIALLY VERIFIED |
+| `vps-service/core/decision_log.py` (shim) | DEAD in vps-service | **نعم عبر scripts/** | ZERO imports في vps-service؛ 3 imports في scripts/ (test_integration_behavioral.py:123 + run_backtest_new_architecture.py:61 + run_b0b4_full.py:48) | PARTIALLY VERIFIED |
+| `vps-service/core/analysis_runner.py` | معطّل (early-return) | مسار endpoint بـ يستدعيه | `if orchestrator=None: return 'DISABLED'` (lines 213-221). misc_routes.py:1403 بيستدعيه — بيرجع فاضي | VERIFIED |
+| `vps-service/core/risk_gate.py` | نشط بس caller واحد | نعم | scanner_routes.py:207,217 (admin endpoint فقط) — V40.2 canonical path بـ bypassه | VERIFIED |
+| `vps-service/api/maestro_routes.py` | DISABLED في lightweight_server.py:55 | لا — مسجل كـ comment | `# ('api.maestro_routes', 'maestro_bp'),` مـ comment out | VERIFIED |
+| `vps-service/analyzers/confluence_engine_v3.py::ConfluenceEngineV3` | DISABLED (SUB_ENGINE_DISABLED=True) | نعم بس بـ return None دايماً | confluence_engine_v3.py:473 `if SUB_ENGINE_DISABLED: return None` | VERIFIED |
+| `vps-service/analyzers/background_analyzer.py` | DISABLED (Maestro killed) | نعم بس _run_*_analysis بـ early-return | `if not self.orchestrator and not self.unified_maestro: return` (lines 889-891 + 1027-1028) — الاتنين None | VERIFIED |
+| `vps-service/engine/__init__.py` (shim) | shim لـ engines/ | نعم — backward compat | بـ re-export من engines/ via importlib — بيشتغل | VERIFIED |
+| `vps-service/analyzers/analyzer_modules/` (nested duplicate) | DUPLICATE — مفيش consumer | لا — `master_analyzer.py` بـ import من top-level | diff = 0 لكل 6 ملفات مع /vps-service/analyzer_modules/ | VERIFIED |
+
+=====================================================================
+3) جدول المهام المجدولة: المصدر | المهمة | entry point | نشط؟ | الثقة
+=====================================================================
+
+| المصدر | المهمة | entry point | نشط؟ | الثقة |
+|---|---|---|---|---|
+| cron (line 35) | V40.2 morning generator | `vps-service/jobs/daily_predictor.py --today-only --max-picks 5` | نعم — يومياً 03:00 UTC (05:00 Cairo) أيام السوق | VERIFIED |
+| cron (line 38) | V40.2 evening generator | `vps-service/jobs/daily_predictor.py --yesterday-only --max-picks 5` | نعم — 13:30 UTC (15:30 Cairo) | VERIFIED |
+| cron (line 43) | Intraday scanner (5-min) | `vps-service/jobs/intraday_scanner.py --limit 5` | نعم — كل 5 دقائق 08:00-12:00 UTC | VERIFIED |
+| cron (line 50) | Intraday storage (2-min) | `data_engine/intraday_storage.py --stocks` | نعم — كل 2 دقيقة 08:00-12:00 UTC | VERIFIED |
+| cron (line 54) | Daily closer | `vps-service/jobs/daily_closer.py` | نعم — 14:00 UTC أيام السوق | VERIFIED |
+| cron (line 58) | Learning engine | `vps-service/jobs/learning_engine.py` | نعم — 15:00 UTC | VERIFIED |
+| cron (line 62) | Corporate actions fetcher | `vps-service/jobs/fetch_corporate_actions.py` | نعم — 04:00 UTC | VERIFIED |
+| cron (line 66-67) | Daily price updater (EGX OHLC) | `vps-service/scripts/daily_price_updater.py` | نعم — 07:00 + 13:00 UTC | VERIFIED |
+| cron (line 71) | TradingView scraper | `data_engine/scrapers/tradingview_scraper.py` | نعم — كل 5 دقائق 08:00-12:00 UTC | VERIFIED |
+| cron (line 75) | Price history safetynet (Yahoo) | `vps-service/jobs/price_history_safetynet.py` | نعم — 06:00 UTC | VERIFIED |
+| cron (line 79) | DB heartbeat checker | `vps-service/scripts/data_heartbeat_checker.py` | نعم — 01:00 UTC يومياً | VERIFIED |
+| cron (line 83) | Smart DB backup | `vps-service/scripts/smart_db_backup.py` | نعم — 01:30 UTC يومياً | VERIFIED |
+| cron (line 87) | EGX fundamentals fetcher | `vps-service/data/egx_fundamental_fetcher.py` | نعم — السبت 14:00 UTC | VERIFIED |
+| cron (line 91) | EGX disclosures fetch | `python -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures"` | نعم — كل ساعتين 08:00-12:00 UTC | VERIFIED |
+| cron (line 95) | Signal Tracker sync | `scripts/sync_hunter_pick_tracking.py` | نعم — 13:35 UTC | VERIFIED |
+| cron (line 99) | Radar Signal Tracker verify | `curl POST localhost:3000/api/maker-radar/signal-tracker/verify` | نعم — 02:00 UTC يومياً | VERIFIED |
+| cron (line 107) | Market Regime Engine (EGX daily) | `python -c "from analyzers.market_regime_engine import MarketRegimeEngine; MarketRegimeEngine('EGX').update_regime()"` | نعم — 02:50 UTC | VERIFIED |
+| cron (line 112) | Market Regime Engine (all markets weekly) | `vps-service/analyzers/market_regime_engine.py --all` | نعم — السبت 02:55 UTC | VERIFIED |
+| cron (line 121) | Weekly Radar Report | `scripts/weekly_radar_report.py --market EGX --send-telegram` | نعم — الأحد 06:00 UTC | VERIFIED |
+| cron (line 127) | US Stock scraper (Yahoo) | `data_engine/scrapers/us_stock_scraper.py` | نعم — 22:00 UTC أيام الأمريكي | VERIFIED |
+| cron (line 133) | Multi-Market scraper | `data_engine/scrapers/multi_market_scraper.py` | نعم — كل ساعة 09:00-22:00 UTC | VERIFIED |
+| cron (line 140) | Mine Learned Lessons | `scripts/mine_learned_lessons.py` | نعم — الأحد 04:00 UTC | VERIFIED |
+| cron (line 146) | Exit Policy Optimizer | `scripts/exit_policy_optimizer.py` | نعم — يوم 1 من الشهر 05:00 UTC | VERIFIED |
+| cron (line 152) | Post-Market Feedback | `scripts/post_market_feedback.py` | نعم — 14:30 UTC أيام السوق | VERIFIED |
+| cron (line 159) | Hot Candidate Detector | `vps-service/jobs/hot_candidate_detector.py` | نعم — كل 15 دقيقة 08:00-12:00 UTC | VERIFIED |
+| cron (line 168) | Telegram Comprehensive Report | `scripts/telegram_comprehensive_report.py --send` | نعم — 14:30 UTC | VERIFIED |
+| cron (line 178) | Downgrade Expired Subscriptions | `bun run scripts/downgrade-expired-subscriptions.ts` | نعم — 03:00 UTC يومياً | VERIFIED |
+| cron (line 191) | Shariah Compliance scraper | `data_engine/scrapers/sharia_compliance_scraper.py` | نعم — السبت 15:00 UTC | VERIFIED |
+| cron (lines 201-208) | Maker Radar (7 markets) | `scripts/maker_radar.py --market {EGX\|TADAWUL\|KSE\|QSE\|US\|CRYPTO\|GOLD} --json-only` | نعم — كل 5 دقائق لـ equity markets + 24/7 لـ CRYPTO/GOLD | VERIFIED |
+| PM2 (app 1) | python-backend (FastAPI + Flask) | `vps-service/main.py` (port 8010) | نعم — autorestart=True، max_memory=500M | VERIFIED |
+| PM2 (app 2) | data-engine | `data_engine/main.py` (port 5000) | نعم — autorestart=True | VERIFIED |
+| PM2 (app 3) | nextjs | `next start -p 3000` (port 3000) | نعم — Node 22+، max_memory=1500M | VERIFIED |
+| PM2 (app 4) | ws-service | `vps-service/ws-service/index.ts` (port 3005، Bun) | نعم — socket.io relay | VERIFIED |
+| PM2 (app 5) | telegram-poster | `vps-service/telegram/auto_post_scheduler.py` | نعم | VERIFIED |
+| PM2 (app 5b) | telegram-interactive-bot | `vps-service/telegram/telegram_interactive_bot.py` | نعم | VERIFIED |
+| PM2 (app 6) | telegram-events | `telegram-events/index.ts` (port 3003، Bun) | نعم | VERIFIED |
+| PM2 (app 7) | news-agent | `news-agent/main.py` | نعم — Ollama RAG | VERIFIED |
+| APScheduler (main.py:163-167) | MarketScheduler.tick | `jobs/market_scheduler.py::MarketScheduler.tick` | نعم — كل 60s (بيـ subprocess daily_predictor.py) | VERIFIED |
+| APScheduler (main.py:227-231) | EgyptScheduler.tick_once | `core/egypt_scheduler.py::tick_once` | نعم — كل 60s (بيـ تشغّل nightly_quant 03:00 Cairo + egksco_sync 9:00-14:30 Cairo) | VERIFIED |
+| APScheduler (main.py:277-282) | WAL checkpoint | `jobs/wal_checkpoint.py::run_wal_checkpoint` | نعم — كل 3600s على 4 DBs | VERIFIED |
+| APScheduler (main.py:317-320) | Crypto Lab Scheduler | `jobs/crypto_lab_scheduler.py::get_crypto_lab_scheduler` | نعم — كل 900s (15min) لـ BTC+ETH، gated بـ SKIP_CRYPTO_LAB=1 | VERIFIED |
+
+**تنبيه**: APScheduler (MarketScheduler.tick كل 60s) بيستدعي `run_v40_2_generation(mode='morning'|'intraday'|'daily')` كل 15 دقيقة (gated بـ _should_run) — والـ cron كمان بـ يشغّل daily_predictor.py مرتين يومياً. ده **تداخل** — نفس الـ entry point بيتشغّل من مصدرين.
+
+=====================================================================
+4) جدول OOP: المسؤولية | الكلاس/الملف | مكتمل؟ | مكرر؟ | الثقة
+=====================================================================
+
+| المسؤولية | الكلاس/الملف | مكتمل؟ | مكرر؟ | الثقة |
+|---|---|---|---|---|
+| **Shared Analysis / Calculation Context** | (1) `analyzers/indicators/{atr,ma,rsi,adx,bollinger,mfi,srsi,flow_indicators,volume_profile,vwap}.py` (canonical per Rule 67). (2) `glminvestment_engines/core/indicators.py` (SECOND canonical — pandas ewm Wilder's). (3) `analyzers/technical.py` + `analyzers/technical_weighted.py` + `analyzers/sniper_engine.py` + `analyzers/enhanced_indicators.py` (delegating wrappers بـ fallback محلي). | مكتمل (كل المؤشرات موجودة) | **آه — 2 canonical sources + 4 wrappers بـ fallbacks** (AUDIT-2 رصد الازدواجية) | VERIFIED |
+| **Fast Candidate Discovery** | (1) `core/unified_scanner.py::_scan_single_stock` (deep، 7 مؤشرات لكل سهم، 200-ticker cap). (2) `jobs/hot_candidate_detector.py` (light، 4 metrics على 5-min). (3) `jobs/intraday_scanner.py` (intraday discovery). **مفيش pre-filter SQL سريع** (AUDIT-3 رصد النقص). | ناقص — مفيش "fast pre-filter" endpoint | لا (كل ماسح بـ يغطي مرحلة مختلفة) | VERIFIED (gap) |
+| **Liquidity Strategy** | (1) `core/real_liquidity_radar.py::analyze_liquidity` (pure function، 5 حالات، مستهلك runtime واحد فقط = unified_scanner:357). (2) `utils/shared_liquidity.py` (1160 LOC، 7+ functions — مستهلك من maker_radar.py:34-47). (3) `scripts/maker_radar.py` (2228 LOC، الـ radar الكامل). (4) `analyzers/liquidity_filter.py` (مستورد من master_analyzer.py). | مكتمل (موجود في 4 طبقات) | **آه — 4 implementations بـ overlap** (real_liquidity_radar معزول، shared_liquidity مخصص لـ maker_radar، liquidity_filter مستقل) | VERIFIED |
+| **Existing Specialized Strategies** (Minervini/Covel/Wilder/Douglas) | (1) `vps-service/engines/stage2_filter.py` (Minervini Stage 1-4). (2) `vps-service/engines/vcp_detector.py` (Minervini VCP). (3) `vps-service/engines/donchian_breakout.py` (Covel). (4) `vps-service/engines/atr_risk_engine.py` (Wilder). (5) `vps-service/engines/take_profit_tiers.py` (Douglas). كلهم بـ import من `glminvestment_engines.core.{base, indicators}`. **ZERO active consumers** (مفيش production code بـ يستدعي أي منهم). | مكتمل كـ implementations + ZERO runtime integration | لا (كل واحد standalone) | VERIFIED |
+| **Orchestrator** (de-facto) | (1) `analyzers/master_analyzer.py::MasterAnalyzer.analyze` (5794 LOC، hardcoded 14 sub-analyzer — الـ **DE FACTO orchestrator النشط**، مستدعى في scanner_routes.py:197). (2) `core/orchestrator.py` + `orchestrator_v2.py` + `orchestrator_v3.py` (DEAD — scripts-only). (3) `core/analysis_runner.py::run_analysis_batch` (معطّل بـ early-return). (4) `glminvestment_engines/confluence/confluence_scorer.py::analyze` (showcase — ZERO production consumers). | مكتمل (master_analyzer بيـ orchestrate) | **آه — 4 orchestrators، 3 معطّلين + 1 active** | VERIFIED |
+| **Executor** | **مفيش executor منفصل في الـ production path.** master_analyzer.analyze() بيـ do both planning + execution (return MasterAnalysis). `core/executor.py` + `executor_v3.py` DEAD (scripts-only). | مكتمل (مدموج في master_analyzer) | آه — 2 dead executors + الـ logic مدموج في ال orchestrator | VERIFIED |
+| **Risk Gate** | (1) `core/risk_gate.py::apply_risk_gate` (6 rules، caller واحد فقط: scanner_routes.py:207 admin endpoint). (2) `analyzers/risk.py` + `analyzers/risk_adaptive.py` + `risk_management_advanced.py` (مستقلة). (3) `utils/risk_reward.py::compute_risk_reward` (canonical). (4) `engines/atr_risk_engine.py::compute_risk_plan` (glminvestment_engines — ZERO active consumers). (5) `core/opportunity_quality.py` (independent risk plan). | مكتمل بس مُجزّأ | **آه — 5 risk implementations بـ overlap** | VERIFIED |
+| **Decision Log** | (1) `analyzers/decision_logger.py::log_decision` (canonical، 13 active caller، بـ يسجل reject_entry + accept_entry + force_exit في `db/decision_log.db`). (2) `core/decision_log.py` (shim — DEAD in vps-service، 3 scripts-only consumers). | مكتمل (decision_logger النشط) | آه — shim + canonical (الـ shim معزول) | VERIFIED |
+
+=====================================================================
+5) إجابات الأسئلة السبعة المحددة
+=====================================================================
+
+**س1: كم ملف في archive/؟ وهل أي ملف نشط بـ import منه؟**
+→ **629 ملف** (169 .py + 436 .ts/.tsx + 24 md/json/etc) موزّعة على 12 subdirectory:
+  - `archive/garage/` 88 ملف (orphan/deprecated)
+  - `archive/wave-2-cleanup-2026-10-01/` 434 ملف (obsolete Next.js routes + components + admin tabs + modules)
+  - `archive/old-scripts/` 45 ملف (15 backtest + 8 backfill + 11 dead + 11 misc)
+  - `archive/old-docs/` 10 ملف
+  - `archive/devil-feature-2026-10-01/` 18 ملف (Devil's Advocate UI + engines)
+  - `archive/engines/` 6 ملف (5 .py + 1 .md)
+  - `archive/dead-components-2026-10-08/` 10 ملف
+  - `archive/market-analysis/` 7 ملف
+  - `archive/education-duplicate-2026-10-01/` 3 ملف
+  - `archive/chatbot-popup-2026-10-01/` 3 ملف
+  - `archive/simulation-crypto-duplicate-2026-10-01/` 2 ملف
+  - `archive/components/` 1 ملف (SKIPPED_NOT_DEDUPLICATED.md)
+  - + `archive/INDEX.md` + `archive/worklog-20261020.md`
+**ZERO active imports** — Grep على `from archive|import archive|archive\.` رجع 16 match كلها comments + DB table names + .zip filenames. الثقة: **VERIFIED**.
+
+**س2: glminvestment_engines/ دي layer منفصلة ولا بتتداخل مع engines/ و analyzers/?**
+→ **مش layer منفصلة — هي base types + backtest showcase.** التحليل:
+  - `glminvestment_engines/core/{base.py, indicators.py}` = base types (Signal, RiskPlan, EngineResult, Position) + canonical indicators (ATR/RSI/ADX/Donchian/SMA/EMA — pandas ewm Wilder's smoothing). ده **الـ source التاني** للمؤشرات الكنسية حسب AUDIT-2.
+  - `vps-service/engines/{donchian_breakout, vcp_detector, stage2_filter, atr_risk_engine, take_profit_tiers}.py` = implementations فعلية بـ import base types من `glminvestment_engines.core`. يعني الـ engines/ النشطة **بتعتمد على** glminvestment_engines/ — مش منفصلة.
+  - `glminvestment_engines/confluence/confluence_scorer.py` = "Confluence v3" showcase — **ZERO production consumers** (مـستهلك بس من cli_analyze + backtest/strategy_backtester + examples/demo_confluence).
+  - `analyzers/confluence_engine_v3.py::ConfluenceEngineV3` = PRODUCTION confluence engine منفصل تماماً، DISABLED بـ `SUB_ENGINE_DISABLED=True` (سطر 473). بيرجع None دايماً.
+  - `glminvestment_engines/integration/{expert_gate_patch, risk_engine_patch}` = patches — الأول مستورد من `analyzers/expert_quality_gate.py:62` (نشط)، التاني من `analyzers/background_analyzer.py:81` (معطّل).
+الخلاصة: **glminvestment_engines/ متداخلة جزئياً مع engines/ (عبر base types) + مع analyzers/ (عبر integration patches) — مش layer منفصلة فعلاً.** الثقة: **VERIFIED**.
+
+**س3: هل فيه Strategy pattern أو plugin registry يسمح بإضافة استراتيجية بدون تعديل core؟**
+→ **لا — مفيش.** التحليل:
+  - Grep على `STRATEGY_REGISTRY|strategy_registry|StrategyRegistry|register_strategy|@register|plugin_registry|PluginRegistry|register_plugin|class StrategyBase|class BaseStrategy|abstract.*[Ss]trategy` = **ZERO matches** في vps-service.
+  - أقرب حاجة = `core/orchestrator_v3.py` فيه STATIC `ENGINE_FAMILIES` (line 21) + `RAW_WEIGHTS` (line 34) — dicts هارد-كود مش runtime-extensible. كمان orchestrator_v3 DEAD.
+  - `analyzers/master_analyzer.py::MasterAnalyzer.__init__` (line 1952-2001) = hardcoded instantiation لـ 14 sub-analyzer (LiquidityFilter + SessionTimingAnalyzer + TechnicalAnalyzerWeighted + EnhancedFundamentalAnalyzer + AIPatternAnalyzer + SentimentAnalyzer + RiskManagerAdaptive + EnhancedIndicators + MultiTimeframeEngine + VolumeProfileAnalyzer + AdaptiveWeightsEngine + PredictionOptimizer + RegimeDetector + SectorRelativeAnalyzer + ExplosiveScanner). مفيش self.engines = []، مفيش register().
+  - لإضافة استراتيجية متخصصة جديدة: لازم تعدّل master_analyzer.py __init__ + analyze() method + unified_scanner.py + unified_config.py + daily_predictor.py.
+الثقة: **VERIFIED — مفيش extensibility point.**
+
+**س4: config/ فيه إعدادات per-strategy ولا global فقط؟**
+→ **Global + per-market + per-persona — مفيش per-strategy.** التحليل:
+  - `config/unified_config.py` (936 LOC): `MarketProfile` per-market (EGX/TADAWUL/KSE/QSE/DFM/CRYPTO/FOREX) + `PersonaProfile` per-persona (scalper/trader/investor/conservative/custom) + `UnifiedConfig` بـ يدمج الاتنين + `AnalyzerWeights` per-market (technical=40, volume=20, candlestick=15, fundamental=10, sentiment=10, sector=5).
+  - `config/active_settings.json` (21 LOC): admin-tunable overrides لـ EGX (stop_max_pct=9.0, rsi_overbought=71.0, min_rr=1.8, stop_min_pct=3.5, target_rr_mult=2.1, stop_atr_mult=2.5, stop_fixed_pct=2.0) + balanced persona (position_size_pct=9.0, score_threshold_boost=-9.0, max_concurrent_trades=4).
+  - `config/optimizer_params.json` (31 LOC): global RL-tuned thresholds (min_conviction=70, min_rr=1.8, max_stop_pct=9, etc. — version "rl-fix-16-risk-rebalance").
+  - `config/market_config.py` (606 LOC): separate MarketConfig classes (MarketType + MarketRegime + MARKET_CONFIGS + is_market_open + detect_market_from_ticker).
+  - `config/sys_config.py` (179 LOC): DB paths + API ports + PROJECT_ROOT.
+  - `config/toxic_ticker_blocklist.json` (53 LOC): blocklist.
+  - **مفيش** config خاص بـ donchian_breakout أو vcp_detector أو stage2_filter أو atr_risk_engine أو take_profit_tiers. كل واحد بيقرا من الـ global + per-market + per-persona.
+الثقة: **VERIFIED.**
+
+**س5: ecosystem.config.js بيشتغل إيه بالظبط؟ (كم process، أي ports، أي entry points)**
+→ **8 PM2 processes:**
+  1. **python-backend** — script: `vps-service/main.py`، interpreter: `.venv/bin/python`، port: 8010، cwd: `vps-service/`، max_memory: 500M. بيـ run FastAPI + mount Flask lightweight_server على `/` (all API blueprints). **الـ BRAIN.**
+  2. **data-engine** — script: `data_engine/main.py`، interpreter: `.venv/bin/python`، port: 5000، cwd: `data_engine/`. بيجمع البيانات من TradingView + Yahoo + Crypto + Metals.
+  3. **nextjs** — script: `node_modules/next/dist/bin/next start -p 3000`، interpreter: Node 22+، cwd: project root، max_memory: 1500M. **DISPLAY ONLY.**
+  4. **ws-service** — script: `vps-service/ws-service/index.ts`، interpreter: Bun، port: 3005، cwd: `vps-service/ws-service/`. socket.io relay بـ polling للـ Python backend كل 30s.
+  5. **telegram-poster** — script: `vps-service/telegram/auto_post_scheduler.py`، interpreter: `.venv/bin/python`. Continuous auto-posting.
+  5b. **telegram-interactive-bot** — script: `vps-service/telegram/telegram_interactive_bot.py`، interpreter: `.venv/bin/python`. AI Stock Analysis bot.
+  6. **telegram-events** — script: `telegram-events/index.ts`، interpreter: Bun، port: 3003. Socket.io relay لأحداث Telegram.
+  7. **news-agent** — script: `news-agent/main.py`، interpreter: `news-agent/.venv/bin/python` (fallback لـ root .venv ثم system python3). Ollama RAG.
+كلهم autorestart=True + max_restarts=10. ecosystem.config.js كمان بـ load `.env` من project root (lines 76-94) عشان PM2 services تستلم نفس الـ env vars زي Next.js. الثقة: **VERIFIED.**
+
+**س6: crontab.txt بيستدعي إيه؟ (daily_predictor؟ intraday_scanner؟ maker_radar؟)**
+→ **25+ cron jobs بتـستدعي:**
+  - **daily_predictor.py** (V40.2 canonical): مرتين يومياً (03:00 UTC morning + 13:30 UTC evening) — `vps-service/jobs/daily_predictor.py --today-only --max-picks 5` + `--yesterday-only --max-picks 5`.
+  - **intraday_scanner.py**: كل 5 دقائق 08:00-12:00 UTC — `vps-service/jobs/intraday_scanner.py --limit 5`.
+  - **maker_radar.py**: 7 cron entries لـ 7 markets (EGX/TADAWUL/KSE/QSE/US كل 5 دقائق 08:00-14:00 UTC + CRYPTO/GOLD كل 5 دقائق 24/7) — `scripts/maker_radar.py --market {MARKET} --json-only`.
+  - **hot_candidate_detector.py**: كل 15 دقيقة 08:00-12:00 UTC.
+  - **daily_closer.py**: 14:00 UTC.
+  - **learning_engine.py**: 15:00 UTC.
+  - **fetch_corporate_actions.py**: 04:00 UTC.
+  - **daily_price_updater.py**: 07:00 + 13:00 UTC.
+  - **price_history_safetynet.py**: 06:00 UTC.
+  - **data_heartbeat_checker.py**: 01:00 UTC daily.
+  - **smart_db_backup.py**: 01:30 UTC daily.
+  - **egx_fundamental_fetcher.py**: السبت 14:00 UTC.
+  - **EGX disclosures**: كل ساعتين 08:00-12:00 UTC (`python -c "from analyzers.egx_disclosure_engine import ..."`).
+  - **sync_hunter_pick_tracking.py**: 13:35 UTC.
+  - **radar signal verify**: 02:00 UTC (`curl POST localhost:3000/api/maker-radar/signal-tracker/verify`).
+  - **market_regime_engine.py**: 02:50 UTC daily (EGX) + السبت 02:55 UTC (all markets).
+  - **weekly_radar_report.py**: الأحد 06:00 UTC (+ send-telegram).
+  - **us_stock_scraper.py**: 22:00 UTC أيام الأمريكي.
+  - **multi_market_scraper.py**: كل ساعة 09:00-22:00 UTC.
+  - **mine_learned_lessons.py**: الأحد 04:00 UTC.
+  - **exit_policy_optimizer.py**: يوم 1 من الشهر 05:00 UTC.
+  - **post_market_feedback.py**: 14:30 UTC.
+  - **telegram_comprehensive_report.py**: 14:30 UTC.
+  - **downgrade-expired-subscriptions.ts**: 03:00 UTC daily (Bun).
+  - **sharia_compliance_scraper.py**: السبت 15:00 UTC.
+  - **intraday_storage.py**: كل 2 دقيقة 08:00-12:00 UTC.
+  - **tradingview_scraper.py**: كل 5 دقائق 08:00-12:00 UTC.
+مفيش أي cron بـ يشغّل scripts/ اللي بـ import من orchestrator/executor dead stack. الثقة: **VERIFIED.**
+
+**س7: هل في routes بتـ import من archive/?**
+→ **لا.** Grep على `from archive|import archive` في كل ملفات src/app/api/*/route.ts + vps-service/api/*_routes.py = ZERO matches. الـ 2 match في src/ هم:
+  - `src/modules/market-analysis/index.ts:8` — comment: `// InteractiveChart removed — moved to archive. TradingViewChart is the sole chart.`
+  - `src/lib/admin-db-manager.ts:921` — comment: `* 2. Zips all .db files (including -wal/-shm) into a single archive.`
+  الاتنين comments مش imports. الثقة: **VERIFIED.**
+
+=====================================================================
+6) قائمة الاعتماديات اللي تمنع العزل بأمان
+=====================================================================
+
+**1. dead orchestrator stack اللي لسه مستورد من scripts/:**
+| الملف المُعزل (dead in vps-service) | الـ scripts اللي بـ تستورده |
+|---|---|
+| `vps-service/core/orchestrator.py` | `scripts/run_backtest_new_architecture.py:58` + `scripts/test_integration_behavioral.py:28` |
+| `vps-service/core/orchestrator_v2.py` | `scripts/run_abcd_comparison.py:36` |
+| `vps-service/core/orchestrator_v3.py` | `scripts/run_b0b4_full.py:45` + `scripts/run_b0b4_v3.py:24` + `scripts/run_b0b4_comparison.py:29` + `scripts/run_b0b4_fast.py:19` + `scripts/run_staged_optimization.py:128,149` + `scripts/test_orchestrator_v3.py:23` |
+| `vps-service/core/executor.py` | `scripts/run_backtest_new_architecture.py:59` + `scripts/test_integration_behavioral.py:69` |
+| `vps-service/core/executor_v3.py` | `scripts/run_b0b4_full.py:46` + `scripts/run_b0b4_v3.py:25` + `scripts/run_staged_optimization.py:129` |
+| `vps-service/core/decision_log.py` (shim) | `scripts/test_integration_behavioral.py:123` + `scripts/run_backtest_new_architecture.py:61` + `scripts/run_b0b4_full.py:48` |
+
+**التقييم**: 9 scripts بتـ import الـ dead stack عبر `sys.path.insert(0, 'vps-service')`. لو حبيت تحذف الـ dead stack (orchestrator/executor/decision_log shim)، لازم إما:
+  (أ) تنقل الـ 9 scripts لـ `archive/old-scripts/` كمان، أو
+  (ب) تعيد كتابتهم على الـ V40.2 canonical path (MasterAnalyzer + PredictionTracker).
+**ملاحظة مهمة**: NONE من الـ 9 scripts مجدولة في cron أو PM2. فـ نظرياً تقدر تشيل الـ dead stack + تكسر الـ 9 scripts، والإنتاج مش هيتأثر. لكن ده قرار معماري لازم ياخده المالك. الثقة: **VERIFIED.**
+
+**2. glminvestment_engines/ مُستوردة من production code:**
+| الملف في glminvestment_engines/ | الـ consumers النشطين |
+|---|---|
+| `glminvestment_engines/core/base.py` | `vps-service/engines/{donchian_breakout, vcp_detector, stage2_filter, atr_risk_engine, take_profit_tiers}.py` (5 ملفات) |
+| `glminvestment_engines/core/indicators.py` | نفس الـ 5 ملفات + `analyzers/confluence_engine_v3.py` (DISABLED) |
+| `glminvestment_engines/integration/expert_gate_patch.py` | `analyzers/expert_quality_gate.py:62` |
+| `glminvestment_engines/integration/risk_engine_patch.py` | `analyzers/background_analyzer.py:81` (معطّل بـ orchestrator=None early-return) |
+
+**التقييم**: لو حبيت تشيل `glminvestment_engines/` كامل:
+  - لازم تعدّل `vps-service/engines/{donchian_breakout, vcp_detector, stage2_filter, atr_risk_engine, take_profit_tiers}.py` لـ import base types من مكان تاني (أو تـ inline الـ dataclasses).
+  - لازم تعدّل `analyzers/expert_quality_gate.py:62` لـ شيل `expert_gate_patch` import.
+  - **ملاحظة**: الـ 5 engines في vps-service/engines/ نفسهم ZERO active consumers (مفيش production code بـ يستدعيهم). فـ نظرياً تقدر تشيلهم مع بعض. لكن ده قرار معماري.
+الثقة: **VERIFIED.**
+
+**3. analyzer_modules/ duplicate:**
+| الموقع | الحالة |
+|---|---|
+| `/vps-service/analyzer_modules/` (top-level) | ACTIVE — master_analyzer.py:215-219 بيـ import منه |
+| `/vps-service/analyzers/analyzer_modules/` (nested) | DUPLICATE — 100% identical files، ZERO consumers |
+
+**التقييم**: tقدر تشيل `/vps-service/analyzers/analyzer_modules/` بأمان. مفيش أي اعتمادية عليها. ده maintenance burden بدون قيمة. الثقة: **VERIFIED.**
+
+**4. risk_gate.py معزول بس مش ميت:**
+| الملف | Caller |
+|---|---|
+| `vps-service/core/risk_gate.py` | `vps-service/api/scanner_routes.py:207,217` (admin-only endpoint `/api/advanced-scanner/run`) |
+
+**التقييم**: risk_gate.py ليه caller واحد نشط. لو حبيت تشيله لازم:
+  (أ) تشيل استدعاء `apply_risk_gate()` من `scanner_routes.py:207-217`، أو
+  (ب) تـ integrate الـ 6 rules في MasterAnalyzer.analyze() نفسها.
+الثقة: **VERIFIED.**
+
+**5. background_analyzer.py معطّل بس مستورد:**
+| الملف | الـ importers |
+|---|---|
+| `vps-service/analyzers/background_analyzer.py::BackgroundAnalyzer` | `core/analysis_runner.py:246` + `analyzers/master_analyzer.py:2098` (via get_background_analyzer) + `jobs/market_scheduler.py:114-115` + `api/misc_routes.py:1502,1540` |
+
+**التقييم**: BackgroundAnalyzer معطّل داخلياً (orchestrator=None + unified_maestro=None + early-return في _run_full_analysis و _run_incremental_analysis). بس لسه instantiated من MarketScheduler عند كل tick. ده overhead بسيط + خطر إن حد يـ re-enableه. الثقة: **VERIFIED.**
+
+**6. maestro_routes.py DISABLED في lightweight_server.py:55:**
+| الملف | الحالة |
+|---|---|
+| `vps-service/api/maestro_routes.py` | commented out في BLUEPRINTS list (`# ('api.maestro_routes', 'maestro_bp')`) |
+
+**التقييم**: الـ blueprint نفسه مش مسجل. مفيش endpoint نشط. الثقة: **VERIFIED.**
+
+=====================================================================
+التوصيات النهائية (Next Actions للمالك)
+=====================================================================
+
+1. **P0 — ما يحتاجش قرار معماري (cleanup مباشر):**
+   - احذف `vps-service/analyzers/analyzer_modules/` (الـ nested duplicate). VERIFIED safe.
+   - ضع علامة `# DEAD — scripts-only` على `vps-service/core/orchestrator.py` + `orchestrator_v2.py` + `executor.py` + `decision_log.py` shim عشان يبقى واضح للـ maintainers إنهم مش في الـ production path.
+   - اكتب docstring على `vps-service/core/orchestrator_v3.py` + `executor_v3.py` بيقول "DEAD — only scripts/run_b0b4_* import this. Don't extend."
+
+2. **P1 — قرار معماري للمالك (dead stack disposal):**
+   - اختر واحد من اتنين:
+     (أ) **Consolidate**: انقل الـ 9 scripts (`run_b0b4_*`, `run_abcd_comparison`, `run_backtest_new_architecture`, `run_staged_optimization`, `test_integration_behavioral`, `test_orchestrator_v3`) لـ `archive/old-scripts/`، ثم احذف الـ dead stack كامل (`core/orchestrator.py` + `orchestrator_v2.py` + `orchestrator_v3.py` + `executor.py` + `executor_v3.py` + `decision_log.py` shim + `analysis_runner.py`).
+     (ب) **Wire**: لو عايز تـ re-activate الـ orchestrator_v3 stack، اعمل wiring فعلي: `MasterAnalyzer.analyze() → create_v3_plan → execute_v3 → apply_risk_gate → log_decision`. ده شغل كبير بس بـ يـ enforce الـ 6 risk rules على كل التوقعات (دلوقتي مش مفروضة).
+
+3. **P2 — Strategy Pattern / Plugin Registry (لإضافة استراتيجيات بدون تعديل core):**
+   - اعمل `vps-service/core/strategy_registry.py` فيه:
+     ```python
+     STRATEGIES: Dict[str, Type[BaseStrategy]] = {}
+     def register_strategy(name: str, cls): STRATEGIES[name] = cls
+     def get_strategy(name: str): return STRATEGIES.get(name)
+     ```
+   - اعمل `BaseStrategy` abstract class بـ define `analyze(ticker, prices, volumes) → EngineResult`.
+   - خلي `MasterAnalyzer.__init__` بـ iterate على `STRATEGIES.values()` بدل hardcoded instantiation.
+   - اعمل config/strategies/{strategy_name}.json per-strategy (thresholds + weights + persona_overrides).
+   - كده تقدر تضيف Donchian + VCP + Stage2 + ATR_Risk + Take_Profit_Tiers كـ registered strategies بـ تـ integrate تلقائياً.
+
+4. **P3 — توحيد الـ 3 محركات confluence:**
+   - حالياً في 3 implementations: (1) `glminvestment_engines/confluence/confluence_scorer.py` (showcase)، (2) `analyzers/confluence_engine_v3.py::ConfluenceEngineV3` (DISABLED بـ SUB_ENGINE_DISABLED)، (3) master_analyzer.py نفسه بـ يعمل confluence inline.
+   - اتخذ قرار: ايه الـ canonical؟ لو master_analyzer هو الـ canonical، احذف confluence_scorer.py + عطّل confluence_engine_v3.py نهائياً (شيل SUB_ENGINE_DISABLED gate خالص).
+
+5. **P4 — real_liquidity_radar معزول — wireه:**
+   - AUDIT-3 رصد إن `core/real_liquidity_radar.py::analyze_liquidity` ليه مستهلك runtime واحد بس (`unified_scanner.py:357`). لو عايز تـ integrateه في master_analyzer، اعمل wrapper يـ calls `analyze_liquidity(ticker, daily_data, intraday_data)` و يـ inject الـ 5 classifications (FALLING_KNIFE / DIRTY_DISTRIBUTION / ACCUMULATION_CONFIRMED / DRY_EXPLOSION_READY / SUSPICIOUS_WATCH) كـ enrichment layer.
+
+6. **P5 — توثيق scheduled tasks overlap:**
+   - cron + APScheduler الاتنين بـ يشغلوا `daily_predictor.py` (cron مرتين يومياً + MarketScheduler.tick كل 60s بـ calls run_v40_2_generation كل 15min). ده **مصدر تعارض محتمل** — نفس الـ script بيتشغّل من مصدرين بـ intervals مختلفة.
+   - اعمل doc بيـ clarifies: APScheduler للـ intraday refresh (كل 15min) + cron للـ daily baseline (مرتين في اليوم). + تأكد إن PredictionTracker بـ enforce dedup (idx_predictions_dedup UNIQUE على ticker+date+persona+market+track).
+
+=====================================================================
+Stage Summary
+=====================================================================
+- Files modified: NONE (read-only audit).
+- Files read: archive/INDEX.md + archive/garage/INDEX.md + archive/engines/SKIPPED_NOT_ARCHIVED.md + archive/components/SKIPPED_NOT_DEDUPLICATED.md + crontab.txt كامل + ecosystem.config.js كامل + main.py كامل + risk_gate.py كامل + decision_logger.py head + orchestrator_v3.py كامل + master_analyzer.py (1929-2012) + scanner_routes.py imports + lightweight_server.py BLUEPRINTS (1-133) + unified_config.py (head + 745-834) + active_settings.json + optimizer_params.json + config/__init__.py + glminvestment_engines/README.md + analyzer_modules/__init__.py + engine/__init__.py + sniper/track/route.ts كامل + ai_predictions_routes.py:540-625 + historical_predictions_v2_routes.py:438-519 + ai_routes.py:110-139 + background_analyzer.py:823-1075 + 1955 + market_scheduler.py:959-1018 + 2539-2618 + persona_db.py:180-200 + 395-450 + nightly_analysis.py head grep + intraday_scanner.py:347,405-424,710-755 + main.py:1-370 + core/scheduler_manager.py grep.
+- Verifications: 18+ Grep queries (from archive / orchestrator / decision_log / scheduler / INSERT / Strategy pattern / glminvestment_engines / risk_gate / log_decision / confluence_scorer / engines strategies) + 5 LS + 1 diff (analyzer_modules) + multiple Read calls. كل claim موثّق بـ file:line.
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change.
+- Next actions: انتظر تعليمات المالك — يبدأ بـ P0 (cleanup مباشر) ولا P1 (dead stack disposal decision) ولا P2 (Strategy pattern) ولا P3 (confluence unification) ولا P4 (real_liquidity_radar wiring) ولا P5 (scheduled tasks doc)؟ كلها منفذة على مراحل بدون rewrite.
+
+
+---
+Task ID: AUDIT-5
+Agent: برافو V2 (subagent — Read-only forensic audit, DB-level evidence + risk/conflict analysis)
+Task: تدقيق ساكن للقراءة فقط (read-only forensic audit) باستعلامات SELECT على SQLite DBs + تحليل المخاطر والتعارضات. لا كتابة كود، لا تعديل ملفات. كل الادعاءات موثّقة بـ SQL queries فعلية.
+
+Work Log:
+- قرأت آخر ~300 سطر من worklog.md (تقارير AUDIT-1/2/3 + S-2-Alpha + Incubator-Redesign + NTP-1) عشان أفهم السياق.
+- استخدمت `python3 -c "import sqlite3; ..."` للاستعلام على 9 DBs في `/home/z/my-project/db/` بـ `mode=ro` (read-only URI) — أي تعديل مستحيل.
+- استخدمت Grep للبحث عن `INSERT INTO predictions`, `INSERT INTO stored_analyses`, `CREATE TABLE.*decision_log`, `lifecycle_status` في الكود.
+- قرأت crontab.txt (209 سطر) لتحليل جدولة المهام.
+- قرأت `vps-service/analyzers/prediction_tracker.py` (lines 640-885) + `vps-service/jobs/intraday_scanner.py` (lines 540-757) + `vps-service/jobs/daily_predictor.py` (lines 770-825, 4150-4200) لتحليل الـ writers.
+- قرأت `vps-service/analyzers/decision_logger.py` (lines 1-200) للتأكد من مكان كتابة decision_log.
+- قرأت `scripts/b2_dedup_migration.py` للتأكد من خطوات الـ migration المفترضة.
+- ما عدّلت أي ملف. ما شغّلتش builds. ما كتبت كود.
+
+---
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **predictions.db ليه 2256 صف و907 منها مكرر (40%)** — `RADAR_PROMOTED` track لوحده فيه 765 صف بس 28 فريد = 737 مكرر زائد (96%)! الـ B2 dedup migration (`scripts/b2_dedup_migration.py`) اللي كان مفروض يضيف `idx_predictions_dedup` UNIQUE + `update_count` + `is_duplicate` columns **ما اتطبّقش على الـ DB ده**. كل الـ ALTER TABLE + CREATE UNIQUE INDEX مفقودين.VERIFIED.
+
+2. **`stored_analyses` فاضية تماماً (0 صف)** رغم إن 10+ writers في الكود (daily_predictor.py:779, 4165 + intraday_scanner.py:414 + background_analyzer.py:1955, 2244 + sync_scanner_to_db.py:211 + ai_routes.py:121, 128 + misc_routes.py:1578, 4258 + nightly_analysis.py:261, 281 + data/analyses.py:687 + persona_db.py:188). يعني الـ canonical "stored analysis" pipeline من daily_predictor متوقف. آخر full_analysis في predictions كمان من 2026-10-18 (9 أيام قبل الـ snapshot). VERIFIED.
+
+3. **`decision_log.db` غير موجود أصلاً** على القرص (`/home/z/my-project/db/decision_log.db` missing) — `analyzers/decision_logger.py:37` بـ defining الـ path بس الملف مش موجود. كل الـ `log_decision()` calls اللي AUDIT-1 قال إنها بتحصل من 10+ مواقع في daily_predictor.py مابتسجّلش حاجة فعلياً. الـ audit-trail للـ reject_entry/force_exit/accept_entry **مفقود بالكامل**. VERIFIED.
+
+4. **Issue #9 (BRAVO-HANDOFF) تشخيصه غلط**: `User.last_active_at` هو TEXT type بيخزّن ISO strings صح (18 قيمة كلها ISO، 0 numeric). المشكلة الحقيقية في `last_login` (16 integer + 111 text) و`updated_at` (29 integer + 99 text) و`email_verified` (16 integer + 78 text) و`created_at` (13 integer + 115 text) و`trial_ends_at` (7 integer). 29 user عندهم mixed-type last_login/updated_at — ومنهم حساب المالك `enmohsen20111975@gmail.com` (last_login=1792334454208 ms, updated_at=1792577677908 ms). ده اللي بيسبب Prisma P2023. VERIFIED.
+
+5. **Issue #2 (BRAVO-HANDOFF) مؤكد**: `data_isolation` table مفقودة من كل الـ 9 DBs. الـ 117 record اللي Bravo ادّعى في worklog line 9148 إنه أنشأها — مش موجودين. الـ B1 isolation audit trail ضاع (إما ما اتطبّقش أصلاً، أو الـ DB اتعمله restore من snapshot أقدم). VERIFIED.
+
+6. **Issue #5 (predictions_duplicates_archive) مؤكد**: الـ table مفقودة من predictions.db. الـ 1270 archived duplicate row اللي Bravo ادّعى في worklog line 9303 إنه نقلهم — مش موجودين. الـ B2 migration إما اتـ reverted أو ما اتطبّقش على الـ snapshot ده. VERIFIED.
+
+7. **ADP/ADPC contamination (Issue #1) مؤكد**: في `stocks.db.stocks` السهم ADP موجود بـ currency='USD' + price=263.855 (ملوّث بـ USD) بينما ADPC موجود بـ currency='EGP' + price=3.06 (صح). التلوّث بيمتد لـ predictions: في صفّين لـ ADPC بـ market='US' + track='liquidity' في 2026-09-24 — دي الإشارات اللي طلعت من US screener بسبب الـ contamination. VERIFIED.
+
+8. **Schema/code drift كبير**: `prediction_tracker.py:794` INSERT بـ references `lifecycle_status, tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar` — كلها MISSING من الـ schema. `intraday_scanner.py:723` INSERT بـ references `update_count` — MISSING. الـ writes بتحدث بس عبر fallback paths (مع `update_count` fallback عند line 715 + last-resort INSERT عند line 867 اللي لسه بـ references `lifecycle_status`). ده معناه إن **الكود الحالي لو اشتغل على الـ DB ده هيـ fail silent** — أي محاولة كتابة جديدة هتضيع. VERIFIED.
+
+9. **النظام شبه خامد منذ 2026-10-22**: آخر INSERT في predictions كان 2026-10-22 12:55:16. آخر تحديث (bulk) 2026-10-23 00:07:24. الأنشطة اللي لسه شغّالة: `exit_notifications` (2026-10-24), `learned_lessons` (2026-10-24 — من learning_engine.py cron), `sniper_performance` (2026-10-23), `analytics_events` في stocks.db (2026-10-27 — اليوم، من الـ frontend Next.js). `pm2_process_snapshot` في metrics.db بـ يـ snapshot كل 15 ثانية بس بـ يـ monitor process واحد بس: `glm-dev` (pm_id=0, Next.js dev server). **مفيش Python backend بـ يشتغل** — لا daily_predictor ولا intraday_scanner ولا maker_radar بيـجدولوا حالياً. VERIFIED.
+
+10. **Risk Gate بـ bypass**: 2256 prediction في الـ DB، 0 منها مرّت على `risk_gate.apply_risk_gate()` (اللي caller واحد بس: `scanner_routes.py:217` جوه `/api/advanced-scanner/run` admin-only). 101 STRONG_BUY + 28 INSTITUTIONAL_BUY + 2054 BUY — كلها اتعملها INSERT مباشر بدون risk gate verification. VERIFIED + مرتبط بـ AUDIT-1.
+
+=====================================================================
+2) جدول DB Inventory (DB | Table | Count | Last write | Sources writing)
+=====================================================================
+
+| DB | Table | Count | Last write | Sources writing (file:line) | Notes |
+|----|-------|-------|------------|-----------------------------|-------|
+| predictions.db | **predictions** | 2256 | 2026-10-22 12:55:16 (created) / 2026-10-23 00:07:24 (updated) | (1) analyzers/prediction_tracker.py:794,836,868 (3 INSERTs) ‖ (2) jobs/intraday_scanner.py:723 (RADAR_PROMOTED INSERT) ‖ (3) jobs/daily_predictor.py:779,4165 (whale + main INSERTs) ‖ (4) api/historical_predictions_v2_routes.py:491,510 (backfill) ‖ (5) api/ai_predictions_routes.py:616 (admin AI) ‖ (6) scripts/generate_persona_predictions.py:251,305 ‖ (7) scripts/dual_track_generator.py:424 ‖ (8) scripts/populate_history_fast.py:115 ‖ (9) analyzers/background_analyzer.py ‖ (10) core/db_manager.py:30,401 (legacy/test) | 907 مكرر (40%). 3 tracks: full_analysis (1414), RADAR_PROMOTED (765), liquidity (77). |
+| predictions.db | **stored_analyses** | **0 (EMPTY)** | N/A | (1) daily_predictor.py:779,4165 ‖ (2) intraday_scanner.py:414 (DISABLED per AUDIT-3) ‖ (3) analyzers/background_analyzer.py:1955,2244 ‖ (4) core/sync_scanner_to_db.py:211 ‖ (5) api/ai_routes.py:121,128 ‖ (6) api/misc_routes.py:1578,4258 (UPDATEs only) ‖ (7) ai/nightly_analysis.py:261,281 ‖ (8) data/analyses.py:687 ‖ (9) core/persona_db.py:188 ‖ (10) jobs/market_scheduler.py:2514 (UPDATE) | **10 writers بس الـ table فاضي**. فيه UNIQUE(ticker,market) constraint. |
+| predictions.db | **cached_analysis** | **0 (EMPTY)** | N/A | intraday_scanner.py:454-487 (AUDIT-3 claim) | UNIQUE(ticker, market, analysis_date). |
+| predictions.db | **persona_predictions** | 1669 | 2026-08-30T22:09:19 | scripts/generate_persona_predictions.py | stale — 2 months old. |
+| predictions.db | **morning_bell_signals** | 82 | 2026-08-27T13:05:31 | daily_predictor.py morning_bell path | stale — 2 months old. |
+| predictions.db | **live_ai_signals** | 1650 | 2026-10-22 07:05:51 | ai/nightly_analysis.py? | آخر نشاط 2026-10-22. |
+| predictions.db | **exit_notifications** | 4064 | 2026-10-24 03:43:59 | daily_closer.py / post_market_feedback.py | ACTIVE — بـ يـ update existing predictions بـ EXIT_STOP/HOLD_RECOVER. |
+| predictions.db | **historical_trades** | 22650 | 2026-10-17 12:54:14 | backfill scripts | backfill data. |
+| predictions.db | **learned_lessons** | 20031 | 2026-10-24T03:44:00 | learning_engine.py | ACTIVE — 48 rows on 2026-10-24. |
+| predictions.db | **crypto_predictions_log** | 187345 | 2026-10-18T10:25:24 | crypto_lab_scheduler.py | **10x حجم الـ predictions table**. |
+| predictions.db | **sniper_performance** | 42 | 2026-10-23T11:30:31 | sniper jobs | daily snapshot. |
+| predictions.db | **hunter_pick_tracking** | 46 | 2026-10-22 13:35:02 | scripts/sync_hunter_pick_tracking.py (cron line 95) | متوقف منذ 2026-10-22. |
+| predictions.db | **aiPrediction** | 2613 | 2026-10-08T16:56:19 | ai_predictions_routes | stale — 19 days old. |
+| predictions.db | **prediction_outcomes** | **0 (EMPTY)** | N/A | unknown | مفيش caller واضح. |
+| predictions.db | **trade_outcomes** | **0 (EMPTY)** | N/A | unknown | مفيش caller واضح. |
+| predictions.db | **user_trades** | **0 (EMPTY)** | N/A | unknown | مفيش caller واضح. |
+| predictions.db | **trade_journal_entries** | **0 (EMPTY)** | N/A | unknown | مفيش caller واضح. |
+| predictions.db | **quant_cache** | 538 | (no created_at) | quant jobs | quant_score cache. |
+| predictions.db | **analysis_engine_status** | 1 | 2026-08-31 03:01:31 | unknown | **2 months old** — الـ status بيقول آخر run 2026-08-31. |
+| predictions.db | **corporate_actions** | 131 | 2026-10-18T04:00:08 | fetch_corporate_actions.py (cron line 62) | active. |
+| predictions.db | **data_isolation** | **MISSING** | N/A | (was supposed to be created by scripts/b1_isolate_adp.py) | **Issue #2 — مفقودة**. |
+| predictions.db | **predictions_duplicates_archive** | **MISSING** | N/A | (was supposed to be created by scripts/b2_dedup_migration.py) | **Issue #5 — مفقودة**. |
+| predictions.db | **decision_log** | **MISSING** | N/A | (was supposed to be created by analyzers/decision_logger.py) | **decision_log.db file missing**. |
+| stocks.db | **radar_signal_tracking** | 1259 | 2026-10-21 19:10:17 (created_at) / 2026-10-21 (signal_date) | scripts/maker_radar.py (cron line 201) | **NO `source` column** (AUDIT-3 claim was wrong). Has `path`, `signal_type`, `signal_date`. |
+| stocks.db | **stocks** | 1240 | 2026-10-21T19:14:57 | tradingview_scraper.py + daily_price_updater.py + maker_radar.py (read) | **ADP contaminated**: currency='USD', price=263.855. ADPC correct: currency='EGP', price=3.06. |
+| stocks.db | **stock_daily_prices** | 85626 | N/A | daily_price_updater.py + tradingview_scraper.py | historical prices. |
+| stocks.db | **market_regime_log** | 56 | 2026-10-21 19:15:03 | analyzers/market_regime_engine.py (cron line 107) | stores DEFENSIVE/NORMAL/AGGRESSIVE. |
+| stocks.db | **system_settings** | 6 | 2026-10-21T19:15:03 | analyzers/market_regime_engine.py | 6 keys: current_regime_<MARKET> for EGX/GOLD/CRYPTO/TADAWUL/KSE/QSE. EGX=DEFENSIVE حالياً. |
+| stocks.db | **cached_analysis** | 25 | 2026-10-21 10:00:29 | intraday_scanner.py:454-487 | 25 row فقط (vs 0 في predictions.db). |
+| stocks.db | **screener_results** | 173 | N/A | screener_routes.py:run-all | presets output. |
+| stocks.db | **screener_presets** | 2175 | 2026-10-21 12:08:37 (computed_at) | analyzers.screener.run_all | preset computations. |
+| stocks.db | **real_evaluated_predictions** | 4035 | 2026-07-23 13:11:09 (ALL same timestamp!) | backfill script | **STALE** — all 4035 rows have same evaluated_at (single backfill run). |
+| stocks.db | **outcome_logs** | 8544 | 2026-06-25T02:29:31 | unknown | **STALE** — 4 months old. |
+| stocks.db | **stock_adaptive_profiles** | 69 | 2026-08-03T12:30:09 | unknown | **STALE** — 3 months old. |
+| stocks.db | **analytics_events** | 1131 | 2026-10-27 11:43:38 (**today**) | Next.js frontend | **ACTIVE** — user activity tracking. |
+| stocks.db | **user_sessions** | 2 | 2026-09-24 10:55:32 | unknown | only 2 sessions ever recorded! |
+| stocks.db | **data_isolation** | **MISSING** | N/A | (was supposed to be created by scripts/b1_isolate_adp.py per worklog line 9148) | **Issue #2 confirmed**. |
+| auth.db | **User** | 128 | last_active_at max=2026-10-21T10:46:07 | Next.js auth + scripts/downgrade-expired-subscriptions.ts (cron line 178) | **Issue #9 مُ corrected**: last_active_at TEXT+ISO صح. real bug في last_login/updated_at/email_verified mixed types. |
+| auth.db | **task_runs** | 75 | 2026-07-12 12:58:10 | unknown | **STALE** — all from July 2026. |
+| auth.db | **Account** | unknown | unknown | Next.js | (didn't deep-dive). |
+| auth.db | **api_tokens** | unknown | unknown | Next.js auth | (didn't deep-dive). |
+| auth.db | **user_telegram_links** | unknown | unknown | Next.js auth | (didn't deep-dive). |
+| intraday.db | **stock_intraday** | unknown | unknown | intraday_storage.py (cron line 50) + tradingview_scraper.py | 5-min bars. |
+| data_engine.db | **egksco_price_history** | unknown | unknown | egksco_sync (cron line 206) | 178MB DB. |
+| data_engine.db | **historical_data** | unknown | unknown | scrapers | 495MB DB — the largest. |
+| price_history.db | **price_history** | unknown | unknown | daily_price_updater.py + safetynet.py + us_stock_scraper.py | 352MB DB. |
+| metrics.db | **pm2_process_snapshot** | unknown | 2026-10-27T09:58:14Z (today) | metrics collector | **Only 1 process: glm-dev** (Next.js dev server). No Python backend running. |
+| metrics.db | **resource_snapshot_5min** | unknown | 2026-10-27 | metrics collector | active. |
+| news.db | **market_news** | unknown | unknown | news fetchers | (didn't deep-dive). |
+
+=====================================================================
+3) جدول المخاطر (Risk Analysis)
+=====================================================================
+
+| # | الخطر | الدليل (DB / SQL) | الأثر | كيفية التحقق من الإصلاح | الثقة |
+|---|-------|-------------------|------|------------------------|-------|
+| R1 | **907 duplicate predictions (40%)** بسبب غياب `idx_predictions_dedup` UNIQUE index | `SELECT COUNT(*) FROM predictions` = 2256, `SELECT COUNT(DISTINCT ticker||substr(prediction_date,1,10)||persona||market||track)` = 1349, excess = 907. ACAPA على 2026-10-22 ليه 31 row بنفس entry/target/stop. | تضخيم虚假 signals في الـ UI؛ خطر تنفيذ صفقات متكررة على نفس السهم؛ تخريب إحصائيات sniper_performance (target_hit_count=298 / 1428 = 20% بس). | `PRAGMA index_list(predictions)` لازم يُرجّع idx_predictions_dedup كـ UNIQUE. `SELECT COUNT(*) FROM predictions WHERE track='RADAR_PROMOTED' GROUP BY ticker, substr(prediction_date,1,10) HAVING COUNT(*)>1` لازم يرجع 0 rows. | VERIFIED |
+| R2 | **`stored_analyses` فاضية رغم 10 writers** — الـ canonical "stored analysis" pipeline متوقف | `SELECT COUNT(*) FROM stored_analyses` = 0. آخر full_analysis في predictions من 2026-10-18. | الـ /api/stored-analysis/* routes بترجّع فاضي → الـ UI بيقول "مفيش تحليلات" → المستخدم مابيشوفش التوصيات اليومية. daily_predictor مش بيـ run على الـ snapshot ده. | `SELECT COUNT(*) FROM stored_analyses` لازم > 0 بعد تشغيل daily_predictor. `SELECT MAX(updated_at) FROM stored_analyses` لازم تكون اليوم. | VERIFIED |
+| R3 | **`decision_log.db` مفقود** — الـ audit trail للـ reject/force_exit/accept ضاع | `find /home/z/my-project -name "decision_log.db"` = 0 results. `analyzers/decision_logger.py:37 DB_PATH = PROJECT_ROOT/'db'/'decision_log.db'`. | مفيش way لـ audit الـ decisions اللي فشلت أو اترفضت. لو في bug في risk_gate أو news_veto، مش هنشوفه. الـ `log_decision()` calls بـ fail silent (except logger.warning). | `ls /home/z/my-project/db/decision_log.db` لازم يرجع file. `sqlite3 /home/z/my-project/db/decision_log.db "SELECT COUNT(*) FROM decision_log"` لازم > 0. | VERIFIED |
+| R4 | **Schema/code drift: prediction_tracker.py INSERT بـ references 7 columns مفقودين** | `PRAGMA table_info(predictions)` shows 75 columns. MISSING: lifecycle_status, tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar, update_count, source. `prediction_tracker.py:794` INSERT بـ references 7 منها. `intraday_scanner.py:723` INSERT بـ references update_count. | أي محاولة كتابة new prediction عن طريق record_prediction() أو promote_incubator_candidates() هتـ fail silent (exception caught + logged). الكود الحالي **لا يستطيع كتابة predictions جديدة** على هذا الـ DB. | `PRAGMA table_info(predictions)` لازم يُرجّع lifecycle_status + update_count + tp1_price + tp2_price + trailing_stop_pct + max_hold_days + exit_protocol + user_advice_ar. | VERIFIED |
+| R5 | **Issue #9 تشخيصه غلط** — `last_active_at` صح، الـ bug في `last_login`/`updated_at`/`email_verified` | `SELECT typeof(last_active_at), COUNT(*) FROM User GROUP BY typeof(last_active_at)` = text:18, null:110 (0 integer). `SELECT typeof(last_login), COUNT(*) FROM User GROUP BY typeof(last_login)` = integer:16, text:111, null:1. حساب المالك `enmohsen20111975@gmail.com`: last_login=1792334454208 (integer ms). | الـ BRAVO-HANDOFF قال إن المشكلة في last_active_at — ده misdiagnosis. لو Bravo عدّل last_active_at لـ numeric (زي ما الـ issue قال) هيكسر الصح. المطلوب: normalize last_login + updated_at + email_verified + created_at + trial_ends_at لـ ISO strings. | `SELECT typeof(last_login), COUNT(*) FROM User GROUP BY typeof(last_login)` لازم يرجّع text:128 (أو text + null) — مفيش integer. | VERIFIED |
+| R6 | **ADP contamination بيمتد لـ predictions** | `SELECT ticker, market, currency FROM stocks WHERE ticker IN ('ADP','ADPC')` = ADP EGX USD 263.855, ADPC EGX EGP 3.06. `SELECT ticker, market FROM predictions WHERE ticker='ADPC'` = ADPC US (×2 rows من 2026-09-24 track=liquidity). | الـ US screener بياخد ADP-USD من stocks.db (currency='USD' → بيتعامل معاه كـ US stock) وبيـ INSERT في predictions بـ market='US'. الـ UI بـ يـ display ADP/ADPC بـ USD price في EGX context. | `SELECT ticker, market, currency FROM stocks WHERE ticker='ADP'` لازم currency='EGP'. `SELECT COUNT(*) FROM predictions WHERE ticker IN ('ADP','ADPC') AND market='US'` لازم = 0. | VERIFIED |
+| R7 | **Risk Gate بـ bypass بالكامل** — 0 من 2256 prediction مرّت على apply_risk_gate | AUDIT-1 confirmed: caller واحد بس لـ `apply_risk_gate` = scanner_routes.py:217 (admin-only). daily_predictor + intraday_scanner + prediction_tracker ما بيستدعوهوش. في 101 STRONG_BUY + 28 INSTITUTIONAL_BUY + 2054 BUY في الـ DB — كلها bypassed. | توصيات بـ signal قوي بتدخل الـ DB بدون ما تمر على risk gate (max_position_pct, RR_FLOOR=1.8, regime-aware sizing). خطر توصيات بـ R/R < 1.8 أو بـ position size > 2.5% تظهر للـ UI. | Grep على `apply_risk_gate` في كل الـ writers (daily_predictor, intraday_scanner, prediction_tracker) لازم يرجّع matches. الـ SQL: `SELECT COUNT(*) FROM predictions WHERE risk_reward < 1.8 AND signal IN ('BUY','STRONG_BUY')` لازم = 0. | VERIFIED |
+| R8 | **mixed-type DATETIME columns في auth.db** تسبب Prisma P2023 | 29 user عندهم `typeof(last_login)='integer'` + 99 user عندهم `typeof(updated_at)='integer'`. القيم integer زي `1792334454208` (ms epoch). Prisma schema بـ declareهم DateTime — بـ throw P2023 على type mismatch. | تسجيل خروج كل 60 ثانية (شكوى المالك الأولى). session غير مستقر. | بعد الـ migration: `SELECT typeof(last_login), COUNT(*) FROM User GROUP BY typeof(last_login)` = text:128 (أو text+null). `SELECT last_login FROM User WHERE typeof(last_login)='integer'` = 0 rows. | VERIFIED |
+| R9 | **`crypto_predictions_log` = 187K row (10x predictions)** — بيمتلئ بـ SELL signals بـ confidence=30 | `SELECT COUNT(*) FROM crypto_predictions_log` = 187345. آخر 3 records كلها SELL confidence=30.0 (low). | تخزين noise بدل signal. حجم الـ DB بيكبر بسرعة. الـ crypto_lab_scheduler بـ يكتب كل 15 دقيقة بـ signal حتى لو ضعيف. | `SELECT COUNT(*) FROM crypto_predictions_log WHERE confidence < 50` لازم يكون < 10% من total. `SELECT MAX(created_at) FROM crypto_predictions_log` لازم تكون < 24h. | PARTIALLY VERIFIED |
+| R10 | **Cron schedule conflicts على predictions.db** | crontab.txt: line 35 (daily_predictor 03:00 UTC) + line 38 (daily_predictor 13:30 UTC) + line 43 (intraday_scanner كل 5 دقائق 08:00-12:00 UTC) — كلهم بـ يكتبوا في predictions. + line 54 (daily_closer 14:00 UTC) + line 152 (post_market_feedback 14:30 UTC) بـ يـ UPDATE predictions. | خلال 13:30-14:30 UTC بـ يبقى فيه 3 concurrent writers على predictions.db. WAL mode شغّال (busy_timeout=5000ms) بس الـ writers بـ serialize — الـ daily_predictor طويل (>30min) هيـ block الـ daily_closer. | `PRAGMA journal_mode` لازم = wal. مراقبة `/tmp/v40_2_*.log` للأخطاء "database is locked". | INFERRED |
+| R11 | **stale data في UI** — predictions بتاريخ 2026-09-22 لسه بتعرض | `SELECT MIN(prediction_date), MAX(prediction_date) FROM predictions` = min 2025-09-22, max 2026-10-22. في صفوف قديمة بـ status='active' (لم تُغلق بعد). | المستخدم بيشوف توصيات عمرها شهر وهي معروضة كـ "active". | `SELECT COUNT(*) FROM predictions WHERE status='active' AND prediction_date < date('now','-7 days')` لازم = 0. | PARTIALLY VERIFIED |
+| R12 | **`task_runs` table بـ last_run numeric + كل القيم من 2026-07-12** | `SELECT last_run, status FROM task_runs LIMIT 3` = (1783861090592, 'running'), (1783861090578, 'completed', 'Generated 0 predictions for crypto'). | task_runs بـ يـ store آخر مرة كل task شغلته. لو القيم stale من July، الـ UI بـ يـ display "آخر تشغيل: يوليو" للمستخدم. + numeric ms format يسبب نفس Prisma P2023 issue. | `SELECT MAX(last_run) FROM task_runs` لازم تكون قريبة من اليوم. `typeof(last_run)` لازم = text (ISO). | VERIFIED |
+| R13 | **`analytics_events` بيكتب اليوم بس باقي الـ system خامل** | `SELECT MAX(created_at) FROM analytics_events` = 2026-10-27 11:43:38 (today). `SELECT MAX(created_at) FROM predictions` = 2026-10-22. `pm2_process_snapshot` = process واحد بس: glm-dev (Next.js). | الـ frontend شغّال (Next.js dev server) بس الـ Python backend متوقف. المستخدم بيشوف UI بـ stale data. الـ cron jobs مش شغّالة (لا cron daemon ولا scripts موجودة على sandbox). | `crontab -l` لازم يرجّع الـ jobs. `pm2 list` لازم يُرجّع Python processes (daily_predictor + intraday_scanner + maker_radar). | VERIFIED |
+
+=====================================================================
+4) إجابات الأسئلة السبعة المحددة
+=====================================================================
+
+**س1: كم توصية في predictions.db؟ آخر تاريخ؟**
+→ **2256 توصية إجمالاً.** آخر `prediction_date` = `2026-10-22 12:55:16` (RADAR_PROMOTED). آخر `created_at` = `2026-10-22T12:55:16.013450`. آخر `updated_at` = `2026-10-23 00:07:24` (bulk update لـ 757 row إلى status='EXPIRED'). آخر `full_analysis` = `2026-10-18` (id=53116, ETEL). الثقة: VERIFIED.
+
+**س2: كم source مختلف بيكتب في predictions؟ (هل maker_radar + intraday_scanner + daily_predictor كلهم بيكتبوا؟)**
+→ **3 tracks موجودة فعلياً في الـ DB**: `full_analysis` (1414 row = daily_predictor), `RADAR_PROMOTED` (765 row = intraday_scanner.promote_incubator_candidates), `liquidity` (77 row = US screener). **ملاحظات مهمة**:
+- مفيش عمود `source` في predictions table (الـ schema ما عندهاش column بـ الاسم ده). الـ "source" بـ يـ infer من `track`.
+- `maker_radar.py` نفسه **مش بيكتب في predictions** — بيكتب في `stocks.db.radar_signal_tracking` + JSON files. تأثيره على predictions غير مباشر عبر `promote_incubator_candidates` (intraday_scanner.py:545) اللي بـ يـ promote الـ incubator_candidates إلى predictions بـ track='RADAR_PROMOTED'.
+- مفيش track='INTRADAY-5M' رغم إن AUDIT-3 قال إن intraday_scanner بيكتبه (سطر 301-317). الـ `scan_intraday()` path بيستخدم `PredictionTracker.record_prediction()` اللي بـ set track='full_analysis' (prediction_tracker.py:665). إذن الـ INTRADAY-5M track **مش موجود في الـ DB فعلياً**.
+- 10+ writers في الكود (انظر جدول R1) بس الـ runtime writers الفعليين = 2-3.
+الثقة: VERIFIED.
+
+**س3: هل stored_analyses موجودة وفيها بيانات حديثة؟**
+→ **موجودة (CREATE TABLE في predictions.db) بس فاضية تماماً (0 row).** مفيش بيانات حديثة ولا قديمة. الـ schema فيها `UNIQUE(ticker, market)` constraint + 35 column. 10+ writers في الكود (daily_predictor:779,4165 + intraday_scanner:414 + background_analyzer:1955,2244 + sync_scanner_to_db:211 + ai_routes:121,128 + misc_routes:1578,4258 + nightly_analysis:261,281 + data/analyses.py:687 + persona_db:188 + market_scheduler:2514) — بس الـ table فاضي. التفسير الأرجح: daily_predictor مش شغّال على الـ snapshot ده (آخر full_analysis في predictions من 2026-10-18، يعني daily_predictor توقف قبلها). الثقة: VERIFIED.
+
+**س4: هل decision_log table فيها بيانات؟ كم سجل؟ آخر تاريخ؟**
+→ **decision_log.db file مش موجود أصلاً** على القرص (`find /home/z/my-project -name "decision_log.db"` = 0 results). الـ `analyzers/decision_logger.py:37` بـ define الـ path `PROJECT_ROOT/'db'/'decision_log.db'` بس الملف ما اتخلقش. ده معناه:
+- كل `log_decision()` calls من 10+ مواقع في daily_predictor.py (AUDIT-1 line 1021, 2666, 2752, 2809, 2851, 2900, 2945, 4635, 4657, 4681) + scanner_routes.py:228,239 + daily_closer.py:735 — **بتـ fail silent**. الـ except بـ logger.warning بس.
+- مفيش way لـ audit الـ reject_entry/force_exit/accept_entry decisions.
+- الـ `_ensure_db()` function بتـ create الـ file لو مش موجود (`CREATE TABLE IF NOT EXISTS decision_log`) — بس محدش بـ يستدعيها بنجاح (يعني محدش بـ يـ reach الـ `_ensure_db()` بنجاح، أو الـ DB بيتـ wipe بعد كل run).
+الثقة: VERIFIED.
+
+**س5: هل data_isolation table موجودة فعلاً؟ (Issue #2)**
+→ **لا، مفقودة من كل الـ 9 DBs.** استعلمت على `sqlite_master` في كل DB:
+```
+predictions.db → NONE
+stocks.db → NONE
+auth.db → NONE
+intraday.db → NONE
+data_engine.db → NONE
+price_history.db → NONE
+crypto.db → NONE
+metrics.db → NONE
+news.db → NONE
+```
+Bravo ادّعى في worklog line 9148 إنه أنشأها في `stocks.db` بـ 117 record. الـ snapshot الحالي مفيهوش الـ table. إما:
+- الـ DB اتعمله restore من snapshot أقدم من Bravo's work
+- أو Bravo's claim كان غلط / الـ script ما اشتغلش
+- أو الـ table اتعملها DROP بعد كده
+الثقة: VERIFIED.
+
+**س6: هل last_active_at numeric ولا ISO في auth.db؟ (Issue #9)**
+→ **`last_active_at` هو TEXT type بيخزّن ISO strings صح.** 18 قيمة كلها ISO format زي `'2026-10-21T10:46:07.740Z'`. 0 قيمة numeric. **BRAVO-HANDOFF Issue #9 تشخيصه غلط.**
+
+المشكلة الحقيقية في **`last_login`, `updated_at`, `email_verified`, `created_at`, `trial_ends_at`** — كلها DATETIME columns في الـ schema بس بـ values مختلطة:
+
+| Column | typeof=integer | typeof=text | typeof=null |
+|--------|----------------|-------------|-------------|
+| last_login | 16 | 111 | 1 |
+| updated_at | 29 | 99 | 0 |
+| email_verified | 16 | 78 | 34 |
+| created_at | 13 | 115 | 0 |
+| trial_ends_at | 7 | 9 | 112 |
+| **last_active_at** | **0** ← FIX! | 18 | 110 |
+
+**29 user عندهم `typeof(updated_at)='integer'`** — ومنهم حساب المالك `enmohsen20111975@gmail.com` (last_login=1792334454208 ms, updated_at=1792577677908 ms, email_verified=1792334454208 ms). ده اللي بيسبب Prisma P2023 → تسجيل خروج كل 60 ثانية. الثقة: VERIFIED.
+
+**س7: هل في تعارض كتابة بين intraday_scanner (track=INTRADAY-5M) و daily_predictor في predictions؟**
+→ **الـ premise غلط**: مفيش track='INTRADAY-5M' في الـ DB أصلاً. الـ tracks الموجودة = `full_analysis` + `RADAR_PROMOTED` + `liquidity`. AUDIT-3 claim إن intraday_scanner بيكتب track='INTRADAY-5M' (سطر 301-317) **ما انطبقش على الـ DB الحالي** — لإن `scan_intraday()` بيستخدم `PredictionTracker.record_prediction()` اللي default _b2_track='full_analysis' (prediction_tracker.py:665). إذن intraday_scanner بيكتب track='full_analysis' مش 'INTRADAY-5M'.
+
+**تعارض الكتابة الفعلي**: في تعارض محتمل بين:
+- `intraday_scanner.scan_intraday()` عبر `record_prediction()` → track='full_analysis' (كل 5 دقائق)
+- `daily_predictor.run_generator()` مباشرة INSERT → track='full_analysis' (03:00 + 13:30 UTC)
+
+الاتنين بـ يكتبوا في نفس الـ track='full_analysis' + نفس persona='balanced' + نفس market='EGX'. الـ B2 dedup كان مفروض يـ enforce UNIQUE(ticker, date, persona, market, track) بس **الـ UNIQUE index مش موجود**. النتيجة: full_analysis عنده 132 excess duplicate (9%). الثقة: VERIFIED.
+
+=====================================================================
+5) أكبر 3 مصادر للتعارض/التكرار من منظور DB
+=====================================================================
+
+### 🔴 #1: غياب `idx_predictions_dedup` UNIQUE index → 907 duplicate predictions (40% من الـ table)
+- **المشكلة**: `scripts/b2_dedup_migration.py` كان مفروض يضيف:
+  1. `ALTER TABLE predictions ADD COLUMN update_count INTEGER DEFAULT 0`
+  2. `ALTER TABLE predictions ADD COLUMN is_duplicate INTEGER DEFAULT 0`
+  3. `CREATE UNIQUE INDEX idx_predictions_dedup ON predictions(ticker, substr(prediction_date,1,10), persona, market, track)`
+  - **مفيش ولا واحد منهم متطبّق على الـ DB الحالي.**
+- **الدليل**: `PRAGMA table_info(predictions)` مفيهوش `update_count` ولا `is_duplicate`. `PRAGMA index_list(predictions)` مفيهوش `idx_predictions_dedup` — كل الـ 6 indexes الموجودة non-UNIQUE.
+- **الأثر**: 
+  - `RADAR_PROMOTED`: 765 row / 28 unique = 737 excess (96%). ACAPA على 2026-10-22 ليه **31 duplicate row** بنفس entry=9.21 / target=10.29 / stop=8.61 — كل 5 دقائق بـ يـ INSERT جديد بدل ما UPDATE.
+  - `full_analysis`: 1414 row / 1282 unique = 132 excess (9%).
+  - `liquidity`: 77 row / 39 unique = 38 excess (49%).
+- **الحل المقترح**: تشغيل `scripts/b2_dedup_migration.py` على الـ DB الحالي (مع تأكيد إنه مش هيـ DROP الـ existing rows بل ينقلهم لـ `predictions_duplicates_archive` اللي برضه لازم تتـ create).
+
+### 🔴 #2: Schema/code drift — الكود بـ references 9 columns مفقودين من predictions
+- **المشكلة**: `prediction_tracker.py:794` (primary INSERT) بـ references: `lifecycle_status, tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar`. `intraday_scanner.py:723` (promote INSERT) بـ references: `update_count`. `prediction_tracker.py:699` (UPDATE) بـ references: `update_count`. كلهم MISSING من `PRAGMA table_info(predictions)`.
+- **الدليل**: 
+  - `PRAGMA table_info(predictions)` رجّع 75 column فقط — NO `lifecycle_status`, NO `update_count`, NO `tp1_price`, NO `tp2_price`, NO `trailing_stop_pct`, NO `max_hold_days`, NO `exit_protocol`, NO `user_advice_ar`, NO `source`.
+  - `prediction_tracker.py:715` (fallback) + `:867` (last-resort INSERT) — لسه بـ reference `lifecycle_status` → هتـ fail برضه.
+  - 765 RADAR_PROMOTED row موجودة في الـ DB → إذن الكود شغّال في وقت ما (lived through schema change). الـ schema اتـ reverted/migrated بعدين لـ version أقدم.
+- **الأثر**: لو الـ cron jobs اشتغلت دلوقتي، الـ `record_prediction()` و`promote_incubator_candidates()` هتـ fail silent. مفيش predictions جديدة هتتكتب. الـ audit trail بيضيع في `except Exception: pass`.
+- **الحل المقترح**: إما (أ) ALTER TABLE predictions ADD COLUMN لكل الـ 9 missing columns، أو (ب) refactor الكود لـ يستخدم schema بسيط متوافق مع الـ DB.
+
+### 🔴 #3: `decision_log.db` مفقود + `stored_analyses` فاضية + `data_isolation` مفقودة + `predictions_duplicates_archive` مفقودة — 4 طبقات audit/tracking ضاعت
+- **المشكلة**: 4 tables/files مهمين مفقودين من نظام الإنتاج:
+  1. `decision_log.db` (file): الـ audit trail للـ reject_entry/force_exit/accept_entry decisions — **مش موجود**.
+  2. `stored_analyses` (table in predictions.db): الـ canonical "stored analysis" output من daily_predictor + sync_scanner_to_db — **0 rows**.
+  3. `data_isolation` (table): الـ B1 audit trail للـ ADP contamination (117 record) — **مش موجودة في أي DB**.
+  4. `predictions_duplicates_archive` (table): الـ 1270 archived duplicate من B2 migration — **مش موجودة**.
+- **الدليل**: 
+  - `find /home/z/my-project -name "decision_log.db"` = 0 results.
+  - `SELECT COUNT(*) FROM stored_analyses` = 0.
+  - `SELECT name FROM sqlite_master WHERE name='data_isolation'` في كل DBs = 0 rows.
+  - `SELECT name FROM sqlite_master WHERE name='predictions_duplicates_archive'` = 0 rows.
+  - Bravo's worklog claims (line 9148, 9284, 9303): "117 isolation entries" + "1270 archived rows" — كلها مش موجودة في الـ snapshot الحالي.
+- **الأثر**: 
+  - مفيش way لـ audit الـ risk decisions (reject_entry reasons ضاعت).
+  - الـ /api/stored-analysis/* routes بترجّع فاضي.
+  - الـ ADP contamination مفيهاش audit trail — لو حد سأل "ليه ADP ملوّث؟" مفيش جواب موثّق.
+  - مفيش way لـ restore الـ 1270 archived predictions (لو المالك أراد مراجعتها).
+- **الحل المقترح**: 
+  - (1) تشغيل `scripts/b1_isolate_adp.py` لإعادة إنشاء `data_isolation` في stocks.db.
+  - (2) تشغيل `scripts/b2_dedup_migration.py` لإعادة إنشاء `predictions_duplicates_archive` + `idx_predictions_dedup`.
+  - (3) التأكد من إن `analyzers/decision_logger.py._ensure_db()` بتشتغل بنجاح + عمل ملف `decision_log.db` فارغ لـ bootstrap.
+  - (4) تشغيل `daily_predictor.py` لإعادة populate `stored_analyses` بعد الـ schema fix.
+
+=====================================================================
+6) ثقة الاستنتاجات (Confidence Roll-up)
+=====================================================================
+
+- **VERIFIED** (12 risks): R1 (duplicates), R2 (stored_analyses empty), R3 (decision_log missing), R4 (schema drift), R5 (Issue #9 misdiagnosis), R6 (ADP contamination), R7 (risk gate bypass), R8 (mixed-type DATETIME), R11 (stale data — partial), R12 (task_runs stale), R13 (system half-dormant).
+- **PARTIALLY VERIFIED** (2 risks): R9 (crypto_predictions_log bloat — confirmed count but didn't deep-dive quality distribution), R11 (stale data in UI — confirmed old active predictions exist but didn't verify UI display).
+- **INFERRED** (1 risk): R10 (cron conflicts — inferred from crontab schedule + WAL mode but no live observation).
+
+كل الـ SQL queries اتعملت بـ `mode=ro` URI — ما فيش أي تعديل للـ DBs. كل الأرقام موثّقة.
+
+=====================================================================
+Stage Summary
+=====================================================================
+- DBs audited: 9 (predictions.db, stocks.db, auth.db, intraday.db, data_engine.db, price_history.db, crypto.db, metrics.db, news.db).
+- SQL queries executed: ~50 (كلها SELECT / PRAGMA — لا INSERT/UPDATE/DELETE).
+- Files read for writer analysis: prediction_tracker.py (lines 640-885), intraday_scanner.py (lines 540-757), daily_predictor.py (lines 770-825, 4150-4200), decision_logger.py (lines 1-200), b2_dedup_migration.py (grep), crontab.txt (full).
+- Grep queries: INSERT INTO predictions (35 files), INSERT INTO stored_analyses (12 files), CREATE TABLE decision_log (18 files), data_isolation references.
+- Files modified: NONE (read-only audit).
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change, NO DB write.
+
+أكبر 3 مصادر للتعارض/التكرار من منظور DB:
+1. غياب `idx_predictions_dedup` UNIQUE index → 907 duplicate predictions (40%).
+2. Schema/code drift — 9 columns مفقودين من predictions رغم إن الكود بـ referencesهم.
+3. 4 طبقات audit/tracking ضاعت: decision_log.db + stored_analyses (empty) + data_isolation + predictions_duplicates_archive.
+
+الخطوة التالية: انتظر تعليمات المالك — هل يبدأ بـ:
+- (P0) تشغيل `b2_dedup_migration.py` + `b1_isolate_adp.py` لإعادة إنشاء الـ audit trail + UNIQUE index؟
+- (P0) ALTER TABLE predictions ADD COLUMN لكل الـ 9 missing columns (lifecycle_status + update_count + tp1_price + tp2_price + trailing_stop_pct + max_hold_days + exit_protocol + user_advice_ar + is_duplicate)؟
+- (P1) normalize `last_login` + `updated_at` + `email_verified` + `created_at` + `trial_ends_at` في auth.db من integer ms إلى ISO strings (Issue #9 fix الحقيقي)؟
+- (P2) filter ADP من stocks.db.stocks + UPDATE predictions SET market='EGX' WHERE ticker='ADPC' AND market='US'؟
+كلها منفذة على مراحل بدون كتابة كود جديد (تشغيل scripts موجودة + SQL statements).
+
+---
+Task ID: AUDIT-FINAL
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: تجميع نتائج 5 تقارير تدقيق (AUDIT-1 to AUDIT-5) في تقرير واحد شامل ORCHESTRATOR_EXECUTOR_REALITY_AUDIT.md
+
+Work Log:
+- استلمت نتائج 5 subagents (AUDIT-1: المسار التنفيذي، AUDIT-2: المحركات، AUDIT-3: الرادار، AUDIT-4: Legacy+OOP، AUDIT-5: DB+المخاطر).
+- نزّلت الـ DBs من GitHub Releases (snapshot 2026-10-21 الكامل + predictions.db 2026-10-24) إلى db/ — كل الـ 9 DBs شغّالة (auth: 14 tables, stocks: 51, predictions: 33, price_history: 3).
+- كتبت التقرير النهائي في /home/z/my-project/ORCHESTRATOR_EXECUTOR_REALITY_AUDIT.md (9 أقسام: A-Executive Summary, B-Runtime Evidence, C-Existing Engines, D-Liquidity Radar, E-Fast Scanner, F-Legacy Isolation, G-Minimal Change Plan, H-Acceptance Criteria, I-Open Questions).
+- التقرير شامل 7 جداول runtime evidence + 3 مسارات فعلية + جرد 12 محرك + 6 حسابات مكررة + تدقيق رادار كامل + خطة 8 مراحل (P0-P7) + 10 open questions.
+
+Stage Summary:
+- أبرز 5 نتائج مثبتة:
+  1. المعمارية الجديدة (Orchestrator V3 stack) غير موصولة — 5 ملفات dead code.
+  2. decision_log.db مفقود — كل audit trail ضاع.
+  3. stored_analyses فاضية (0 row) رغم 10+ writers.
+  4. 907 duplicate predictions (40%) — UNIQUE index مفقود.
+  5. تشخيص Issue #9 كان غلط — الـ bug في last_login/updated_at/email_verified/created_at (numeric ms)، مش last_active_at (اللي هو ISO صح).
+- الرادار: لا يحتاج إعادة كتابة — يحتاج تصحيح توصيل فقط.
+- Fast Scanner: feasibility HIGH — المكونات موجودة، النقص في wiring + endpoint.
+- المسار الفعلي للإنتاج: V40.2/MasterAnalyzer + daily_predictor subprocess (مش الـ V3 stack).
+- لم أكتب أي كود. لم أعدّل أي ملف. لم أكتب على أي DB. Read-only بالكامل.
+- التقرير جاهز لمراجعة المالك. لا تنفذ أي حاجة قبل اعتماد الخطة.
