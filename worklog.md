@@ -12640,3 +12640,45 @@ Stage Summary:
 - لم أكتب كود إنتاج، لم أغير سلوك إشارات حية، لم ألمس main، لم ألمس db/ الحالية.
 - كل الفحص في /tmp/dbsnap (معزول).
 - انتظر تعليمات المالك: هل أبدأ المرحلة D (الاختبارات التاريخية) على historical.db؟
+
+---
+Task ID: EXIT-BACKTEST-D
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: المرحلة D — الاختبار التاريخي الاستكشافي لإشارات الخروج (conditional approval)
+
+Work Log:
+- نسخت historical.db → db/historical_snapshot_2026-10-18.db (gitignored، لا commit للـ DB).
+- تحقق جودة البيانات: 11 سهم × 1210 يوم، 0 duplicates، 0 high<low، 0 invalid prices، 0 disordered dates.
+- اكتشفت HELI split (2025-09-16, ratio 3.08:1) → عدّلت pre-split prices ÷ 3.08.
+- 441 zero-volume rows (~40/سهم، 3.3%) — أيام توقف، احتفظت بيها (مشاركين فقط، مش بـ تـ fire signals).
+- تصميم الاختبار:
+  * In-sample (dev): 2021-10-10 → 2023-12-31 (مش reported)
+  * Out-of-sample (eval): 2024-01-02 → 2026-10-07 (665 يوم، REPORTED)
+  * Point-in-time صارم: signal at close of D, execute at open of D+1 (no future data)
+  * Costs: 0.65% per side (0.15% commission + 0.5% slippage)
+  * Cooldown: 20 trading days بعد exit قبل re-entry
+- كتبت scripts/test_exit_signals_historical.py (312 سطر).
+- 3 استراتيجيات: experimental (Volume Ratio > 2.0 + 3 lower highs) | current (evaluate_force_exit) | buy_and_hold.
+
+Stage Summary — النتائج الفعلية (out-of-sample 2024-01-02 → 2026-10-07):
+- experimental: avg return 165.74% (median 95.34%) | avg maxDD 38.22% | 77 trades (7/stock) | FP=42 FN=142 | beat B&H 10/11
+- current_exit: avg return 165.97% (median 99.51%) | avg maxDD 32.55% | 272 trades (24.7/stock) | FP=171 FN=141 | beat B&H 8/11
+- buy_and_hold: avg return 164.38% (median 94.07%) | avg maxDD 38.57% | 11 trades (1/stock)
+
+الاستنتاجات الصريحة:
+1. العوائد متقاربة جداً بين الـ 3 استراتيجيات (~165%) — سوق صاعد قوي 2024-2026 يهيمن على timing.
+2. current_exit لديه أقل max drawdown (32.55% vs 38.22%) — حماية أفضل في التصحيحات.
+3. experimental أطلق إشارات أقل (7 vs 25/stock) — تكاليف أقل بس حماية أقل.
+4. False positive rate مرتفع في الاتنين: experimental 55%، current 63% — كتير من الإشارات بـ تطلع قبل صعود إضافي.
+5. False negatives كتيرة في الاتنين (142, 141) — الاتنين بـ يفوّتوا نزولات كبيرة.
+6. experimental beat B&H في 10/11 سهم، current في 8/11 — الفرق صغير ومش دلالة إحصائية.
+
+القيود (موثّقة):
+- عينة 11 سهم سائل بس — لا تعمم على EGX70 أو السوق كله.
+- فترة التقييم سوق صاعد — نتائج bear/sideways مختلفة.
+- مفيش buy/sell volume breakdown — الـ distribution heuristic بدائي.
+- current_exit مصمم لـ position management (مع entry_price)، مش standalone signal — المقارنة مش fully fair.
+- cooldown 20 يوم تعسفي.
+- مفيش capital gains tax.
+
+لم أعدّل أي منطق إنتاج. لم ألمس short_holding_exit.py. لم ألمس main. لا merge، لا deploy.
