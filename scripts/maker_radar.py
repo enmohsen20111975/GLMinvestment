@@ -316,25 +316,23 @@ def compute_turnover(row):
 # ============================================================================
 
 # Cache: ticker → {value_traded, relative_volume_10d, ...} from stocks.db
-_SCANNER_ENRICHMENT_CACHE: dict = None
+_SCANNER_ENRICHMENT_CACHE: dict = {}  # keyed by market_code
 
 
 def _load_scanner_enrichment(market_code: str = 'EGX'):
     """Load value_traded + relative_volume_10d from stocks.db for all tickers.
 
-    Caches at module level (one DB read per radar run). Returns dict:
-        {ticker: {'value_traded': float, 'relative_volume_10d': float, ...}}
-
+    Caches at module level PER MARKET (one DB read per market per radar run).
     Returns empty dict if stocks.db or columns don't exist (backward compat).
     """
     global _SCANNER_ENRICHMENT_CACHE
-    if _SCANNER_ENRICHMENT_CACHE is not None:
-        return _SCANNER_ENRICHMENT_CACHE
+    if market_code in _SCANNER_ENRICHMENT_CACHE:
+        return _SCANNER_ENRICHMENT_CACHE[market_code]
 
     cache: dict = {}
     db_path = PROJECT_ROOT / 'db' / 'stocks.db'
     if not db_path.exists():
-        _SCANNER_ENRICHMENT_CACHE = cache
+        _SCANNER_ENRICHMENT_CACHE[market_code] = cache
         return cache
 
     try:
@@ -355,12 +353,12 @@ def _load_scanner_enrichment(market_code: str = 'EGX'):
 
         rows = conn.execute(
             "SELECT symbol, value_traded, relative_volume_10d, turnover_egp, "
-            "pe_ratio, roe, profit_margin, eps, dividend_yield, rsi "
+            "pe_ratio, roe, profit_margin, eps, dividend_yield, rsi, volume "
             "FROM stocks WHERE market = ?",
             (market_slug,)
         ).fetchall()
         for r in rows:
-            ticker, vt, rv, te, pe, roe, pm, eps, dy, rsi = r
+            ticker, vt, rv, te, pe, roe, pm, eps, dy, rsi, vol = r
             cache[ticker] = {
                 'value_traded': vt,
                 'relative_volume_10d': rv,
@@ -371,13 +369,14 @@ def _load_scanner_enrichment(market_code: str = 'EGX'):
                 'eps': eps,
                 'dividend_yield': dy,
                 'rsi_scanner': rsi,
+                'volume': vol,
             }
         conn.close()
         log(f"  📊 scanner enrichment: {len(cache)} tickers from stocks.db (market={market_slug})")
     except Exception as e:
         log(f"  ⚠️ scanner enrichment failed: {e}")
 
-    _SCANNER_ENRICHMENT_CACHE = cache
+    _SCANNER_ENRICHMENT_CACHE[market_code] = cache
     return cache
 
 
@@ -536,52 +535,35 @@ def is_early_break(closes, volumes, highs=None):
     return True, f'break: close {last_close:.2f} > max_20 {max_20:.2f}, vol {vol_ratio:.2f}×, range {range_pct:.1f}%'
 
 
-def scan_ticker(rows, ticker, regime='NORMAL'):
-    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
-    # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
-    if len(rows) < 15:
-        # RADAR-FIX: scanner-based fallback when historical data is insufficient.
-        # Instead of returning None (which drops the ticker entirely),
-        # create a minimal result from scanner data so the ticker appears
-        # in the radar output with a SCANNER_ALERT classification.
-        # This does NOT generate a buy/sell recommendation — it only flags
-        # that the stock has unusual activity based on live scanner data.
-        return _scanner_fallback(ticker, regime)
-
-
-def _scanner_fallback(ticker, regime='NORMAL'):
+def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
     """RADAR-FIX: Create a minimal radar result from scanner data when historical
-    data is insufficient (< 15 rows). This does NOT replace the 5 detection paths —
-    it only ensures the ticker appears in radar output with live data.
+    data is insufficient (< 15 rows). STANDALONE function — does NOT replace
+    the 5 detection paths inside scan_ticker.
 
     Classification: SCANNER_ALERT (not a buy/sell recommendation).
+    Returns None if no scanner data available.
     """
-    cache = _load_scanner_enrichment('EGX')
+    cache = _load_scanner_enrichment(market_code)
     if not cache or ticker not in cache:
-        return None  # no scanner data either → truly insufficient
+        return None
 
     e = cache[ticker]
-    price = e.get('value_traded')  # not price, but check if data exists
-    current_price = None
     value_traded = e.get('value_traded')
     relvol = e.get('relative_volume_10d')
     rsi = e.get('rsi_scanner') or e.get('rsi')
     volume = e.get('volume')
 
-    # Need at least price + one activity indicator
     if not value_traded or value_traded <= 0:
         return None
 
-    # Get current_price from scanner enrichment
-    # The cache has: value_traded, relative_volume_10d, turnover_egp, pe_ratio, roe, etc.
-    # But current_price is NOT in the enrichment cache. We need to read it directly.
     try:
         conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
-        r = conn.execute("SELECT current_price, change_percent FROM stocks WHERE symbol = ?", (ticker,)).fetchone()
+        r = conn.execute("SELECT current_price, change_percent, volume FROM stocks WHERE symbol = ?", (ticker,)).fetchone()
         conn.close()
         if r:
             current_price = r[0]
             change_pct = r[1] or 0
+            volume = r[2] or volume or 0
         else:
             return None
     except Exception:
@@ -590,9 +572,6 @@ def _scanner_fallback(ticker, regime='NORMAL'):
     if not current_price or current_price <= 0:
         return None
 
-    # Classify based on scanner data
-    # relvol > 1.2 = volume surge
-    # change > 0 = bullish, change < 0 = bearish
     vol_surge = relvol and relvol > 1.2
     is_bullish = change_pct > 0
     is_bearish = change_pct < 0
@@ -613,7 +592,7 @@ def _scanner_fallback(ticker, regime='NORMAL'):
         movement_type = 'FLAT'
         movement_desc = 'حركة محدودة'
 
-    result = {
+    return {
         'ticker': ticker,
         'current_price': round(current_price, 2),
         'path': 'F_scanner_alert',
@@ -626,15 +605,15 @@ def _scanner_fallback(ticker, regime='NORMAL'):
         'turnover_egp': round(value_traded, 2) if value_traded else 0,
         'rsi_scanner': round(rsi, 1) if rsi else None,
         'change_percent': round(change_pct, 2),
-        'readiness_pct': 0,  # not ready for entry (no historical analysis)
-        'under_microscope': False,  # NOT a buy recommendation
+        'readiness_pct': 0,
+        'under_microscope': False,
         'reason': f'SCANNER_ALERT: {movement_desc} (بيانات تاريخية غير كافية للتحليل الكامل)',
         'data_quality': 'scanner_only',
         'stale_flag': False,
         'last_close_date': datetime.now().strftime('%Y-%m-%d'),
         'staleness_days': 0,
-        'score': 0,  # no score — this is a detection, not a recommendation
-        'signal': 'HOLD',  # NOT a buy signal
+        'score': 0,
+        'signal': 'HOLD',
         'signal_ar': 'مراقبة',
         'entry': None,
         'target': None,
@@ -675,7 +654,13 @@ def _scanner_fallback(ticker, regime='NORMAL'):
         'position_size': 0,
         'final_reason': f'SCANNER_ALERT: {movement_desc}',
     }
-    return result
+
+
+def scan_ticker(rows, ticker, regime='NORMAL'):
+    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
+    # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
+    if len(rows) < 15:
+        return None  # historical analysis needs >= 15 rows — scanner_fallback handled by caller
 
     closes = [r['close'] for r in rows if r['close'] and r['close'] > 0]
     volumes = [parse_volume(r['volume']) for r in rows]
@@ -2037,7 +2022,7 @@ def main():
         # has _scanner_fallback. If scanner data is available, it returns
         # a SCANNER_ALERT result instead of None.
         if not rows or len(rows) < 15:
-            result = scan_ticker(rows or [], ticker, regime=regime_name)
+            result = _scanner_fallback(ticker, regime=regime_name, market_code=args.market.upper())
             if result and result.get('classification') == 'SCANNER_ALERT':
                 # Scanner fallback worked — enrich + add to results
                 identity = identity_map.get(ticker, {})
