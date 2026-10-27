@@ -262,6 +262,24 @@ export async function GET(req: NextRequest) {
         scan_timestamp: s.scan_timestamp ?? null,
         reasons: Array.isArray(s.reasons) ? s.reasons : null,
         sanity_status: s.sanity_status ?? null,
+        // ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): 4 طبقات ذكاء ──
+        // price_action + participant_flow + continuation + data_quality من برافو.
+        // كلها null-safe (Rule 27: null = null).
+        price_action: s.price_action ?? null,
+        price_action_evidence: s.price_action_evidence ?? null,
+        participant_flow_assessment: s.participant_flow_assessment ?? null,
+        participant_evidence_level: s.participant_evidence_level ?? null,
+        participant_evidence: s.participant_evidence ?? null,
+        continuation_assessment: s.continuation_assessment ?? null,
+        data_quality_reasons: Array.isArray(s.data_quality_reasons) ? s.data_quality_reasons : null,
+        classification_timestamp: s.classification_timestamp ?? null,
+        // enrichment fields (from scanner)
+        volume_surge: s.volume_surge ?? null,
+        rsi_scanner: s.rsi_scanner ?? null,
+        value_traded_official: s.value_traded_official ?? null,
+        relative_volume_10d_official: s.relative_volume_10d_official ?? null,
+        movement_type: s.movement_type ?? null,
+        movement_desc: s.movement_desc ?? null,
       };
     });
 

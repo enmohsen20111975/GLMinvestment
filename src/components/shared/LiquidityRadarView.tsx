@@ -36,6 +36,8 @@ import {
 import { useAppStore } from '@/lib/store';
 import { isGuestUser } from '@/lib/subscription-gate';
 import { useSession } from '@/lib/next-auth-shim';
+// (ALPHA-RADAR-INTELLIGENCE): شارات الـ 4 طبقات ذكاء — shared component.
+import { IntelligenceBadges } from '@/components/shared/IntelligenceBadges';
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
@@ -114,6 +116,24 @@ interface RadarStock {
  currency?: string | null;
  // Legacy lowercase data_quality from older cache (forward-compat).
  data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | 'invalid' | 'unavailable' | null;
+ // ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): 4 طبقات ذكاء ──
+ // price_action + participant_flow + continuation + data_quality من برافو.
+ // كلها optional + null-safe (Rule 27: null = null).
+ price_action?: string | null;
+ price_action_evidence?: Record<string, unknown> | null;
+ participant_flow_assessment?: string | null;
+ participant_evidence_level?: string | null;
+ participant_evidence?: Record<string, unknown> | null;
+ continuation_assessment?: string | null;
+ data_quality_reasons?: string[] | null;
+ classification_timestamp?: string | null;
+ // enrichment fields (from scanner)
+ volume_surge?: boolean | null;
+ rsi_scanner?: number | null;
+ value_traded_official?: number | null;
+ relative_volume_10d_official?: number | null;
+ movement_type?: string | null;
+ movement_desc?: string | null;
 }
 
 
@@ -795,6 +815,52 @@ export function LiquidityRadarView({
  );
  },
  },
+// ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): عمود الذكاء ──
+// بيعرض الـ 4 طبقات ذكاء (price_action + participant_flow + continuation +
+// data_quality) كـ badges مختصرة. لو كل الطبقات null → مخفي (Rule 27).
+{
+ key: 'intelligence',
+ header: '🧠 الذكاء',
+ align: 'center',
+ width: 'w-48',
+ sortable: false,
+ filterable: false,
+ render: (row) => (
+ <div className="flex flex-col items-center gap-1 py-1">
+ <IntelligenceBadges
+ price_action={row.price_action}
+ price_action_evidence={row.price_action_evidence}
+ participant_flow_assessment={row.participant_flow_assessment}
+ participant_evidence_level={row.participant_evidence_level}
+ participant_evidence={row.participant_evidence}
+ continuation_assessment={row.continuation_assessment}
+ data_quality_status={row.data_quality_status}
+ data_quality_reasons={row.data_quality_reasons}
+ classification_timestamp={row.classification_timestamp}
+ />
+ {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
+ {row.volume_surge === true && (
+ <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+ ⚡ حجم غير اعتيادي
+ </Badge>
+ )}
+ {/* (ALPHA-SCANNER-ALERTS): شارة الحركة لو movement_type موجود */}
+ {row.movement_type && row.movement_type !== 'FLAT' && (
+ <Badge variant="outline" className={cn(
+ 'text-[9px] px-1 py-0 h-4',
+ row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
+ : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
+ : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
+ : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
+ : 'border-border bg-muted/20 text-muted-foreground'
+ )}>
+ {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
+ : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
+ </Badge>
+ )}
+ </div>
+ ),
+},
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
  ], []); // [] = stable — لا تتغير إلا عند mount
 
