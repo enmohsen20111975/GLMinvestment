@@ -454,6 +454,54 @@ export function LiquidityRadarView({
  <FlashingPriceCell price={row.current_price ?? null} />
  ),
  },
+ // P-TURNOVER: عمود السيولة المتداولة (Turnover / Cash) — يطابق شاشة TradingView
+ {
+ key: 'turnover',
+ header: 'السيولة المتداولة',
+ sortable: true,
+ width: 'w-28',
+ align: 'center',
+ // الفرز الافتراضي: تنازلي حسب السيولة (الأعلى سيولة أولاً)
+ defaultSort: 'desc',
+ sortValue: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   return turnover;
+ },
+ filterValue: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   return turnover > 0 ? fmtFlow(turnover) : '—';
+ },
+ render: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   if (turnover <= 0) return <span className="text-muted-foreground text-xs">—</span>;
+   // تلوين حسب حجم السيولة: >100M أخضر غامق، >10M أخضر فاتح، غير ذلك عادي
+   const isHighCash = turnover >= 100_000_000;
+   const isMidCash = turnover >= 10_000_000;
+   return (
+     <span className={cn(
+       'font-mono text-xs font-bold',
+       isHighCash ? 'text-profit' : isMidCash ? 'text-profit/70' : 'text-foreground'
+     )}>
+       {fmtFlow(turnover)}
+     </span>
+   );
+ },
+ },
  {
  key: 'change_pct',
  header: 'التغير%',
@@ -716,6 +764,9 @@ export function LiquidityRadarView({
  ? 'bg-whale/10 text-whale border-whale/20'
  : row.classification === 'rule80_downtrend'
  ? 'bg-loss/10 text-loss border-loss/20'
+ // P-BREAKOUT: الأسهم المتفجرة (turnover > 100M + change > +5%) = breakout surge = أخضر
+ : (Number(row.turnover_egp ?? 0) >= 100_000_000 && (row.change_percent ?? 0) >= 5)
+ ? 'bg-profit/15 text-profit border-profit/30 ring-1 ring-profit/20'
  : 'bg-muted text-muted-foreground border-border';
  return (
  <div className="flex flex-col items-center gap-0.5" title={reasons.join(' | ')}>
