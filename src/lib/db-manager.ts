@@ -528,18 +528,65 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
       filtered as unknown as Record<string, unknown>[],
     ) as unknown as IncubatorCandidate[];
 
+    // (ALPHA-RADAR-INTELLIGENCE-FIX — owner directive 2026-10-28):
+    // المشكلة: maker_radar.py بـ يبني incubator_candidates من الصفر (line 1548)
+    // ومش بـ ينسخ حقول الـ 4 طبقات ذكاء من الـ result الأصلي.
+    // الحل: ندمج الطبقات من `results` لـ `incubator_candidates` عن طريق الـ ticker.
+    // ده يخلّي الـ IntelligenceBadges يظهر في الحاضنة كمان (مش بس في ScannerAlerts).
+    const allResultsForMerge = (parsed.results || parsed.all_results || []) as Array<Record<string, unknown>>;
+    const resultsByTicker = new Map<string, Record<string, unknown>>();
+    for (const r of allResultsForMerge) {
+      const t = String(r.ticker || r.symbol || '').toUpperCase();
+      if (t) resultsByTicker.set(t, r);
+    }
+    const INTELLIGENCE_FIELDS = [
+      'price_action', 'price_action_evidence',
+      'participant_flow_assessment', 'participant_evidence_level', 'participant_evidence',
+      'continuation_assessment',
+      'data_quality_status', 'data_quality_reasons',
+      'classification_timestamp',
+      // enrichment fields كمان (لو مش موجودة في candidate)
+      'volume_surge', 'change_percent', 'rsi_scanner',
+      'value_traded_official', 'relative_volume_10d_official', 'turnover_egp',
+    ];
+    for (const candidate of enrichedCandidates) {
+      const ticker = (candidate.ticker || '').toUpperCase();
+      const sourceResult = resultsByTicker.get(ticker);
+      if (sourceResult) {
+        for (const field of INTELLIGENCE_FIELDS) {
+          const val = sourceResult[field];
+          // ادمج لو الحقل مش موجود في candidate أو null.
+          if (val != null && (candidate[field as keyof IncubatorCandidate] == null)) {
+            (candidate as Record<string, unknown>)[field] = val;
+          }
+        }
+      }
+    }
+
     // (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
     // اقرا scanner_alerts + under_microscope من الـ JSON.
     // الـ JSON فيه `results` (كل النتائج) — نصفي منها الـ SCANNER_ALERT.
-    const allResults = (parsed.results || parsed.all_results || []) as Array<Record<string, unknown>>;
-    const rawScannerAlerts = allResults.filter(
+    const rawScannerAlerts = allResultsForMerge.filter(
       (r) => r.classification === 'SCANNER_ALERT' || r.path === 'F_scanner_alert',
     ) as unknown as ScannerAlert[];
     const enrichedScannerAlerts = enrichWithUnifiedLogos(
       rawScannerAlerts as unknown as Record<string, unknown>[],
     ) as unknown as ScannerAlert[];
 
+    // (ALPHA-RADAR-INTELLIGENCE-FIX): نفس الدمج لـ under_microscope.
     const rawUnderMicroscope = (parsed.under_microscope || []) as IncubatorCandidate[];
+    for (const candidate of rawUnderMicroscope) {
+      const ticker = (candidate.ticker || '').toUpperCase();
+      const sourceResult = resultsByTicker.get(ticker);
+      if (sourceResult) {
+        for (const field of INTELLIGENCE_FIELDS) {
+          const val = sourceResult[field];
+          if (val != null && (candidate[field as keyof IncubatorCandidate] == null)) {
+            (candidate as Record<string, unknown>)[field] = val;
+          }
+        }
+      }
+    }
     const enrichedUnderMicroscope = enrichWithUnifiedLogos(
       rawUnderMicroscope as unknown as Record<string, unknown>[],
     ) as unknown as IncubatorCandidate[];
