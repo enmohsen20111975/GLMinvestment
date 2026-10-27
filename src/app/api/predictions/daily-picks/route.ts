@@ -17,6 +17,9 @@ import { applyValidatedTargets } from '@/lib/targets-validator';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
 import { applyPaywallToResults } from '@/lib/paywall';
+// (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+// «إزالة استدعاء new Database(...) نهائياً. البديل: openDb من DbManager.»
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -109,12 +112,12 @@ function _readRegimeFromStocksDb(marketCode: string): {
   // (in which case the caller MUST NOT fabricate a regime — it should
   // surface `market_regime: null` + `no_trade_reason: "backend_offline"`).
   try {
-    const path = require('path');
     const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
+    const stocksDbPath = require('path').join(process.cwd(), 'db', 'stocks.db');
     if (!fs.existsSync(stocksDbPath)) return null;
-    const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
+    // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+    const db = openDb('stocks.db');
+    if (!db) return null;
     try {
       // Idempotent-ish: if system_settings doesn't exist, return null.
       const marketKey = REGIME_MARKET_MAP[(marketCode || 'EGX').toUpperCase()] || 'EGX';
@@ -298,8 +301,8 @@ export async function GET(req: NextRequest) {
         }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
+    // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+    const db = openDb(dbPath.endsWith('predictions.db') ? 'predictions.db' : 'predictions.db');
 
     const marketRaw = (url.searchParams.get('market') || 'EGX').toUpperCase();
     const market = MARKET_MAP[marketRaw] || 'EGX';
@@ -312,9 +315,9 @@ export async function GET(req: NextRequest) {
     // Optional stock lookup for name_ar + sector
     let stocksLookup: Map<string, { sector: string; name_ar: string }> = new Map();
     try {
-      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-      if (fs.existsSync(stocksDbPath)) {
-        const stocksDb = new Database(stocksDbPath, { readonly: true });
+      // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+      const stocksDb = openDb('stocks.db');
+      if (stocksDb) {
         const stockRows = stocksDb
           .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
           .all() as Array<Record<string, unknown>>;

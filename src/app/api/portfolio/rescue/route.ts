@@ -19,9 +19,14 @@
  *
  * Reads:
  *   - stocks.db: stocks (fundamentals + current price + MA/RSI/support/
- *     resistance if pre-computed), sharia_compliance via data_engine.db
- *   - price_history.db: price_history (ticker, date, open_price, high_price,
- *     low_price, close_price, volume) for RSI/MA calculations
+ *     resistance if pre-computed) + stock_daily_prices (LIVE candles)
+ *   - data_engine.db: sharia_compliance (sharia_metrics table)
+ *   - price_history.db: price_history (EMERGENCY FALLBACK only — frozen at
+ *     2026-09-24, used if stocks.db has no candle data for the ticker)
+ *
+ * (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+ *   «القراءة من جدول stock_daily_prices أولاً (حيث التاريخ أحدث من 2026-09-24).
+ *    اجعل price_history.db خيار احتياطي أخير (Fallback) فقط.»
  *
  * Auth: required (getSessionUserId). All numeric outputs coerced to Number
  * and rounded to 2 decimals to keep the payload lean.
@@ -30,6 +35,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { getStocksDb, getPriceHistoryDb } from '@/lib/egx-db';
+// (ALPHA-DAL-WAVE2 — owner directive 2026-10-27): openDb للوصول الموحد عبر DAL.
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -51,7 +58,8 @@ function round2(n: number): number {
 // MUST come from the Python canonical package `vps-service/analyzers/indicators/`
 // (calc_rsi Wilder's / calc_atr Wilder's / sma / ema / macd).
 //
-// This route reads stocks.db + price_history.db directly (no Python call).
+// This route reads stocks.db (stock_daily_prices PRIMARY) + price_history.db
+// (EMERGENCY FALLBACK) via the egx-db helpers (which route through the DAL).
 // To respect Rule 54, the local `sma`/`ema`/`rsi` calc functions were deleted
 // 2026-10-05 (CALC-AUDIT consolidation). The technical fields `rsi`/`ma_50`/
 // `ma_200` are read from the pre-computed columns in `stocks.db` (populated
@@ -139,14 +147,11 @@ const STAGE_VERDICT: Record<1 | 2 | 3 | 4, { ar: string; hint: string }> = {
 /** Quick sharia compliance lookup from data_engine.db (best-effort, optional). */
 function lookupSharia(ticker: string): { compliant: boolean | null; sources: number; details: string | null } {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const dataEnginePath = path.join(process.cwd(), 'db', 'data_engine.db');
-    if (!fs.existsSync(dataEnginePath)) {
+    // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+    const db = openDb('data_engine.db');
+    if (!db) {
       return { compliant: null, sources: 0, details: null };
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(dataEnginePath, { readonly: true, fileMustExist: true, timeout: 8000 });
     db.pragma('busy_timeout = 8000');
     let row: Row | undefined;
     try {
@@ -170,11 +175,62 @@ function lookupSharia(ticker: string): { compliant: boolean | null; sources: num
   }
 }
 
-/** Pull the last N closes (oldest → newest) for `ticker` from price_history.db. */
+/**
+ * Pull the last N closes (oldest → newest) for `ticker`.
+ *
+ * (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+ * «القراءة من جدول stock_daily_prices أولاً (حيث التاريخ أحدث من 2026-09-24).
+ *  اجعل price_history.db خيار احتياطي أخير (Fallback) فقط إذا لم يُعثر على الرمز إطلاقاً.»
+ *
+ * Source priority:
+ *   1. stocks.db.stock_daily_prices (LIVE — updated daily by TradingView Scanner)
+ *   2. price_history.db.price_history (EMERGENCY FALLBACK — frozen at 2026-09-24)
+ */
 function fetchCloses(ticker: string, days: number): { closes: number[]; volumes: number[]; firstDate: string | null; lastDate: string | null; high52: number; low52: number } {
+  const upper = ticker.toUpperCase();
+
+  // ─── Source 1 (PRIMARY): stocks.db.stock_daily_prices ─────────────────────
+  // (ALPHA-DAL-WAVE2): use getStocksDb() — it routes through the DAL (openDb).
+  try {
+    const db = getStocksDb();
+    const rows = db
+      .prepare(
+        `SELECT price_date AS date, close_price, volume
+         FROM stock_daily_prices
+         WHERE ticker = ? AND close_price > 0
+         ORDER BY price_date DESC
+         LIMIT ?`,
+      )
+      .all(upper, days) as Row[];
+    if (rows && rows.length > 0) {
+      const sorted = [...rows].reverse();
+      const closes = sorted.map((r) => num(r.close_price, 0)).filter((p) => p > 0);
+      const volumes = sorted.map((r) => num(r.volume, 0));
+      const firstDate = (sorted[0]?.date as string) || null;
+      const lastDate = (sorted[sorted.length - 1]?.date as string) || null;
+      let high52 = 0;
+      let low52 = 0;
+      try {
+        const r52 = db
+          .prepare(
+            `SELECT MAX(high_price) AS h, MIN(low_price) AS l
+             FROM stock_daily_prices
+             WHERE ticker = ? AND price_date >= date('now','-365 days')`,
+          )
+          .get(upper) as Row | undefined;
+        high52 = num(r52?.h, 0);
+        low52 = num(r52?.l, 0);
+      } catch { /* ignore */ }
+      return { closes, volumes, firstDate, lastDate, high52, low52 };
+    }
+  } catch {
+    // stocks.db missing or table not found → fall through to price_history.db.
+  }
+
+  // ─── Source 2 (EMERGENCY FALLBACK): price_history.db.price_history ────────
+  // (ALPHA-DAL-WAVE2): آخر خيار طوارئ ONLY if stocks.db has no data.
   try {
     const db = getPriceHistoryDb();
-    const upper = ticker.toUpperCase();
     const rows = db
       .prepare(
         `SELECT date, close_price, volume
@@ -187,13 +243,11 @@ function fetchCloses(ticker: string, days: number): { closes: number[]; volumes:
     if (!rows || rows.length === 0) {
       return { closes: [], volumes: [], firstDate: null, lastDate: null, high52: 0, low52: 0 };
     }
-    // chronological (oldest → newest)
     const sorted = [...rows].reverse();
     const closes = sorted.map((r) => num(r.close_price, 0)).filter((p) => p > 0);
     const volumes = sorted.map((r) => num(r.volume, 0));
     const firstDate = (sorted[0]?.date as string) || null;
     const lastDate = (sorted[sorted.length - 1]?.date as string) || null;
-    // 52w high/low from a wider window (365 days) — separate query.
     let high52 = 0;
     let low52 = 0;
     try {

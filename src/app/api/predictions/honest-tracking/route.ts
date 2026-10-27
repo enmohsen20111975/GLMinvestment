@@ -3,21 +3,26 @@
  * ===================================
  * نقطة دخول موحّدة لتتبّع التوقعات الحقيقية.
  * يرجع قائمة بالـ endpoints المتاحة + ملخّص سريع.
+ *
+ * (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+ * «إزالة استدعاء new Database(...) نهائياً. البديل: استخدام دوال DbManager المناسبة (openDb).»
+ * المسار ده دلوقتي thin wrapper — كل الـ DB access بيحصل جوه DbManager.openDb.
  */
 
 import { NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  let db: Database.Database;
-  try {
-    db = new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
-    db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
+  // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+  const db = openDb('predictions.db');
+  if (!db) {
+    return NextResponse.json({
+      success: false,
+      error: 'predictions_db_unavailable',
+      message: 'قاعدة بيانات التوقعات غير متاحة حاليًا',
+    }, { status: 200 }); // graceful 200 (not 500) per fallback policy
   }
 
   try {
@@ -34,7 +39,12 @@ export async function GET() {
       FROM predictions
     `).get() as any;
 
-    const lessonsCount = db.prepare('SELECT COUNT(*) as count FROM prediction_lessons').get() as any;
+    let lessonsCount = { count: 0 };
+    try {
+      lessonsCount = db.prepare('SELECT COUNT(*) as count FROM prediction_lessons').get() as any;
+    } catch {
+      // table may not exist — default to 0
+    }
 
     const closed = (summary.wins || 0) + (summary.losses || 0);
     const winRate = closed > 0 ? Math.round((summary.wins / closed) * 1000) / 10 : 0;
@@ -61,8 +71,9 @@ export async function GET() {
       note: '✅ نظام تتبّع حقيقي — كل البيانات من predictions table مع التحقق من الأسعار الفعلية',
     });
   } catch (error) {
-    db.close();
     console.error('[predictions:honest-tracking]', error);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
+  } finally {
+    try { db.close(); } catch { /* noop */ }
   }
 }

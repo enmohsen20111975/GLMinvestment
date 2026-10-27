@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,21 +6,41 @@ export const dynamic = 'force-dynamic';
  * GET /api/stocks/delta-volume?ticker=COMI&days=14
  *
  * يجلب بيانات delta_volume (ضغط الشراء/البيع) لسهم معين.
+ *
+ * (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+ * «التوجيه عبر DbManager مع التبديل التلقائي لمصدر البيانات الحية.»
+ * المسار ده دلوقتي thin wrapper — كل الـ DB access بيحصل جوه DbManager.openDb.
+ * المحظور: «ممنوع كتابة SELECT أو new Database() داخل أي مسار UI.»
  */
+
+import { openDb } from '@/lib/db-manager';
+
 export async function GET(request: NextRequest) {
+  const ticker = request.nextUrl.searchParams.get('ticker');
+  const days = parseInt(request.nextUrl.searchParams.get('days') || '14', 10);
+
+  if (!ticker) {
+    return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
+  }
+
+  const upper = ticker.toUpperCase();
+
+  // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+  const db = openDb('data_engine.db');
+  if (!db) {
+    return NextResponse.json({
+      success: false,
+      error: 'delta_volume_data_unavailable',
+      ticker: upper,
+      fallback: true,
+      latest: null,
+      history: [],
+      summary: null,
+      message: 'No delta volume data available for this ticker',
+    }, { status: 200 });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const ticker = searchParams.get('ticker');
-    const days = parseInt(searchParams.get('days') || '14', 10);
-
-    if (!ticker) {
-      return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
-    }
-
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-    const db = new Database(dbPath, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
-
     // Latest delta
     const latest = db.prepare(`
       SELECT symbol, price_date, volume, buy_volume, sell_volume,
@@ -30,11 +48,11 @@ export async function GET(request: NextRequest) {
       FROM egksco_price_history
       WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
       ORDER BY price_date DESC LIMIT 1
-    `).get(ticker.toUpperCase()) as any;
+    `).get(upper) as any;
 
     if (!latest) {
       db.close();
-      return NextResponse.json({ success: false, error: 'No delta data', ticker });
+      return NextResponse.json({ success: false, error: 'No delta data', ticker: upper });
     }
 
     // History
@@ -44,7 +62,7 @@ export async function GET(request: NextRequest) {
       FROM egksco_price_history
       WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
       ORDER BY price_date DESC LIMIT ?
-    `).all(ticker.toUpperCase(), days) as any[];
+    `).all(upper, days) as any[];
 
     // Summary
     const summary = db.prepare(`
@@ -59,7 +77,7 @@ export async function GET(request: NextRequest) {
         SUM(delta_volume) as total_delta
       FROM egksco_price_history
       WHERE symbol = ? AND volume > 0 AND delta_volume IS NOT NULL
-    `).get(ticker.toUpperCase()) as any;
+    `).get(upper) as any;
 
     // Maker direction
     let makerDirection = 'NEUTRAL';
@@ -76,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      ticker: ticker.toUpperCase(),
+      ticker: upper,
       latest: {
         date: latest.price_date,
         volume: latest.volume,
@@ -110,19 +128,17 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[/api/stocks/delta-volume] Error:', error);
-    // BRAVO-FIX (per Mohsen's directive): return 200 with fallback data instead of 500.
-    // NOTE: ticker may not be defined if the error happened before searchParams parsing.
-    // Using optional chaining + fallback to avoid ReferenceError in the catch block.
-    const safeTicker = typeof ticker === 'string' ? ticker.toUpperCase() : '';
     return NextResponse.json({
       success: false,
       error: 'delta_volume_data_unavailable',
-      ticker: safeTicker,
+      ticker: upper,
       fallback: true,
       latest: null,
       history: [],
       summary: null,
       message: 'No delta volume data available for this ticker',
     }, { status: 200 });
+  } finally {
+    try { db.close(); } catch { /* noop */ }
   }
 }

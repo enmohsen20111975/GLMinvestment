@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
-import Database from 'better-sqlite3';
-import path from 'path';
-import { existsSync } from 'fs';
+// (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+// «إزالة استدعاء new Database(...) نهائياً. البديل: استخدام openDb من DbManager.»
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,11 +42,11 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
     }
   }
 
-  // Local SQLite fallback from stocks.db stock_daily_prices
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  if (existsSync(stocksDbPath)) {
+  // Local SQLite fallback from stocks.db stock_daily_prices (via DbManager DAL)
+  // (ALPHA-DAL-WAVE2): استخدم openDb من الـ DAL — ممنوع new Database().
+  const db = openDb('stocks.db');
+  if (db) {
     try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 5000 });
       const rows = db.prepare(`
         SELECT price_date as date,
                COALESCE(open, open_price) as open,
@@ -69,6 +69,8 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
       }
     } catch (e) {
       console.warn(`[history] Local fallback failed for ${ticker}:`, e);
+    } finally {
+      try { db.close(); } catch { /* noop */ }
     }
   }
 

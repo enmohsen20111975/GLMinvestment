@@ -10264,3 +10264,61 @@ Stage Summary:
 - grep verification: 0 REAL `new Database()` in src/modules/ + the 2 routes.
 - Lint + tsc clean.
 - Git state: branch `alpha/dal-wave1-purge`, unstaged (awaiting commit + push).
+
+---
+Task ID: ALPHA-DAL-WAVE2
+Agent: Alpha (Frontend Engineer — DAL Wave 2 portfolio + predictions purge)
+Task: تكليف الـ owner WAVE 2 — بتر price_history.db من المحفظة + تحويل التوقعات لـ thin wrappers.
+
+Work Log:
+- Step 0 (Branch + rebase): أنشأت `alpha/dal-wave2-portfolio-predictions` من main (rebased onto origin/main بعد ما برافو دفع 2 commits).
+
+- Step 1 (Task 1a — portfolio/rescue/route.ts):
+  * أعدت كتابة `fetchCloses` عشان تقرأ من `stocks.db.stock_daily_prices` أولاً (PRIMARY، via getStocksDb اللي بـ route عبر DAL) + fallback على `price_history.db.price_history` (EMERGENCY ONLY).
+  * أضفت import `openDb` من db-manager + استخدمته في `lookupSharia` (بدل `new Database(dataEnginePath)`).
+  * حدّثت الـ comment block (السطور 20-55) عشان يعكس المصدر الجديد.
+  * grep: 0 real `new Database()` في الملف.
+
+- Step 2 (Task 1b — portfolio/master/route.ts):
+  * استبدلت query `stock_price_history` القديم بـ `stock_daily_prices` (PRIMARY، أحدث تاريخ).
+  * حدّثت fallback comment من "price_history.db (dead)" لـ "data_engine.db.egksco_price_history (migrated, working)".
+  * الأولوية دلوقتي: stocks.current_price → stock_daily_prices → data_engine.egksco_price_history.
+
+- Step 3 (Task 1c — stocks/delta-volume/route.ts):
+  * أعدت كتابة المسار كـ thin wrapper: استبدلت `import Database` + `new Database(dbPath)` بـ `import { openDb }` + `openDb('data_engine.db')`.
+  * defensive: لو data_engine.db مش موجود → 200 graceful (fallback: true) بدل 500.
+
+- Step 4 (Task 2a — predictions/daily-picks/route.ts):
+  * استبدلت 3 `new Database()` calls بـ `openDb`:
+    1. regime helper (line 117): openDb('stocks.db')
+    2. main predictions read (line 302): openDb('predictions.db')
+    3. stocks lookup (line 317): openDb('stocks.db')
+  * أضفت import `openDb` من db-manager.
+
+- Step 5 (Task 2b — predictions/honest-tracking/route.ts):
+  * أعدت كتابة المسار كـ thin wrapper: استبدلت `import Database` + 2 `new Database` (readonly + immutable fallback) بـ `openDb('predictions.db')`.
+  * defensive: graceful 200 (مش 500) لو predictions.db مش موجود.
+
+- Step 6 (Task 2c — stocks/[ticker]/history/route.ts):
+  * استبدلت `import Database` + `new Database(stocksDbPath)` في الـ local fallback بـ `openDb('stocks.db')`.
+  * أزلت `import path` + `import { existsSync }` (مش محتاجين — openDb بيتحقق داخليًا).
+
+- Step 7 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي → 0 errors (pre-existing errors في helpers.ts مش متأثرة).
+  * grep check: 0 real `new Database()` في الـ 6 routes المعدّلة.
+  * grep check: `price_history.db` في portfolio/ = comments فقط (fallback labels، 0 direct opens).
+
+Stage Summary:
+- Files modified (6):
+  * src/app/api/portfolio/rescue/route.ts: fetchCloses → stock_daily_prices PRIMARY + lookupSharia via openDb.
+  * src/app/api/portfolio/master/route.ts: stock_daily_prices PRIMARY بدل stock_price_history.
+  * src/app/api/stocks/delta-volume/route.ts: thin wrapper via openDb('data_engine.db').
+  * src/app/api/predictions/daily-picks/route.ts: 3 new Database() → openDb (regime + predictions + stocks lookup).
+  * src/app/api/predictions/honest-tracking/route.ts: thin wrapper via openDb('predictions.db').
+  * src/app/api/stocks/[ticker]/history/route.ts: fallback via openDb('stocks.db').
+- المحظورات الالتزام:
+  * ممنوع `new Database()` — استخدمت openDb في كل الـ 6 routes.
+  * ممنوع إرجاع `[]` فارغة بدون fallback — كل الـ routes بترجع graceful 200 مع `source: "fallback"` لو الـ DB مش موجود.
+  * ممنوع كسر TypeScript — tsc clean على ملفاتي.
+- Git state: branch `alpha/dal-wave2-portfolio-predictions`, unstaged (awaiting commit + push).
