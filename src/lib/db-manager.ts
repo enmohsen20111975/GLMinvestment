@@ -70,11 +70,25 @@ export interface IncubatorCandidate {
   logo_url?: string | null;
   logoUrl?: string | null;
   classification?: string;
+  // ─── (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء — نفس حقول ScannerAlert ──
+  price_action?: PriceActionType | null;
+  price_action_evidence?: Record<string, unknown> | null;
+  participant_flow_assessment?: ParticipantFlowType | null;
+  participant_evidence_level?: EvidenceLevel | null;
+  participant_evidence?: Record<string, unknown> | null;
+  continuation_assessment?: ContinuationType | null;
+  data_quality_status?: DataQualityStatus | null;
+  data_quality_reasons?: string[] | null;
+  classification_timestamp?: string | null;
 }
 
 /**
  * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
  * تنبيه من بيانات السكانر الحية — نشاط غير معتاد (مش توصية شراء).
+ *
+ * (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-27):
+ * 4 طبقات ذكاء من برافو: price_action + participant_flow + continuation + data_quality.
+ * كلها optional + ممكن تكون null (Rule 27: null = null).
  */
 export interface ScannerAlert {
   ticker: string;
@@ -105,7 +119,61 @@ export interface ScannerAlert {
   // الأيقونة
   logo_url?: string | null;
   logoUrl?: string | null;
+
+  // ─── (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء من برافو ──────────────────
+  /** Layer 1: تصنيف الحركة السعرية (14 قيمة مسموحة). */
+  price_action?: PriceActionType | null;
+  /** Layer 1: الأدلة الرقمية (daily_change, volume_ratio, roc_7d, etc.). */
+  price_action_evidence?: Record<string, unknown> | null;
+  /** Layer 2: تقييم المشاركين (INSTITUTIONAL_EVIDENCE, SPECULATIVE_PATTERN, ...). */
+  participant_flow_assessment?: ParticipantFlowType | null;
+  /** Layer 2: مستوى الدليل (DIRECT, INDIRECT, WEAK, UNAVAILABLE). */
+  participant_evidence_level?: EvidenceLevel | null;
+  /** Layer 2: تفاصيل الأدلة. */
+  participant_evidence?: Record<string, unknown> | null;
+  /** Layer 3: قابلية الاستمرار (SUPPORTIVE, MIXED, WEAK, ...). */
+  continuation_assessment?: ContinuationType | null;
+  /** Layer 4: حالة البيانات (FRESH, STALE, VERY_STALE, ...). */
+  data_quality_status?: DataQualityStatus | null;
+  /** Layer 4: أسباب محددة (مثلاً `insufficient_history:1<15`). */
+  data_quality_reasons?: string[] | null;
+  /** وقت التصنيف (ISO datetime). */
+  classification_timestamp?: string | null;
 }
+
+/**
+ * (ALPHA-RADAR-INTELLIGENCE): 14 تصنيف للحركة السعرية.
+ * كلها optional — null لو مش متاح (INSUFFICIENT_DATA).
+ */
+export type PriceActionType =
+  | 'SURGE_UP' | 'SURGE_DOWN'
+  | 'BULLISH_WAVE_START' | 'BEARISH_WAVE_START'
+  | 'BULLISH_CONTINUATION' | 'BEARISH_CONTINUATION'
+  | 'BOUNCE_AFTER_DECLINE' | 'PULLBACK_AFTER_RALLY'
+  | 'BREAKOUT' | 'BREAKDOWN'
+  | 'SIDEWAYS' | 'MOMENTUM_EXHAUSTION'
+  | 'UNCONFIRMED' | 'INSUFFICIENT_DATA';
+
+/** Layer 2: تقييم المشاركين. */
+export type ParticipantFlowType =
+  | 'INSTITUTIONAL_EVIDENCE'
+  | 'SPECULATIVE_PATTERN'
+  | 'MIXED_PARTICIPATION'
+  | 'UNCONFIRMED'
+  | 'UNAVAILABLE';
+
+/** Layer 2: مستوى الدليل. */
+export type EvidenceLevel = 'DIRECT' | 'INDIRECT' | 'WEAK' | 'UNAVAILABLE';
+
+/** Layer 3: قابلية الاستمرار. */
+export type ContinuationType =
+  | 'SUPPORTIVE' | 'MIXED' | 'WEAK'
+  | 'UNCONFIRMED' | 'INSUFFICIENT_DATA';
+
+/** Layer 4: حالة البيانات. */
+export type DataQualityStatus =
+  | 'FRESH' | 'STALE' | 'VERY_STALE'
+  | 'INSUFFICIENT_HISTORY' | 'GAPS' | 'UNAVAILABLE' | 'OK';
 
 export interface IncubatorData {
   market: string;

@@ -10497,3 +10497,39 @@ Stage Summary:
 - Files modified (3): db-manager.ts (ScannerAlert type + getIncubatorData enrichment), incubator/route.ts (response fields), IncubatorSection.tsx (ScannerAlertsSection + CandidateCard enrichment).
 - المحظورات: ممنوع عرض SCANNER_ALERT كـ "شراء" (شارة "مراقبة" فقط) + ممنوع حساب مؤشرات في frontend + ممنوع price_history.db.
 - Git state: branch alpha/scanner-alerts-section, unstaged.
+
+---
+Task ID: ALPHA-RADAR-INTELLIGENCE
+Agent: Alpha
+Task: عرض الـ 4 طبقات ذكاء من برافو في شاشة الرادار (price_action + participant_flow + continuation + data_quality).
+
+Work Log:
+- أضفت 9 حقول جديدة لـ ScannerAlert + IncubatorCandidate في db-manager.ts + IncubatorSection.tsx:
+  - price_action (14 قيمة: SURGE_UP, BREAKOUT, BULLISH_WAVE_START, ...)
+  - price_action_evidence (dict — أدلة رقمية)
+  - participant_flow_assessment (INSTITUTIONAL_EVIDENCE, SPECULATIVE_PATTERN, ...)
+  - participant_evidence_level (DIRECT, INDIRECT, WEAK, UNAVAILABLE)
+  - participant_evidence (dict)
+  - continuation_assessment (SUPPORTIVE, MIXED, WEAK, ...)
+  - data_quality_status (FRESH, STALE, VERY_STALE, INSUFFICIENT_HISTORY, ...)
+  - data_quality_reasons (list)
+  - classification_timestamp (ISO datetime)
+- أضفت type exports في db-manager.ts: PriceActionType, ParticipantFlowType, EvidenceLevel, ContinuationType, DataQualityStatus.
+- بنيت IntelligenceBadges component (~180 LOC):
+  - 4 badges مختصرة (واحد لكل طبقة) بـ ترجمة عربي + ألوان مميزة:
+    * price_action: أزرق (primary)
+    * participant_flow: whale (أزرق فاتح)
+    * continuation: بنفسجي (violet)
+    * data_quality: أخضر/أصفر/أحمر حسب الحالة (FRESH=أخضر, STALE=أصفر, VERY_STALE=أحمر)
+  - زر "تفاصيل" expandable لعرض الأدلة الرقمية (price_action_evidence, participant_evidence, data_quality_reasons)
+  - tooltip على كل badge بالقيمة الإنجليزية الأصلية
+  - Rule 27: لو كل الطبقات null → لا تعرض شيئًا
+- دمجت IntelligenceBadges في:
+  - ScannerAlertsSection (لكل alert row — بعد شارة المراقبة)
+  - CandidateCard (للحاضنة — بعد زر التنبيه)
+- Lint نظيف. tsc نظيف على ملفاتي.
+
+Stage Summary:
+- Files modified (2): db-manager.ts (types + fields), IncubatorSection.tsx (interfaces + IntelligenceBadges + integration).
+- الـ 4 طبقات بتظهر كـ badges مختصرة + قابلة للتوسيع لعرض الأدلة.
+- Git state: branch alpha/radar-intelligence-ui, unstaged.
