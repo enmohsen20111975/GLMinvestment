@@ -12541,3 +12541,25 @@ Stage Summary
 - (P2) document known divergences في `Documentation/ATR_KNOWN_DIVERGENCES.md` + `Documentation/REGIME_MAP.md`؟
 - (P3) audit historical market_regime_log للـ ATR ratio behavior قبل أي تحويل لـ Wilder في market_regime_engine؟
 كلها read-only audit — ما نفّذتش أي حاجة.
+
+---
+Task ID: CANON-1
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: تنفيذ توجيه المالك — مكتبة حسابات مركزية (SSOT) + ترحيل مستهلكي ATR
+
+Work Log:
+- حدّدت canonical المعتمد: Python = analyzers.indicators.atr.calc_atr (Wilder، Rule 67). TS = canonical-rsi.ts.
+- backtest_engine.calc_atr بتفوّض للـ canonical فعلاً (BRAVO UNIFY موجود).
+- حصرت 14 ملف فيها ATR محلي، 64 ملف بستورد canonical (122 import).
+- رحّلت 2 production duplicates:
+  1. daily_predictor._atr_soft (line 1257): SMA → calc_atr (Wilder). حفظ fallback + clamp.
+  2. strict_entry_filters._safe_atr (line 79): SMA → delegation لـ calc_atr.
+- blockers موثّقة: market_regime_engine._atr (يؤثر على regime = عتبات) + camp/ + glminvestment_engines.
+- اختبارات scripts/test_canonical_atr_parity.py — 5/5 passed.
+- cross-language parity: Python calc_rsi (66.99) == TS computeRSI (66.988).
+- commit c3dc20e على bravo/audit-fixes + push عادي.
+
+Stage Summary:
+- 2 من 14 duplicate اترحّلوا (production paths الأوضح).
+- parity tests + duplicate-detection test تحمي من رجوع الحسابات المحلية.
+- لم أmerge، لم أdeploy، لم ألمس main، لم أforce-push.
