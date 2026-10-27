@@ -637,6 +637,46 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  </div>
  </div>
 
+ {/* P2-B: نبض القطاعات — شريط حي يعرض أقوى/أضعف قطاع + متوسط السوق */}
+ {data && sectors.length > 0 && ms && (() => {
+   const sorted = [...sectors].sort((a, b) => (b.avg_change || 0) - (a.avg_change || 0));
+   const strongest = sorted[0];
+   const weakest = sorted[sorted.length - 1];
+   return (
+     <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/20 border border-border/40 text-[11px]">
+       <div className="flex items-center gap-1.5">
+         <span className={cn('size-2 rounded-full', isBackgroundRefreshing ? 'bg-info animate-pulse' : 'bg-profit')} />
+         <span className="text-muted-foreground">
+           {isBackgroundRefreshing ? 'جارٍ التحديث...' : 'حركة القطاعات'}
+         </span>
+       </div>
+       {strongest && (
+         <div className="flex items-center gap-1">
+           <span className="text-profit font-bold">🟢 {strongest.sector}</span>
+           <span className="font-mono text-profit">+{strongest.avg_change?.toFixed(1)}%</span>
+         </div>
+       )}
+       {weakest && weakest !== strongest && (
+         <div className="flex items-center gap-1">
+           <span className="text-loss font-bold">🔴 {weakest.sector}</span>
+           <span className="font-mono text-loss">{weakest.avg_change?.toFixed(1)}%</span>
+         </div>
+       )}
+       <div className="flex items-center gap-1">
+         <span className="text-muted-foreground">متوسط السوق:</span>
+         <span className={cn('font-mono font-bold', (ms.avg_change ?? 0) >= 0 ? 'text-profit' : 'text-loss')}>
+           {ms.avg_change >= 0 ? '+' : ''}{ms.avg_change?.toFixed(1)}%
+         </span>
+       </div>
+       {ms.fetched_at && (
+         <span className="text-muted-foreground font-mono">
+           ⏱ {new Date(ms.fetched_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+         </span>
+       )}
+     </div>
+   );
+ })()}
+
  {/* ============= A2 FIX: Sector Liquidity Treemap ============= */}
  {/* A2: عرض بصري لتوزيع السيولة على القطاعات — مساحة كل قطاع = نسبة سيولته */}
  {data && sectors.length > 0 && (
