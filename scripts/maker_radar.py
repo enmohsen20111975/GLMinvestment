@@ -540,7 +540,142 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
     # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
     if len(rows) < 15:
+        # RADAR-FIX: scanner-based fallback when historical data is insufficient.
+        # Instead of returning None (which drops the ticker entirely),
+        # create a minimal result from scanner data so the ticker appears
+        # in the radar output with a SCANNER_ALERT classification.
+        # This does NOT generate a buy/sell recommendation — it only flags
+        # that the stock has unusual activity based on live scanner data.
+        return _scanner_fallback(ticker, regime)
+
+
+def _scanner_fallback(ticker, regime='NORMAL'):
+    """RADAR-FIX: Create a minimal radar result from scanner data when historical
+    data is insufficient (< 15 rows). This does NOT replace the 5 detection paths —
+    it only ensures the ticker appears in radar output with live data.
+
+    Classification: SCANNER_ALERT (not a buy/sell recommendation).
+    """
+    cache = _load_scanner_enrichment('EGX')
+    if not cache or ticker not in cache:
+        return None  # no scanner data either → truly insufficient
+
+    e = cache[ticker]
+    price = e.get('value_traded')  # not price, but check if data exists
+    current_price = None
+    value_traded = e.get('value_traded')
+    relvol = e.get('relative_volume_10d')
+    rsi = e.get('rsi_scanner') or e.get('rsi')
+    volume = e.get('volume')
+
+    # Need at least price + one activity indicator
+    if not value_traded or value_traded <= 0:
         return None
+
+    # Get current_price from scanner enrichment
+    # The cache has: value_traded, relative_volume_10d, turnover_egp, pe_ratio, roe, etc.
+    # But current_price is NOT in the enrichment cache. We need to read it directly.
+    try:
+        conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+        r = conn.execute("SELECT current_price, change_percent FROM stocks WHERE symbol = ?", (ticker,)).fetchone()
+        conn.close()
+        if r:
+            current_price = r[0]
+            change_pct = r[1] or 0
+        else:
+            return None
+    except Exception:
+        return None
+
+    if not current_price or current_price <= 0:
+        return None
+
+    # Classify based on scanner data
+    # relvol > 1.2 = volume surge
+    # change > 0 = bullish, change < 0 = bearish
+    vol_surge = relvol and relvol > 1.2
+    is_bullish = change_pct > 0
+    is_bearish = change_pct < 0
+
+    if vol_surge and is_bullish:
+        movement_type = 'SURGE_UP'
+        movement_desc = f'ارتفاع +{change_pct:.1f}% مع حجم نسبي {relvol:.2f}x'
+    elif vol_surge and is_bearish:
+        movement_type = 'SURGE_DOWN'
+        movement_desc = f'انخفاض {change_pct:.1f}% مع حجم نسبي {relvol:.2f}x'
+    elif is_bullish:
+        movement_type = 'UP'
+        movement_desc = f'ارتفاع +{change_pct:.1f}% (حجم عادي)'
+    elif is_bearish:
+        movement_type = 'DOWN'
+        movement_desc = f'انخفاض {change_pct:.1f}% (حجم عادي)'
+    else:
+        movement_type = 'FLAT'
+        movement_desc = 'حركة محدودة'
+
+    result = {
+        'ticker': ticker,
+        'current_price': round(current_price, 2),
+        'path': 'F_scanner_alert',
+        'classification': 'SCANNER_ALERT',
+        'movement_type': movement_type,
+        'movement_desc': movement_desc,
+        'volume_surge': vol_surge or False,
+        'relative_volume_10d_official': round(relvol, 3) if relvol else None,
+        'value_traded_official': round(value_traded, 2) if value_traded else None,
+        'turnover_egp': round(value_traded, 2) if value_traded else 0,
+        'rsi_scanner': round(rsi, 1) if rsi else None,
+        'change_percent': round(change_pct, 2),
+        'readiness_pct': 0,  # not ready for entry (no historical analysis)
+        'under_microscope': False,  # NOT a buy recommendation
+        'reason': f'SCANNER_ALERT: {movement_desc} (بيانات تاريخية غير كافية للتحليل الكامل)',
+        'data_quality': 'scanner_only',
+        'stale_flag': False,
+        'last_close_date': datetime.now().strftime('%Y-%m-%d'),
+        'staleness_days': 0,
+        'score': 0,  # no score — this is a detection, not a recommendation
+        'signal': 'HOLD',  # NOT a buy signal
+        'signal_ar': 'مراقبة',
+        'entry': None,
+        'target': None,
+        'stop_loss': None,
+        'risk_reward': 0,
+        'evidence': 0,
+        'master_score': 0,
+        'tech_score': 0,
+        'money_flow': {'buy_pct': 0, 'sell_pct': 0, 'net_flow_egp': 0,
+                       'buy_value_m': 0, 'sell_value_m': 0,
+                       'liquidity_state': 'unknown', 'money_flow_state': 'unknown'},
+        'life_cycle': 'unknown',
+        'pre_surge_details': None,
+        'quiet_details': None,
+        'explosive_details': None,
+        'break_reason': None,
+        'distribution_flag': False,
+        'avg_turnover_20d': 0,
+        'avg_volume_20d': 0,
+        'avg_volume_10d': 0,
+        'volume_ratio_10d_vs_20d': 0,
+        'volume': int(volume) if volume else 0,
+        'price_bucket': classify_price_bucket(current_price),
+        'price_stability': 0,
+        'range_10d_pct': 0,
+        'roc_10d': 0,
+        'roc_30d': 0,
+        'maker_activity': 'unknown',
+        'accumulation': 'unknown',
+        'correction_status': 'unknown',
+        'drop_from_peak': 0,
+        'expected': 0,
+        'buy_days': 0,
+        'sell_days': 0,
+        'limit_up_trap': False,
+        'kill_switch': False,
+        'kill_reason': None,
+        'position_size': 0,
+        'final_reason': f'SCANNER_ALERT: {movement_desc}',
+    }
+    return result
 
     closes = [r['close'] for r in rows if r['close'] and r['close'] > 0]
     volumes = [parse_volume(r['volume']) for r in rows]
@@ -1261,6 +1396,7 @@ B3_CLASSIFICATIONS = (
     'unclassified',
     'DATA_INVALID',
     'INSUFFICIENT_DATA',
+    'SCANNER_ALERT',  # RADAR-FIX: scanner-based detection (no historical analysis)
 )
 
 # Allowed data_quality (lowercase — backward compat with existing TS consumer)
@@ -1384,6 +1520,9 @@ def _classify_scanned_result(result: dict, args) -> str:
       7. otherwise → 'unclassified'
     """
     path = result.get('path') or ''
+    # 0. SCANNER_ALERT (radar-fix: scanner-based detection, no historical analysis)
+    if path == 'F_scanner_alert' or result.get('classification') == 'SCANNER_ALERT':
+        return 'SCANNER_ALERT'
     # 1. distribution
     if path == 'distribution' or result.get('distribution_flag'):
         return 'distribution'
@@ -1472,7 +1611,7 @@ def _build_summary(
     scanned_count = len(results)
     valid_data_count = sum(
         1 for r in results
-        if r.get('classification') not in ('DATA_INVALID', 'INSUFFICIENT_DATA')
+        if r.get('classification') not in ('DATA_INVALID', 'INSUFFICIENT_DATA', 'SCANNER_ALERT')
     )
     data_error_count = sum(
         1 for r in results
@@ -1701,6 +1840,25 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+            # RADAR-FIX: also include tickers from stocks table (scanner data)
+            # This ensures newly-scanned stocks appear in the radar even if
+            # they were just added to stock_daily_prices today.
+            try:
+                stocks_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+                scanner_tickers = [r[0] for r in stocks_conn.execute(
+                    "SELECT DISTINCT symbol FROM stocks WHERE market = 'egypt'"
+                ).fetchall()]
+                stocks_conn.close()
+                # Merge: add scanner tickers that aren't already in the list
+                existing = set(tickers)
+                for t in scanner_tickers:
+                    if t not in existing:
+                        tickers.append(t)
+                        existing.add(t)
+                if scanner_tickers:
+                    log(f"  + {len(scanner_tickers)} tickers from stocks table (scanner)")
+            except Exception:
+                pass  # non-fatal — continue with PROD_TABLE tickers only
     else:
         # TADAWUL/KSE/QSE/US مع historical_data في db/data_engine.db —
         # مفيش stocks table في نفس الـ DB. اعمل cross-DB lookup في
@@ -1742,6 +1900,25 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+            # RADAR-FIX: also include tickers from stocks table (scanner data)
+            # This ensures newly-scanned stocks appear in the radar even if
+            # they were just added to stock_daily_prices today.
+            try:
+                stocks_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+                scanner_tickers = [r[0] for r in stocks_conn.execute(
+                    "SELECT DISTINCT symbol FROM stocks WHERE market = 'egypt'"
+                ).fetchall()]
+                stocks_conn.close()
+                # Merge: add scanner tickers that aren't already in the list
+                existing = set(tickers)
+                for t in scanner_tickers:
+                    if t not in existing:
+                        tickers.append(t)
+                        existing.add(t)
+                if scanner_tickers:
+                    log(f"  + {len(scanner_tickers)} tickers from stocks table (scanner)")
+            except Exception:
+                pass  # non-fatal — continue with PROD_TABLE tickers only
     if args.limit > 0:
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")
@@ -1855,8 +2032,20 @@ def main():
     for i, ticker in enumerate(tickers, 1):
         rows = fetch_ticker_series(conn, ticker, days=40)
 
-        # ─── B3: insufficient history → INSUFFICIENT_DATA (NOT dropped) ──
+        # ─── B3: insufficient history → try scanner fallback first ──
+        # RADAR-FIX: if historical rows < 15, call scan_ticker which now
+        # has _scanner_fallback. If scanner data is available, it returns
+        # a SCANNER_ALERT result instead of None.
         if not rows or len(rows) < 15:
+            result = scan_ticker(rows or [], ticker, regime=regime_name)
+            if result and result.get('classification') == 'SCANNER_ALERT':
+                # Scanner fallback worked — enrich + add to results
+                identity = identity_map.get(ticker, {})
+                result = _enrich_result_with_scanner(result, ticker)
+                result = _enrich_result_with_b3_fields(result, identity, args, scan_timestamp)
+                contract_results.append(result)
+                continue
+            # Scanner fallback also failed → truly insufficient
             identity = identity_map.get(ticker, {})
             contract_results.append(_build_insufficient_result(
                 ticker=ticker,

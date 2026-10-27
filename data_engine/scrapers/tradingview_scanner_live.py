@@ -338,8 +338,58 @@ def _ensure_schema(conn: sqlite3.Connection) -> int:
 
     # Ensure UNIQUE index on symbol (required for ON CONFLICT upsert)
     cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_stocks_symbol ON stocks(symbol)')
+    # RADAR-FIX: Ensure UNIQUE index on stock_daily_prices(ticker, price_date)
+    # Required for persist_to_daily_prices ON CONFLICT upsert
+    try:
+        cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_sdp_ticker_date ON stock_daily_prices(ticker, price_date)')
+    except Exception:
+        pass  # duplicates may exist — index creation will fail gracefully
     conn.commit()
     return added
+
+
+def persist_to_daily_prices(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
+    """RADAR-FIX: Persist scanner snapshot to stock_daily_prices as a time-series row.
+
+    Without this, scanner updates stocks.current_price (snapshot) but radar
+    never sees history -> INSUFFICIENT_DATA.
+    """
+    if not rows:
+        return 0
+    cur = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    count = 0
+    for row in rows:
+        ticker = row.get("symbol")
+        if not ticker:
+            continue
+        close = row.get("current_price")
+        if not close or close <= 0:
+            continue
+        volume = row.get("volume") or 0
+        open_p = row.get("open_price") or close
+        high_p = row.get("high_price") or close
+        low_p = row.get("low_price") or close
+        change_pct = row.get("change_percent") or 0
+        market_slug = row.get("market", "egypt")
+        try:
+            cur.execute(
+                "INSERT INTO stock_daily_prices (ticker, symbol, price_date, open, high, low, close, volume, change_percent, market, fetch_time) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(ticker, price_date) DO UPDATE SET "
+                "close = excluded.close, volume = excluded.volume, "
+                "open = COALESCE(excluded.open, stock_daily_prices.open), "
+                "high = MAX(CASE WHEN excluded.high > 0 THEN excluded.high ELSE stock_daily_prices.high END, stock_daily_prices.high), "
+                "low = MIN(CASE WHEN excluded.low > 0 THEN excluded.low ELSE stock_daily_prices.low END, stock_daily_prices.low), "
+                "change_percent = excluded.change_percent, fetch_time = excluded.fetch_time",
+                (ticker, ticker, today, open_p, high_p, low_p, close, volume, change_pct, market_slug, now_str)
+            )
+            count += 1
+        except Exception:
+            pass  # skip rows that fail (e.g. UNIQUE constraint without ON CONFLICT support)
+    conn.commit()
+    return count
 
 
 def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
@@ -432,6 +482,9 @@ def main() -> int:
         if not args.dry_run and rows:
             saved = save_to_db(conn, rows)
             log(f"  💾 saved {saved}/{len(rows)} to stocks table")
+            # RADAR-FIX: persist to stock_daily_prices for radar history
+            persisted = persist_to_daily_prices(conn, rows)
+            log(f"  📅 persisted {persisted} to stock_daily_prices (radar history)")
 
     if conn:
         conn.close()
