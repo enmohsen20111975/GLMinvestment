@@ -663,6 +663,37 @@ async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
     const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const db = openRobust(dbPath);
     if (!db) return [];
+
+    // FIX (2026-10-27 — Price Accuracy): cross-check market_indices against
+    // price_history.db. لو الفرق > 5%، استخدم price_history كمصدر موثوق.
+    // السبب: market_indices ممكن يكون فيه قيم قديمة/غلط من الـ scraper.
+    let phIndexValues: Record<string, number> = {};
+    try {
+      const phPath = path.join(process.cwd(), 'db', 'price_history.db');
+      const phDb = openRobust(phPath);
+      if (phDb) {
+        try {
+          // جلب آخر قيمة لكل مؤشر من price_history
+          const phRows = phDb.prepare(`
+            SELECT ticker, close_price
+            FROM price_history
+            WHERE ticker IN ('EGX30', 'EGX70', 'EGX100', 'EGX50', 'EGX33')
+            AND date = (SELECT MAX(date) FROM price_history WHERE ticker = price_history.ticker)
+            GROUP BY ticker
+          `).all() as any[];
+          for (const r of phRows) {
+            if (r.ticker && r.close_price > 0) {
+              phIndexValues[r.ticker] = Number(r.close_price);
+            }
+          }
+        } finally {
+          phDb.close();
+        }
+      }
+    } catch {
+      // price_history غير متاح → نستخدم market_indices فقط
+    }
+
     try {
       const rows = db.prepare('SELECT * FROM market_indices ORDER BY id ASC').all() as any[];
       return rows
@@ -670,30 +701,41 @@ async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
         .map((idx: any) => {
           const rawValue = Number(idx.value) || 0;
           const synthValue = Number(idx.current_value) || 0;
-          const value = rawValue > 0 ? rawValue : synthValue;
+          let value = rawValue > 0 ? rawValue : synthValue;
+
+          // FIX: Cross-check against price_history
+          const phValue = phIndexValues[idx.symbol];
+          if (phValue && value > 0) {
+            const diffPct = Math.abs(value - phValue) / phValue * 100;
+            if (diffPct > 5) {
+              // market_indices is stale → use price_history
+              value = phValue;
+            }
+          } else if (phValue && value === 0) {
+            value = phValue;
+          }
+
           const previousClose = Number(idx.previous_close) || 0;
           const storedChange = Number(idx.change) || 0;
           const storedChangePct = Number(idx.change_percent) || 0;
-          // FRONTEND-CLEANUP-A-2 (Problem 3 — EGX50 change math):
-          // الـ change field في DB ممكن يكون غلط (بيانات قديمة أو bug في الـ scraper).
-          // Data integrity guard: لو value + previous_close موجودين، recomputehن change
-          // = value - previous_close + change_percent = (change / previous_close) × 100.
-          // ده مش "logic حسابي في الواجهة" (Rule 20) — ده basic data integrity في API route.
           const computedChange = (value > 0 && previousClose > 0) ? value - previousClose : storedChange;
           const computedChangePct = (previousClose > 0) ? (computedChange / previousClose) * 100 : storedChangePct;
-          // استخدم الـ computed لو الـ stored مختلف بشكل كبير (> 1 وحدة فرق)
           const finalChange = Math.abs(storedChange - computedChange) > 1 ? computedChange : storedChange;
           const finalChangePct = Math.abs(storedChangePct - computedChangePct) > 0.1 ? computedChangePct : storedChangePct;
+
+          // FIX: لو القيمة = 0 → "—" (مش رقم غلط)
+          const safeValue = value > 0 ? value : 0;
+
           return {
             symbol: idx.symbol,
             name: idx.name || '',
             name_ar: idx.name_ar || '',
-            value,
+            value: safeValue,
             previous_close: previousClose,
             change: finalChange,
             change_percent: finalChangePct,
             last_updated: idx.last_update || null,
-            source: 'stocks_db_market_indices',
+            source: safeValue > 0 ? 'stocks_db_market_indices' : 'unavailable',
           };
         });
     } finally {
