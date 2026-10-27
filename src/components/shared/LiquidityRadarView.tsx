@@ -12,7 +12,7 @@
  * Rule 30: emerald/teal/rose فقط
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,6 +25,7 @@ import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { LockModal } from '@/components/auth/LockModal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StockDetailDrawer } from '@/modules/predictions/components/MakerRadarTab';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
 // ALPHA-UX-FIX-6: guest CTA + sectors tracking (moved from #recommendations)
 import { GuestLimitCta } from '@/components/auth/GuestLimitCta';
 import { SectorTrackingTab } from '@/modules/market-analysis/components/SectorTrackingTab';
@@ -304,51 +305,54 @@ export function LiquidityRadarView({
  const [page, setPage] = useState(0);
  const currency = marketCurrency(market);
 
- // FIX (2026-10-27): فصل حالات التحميل الثلاث:
- // - isInitialLoading: أول تحميل (نعرض skeleton)
- // - isBackgroundRefreshing: تحديث دوري (نحتفظ بالبيانات القديمة)
- // - error: تعذر التحديث (نحتفظ بالبيانات القديمة + نعرض الخطأ بشكل غير مزعج)
+ // FIX (2026-10-27 — In-Place Patching Blueprint):
+ // 3 حالات منفصلة تماماً:
+ // - isInitialLoading: فقط أول مرة data === null (نعرض skeleton)
+ // - isBackgroundRefreshing: تحديث دوري (نبض خفيف — لا نلمس الجدول)
+ // - error: تعذر التحديث (نحتفظ بالبيانات القديمة + Badge غير مزعج)
  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+ // useRef علشان نقرأ وجود بيانات قديمة بدون إعادة تعريف الدالة (يمنع dependency loop)
+ const dataRef = useRef<RadarResponse | null>(null);
+ dataRef.current = data;
 
  const fetchData = useCallback(async () => {
- const hasUsableData = data !== null && (data.results?.length ?? 0) > 0;
- // FIX: لو فيه بيانات موجودة، ما نعرضش loading كامل — نعتبر ده تحديث خلفي
+ const hasUsableData = dataRef.current !== null && (dataRef.current.results?.length ?? 0) > 0;
+ // FIX: لو فيه بيانات موجودة، ما نعرضش loading كامل — مؤشر نبض خفيف فقط
  if (hasUsableData) {
    setIsBackgroundRefreshing(true);
  } else {
    setLoading(true);
  }
- setError(null);
+ // FIX: لا نمسح الخطأ القديم لو فيه بيانات — فقط لو أول تحميل
+ if (!hasUsableData) setError(null);
  try {
- // FRONTEND-2 Phase 1: switch to /api/v2/liquidity-radar (cache reader, 20+ fields, all markets)
- // was: /api/market/liquidity-radar (Python proxy, 9 fields, 10 LARGE_CAPS only — left 4 columns blank)
  const res = await fetch(
  `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
  { cache: 'no-store' },
  );
  if (!res.ok) {
-   // FIX: لا نمسح البيانات القديمة عند الخطأ
-   setError('تعذّر الاتصال بالخادم');
-   if (!hasUsableData) setData(null);
+   // FIX: لا نمسح البيانات القديمة عند الخطأ — احتفظ بها
+   if (!hasUsableData) { setError('تعذّر الاتصال بالخادم'); setData(null); }
    return;
  }
  const json: RadarResponse = await res.json();
  if (!json.success) {
-   setError(json.message || json.error || 'فشل المحرك');
-   // FIX: لو فيه بيانات قديمة، احتفظ بيها
-   if (!hasUsableData) setData(json);
+   // FIX: لو فيه بيانات قديمة، احتفظ بيها — لا تستبدلها
+   if (!hasUsableData) { setError(json.message || json.error || 'فشل المحرك'); setData(json); }
    return;
  }
+ // FIX: حدّث البيانات في مكانها — React هيعمل diff فقط (مش re-mount)
  setData(json);
+ setError(null); // امسح الخطأ لو التحديث نجح
  } catch {
- setError('تعذّر الاتصال بالخادم');
- // FIX: لا نمسح البيانات القديمة عند الخطأ
- if (!hasUsableData) setData(null);
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!hasUsableData) { setError('تعذّر الاتصال بالخادم'); setData(null); }
  } finally {
  setLoading(false);
  setIsBackgroundRefreshing(false);
  }
- }, [market, data]);
+ // FIX (Blueprint Rule 5): شيل `data` من الـ deps — استخدمنا dataRef بدلاً منه
+ }, [market]);
 
  useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -419,8 +423,9 @@ export function LiquidityRadarView({
 
  React.useEffect(() => { setPage(0); }, [bucketFilter, hideInactive, activeMarket]);
 
- // ─── Build UnifiedTable columns ───
- const columns: Column<RadarStock>[] = [
+ // ─── Build UnifiedTable columns (Blueprint Rule 4: memoized with stable deps) ───
+ // FIX: columns تتعمل مرة واحدة فقط (useMemo with [] deps) — لا تتغير عند كل render
+ const columns: Column<RadarStock>[] = React.useMemo(() => [
  {
  key: 'ticker',
  header: 'السهم',
@@ -728,7 +733,7 @@ export function LiquidityRadarView({
  },
  },
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
- ];
+ ], []); // [] = stable — لا تتغير إلا عند mount
 
  return (
  <div className="space-y-4 p-4" dir="rtl">
@@ -781,28 +786,49 @@ export function LiquidityRadarView({
   </div>
  )}
 
- {loading ? (
+ {/* FIX (Blueprint Rule 1): Never unmount UnifiedTable after first mount.
+     - isInitialLoading (data === null && !error): skeleton فقط أول مرة
+     - بعد أول mount ناجح: الجدول يفضل في الـ DOM للأبد
+     - لو حصل خطأ أثناء polling: نعرض Badge فوق الجدول (مش نستبدله)
+ */}
+ {loading && !data ? (
+   // أول تحميل فقط — لا توجد بيانات بعد
  <div className="space-y-4">
  <Skeleton className="h-12 w-full rounded-xl" />
  <Skeleton className="h-64 w-full rounded-xl" />
  </div>
- ) : error || !data || allScanned.length === 0 ? (
+ ) : !data && error ? (
+   // أول تحميل فشل — مفيش بيانات ولا جدول
  <UnifiedEmptyState
- variant={error ? 'error' : 'empty'}
- title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
- description={error || (
- // TASK-A1: if summary says scanned > 0 but `results` is empty, that's
- // a backend bug — show honest message. Otherwise, the engine hasn't
- // scanned yet — show the standard "scanning" message.
- (data?.summary && (data.summary.scanned_count ?? 0) > 0)
- ? 'تم الفحص لكن لا توجد تصنيفات — تحقق من سجلات المحرك'
- : 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'
- )}
+ variant="error"
+ title="تعذّر تحميل الرادار"
+ description={error}
  actionLabel="إعادة المحاولة"
  onAction={fetchData}
  />
+ ) : !data ? (
+   // أول تحميل — مفيش بيانات ولا خطأ (لسه بيتحم)
+ <UnifiedEmptyState
+ variant="empty"
+ title="لا توجد إشارات رادار حالياً"
+ description="المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها"
+ />
  ) : (
  <>
+ {/* ─── Background refresh indicator (Blueprint Rule 1) ─── */}
+ {isBackgroundRefreshing && (
+   <div className="flex items-center gap-2 px-3 py-1 mb-2 rounded-lg bg-info/5 border border-info/20 text-[11px] text-info">
+     <RefreshCw className="size-3 animate-spin" />
+     <span>جارٍ تحديث البيانات...</span>
+   </div>
+ )}
+ {/* ─── Error badge (non-intrusive — keeps table visible) ─── */}
+ {error && data && allScanned.length > 0 && (
+   <div className="flex items-center gap-2 px-3 py-1 mb-2 rounded-lg bg-loss/5 border border-loss/20 text-[11px] text-loss/70">
+     <AlertTriangle className="size-3" />
+     <span>تعذّر التحديث اللحظي — معروض آخر بيانات صالحة</span>
+   </div>
+ )}
  {/* ─── TASK-PUBLISH: نشر الجدول كله + فلتر الأسهم الخاملة ─── */}
  <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
  <UnifiedPublishButton
