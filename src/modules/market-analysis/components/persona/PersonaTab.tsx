@@ -279,7 +279,8 @@ export function PersonaTab({
                     narrative={it.analysisJson?.narrative}
                     market={market}
                     nameAr={it.nameAr}
-                    logoUrl={it.logoUrl}
+                    // (ALPHA-ICON-FIX): defensive — اقرا logo_url (snake_case) أو logoUrl (camelCase)
+                    logoUrl={it.logo_url || it.logoUrl}
                     fundamentals={it.fundamentals}
                     onClick={() => handleSelectItem(it)}
                   />
