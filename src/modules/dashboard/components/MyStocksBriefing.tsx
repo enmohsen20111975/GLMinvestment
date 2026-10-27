@@ -274,8 +274,9 @@ function AlertCard({ stock }: { stock: UserStock }) {
 }
 
 function PortfolioSummaryCard({ data }: { data: BriefingData }) {
- const { summary } = data;
- const isPositive = summary.total_pnl >= 0;
+  const summary = data?.summary;
+  if (!summary) return null;
+  const isPositive = (summary.total_pnl ?? 0) >= 0;
 
  return (
  <WidgetStatGrid cols={2} className="bg-transparent p-0">
@@ -407,8 +408,21 @@ export function MyStocksBriefing() {
  );
  }
 
+ // ─── Error or Missing Summary state ──────────────────────────
+ if (error || !briefing || !briefing.summary) {
+ return (
+ <WidgetError title={t('dashboard.myStocksBriefing')}
+ message={error === 'auth_required' ? 'يلزم تسجيل الدخول.' : 'يرجى المحاولة مرة أخرى.'}
+ onRetry={handleRefresh} className="border-loss/20" />
+ );
+ }
+
  // ─── Authenticated but no portfolio yet ────────────────────
- if (briefing && briefing.summary.portfolio_stocks === 0 && briefing.summary.watchlist_stocks === 0 && briefing.summary.radar_tracked === 0) {
+ if (
+ (briefing.summary.portfolio_stocks ?? 0) === 0 &&
+ (briefing.summary.watchlist_stocks ?? 0) === 0 &&
+ (briefing.summary.radar_tracked ?? 0) === 0
+ ) {
  return (
  <WidgetCard title={t('dashboard.myStocksBriefing')} icon={BellRing} iconColor="text-profit" iconBg="bg-transparent" iconSize="w-4 h-4"
  hideRefresh className="border-profit" titleClassName="text-base">
@@ -422,20 +436,11 @@ export function MyStocksBriefing() {
  </WidgetCard>
  );
  }
-
- // ─── Error state ────────────────────────────────────────────
- if (error || !briefing) {
- return (
- <WidgetError title={t('dashboard.myStocksBriefing')}
- message={error === 'auth_required' ? 'يلزم تسجيل الدخول.' : 'يرجى المحاولة مرة أخرى.'}
- onRetry={handleRefresh} className="border-loss/20" />
- );
- }
  // ─── Main content ───────────────────────────────────────────
- const { summary, stocks } = briefing;
+ const { summary, stocks = [] } = briefing;
 
  // Sort stocks by advice priority (exit_radar first, then stop_loss, take_profit, etc.).
- const sortedStocks = [...stocks].sort((a, b) => {
+ const sortedStocks = [...(stocks || [])].sort((a, b) => {
  const aP = a.advice ? (ADVICE_TYPE_INFO[a.advice.type]?.priority ?? 0) : 0;
  const bP = b.advice ? (ADVICE_TYPE_INFO[b.advice.type]?.priority ?? 0) : 0;
  return bP - aP;
