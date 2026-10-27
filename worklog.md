@@ -10448,3 +10448,26 @@ Stage Summary:
 - Files modified (3): types.ts (added 'system-topology' tab), admin-hubs.tsx (tab entry + Network icon), AdminView.tsx (render + import)
 - الوصول: #admin → المراقبة → 🗺️ خريطة النظام الحية
 - Git state: branch alpha/admin-system-topology, unstaged.
+
+---
+Task ID: ALPHA-SYSTEM-TOPOLOGY-DEEP
+Agent: Alpha
+Task: تطوير شاشة خريطة النظام بمتابعة دقيقة — KPIs + live log + node modal + refresh selector.
+
+Work Log:
+- أعدت كتابة SystemTopologyView.tsx (~600 LOC):
+  1. KPI bar حية (6 كروت): الأسهم، التوقعات، معدل النجاح، المحركات، Cron Jobs، صحة النظام
+  2. Live Log Feed (آخر 30 حدث): قرار/رفض/خروج/خطأ/معلومة — بأيقونة + timestamp per entry
+  3. Node Detail Modal: اضغط أي node → dialog بتفاصيله الكاملة (metrics per node)
+  4. Auto-refresh selector: 10s/30s/60s (default 30s)
+  5. Pulsing live dot على كل node (animate-ping) — مؤشر حيوية
+  6. Enriched nodes: كل node فيها metrics تفصيلية (stocks count, predictions win/loss, engine statuses, cron lastRun)
+  7. Grid layout: diagram (2/3) + log feed (1/3) على desktop، stack على mobile
+- البيانات الحية بتيجي من 6 APIs: health, market/status, engines-status, honest-tracking, cron-health, data-coverage
+- defensive: Promise.allSettled + status: 'unknown' لو API فشل (Rule 27)
+- Lint نظيف. tsc نظيف على ملفاتي.
+
+Stage Summary:
+- Files modified (1): src/modules/admin/components/SystemTopologyView.tsx (370 → 600 LOC)
+- المميزات الجديدة: KPI bar + live log + node modal + refresh selector + pulsing dots + enriched metrics
+- Git state: branch alpha/topology-deep-monitoring, unstaged.
