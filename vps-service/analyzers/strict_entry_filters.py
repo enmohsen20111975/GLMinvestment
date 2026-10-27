@@ -78,19 +78,19 @@ LATE_RECENT_GAIN_PCT = 18.0        # صعود +18% في 5 أيام → late (ك�
 
 def _safe_atr(highs: List[float], lows: List[float], closes: List[float],
               period: int = 14) -> float:
-    """ATR(period)."""
-    n = min(len(highs), len(lows), len(closes))
-    if n < 2:
-        return 0.0
-    trs = []
-    for i in range(max(1, n - period), n):
-        tr = max(
-            highs[i] - lows[i],
-            abs(highs[i] - closes[i - 1]),
-            abs(lows[i] - closes[i - 1])
-        )
-        trs.append(tr)
-    return sum(trs) / len(trs) if trs else 0.0
+    """ATR(period) — BRAVO-SSOT: delegates to canonical analyzers.indicators.atr.calc_atr (Wilder's).
+
+    Backward-compat wrapper: canonical بترجع None لو البيانات قليلة،
+    احنا بنرجّع 0.0 للحفاظ على السلوك القديم.
+
+    BRAVO-CANON-2 (Issue #4): old body was a local SMA-of-TR loop (sum/len)
+    which is mathematically wrong per Rule 67 (Wilder's smoothing is canonical).
+    FIX-E parity test showed SMA diverges +15.3% from Wilder. Now delegates
+    to the single source of truth.
+    """
+    from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
+    result = _canonical_calc_atr(highs, lows, closes, period)
+    return result if result is not None else 0.0
 
 
 def _sma(values: List[float], period: int) -> float:
