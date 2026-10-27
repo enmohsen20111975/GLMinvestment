@@ -284,6 +284,120 @@ def compute_turnover(row):
 
 
 # ============================================================================
+# SCANNER-LIVE-2 (2026-10-27): Enrichment from stocks.db (unified scanner)
+# ============================================================================
+# Owner directive: use official `value_traded` (cash) + `relative_volume_10d`
+# from the TradingView Scanner API (stored in stocks.db by tradingview_scanner_live.py)
+# as the authoritative liquidity + volume-surge metrics, instead of computing
+# them from historical close × volume (which is an approximation).
+#
+# The enrichment is OPTIONAL: if stocks.db doesn't have the columns or the
+# ticker isn't found, we fall back to the computed values (backward compat).
+# ============================================================================
+
+# Cache: ticker → {value_traded, relative_volume_10d, ...} from stocks.db
+_SCANNER_ENRICHMENT_CACHE: dict = None
+
+
+def _load_scanner_enrichment(market_code: str = 'EGX'):
+    """Load value_traded + relative_volume_10d from stocks.db for all tickers.
+
+    Caches at module level (one DB read per radar run). Returns dict:
+        {ticker: {'value_traded': float, 'relative_volume_10d': float, ...}}
+
+    Returns empty dict if stocks.db or columns don't exist (backward compat).
+    """
+    global _SCANNER_ENRICHMENT_CACHE
+    if _SCANNER_ENRICHMENT_CACHE is not None:
+        return _SCANNER_ENRICHMENT_CACHE
+
+    cache: dict = {}
+    db_path = PROJECT_ROOT / 'db' / 'stocks.db'
+    if not db_path.exists():
+        _SCANNER_ENRICHMENT_CACHE = cache
+        return cache
+
+    try:
+        conn = sqlite3.connect(str(db_path))
+        # Check if the new columns exist
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
+        needed = {'value_traded', 'relative_volume_10d', 'turnover_egp'}
+        if not needed.issubset(cols):
+            log(f"  ℹ️ stocks.db missing scanner columns {needed - cols}, skipping enrichment")
+            conn.close()
+            _SCANNER_ENRICHMENT_CACHE = cache
+            return cache
+
+        # Map market_code → scanner market slug
+        market_slug_map = {'EGX': 'egypt', 'TADAWUL': 'saudi', 'KSE': 'kuwait',
+                           'QSE': 'qatar', 'US': 'america', 'CRYPTO': None}
+        market_slug = market_slug_map.get(market_code, 'egypt')
+
+        rows = conn.execute(
+            "SELECT symbol, value_traded, relative_volume_10d, turnover_egp, "
+            "pe_ratio, roe, profit_margin, eps, dividend_yield, rsi "
+            "FROM stocks WHERE market = ?",
+            (market_slug,)
+        ).fetchall()
+        for r in rows:
+            ticker, vt, rv, te, pe, roe, pm, eps, dy, rsi = r
+            cache[ticker] = {
+                'value_traded': vt,
+                'relative_volume_10d': rv,
+                'turnover_egp': te,
+                'pe_ratio': pe,
+                'roe': roe,
+                'profit_margin': pm,
+                'eps': eps,
+                'dividend_yield': dy,
+                'rsi_scanner': rsi,
+            }
+        conn.close()
+        log(f"  📊 scanner enrichment: {len(cache)} tickers from stocks.db (market={market_slug})")
+    except Exception as e:
+        log(f"  ⚠️ scanner enrichment failed: {e}")
+
+    _SCANNER_ENRICHMENT_CACHE = cache
+    return cache
+
+
+def _enrich_result_with_scanner(result: dict, ticker: str) -> dict:
+    """Enrich a radar result dict with official value_traded + relative_volume_10d.
+
+    Mutates + returns the result dict. If ticker not in cache, leaves computed
+    values unchanged (backward compat).
+    """
+    cache = _load_scanner_enrichment(result.get('market', 'EGX'))
+    if not cache or ticker not in cache:
+        return result
+
+    enrichment = cache[ticker]
+
+    # Official cash value (overrides computed turnover_egp if available)
+    official_vt = enrichment.get('value_traded')
+    if official_vt and official_vt > 0:
+        result['value_traded_official'] = round(official_vt, 2)
+        result['turnover_egp_official'] = round(official_vt, 2)
+        # Use the official value as the canonical turnover_egp
+        result['turnover_egp'] = round(official_vt, 2)
+
+    # Official relative volume (from TradingView, 10d calc)
+    official_rv = enrichment.get('relative_volume_10d')
+    if official_rv and official_rv > 0:
+        result['relative_volume_10d_official'] = round(official_rv, 3)
+        # Flag unusual volume surge if > 1.2 (per owner directive)
+        result['volume_surge'] = official_rv > 1.2
+
+    # Fundamentals (bonus — from scanner, may differ from computed)
+    for field in ['pe_ratio', 'roe', 'profit_margin', 'eps', 'dividend_yield']:
+        val = enrichment.get(field)
+        if val is not None:
+            result[f'{field}_scanner'] = val
+
+    return result
+
+
+# ============================================================================
 # FRESHNESS GUARD (Task FIX-STALE-DTPP-2026-10-07 — Rule 71)
 # ============================================================================
 # ROOT CAUSE (DTPP case):
@@ -686,6 +800,11 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
     }
+
+    # SCANNER-LIVE-2 (2026-10-27): enrich with official value_traded +
+    # relative_volume_10d from TradingView Scanner API (stored in stocks.db).
+    # This overrides the computed turnover_egp with the authoritative cash value.
+    result = _enrich_result_with_scanner(result, ticker)
 
 
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB

@@ -26,6 +26,7 @@ import { db } from '@/lib/db';
 import { verifyAdminRequest } from '@/lib/admin-auth-server';
 import { isServerAdmin } from '@/lib/admin-identities';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { safeUserFindById, safeUserFindByEmail } from '@/lib/user-timestamp-helper';
 
 // P0.1 (SEC-01): admin emails sourced from env vars via @/lib/admin-identities.
 // No hardcoded list in this file anymore.
@@ -49,19 +50,18 @@ export async function GET(request: NextRequest) {
     try {
       const { userId, isAdmin: tokenIsAdmin } = await getSessionUserId();
       if (userId && userId !== 'admin') {
-        const dbUser = await db.user.findUnique({
-          where: { id: userId },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            name: true,
-            image: true,
-            subscription_tier: true,
-            default_risk_tolerance: true,
-            is_active: true,
-            email_verified: true,
-          },
+        // BRAVO-FIX-G (Issue #9): use defensive reader that handles Prisma P2023
+        // (corrupted ms-timestamp columns) by repairing + retrying + raw fallback.
+        const dbUser = await safeUserFindById(userId, {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          image: true,
+          subscription_tier: true,
+          default_risk_tolerance: true,
+          is_active: true,
+          email_verified: true,
         });
         if (dbUser && dbUser.is_active) {
           const isAdmin = isAdminEmail(dbUser.email, dbUser.username) || dbUser.subscription_tier === 'admin' || tokenIsAdmin;
@@ -111,19 +111,17 @@ export async function GET(request: NextRequest) {
 
     if (session?.user?.email) {
       try {
-        const dbUser = await db.user.findUnique({
-          where: { email: session.user.email },
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            name: true,
-            image: true,
-            subscription_tier: true,
-            default_risk_tolerance: true,
-            is_active: true,
-            email_verified: true,
-          },
+        // BRAVO-FIX-G (Issue #9): defensive reader — repairs P2023 + retries.
+        const dbUser = await safeUserFindByEmail(session.user.email, {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          image: true,
+          subscription_tier: true,
+          default_risk_tolerance: true,
+          is_active: true,
+          email_verified: true,
         });
 
         if (dbUser) {

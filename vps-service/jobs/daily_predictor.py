@@ -1254,27 +1254,21 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                         # احسب ATR للـ entry/target/stop
                                         _highs_soft = highs[:day_idx+1]
                                         _lows_soft = lows[:day_idx+1]
-                                        _atr_soft = 0.0
-                                        if len(_closes_soft) >= 15:
-                                            _tr_list = []
-                                            for i in range(1, min(15, len(_closes_soft))):
-                                                _h = _highs_soft[-i] if abs(_highs_soft[-i]) > 0 else _closes_soft[-i]
-                                                _l = _lows_soft[-i] if abs(_lows_soft[-i]) > 0 else _closes_soft[-i]
-                                                _pc = _closes_soft[-i-1] if abs(_closes_soft[-i-1]) > 0 else _closes_soft[-i]
-                                                # skip لو فيه قيم غلط
-                                                if _h <= 0 or _l <= 0 or _pc <= 0 or _h < _l:
-                                                    continue
-                                                _tr = max(
-                                                    _h - _l,
-                                                    abs(_h - _pc),
-                                                    abs(_l - _pc)
-                                                )
-                                                if _tr > 0 and _tr < _closes_soft[-1] * 0.20:  # skip TR > 20% (غالباً غلط)
-                                                    _tr_list.append(_tr)
-                                            _atr_soft = sum(_tr_list) / len(_tr_list) if _tr_list else 0
-                                        if _atr_soft <= 0:
+                                        # BRAVO-CANON-1 (Issue #4 — canonical library first):
+                                        # use canonical calc_atr (Wilder's smoothing) from
+                                        # analyzers.indicators.atr — Rule 67 SSOT.
+                                        # Old: local _tr_list + sum/count = SMA of last 14 TRs
+                                        #      (mathematically wrong per Rule 67; FIX-E parity
+                                        #      test showed +15.3% divergence from Wilder).
+                                        # New: calc_atr (Wilder) — the single source of truth.
+                                        # The old "skip TR > 20%" filter was data cleaning (not
+                                        # part of the ATR formula); bad bars should be caught
+                                        # upstream by B1 price_sanity, not inside ATR.
+                                        from analyzers.indicators.atr import calc_atr as _canonical_calc_atr_soft
+                                        _atr_soft = _canonical_calc_atr_soft(_highs_soft, _lows_soft, _closes_soft, period=14)
+                                        if _atr_soft is None or _atr_soft <= 0:
                                             _atr_soft = _closes_soft[-1] * 0.05  # fallback 5%
-                                        # clamp ATR لـ [2%, 10%] من entry
+                                        # clamp ATR لـ [2%, 10%] من entry (business rule, not ATR formula)
                                         _atr_soft = max(_closes_soft[-1] * 0.02, min(_closes_soft[-1] * 0.10, _atr_soft))
 
                                         _entry_soft = _closes_soft[-1]
@@ -4117,9 +4111,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         # in ai_routes.py, misc_routes.py, persona_db.py, intraday_scanner.py,
                         # market_scheduler.py, nightly_analysis.py).
                         try:
-                            # Phase 7.1: migrated to db_manager (writable=False)
+                            # BRAVO-FIX-D (stored_analyses empty): writable=False made the
+                            # INSERT below fail with "attempt to write a readonly database"
+                            # (PRAGMA query_only=1) → stored_analyses stayed empty (0 rows)
+                            # despite 10+ writers. The except: pass on line ~4199 swallowed
+                            # the error silently. This is the CANONICAL writer for
+                            # stored_analyses (Rule 73 SINGLE-WRITER), so it MUST be writable.
                             from core.db_manager import db_manager
-                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=True)
                             cur_sa = conn_sa.cursor()
                             # ── TASK-A (2026-10-04): تأكّد إن أعمدة AI موجودة ──
                             # الأعمدة دي declared في ai/nightly_analysis.py بس ممكن تكون
