@@ -12596,3 +12596,47 @@ Stage Summary:
 - التزامًا بتوجيه المالك: "إذا كانت البيانات غير كافية، يتوقف ويقدم تقريرًا بالفجوات بدلًا من اختلاق نتائج."
 - لم أكتب كود إنتاج، لم أغير سلوك إشارات حية، لم ألمس main.
 - انتظر تعليمات المالك: هل نزّل بيانات EGX تاريخية أطول (6+ شهور) من GitHub Releases snapshot أكمل؟ ولا نكمل بالبيانات المتاحة (62 يوم) مع توضيح التحفظ؟
+
+---
+Task ID: EXIT-DATA-GATE-2
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: تنفيذ المرحلة A + B + C من توجيه المالك الموحد (Exit Signals & Historical Validation)
+
+Work Log:
+المرحلة A — تحقق مسارات الإنتاج:
+- daily_predictor.py: produce BUY/HOLD فقط (lines 1116-1376). مفيش EXIT/SELL/CAUTION.
+- daily_closer.py: force_exit على ACTIVE positions (line 701-738). exit_codes: distribution_exit, max_holding_7d, no_move_3d, early_drop. ده post-entry management، مش إشارة EXIT مستقلة.
+- short_holding_exit.py::evaluate_force_exit: return exit_code = distribution_exit/early_drop/compound_breakdown_exit/review_alert. PRODUCTION caller = daily_closer بس.
+- smart_exit_engine.py: ExitReason enum (8 قيم) + TrajectoryType (7 قيم). callers = position_manager + stored_analysis_routes (continuation metrics). مش في daily_predictor/daily_closer.
+- multi_target_exit.py: exit_type = hard_stop_loss/trailing_stop/t3_full/trend_break/expired/end_of_data. portfolio management.
+- sync_scanner_to_db.py: exit_type = STALE_PURGE_48H/STOP_VIOLATION/LOW_RR_PURGE. ده cleanup، مش توصية.
+
+المرحلة B — فحص GitHub Releases لـ snapshot أعم:
+- GitHub Releases: snapshot 2026-10-21 (16 assets) + 2026-10-24 (8 assets، predictions.db فقط).
+- نزلت snapshot 2026-10-08T10-08-10 (part1 + part7) → فيه auth.db + stocks.db.
+  * stocks.db::stock_daily_prices EGX: 65 يوم بس (2026-07-28 → 2026-10-07)، OHLC NULL 42.3%.
+- نزلت snapshot 2026-10-18T14-54-47 (4 parts) → فيه auth.db + crypto.db + decision_log.db + historical.db + metrics.db + news.db + paper_trading.db + stocks.db.
+  * **historical.db::historical_prices: 73,526 rows، 54 symbol، 5 سنين (2021-10-10 → 2026-10-10)**.
+  * **EGX: 11 سهم، 1210 يوم لكل سهم (5 سنين!)، OHLC + volume نظيفة 100%، 0 duplicates**.
+  * الأسهم: COMI, ETEL, HRHO, SWDY, EAST, AMOC, CIEB, EMFD, HELI, ORWE, PHDC.
+- كل الفحص في /tmp/dbsnap (معزول، ما لمست db/ الحالية).
+
+المرحلة C — بوابة كفاية البيانات:
+- المصدر المعتمد للاختبار: historical.db::historical_prices (snapshot 2026-10-18).
+- التغطية: 11 سهم × 1210 يوم = 13,310 rows EGX.
+- لاختبار 6 شهور (2026-04-27 → 2026-10-07): COMI = 109 يوم تداول (كافي).
+- لاختبار 12 شهر (2025-10-07 → 2026-10-07): ~250 يوم لكل سهم.
+- جودة: open/high/low/close نظيفة، volume نظيف، 0 duplicates، 4 صفوف high<low بس (0.03%).
+- القيود:
+  * 11 سهم بس (عينة صغيرة — بس كلهم أسهم سائلة EGX30).
+  * آخر تاريخ = 2026-10-07 (10 أيام قبل النهاردة 2026-10-27).
+  * مفيش بيانات مؤسسية (buy/sell volume breakdown) — بس volume إجمالي.
+  * مفيش بيانات تقسيم أسهم (splits) — لازم فحص منفصل لو اكتشفتنا outliers.
+
+Stage Summary:
+- المرحلة A: أكّدت إن EXIT مش موجود كإشارة في الإنتاج ( بس exit_type/exit_reason post-entry). 6 مسارات منفصلة موثّقة.
+- المرحلة B: اكتشفت historical.db (5 سنين EGX، 11 سهم) في snapshot 2026-10-18. ده يحل فجوة البيانات.
+- المرحلة C: البيانات كافية لاختبار distribution_exit + support_break_with_volume + bearish_divergence على 11 سهم سائل. عينة صغيرة بس جودة عالية.
+- لم أكتب كود إنتاج، لم أغير سلوك إشارات حية، لم ألمس main، لم ألمس db/ الحالية.
+- كل الفحص في /tmp/dbsnap (معزول).
+- انتظر تعليمات المالك: هل أبدأ المرحلة D (الاختبارات التاريخية) على historical.db؟
