@@ -55,6 +55,8 @@ import { type StockInfographicCardProps } from '@/modules/publishing/components/
 import { ComprehensiveStockAnalysis } from './ComprehensiveStockAnalysis';
 import { DeltaVolumeBar } from './DeltaVolumeBar';
 import GateAnalysisView from './GateAnalysisView';
+// P-FUNDAMENTALS: CompanyFundamentalsCard — 8 تبويبات مالية من stocks.db (TradingView data)
+import { CompanyFundamentalsCard } from '@/modules/radar/components/CompanyFundamentalsCard';
 // Task 23-C Deliverable 2 — inline Sharia badge next to stock price.
 import { ShariaBadge } from '@/modules/sharia/components/ShariaBadge';
 
@@ -1232,6 +1234,8 @@ export function StockDetail() {
  {/* Flow Score + Explosive + Fundamentals from Python backend */}
  <FlowScoreCard ticker={stock.ticker} />
  <FundamentalsCard ticker={stock.ticker} />
+ {/* P-FUNDAMENTALS: CompanyFundamentalsCard — 8 تبويبات من stocks.db (64 عمود من TradingView) */}
+ <CompanyFundamentalsCard ticker={stock.ticker} />
 
  {/* ALPHA-STOCK-FEEL-1: بطاقة الإحساس بالسهم */}
  <StockFeelCard analysis={feelData} />
