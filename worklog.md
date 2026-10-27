@@ -12682,3 +12682,30 @@ Stage Summary — النتائج الفعلية (out-of-sample 2024-01-02 → 20
 - مفيش capital gains tax.
 
 لم أعدّل أي منطق إنتاج. لم ألمس short_holding_exit.py. لم ألمس main. لا merge، لا deploy.
+
+---
+Task ID: EXIT-SIGNALS-CLOSE-1
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: إقرار قرار المالك النهائي بإغلاق مهمة Exit/Sell Signals (بعد تقرير جيمي الموحد)
+
+Work Log:
+- استلمت تقرير جيمي النهائي الموحد + قرار المالك الحاسم.
+- تحققت من SHAs على GitHub (مطابقة 100% لتقرير جيمي):
+  * bravo/audit-fixes @ 54e590f (شغلي — backtest script + worklog)
+  * alpha/exit-signals @ 92aab58 (شغل ألفا — ExitSignalBadge + 48 test)
+  * main @ 021463d (الإنتاج محمي — ما اتلمس)
+- أكّدت إن شغلي (historical.db + test_exit_signals_historical.py) اتـ adopt كأداة Backtest معتمدة في المستودع.
+- أكّدت إن لا دمج في main، لا deploy، لا تفعيل إشارات خروج في الإنتاج.
+- أكّدت إن short_holding_exit.py + daily_closer.py ما اتعدّلوش.
+
+إقرار قرار المالك:
+- ⛔ ممنوع تفعيل إشارات الخروج التجريبية في الإنتاج (نسبة خطأ 55% في سوق صاعد = كارثة).
+- ⛔ ممنوع دمج bravo/audit-fixes أو alpha/exit-signals في main.
+- ✅ حفظ عمل الفريقين كـ Asset معزول للاستخدام المستقبلي.
+- ✅ التوجه القادم: Smart Trailing Stop (حماية أرباح تدريجية) بدلاً من محاولة التنبؤ بقمم التصريف.
+
+Stage Summary:
+- مهمة Exit/Sell Signals أُغلقت بقرار المالك بناءً على أدلة تاريخية صادقة.
+- النتائج محفوظة في bravo/audit-fixes (commit 54e590f) كأداة فحص معيارية.
+- الفرع يظل معزول، main محمي، الإنتاج مستقر.
+- أنتظر التكليف القادم من المالك (Smart Trailing Stop أو تحسينات الرادار/الموبايل).
