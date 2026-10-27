@@ -688,11 +688,14 @@ function PanelView({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                    {/* P1-A: مؤشر الجاهزية الحي — تدرج لوني 3 مراحل */}
+                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div
                         className={cn(
-                          'h-full rounded-full transition-all',
-                          c.readiness_pct >= 80 ? 'bg-profit' : 'bg-warning',
+                          'h-full rounded-full transition-all duration-500 ease-out',
+                          c.readiness_pct >= 80 ? 'bg-profit' :
+                          c.readiness_pct >= 50 ? 'bg-warning' :
+                          'bg-muted-foreground/40',
                         )}
                         style={{
                           width: `${Math.min(100, Math.max(0, c.readiness_pct))}%`,
@@ -701,12 +704,32 @@ function PanelView({
                     </div>
                     <span
                       className={cn(
-                        'text-[10px] font-mono font-bold shrink-0',
-                        c.readiness_pct >= 80 ? 'text-profit' : 'text-warning',
+                        'text-[10px] font-mono font-bold shrink-0 transition-colors duration-300',
+                        c.readiness_pct >= 80 ? 'text-profit' :
+                        c.readiness_pct >= 50 ? 'text-warning' :
+                        'text-muted-foreground',
                       )}
                     >
                       {c.readiness_pct}%
                     </span>
+                  </div>
+                  {/* P1-B: إثبات الفرصة — Evidence Chips مختصرة */}
+                  <div className="flex flex-wrap gap-0.5 mt-1">
+                    {c.signals_passed > 0 && (
+                      <span className="text-[8px] font-mono text-profit/70 bg-profit/5 px-1 py-0.5 rounded">
+                        ✅ {c.signals_passed}/{c.total_signals}
+                      </span>
+                    )}
+                    {c.trigger?.condition_ar && c.trigger?.type !== 'COMPLETE' && (
+                      <span className="text-[8px] font-mono text-warning/70 bg-warning/5 px-1 py-0.5 rounded">
+                        ⏳ {c.trigger.type === 'VOLUME_SURGE' ? 'فوليوم' : c.trigger.type === 'RESISTANCE_BREAK' ? 'اختراق' : 'تأكيد'}
+                      </span>
+                    )}
+                    {c.risk_reward > 0 && (
+                      <span className="text-[8px] font-mono text-info/70 bg-info/5 px-1 py-0.5 rounded">
+                        R/R {c.risk_reward.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </button>
               );
