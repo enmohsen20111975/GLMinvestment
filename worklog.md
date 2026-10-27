@@ -12563,3 +12563,36 @@ Stage Summary:
 - 2 من 14 duplicate اترحّلوا (production paths الأوضح).
 - parity tests + duplicate-detection test تحمي من رجوع الحسابات المحلية.
 - لم أmerge، لم أdeploy، لم ألمس main، لم أforce-push.
+
+---
+Task ID: EXIT-TEST-GAP-1
+Agent: برافو V2 — كبير مهندسي الباك إند وسلامة البيانات
+Task: الاختبار التاريخي لإشارات الخروج (Exit/Sell Signals) — تدقيق مصدر البيانات أولاً
+
+Work Log:
+- استلمت توجيه المالك: ابدأ الاختبار التاريخي بشرط التحقق من جودة بيانات EGX (تغطية 6 شهور، تواريخ، أسعار، أحجام، تكرار، stale).
+- preflight: على bravo/audit-fixes @ 312727f، working tree clean.
+- فحصت price_history.db: 1,311,000 rows، 1557 ticker، **US market فقط** — مفيش EGX نهائيًا (market='EGX' = 0 rows).
+- فحصت data_engine.db::historical_data (المصدر الرئيسي لـ EGX):
+  * 75,760 rows EGX، 1136 ticker (395 منهم مصرية حقيقية)
+  * **تغطية: 2026-07-28 → 2026-10-15 (62 يوم بس، أقل من 3 شهور)**
+  * open/high/low/close نظيفة، volume أرقام صحيحة
+  * أحدث تاريخ = 2026-10-15 (12 يوم stale عن النهاردة 2026-10-27)
+- فحصت stocks.db::stock_daily_prices:
+  * 17,908 rows EGX، 434 ticker، 45 يوم (2026-07-28 → 2026-10-07)
+  * **open/high NULL في 37.7% من الصفوف**
+  * **volume مخزّن كنصوص ("1.36 M") مش أرقام**
+  * **turnover كله NULL**
+  * غير صالحة لاختبار مؤشرات فنية
+- فحصت intraday.db::stock_intraday: 50,305 rows EGX (intraday، مش daily — لا يناسب اختبار candle-based).
+
+Stage Summary:
+- **STOPED قبل أي اختبار تاريخي** — البيانات غير كافية.
+- فجوة حرجة: **مفيش مصدر EGX daily يغطي 6 شهور بجودة كافية**.
+  * data_engine.db = 62 يوم بس (أقل من 3 شهور)
+  * stocks.db = 45 يوم + open/high NULL 37.7% + volume نصوص
+  * price_history.db = US فقط
+- أي اختبار على البيانات الحالية هيعطي نتائج مضللة (false positives/negatives مش موثوقة).
+- التزامًا بتوجيه المالك: "إذا كانت البيانات غير كافية، يتوقف ويقدم تقريرًا بالفجوات بدلًا من اختلاق نتائج."
+- لم أكتب كود إنتاج، لم أغير سلوك إشارات حية، لم ألمس main.
+- انتظر تعليمات المالك: هل نزّل بيانات EGX تاريخية أطول (6+ شهور) من GitHub Releases snapshot أكمل؟ ولا نكمل بالبيانات المتاحة (62 يوم) مع توضيح التحفظ؟
