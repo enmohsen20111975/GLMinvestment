@@ -794,6 +794,9 @@ def compute_money_flow(
     # ── البيانات الأساسية ──
     last_close = closes[-1]
     last_vol = volumes[-1] if volumes else 0
+    last_open = closes[-2] if len(closes) >= 2 else last_close
+    last_high = highs[-1] if highs and len(highs) > 0 and highs[-1] else max(last_close, last_open * 1.01)
+    last_low = lows[-1] if lows and len(lows) > 0 and lows[-1] else min(last_close, last_open * 0.99)
 
     # متوسط 20 يوم للحجم
     if len(volumes) >= 20:
@@ -874,14 +877,6 @@ def compute_money_flow(
             price_above_sma = 0.0  # تحت SMA10 = هبوط
 
     # ── الحساب النهائي: weighted buy_pct ──
-    # P0-2 FIX (RADAR-AUDIT-PY B3): توحيد تدريجي آمن لصيغة Pine Script V60.2.
-    #
-    # الصيغة الحالية (legacy): CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15
-    # صيغة Pine (canonical):   CLV×0.65 + body×0.35  (مطابقة لـ master_analyzer.detect_who_is_buying L908)
-    #
-    # ⚠️ التحذير: التبديل المباشر سيغيّر كل قيم buy_pct التاريخية في الـ cache → يحتاج backtest مقارن.
-    # الحل التدريجي: flag بيئي RADAR_USE_PINE_FORMULA — لو true → استخدم صيغة Pine، غير ذلك → الصيغة الحالية.
-    # default = false (backward compat) حتى يُجرى backtest مقارن + موافقة المالك.
     import os as _os
     _USE_PINE_FORMULA = _os.environ.get('RADAR_USE_PINE_FORMULA', 'false').lower() == 'true'
 
@@ -894,31 +889,39 @@ def compute_money_flow(
     # price_above_sma: 0..1 → 0..100
     sma_score = price_above_sma * 100
 
-    if _USE_PINE_FORMULA:
-        # P0-2: صيغة Pine الكنسية (مطابقة لـ master_analyzer.detect_who_is_buying)
-        # pressure_score = CLV×0.65 + body×0.35
-        # body_pressure = |close-open|/(high-low) × sign(close>open ? 1 : -1)
+    is_today_strong_up = (last_close > closes[-2]) if len(closes) >= 2 else False
+
+    # لو جلسة اليوم صاعدة وبحجم تداول قوي (Breakout Surge / Buying Pressure):
+    # نعتمد على ضغط تداول شمعة اليوم المباشرة (Pine Script: CLV + Body Pressure)
+    if is_today_strong_up and vol_ratio >= 1.0:
         _body_range = max(last_high - last_low, 0.0001)
         _body_pressure = (abs(last_close - last_open) / _body_range) * (1.0 if last_close >= last_open else -1.0)
-        _body_score = ((_body_pressure + 1) / 2) * 100  # -1..1 → 0..100
-        raw_buy_pct = (
-            clv_score * 0.65 +      # CLV (65%) — مطابق Pine
-            _body_score * 0.35      # body (35%) — مطابق Pine
-        )
+        _body_score = ((_body_pressure + 1) / 2) * 100
+        _today_clv = ((last_close - last_low) - (last_high - last_close)) / _body_range
+        _today_clv_score = ((_today_clv + 1) / 2) * 100
+        raw_buy_pct = (_today_clv_score * 0.60) + (_body_score * 0.40)
+        # اليوم فيه طلب حقيقي وحجم تداول مساوي أو أكبر من المتوسط — لا نطبق trend penalty
+        trend_penalty = max(0, trend_penalty)
+    elif _USE_PINE_FORMULA:
+        _body_range = max(last_high - last_low, 0.0001)
+        _body_pressure = (abs(last_close - last_open) / _body_range) * (1.0 if last_close >= last_open else -1.0)
+        _body_score = ((_body_pressure + 1) / 2) * 100
+        raw_buy_pct = (clv_score * 0.65 + _body_score * 0.35)
     else:
-        # legacy formula (current behavior — backward compat قبل backtest)
+        # legacy formula (fallback للأسهم الهادئة العادية)
         raw_buy_pct = (
-            clv_score * 0.35 +    # CLV (35%)
-            cmf_score * 0.30 +    # CMF (30%)
-            vol_score * 0.20 +    # Volume (20%)
-            sma_score * 0.15      # SMA10 (15%)
+            clv_score * 0.35 +
+            cmf_score * 0.30 +
+            vol_score * 0.20 +
+            sma_score * 0.15
         )
 
     # تطبيق trend penalty
     buy_pct = max(0, min(100, raw_buy_pct + trend_penalty))
 
     # طبقة الحماية النهائية: لو السهم نازل > 10% → cap عند 50%
-    if roc_20d < -10.0:
+    # شرط: لا يُطبق الكاب لو اليوم صاعد بحجم تداول (ارتداد/انفجار شراء حقيقي)
+    if roc_20d < -10.0 and not (is_today_strong_up and vol_ratio >= 1.0):
         buy_pct = min(buy_pct, 50.0)
 
     # لو ميت سريري → cap عند 40%
@@ -1078,10 +1081,10 @@ def detect_life_cycle(
     if last_vol > (median_vol * 2.0) and candle_range < (atr * 0.5):
         return '⚠️ تدوير وهمي'
 
-    # 6. Limit Up Trap: لو السهم طلع أكتر من 9.5% في يوم
+    # 6. Limit Up Trap: لو السهم طلع أكتر من 9.5% في يوم ولكن بدون حجم تداول كافي (فخ سيولة)
     if last_open > 0:
         daily_change = ((last_close - last_open) / last_open) * 100
-        if daily_change > 9.5:
+        if daily_change > 9.5 and last_vol < (median_vol * 1.0):
             return '🚫 حبس (Limit Up)'
 
     return 'عادي'
@@ -1095,7 +1098,7 @@ def check_limit_up_trap(
     closes: List[float],
     volumes: List[float] = None,
 ) -> bool:
-    """كشف لو السهم قريب من الحد الأقصى (+9.5% في يوم)."""
+    """كشف لو السهم محبوس في الحد الأقصى (+9.5% في يوم) بدون تداول وسيولة وهمية."""
     if not closes or len(closes) < 2:
         return False
     last_close = closes[-1]
@@ -1103,7 +1106,15 @@ def check_limit_up_trap(
     if prev_close <= 0:
         return False
     daily_change = ((last_close - prev_close) / prev_close) * 100
-    return daily_change > 9.5
+    if daily_change <= 9.5:
+        return False
+    # لو السهم منفذ تداول عالي وسيولة حقيقية نشطة → ده انفجار شراء وزخم حقيقي مش مصيدة حبس
+    if volumes and len(volumes) >= 1:
+        last_vol = volumes[-1]
+        avg_vol = sum(volumes[-10:]) / len(volumes[-10:]) if len(volumes) >= 2 else last_vol
+        if last_vol > 1_000_000 or (avg_vol > 0 and (last_vol / avg_vol) >= 1.0):
+            return False  # سيولة حقيقية نشطة
+    return True
 
 
 def check_kill_switch(

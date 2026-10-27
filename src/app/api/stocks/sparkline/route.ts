@@ -48,10 +48,49 @@ function fetchSingleSparkline(t: string, days: number) {
   if (cached) return cached;
 
   const candidates = getCandidateTickers(t);
+  const upper = t.toUpperCase().trim();
+  const isIndex = upper.startsWith('EGX') || upper.startsWith('TASI') || upper.startsWith('^') || upper in INDEX_ALIASES;
   const phPath = join(process.cwd(), 'db', 'price_history.db');
   const stocksPath = join(process.cwd(), 'db', 'stocks.db');
 
-  // 1. price_history.db (canonical)
+  // 1. INDICES PRIORITY: stocks.db.index_daily_prices contains live updated index data (synced daily)
+  // price_history.db contains stale archive data up to Sept 2026 for index symbols.
+  if (isIndex) {
+    try {
+      const stocksDb = new Database(stocksPath, { readonly: true, timeout: 3000 });
+      for (const cand of candidates) {
+        const rows = stocksDb.prepare(`
+          SELECT price_date, close
+          FROM index_daily_prices
+          WHERE symbol = ? AND close > 0
+          ORDER BY price_date DESC
+          LIMIT ?
+        `).all(cand, days) as { price_date: string; close: number }[];
+        if (rows.length > 0) {
+          stocksDb.close();
+          const prices = rows.reverse().map(r => Number(r.close));
+          const first = prices[0];
+          const last = prices[prices.length - 1];
+          const result = {
+            ticker: t,
+            prices,
+            min: Math.min(...prices),
+            max: Math.max(...prices),
+            first,
+            last,
+            change_pct: first > 0 ? ((last - first) / first) * 100 : 0,
+            days: prices.length,
+            source: 'stocks.db.index_daily_prices',
+          };
+          setCache(key, result);
+          return result;
+        }
+      }
+      stocksDb.close();
+    } catch {}
+  }
+
+  // 2. price_history.db (canonical for regular stocks)
   try {
     const phDb = new Database(phPath, { readonly: true, timeout: 3000 });
     for (const cand of candidates) {

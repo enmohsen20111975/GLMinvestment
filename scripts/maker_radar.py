@@ -503,7 +503,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
     money_flow = compute_money_flow(closes, volumes, highs, lows)
     life_cycle = detect_life_cycle(closes, volumes, highs, lows)
-    limit_up = check_limit_up_trap(closes)
+    limit_up = check_limit_up_trap(closes, volumes)
     kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
 
     # BRAVO-FLOW-GATE-ALL (2026-10-20, owner directive — P0-RADAR-FLOW-GATE-ALL):
