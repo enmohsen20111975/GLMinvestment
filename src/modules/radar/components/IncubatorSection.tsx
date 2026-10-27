@@ -669,11 +669,15 @@ function PanelView({
                   key={`${c.ticker}-${idx}`}
                   onClick={() => handleCandidateClick(idx)}
                   className={cn(
-                    'w-full text-right rounded-md border p-2 transition-colors duration-150',
+                    'w-full text-right rounded-md border p-2 transition-all duration-200',
                     isActive
-                      ? 'border-primary/40 bg-primary/5 shadow-sm'
+                      ? 'border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/20'
                       : 'border-transparent hover:bg-muted/40',
                   )}
+                  style={isActive ? {
+                    // P3-B: Transition Pulse — إطار glow خفيف
+                    boxShadow: '0 0 0 2px rgba(var(--primary-rgb, 99, 102, 241), 0.1), 0 1px 3px rgba(0,0,0,0.05)',
+                  } : undefined}
                   aria-current={isActive ? 'true' : undefined}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
