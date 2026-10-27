@@ -232,8 +232,8 @@ def _market_pulse_impl(now, cache_key):
     _rsi_expr = 'rsi' if _has_rsi else 'NULL'
 
     # EGX30 vs EGX70
-    egx30_row = cur.execute("SELECT symbol, current_value, previous_close, change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone()
-    egx70_row = cur.execute("SELECT symbol, current_value, previous_close, change_percent FROM market_indices WHERE symbol = 'EGX70'").fetchone()
+    egx30_row = cur.execute("SELECT symbol, current_value, value, previous_close, change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone()
+    egx70_row = cur.execute("SELECT symbol, current_value, value, previous_close, change_percent FROM market_indices WHERE symbol = 'EGX70'").fetchone()
 
     egx30_change = egx30_row['change_percent'] if egx30_row else 0
     egx70_change = egx70_row['change_percent'] if egx70_row else 0
@@ -356,8 +356,8 @@ def _market_pulse_impl(now, cache_key):
             "is_trading_hours": is_trading_hours,
             "market_status": "OPEN" if is_trading_hours else "CLOSED",
             "latest_update": latest_update,
-            "egx30": {"value": egx30_row['current_value'] if egx30_row else None, "change_percent": round(egx30_change, 2) if egx30_change else 0, "previous_close": egx30_row['previous_close'] if egx30_row else None},
-            "egx70": {"value": egx70_row['current_value'] if egx70_row else None, "change_percent": round(egx70_change, 2) if egx70_change else 0, "previous_close": egx70_row['previous_close'] if egx70_row else None},
+            "egx30": {"value": (egx30_row['value'] if egx30_row and egx30_row['value'] and egx30_row['value'] > 1000 else (egx30_row['current_value'] if egx30_row else None)), "change_percent": round(egx30_change, 2) if egx30_change else 0, "previous_close": egx30_row['previous_close'] if egx30_row else None},
+            "egx70": {"value": (egx70_row['value'] if egx70_row and egx70_row['value'] and egx70_row['value'] > 1000 else (egx70_row['current_value'] if egx70_row else None)), "change_percent": round(egx70_change, 2) if egx70_change else 0, "previous_close": egx70_row['previous_close'] if egx70_row else None},
             "divergence": {"value": round(divergence, 2), "regime": regime, "regime_ar": regime_ar, "action": action, "action_ar": action_ar},
             "pulse": {"score": round(pulse_score, 2), "label": pulse_label, "label_en": pulse_label_en, "color": pulse_color},
             "sectors": sectors,
