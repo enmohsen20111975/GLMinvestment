@@ -357,11 +357,13 @@ def _load_scanner_enrichment(market_code: str = 'EGX'):
             _SCANNER_ENRICHMENT_CACHE[market_code] = cache
             return cache
 
+        # RADAR-INTEL-V2: try both lowercase slug AND uppercase market_code
+        # (laptop DB might use 'EGX' instead of 'egypt')
         rows = conn.execute(
             "SELECT symbol, value_traded, relative_volume_10d, turnover_egp, "
             "pe_ratio, roe, profit_margin, eps, dividend_yield, rsi, volume "
-            "FROM stocks WHERE market = ?",
-            (market_slug,)
+            "FROM stocks WHERE market = ? OR market = ?",
+            (market_slug, market_code)
         ).fetchall()
         for r in rows:
             ticker, vt, rv, te, pe, roe, pm, eps, dy, rsi, vol = r
@@ -392,7 +394,9 @@ def _enrich_result_with_scanner(result: dict, ticker: str) -> dict:
     Mutates + returns the result dict. If ticker not in cache, leaves computed
     values unchanged (backward compat).
     """
-    cache = _load_scanner_enrichment(result.get('market', 'EGX'))
+    # RADAR-INTEL-V2: use 'EGX' as default (result may not have 'market' set)
+    market_code = result.get('market') or 'EGX'
+    cache = _load_scanner_enrichment(market_code)
     if not cache or ticker not in cache:
         return result
 
@@ -868,6 +872,17 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     turnovers = [compute_turnover(r) for r in rows]
 
     if len(closes) < 15 or len(volumes) < 15:
+        return None
+
+    # RADAR-INTEL-V2: detect if history is mostly duplicates (1 real day repeated)
+    # This happens when scanner_live persists the same day's data multiple times
+    unique_dates = set()
+    for r in rows:
+        d = r.get('price_date') or r.get('date') or ''
+        if d:
+            unique_dates.add(str(d)[:10])
+    if len(unique_dates) < 3:
+        # Not enough unique trading days for meaningful analysis
         return None
 
     current_price = closes[-1]
