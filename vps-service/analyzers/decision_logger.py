@@ -94,10 +94,18 @@ REASON_CODES = {
     'crypto_news_veto': 'خبر كريبتو VETO',
     # B1 (Task 1-a — Bravo): price-data sanity gate
     'data_invalid': 'بيانات سعرية غير صالحة (B1 Price Sanity)',
+    # BRAVO-FIX-B (REASON_CODES completion): 6 codes كانت مستخدمة في callers
+    # بس مش معرّفة في الـ dict (كانت بـ تتسجل كـ raw strings من غير توثيق).
+    'expert_veto': 'اعتراض خبير (Expert Memory)',
+    'bearish_regime': 'حالة سوق هابطة (Bearish Regime)',
+    'risk_gate_blocked': 'بوابة المخاطر رفضت الإشارة',
+    'risk_gate_passed': 'بوابة المخاطر قبلت الإشارة',
     # Force exits
     'distribution_exit': 'شمعة توزيع',
     'max_holding': 'تجاوز المدة القصوى',
+    'max_holding_7d': 'تجاوز 7 أيام (حد التداول)',
     'no_move': 'لا حركة',
+    'no_move_3d': 'لا حركة لـ 3 أيام',
     'early_drop': 'نزول مبكر',
 }
 
@@ -151,8 +159,21 @@ def log_decision(
         ))
         conn.commit()
         conn.close()
+    except sqlite3.OperationalError as e:
+        # BRAVO-FIX-B (defensive writer): distinguish structural errors (disk
+        # full, DB locked, schema drift) from transient ones. Structural errors
+        # get a full stacktrace so they're visible in logs instead of silent.
+        # Transient errors (busy) get a single-line warning.
+        # We do NOT re-raise — logging must never crash the prediction pipeline.
+        # But we DO log with exc_info=True so the operator can diagnose.
+        msg = str(e).lower()
+        is_structural = any(k in msg for k in ('disk', 'readonly', 'no such table', 'no such column'))
+        if is_structural:
+            logger.error(f"log_decision DB structural error: {e}", exc_info=True)
+        else:
+            logger.warning(f"log_decision DB transient error: {e}")
     except Exception as e:
-        logger.warning(f"log_decision DB failed: {e}")
+        logger.warning(f"log_decision DB failed: {e}", exc_info=True)
 
     # Also print (lightweight — لا يعطل المسار)
     if also_print:

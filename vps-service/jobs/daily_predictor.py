@@ -4117,9 +4117,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         # in ai_routes.py, misc_routes.py, persona_db.py, intraday_scanner.py,
                         # market_scheduler.py, nightly_analysis.py).
                         try:
-                            # Phase 7.1: migrated to db_manager (writable=False)
+                            # BRAVO-FIX-D (stored_analyses empty): writable=False made the
+                            # INSERT below fail with "attempt to write a readonly database"
+                            # (PRAGMA query_only=1) → stored_analyses stayed empty (0 rows)
+                            # despite 10+ writers. The except: pass on line ~4199 swallowed
+                            # the error silently. This is the CANONICAL writer for
+                            # stored_analyses (Rule 73 SINGLE-WRITER), so it MUST be writable.
                             from core.db_manager import db_manager
-                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+                            conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=True)
                             cur_sa = conn_sa.cursor()
                             # ── TASK-A (2026-10-04): تأكّد إن أعمدة AI موجودة ──
                             # الأعمدة دي declared في ai/nightly_analysis.py بس ممكن تكون

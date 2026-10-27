@@ -195,7 +195,7 @@ export const authOptions: NextAuthOptions = {
               // Update last login
               await db.user.update({
                 where: { id: user.id },
-                data: { last_login: new Date() },
+                data: { last_login: new Date().toISOString() },
               });
             } catch (e) {
               // Non-fatal
@@ -260,18 +260,18 @@ export const authOptions: NextAuthOptions = {
                 name: user.name,
                 username: user.email?.split('@')[0] || null,
                 image: user.image,
-                email_verified: new Date(),
+                email_verified: new Date().toISOString(),
                 is_active: true,
                 subscription_tier: isAdminEmail ? 'admin' : 'free',
                 default_risk_tolerance: 'medium',
-                last_login: new Date(),
+                last_login: new Date().toISOString(),
                 trial_ends_at: isAdminEmail ? null : trialEndsAt, // الأدمن مش محتاج trial
               },
               update: {
                 name: user.name,
                 image: user.image,
                 email_verified: user.email ? new Date() : undefined,
-                last_login: new Date(),
+                last_login: new Date().toISOString(),
                 // ترقية للأدمن لو كان عامل حساب قبل كده بـ tier='free'
                 ...(isAdminEmail ? { subscription_tier: 'admin' } : {}),
               },
@@ -403,11 +403,11 @@ export const authOptions: NextAuthOptions = {
                   name: token.name || token.email.split('@')[0],
                   username: (token.username as string) || token.email.split('@')[0],
                   image: (token.picture as string) || (token.image as string) || null,
-                  email_verified: new Date(),
+                  email_verified: new Date().toISOString(),
                   is_active: true,
                   subscription_tier: 'free',
                   default_risk_tolerance: 'medium',
-                  last_login: new Date(),
+                  last_login: new Date().toISOString(),
                 },
               });
               console.log(`[Auth Session] Created user in DB dynamically:`, freshUser.id);

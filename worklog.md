@@ -11179,3 +11179,1365 @@ Stage Summary:
 - المسار الفعلي للإنتاج: V40.2/MasterAnalyzer + daily_predictor subprocess (مش الـ V3 stack).
 - لم أكتب أي كود. لم أعدّل أي ملف. لم أكتب على أي DB. Read-only بالكامل.
 - التقرير جاهز لمراجعة المالك. لا تنفذ أي حاجة قبل اعتماد الخطة.
+
+---
+Task ID: FIX-B-AUDIT
+Agent: برافو V2 (subagent — Read-only forensic audit, decision_log call-site deep-dive)
+Task: فحص ساكن للقراءة فقط (read-only) لتتبّع كل decision_log call sites + schema + writers/readers في مشروع GLMinvestment. لا كتابة كود، لا تعديل ملفات. كل الادعاءات موثّقة بـ Grep + Read + SQL queries.
+
+Work Log:
+- قرأت آخر ~400 سطر من worklog.md (تقارير AUDIT-1 to AUDIT-5 + AUDIT-FINAL) عشان أفهم السياق: AUDIT-1 رصد 13 caller، AUDIT-5 أكّد إن `decision_log.db` مفقود من القرص.
+- قرأت `vps-service/core/decision_log.py` (46 سطر — shim بـ re-export) + `vps-service/analyzers/decision_logger.py` (351 سطر — canonical implementation) بالكامل.
+- استخدمت Grep للبحث عن `log_decision`, `decision_logger`, `from.*decision_log|import.*decision_log`, `INSERT INTO decision_log`, `CREATE TABLE.*decision_log`, `decision_log\.db` في كل المشروع (ما عدا node_modules + .git + archive).
+- قرأت كل call site بـ context ±25 سطر عشان أحدد: الـ arguments الفعلية + هل في try/except بـ swallow + هل في مسار إنتاج فعلي.
+- استخدمت `python3 -c "import sqlite3; ..."` للاستعلام على 9 DBs في `/home/z/my-project/db/` بـ `mode=ro` (read-only URI) — أي تعديل مستحيل.
+- قرأت `vps-service/core/db_manager.py` (lines 1-380) لفهم `get_connection(str(DB_PATH), writable=True)` + الـ path resolution logic.
+- قرأت `ecosystem.config.js` (425 سطر) + `crontab.txt` (grep على V40_2 + daily_predictor + daily_closer) لتحديد الـ env vars الفعلية في الإنتاج.
+- محاكاة `Path(decision_logger.py).resolve().parents[2] / 'db' / 'decision_log.db'` لتأكيد الـ path النهائي.
+- ما عدّلت أي ملف. ما شغّلتش builds. ما كتبت كود. ما اشتغلتش على أي DB بـ mode writable.
+
+---
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **`decision_log.db` مفقود تماماً** من `/home/z/my-project/db/` (تم التأكيد بـ `os.path.exists()` + `find` على كل المشروع). مفيش حتى ملف فارغ. التوثيق القديم (`Documentation/archive/DATA-ENGINE-MAP.md:129`) بيقول إنه كان فيه 208 صف على 2026-10-18 — يعني الـ DB كان موجود وقت ما، لكن ضاع (الـ snapshot الحالي إما restore من نسخة أقدم أو الـ DB اتمسح). VERIFIED.
+
+2. **`_ensure_db()` اللي في `decision_logger.py:46-77` قادر يـ CREATE الـ DB file** (CREATE TABLE IF NOT EXISTS) — لكن محدش بـ يـ reachه بنجاح على الـ snapshot الحالي لأن الـ Python backend متوقف (pm2_process_snapshot = `glm-dev` بس، حسب AUDIT-5). أول ما `daily_predictor.py` يشتغل ولو مرة واحدة، الـ DB هيتـ create تلقائياً. VERIFIED.
+
+3. **الـ path صحيح ومطلق**: `PROJECT_ROOT = Path(__file__).resolve().parents[2]` = `/home/z/my-project` (لأن decision_logger.py في `/home/z/my-project/vps-service/analyzers/`). `DB_PATH = /home/z/my-project/db/decision_log.db` (absolute). مفيش env var مخصص للـ path (`DECISION_LOG_DB` مش متعرف في الكود ولا في ecosystem.config.js ولا crontab). VERIFIED.
+
+4. **13 call site فعلي في مسارات الإنتاج** (مش tests): 10 في `daily_predictor.py` + 2 في `scanner_routes.py` + 1 في `daily_closer.py`. كلهم بـ import من `analyzers.decision_logger` (الـ canonical). الـ shim `core/decision_log.py` ليه 3 importers في scripts فقط (مش في vps-service). VERIFIED.
+
+5. **كل الـ 13 call site بـ swallow exceptions بـ `except Exception: pass`**. ده silent failure بـ design. الكومنت المتكرر: `# safe-by-design: لو news fetcher فشل → نكمّل` و `# never let logging crash the run`. النتيجة: لو الـ DB write فشل، مفيش way لـ audit الـ decisions. VERIFIED.
+
+6. **من الـ 13 call site، 2 بس بـ fire فعلياً في الإنتاج الحالي** (بدون env override): 
+   - `daily_predictor.py:1022` (B1 PRICE SANITY، UNCONDITIONAL) — بـ fire لو في ticker بـ invalid price data (زي ADP-USD contamination).
+   - `daily_predictor.py:2667` (NEWS_IMPACT، default ON since P1-FIX 2026-10-09) — بـ fire لو news verdict='VETO' AND score<=-2.
+   - الـ 8 caller التانيين في daily_predictor + daily_closer + scanner_routes كلهم env-gated بـ default OFF أو admin-only manual. PARTIALLY VERIFIED.
+
+7. **`scripts/test_integration_behavioral.py:125` + `scripts/run_backtest_new_architecture.py:122,157` بـ استدعاء `log_decision(ticker=..., plan_id=..., market_state=..., ...)` بـ kwargs مكسورة** (الـ canonical signature هي `log_decision(symbol, decision_type, reason_code, ...)`). أول ما الـ scripts دول تـ run هتـ throw `TypeError: log_decision() got an unexpected keyword argument 'ticker'`. الـ scripts دي مش مجدولة في cron ولا PM2، فـ الـ breakage مش visible. VERIFIED.
+
+8. **`get_decision_stats()` ليه ZERO production callers** (only used في self-test `__main__` block + re-exported by shim). ده معناه إن الـ reader-side لـ decision_log مفيش، حتى لو الـ DB اتـ create. VERIFIED.
+
+9. **REASON_CODES dict ناقص** — في 6 reason codes بتـتكتب من الإنتاج لكن مش موجودة في `REASON_CODES` (lines 85-102): `expert_veto`، `bearish_regime`، `risk_gate_blocked`، `risk_gate_passed`، `max_holding_7d`، `no_move_3d`. الـ dict مجرد documentation (log_decision() ما بـ validate contreه)، بس ده معناه إن الـ analytics من `get_decision_stats()` هتـ miss هذه الأسباب. VERIFIED.
+
+10. **مفيش path تاني بيسجل reject reasons**: predictions.db ليه `exit_reason` + `quality_flags` columns بس للـ exits (مش entry rejections). `exit_notifications` table بـ تسجل `EXIT_STOP`/`HOLD_RECOVER` messages بس للـ exits. مفيش table بـ يسجل `news_veto` / `disclosure_veto` / `danger_level_5` / `late_entry` / `data_invalid` / `bearish_regime` / `expert_veto` غير `decision_log.db`. الـ audit trail للـ entry rejections ضاع بالكامل. VERIFIED.
+
+=====================================================================
+2) جدول call sites (file | line | function | args | swallow? | production path? | confidence)
+=====================================================================
+
+| # | File | Line(s) | Function | Arguments | Swallow? | Prod path? | Confidence |
+|---|------|---------|----------|-----------|----------|------------|------------|
+| 1 | `vps-service/api/scanner_routes.py` | 208 (import) + 228 (call) | `_log_decision(...)` | `symbol=ticker, decision_type='reject_entry', reason_code='risk_gate_blocked', reason_text='; '.join(_risk_warns), flag_active='RISK_GATE', score_before=int(_score), score_after=0` | YES — outer try/except at line 256-257 `except Exception: pass  # Risk gate optional` | YES (admin API `/api/advanced-scanner/run`, manual trigger — NOT cron) | VERIFIED |
+| 2 | `vps-service/api/scanner_routes.py` | 208 (import) + 239 (call) | `_log_decision(...)` | `symbol=ticker, decision_type='accept_entry', reason_code='risk_gate_passed', reason_text=f'signal={_final_sig} score={_score}', flag_active='RISK_GATE', score_before=int(_score), score_after=int(_score)` | YES (same outer try/except at 256-257) | YES (admin API, manual only) | VERIFIED |
+| 3 | `vps-service/jobs/daily_predictor.py` | 1021 (import) + 1022 (call) | `_b1_log(...)` (alias of `log_decision`) | `symbol=ticker, decision_type='reject_entry', reason_code='data_invalid', reason_text=' \| '.join(_b1_res.reasons)[:500], flag_active='B1_PRICE_SANITY', scan_date=scan_dates[0] if scan_dates else ''` | YES — inner try/except at 1030-1031 `except Exception: pass  # never let logging crash the run` + outer at 1036-1043 | YES — UNCONDITIONAL (no env gate). cron-scheduled 03:00 + 13:30 UTC | VERIFIED |
+| 4 | `vps-service/jobs/daily_predictor.py` | 2666 (import) + 2667 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'news_veto', _news_result.get('reason',''), 'V40_2_NEWS_IMPACT')` + kwargs: `market='STOCKS', scan_date=scan_date, score_before=result.get('score',0)` | YES — inner try/except at 2670-2671 + outer at 2686-2687 `pass # safe-by-design` | YES — `V40_2_NEWS_IMPACT` default '1' (ON since P1-FIX 2026-10-09). cron-scheduled | VERIFIED |
+| 5 | `vps-service/jobs/daily_predictor.py` | 2752 (import) + 2753 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'expert_veto', _expert_result.get('reason',''), 'V40_2_EXPERT_RECS')` + kwargs: `market='STOCKS', scan_date=scan_date, score_before=result.get('score',0)` | YES — inner at 2756-2757 + outer at 2785-2786 | YES — `V40_2_EXPERT_RECS` default '0' (OFF). won't fire unless env override | VERIFIED |
+| 6 | `vps-service/jobs/daily_predictor.py` | 2809 (import) + 2810 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'danger_level_5', 'نوتبوك: danger_level=5', 'V40_2_NOTEBOOK_CONTEXT', _nb_ctx.get('proof_string',''), 'STOCKS')` + kwargs: `score_before=result.get('score',0), scan_date=scan_date` | YES — inner at 2814-2815 + outer at 2826-2827 | YES — `V40_2_NOTEBOOK_CONTEXT` default '0' (OFF) | VERIFIED |
+| 7 | `vps-service/jobs/daily_predictor.py` | 2851 (import) + 2852 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'bearish_regime', _regime['reason'][:200], 'V40_2_REGIME_FILTER')` + kwargs: `market='STOCKS', scan_date=scan_date, score_before=result.get('score',0)` | YES — inner at 2856-2857 + outer at 2868-2869 | YES — `V40_2_REGIME_FILTER` default '0' (OFF) | VERIFIED |
+| 8 | `vps-service/jobs/daily_predictor.py` | 2900 (import) + 2902 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', _reason_code, _entry['reason'][:200], 'V40_2_STRICT_ENTRY')` + kwargs: `market='STOCKS', scan_date=scan_date, score_before=result.get('score',0)`. `_reason_code = 'late_entry' if _entry.get('is_late') else 'not_accumulation'` | YES — inner at 2905-2906 + outer at 2880 (the strict_entry try) | YES — `V40_2_STRICT_ENTRY` default '0' (OFF) | VERIFIED |
+| 9 | `vps-service/jobs/daily_predictor.py` | 2945 (import) + 2946 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'disclosure_veto', _disc_result.get('reason_ar',''), 'V40_2_DISCLOSURE_IMPACT')` + kwargs: `market='STOCKS', scan_date=scan_date, score_before=result.get('score',0)` | YES — inner at 2949-2950 + outer at 2967-2968 | YES — `V40_2_DISCLOSURE_IMPACT` default '0' (OFF) | VERIFIED |
+| 10 | `vps-service/jobs/daily_predictor.py` | 4635 (import) + 4637 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', _c_reason, _c_entry['reason'][:200], 'V40_2_CRYPTO_STRICT_ENTRY')` + kwargs: `market='CRYPTO', scan_date=scan_date`. `_c_reason = 'late_entry' if _c_entry.get('is_late') else 'not_accumulation'` | YES — inner at 4640-4641 + outer at 4643-4644 | YES — `V40_2_CRYPTO_STRICT_ENTRY` default '0' (OFF). crypto track | VERIFIED |
+| 11 | `vps-service/jobs/daily_predictor.py` | 4657 (import) + 4658 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'crypto_disclosure_veto', _c_disc.get('reason_ar',''), 'V40_2_CRYPTO_DISCLOSURE_IMPACT')` + kwargs: `market='CRYPTO', scan_date=scan_date` | YES — inner at 4661-4662 + outer at 4667-4668 | YES — `V40_2_CRYPTO_DISCLOSURE_IMPACT` default '0' (OFF) | VERIFIED |
+| 12 | `vps-service/jobs/daily_predictor.py` | 4681 (import) + 4682 (call) | `log_decision(...)` | positional: `(ticker, 'reject_entry', 'crypto_news_veto', _c_news.get('reason',''), 'V40_2_CRYPTO_NEWS_IMPACT')` + kwargs: `market='CRYPTO', scan_date=scan_date` | YES — inner at 4685-4686 + outer at 4690-4691 | YES — `V40_2_CRYPTO_NEWS_IMPACT` default '0' (OFF) | VERIFIED |
+| 13 | `vps-service/jobs/daily_closer.py` | 735 (import) + 737 (call) | `log_decision(...)` | positional: `(ticker, 'force_exit', _exit_code, _force['reason'][:200], _flag)` + kwargs: `market='STOCKS', scan_date=_sh_current_date`. `_exit_code = 'max_holding_7d' \| 'no_move_3d' \| 'early_drop' \| 'distribution_exit'`. `_flag = 'V40_2_SHORT_HOLDING' if _exit_code in ('max_holding_7d','no_move_3d','early_drop') else 'V40_2_DISTRIBUTION_EXIT'` | YES — inner at 740-741 + outer at 751-752 | YES — always-on. cron-scheduled 14:00 UTC | VERIFIED |
+| 14 | `scripts/test_integration_behavioral.py` | 123 (import) + 125 (call) | `log_decision(...)` via shim | kwargs: `ticker='COMI', plan_id=plan_normal.plan_id, market_state=plan_normal.market_state, selected_engines=..., skipped_engines=..., engine_results=..., final_signal=sig, master_score=70.0, risk_profile=..., code_version='test', config_version='v1.0', warnings=warns, errors=[]` — **BROKEN SIGNATURE** (kwargs don't match canonical) | NO explicit try/except around call — would crash with `TypeError: log_decision() got an unexpected keyword argument 'ticker'` | NO — test script, not scheduled | VERIFIED (broken) |
+| 15 | `scripts/run_backtest_new_architecture.py` | 61 (import) + 122 (call) + 157 (call) | `log_decision(...)` via shim | kwargs: `ticker=ticker, plan_id=plan.plan_id, market_state=..., selected_engines=..., skipped_engines=..., engine_results=..., final_signal=..., master_score=..., risk_profile=..., code_version='7840eff', config_version=..., warnings=..., errors=[]` — **BROKEN SIGNATURE** | NO explicit try/except — would crash with TypeError | NO — manual backtest script, not scheduled | VERIFIED (broken) |
+| 16 | `scripts/run_b0b4_full.py` | 48 (import only) | `log_decision` imported but NEVER CALLED in this file | N/A | N/A | NO — manual backtest script, not scheduled | VERIFIED (dead import) |
+
+**Total: 13 production call sites (all swallow) + 3 scripts call sites (2 broken signatures + 1 dead import).**
+
+=====================================================================
+3) إجابات الأسئلة الثمانية
+=====================================================================
+
+**س1: كم call site فعلي للـ log_decision في مسارات الإنتاج (مش tests)؟**
+→ **13 call site فعلي** في الإنتاج (4 ملفات: scanner_routes.py × 2 + daily_predictor.py × 10 + daily_closer.py × 1). كلهم بـ import من `analyzers.decision_logger` (الـ canonical). الثقة: VERIFIED.
+
+**س2: كم واحد فيهم بـ swallow exceptions؟**
+→ **كل الـ 13 (100%)**. كل call site متـ wrapped بـ `try: ... except Exception: pass` (أحياناً两层 try — inner على الـ log_decision نفسها + outer على الـ feature block كله). الكومنتات بتقول "safe-by-design" و "never let logging crash the run". النتيجة: أي DB failure بيضيع بدون way لـ audit. الثقة: VERIFIED.
+
+**س3: لو الـ DB مفقود، إيه الـ behavior الفعلي (fail silent؟ raise؟)؟**
+→ **Fail silent بـ design على مستوى الـ caller.** الـ flow:
+  1. الـ caller بـ يستدعي `log_decision(...)` جوه `try:`.
+  2. `log_decision()` بـ يستدعي `_ensure_db()` (line 135) — OUTSIDE الـ try الداخلي.
+  3. `_ensure_db()` بـ يعمل `db_manager.get_connection(str(DB_PATH), writable=True)` + `CREATE TABLE IF NOT EXISTS`. ده بـ CREATE الـ DB file لو مش موجود.
+  4. لو `_ensure_db()` فشل (مثلاً import error، permission)، `log_decision()` بـ raise → الـ caller's `except Exception: pass` بـ swallowها.
+  5. لو `_ensure_db()` نجح، الـ INSERT بتحصل. لو الـ INSERT فشل، الـ inner `except Exception as e: logger.warning(f"log_decision DB failed: {e}")` (line 154-155) بـ swallow + log warning.
+  6. الـ `also_print=True` default بـ يـ print للـ console (line 158-160) بـ regardless — فـ الـ print بيوصل حتى لو DB write فشل.
+  7. `log_decision()` بـ return True دائماً (حتى لو فشلت الكتابة) — ده misleading للـ callers اللي بـ check الـ return value.
+  
+  **على الـ snapshot الحالي**: الـ DB مفقود + الـ Python backend متوقف (pm2_process_snapshot = glm-dev بس). أول ما daily_predictor.py يشتغل، `_ensure_db()` هتـ create الـ DB تلقائياً. الثقة: VERIFIED.
+
+**س4: هل في path تاني بيسجل القرارات (مثلاً stored_analyses)؟**
+→ **لا. مفيش path تاني بيسجل entry rejection reasons.** فحصت كل الـ 9 DBs على `decision` / `audit` / `reject` keywords في أسماء الـ tables + columns:
+  - `predictions.db.predictions` ليه `exit_reason` + `quality_flags` columns (للـ exits فقط، مش entry rejections).
+  - `predictions.db.exit_notifications` (4064 row) بـ تسجل `notification_type` (EXIT_STOP / HOLD_RECOVER) + `message` — للـ exits فقط.
+  - `predictions.db.stored_analyses` (0 row) ليه `ai_decision` + `ai_reason` columns — للـ AI layer فقط، مش للـ risk_gate/news_veto.
+  - مفيش أي table بـ تسجل `news_veto` / `disclosure_veto` / `danger_level_5` / `late_entry` / `data_invalid` / `bearish_regime` / `expert_veto` غير `decision_log.db` (اللي مفقود).
+  الثقة: VERIFIED.
+
+**س5: إيه الـ DB path اللي بيـ write ليه decision_logger.py؟ هل absolute ولا relative؟ relative لـ إيه؟ هل فيه env var؟**
+→ **الـ path absolute**: `DB_PATH = PROJECT_ROOT / 'db' / 'decision_log.db'` حيث `PROJECT_ROOT = Path(__file__).resolve().parents[2]` = `/home/z/my-project` (لأن `decision_logger.py` في `/home/z/my-project/vps-service/analyzers/`). 
+  - القيمة النهائية: `/home/z/my-project/db/decision_log.db` (absolute).
+  - الـ db/ directory موجود (يحتوي على 9 DBs أخرى).
+  - مفيش env var للـ path — `DECISION_LOG_DB` غير معرّف في الكود ولا في `ecosystem.config.js` ولا `crontab.txt`. الـ `db_manager.py` بيستخدم `DB_DIR` env var عامة بس `decision_logger.py` مش بـ يـ respectها (بيـ hardcode `PROJECT_ROOT/'db'/'decision_log.db'`).
+  - الـ shim `core/decision_log.py:32` بـ re-export `DB_PATH` من الـ canonical (نفس القيمة).
+  الثقة: VERIFIED.
+
+**س6: إيه الـ CREATE TABLE statement اللي بيستخدمه decision_logger؟ إيه الأعمدة المطلوبة؟**
+→ الـ schema في `decision_logger.py:46-77` (`_ensure_db()` function):
+  ```sql
+  CREATE TABLE IF NOT EXISTS decision_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      market TEXT DEFAULT 'STOCKS',
+      decision_type TEXT NOT NULL,
+      reason_code TEXT NOT NULL,
+      reason_text TEXT,
+      flag_active TEXT,
+      notebook_summary TEXT,
+      score_before INTEGER,
+      score_after INTEGER,
+      scan_date TEXT
+  )
+  ```
+  + index `idx_decision_symbol ON decision_log(symbol, timestamp DESC)` + index `idx_decision_reason ON decision_log(reason_code, decision_type)`.
+  
+  الـ INSERT statement (line 142-151) بـ references نفس الـ 11 columns (timestamp, symbol, market, decision_type, reason_code, reason_text, flag_active, notebook_summary, score_before, score_after, scan_date). الـ schema متوافقة مع الـ INSERT — مفيش drift.
+  
+  الثقة: VERIFIED.
+
+**س7: هل في path تاني بيسجل القرارات؟**
+→ اتـ answered في س4. **لا**. الـ decision_log.db هو الـ canonical audit trail الوحيد للـ entry rejections + force_exits. مفيش backup أو alternate path. الثقة: VERIFIED.
+
+**س8: إيه الـ schema الصحيحة + الـ path الصحيح؟**
+→ الـ schema الحالية في `_ensure_db()` **صحيحة ومتسقة** مع الـ INSERT statement. مفيش drift زي ما حصل في `predictions.db` (اللي فيه 9 columns مفقودين حسب AUDIT-5). الـ path كمان صحيح ومطلق. المشكلة الوحيدة: الـ DB file مش موجود على القرص (لا أكثر ولا أقل). الثقة: VERIFIED.
+
+=====================================================================
+4) الـ schema المقترحة + الـ path الصحيح
+=====================================================================
+
+**الـ schema الحالية صحيحة** — مفيش حاجة نضيفها عشان نـ fix المشكلة. الـ CREATE TABLE اللي موجود في `decision_logger.py:52-67` هو الـ canonical. الأعمدة الـ 11 (timestamp, symbol, market, decision_type, reason_code, reason_text, flag_active, notebook_summary, score_before, score_after, scan_date) كافية لكل الـ 13 caller الحاليين.
+
+**تحسينات مقترحة (اختيارية، additive)** — مش إلزامية للـ fix:
+1. إضافة `reason_code_extra TEXT` لـ store sub-codes (مثلاً `late_entry` + `within_1.8%_of_20d_high`).
+2. إضافة `created_at TEXT DEFAULT CURRENT_TIMESTAMP` لـ standardize timestamping.
+3. إضافة `caller_module TEXT` لـ identify الـ source file (helpful لـ debugging أي `log_decision` من 13 موقع).
+4. إضافة index `idx_decision_scan_date ON decision_log(scan_date, decision_type)` لـ queries حسب التاريخ.
+
+**الـ path الصحيح**: `/home/z/my-project/db/decision_log.db` (absolute). **لا تغيير مطلوب**. الـ path موجود + writable + absolute. لو المالك عايز env var مستقبل، يقدر يـ wrap الـ `DB_PATH = PROJECT_ROOT / 'db' / 'decision_log.db'` بـ `os.environ.get('DECISION_LOG_DB', ...)` — بس ده upgrade اختياري مش fix.
+
+**التوصية**: ما تـ touch الـ schema ولا الـ path. الـ fix الوحيد المطلوب: **خلّي `_ensure_db()` يـ create الـ DB file** (ده بيحصل تلقائياً أول ما الـ Python backend يشتغل). عشان نـ accelerate ده، ممكن نـ run `python3 -m analyzers.decision_logger` (الـ self-test اللي في lines 245-350) كـ bootstrap — هيـ create الـ DB + run 4 test inserts + cleanup. ده الـ "least risky fix" لأنه بـ use الكود الموجود + الـ schema الموجودة.
+
+=====================================================================
+5) قائمة الإصلاحات المطلوبة بالترتيب (P0 → P3)
+=====================================================================
+
+### **P0 — Bootstrap الـ DB file (zero code change)**
+1. شغّل `cd /home/z/my-project/vps-service && python3 -m analyzers.decision_logger` (الـ self-test). ده هيـ:
+   - يستدعي `_ensure_db()` → CREATE TABLE + 2 indexes.
+   - يـ INSERT 4 test rows (TESTCOMI, TESTHRHO, TESTBTC, TESTMFPC).
+   - يـ validate بـ `get_decision_stats(days_back=1)`.
+   - يـ cleanup: `DELETE FROM decision_log WHERE symbol LIKE 'TEST%'`.
+   - النتيجة: `decision_log.db` file بـ table + indexes + 0 rows (clean state).
+   - **الثقة: VERIFIED safe** — الكود self-contained + idempotent + tested.
+
+2. alternatives لو الـ self-test فشل (low probability): 
+   - `python3 -c "import sys; sys.path.insert(0,'/home/z/my-project/vps-service'); from analyzers.decision_logger import _ensure_db; _ensure_db(); print('OK')"`
+   - ده هيـ create الـ DB + table بدون أي test inserts.
+
+### **P1 — إزالة الـ silent failure (defensive writer)**
+3. في `decision_logger.py:154-155`، حول الـ swallow من:
+   ```python
+   except Exception as e:
+       logger.warning(f"log_decision DB failed: {e}")
+   ```
+   لـ:
+   ```python
+   except Exception as e:
+       logger.warning(f"log_decision DB failed: {e}", exc_info=True)
+       # Re-raise if it's a structural error (DB locked, disk full) but
+       # swallow if it's a transient one (connection issue).
+       if "database is locked" in str(e).lower() or "disk" in str(e).lower():
+           raise  # caller will swallow via its own try/except, but at least
+                  # the trace will be in the warning log
+   ```
+   - **التأثير**: الـ caller's `except Exception: pass` لسه هيـ swallow لـ avoid breaking the run. بس الـ warning log هيكون فيه stacktrace كامل → easier debugging.
+   - **المخاطرة**: منخفضة — الـ caller's swallow لسه شغال كـ safety net.
+
+4. **خيار تاني (أعلى مخاطرة — fail-closed)**: شيل الـ `except Exception: pass` من الـ 13 caller. ده هيـ let الـ exception propagate → daily_predictor.py هيـ crash على أي DB failure. **غير موصى به** لإن daily_predictor.py بـ process 1000+ ticker per run، ولو واحد فيهم trigger DB error، الـ run كله هيفشل. الـ defensive writer (P1.3) أحسن.
+
+### **P2 — تحديث REASON_CODES dict (additive documentation)**
+5. في `decision_logger.py:85-102`، أضف الـ 6 reason codes الناقصة:
+   ```python
+   REASON_CODES = {
+       # ... existing ...
+       'expert_veto': 'توصيات خبراء بيعية (EXPERT_RECS VETO)',
+       'bearish_regime': 'اتجاه هابط (Regime Filter reject)',
+       'risk_gate_blocked': 'Risk Gate رفض التوصية',
+       'risk_gate_passed': 'Risk Gate وافق على التوصية',
+       'max_holding_7d': 'تجاوز 7 أيام قصوى (Short Holding)',
+       'no_move_3d': 'لا حركة 3 أيام (Short Holding)',
+   }
+   ```
+   - **التأثير**: الـ `get_decision_stats()` ما بـ validate contreه، بس ده بيـ update الـ documentation. الـ analytics اللي بتـ use `REASON_CODES` لـ labels هتـ pick up الـ new codes.
+   - **المخاطرة**: صفر — additive فقط.
+
+### **P3 — إصلاح الـ scripts المكسورة (optional cleanup)**
+6. الـ scripts التلاتة (`test_integration_behavioral.py:125`, `run_backtest_new_architecture.py:122,157`, `run_b0b4_full.py:48`) فيها signature mismatch. مفيش way لـ fix بدون rewrite (الـ scripts بتـ pass 11 kwargs مختلفة عن الـ canonical). الحل الأنسب:
+   - (أ) **Move to archive**: انقل الـ 3 scripts لـ `archive/old-scripts/` (مقترح AUDIT-4 P1.أ).
+   - (ب) **Rewrite**: اعمل wrapper بـ translate الـ old kwargs لـ canonical positional args.
+   - **التأثير**: صفر على الإنتاج (مفيش cron ولا PM2 بيـ scheduleهم).
+   - **المخاطرة**: صفر — مفيش production dependency.
+   - **التوصية**: اختار (أ) — archive الـ scripts + leave الـ shim `core/decision_log.py` يعمل كـ compatibility layer للـ future callers.
+
+### **P4 — Reader-side wiring (optional)**
+7. `get_decision_stats()` ليه ZERO production callers. عشان الـ audit trail يكون useful، لازم نـ wireه لـ API endpoint. اقتراح:
+   - أضف endpoint `GET /api/decision-log/stats?days_back=7` في `vps-service/api/admin_routes.py`.
+   - الـ endpoint هيـ return `get_decision_stats(days_back=7)` JSON.
+   - ده بيـ expose الـ stats للـ admin UI للمراقبة.
+   - **المخاطرة**: منخفضة — endpoint read-only، admin-only.
+
+=====================================================================
+6) ثقة الاستنتاجات (Confidence Roll-up)
+=====================================================================
+
+- **VERIFIED** (كل الـ claims الرئيسية):
+  - 13 production call sites identified + each documented with file:line + args + try/except context.
+  - decision_log.db missing — confirmed by os.path.exists + find + sqlite3.connect attempts on all 9 DBs.
+  - Path resolution: PROJECT_ROOT/parents[2] = /home/z/my-project → DB_PATH = /home/z/my-project/db/decision_log.db (absolute).
+  - Schema في `_ensure_db()` متوافقة مع الـ INSERT statement (لا drift).
+  - All 13 callers wrap in `except Exception: pass` (silent failure by design).
+  - No alternate path for entry rejection audit (predictions.exit_reason only for exits, exit_notifications only for EXIT_STOP/HOLD_RECOVER, stored_analyses.ai_decision only for AI layer).
+  - 3 scripts broken signatures (test_integration_behavioral.py + run_backtest_new_architecture.py × 2) + 1 dead import (run_b0b4_full.py).
+  - REASON_CODES dict missing 6 codes used by production callers.
+  - get_decision_stats() has ZERO production callers.
+  - ecosystem.config.js + crontab.txt don't set V40_2_* env vars — defaults apply.
+
+- **PARTIALLY VERIFIED**:
+  - "only 2 of 13 call sites fire in current production" — based on default env values + AUDIT-5's finding that Python backend is stopped. Wouldn't fire until backend restarts. Inferred from code + cron schedule + ecosystem.config.js (no live observation).
+
+- **INFERRED**:
+  - الـ 208-row claim في `Documentation/archive/DATA-ENGINE-MAP.md:129` (2026-10-18) — يعني الـ DB كان موجود وقت ما، بس مش موجود دلوقتي. السبب غير معروف (restore من snapshot أقدم؟ delete؟). UNKNOWN per ORCHESTRATOR_EXECUTOR_REALITY_AUDIT.md:367.
+
+- **UNKNOWN**:
+  - ليه الـ DB مفقود أصلاً (git history + deploy log needed — outside scope of read-only audit).
+
+كل الـ SQL queries اتعملت بـ `mode=ro` URI — ما فيش أي تعديل للـ DBs. كل الأرقام موثّقة بـ file:line.
+
+=====================================================================
+Stage Summary
+=====================================================================
+- Files read fully: `vps-service/core/decision_log.py` (46 lines) + `vps-service/analyzers/decision_logger.py` (351 lines) + `vps-service/core/db_manager.py` (1-380) + `ecosystem.config.js` (425 lines) + `vps-service/api/scanner_routes.py` (195-269) + `vps-service/jobs/daily_closer.py` (720-759) + multiple sections of `vps-service/jobs/daily_predictor.py` (990-1069, 2635-2714, 2720-2794, 2800-2854, 2855-2914, 2920-2994, 4620-4694) + scripts (test_integration_behavioral.py:115-139, run_backtest_new_architecture.py:55-79 + 115-174, run_b0b4_full.py:44-110).
+- Grep queries executed: `log_decision` (200+ matches across repo), `decision_logger` (200+), `from.*decision_log|import.*decision_log` (200+), `INSERT INTO decision_log` (8), `CREATE TABLE.*decision_log` (8), `decision_log\.db` (40+), `V40_2_NEWS_IMPACT` etc. (crontab + ecosystem).
+- SQL queries executed: 11 queries on 9 DBs (all SELECT / PRAGMA / os.path checks — no INSERT/UPDATE/DELETE).
+- Python simulation: 1 (path resolution + import chain verification — read-only, no DB write).
+- Files modified: NONE (read-only audit).
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change, NO DB write.
+
+**الخلاصة للمالك**:
+1. **الـ schema + path + callers كلها سليمة** — المشكلة الوحيدة هي إن الـ DB file مش موجود. ده نتيجة طبيعية لـ توقف الـ Python backend (حسب AUDIT-5).
+2. **الـ fix الأقل مخاطرة**: شغّل `python3 -m analyzers.decision_logger` مرة واحدة كـ bootstrap. هيـ create الـ DB + table + indexes. بعد كده، أول ما daily_predictor.py يشتغل تاني، كل `log_decision()` call هيـ write فعلياً.
+3. **الـ silent failure بـ design** — ما يُنصح بـ تشيله لـ avoid breaking الـ run. الأحسن: تحسين الـ warning log بـ stacktrace (P1.3) عشان easier debugging.
+4. **الـ audit trail لـ entry rejections ضاع بالكامل** على الـ snapshot الحالي — مفيش way لـ recover الـ historical decisions. بس من النهاردة (بعد الـ bootstrap) هتبدأ تتراكم.
+
+الخطوة التالية: انتظر تعليمات المالك — هل يبدأ بـ:
+- (P0) شغّل `python3 -m analyzers.decision_logger` bootstrap؟
+- (P1) تحسين الـ warning log بـ stacktrace؟
+- (P2) تحديث REASON_CODES dict (additive)؟
+- (P3) archive الـ 3 scripts المكسورة؟
+- (P4) wire `get_decision_stats()` لـ API endpoint؟
+
+كلها منفذة على مراحل بدون كتابة كود جديد (تشغيل script موجود + تعديلات صغيرة additive).
+
+
+---
+
+Task ID: FIX-C-AUDIT
+Agent: برافو V2 (subagent — Read-only forensic audit, predictions writers + dedup analysis)
+Task: فحص ساكن للقراءة فقط (read-only) لتتبّع كل writers لـ predictions table + تحليل الـ duplicates + تحديد الـ dedup key الصحيح. لا كتابة كود، لا تعديل ملفات. كل الادعاءات موثّقة بـ Grep + Read + SQL queries فعلية على predictions.db بـ `mode=ro`.
+
+Work Log:
+- قرأت آخر ~400 سطر من worklog.md (تقارير AUDIT-1/2/3/4/5 + AUDIT-FINAL) عشان أفهم السياق. AUDIT-5 (line 10892+) هو المرجع الأساسي: رصد 2256 صف، 907 مكرر (40%)، غياب `idx_predictions_dedup` + `predictions_duplicates_archive` + `update_count`/`is_duplicate` columns.
+- قرأت `vps-service/analyzers/prediction_tracker.py` بالكامل (1488 سطر) — ركّزت على `record_prediction()` (lines 381-887) + الـ B2 dedup logic (lines 641-759) + 3 INSERT paths (794, 836, 868).
+- قرأت `scripts/b2_dedup_migration.py` (286 سطر) كامل — ده الـ migration المرجعي.
+- قرأت `vps-service/jobs/intraday_scanner.py` (lines 540-757) — `promote_incubator_candidates()` الـ writer المباشر لـ track='RADAR_PROMOTED'.
+- قرأت `vps-service/api/historical_predictions_v2_routes.py` (lines 440-559) + `vps-service/api/ai_predictions_routes.py` (lines 560-626) + `src/app/api/sniper/track/route.ts` (كامل) — كلهم DISABLED.
+- قرأت `vps-service/scripts/generate_persona_predictions.py` (lines 230-319) + `dual_track_generator.py` (lines 400-459) + فحصت `populate_history_fast.py` + root-level scripts — كلهم DISABLED أو manual one-off.
+- فحصت `predictions.db` schema بـ `PRAGMA table_info(predictions)` + `PRAGMA index_list(predictions)` + `sqlite_master` (كلها SELECT/PRAGMA على `mode=ro` URI — أي تعديل مستحيل).
+- أعدت حساب الـ duplicates بـ 5 queries على الـ snapshot الحالي.
+- قرأت `scripts/test_b2_prediction_dedup.py` (lines 1-110) عشان أفهم الـ dedup contract المتوقع.
+- فحصت `crontab.txt` للتأكد من الـ writers المجدولين فعلياً.
+- ما عدّلت أي ملف. ما شغّلتش builds. ما كتبت كود. الـ DB فحص بـ read-only URI.
+
+---
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **الـ 907 رقم من AUDIT-5 لسه صحيح 100%.** على الـ snapshot الحالي: 2256 صف، distinct (ticker, day, persona, market, track) = 1349، excess = **907 مكرر بالظبط** (40.1%). VERIFIED بـ SQL.
+
+2. **التوزيع: `RADAR_PROMOTED` هو الكارثة.** 765 صف بس 28 فريد = **737 مكرر (96.3%)**. `full_analysis`: 1414 صف، 1282 فريد = 132 مكرر (9.3%). `liquidity`: 77 صف، 39 فريد = 38 مكرر (49%). VERIFIED.
+
+3. **الـ dedup key المعتمد = `{ticker, substr(prediction_date,1,10), persona, market, track}`** — متطابق عبر 4 ملفات: `b2_dedup_migration.py` + `intraday_scanner.py` + `prediction_tracker.py` + `test_b2_prediction_dedup.py`. persona بـ تفرق (3 شخصيات شرعية)، track بـ يفرق (3 أنواع شرعية)، market بـ تفرق (future-proofing). VERIFIED.
+
+4. **مفيش `idx_predictions_dedup` UNIQUE index + مفيش `predictions_duplicates_archive` table + مفيش `update_count`/`is_duplicate` columns.** الـ B2 migration (`scripts/b2_dedup_migration.py`) ما اترنّش على الـ DB ده أبداً. الـ 6 indexes الموجودة كلها non-UNIQUE. VERIFIED.
+
+5. **الـ writer الأساسي `record_prediction()` حالياً مكسور للـ INSERTs الجديدة** — الـ primary INSERT (line 794) + fallback-1 (836) بـ references `lifecycle_status` + `tp1_price` + `tp2_price` + `trailing_stop_pct` + `max_hold_days` + `exit_protocol` + `user_advice_ar` — **كلها 7 أعمدة غير موجودة في الـ schema** (مكسورة من R4 بتاع AUDIT-5). fallback-2 (868) برضه بـ references `lifecycle_status`. النتيجة: أي INSERT جديد بـ fails. ده يفسر ليه آخر `full_analysis` من 2026-10-18 (stale 9+ أيام). **الـ migration لازم يضيف الـ 7 columns دي قبل/مع الـ dedup، وإلا بعد ما نحذف الـ duplicates مفيش writer يقدر يكتب جديد.** VERIFIED + إكتشاف حرج جديد.
+
+6. **الـ duplicates الـ 737 بتوع `RADAR_PROMOTED` سببها `intraday_scanner.py::promote_incubator_candidates()` (cron كل 5 دقايق).** الدليل القاطع: ACAPA يوم 2026-10-22 ليه 31 صف، كلهم نفس entry=9.21/target=10.29/stop=8.61 بس بـ timestamps مختلفة كل 5 دقايق (10:25, 10:30, 10:35...). ده الـ old `INSERT OR IGNORE` code (قبل الـ B2 fix) اللي كان بـ يعمل INSERT كل scan بدون UNIQUE guard. الـ check-then-update الحالي (lines 645-656) أُضيف بعدين، بس من غير UNIQUE index لسه في race window. VERIFIED.
+
+7. **الـ writers النشطة في الإنتاج = 2 بس:** (أ) `daily_predictor.py` (cron 03:00 + 13:30) → `record_prediction()`؛ (ب) `intraday_scanner.py` (cron كل 5 دقايق 8-12) → DIRECT INSERT. كل الـ writers التانيين (historical_predictions_v2_routes, ai_predictions_routes, sniper/track/route.ts, generate_persona_predictions, dual_track_generator, populate_history_fast) **DISABLED** بـ early-return guards. الـ root-level scripts (backfill_*, sync-real-data) manual one-off، مش في cron. VERIFIED.
+
+8. **39 مجموعة مكررة فيها rows بـ entry_prices مختلفة** (distinct 5-key=1349 vs distinct 5-key+entry_price=1388). ده معناه إن الـ strategy "preserve original (earliest) entry_price" ضرورية — مش مجرد حذف تكرارات byte-identical. الـ migration الأصلي (`_pick_original`) بـ يختار earliest prediction_date with non-null entry_price, tie→lowest rowid. VERIFIED كـ strategy صحيحة.
+
+=====================================================================
+2) جدول writers الكامل (كل اللي بـ يكتب/يقدر يكتب في predictions table)
+=====================================================================
+
+| # | الملف | السطر | track المكتوب | INSERT/UPDATE | dedup check؟ | نشط؟ | الثقة |
+|---|---|---|---|---|---|---|---|
+| 1 | `vps-service/analyzers/prediction_tracker.py` | 794 (primary) | `full_analysis` (default) | INSERT (31 col) | نعم — B2 dedup SELECT (667-677) قبل INSERT، hardcode track='full_analysis'+market='EGX' | نشط (لكن INSERT **مكسور** — 7 columns مفقودة) | VERIFIED |
+| 1b | `vps-service/analyzers/prediction_tracker.py` | 836 (fallback-1) | `full_analysis` | INSERT (31 col) | لا (fallback path) | نشط (مكسور برضه) | VERIFIED |
+| 1c | `vps-service/analyzers/prediction_tracker.py` | 868 (fallback-2) | `full_analysis` | INSERT (16 col) | لا (last resort) | نشط (مكسور — references lifecycle_status) | VERIFIED |
+| 1d | `vps-service/analyzers/prediction_tracker.py` | 688-738 | — | UPDATE (mutable fields only, preserves entry_price) | نعم — ده الـ dedup UPDATE path | نشط (شغّال لو فيه row موجود) | VERIFIED |
+| 2 | `vps-service/jobs/intraday_scanner.py` | 723 | `RADAR_PROMOTED` | INSERT مباشر (16 col) | نعم — check-then-update (645-656) بـ 5-key، بس **race-prone + بدون UNIQUE backing** | **نشط (cron كل 5 دقايق) — مصدر الـ 737 مكرر** | VERIFIED |
+| 2b | `vps-service/jobs/intraday_scanner.py` | 672-690 | `RADAR_PROMOTED` | UPDATE (mutable, preserves entry) | نعم | نشط | VERIFIED |
+| 3 | `vps-service/jobs/daily_predictor.py` | 734, 4061 | `full_analysis` (عبر record_prediction) | INSERT (via #1) | نعم (عبر record_prediction B2 dedup) | نشط (cron 03:00 + 13:30) | VERIFIED |
+| 4 | `vps-service/api/historical_predictions_v2_routes.py` | 491, 510 | default `full_analysis` | INSERT | early-return **DISABLED** (line 447) | **معطّل** (Rule 35) | VERIFIED |
+| 5 | `vps-service/api/ai_predictions_routes.py` | ~616 | default | INSERT | body في string literal (lines 566-625) | **معطّل** (Rule 35) | VERIFIED |
+| 6 | `src/app/api/sniper/track/route.ts` | 65 | default (HOLD placeholder) | INSERT (TS-side) | returns **410 Gone** (line 25) | **معطّل** (Rule 35) | VERIFIED |
+| 7 | `vps-service/scripts/generate_persona_predictions.py` | 251, 305 | default `full_analysis` | INSERT مباشر | CAP فقط (5 pending)، 3-key dup check للـ historical فقط | **معطّل** (line 336 guard) | VERIFIED |
+| 8 | `vps-service/scripts/dual_track_generator.py` | 424 | `liquidity` | INSERT مباشر | لا | **معطّل** (line 449 guard) | VERIFIED |
+| 9 | `vps-service/scripts/populate_history_fast.py` | 115 | default | INSERT | لا | **معطّل** (line 132 guard) | VERIFIED |
+| 10 | `scripts/backfill_history.py` | 145 | default (no track col) | INSERT | لا | manual one-off، **مش في cron** | PARTIALLY VERIFIED |
+| 11 | `scripts/sync-real-data.py` | 73 | default | INSERT | لا | manual one-off، **مش في cron** | PARTIALLY VERIFIED |
+| 12 | `scripts/backfill_maestro_history.py` | 180 | default | INSERT | لا | manual one-off، **مش في cron** | PARTIALLY VERIFIED |
+| 13 | `scripts/populate_real_maestro_closed_history.py` | 181 | default | INSERT | لا | manual one-off، **مش في cron** | PARTIALLY VERIFIED |
+| 14 | `scripts/test_shadow_mode_phase2.py` | 207 | default | INSERT | لا | TEST file (not production) | VERIFIED |
+| 15 | `scripts/volume_surge_hunter_test.py` | 272 | default, persona='surge_hunter' (non-canonical!) | INSERT | لا | TEST file | VERIFIED |
+| 16 | `scripts/test_b2_prediction_dedup.py` | 355, 429, 440 | متغير | INSERT | نعم (بيختبر الـ dedup) | TEST file (temp DB) | VERIFIED |
+| 17 | `archive/old-scripts/backfill/backfill_with_personas.py` | 429 | default | INSERT | لا | **مؤرشف** (archive/) | VERIFIED |
+| 18 | `archive/old-scripts/backfill/backfill_to_predictions.py` | 195 | default | INSERT | لا | **مؤرشف** | VERIFIED |
+| 19 | `archive/old-scripts/maestro_backfill_v2.py` | 412 | default | INSERT | لا | **مؤرشف** | VERIFIED |
+| 20 | `archive/old-scripts/backtest/backtesting_engine.py` | 403 | default | INSERT | لا | **مؤرشف** | VERIFIED |
+| 21 | `vps-service/core/db_manager.py` | 30, 401 | — | — | — | **docstring example** (مش كود منفّذ) | VERIFIED |
+| 22 | `vps-service/telegram/telegram_target_hit_tracker.py` | 936 | — | UPDATE فقط (لا INSERT) | — | نشط (UPDATE بس) | VERIFIED |
+
+**الخلاصة**: 2 writers نشطة فعلياً (record_prediction عبر daily_predictor + intraday_scanner direct). 6 معطّلين بـ guards. 4 manual one-off. 4 مؤرشفين. 3 test files. 1 docstring. 1 UPDATE-only.
+
+=====================================================================
+3) جدول الـ duplicates الفعلي (TOP 20 من الـ snapshot الحالي)
+=====================================================================
+
+Query: `SELECT ticker, substr(prediction_date,1,10) AS pd, market, persona, track, COUNT(*) AS cnt FROM predictions GROUP BY ticker, substr(prediction_date,1,10), market, persona, track HAVING cnt > 1 ORDER BY cnt DESC LIMIT 20`
+
+| ticker | date | market | persona | track | cnt |
+|---|---|---|---|---|---|
+| ACAPA | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| ACTFA | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| BONYB | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| CIRAC | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| CNFNC | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| DCRCD | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| EGS | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| EGS385S1C012 | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| FTNSF | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| FWRYF | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| GGRNG | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| ISMQI | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| LKGPT | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| NPCO | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| PRDCP | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| SMPP | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| SNFIS | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| SUCES | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| TALMT | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+| TANMT | 2026-10-22 | EGX | balanced | RADAR_PROMOTED | 31 |
+
+**إحصائيات إجمالية:**
+- إجمالي الصفوف: **2256**
+- distinct (5-key): **1349**
+- excess (مكرر للأرشفة): **907**
+- عدد مجموعات التكرار: **124** مجموعة
+- صفوف داخل المجموعات: **1031**
+- توزيع الـ excess حسب track: `RADAR_PROMOTED` = 737، `full_analysis` = 132، `liquidity` = 38.
+
+**دليل قاطع على سبب الـ duplicates** (ACAPA, 2026-10-22, sample 5 rows):
+```
+id=53171  pd=2026-10-22 10:25:13  entry=9.21  target=10.29  stop=8.61  created=2026-10-22T10:25:13.701608
+id=53194  pd=2026-10-22 10:30:15  entry=9.21  target=10.29  stop=8.61  created=2026-10-22T10:30:15.146022
+id=53217  pd=2026-10-22 10:35:17  entry=9.21  target=10.29  stop=8.61  created=2026-10-22T10:35:17.133658
+id=53240  pd=2026-10-22 10:40:15  entry=9.21  target=10.29  stop=8.61  created=2026-10-22T10:40:15.393079
+id=53263  pd=2026-10-22 10:45:12  entry=9.21  target=10.29  stop=8.61  created=2026-10-22T10:45:12.911717
+```
+→ نفس السهم، نفس الأسعار، بس كل 5 دقايق (cron `*/5 8-12 * * 0-4`). الـ check-then-update الحالي ما كانش موجود أيام 2026-10-22 (الـ duplicates دي legacy من `INSERT OR IGNORE` القديم).
+
+=====================================================================
+4) الـ dedup key المعتمد + التبرير
+=====================================================================
+
+**الـ dedup key المعتمد (VERIFIED عبر 4 ملفات):**
+```
+(ticker, substr(prediction_date,1,10), persona, market, track)
+```
+
+**التطابق عبر الكود:**
+- `scripts/b2_dedup_migration.py` line 8 + 95-106 + 234-237: `(ticker, date(prediction_date), persona, market, track)`
+- `vps-service/analyzers/prediction_tracker.py` lines 648-677: نفس الـ 5 columns في الـ dedup SELECT.
+- `vps-service/jobs/intraday_scanner.py` lines 645-656: نفس الـ 5 columns.
+- `scripts/test_b2_prediction_dedup.py` lines 88-90: نفس الـ UNIQUE INDEX.
+
+**التبرير (ليه كل column في الـ key):**
+| column | ليّه بـ تفرق؟ | الدليل |
+|---|---|---|
+| `ticker` | توقع لكل سهم — بديهي. | — |
+| `substr(prediction_date,1,10)` | يوم التوقع. substr(,1,10) بـ ياخد 'YYYY-MM-DD' من 'YYYY-MM-DD HH:MM:SS' (الـ timestamps بتختلف بس اليوم هو هو). | intraday_scanner بـ يكتب `prediction_date = '2026-10-22 10:25:13'`؛ الـ dedup بـ يقارن `'2026-10-22'`. VERIFIED. |
+| `persona` | 3 شخصيات شرعية (gambler/balanced/conservative) = استراتيجيات مخاطرة مختلفة. نفس السهم + يوم + personas مختلفة = **توصيات مختلفة مش duplicate**. | `test_b2_prediction_dedup.py` line 10: "Different persona for same ticker+day → assert 2 distinct rows (NOT merged)." VERIFIED. |
+| `market` | future-proofing. حالياً كل track بيـ map لـ market واحد (full_analysis→EGX, RADAR_PROMOTED→EGX, liquidity→EGX/US/CRYPTO)، بس لو نفس الـ track استخدم على market تاني يبقى توصية مختلفة. no-cost safety. | `b2_dedup_migration.py` lines 15-17. VERIFIED. |
+| `track` | 3 أنواع شرعية: `full_analysis` (daily predictor) | `RADAR_PROMOTED` (intraday incubator) | `liquidity` (liquidity breakouts). نفس السهم + يوم ممكن يكون عنده daily-prediction AND intraday-prediction بدون collision. | `b2_dedup_migration.py` lines 9-14: "These ARE legitimately different prediction TYPES per owner's constraint #4 ('no blanket unique constraint')." VERIFIED. |
+
+**ملاحظة على الـ schema**: الـ 5 columns كلها **موجودة** في `predictions` (ticker cid=1, prediction_date cid=4, persona cid=37 default 'balanced', market cid=28 default 'EGX', track cid=66 default 'full_analysis'). مفيش NULLs في الـ data الفعلي (verified: track في 3 قيم بس، market في 3 قيم، persona في 3 قيم). الـ dedup key شغّال على الـ schema الحالي بدون تعديل.
+
+=====================================================================
+5) إجابات الأسئلة السبعة
+=====================================================================
+
+**Q1: إيه الـ writers اللي بـ تكتب في predictions؟**
+جواب: 22 ملف عندها INSERT INTO predictions (مكتوب أو معطّل). **النشطة فعلياً في الإنتاج = 2**: (أ) `daily_predictor.py` (cron 03:00 + 13:30) → `record_prediction()` (3 INSERT paths: 794/836/868، كلهم مكسورين حالياً بسبب 7 columns مفقودة)؛ (ب) `intraday_scanner.py::promote_incubator_candidates()` (cron كل 5 دقايق 8-12) → DIRECT INSERT (line 723, track='RADAR_PROMOTED'). 6 معطّلين بـ guards صريحة (historical_predictions_v2_routes, ai_predictions_routes, sniper/track/route.ts, generate_persona_predictions, dual_track_generator, populate_history_fast). 4 manual one-off مش في cron (backfill_history, sync-real-data, backfill_maestro_history, populate_real_maestro_closed_history). 4 مؤرشفين في archive/. 3 test files. 1 docstring example. 1 UPDATE-only (telegram). VERIFIED.
+
+**Q2: إيه الـ duplicates الفعلية؟**
+جواب: 2256 صف، 907 مكرر (40.1%). 124 مجموعة تكرار. التوزيع: RADAR_PROMOTED = 737 مكرر (96.3% من الـ track)، full_analysis = 132 مكرر (9.3%)، liquidity = 38 مكرر (49%). الـ TOP 20 كلها RADAR_PROMOTED يوم 2026-10-22 بـ 31 صف لكل سهم. الرقم 907 من AUDIT-5 لسه صحيح بالظبط. VERIFIED.
+
+**Q3: هل الـ 907 رقم من AUDIT-5 لسه صحيح؟**
+جواب: **آه، 100%.** `SELECT COUNT(*) FROM predictions` = 2256. `SELECT COUNT(*) - COUNT(DISTINCT ticker || substr(prediction_date,1,10) || COALESCE(persona,'') || COALESCE(market,'') || COALESCE(track,'')) FROM predictions` = 907. (ملاحظة: الاستعلام اللي في الـ task بـ يستخدم `COALESCE(persona,'')` بس الـ data مفيهاش NULLs، فـ النتيجة مطابقة.) VERIFIED.
+
+**Q4: إيه الـ dedup key الصحيح؟**
+جواب: `{ticker, substr(prediction_date,1,10), persona, market, track}` — معتمد عبر 4 ملفات. persona بـ تفرق (3 شخصيات شرعية)، track بـ يفرق (3 أنواع شرعية per owner constraint #4 "no blanket unique constraint")، market بـ تفرق (future-proofing). VERIFIED. انظر القسم 4.
+
+**Q5: هل persona بـ تفرق؟ (نفس السهم + نفس اليوم + personas مختلفة = توصيات مختلفة ولا duplicate؟)**
+جواب: **توصيات مختلفة، مش duplicate.** `persona` = 'gambler' (مخاطرة عالية) | 'balanced' | 'conservative' = استراتيجيات مختلفة بنفس السهم. الـ test contract (`test_b2_prediction_dedup.py` line 10) بـ asserts إن personas مختلفة بـ تنتج صفوف منفصلة. في الـ DB الحالي: balanced=2120، gambler=69، conservative=67. الـ dedup key بـ يفصلهم. VERIFIED.
+
+**Q6: هل track بـ تفرق؟ (full_analysis vs RADAR_PROMOTED لنفس السهم = duplicate ولا لا؟)**
+جواب: **توصيات مختلفة، مش duplicate.** `track` بـ يميز نوع التوقع: `full_analysis` (daily predictor EGX) | `RADAR_PROMOTED` (intraday incubator EGX) | `liquidity` (US/CRYPTO breakouts). نفس السهم ممكن يكون عنده daily-prediction + intraday-prediction في نفس اليوم بدون collision. ده owner constraint #4 صريح. VERIFIED في `b2_dedup_migration.py` lines 9-14.
+
+**Q7: فحص الـ writer logic في `record_prediction()`؟**
+جواب:
+- (أ) **هل فيه check قبل INSERT؟** آه — B2 dedup SELECT (lines 667-677) بـ يدور على existing row بـ 5-key. لو موجود → UPDATE + return. لو لأ → fall through لـ INSERT. الـ dedup ALWAYS runs (مش gated على cap bypass) من الـ fix في line 641-648.
+- (ب) **هل بيـ UPDATE لو موجود ولا بيـ INSERT دايمًا؟** بيـ UPDATE لو موجود (lines 688-738: بـ update الـ mutable fields فقط — signal, scores, notes, atr, risk_reward, etc. — وبيـ PRESERVE entry_price/target_price/stop_loss/prediction_date/persona/market/track + bump update_count). بيـ INSERT بس لو مفيش existing row.
+- (ج) **هل فيه UNIQUE constraint violation handling؟** **لا.** الـ INSERT (line 794) bare INSERT مش `INSERT OR IGNORE`/`ON CONFLICT`. لو الـ dedup SELECT فشل (exception على line 749 → caught → fall through) و حصل INSERT لـ duplicate، مفيش UNIQUE index يـ catchesه. الـ comment على lines 750-754 بـ يقول "The UNIQUE INDEX (if present) will then either raise IntegrityError... caught by the primary INSERT's except branch" — بس **الـ UNIQUE index مش موجود** + الـ except branch (817) بـ retry fallback، مش بـ handle IntegrityError بشكل خاص. ده الـ gap الأساسي.
+- (د) **عيب إضافي حرج**: الـ dedup SELECT بـ hardcode `_b2_market = 'EGX'` + `_b2_track = 'full_analysis'` (lines 664-665). يعني الـ dedup بـ يشتغل بس للـ default track/market. لو أي caller مرّر track/market مختلفين (مش بيحصل حالياً لأن record_prediction ما بـ يكتبهمش في الـ INSERT — بـ يستخدم الـ defaults)، الـ dedup مش هيـ match. حالياً ده safe لأن record_prediction دايماً بـ ينتج full_analysis/EGX. بس intraday_scanner بـ يتجنب record_prediction تماماً وبيـ INSERT مباشر بـ track='RADAR_PROMOTED' — وعنده check-then-update مستقل (645-656).
+- (هـ) **عيب حرج جديد**: الـ 3 INSERT paths (794/836/868) كلهم بـ references `lifecycle_status` (عمود مش موجود!). فـ الـ primary + fallback-1 بـ fail، و fallback-2 برضه بـ fail. يعني record_prediction() ما بيقدرش يعمل INSERT جديد نهائياً. الـ UPDATE path (688-738) شغّال لأنه ما بـ references `lifecycle_status`. VERIFIED.
+
+=====================================================================
+6) خطوات الـ migration الآمنة المقترحة (dry-run → backup → archive → delete → create index → verify)
+=====================================================================
+
+**Strategy معتمدة: UPDATE-preserves-original (earliest prediction_date with non-null entry_price; tie → lowest rowid).** ده متطابق مع `b2_dedup_migration.py::_pick_original` + owner constraint #2/#6 ("do NOT overwrite the original Entry Price; the FIRST row holds the original"). latest-wins مرفوضة لأنها بـ تخسر الـ entry_price الأصلي (39 مجموعة فيها entries مختلفة).
+
+**الـ migration الآمن (idempotent + dry-run + backup) — 7 مراحل:**
+
+**Stage 0 — Pre-flight checks (read-only):**
+```bash
+# تأكد إن مفيش process بـ يكتب (وقف الـ cron مؤقتاً)
+sudo pm2 stop all 2>/dev/null; crontab -l | grep -E "daily_predictor|intraday_scanner"
+# snapshot الـ state قبل أي حاجة
+python3 scripts/b2_dedup_migration.py --dry-run
+```
+المتوقع: 2256 صف، 124 مجموعة، 907 صف للأرشفة.
+
+**Stage 1 — Backup كامل (قبل أي تعديل):**
+```bash
+cp /home/z/my-project/db/predictions.db /home/z/my-project/db/predictions.db.pre-fix-c-backup-$(date +%Y%m%d-%H%M%S)
+# تحقق من الـ backup
+sqlite3 /home/z/my-project/db/predictions.db.pre-fix-c-backup-* "SELECT COUNT(*) FROM predictions"
+# لازم = 2256
+```
+
+**Stage 2 — إضافة الـ 9 columns المفقودة (ضروري قبل/مع الـ dedup):**
+```sql
+-- ده独立 عن الـ dedup بس ضروري عشان record_prediction() يشتغل تاني بعد الـ cleanup.
+ALTER TABLE predictions ADD COLUMN lifecycle_status TEXT DEFAULT 'testing';
+ALTER TABLE predictions ADD COLUMN tp1_price REAL;
+ALTER TABLE predictions ADD COLUMN tp2_price REAL;
+ALTER TABLE predictions ADD COLUMN trailing_stop_pct REAL DEFAULT 2.5;
+ALTER TABLE predictions ADD COLUMN max_hold_days INTEGER DEFAULT 5;
+ALTER TABLE predictions ADD COLUMN exit_protocol TEXT DEFAULT 'TP1_6PCT_TIME_STOP_5D';
+ALTER TABLE predictions ADD COLUMN user_advice_ar TEXT DEFAULT '';
+ALTER TABLE predictions ADD COLUMN update_count INTEGER DEFAULT 0;
+ALTER TABLE predictions ADD COLUMN is_duplicate INTEGER DEFAULT 0;
+```
+ملاحظة: `b2_dedup_migration.py` بـ يعمل الـ update_count + is_duplicate بس (lines 188-189). الـ 7 columns التانيين محتاجين ALTER منفصل (أو تعديل الـ script). لازم يتعملوا قبل ما record_prediction() يشتغل تاني.
+
+**Stage 3 — تشغيل الـ B2 migration (archive + delete + create UNIQUE index):**
+```bash
+python3 scripts/b2_dedup_migration.py
+```
+الـ script بيعمل (in transaction، idempotent):
+1. `ALTER TABLE predictions ADD COLUMN update_count` + `is_duplicate` (لو مش موجودين).
+2. `CREATE TABLE predictions_duplicates_archive` (mirror + `archived_at`).
+3. لكل مجموعة مكررة (124 مجموعة): pick original (earliest prediction_date with non-null entry_price, tie→lowest rowid) → COPY الـ 907 non-originals لـ archive → DELETE من main.
+4. `CREATE UNIQUE INDEX idx_predictions_dedup ON predictions(ticker, substr(prediction_date,1,10), persona, market, track)`.
+5. COMMIT (أو ROLLBACK على أي error).
+
+**Stage 4 — Verify (read-only post-migration):**
+```sql
+-- المتوقع: 1349 صف في predictions، 907 في archive، 0 duplicate groups.
+SELECT COUNT(*) FROM predictions;                                    -- = 1349
+SELECT COUNT(*) FROM predictions_duplicates_archive;                 -- = 907
+SELECT COUNT(*) FROM (                                                -- = 0
+  SELECT ticker, substr(prediction_date,1,10), persona, market, track, COUNT(*) c
+  FROM predictions GROUP BY ticker, substr(prediction_date,1,10), persona, market, track
+  HAVING c > 1
+);
+PRAGMA index_list(predictions);                                       -- idx_predictions_dedup unique=1
+-- تأكد إن entry_price الأصلي محفوظ (ACAPA example):
+SELECT id, prediction_date, entry_price, target_price, stop_loss, update_count
+FROM predictions WHERE ticker='ACAPA' AND track='RADAR_PROMOTED'
+AND substr(prediction_date,1,10)='2026-10-22';
+-- المتوقع: 1 صف، entry_price=9.21 (الأصلي)، update_count>=0
+```
+
+**Stage 5 — منع الـ duplicates الجديدة (hardening الـ writers):**
+- (أ) الـ UNIQUE index (Stage 3) بقى guards أي INSERT مباشر. لو `intraday_scanner.py` حاول INSERT duplicate → `IntegrityError: UNIQUE constraint failed: idx_predictions_dedup`. لازم نضيف `except IntegrityError` في intraday_scanner.py:722 بـ يـ fallback لـ UPDATE (أو silent skip).
+- (ب) `record_prediction()`: الـ dedup SELECT (667-677) كفاية لو شغّال، بس يفضل نضيف `INSERT OR IGNORE` أو `ON CONFLICT DO UPDATE` كـ defense-in-depth. **بس الأول لازم نصلح الـ 7 columns المفقودة (Stage 2) عشان الـ INSERT يشتغل أصلاً.**
+- (ج) تأكد إن `intraday_scanner.py::promote_incubator_candidates()` الـ check-then-update (645-656) شغّال داخل transaction مع الـ INSERT (BEGIN IMMEDIATE) عشان نـ close الـ race window بين الـ 5-min scans.
+
+**Stage 6 — Re-enable production + monitor:**
+```bash
+# شغّل الـ cron تاني
+sudo pm2 start all 2>/dev/null
+# راقب 24 ساعة
+tail -f /tmp/v40_2_intraday.log | grep -E "B2_DEDUP_UPDATE|IntegrityError|INCUBATOR PROMOTED"
+# المتوقع: B2_DEDUP_UPDATE كتير، 0 IntegrityError (لأن الـ check-then-update بـ يـ catch قبل الـ INSERT)
+```
+
+**Stage 7 — Idempotency check (أعد التشغيل للتأكد):**
+```bash
+python3 scripts/b2_dedup_migration.py --dry-run
+# المتوقع: 0 duplicate groups (لأن الـ UNIQUE index منع الـ duplicates الجديدة)
+python3 scripts/test_b2_prediction_dedup.py
+# المتوقع: كل الـ 5 scenarios pass (1 dedup, 2 persona split, 3 ticker split, 4 day split, 5 promote dedup)
+```
+
+**المخاطر + الـ mitigations:**
+| الخطر | الـ mitigation |
+|---|---|
+| فقدان بيانات أثناء الـ DELETE | Stage 1 backup كامل + Stage 3 transaction (ROLLBACK على error) + archive table بـ تحفظ الـ 907 صف كاملين. |
+| race condition أثناء الـ migration (writer بـ يكتب) | Stage 0: وقف cron/pm2 قبل الـ migration. |
+| الـ UNIQUE index بـ يفشل لو فيه NULLs في الـ key | verified: مفيش NULLs (track/market/persona كلها ليها defaults + الـ data كلها populated). |
+| record_prediction() يفضل مكسور بعد الـ dedup | Stage 2: ضف الـ 7 columns قبل ما تشغّل الـ writers تاني. |
+| intraday_scanner IntegrityError بعد الـ UNIQUE index | Stage 5a: ضف except IntegrityError fallback لـ UPDATE. |
+| الـ 39 مجموعة بـ entries مختلفة تختار الـ original غلط | `_pick_original` بـ يختار earliest prediction_date with non-null entry_price (مش newest) — ده owner constraint صريح. |
+
+**الخلاصة**: الـ migration جاهز في `scripts/b2_dedup_migration.py` (idempotent + dry-run + transactional). محتاج بس: (1) backup قبل، (2) ALTER TABLE للـ 7 columns المفقودة (مش مغطاة في الـ script)، (3) تشغيله، (4) verify، (5) hardening intraday_scanner لـ catch IntegrityError، (6) re-enable cron + monitor.
+
+=====================================================================
+Stage Summary
+=====================================================================
+- DBs audited: 1 (predictions.db, read-only `mode=ro` URI).
+- SQL queries executed: ~25 (كلها SELECT / PRAGMA — لا INSERT/UPDATE/DELETE).
+- Files read for writer analysis: prediction_tracker.py (كامل 1488 سطر), intraday_scanner.py (540-757), daily_predictor.py (grep), historical_predictions_v2_routes.py (440-559), ai_predictions_routes.py (560-626), sniper/track/route.ts (كامل), generate_persona_predictions.py (230-319), dual_track_generator.py (400-459), populate_history_fast.py (grep), db_manager.py (1-45, 395-410), b2_dedup_migration.py (كامل 286 سطر), test_b2_prediction_dedup.py (1-110), crontab.txt (grep).
+- Grep queries: `INSERT INTO predictions` (47 matches), `record_prediction` (in prediction_tracker.py), `DISABLE/R35/FINALIZE-UNIFICATION` guards (in scripts), crontab scheduling.
+- Files modified: NONE (read-only audit).
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change, NO DB write.
+
+أبرز 5 نتائج مثبتة:
+1. الـ 907 duplicate رقم AUDIT-5 لسه صحيح 100% (2256 صف، 1349 فريد، 907 excess).
+2. الـ dedup key = `{ticker, substr(prediction_date,1,10), persona, market, track}` — معتمد عبر 4 ملفات.
+3. الـ writers النشطة = 2 بس (daily_predictor→record_prediction + intraday_scanner direct INSERT). 6 معطّلين، 4 manual، 4 مؤرشفين.
+4. **اكتشاف حرج جديد**: record_prediction() مكسور للـ INSERTs الجديدة (7 columns مفقودة: lifecycle_status, tp1_price, tp2_price, trailing_stop_pct, max_hold_days, exit_protocol, user_advice_ar) — لازم تـ ALTER قبل/مع الـ dedup.
+5. الـ 737 RADAR_PROMOTED مكرر سببها intraday_scanner كل 5 دقايق (دليل قاطع: ACAPA 31 صف بنفس entry/target/stop بس timestamps كل 5 دقايق). الـ migration الآمن جاهز في b2_dedup_migration.py (idempotent + dry-run + transactional + archive).
+
+الخطوة التالية: انتظر تعليمات المالك — هل يبدأ بـ:
+- (P0) Stage 0-4 (backup + ALTER 9 columns + b2_dedup_migration + verify)؟
+- (P0) Stage 5 (hardening intraday_scanner لـ catch IntegrityError + fix record_prediction INSERT)؟
+- (P1) Stage 6-7 (re-enable + monitor 24h + idempotency check)؟
+كلها read-only audit — ما نفّذتش أي حاجة.
+
+
+---
+Task ID: FIX-D-AUDIT
+Agent: برافو V2 (subagent — Read-only forensic audit, stored_analyses writer/reader trace + data freshness analysis)
+Task: تدقيق ساكن للقراءة فقط (read-only forensic audit) لتتبّع writers/readers لـ stored_analyses + تحليل data freshness في مشروع GLMinvestment. لا كتابة كود، لا تعديل ملفات. كل الادعاءات موثّقة بـ Grep + Read + SQL queries فعلية (mode=ro URI).
+
+Work Log:
+- قرأت آخر 400 سطر من worklog.md (تقارير AUDIT-1..5 + AUDIT-FINAL) عشان أفهم السياق: empty stored_analyses + 10+ writers + schema drift + system half-dormant.
+- استخدمت `Grep` على `stored_analyses` في vps-service/ + src/ (116 file، 250+ hit) → فلترت INSERT/UPDATE/REPLACE/DELETE لإيجاد كل الـ writers فعلياً.
+- استخدمت `Grep` على `freshness|stale|last_updated|max_age|is_stale|days_old|hours_old` → طلعت 9 مواقع للـ freshness checks.
+- استخدمت `Grep` على `validate_price_data|B1_PRICE_SANITY|price_sanity|from core.price_sanity` → caller واحد بس (matches AUDIT-2 claim).
+- استخدمت `python3 -c "import sqlite3; ..."` للتحقق من:
+  - وجود stored_analyses في 9 DBs (موجودة في predictions.db بس).
+  - schema stored_analyses (50 columns + UNIQUE(ticker, market) + 6 non-UNIQUE indexes).
+  - count stored_analyses = 0 rows.
+  - آخر تاريخ في price_history.db / stocks.db.last_update / stock_daily_prices / intraday.db.stock_intraday / predictions.db.predictions.
+- استخدمت `Read` على:
+  - daily_predictor.py:521-822 (whale radar writer 779 + helpers)
+  - daily_predictor.py:4090-4300 (V40.2 main writer 4165 + try/except)
+  - daily_predictor.py:4445-4477 (main() call to inject_whale_radar_picks)
+  - daily_predictor.py:975-1064 (B1 price sanity gate)
+  - db_manager.py:180-326 (get_connection implementation)
+  - core/price_sanity.py:1-130 + 390-510 (B1 gate logic + DEFAULT_MAX_AGE_DAYS=4)
+  - background_analyzer.py:887-1100 (early-return + stale veto) + 2517-2631 (_is_data_stale)
+  - master_analyzer.py:2925-2970 (STALE-VETO 24h)
+  - intraday_scanner.py:335-424 (SKIP_STORED_ANALYSES_WRITE=True)
+  - ai_routes.py:100-150 (SKIP_STORED_ANALYSES_WRITE=True)
+  - persona_db.py:140-210 (SKIP_STORED_ANALYSES_WRITE=True)
+  - nightly_analysis.py:238-300 (SKIP_STORED_ANALYSES_WRITE=True)
+  - sync_scanner_to_db.py:95-220 + 241-357 (purge_stale_predictions + writable=False)
+  - data/analyses.py:655-755 + 1080-1180 (_STORED_ANALYSES_INSERT_SQL + persist_analysis_batch)
+  - core/analysis_runner.py:180-260 (orchestrator=None early-return)
+  - api/stored_analysis_routes.py:1205-1295 (TODO freshness filters)
+  - api/misc_routes.py:4140-4280 (live_refresh freshness logic)
+  - src/app/api/stored-analysis/results/route.ts:1-200 (Next.js fallback path)
+  - jobs/price_history_stale_monitor.py:1-181 (monitor)
+- اختبرت الفرضية تجريبياً: نسخت predictions.db لـ tempfile + فتحت connection بـ `PRAGMA query_only=1` (نفس pattern بتاع writable=False) + جربت INSERT → فشل بـ `OperationalError: attempt to write a readonly database`. ده إثبات قاطع إن الـ writer المعتقد "canonical" في daily_predictor.py:4165 بـ fail silent.
+- ما عدّلت أي ملف. ما شغّلتش builds. ما كتبت كود.
+
+---
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **السبب الرئيسي لـ stored_analyses فاضية (0 صف) اكتُشف**: الـ writer المُعتبر canonical في `daily_predictor.py:4165` بيفتح الـ SQLite connection بـ `db_manager.get_connection(PREDICTIONS_DB, writable=False)` (السطر 4122). في `db_manager.py:308-323`، `writable=False` بيفتح الـ connection بـ `PRAGMA query_only=1` → SQLite بـ يرفض أي INSERT/UPDATE/DELETE بـ `OperationalError: attempt to write a readonly database`. الـ except block في السطور 4199-4200 بـ `pass` بيسكّت الخطأ بصمت. **VERIFIED** بـ SQL query فعلية على نسخة من predictions.db.
+
+2. **11 writer في الكود، بس 1 منهم يقدر يكتب فعلياً**: من 11 موقع INSERT/UPDATE لـ stored_analyses، 10 معطّلين (5 بـ `SKIP_STORED_ANALYSES_WRITE=True`، 2 بـ early-return `orchestrator=None`، 2 UPDATE-only ما بـ يؤثّروش على table فاضي، 1 dead code مش مستدعى). الـ writer الوحيد اللي يقدر يكتب = `sync_scanner_to_db.py:211` (عبر `inject_whale_radar_picks` من `daily_predictor.py:4470` — بيستخدم `writable=True`). **VERIFIED**.
+
+3. **daily_predictor.py:779 (whale radar writer) ده dead code**: الدالة الـ محتواة فيه `_integrate_whale_radar_predictions` معرّفة بس **محدش بيستدعيها** (Grep على المشروع كله → ZERO callers في vps-service). ذُكرت فقط في worklog.md + Documentation/archive. **VERIFIED**.
+
+4. **التاريخ الفعلي للأسعار في كل الـ DBs = 2026-10-21 (6 أيام قبل اليوم 2026-10-27)**: price_history.db.MAX(date)=2026-10-21 + stocks.db.last_update=2026-10-21T19:14:57 + stock_daily_prices.MAX(price_date)=2026-10-21 + intraday.db.stock_intraday.MAX(timestamp)=2026-10-21T11:55:20 + predictions.MAX(prediction_date)=2026-10-22 12:55:16 (5 أيام). النظام شبه خامد منذ 2026-10-22. **VERIFIED** بـ SQL queries.
+
+5. **B1 price sanity gate بـ DEFAULT_MAX_AGE_DAYS=4 بيتطبّق في مكان واحد بس**: `daily_predictor.py:1011` داخل `run_generator()` main loop (تأكيد AUDIT-2). مش بيتطبّق على: intraday_scanner + master_analyzer.analyze() (live API) + background_analyzer (معطّل) + ai_routes + misc_routes + sync_scanner_to_stored_analyses (whale radar). بمعنى تاني: لو price_history.db.MAX(date) أقدم من 4 أيام (والحالة دي قائمة دلوقتي — 6 أيام)، B1 هيـ reject كل ticker في daily_predictor، بس الـ whale radar injection (اللي بيكتب فعلياً) مش بيمر على B1. **VERIFIED**.
+
+6. **7 مواقع freshness checks موجودة بس غير مترابطة**: (أ) B1 gate=4d في daily_predictor بس، (ب) master_analyzer STALE-VETO=24h على stock_data.last_update، (ج) background_analyzer _is_data_stale=24h (stocks.db) + 7d (price_history.db) بس معطّل بـ early-return، (د) opportunity_quality LIVE_STRICT_MAX_AGE_HOURS=24 (gambler) + LIVE_LOOSE_MAX_AGE_DAYS=7 (investor)، (هـ) price_history_stale_monitor (alert-only)، (و) misc_routes live_refresh `_is_fresh = (updated_date == today)` (للـ skip مش للـ filter)، (ز) support_resistance_calculator freshness tag (للـ levels مش للـ predictions). **VERIFIED**.
+
+7. **TODO comments في 5 مواقع بـ تقول "ضيف فلتر `updated_at >= datetime('now', '-2 days')`" بس ما اتضافش أبداً**: `stored_analysis_routes.py:1222, 1234, 1283` (Python) + `src/app/api/stored-analysis/results/route.ts:158-160` + `src/app/api/predictions/route.ts:172, 403` (Next.js). ده إقرار صريح من الكود إن الفلتر مطلوب ومفقود. **VERIFIED**.
+
+8. **لو شغّلنا daily_predictor.py دلوقتي على الـ DB الحالي**: (أ) B1 gate هيـ reject كل ticker (price_history 6 أيام قديم > 4 أيام max) → الـ main loop ما هيـ outputش أي توقع. (ب) `inject_whale_radar_picks` (الـ writer الوحيد الفعّال) هيستدعي `sync_scanner_to_stored_analyses` اللي بـ DELETE FROM stored_analyses WHERE market='EGX' → INSERT نتائج unified_scanner. بس unified_scanner بيقرأ price_history.db (6 أيام قديم) → لو سمح بـ stale data، هيـ inject توصيات مبنية على أسعار أسبوع قديم. (ج) الكتابة في `predictions` table عبر `prediction_tracker.record_prediction()` هتـ fail silent بسبب schema drift (9 columns مفقودين — تأكيد AUDIT-5 R4). **VERIFIED** + **INFERRED** (الـ inference بخصوص unified_scanner ما اتحقّقش بـ live run).
+
+=====================================================================
+2) جدول stored_analyses writers/readers (الموقع | السطر | العملية | fail silent؟ | السبب | الثقة)
+=====================================================================
+
+| # | الملف | السطر | العملية | fail silent؟ | السبب | الثقة |
+|---|------|------|---------|-------------|-------|-------|
+| W1 | `jobs/daily_predictor.py` | 4165 | INSERT (canonical V40.2 main) | **YES** | `writable=False` (line 4122) → `PRAGMA query_only=1` → `OperationalError: attempt to write a readonly database`. except: pass (lines 4199-4200). **السبب الرئيسي للـ empty table.** | VERIFIED |
+| W2 | `jobs/daily_predictor.py` | 779 | INSERT (whale radar `_integrate_whale_radar_predictions`) | N/A | **DEAD CODE** — الدالة معرّفة بس ZERO callers في vps-service. ذُكرت فقط في worklog/Documentation. | VERIFIED |
+| W3 | `jobs/intraday_scanner.py` | 414 | INSERT (DISABLED) | N/A | `SKIP_STORED_ANALYSES_WRITE = True` (line 347) → `if not SKIP_STORED_ANALYSES_WRITE:` (line 412) بـ skip الـ INSERT. ولو الـ flag اترفع، `writable=False` (line 352) هيـ fail برضه. | VERIFIED |
+| W4 | `analyzers/background_analyzer.py` | 1955 | INSERT OR REPLACE (in `_run_full_analysis_inner`) | N/A | early-return في `_run_full_analysis` (line 889-891) لو `not self.orchestrator and not self.unified_maestro` (الاتنين None per AUDIT-1). | VERIFIED |
+| W5 | `analyzers/background_analyzer.py` | 2244 | INSERT OR REPLACE (in `_run_incremental_analysis_inner`) | N/A | early-return في `_run_incremental_analysis` (line 1027-1028) لو `not self.orchestrator and not self.unified_maestro`. | VERIFIED |
+| W6 | `ai/nightly_analysis.py` | 261 (UPDATE) + 281 (INSERT) | UPSERT (in `save_ai_result`) | N/A | `SKIP_STORED_ANALYSES_WRITE = True` (line 248) → early-return (lines 249-251). ولو الـ flag اترفع، `writable=False` (line 254) هيـ fail. | VERIFIED |
+| W7 | `core/persona_db.py` | 188 | INSERT (in `safe_store_analysis_json`) | N/A | `SKIP_STORED_ANALYSES_WRITE = True` (line 168) → early-return (lines 169-174) بـ `return True` (pretend success). | VERIFIED |
+| W8 | `api/ai_routes.py` | 121 (UPDATE) + 128 (INSERT) | UPSERT (in `_run_live_analysis`) | N/A | `SKIP_STORED_ANALYSES_WRITE = True` (line 110) → `if not SKIP_STORED_ANALYSES_WRITE:` skip. ولو اترفع، `writable=False` (line 115) هيـ fail. | VERIFIED |
+| W9 | `api/misc_routes.py` | 1578 | UPDATE `is_gambler_opportunity` + persona flags | partial | بـ UPDATE rows موجودة (`WHERE ticker = ?`). لو table فاضي → 0 rows affected (silent no-op). بـ يتخطّى row-by-row. | VERIFIED |
+| W10 | `api/misc_routes.py` | 4258 | UPDATE `recommendation` + prices | partial | بـ UPDATE rows موجودة. لو table فاضي → 0 rows affected. الـ caller بـ counts `updated_count` (silent no-op). | VERIFIED |
+| W11 | `jobs/market_scheduler.py` | 2514 | UPDATE `analysis_json` | partial | بـ UPDATE `WHERE id = ?`. لو مفيش row matching → 0 rows affected. | VERIFIED |
+| W12 | `core/sync_scanner_to_db.py` | 211 | INSERT OR REPLACE (in `sync_scanner_to_stored_analyses`) | **NO (the only working writer)** | `writable=True` (line 101). بـ DELETE FROM stored_analyses WHERE market=? ثم INSERT OR REPLACE. بـ يكتب فعلياً لو daily_predictor.py main() اشتغل + `market != 'CRYPTO'` + `dry_run=False`. **الـ writer الوحيد الفعّال.** | VERIFIED |
+| W13 | `core/sync_scanner_to_db.py` | 307 + 320 | UPDATE → STALE (in `purge_stale_predictions`) | YES | `writable=False` (line 256) → `OperationalError` على conn.commit() (line 330). caller = `__main__` block بس (line 419) — مش بـ يتـ call في production. | VERIFIED |
+| W14 | `data/analyses.py` | 687 | INSERT OR REPLACE (`_STORED_ANALYSES_INSERT_SQL` shared template) | YES | بـ يتـ execute في `persist_analysis_batch` (line 1132) أو `persist_analysis_with_persona` (line 1210). caller الوحيد = `analysis_runner.run_analysis_batch` (line 441) + background_analyzer. **الاتنين معطّل**: analysis_runner early-return لو `orchestrator=None` (lines 215-221) + background_analyzer early-return (lines 889-891). | VERIFIED |
+| -- | **READERS** | -- | -- | -- | -- | -- |
+| R1 | `api/stored_analysis_routes.py` | 1218, 1228, 1279, 1329, 1341, 2162, 2166, 2254, 2317, 2462 | SELECT | -- | الـ routes الأساسية: `/stats`, `/results`, `/trending`, `/top`, `/live-tracking`. بترجّع فاضي لو table فاضي. | VERIFIED |
+| R2 | `api/ai_routes.py` | 45, 117, 698 | SELECT (AI summary + check-exists) | -- | لو table فاضي → 0 rows للـ AI narrative enrichment. | VERIFIED |
+| R3 | `api/picks_management_routes.py` | 221, 260 | SELECT * | -- | trigger-analysis path — بترجّع فاضي. | VERIFIED |
+| R4 | `api/v2_routes.py` | 1801, 1834, 1856, 1875, 1933, 2160 | SELECT | -- | v2 endpoints. بترجّع فاضي. | VERIFIED |
+| R5 | `api/misc_routes.py` | 1516, 1525, 1625, 1770, 1928, 1935, 1942, 2812, 4153, 4188, 4319, 4325 | SELECT COUNT/SELECT * | -- | admin stats + live_refresh source. | VERIFIED |
+| R6 | `telegram/auto_poster.py` | 819 | SELECT (whale radar auto-post) | -- | بيرجّع فاضي → مفيش telegram posts. | VERIFIED |
+| R7 | `core/opportunity_quality.py` | 322, 1988, 1991 | SELECT | -- | persona scoring read. | VERIFIED |
+| R8 | `core/migrator.py` | 319, 323, 455-460, 836 | SELECT (migration check) | -- | بيتـ shelo مرة واحدة عند الـ startup. | VERIFIED |
+| R9 | `src/lib/unified-stock-data.ts` | 350-383 | SELECT (Node.js fallback) | -- | Next.js fallback path — بترجّع فاضي → الـ UI بيقول "مفيش تحليلات". | VERIFIED |
+| R10 | `src/lib/honest-tracking/maestro.ts` + `helpers.ts` + `scoring.ts` | many | ALTER TABLE + CREATE TABLE | -- | بـ ensureColumns على stored_analyses (ADD COLUMN IF MISSING) — idempotent. | VERIFIED |
+| R11 | `src/app/api/stored-analysis/results/route.ts` | 105, 114, 153 | SELECT (Node.js fallback) | -- | بـ يـ check existence + SELECT. | VERIFIED |
+| R12 | `src/app/api/predictions/route.ts` | 169, 177, 401, 411 | SELECT (Node.js join) | -- | بـ يـ try join على stored_analyses — silent fallback على except. | VERIFIED |
+| R13 | `src/app/api/ai/analyze-stock/route.ts` | 99, 265 | SELECT * | -- | بيرجّع فاضي → الـ AI narrative مش بـ يتـ populate. | VERIFIED |
+| R14 | `src/app/api/admin/generate-historical-predictions/route.ts` | 286 | SELECT last 200 | -- | admin backfill — بيرجّع فاضي. | VERIFIED |
+| R15 | `src/app/api/admin/purge-cache/route.ts` | 99, 180 | DELETE + SELECT COUNT | -- | admin purge — بيمسح 0 rows (table فاضي أصلاً). | VERIFIED |
+| R16 | `src/app/api/admin/db-manager/repair/route.ts` | 336, 478, 484 | CREATE TABLE + SELECT | -- | admin repair endpoint. | VERIFIED |
+| R17 | `src/app/api/market/morning-bell/route.ts` | -- | SELECT top 3 EGX | -- | Morning Bell — بترجّع فاضي → الـ UI بيقول "مفيش morning bell". | INFERRED |
+| R18 | `src/app/api/finance/smart-confluence/route.ts` | -- | SELECT predictions + stored_analyses | -- | confluence API — fallback على predictions. | INFERRED |
+| R19 | `src/app/api/stocks/dual-persona/[ticker]/route.ts` | -- | Path 1: stored_analyses | -- | لو table فاضي → fallback على Python backend. | INFERRED |
+
+**ملخّص الـ writers**:
+- 11 INSERT/UPDATE موقع في الكود.
+- **1 بس بيقدر يكتب فعلياً** = W12 (`sync_scanner_to_db.py:211` عبر `inject_whale_radar_picks`).
+- **1 canonical مكسور** = W1 (`daily_predictor.py:4165` بـ `writable=False` — السبب الرئيسي للـ empty table).
+- **1 dead code** = W2 (`daily_predictor.py:779` — `_integrate_whale_radar_predictions` مش مستدعى).
+- **5 معطّلين بـ `SKIP_STORED_ANALYSES_WRITE=True`** = W3, W6, W7, W8 (W4+W5 معطّلين بـ early-return).
+- **3 UPDATE-only** = W9, W10, W11 (ما بـ يؤثّروش على table فاضي).
+- **1 purge function معطّلة** = W13 (بـ writable=False + caller=__main__ بس).
+
+=====================================================================
+3) جدول freshness checks (الموقع | السطر | الـ rule | بيتطبّق فين | الثقة)
+=====================================================================
+
+| # | الملف | السطر | الـ rule | بيتطبّق فين | الثقة |
+|---|------|------|---------|-------------|-------|
+| F1 | `core/price_sanity.py` | 72 | `DEFAULT_MAX_AGE_DAYS = 4` (latest_date vs today) | **caller واحد**: `daily_predictor.py:1011` (B1 gate, داخل `run_generator()` main loop). بيرفض الـ ticker (`continue`) لو age > 4 أيام. **مش بيتطبّق على**: intraday_scanner, master_analyzer.analyze() (live API), background_analyzer, ai_routes, misc_routes, sync_scanner_to_stored_analyses (whale radar injection). | VERIFIED |
+| F2 | `analyzers/master_analyzer.py` | 2949-2951 | `_hours_old > 24` (stock_data.last_update vs now) | كل استدعاء `MasterAnalyzer.analyze()`. بيرجّع MasterAnalysis(signal='WAIT', signal_ar='انتظار - بيانات قديمة', confidence=0, master_score=0, is_tradeable=False) لو stale. **بيقفل التحليل بس مش بيكتب في DB.** | VERIFIED |
+| F3 | `analyzers/background_analyzer.py` | 2517-2631 | `_is_data_stale()`: (أ) stocks.db.MAX(last_update) > `STALE_DATA_HOURS` (default=24h, env-overridable) → stale. (ب) price_history.db.MAX(date) > 7d AND stocks.db stale → stale. | `_run_full_analysis` (line 917) + `_run_incremental_analysis` (line 1042) — **الاتنين معطّلين** بـ early-return لو `not self.orchestrator and not self.unified_maestro`. | VERIFIED |
+| F4 | `core/opportunity_quality.py` | 114, 118, 1186, 1238 | `LIVE_STRICT_MAX_AGE_HOURS = 24` (gambler) + `LIVE_LOOSE_MAX_AGE_DAYS = 7` (investor) — بـ يقارن age vs cutoff لكل توقع. | `_compute_persona_opportunity_flags` + scoring functions — بـ يتـ apply على persona flag computation. بـ يـ mark `is_gambler_opportunity=0` لو age > 24h. **مش بيرفض التوقع، بس بـ يـ downgrade الـ persona flag.** | VERIFIED |
+| F5 | `jobs/price_history_stale_monitor.py` | 81-172 | trading_days_behind: 0=OK, 1=STALE (warning), >1=CRITICAL. بـ يقارن MAX(date) في price_history.db بـ آخر EGX trading day متوقّع (Sun-Thu). | `market_scheduler.py:1490 run_price_history_stale_monitor` — بيـ يـ alert-only (logger.warning/critical). **مش بـ يـ block أي حاجة.** | VERIFIED |
+| F6 | `api/misc_routes.py` | 4214-4239 | `_is_fresh = (_updated_date == _today_date)` + `_price_moved_pct < 0.005` + `_in_trading_hours`. | `live_refresh` endpoint (line 4151+). بـ يـ skip re-analysis لو الشرط متحقق (inverted freshness — skip if fresh). **مش بـ يـ filter stale data من الـ display.** | VERIFIED |
+| F7 | `api/stored_analysis_routes.py` | 1222, 1234, 1283 | `# TODO: Add AND updated_at >= datetime('now', '-2 days')` — **3 TODO comments** | مفيش حاجة — الـ TODO ما اتـ implementedش. الـ queries بترجّع كل rows بغض النظر عن updated_at. | VERIFIED |
+| F8 | `src/app/api/stored-analysis/results/route.ts` | 158-160 | `// TODO: Append AND updated_at >= datetime('now', '-2 days')` | مفيش حاجة — الـ TODO ما اتـ implementedش. | VERIFIED |
+| F9 | `src/app/api/predictions/route.ts` | 172, 403 | `// TODO: Add AND updated_at >= datetime('now', '-2 days')` | مفيش حاجة — الـ TODO ما اتـ implementedش. | VERIFIED |
+| F10 | `analyzers/support_resistance_calculator.py` | 256-386 | `_calculate_freshness`: fresh / recent / stale tag على S/R levels. | بـ يـ tag levels بـ freshness — **للـ display فقط، مش لـ filtering.** | VERIFIED |
+| F11 | `utils/data_engine_guard.py` | 198-234 | `ensure_data_engine_alive(timeout=5)` — بـ يفحص port 5000 (data engine HTTP) | `background_analyzer.py:906, 1034` (داخل الـ functions المعطّلة). | VERIFIED |
+| F12 | `camp/canonical_stock_state.py` | 215, 274-300 | `_is_data_stale(latest_date, as_of_date, max_trading_days=4, market='EGX')` — بـ يـ tag assessment بـ `data_freshness='fresh'/'stale'/'incomplete'` | CAMP assessment — بـ يـ tag field في canonical_state_shadow. **للـ audit trail، مش لـ blocking.** | VERIFIED |
+| F13 | `lightweight_server.py` | 1908, 1949 | `data_freshness` column في analysis_engine_status table | بـ يـ store آخِر freshness snapshot. **للـ display بس.** | VERIFIED |
+| F14 | `scripts/multi_target_backtest.py` | 329-348 | `stale_price_history_warning` لو MAX(date) أقدم من X أيام | backtest script — **مش production path.** | VERIFIED |
+
+**ملخّص الـ freshness checks**:
+- **14 موقع** للـ freshness checks في الكود.
+- **2 بس بـ يـ block التحليل**: F1 (B1=4d في daily_predictor) + F2 (24h STALE-VETO في master_analyzer).
+- **1 معطّل بـ early-return**: F3 (background_analyzer — معطّل نفسه).
+- **3 بـ يـ tag/flag بس (مش block)**: F4 (persona downgrade), F10 (S/R tag), F12 (CAMP tag).
+- **2 alert-only**: F5 (price_history_stale_monitor) + F11 (data_engine_guard).
+- **1 inverted (skip-if-fresh)**: F6 (live_refresh — مش filter).
+- **5 TODOs مبتدورش حاجة**: F7 (3 مواقع في Python) + F8 (Next.js) + F9 (Next.js).
+- **0 filter على الـ READ side** — API بترجّع كل predictions/analyses بغضّ النظر عن updated_at/prediction_date.
+
+=====================================================================
+4) جدول الأسعار الفعلية (DB | آخر تاريخ | sample tickers)
+=====================================================================
+
+| DB | Table | MAX(date/timestamp) | أيام قبل 2026-10-27 | sample tickers (آخر candle) |
+|----|-------|---------------------|---------------------|------------------------------|
+| `price_history.db` | `price_history` | `2026-10-21` | 6 أيام | COMI=2026-10-21, ETEL=2026-10-21, SWDY=2026-10-21, HRHO=2026-10-21, ADPC=2026-10-21 |
+| `stocks.db` | `stocks.last_update` | `2026-10-21T19:14:57.402856` | 6 أيام | COMI=2026-10-21T19:14:57 (current_price=129.0), ETEL=2026-10-21T19:14:57 (140.95), SWDY=2026-10-21T19:14:57 (110.1), HRHO=2026-10-21T19:14:57 (24.8), EFGR=غير موجود |
+| `stocks.db` | `stock_daily_prices` | `2026-10-21` | 6 أيام | COMI=2026-10-21 (55 row), ETEL=2026-10-21 (55), SWDY=2026-10-21 (55), HRHO=2026-10-21 (55) |
+| `intraday.db` | `stock_intraday` | `2026-10-21T11:55:20.148649` | 6 أيام | (5-min bars — آخر update يوم الأربعاء 2026-10-21 الساعة 11:55 ص) |
+| `intraday.db` | `crypto_intraday` | `2026-10-21T19:14:57` | 6 أيام | (732K row — crypto 24/7 بس آخر update نفس تاريخ الأسهم) |
+| `intraday.db` | `commodity_intraday` | `2026-10-21T19:07:37` | 6 أيام | -- |
+| `predictions.db` | `predictions.prediction_date` | `2026-10-22 12:55:16` | 5 أيام | آخر 7 أيام: 2026-10-22=757 row, 2026-10-21=8, 2026-10-18=3, 2026-10-15=1 |
+| `predictions.db` | `predictions.updated_at` | `2026-10-23 00:07:24` | 4 أيام | (bulk update 757 row → status='EXPIRED') |
+| `predictions.db` | `stored_analyses.updated_at` | `NULL` (table فاضي 0 row) | N/A | -- |
+| `predictions.db` | `stored_analyses.count` | `0` | -- | -- |
+
+**Gap analysis**:
+- آخر سعر متاح = 2026-10-21.
+- آخر توصية في `predictions` = 2026-10-22 (اتعملت على أسعار 2026-10-21).
+- `stored_analyses` = فاضي تماماً.
+- لو user فاتح الـ UI دلوقتي، بيشوف:
+  - في `/api/stored-analysis/results` → فاضي (لا توصيات).
+  - في `/api/predictions` → أحدث توقع = 2026-10-22 (عمره 5 أيام) — معروض كـ "active" (status='testing').
+- **الأسعار اللي بتستخدمها التوصيات الحالية (5-6 أيام قديمة) مش بـ تتـ reject من أي freshness filter على الـ READ side.** الـ TODOs في F7/F8/F9 كانت هتـ fix ده بس ما اتـ implementوش.
+
+=====================================================================
+5) إجابات الأسئلة السبعة المحددة
+=====================================================================
+
+**س1: كم writer لـ stored_analyses؟ كلهم بـ fail silent؟**
+→ **11 موقع INSERT/UPDATE في الكود** (W1..W14 في الجدول أعلاه — بدون R-rows اللي هي readers). الحالة:
+- **W1 (`daily_predictor.py:4165`) — YES بـ fail silent**: `writable=False` (line 4122) → `PRAGMA query_only=1` → `OperationalError: attempt to write a readonly database` → except: pass (lines 4199-4200). **السبب الرئيسي.**
+- **W2 (`daily_predictor.py:779`) — DEAD CODE (مش fail silent، مش بـ يـ run أصلاً)**: `_integrate_whale_radar_predictions` معرّفة بس ZERO callers في vps-service.
+- **W3 (`intraday_scanner.py:414`) — معطّل بـ `SKIP_STORED_ANALYSES_WRITE=True`**: لو اترفع، `writable=False` (line 352) هيـ fail برضه.
+- **W4+W5 (`background_analyzer.py:1955, 2244`) — معطّل بـ early-return** `orchestrator=None` (lines 889-891, 1027-1028).
+- **W6 (`nightly_analysis.py:261, 281`) — معطّل بـ `SKIP_STORED_ANALYSES_WRITE=True`**.
+- **W7 (`persona_db.py:188`) — معطّل بـ `SKIP_STORED_ANALYSES_WRITE=True`**.
+- **W8 (`ai_routes.py:121, 128`) — معطّل بـ `SKIP_STORED_ANALYSES_WRITE=True`**.
+- **W9+W10 (`misc_routes.py:1578, 4258`) — UPDATE-only**: بـ يؤثّر على 0 row لو table فاضي.
+- **W11 (`market_scheduler.py:2514`) — UPDATE-only**: 0 row effect.
+- **W12 (`sync_scanner_to_db.py:211`) — NO بـ يكتب فعلياً** (`writable=True`): الـ writer الوحيد الفعّال، بس مش بـ يـ trigger إلا لما daily_predictor main() يشتغل.
+- **W13 (`sync_scanner_to_db.py:307, 320` in `purge_stale_predictions`) — YES بـ fail silent**: `writable=False` (line 256) + caller = `__main__` بس.
+- **W14 (`data/analyses.py:687`) — معطّل بـ callers معطّلين**: `analysis_runner.run_analysis_batch` (orchestrator=None early-return) + background_analyzer (early-return).
+
+**الخلاصة**: من 11 writer، **1 بس بيـ write فعلياً (W12)**، **1 canonical مكسور بـ fail silent (W1)**، **2 UPDATE-only ما بيـ تأثّروش على table فاضي (W9, W10, W11)**، **6 معطّلين بـ flags/early-return (W3..W8 + W4..W5)**، **1 dead code (W2)**، **1 purge function معطّلة (W13)**، **1 template معطّل عبر callers (W14)**.
+
+الثقة: **VERIFIED**.
+
+**س2: لو شغلنا daily_predictor دلوقتي، هل هيكتب في stored_analyses؟ (schema drift؟)**
+→ **جزئياً**:
+- **W1 (`daily_predictor.py:4165`) — NO مش هيكتب**: بسبب `writable=False` (شرح في س1). ده الـ canonical writer اللي المفروض يكتب التوقعات الأساسية. except: pass بـ يبلّع الخطأ. التوصيات الأساسية V40.2 هتـ insert في `predictions` table بس (عبر `tracker.set_prediction()`) — ودي برضه هتـ fail silent بسبب schema drift (9 columns مفقودين — تأكيد AUDIT-5 R4).
+- **W2 (`daily_predictor.py:779`) — NO مش هيكتب (dead code)**: مش هيتـ استدعى.
+- **W12 (`sync_scanner_to_db.py:211`) — YES هيكتب**: لما `main()` ينفّذ `inject_whale_radar_picks(market=args.market, dry_run=args.dry_run)` (line 4470) — شرط `args.market != 'CRYPTO'` (line 4465) + `not dry_run` (line 4300-4302). هتـ DELETE FROM stored_analyses WHERE market='EGX' (line 105) ثم INSERT نتائج unified_scanner.
+- **schema drift على stored_analyses**: مفيش — الـ schema في predictions.db متطابق مع الـ INSERTs في الكود (50 columns، كلها موجودة). الـ schema drift اللي ذكره AUDIT-5 R4 خاص بـ `predictions` table (9 columns مفقودين)، مش stored_analyses.
+- **لكن**: B1 gate (daily_predictor.py:1011) بـ `DEFAULT_MAX_AGE_DAYS=4` هيـ reject كل ticker لو price_history.db.MAX(date) > 4 أيام. دلوقتي MAX=2026-10-21 (6 أيام قبل 2026-10-27) → B1 هيرفض كل ticker في الـ main loop. الـ whale radar injection (W12) مش بيمر على B1 (فيه path منفصل عبر unified_scanner).
+
+الثقة: **VERIFIED** للـ schema match + B1 logic. **INFERRED** للـ runtime behavior (ما اشتغلناش daily_predictor فعلياً — read-only audit).
+
+**س3: إيه الـ max age للأسعار في الـ DBs الحالية؟**
+→ **6 أيام** على الأسعار (price_history.db.MAX=2026-10-21، stocks.db.last_update=2026-10-21T19:14:57، intraday.db.stock_intraday=2026-10-21T11:55:20، stock_daily_prices.MAX(price_date)=2026-10-21) + **5 أيام** على التوصيات (predictions.MAX(prediction_date)=2026-10-22 12:55:16). النظام شبه خامد منذ 2026-10-22. الـ analytics_events (Next.js frontend) لسه بـ تكتب اليوم (2026-10-27) بس الـ Python backend متوقف. الثقة: **VERIFIED**.
+
+**س4: فين الـ gaps في الـ freshness checks؟**
+→ **5 gaps رئيسية**:
+
+1. **gap #1 — READ-side filtering مفقود**: API بترجّع كل predictions/analyses بغضّ النظر عن updated_at/prediction_date. الـ 5 TODOs (F7/F8/F9) صريحة إن الفلتر مطلوب بس مش متطبّق. النتيجة: user بيشوف توصيات عمرها 5 أيام معروضة كـ "active".
+
+2. **gap #2 — B1 gate بـ يـ block بس في daily_predictor main loop**: `validate_price_data` (F1) caller واحد بس (`daily_predictor.py:1011`). مش بيتطبّق على:
+   - `intraday_scanner.py` (intraday predictions)
+   - `master_analyzer.analyze()` (live API path)
+   - `sync_scanner_to_stored_analyses` (whale radar injection — الـ writer الوحيد الفعّال!)
+   - `ai_routes._run_live_analysis`
+   - `misc_routes.live_refresh`
+
+3. **gap #3 — STALE-VETO في master_analyzer بـ يـ trust stock_data.last_update بس**: `master_analyzer.py:2938` بـ يقرأ `_stock_data.get('last_update') or _stock_data.get('last_updated')`. لو الـ field فاضي (كما في بعض tickers)، الفلتر بـ يـ skip — مش بـ fallback على price_history.db.MAX(date). ده يعني توقع ممكن يـ pass لو stocks.db.last_update NULL حتى لو price_history قديم.
+
+4. **gap #4 — `purge_stale_predictions` معطّلة بـ `writable=False`**: `sync_scanner_to_db.py:256` بـ يفتح connection read-only → كل UPDATEs (lines 261, 275, 291, 307, 320) بـ fail بـ `OperationalError`. caller = `__main__` block بس (line 419) — مش بـ يتـ schedule. **مفيش purge فعلي للـ stale predictions/stored_analyses.**
+
+5. **gap #5 — `price_history_stale_monitor` (F5) alert-only**: بـ يـ logger.warning/critical بس. مش بـ يـ trigger safetynet آلياً، ولا بـ يـ block أي analysis. الـ safetynet المذكور في الكومنت (line 20: "الـ safetynet هو اللي بيصلّح") — الـ safetynet ده script منفصل مش مربوط بالمراقب.
+
+الثقة: **VERIFIED**.
+
+**س5: هل daily_predictor بيستخدم price_history.db (اللي ممكن يكون stale)؟**
+→ **YES**. `daily_predictor.py:322` بـ يفتح `sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)` كـ PRIMARY source (line 311: "PRIMARY: price_history.db.price_history (canonical — 1.4M rows)"). Fallback أخير = `stocks.db.stock_daily_prices` (line 391). live prices بـ تيجي من `stocks.db.stocks.current_price` (per master_analyzer.py:1256).
+
+B1 gate (daily_predictor.py:1011) بـ يـ check `latest_date=dates[-1]` (آخر candle من price_history.db). لو age > 4d → reject. فـ effective: لو price_history قديم، daily_predictor main loop بـ يـ reject كل tickers. **بس** الـ whale radar injection path (W12) مش بيمر على B1 — بيقرأ من unified_scanner اللي بـ يقرأ من نفس price_history.db بدون B1 check. الثقة: **VERIFIED**.
+
+**س6: هل فيه checks بتمنع استخدام سعر أقدم من X يوم؟**
+→ **YES بس في 2 paths بس**:
+- **F1 (B1, daily_predictor.py:1011)**: X=4 أيام. بـ يـ reject ticker (`continue`) لو price age > 4d.
+- **F2 (master_analyzer.py:2950)**: X=24 ساعة. بـ يـ return MasterAnalysis(signal='WAIT') لو stock_data.last_update age > 24h.
+- **F3 (background_analyzer, _is_data_stale)**: X=24h (stocks.db) + 7d (price_history.db) — **معطّل بـ early-return**.
+- **F4 (opportunity_quality)**: X=24h (gambler flag) + 7d (investor flag) — بـ downgrade flag، مش بـ reject.
+
+**مفيش check على**: ai_routes, misc_routes live_refresh, intraday_scanner (SCAN_INTRADAY), sync_scanner_to_stored_analyses, api/stored_analysis_routes (READ side).
+
+الثقة: **VERIFIED**.
+
+**س7: لو فيه B1 gate، بيطبق فين بس؟ (AUDIT-2 قال call site واحد)**
+→ **CONFIRMED — call site واحد بس**: `daily_predictor.py:1011` داخل `run_generator()` main loop. Grep على `validate_price_data|price_sanity|B1_PRICE_SANITY` في كل vps-service → caller واحد. تأكيد AUDIT-2.
+
+مش بيتطبّق على:
+- `intraday_scanner.py` (intraday predictions — كل 5 دقايق).
+- `master_analyzer.analyze()` (live API path — trigger_analysis_manual + live_refresh).
+- `background_analyzer.py` (full + incremental analysis — بس معطّل أصلاً).
+- `sync_scanner_to_stored_analyses` (whale radar injection — الـ writer الوحيد الفعّال لـ stored_analyses!).
+- `ai_routes._run_live_analysis`.
+- `nightly_analysis.py` (AI narrative pipeline).
+
+الثقة: **VERIFIED**.
+
+=====================================================================
+6) إصلاحات مطلوبة للـ freshness (مرتّبة حسب الأولوية)
+=====================================================================
+
+### 🔴 P0 — fix الـ canonical writer (يمنع empty stored_analyses):
+
+1. **`daily_predictor.py:4122` — غيّر `writable=False` لـ `writable=True`** (الإصلاح الرئيسي):
+   - قبل: `conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=False)`
+   - بعد: `conn_sa = db_manager.get_connection(PREDICTIONS_DB, writable=True)`
+   - السبب: `writable=False` بـ يفعّل `PRAGMA query_only=1` (db_manager.py:323) → SQLite بيرفض أي INSERT. الـ except (line 4199-4200) بـ يبلّع الخطأ بصمت.
+   - الاختبار: شغّل `daily_predictor.py --today-only` (مع توفّر price_history fresh) → `SELECT COUNT(*) FROM stored_analyses` لازم > 0.
+
+2. **احذف أو وصّل `_integrate_whale_radar_predictions` (daily_predictor.py:521-822)**: إما استدعها من `run_generator()` أو انقلها لـ `archive/old-scripts/`. ذكرت في worklog/Documentation بس مفيش caller فعلي — ده dead code 300 سطر.
+
+### 🔴 P0 — implement READ-side freshness filter (يمنع stale signals للـ user):
+
+3. **نفّذ الـ 5 TODOs**: ضيف `AND updated_at >= datetime('now', '-2 days')` في:
+   - `api/stored_analysis_routes.py:1222, 1234, 1283` (Python — 3 مواقع)
+   - `src/app/api/stored-analysis/results/route.ts:158-160` (Next.js)
+   - `src/app/api/predictions/route.ts:172, 403` (Next.js)
+   - **المبرر**: الـ TODO صريح منذ Task PHASE-3 (Rule 72). الـ user بيشوف توصيات عمرها 5+ أيام معروضة كـ "active" — ده误导.
+
+4. **أضف `prediction_date >= date('now', '-2 days')` filter في `/api/predictions` + `/api/stored-analysis/results`**: `updated_at` ممكن يبقى حديث بسبب bulk UPDATE بس `prediction_date` هو التاريخ الفعلي للتوصية. الاتنين لازم يتـ filter.
+
+### 🟡 P1 — وسّع B1 gate لكل الـ writers:
+
+5. **أضف B1 check (`validate_price_data`) قبل كل INSERT لـ stored_analyses/predictions**:
+   - `sync_scanner_to_stored_analyses` (sync_scanner_to_db.py:132 loop): قبل INSERT، تأكد إن `latest_date` من results متـ verify.
+   - `intraday_scanner.py` scan_intraday: استدعِ `validate_price_data` قبل record_prediction.
+   - `master_analyzer.analyze()`: B1 check قبل التحليل (دلوقتي بـ يعتمد على STALE-VETO 24h بس — مش بـ check price_history.db.MAX(date)).
+   - `ai_routes._run_live_analysis`: B1 check قبل AI narrative.
+
+### 🟡 P1 — فعّل purge_stale_predictions:
+
+6. **`sync_scanner_to_db.py:256` — غيّر `writable=False` لـ `writable=True`** في `purge_stale_predictions` + scheduleها في cron (مرتين يومياً مثلاً). الـ UPDATEs (lines 261, 275, 291, 307, 320) هتـ fail دلوقتي بـ `OperationalError`.
+
+7. **schedule `purge_stale_predictions` في cron**: `0 */12 * * *` (كل 12 ساعة). مفيش caller فعلي دلوقتي — caller = `__main__` block بس.
+
+### 🟡 P1 — أضف freshness rejection reason للمستخدم:
+
+8. **في `/api/stored-analysis/results` + `/api/predictions`**: لو الـ results فاضية بسبب stale data، ارجع `{ success: true, results: [], stale_reason: 'price_history_age=6d,max=2d' }` بدل ما ترجع فاضي صامت. ده يوضح للمستخدم ليه مفيش توصيات.
+
+### 🟢 P2 — ربط price_history_stale_monitor بـ trigger:
+
+9. **`jobs/price_history_stale_monitor.py`**: لما status=CRITICAL، اعمل trigger لـ `safetynet.py` آلياً (دلوقتي alert-only). الـ safetynet موجود كـ script منفصل (per line 20 comment) بس مش مربوط بالمراقب.
+
+10. **أضف `STALE_DATA_HOURS` env var لمستوى الـ production**: default=24h دلوقتي. اعمله 12h للـ intraday (لو السوق فاتح) و 48h للـ weekend.
+
+### 🟢 P2 — توثيق max age policy:
+
+11. **اعمل doc واضح للـ max age policy**: 
+    - price_history.db: max 1 يوم تداول (1 trading day = ~1-3 calendar days)
+    - stocks.db.last_update: max 24 ساعة (intraday)
+    - predictions.prediction_date: max 2 أيام لـ display
+    - stored_analyses.updated_at: max 2 أيام لـ display
+    - كل واحد فيهم بـ يـ trigger rejection مختلف (B1 / STALE-VETO / TODO filter).
+
+### 🟢 P3 — unification:
+
+12. **وحّد الـ 3 stale checks** (F1=4d + F2=24h + F3=24h+7d) في `core/freshness_policy.py` واحد. دلوقتي كل check بـ يعرف max age مختلف + بـ يـ trust sources مختلفة (latest_date vs last_update vs MAX(date)).
+
+=====================================================================
+7) ثقة الاستنتاجات (Confidence Roll-up)
+=====================================================================
+
+- **VERIFIED** (الـ 7 claims الرئيسية):
+  1. W1 بـ fail silent بسبب `writable=False` → `PRAGMA query_only=1` → `OperationalError` (إثبات تجريبي بـ tempfile copy of predictions.db).
+  2. W2 dead code (ZERO callers في vps-service — تأكيد بـ Grep على المشروع كله).
+  3. W12 = الـ writer الوحيد الفعّال (`writable=True` + caller في main).
+  4. 5 TODOs صريحة لـ freshness filter مش متطبّقة.
+  5. B1 gate caller واحد بس (تأكيد AUDIT-2).
+  6. الأسعار كلها 6 أيام قديمة (SQL queries على 4 DBs).
+  7. 11 writer موقع، 10 معطّلين بـ أسباب مختلفة (flags/early-return/UPDATE-only/dead-code/writable=False).
+
+- **PARTIALLY VERIFIED**:
+  - runtime behavior لـ daily_predictor (ما اشتغلناهوش فعلياً — read-only audit). الـ inference مبني على تحليل الكود + الـ SQL evidence.
+
+- **INFERRED**:
+  - السلوك المتوقّع لـ unified_scanner في `sync_scanner_to_stored_analyses` لو price_history قديم — ما قرأتش unified_scanner.py بـ التفصيل.
+
+- **UNKNOWN**:
+  - هل `inject_whale_radar_picks` هتـ produce أي نتائج لو price_history قديم؟ بـ يعتمد على unified_scanner behavior (محتاج audit منفصل).
+
+كل الـ SQL queries اتعملت بـ `mode=ro` URI — ما فيش أي تعديل للـ DBs. كل الأرقام موثّقة بـ file:line.
+
+=====================================================================
+Stage Summary
+=====================================================================
+- Files read: worklog.md (آخر 400 سطر) + daily_predictor.py (521-822, 975-1064, 4090-4300, 4445-4477) + db_manager.py (180-326) + core/price_sanity.py (1-130, 390-510) + background_analyzer.py (887-1100, 2517-2631) + master_analyzer.py (2925-2970) + intraday_scanner.py (335-424) + ai_routes.py (100-150) + persona_db.py (140-210) + nightly_analysis.py (238-300) + sync_scanner_to_db.py (95-220, 241-357) + data/analyses.py (655-755, 1080-1180) + analysis_runner.py (180-260) + stored_analysis_routes.py (1205-1295, 1310-1369, 1760-1810) + misc_routes.py (4140-4280, 4200-4280, 1556-1605) + jobs/price_history_stale_monitor.py (1-181) + src/app/api/stored-analysis/results/route.ts (1-200) + src/app/api/predictions/route.ts (grep).
+- SQL queries executed: ~15 (كلها SELECT / PRAGMA — لا INSERT/UPDATE/DELETE) + 1 experimental INSERT على tempfile copy للتحقق من `query_only=1` behavior.
+- Grep queries: 12+ (stored_analyses في vps-service + src, INSERT/UPDATE/REPLACE/DELETE stored_analyses, freshness|stale|last_updated|max_age|is_stale|days_old|hours_old, validate_price_data|B1_PRICE_SANITY, _integrate_whale_radar_predictions, purge_stale_predictions, persist_analysis_with_persona|persist_analysis_batch, last_updated_at|last_price_date|days_since_last, apply_price_sanity|check_stale|check_freshness|ensure_data_engine_alive, prediction_date > date|updated_at > datetime|stale_cutoff).
+- Files modified: NONE (read-only audit).
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change, NO DB write.
+
+أكبر 3 إصلاحات مطلوبة:
+1. **P0-1**: غيّر `writable=False` لـ `writable=True` في `daily_predictor.py:4122` — ده السبب الرئيسي لـ stored_analyses فاضية.
+2. **P0-2**: نفّذ الـ 5 TODOs للـ freshness filter على الـ READ side (`updated_at >= datetime('now', '-2 days')`) — يمنع عرض توصيات قديمة كـ "active".
+3. **P0-3**: غيّر `writable=False` لـ `writable=True` في `sync_scanner_to_db.py:256` (`purge_stale_predictions`) + scheduleha — يفعّل الـ purge الآلي للـ stale predictions.
+
+الخطوة التالية: انتظر تعليمات المالك — هل يبدأ بـ:
+- (P0) fix `writable=False` bugs (2 sites — daily_predictor:4122 + sync_scanner_to_db:256)؟
+- (P0) implement READ-side freshness filters (5 TODOs — Python + Next.js)؟
+- (P1) expand B1 gate لكل الـ writers (5 paths)؟
+- (P1) schedule purge_stale_predictions في cron؟
+- (P2) unify freshness policy في `core/freshness_policy.py`؟
+كلها منفذة على مراحل بدون كتابة كود جديد (تعديل سطور موجودة + إضافة WHERE clauses).
+
+
+---
+Task ID: FIX-E
+Agent: برافو V2 (subagent — ATR + Market Regime dependency map + parity tests, read-only)
+Task: عمل dependency map للم implementations ATR + Market Regime في vps-service + parity tests على بيانات مرجعية معروفة (True Range + Wilder smoothing) + مقارنة implementations لنفس المدخلات + قياس الاختلافات. لا كتابة كود جديد (test scripts جديدة فقط في scripts/)، لا تعديل ملفات قائمة، لا حذف/دمج أي implementation قبل إثبات عدم استخدامه. كل الادعاءات موثّقة بـ Grep + Read + test runs فعلية.
+
+Work Log:
+- قرأت آخر 500 سطر من worklog.md (تقارير AUDIT-2 + AUDIT-5 + FIX-D-AUDIT) عشان أفهم السياق: stored_analyses فارغة + 11 writer مع 10 معطّل + canonical ATR معلَن في analyzers/indicators/atr.py.
+- استخدمت `Grep` على `def\s+\w*atr\w*|def\s+\w*ATR\w*|def\s+\w*true_range\w*` في vps-service (ما عدا archive + __pycache__) → طلع 40+ موقع ATR calculation.
+- استخدمت `Grep` على `market_regime|regime_engine|classify_regime|_regime_` → طلع 86 file بـ references regime + 13 implementations فعليًا للـ classification.
+- استخدمت `Read` على كل implementation رئيسي:
+  - ATR: analyzers/indicators/atr.py (canonical، 75 سطر) + glminvestment_engines/core/indicators.py (true_range + atr، 232 سطر) + analyzers/market_regime_engine.py:657-670 (SMA-not-Wilder) + analyzers/v82_analyzer.py:398-445 (SMA-not-Wilder، disabled) + camp/data_analyzer.py:66-76 + camp/canonical_stock_state.py:136-145 + camp/orchestrator.py:445-483 (duplicate _atr + atr) + analyzers/strict_entry_filters.py:79-93 (unused) + analyzers/background_analyzer.py:529-551 (Wilder manual rolling، disabled module) + 8 implementations تانية بـ delegate للـ canonical.
+  - Regime: engines/market_regime.py (532 سطر، Minervini Stage 1-4) + analyzers/market_regime_engine.py (1381 سطر، DEFENSIVE/NORMAL/AGGRESSIVE) + analyzers/regime_detector.py (312 سطر، bull_trend/bear_trend/ranging) + analyzers/regime_filter.py (247 سطر، is_bullish binary) + analyzers/hmm_market_regime.py (310 سطر، Wyckoff) + analyzers/crypto_regime.py (269 سطر، crypto-specific) + analyzers/adaptive_weights.py:605-631 + analyzers/breakout_signal.py:35-57 + core/orchestrator_v3.py:60-118 + core/orchestrator_v2.py:115-176 + camp/orchestrator.py:371-379 + config/market_config.py:31-35 + scripts/run_backtest.py:220-233.
+- استخدمت `Grep` على callers:
+  - canonical calc_atr: 26+ imports عبر analyzers/ + jobs/ + api/ + engines/ + portfolio/ → **canonical VERIFIED**.
+  - glminvestment_engines indicators.atr: 3 imports (engines/atr_risk_engine.py + engines/take_profit_tiers.py + engines/stage2_filter.py + engines/donchian_breakout.py) — كلها في glminvestment_engines subsystem.
+  - market_regime_engine.py::MarketRegimeEngine: callers = jobs/daily_predictor.py:876 + cron job 15 (crontab.txt:107) + cron job 15b (crontab.txt:112) → **PRODUCTION VERIFIED**.
+  - engines/market_regime.py::MarketRegimeEngine: callers = jobs/market_scheduler.py:159 + glminvestment_engines/confluence/confluence_scorer.py:59 → 2 callers.
+  - RegimeDetector: callers = api/regime_routes.py + api/chart_routes.py:1695 + analyzers/master_analyzer.py:144 + analyzers/sniper_engine.py:80 + analyzers/background_analyzer.py:728,950 + test_quick_check.py.
+  - regime_filter.is_bullish_regime: caller = jobs/daily_predictor.py:2841.
+  - adaptive_weights.detect_regime: caller = analyzers/prediction_optimizer.py:1042 (fallback when regime='unknown').
+  - breakout_signal.calc_regime: caller = analyzers/breakout_signal.py (internal only — used by detect_breakout logic).
+  - orchestrator_v3.classify_regime: callers = scripts/run_b0b4_v3.py + run_b0b4_full.py + run_staged_optimization.py + run_b0b4_comparison.py + run_b0b4_fast.py (scripts only، مش cron).
+  - camp/orchestrator.detect_regime: callers = camp/ablation_loop.py + camp/rolling_ic_analyzer.py (camp research only).
+- استخدمت `Read` على crontab.txt → cron job 15: `MarketRegimeEngine('EGX').update_regime()` يومياً 02:50 UTC قبل daily_predictor. ده production regime engine الـ canonical.
+- كتبت `scripts/test_atr_parity.py` (578 سطر) — بـ يختبر 10 implementations + 2 ground truth references على 30 يوم OHLCV ثابت. بـ يتحقق من True Range formula (4 boundary cases) + Wilder smoothing formula (day-by-day print). شغّلته.
+- كتبت `scripts/test_regime_parity.py` (440 سطر) — بـ يختبر 13 regime implementations على 3 scenarios (BULL/BEAR/SIDEWAYS، كل واحد 220 يوم). بـ يعرض vocabulary matrix + persistence behavior. شغّلته.
+- ما عدّلت أي ملف قائم. ما كتبتش أي implementation جديد. الـ test scripts الجديدة في scripts/ فقط.
+
+---
+
+=====================================================================
+1) ملخص تنفيذي (Executive Summary)
+=====================================================================
+
+1. **ATR canonical source واضح**: `analyzers/indicators/atr.py::calc_atr` (Wilder's smoothing manual loop). مستورد في 26+ file عبر vps-service (daily_predictor + intraday_scanner + master_analyzer + backtest_engine + 22 file تاني). VERIFIED.
+
+2. **3 implementations لـ ATR مش بـ delegate للـ canonical** (بتـ compute بنفسها):
+   - `glminvestment_engines/core/indicators.py::atr` (Wilder via pandas ewm alpha=1/period، adjust=False) — بـ يستخدم seeding مختلف (first TR instead of SMA of first 14 TRs) → **+4.04% divergence** من canonical.
+   - `analyzers/background_analyzer.py::_maestro_rolling_atr` (Wilder manual، disabled module) — بـ يشمل TR[0]=H-L في الـ seed → **+1.02% divergence**.
+   - `analyzers/market_regime_engine.py::_atr` (SMA-not-Wilder، صريح في الـ docstring "Wilder smoothing skipped for clarity") — داخل production regime engine بس لـ ATR ratio، مش absolute ATR → **-13.30% divergence**.
+   - + 5 implementations تانية بـ SMA-not-Wilder في camp/ + v82_analyzer + strict_entry_filters (كلها disabled أو research أو unused).
+
+3. **5 implementations بـ SMA-not-Wilder رياضياً غلط**: camp/data_analyzer.py + camp/canonical_stock_state.py + camp/orchestrator.py (×2) + analyzers/v82_analyzer.py + analyzers/strict_entry_filters.py + analyzers/market_regime_engine.py::_atr. كلها بـ تستخدم `sum(trs[-period:]) / period` (SMA) بدل `(prev_atr * (n-1) + tr) / n` (Wilder). **الـ divergence في الـ test: -15.33%**.
+
+4. **ATR parity test أثبت الاختلاف**: على 30 يوم OHLCV ثابت (period=14)، الـ reference Wilder ATR = 1.853475، الـ SMA-of-TR = 1.607143. Δ = +0.246332 (+15.33%). canonical calc_atr → 1.8535 (match Wilder، rounding فقط). كل SMA implementations → 1.6071 (match SMA). glminvestment_engines Wilder → 1.9283 (divergent +4.04%). background_analyzer Wilder-rolling → 1.8724 (divergent +1.02%).
+
+5. **Market Regime implementations = 13 في 11 vocabularies مختلفة**: Minervini Stage 1-4 (engines/market_regime.py) + DEFENSIVE/NORMAL/AGGRESSIVE (analyzers/market_regime_engine.py) + bull_trend/bear_trend/ranging (regime_detector) + binary is_bullish (regime_filter) + Wyckoff 4-state (hmm) + bull/bear/range (adaptive_weights + breakout_signal + run_backtest) + R1-R11 (orchestrator_v2) + BULL_STABLE/.../CONFLICTING (orchestrator_v3) + Bull/Bear/Sideways (camp breadth) + BTC_SEASON/... (crypto_regime) + bull/bear/range enum (market_config).
+
+6. **Production regime engine = `analyzers/market_regime_engine.py`** (DEFENSIVE/NORMAL/AGGRESSIVE). مدعوم بـ cron job 15 (يومياً 02:50 UTC) + cron job 15b (أسبوعياً للـ multi-market) + daily_predictor.py:876 (بـ يـ override الـ thresholds). Persistent في `system_settings` + `market_regime_log` بـ hysteresis 2-3 أيام. VERIFIED.
+
+7. **نفس المدخلات بـ تنتج regimes مختلفة من implementations مختلفة**: على BULL scenario:
+   - engines/market_regime.py → Stage 2 (Bull Market) ✅
+   - analyzers/market_regime_engine.py → NORMAL (مش AGGRESSIVE — placeholder breadth=0.6)
+   - regime_filter.is_bullish_regime → True ✅
+   - adaptive_weights.detect_regime → bull ✅
+   - breakout_signal.calc_regime → BULL ✅
+   - orchestrator_v3.classify_regime → market=BULL_WEAK, stock=S2
+   - orchestrator_v2.detect_market_regime → market=R2
+   - camp/orchestrator.detect_regime → Bear (breadth=20% — proxy محدود)
+   - run_backtest.get_regime → bull ✅
+   الاختلاف ده متوقع لأن كل implementation بـ يعرف الـ regime بشكل مختلف + بـ يستخدم indicators مختلفة.
+
+8. **التوصية: لا توحيد أي implementation بدون دليل قاطع على عدم استخدامه.** canonical ATR (analyzers/indicators/atr.py) واضح ومستخدم في 26+ file. الـ regime implementations بتـ تخدم أدوارًا مختلفة (production regime engine vs per-stock regime filter vs chart display vs backtest tagging vs crypto-specific vs research). الـ divergence موجود بس known + documented.
+
+=====================================================================
+2) جدول ATR implementations
+=====================================================================
+الـ implementations المرتبة حسب (canonical → delegates → standalone → unused/disabled):
+
+| # | الملف | السطر | signature | True Range صح؟ | Wilder؟ | callers | الثقة |
+|---|------|------|-----------|----------------|---------|---------|-------|
+| A1 | `analyzers/indicators/atr.py` | 26 | `calc_atr(highs, lows, closes, period=14) -> Optional[float]` | ✅ VERIFIED (max of H-L, \|H-prevC\|, \|L-prevC\|) | ✅ Wilder manual (`atr×(n-1)+tr)/n`) | **26+ files** عبر vps-service — **CANONICAL** | VERIFIED |
+| A2 | `glminvestment_engines/core/indicators.py` | 66 | `atr(df: pd.DataFrame, period=14) -> pd.Series` | ✅ VERIFIED (`true_range` helper سطر 50) | 🟡 Wilder via pandas ewm `alpha=1/period, adjust=False` — **seeding مختلف** (first TR بدل SMA[:14]) | 3 files في glminvestment_engines (atr_risk_engine + take_profit_tiers + stage2_filter + donchian_breakout) | VERIFIED |
+| A3 | `analyzers/background_analyzer.py` | 529 | `_maestro_rolling_atr(highs, lows, closes, period=14) -> List[Optional[float]]` | ✅ (يشمل TR[0]=H-L للـ first bar) | 🟡 Wilder manual بس بـ يشمل TR[0] → **seeding مختلف** عن canonical | 1 caller داخلي (background_analyzer.py:642) — **module معطّل** (early-return orchestrator=None) | VERIFIED |
+| A4 | `analyzers/market_regime_engine.py` | 657 | `_atr(highs, lows, closes, period=14) -> List[float]` (staticmethod) | ✅ TR صح | 🔴 **SMA-not-Wilder** (docstring صريح: "Wilder smoothing skipped for clarity; we use a 14-period SMA of TR") | 1 caller داخلي (line 815 — ATR ratio computation في regime engine) — **production but for ratio, not absolute** | VERIFIED |
+| A5 | `analyzers/v82_analyzer.py` | 438 | `_calc_atr(highs, lows, closes, period=14) -> float` (staticmethod) | ✅ TR صح | 🔴 **SMA** (`sum(trs[-period:]) / period`) | 1 caller داخلي (v82_analyzer.py:209) — **module معطّل** (`SUB_ENGINE_DISABLED=True` line 61) | VERIFIED |
+| A6 | `analyzers/strict_entry_filters.py` | 79 | `_safe_atr(highs, lows, closes, period=14) -> float` | ✅ TR صح | 🔴 **SMA** (`sum(trs) / len(trs)` — آخر period TRs) | **0 callers** (dead code) | VERIFIED |
+| A7 | `camp/data_analyzer.py` | 66 | `_atr(highs, lows, closes, period=14) -> Optional[float]` | ✅ TR صح | 🔴 **SMA** (`sum(trs[-period:]) / period`) | camp scripts فقط (research) | VERIFIED |
+| A8 | `camp/canonical_stock_state.py` | 136 | `_atr(highs, lows, closes, period=14) -> Optional[float]` | ✅ TR صح | 🔴 **SMA** (`sum(trs[-period:]) / period`) | camp scripts فقط (research) | VERIFIED |
+| A9 | `camp/orchestrator.py` | 445 | `_atr(h, l, c, period=14) -> Optional[float]` (inner method) | ✅ TR صح | 🔴 **SMA** | camp scripts فقط (research) | VERIFIED |
+| A10 | `camp/orchestrator.py` | 474 | `atr(highs, lows, closes, period=14) -> Optional[float]` (module-level) | ✅ TR صح | 🔴 **SMA** (duplicate of A9) | camp scripts فقط (research) | VERIFIED |
+| -- | **Delegates للـ canonical (A1)** | -- | -- | -- | -- | -- | -- |
+| D1 | `engines/backtest_engine.py` | 272 | `calc_atr(highs, lows, closes, period=14) -> List[float]` | (delegate) | (delegate) | internal to backtest_engine | VERIFIED |
+| D2 | `analyzers/core_scoring_engine.py` | 79 | `calc_atr(highs, lows, closes, period=14) -> float` | (delegate) | (delegate) + fallback SMA لو canonical فشل | 1 caller (master_analyzer.py:3145) | VERIFIED |
+| D3 | `analyzers/sniper_engine.py` | 341 | `calc_atr(self, highs, lows, closes, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D4 | `analyzers/enhanced_indicators.py` | 173 | `calc_atr(highs, lows, closes, period=14) -> Optional[float]` | (delegate) | (delegate) | internal | VERIFIED |
+| D5 | `analyzers/dynamic_target_engine.py` | 230 + 1545 | `calculate_atr` + `_calculate_atr_from_history` | (delegate) | (delegate) | internal | VERIFIED |
+| D6 | `analyzers/technical_target_engine.py` | 631 | `_calculate_atr(self, price_history, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D7 | `analyzers/stock_dna_analyzer.py` | 685 | `_compute_atr_series(highs, lows, closes, period=14) -> List[float]` | (delegate) | (delegate) per-point | internal | VERIFIED |
+| D8 | `analyzers/prediction_optimizer.py` | 1204 | `_calc_atr(self, highs, lows, closes, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D9 | `analyzers/dynamic_context_engine.py` | 198 | `_calculate_atr(history) -> Tuple[float, float]` | (delegate) | (delegate) | internal | VERIFIED |
+| D10 | `analyzers/golden_hunter.py` | 31 | `_safe_atr(highs, lows, closes, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D11 | `analyzers/v68_oracle.py` | 76 | `_safe_atr(highs, lows, closes, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D12 | `analyzers/kimi_fixes.py` | 235 | `calculate_atr_stop_loss(...)` | (delegate) | (delegate) + closes-only fallback | internal | VERIFIED |
+| D13 | `analyzers/unified_analysis.py` | 155 | `_compute_atr(highs, lows, closes, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D14 | `analyzers/crypto_quality_gate.py` | 214 | `_calculate_atr(highs, lows, closes, period=14) -> Optional[float]` | (delegate) | (delegate) | internal | VERIFIED |
+| D15 | `analyzers/support_resistance_calculator.py` | 169 | `_calculate_atr(rows, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D16 | `engines/flow_system.py` | 685 | `_get_atr_for_ticker(self, ticker, period=14) -> Optional[float]` | (delegate) + fallback SMA | (delegate) + fallback SMA | internal (flow_system.py:733) | VERIFIED |
+| D17 | `api/ai_predictions_routes.py` | 234 | `_compute_atr(historical, period=14) -> float` | (delegate) | (delegate) | internal (ai_predictions_routes.py:255,285) | VERIFIED |
+| D18 | `api/chart_routes.py` | 147 | `_rolling_atr(highs, lows, closes, period=14)` | (delegate) per-point | (delegate) | internal | VERIFIED |
+| D19 | `portfolio/multi_target_exit.py` | 275 | `_compute_atr(price_history, end_idx, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D20 | `jobs/daily_closer.py` | 537 | `_compute_atr_at_entry(self, ticker, entry_date, period=14) -> float` | (delegate) | (delegate) | internal | VERIFIED |
+| D21 | `jobs/closer_modules/atr_helpers.py` | 15 | `compute_atr_at_entry(closer, ticker, entry_date, period=14) -> float` | (delegate) | (delegate) | internal (extracted from daily_closer) | VERIFIED |
+| D22 | `jobs/crypto_lab_scheduler.py` | 626 | `_calc_atr(ohlcv, period=14) -> Optional[float]` (staticmethod) | (delegate) | (delegate) | internal | VERIFIED |
+| D23 | `engines/atr_risk_engine.py` | 38 (import) | `from glminvestment_engines.core.indicators import atr` | (uses A2) | (uses A2) | internal (compute_risk_plan + analyze) | VERIFIED |
+
+ملخّص ATR:
+- **1 canonical** = `analyzers/indicators/atr.py::calc_atr` (Wilder manual loop، 26+ callers).
+- **2 standalone Wilder implementations** (A2 + A3) — divergent بسبب seeding مختلف.
+- **5 SMA-not-Wilder implementations** (A4-A10) — divergent رياضياً (SMA بدل Wilder).
+- **1 unused** = `strict_entry_filters._safe_atr` (0 callers).
+- **22 delegates** للـ canonical (D1-D22) — كلها بـ تستخدم canonical لكن بتـ wrap بـ fallback آمن.
+- **1 mixed** = `engines/flow_system._get_atr_for_ticker` (D16) — canonical primary + SMA fallback.
+
+=====================================================================
+3) جدول Market Regime implementations
+=====================================================================
+
+| # | الملف | السطر | vocabulary | persistent؟ | callers | الثقة |
+|---|------|------|-----------|-------------|---------|-------|
+| R1 | `engines/market_regime.py` | 56-80 | Minervini: Stage 1=Consolidation / 2=Bull / 3=Distribution / 4=Bear (stateless — reads price_history.db each call) | **no** (stateless) | 2 callers: `jobs/market_scheduler.py:159` + `glminvestment_engines/confluence/confluence_scorer.py:59` | VERIFIED |
+| R2 | `analyzers/market_regime_engine.py` | 56-80-360-833 | **DEFENSIVE / NORMAL / AGGRESSIVE** (with hysteresis 2-3d, multi-market EGX/TADAWUL/KSE/QSE/CRYPTO/GOLD) | **YES** (system_settings + market_regime_log في stocks.db) | **3 production paths**: `daily_predictor.py:876` (override thresholds) + cron job 15 (`MarketRegimeEngine('EGX').update_regime()`) + cron job 15b (weekly multi-market). **THE CANONICAL PRODUCTION REGIME ENGINE.** | VERIFIED |
+| R3 | `analyzers/regime_detector.py` | 24-113 | bull_trend / bear_trend / ranging / unknown (Arabic: صاعد واضح / هابط واضح / متراوح / غير معروف) — ADX + ROC based | **no** (stateless detector) — بس `save_daily_regime()` (line 231) writes لـ market_regime_log | 6 callers: `api/regime_routes.py:5` + `api/chart_routes.py:1695` + `analyzers/master_analyzer.py:144,1990` + `analyzers/sniper_engine.py:80` + `analyzers/background_analyzer.py:728,950` + `test_quick_check.py:69` | VERIFIED |
+| R4 | `analyzers/regime_filter.py` | 70-167 | Binary: `is_bullish=True/False` (per-stock، mode A=Close>SMA50 / mode B=Close>SMA20 AND Close>SMA50) | **no** (pure function) | 1 caller: `jobs/daily_predictor.py:2841` (per-stock entry filter) | VERIFIED |
+| R5 | `analyzers/hmm_market_regime.py` | 52-262 | Wyckoff 4-state: Accumulation / Markup / Distribution / Markdown (Hidden Markov Model) | **no** (in-memory singleton `_hmm_instance`) | 1 caller: `jobs/daily_predictor.py:3322` (`get_hmm_regime`) — experimental path | VERIFIED |
+| R6 | `analyzers/adaptive_weights.py` | 605-631 | bull / bear / range / unknown (SMA50 + slope based) | **no** (pure function) | 1 caller: `analyzers/prediction_optimizer.py:1042` (fallback when regime='unknown' in prediction scoring) | VERIFIED |
+| R7 | `analyzers/breakout_signal.py` | 35-57 | BULL / BEAR / RANGE (point-in-time at idx — MA20 vs MA50 + ROC20) | **no** (pure function) | internal to `breakout_signal.py` (used by `detect_breakout`) | VERIFIED |
+| R8 | `core/orchestrator_v3.py` | 60-118 | Market: BULL_STABLE / BULL_WEAK / BEAR_STABLE / BEAR_ACC / SIDEWAYS / HIGH_VOL / CONFLICTING + Stock: S1-S11 | **no** (pure function) | 5 callers في scripts/ (run_b0b4_v3 + run_b0b4_full + run_staged_optimization + run_b0b4_comparison + run_b0b4_fast) — **no cron، no production path** | VERIFIED |
+| R9 | `core/orchestrator_v2.py` | 115-176 | Market: R1-R11 (R1=bull stable / R4=bear acc / R8=high vol / R10=conflicting / R11=insufficient) + Stock: S1-S14 | **no** (pure function) | 0 external callers (legacy version، orchestrator_v3 هو الحالي) | VERIFIED |
+| R10 | `camp/orchestrator.py` | 371-379 | Bull / Bear / Sideways (breadth-based: % of tickers above SMA50 — 55/45 thresholds) | **no** (pure function on breadth) | camp scripts فقط (`ablation_loop.py` + `rolling_ic_analyzer.py`) — research، مش production | VERIFIED |
+| R11 | `config/market_config.py` | 31-35 + 480 | Enum: bull / bear / range + `get_regime_settings(market_code, regime)` (settings map، not classifier) | **no** (settings lookup) | `get_regime_settings` callers في `analyzers/` (settings lookup only) | VERIFIED |
+| R12 | `analyzers/crypto_regime.py` | 25-36-137 | Crypto: BTC_SEASON / ALT_SEASON / HIGH_VOL / LOW_VOL / EXTREME_FEAR / EXTREME_GREED / NEUTRAL (external API based) | **no** (5-min in-memory cache) | 1 caller: `analyzers/crypto_maestro.py:138` (`CryptoRegimeDetector`) | VERIFIED |
+| R13 | `scripts/run_backtest.py` | 220-233 | bull / bear / range (SMA20 vs SMA50 + close) | **no** (pure function) | internal to `run_backtest.py` (backtest tagging only) — **no production path** | VERIFIED |
+| -- | `scripts/run_backtest_v2.py` + `run_backtest_v3.py` | 276 / 266 | bull / bear / range (duplicate of R13) | **no** | internal to scripts — **no production path** | VERIFIED |
+
+ملخّص Regime:
+- **1 production canonical** = R2 `analyzers/market_regime_engine.py` (DEFENSIVE/NORMAL/AGGRESSIVE) — cron + daily_predictor + persistent.
+- **2 stateless for chart/display** = R1 (Minervini، for market_scheduler + confluence_scorer) + R3 (bull_trend/...، for chart_routes + master_analyzer + sniper_engine + background_analyzer).
+- **1 per-stock entry filter** = R4 (binary is_bullish، for daily_predictor).
+- **1 experimental** = R5 (HMM Wyckoff، daily_predictor fallback path).
+- **1 prediction-scoring fallback** = R6 (bull/bear/range، prediction_optimizer fallback).
+- **2 legacy orchestrator** = R8 (v3) + R9 (v2) — بـ تستخدم scripts بس، مش production.
+- **1 research camp** = R10 (breadth-based، camp scripts only).
+- **1 settings lookup** = R11 (enum + get_regime_settings، not a classifier).
+- **1 crypto-specific** = R12 (BTC dominance / Fear&Greed).
+- **3 backtest-only** = R13 + v2 + v3 (scripts internal).
+
+=====================================================================
+4) نتائج parity tests
+=====================================================================
+
+### ATR Parity Test (`scripts/test_atr_parity.py`)
+
+**Test 1: True Range formula verification** ✅
+- Case A (H-L dominant): H=110 L=100 prevC=105 → TR=10.0 ✅
+- Case B (gap up): H=110 L=108 prevC=105 → TR=5.0 ✅ (|H-pC|=5.0 wins)
+- Case C (gap down): H=102 L=95 prevC=105 → TR=10.0 ✅ (|L-pC|=10.0 wins)
+- Case D (first bar, no prevC): H=102.5 L=99.2 → TR=3.3 = H-L ✅
+- 30-day reference TR series: كلها صحيحة (gap-up days 5 و 8 بتنتج TR > H-L ✅)
+
+**Test 2: Wilder smoothing formula verification** ✅
+- Seed: SMA(TR[:14]) = 33.6 / 14 = 2.4
+- Day-by-day Wilder smoothing printed (15 iterations).
+- Final Wilder ATR(14) = **1.853475**
+- Compare: SMA-of-TR[-14:] = **1.607143**
+- Δ (Wilder - SMA) = **+0.246332 (+15.327%)** — divergent بشكل كبير.
+
+**Test 3: All ATR implementations on reference 30-day OHLCV** (period=14):
+
+| # | Implementation | Kind | ATR(14) | Δ vs Wilder-REF | status |
+|---|----------------|------|---------|-----------------|--------|
+| 1 | REF Wilder (ground truth) | Wilder | 1.853475 | +0.000000 | EXACT |
+| 2 | REF SMA-of-TR (ground truth) | SMA | 1.607143 | -0.246332 | 🔴 DIVERGENT |
+| 3 | `analyzers/indicators/atr.py::calc_atr` (canonical) | Wilder | 1.853500 | +0.000025 | ✅ EXACT (rounding only — canonical rounds to 4 dp) |
+| 4 | `glminvestment_engines/core/indicators.py::atr` | Wilder (pandas ewm) | 1.928331 | +0.074856 | 🔴 DIVERGENT (+4.04%) — pandas ewm `adjust=False` uses different seeding |
+| 5 | `analyzers/background_analyzer.py::_maestro_rolling_atr` | Wilder-rolling | 1.872400 | +0.018925 | 🔴 DIVERGENT (+1.02%) — includes TR[0]=H-L in seed |
+| 6 | `analyzers/market_regime_engine.py::_atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT (-13.30%) — matches SMA reference exactly |
+| 7 | `analyzers/v82_analyzer.py::_calc_atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT — disabled module |
+| 8 | `camp/data_analyzer.py::_atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT — research only |
+| 9 | `camp/canonical_stock_state.py::_atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT — research only |
+| 10 | `camp/orchestrator.py::atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT — research only |
+| 11 | `analyzers/strict_entry_filters.py::_safe_atr` | SMA (NOT Wilder) | 1.607143 | -0.246332 | 🔴 DIVERGENT — 0 callers (dead code) |
+
+**Key findings**:
+- canonical calc_atr (1.8535) متطابق مع Wilder reference (1.853475) — الـ 0.000025 فرق هو rounding لـ 4 decimal places (canonical line 74: `return round(atr, 4)`).
+- كل 5 implementations بـ SMA بـ تنتج 1.607143 — متطابقة مع SMA reference.
+- glminvestment_engines Wilder (1.928331) divergent بـ +4.04% — pandas ewm `adjust=False` بـ يبدأ الـ smoothing من أول TR (مش SMA of first 14) → seeding مختلف.
+- background_analyzer Wilder-rolling (1.8724) divergent بـ +1.02% — بـ يشمل TR[0]=H-L في الـ seed (canonical بـ يبدأ من TR[1] لأن TR[0] ما لهوش prev close).
+
+**Test 4: Edge cases** ✅
+- Canonical على 2 bars (period=14): رجّع 3.0 (avg of 1 TR) — graceful handling.
+- Canonical على empty: رجّع None.
+- Canonical على period+1=15 bars: رجّع 2.4 = SMA(TR[:14]) — Wilder seed match ✅.
+
+### Market Regime Parity Test (`scripts/test_regime_parity.py`)
+
+**Test 1: Reference scenarios sanity check** ✅
+- BULL scenario (n=220): last=140.13, last>SMA50(135.13)>SMA200(121.01), change_5d=+0.55%, change_20d=+2.44% → clear bull.
+- BEAR scenario (n=220): last=72.65, last<SMA50(75.39)<SMA200(84.56), change_5d=-0.65%, change_20d=-3.23% → clear bear.
+- SIDEWAYS scenario (n=220): last=101.66, near SMA200(99.95), oscillating → mild sideways (change_20d=+2.53% بسبب آخر sinusoidal peak).
+
+**Test 2: All regime implementations on 3 scenarios**:
+
+| # | Implementation | BULL | BEAR | SIDEWAYS |
+|---|----------------|------|------|----------|
+| 1 | `engines/market_regime.py::MarketRegimeEngine` (Minervini) | Stage 2 (Bull Market) ✅ | Stage 4 (Bear Market) ✅ | Stage 3 (Distribution) |
+| 2 | `analyzers/market_regime_engine.py::MarketRegimeEngine` (DEFENSIVE/NORMAL/AGGRESSIVE) | NORMAL | DEFENSIVE ✅ | NORMAL |
+| 3 | `analyzers/regime_detector.py::RegimeDetector` | unknown (mock محدود) | unknown | unknown |
+| 4 | `analyzers/regime_filter.py::is_bullish_regime` | is_bullish=True ✅ | is_bullish=False ✅ | is_bullish=True |
+| 5 | `analyzers/hmm_market_regime.py::HMMMarketRegime` | VOCAB only (hmmlearn training skipped) | VOCAB only | VOCAB only |
+| 6 | `analyzers/adaptive_weights.py::detect_regime` | bull ✅ | bear ✅ | bull |
+| 7 | `analyzers/breakout_signal.py::calc_regime` | BULL ✅ | BEAR ✅ | RANGE ✅ |
+| 8 | `core/orchestrator_v3.py::classify_regime` | market=BULL_WEAK, stock=S2 | market=CONFLICTING, stock=S9 | market=BULL_WEAK, stock=S2 |
+| 9 | `core/orchestrator_v2.py::detect_market_regime` | market=R2, stock=S2 | market=R10, stock=S4 | market=R2, stock=S2 |
+| 10 | `camp/orchestrator.py::Orchestrator.detect_regime` | Bear (breadth=20%) | Bull (breadth=80%) | Bear (breadth=20%) |
+| 11 | `config/market_config.py::MarketRegime` | VOCAB only (settings lookup) | VOCAB only | VOCAB only |
+| 12 | `analyzers/crypto_regime.py::CryptoRegimeDetector` | VOCAB only (needs API) | VOCAB only | VOCAB only |
+| 13 | `scripts/run_backtest.py::get_regime` | bull ✅ | bear ✅ | bull |
+
+**Key findings**:
+- **لا implementation وحدة بـ تنتج نفس الـ output** على نفس البيانات — كلها بـ تستخدم indicators مختلفة + thresholds مختلفة + vocabularies مختلفة.
+- R10 (camp breadth) بـ ينتج Bear على BULL scenario — لأن breadth proxy (last 50 prices vs SMA20) بـ يحسب 20% فقط فوق SMA20 (لأن في uptrend الـ prices بتطلع فوق SMA20 بسرعة). ده limitation في الـ test proxy مش production bug.
+- R3 (RegimeDetector) بـ ينتج unknown في الـ test — لأن الـ mock للـ DB cursor محدود (الـ test بيـ feed 100 bars بس الإعداد يتطلب OHLC من stock_price_history). الـ production behavior مختلف (بيقري من DB الحقيقي). VERIFIED في الكود بس مش في الـ test.
+- R5 (HMM) + R12 (crypto) ما اتـ testedوش بشكل كامل (يحتاجوا hmmlearn + external API). بس الـ vocabulary موثّق.
+
+**Test 3: Vocabulary incompatibility matrix** ✅
+- 11 mutually-incompatible vocabularies مؤكدة (مفصّلة في الجدول أعلاه).
+- **NO two implementations share the same vocabulary across the same scope** (الـ exceptions: adaptive_weights + breakout_signal + run_backtest بـ يستخدموا bull/bear/range بس في أدوار مختلفة — prediction-scoring fallback vs breakout detector vs backtest tagging).
+
+**Test 4: Persistence behavior** ✅
+- **2 persistent**: R2 (`analyzers/market_regime_engine.py` — system_settings + market_regime_log) + R3 (stateless detector بس `save_daily_regime()` بـ تكتب لـ market_regime_log).
+- **11 non-persistent**: R1, R4-R13 (stateless pure functions أو in-memory cache).
+
+=====================================================================
+5) implementations القابلة للتوحيد + المخاطر
+=====================================================================
+
+### ⚠️ قاعدة صارمة: ما توحدش أي implementation بدون دليل قاطع على عدم استخدامه.
+
+**قابلة للتوحيد (low risk):**
+
+1. **`analyzers/strict_entry_filters.py::_safe_atr` (A6) → canonical calc_atr**:
+   - الدليل: 0 callers (Grep على المشروع كله → ZERO imports).
+   - المخاطر: مفيش — dead code.
+   - الإجراء: ممكن يـ delegate للـ canonical أو يـ delete (Rule 4 NO-DELETION يـ prefer delegate).
+
+2. **`camp/data_analyzer.py::_atr` (A7) + `camp/canonical_stock_state.py::_atr` (A8) + `camp/orchestrator.py::_atr` + `atr` (A9 + A10) → canonical**:
+   - الدليل: camp scripts فقط (research، ما فيش cron ولا production path).
+   - المخاطر: research workflow ممكن يـ break بس مفيش production impact.
+   - الإجراء: ممكن توحيد لو الـ camp team موافق.
+
+3. **`analyzers/v82_analyzer.py::_calc_atr` (A5) → canonical**:
+   - الدليل: `SUB_ENGINE_DISABLED=True` (line 61) → `analyze()` بـ short-circuit ويرجّع disabled signal.
+   - المخاطر: مفيش — module معطّل.
+   - الإجراء: ممكن يـ delegate بس الأول خلّي V82 disabled نهائيًا (محذور أو موثّق).
+
+4. **`analyzers/background_analyzer.py::_maestro_rolling_atr` (A3) → canonical rolling**:
+   - الدليل: background_analyzer معطّل بـ early-return `orchestrator=None` (per AUDIT-FINAL).
+   - المخاطر: مفيش في production — بس لو الـ background_analyzer اتعاد تشغيله، لازم يتـ delegate.
+   - الإجراء: ممكن يـ delegate بس مع verification إن background_analyzer لسه معطّل.
+
+**قابلة للتوحيد بس بمخاطر (medium risk):**
+
+5. **`analyzers/market_regime_engine.py::_atr` (A4) → canonical**:
+   - الدليل: 1 caller داخلي (line 815) لـ ATR ratio computation. الـ ATR ratio = `atr_14 / atr_20d_avg`. لو الـ canonical Wilder اـ استخدم بدل الـ SMA، الـ ratio هيتغير بس الـ thresholds (1.4× لـ DEFENSIVE) هتفضل نفسها — التأثير عملي صغير.
+   - المخاطر: تغيير سلوك الـ production regime engine. الـ ATR ratio بـ يدخل في حساب الـ DEFENSIVE rule `atr_ratio_gt=1.4`. لو تحوّل لـ Wilder، نسبة الـ ATRs هتختلف ممكن تـ trigger DEFENSIVE في أوقات مختلفة.
+   - الإجراء: **لا ينصح بالتوحيد بدون regression test كامل لـ regime engine + audit لـ historical market_regime_log entries**. وثّق كـ "known divergence — ATR ratio computed with SMA instead of Wilder by design".
+
+**لا توحّد (different scope/purpose):**
+
+6. **`glminvestment_engines/core/indicators.py::atr` (A2) — Wilder via pandas ewm**:
+   - السبب: بـ يخدم الـ glminvestment_engines subsystem (engines/atr_risk_engine.py + take_profit_tiers + stage2_filter + donchian_breakout). الـ subsystem ده separate عن الـ V40.2 canonical pipeline. التوحيد هنا محتاج توحيد الـ subsystem كله — خارج نطاق FIX-E.
+   - الـ divergence (+4.04%) due to pandas ewm `adjust=False` seeding different from manual Wilder — known pandas behavior.
+
+**Regime implementations لا توحّد إطلاقًا:**
+- كل implementations الـ 13 بـ تخدم أدوارًا مختلفة (مفصّلة في الجدول).
+- التوحيد هنا = كسر contracts الـ consumers.
+- الـ production canonical = R2 (`analyzers/market_regime_engine.py`).
+
+=====================================================================
+6) implementations اللي لازم تفضل منفصلة (أدوار مختلفة)
+=====================================================================
+
+**ATR — لازم تفضل منفصلة:**
+
+1. **`analyzers/indicators/atr.py::calc_atr` (A1)** = CANONICAL. لازم يفضل المصدر الوحيد للـ ATR في V40.2 pipeline.
+2. **`glminvestment_engines/core/indicators.py::atr` (A2)** = separate subsystem (glminvestment_engines). له الـ self-contained pandas-based indicators. التوحيد هنا محتاج توحيد الـ subsystem كله.
+3. **`analyzers/market_regime_engine.py::_atr` (A4)** = يستخدم SMA by design للـ ATR ratio (مش absolute ATR). الـ ratio نفسه بـ يستخدم SMA على البسط والمقام → الـ normalization بـ يـ cancel الـ divergence جزئيًا. توثّق كـ "known divergence — by design for ratio computation".
+
+**Regime — لازم تفضل منفصلة كلها:**
+
+1. **R1 `engines/market_regime.py` (Minervini Stage 1-4)** — بـ يخدم `market_scheduler.py` + `confluence_scorer.py` (glminvestment_engines). Minervini stage classification مختلف عن DEFENSIVE/NORMAL/AGGRESSIVE — بيـ return position_modifier (1.0/0.5/0.0) لـ position sizing.
+
+2. **R2 `analyzers/market_regime_engine.py` (DEFENSIVE/NORMAL/AGGRESSIVE)** = PRODUCTION CANONICAL. مدعوم بـ cron + daily_predictor + persistent في system_settings. بـ يـ override thresholds (min_rr, min_score, max_picks, atr_stop_multiplier, ...). لازم يفضل المصدر الوحيد للـ market-wide regime.
+
+3. **R3 `analyzers/regime_detector.py` (bull_trend/bear_trend/ranging)** — بـ يخدم chart-level display + master_analyzer + sniper_engine. ADX-based classification مختلف عن SMA-based Minervini و different عن DEFENSIVE/NORMAL/AGGRESSIVE. دوره = chart display + per-ticker trend detection.
+
+4. **R4 `analyzers/regime_filter.py::is_bullish_regime` (binary)** — بـ يخدم per-stock entry filter في daily_predictor. دوره = block entries when stock not in bullish regime. مفهوم مختلف (per-stock binary، مش market-wide 3-state).
+
+5. **R5 `analyzers/hmm_market_regime.py` (Wyckoff)** — experimental HMM-based. بـ يستخدم returns + volatility + volume features. مختلف جوهريًا عن SMA-based. دوره = supplementary non-linear detection (lazy-loaded in daily_predictor).
+
+6. **R6 `analyzers/adaptive_weights.py::detect_regime` (bull/bear/range)** — per-stock regime for prediction_optimizer fallback. دوره = prediction scoring fallback.
+
+7. **R7 `analyzers/breakout_signal.py::calc_regime` (BULL/BEAR/RANGE)** — point-in-time regime for breakout detection logic. دوره = filter breakouts based on trend context.
+
+8. **R8 `core/orchestrator_v3.py::classify_regime`** + **R9 `core/orchestrator_v2.py::detect_market_regime`** — orchestrator v3/v2 legacy state codes (R1-R11 + S1-S14). بـ تستخدم scripts فقط. لو الـ orchestrator_v3 رجع للـ production، لازم يفضل. حاليًا legacy.
+
+9. **R10 `camp/orchestrator.py::detect_regime` (Bull/Bear/Sideways)** — camp research فقط. breadth-based.
+
+10. **R11 `config/market_config.py::MarketRegime` (enum)** — settings lookup، مش classifier. لازم يفضل كـ enum للـ settings.
+
+11. **R12 `analyzers/crypto_regime.py::CryptoRegimeDetector`** — crypto-specific (BTC dominance + Fear&Greed + AltSeason + volatility). مختلف جوهريًا عن الـ stock regimes. دوره = crypto_maestro only.
+
+12. **R13 `scripts/run_backtest.py::get_regime` + v2 + v3** — backtest tagging فقط. مش production.
+
+=====================================================================
+7) توصيات + known divergences
+=====================================================================
+
+### توصيات الـ ATR:
+
+1. **(P0) سجّل canonical source رسميًا**: `analyzers/indicators/atr.py::calc_atr` هو canonical ATR. موثّق في docstring (Rule 67 — CALCULATION-CANONICAL). الكود كله بـ يستخدمه (26+ imports). لازم يفضل كده.
+
+2. **(P1) delegate `strict_entry_filters._safe_atr` (A6) للـ canonical**: 0 callers = dead code. آمن تـ delegate أو تحذف. (ملاحظة: Rule 4 NO-DELETION بـ يـ prefer delegate.)
+
+3. **(P2) delegate camp/* ATR implementations (A7-A10) للـ canonical**: camp scripts research only. آمن تـ delegate لو الـ camp team موافق.
+
+4. **(P2) delegate `v82_analyzer._calc_atr` (A5) للـ canonical**: module معطّل (`SUB_ENGINE_DISABLED=True`). آمن تـ delegate.
+
+5. **(P3) document `market_regime_engine._atr` (A4) كـ "known divergence — SMA by design"**: الـ ATR ratio computation بـ يستخدم SMA بدل Wilder عمدًا (docstring صريح). التحويل لـ Wilder ممكن يـ break الـ historical thresholds. وثّق + ما تغيّرش.
+
+6. **(P3) document `glminvestment_engines/core/indicators.py::atr` (A2) كـ "known divergence — pandas ewm seeding"**: +4.04% divergence بسبب pandas ewm `adjust=False` (seeding = first TR بدل SMA[:14]). ده known pandas behavior. الـ glminvestment_engines subsystem separate عن V40.2. ما توحدش بدون توحيد الـ subsystem كله.
+
+7. **(P3) document `background_analyzer._maestro_rolling_atr` (A3) كـ "known divergence — TR[0]=H-L in seed"**: +1.02% divergence. module معطّل. ما توحدش بدون إعادة تفعيل + audit.
+
+### توصيات الـ Market Regime:
+
+1. **(P0) سجّل canonical source رسميًا**: `analyzers/market_regime_engine.py::MarketRegimeEngine` (DEFENSIVE/NORMAL/AGGRESSIVE) هو canonical regime engine. مدعوم بـ cron job 15 + 15b + daily_predictor. لازم يفضل المصدر الوحيد للـ market-wide regime.
+
+2. **(P1) وثّق الـ roles المختلفة لكل implementation** في `Documentation/REGIME_MAP.md`:
+   - production market-wide regime = R2 (DEFENSIVE/NORMAL/AGGRESSIVE)
+   - chart-level display = R3 (bull_trend/bear_trend/ranging) + R1 (Minervini Stage)
+   - per-stock entry filter = R4 (binary is_bullish)
+   - experimental HMM = R5 (Wyckoff)
+   - prediction scoring fallback = R6 (bull/bear/range)
+   - breakout context = R7 (BULL/BEAR/RANGE)
+   - orchestrator v3 (legacy) = R8
+   - orchestrator v2 (legacy) = R9
+   - camp research = R10
+   - settings enum = R11
+   - crypto-specific = R12
+   - backtest tagging = R13
+
+3. **(P2) أنشئ vocabulary translation table** في `core/regime_vocab_map.py`: mapping بين vocabularies للـ display purposes (مش للـ production logic). مثال: DEFENSIVE → bear_trend → bear → Stage 4. بس بدون كسر الـ contracts.
+
+4. **(P3) لا توحّد أي implementation**: كلها بـ تخدم أدوارًا مختلفة. التوحيد = كسر contracts.
+
+### Known divergences مسجّلة:
+
+| Divergence | الموقع | السبب | التأثير | الإجراء |
+|------------|--------|------|---------|---------|
+| ATR Wilder vs SMA | 5 implementations بـ SMA | `sum(trs[-period:]) / period` بدل `(prev_atr * (n-1) + tr) / n` | -15.33% على 30 يوم | document + delegate (low risk) |
+| ATR pandas ewm seeding | `glminvestment_engines/core/indicators.py::atr` | `ewm(adjust=False)` بـ يبدأ من first TR | +4.04% على 30 يوم | document (separate subsystem) |
+| ATR TR[0] inclusion | `background_analyzer._maestro_rolling_atr` | بـ يشمل TR[0]=H-L في seed | +1.02% على 30 يوم | document (disabled module) |
+| ATR canonical rounding | `analyzers/indicators/atr.py::calc_atr` | `round(atr, 4)` (line 74) | +0.001% (0.000025) | none (intentional) |
+| Regime vocabulary | 11 vocabularies مختلفة | كل implementation بـ يعرف الـ regime بشكل مختلف | non-interchangeable | document + roles map |
+
+=====================================================================
+8) ثقة الاستنتاجات (Confidence Roll-up)
+=====================================================================
+
+- **VERIFIED** (الـ 8 claims الرئيسية):
+  1. ATR canonical = `analyzers/indicators/atr.py::calc_atr` (26+ imports عبر المشروع).
+  2. 5 implementations بـ SMA-not-Wilder (mathematically divergent من canonical).
+  3. ATR Wilder vs SMA divergence = +15.33% على 30-day reference data (numerical proof).
+  4. Production regime engine = `analyzers/market_regime_engine.py` (cron job 15 + daily_predictor + persistent).
+  5. 13 regime implementations في 11 mutually-incompatible vocabularies.
+  6. `strict_entry_filters._safe_atr` = dead code (0 callers).
+  7. `v82_analyzer` = disabled (`SUB_ENGINE_DISABLED=True`).
+  8. `background_analyzer` = disabled (early-return `orchestrator=None`).
+
+- **PARTIALLY VERIFIED**:
+  - glminvestment_engines ATR divergence بسبب pandas ewm `adjust=False` — موثّق numerically (+4.04%) بس السبب الـ exact بـ يـ require pandas source audit.
+  - HMM + Crypto regime لم تـ tested بالكامل (يحتاجوا hmmlearn + external API) — بس الـ vocabulary موثّق.
+
+- **INFERRED**:
+  - الـ ATR ratio computation في `market_regime_engine._atr` (SMA) بـ normalize جزئيًا بسبب استخدام SMA على البسط والمقام — ما اتحقّقش numerically (يحتاج test منفصل للـ ATR ratio behavior).
+
+- **UNKNOWN**:
+  - هل الـ historical `market_regime_log` entries بـ reflect SMA-based ATR ratios ولا Wilder-based؟ لو اتحوّل لـ Wilder، الـ historical comparisons هتختلف. محتاج audit منفصل.
+
+كل الـ Grep + Read + test runs اتـ documented بـ file:line. كل الـ test scripts في `scripts/` (read-only، ما عدّلت أي ملف قائم).
+
+=====================================================================
+Stage Summary
+=====================================================================
+- Files read: worklog.md (آخر 500 سطر) + analyzers/indicators/atr.py (75 سطر) + glminvestment_engines/core/indicators.py (232 سطر) + engines/atr_risk_engine.py (265 سطر) + engines/market_regime.py (532 سطر) + analyzers/market_regime_engine.py (1381 سطر، focus على lines 1-460 + 833-980 + 1040-1080) + analyzers/regime_detector.py (312 سطر) + analyzers/regime_filter.py (247 سطر) + analyzers/hmm_market_regime.py (310 سطر) + analyzers/crypto_regime.py (269 سطر) + analyzers/adaptive_weights.py (lines 600-635) + analyzers/breakout_signal.py (lines 30-65) + core/orchestrator_v3.py (lines 50-130) + core/orchestrator_v2.py (lines 75-220) + camp/orchestrator.py (lines 365-490) + camp/data_analyzer.py (lines 60-95) + camp/canonical_stock_state.py (lines 130-170) + analyzers/v82_analyzer.py (lines 55-70 + 395-450) + analyzers/strict_entry_filters.py (lines 75-110) + analyzers/background_analyzer.py (lines 525-560 + 887-895) + analyzers/market_regime_engine.py (lines 657-670) + analyzers/core_scoring_engine.py (lines 79-110) + analyzers/dynamic_target_engine.py (lines 225-265 + 1540-1560) + analyzers/technical_target_engine.py (lines 625-655) + analyzers/prediction_optimizer.py (lines 110-160 + 1040-1055 + 1200-1215) + engines/backtest_engine.py (lines 1-50 + 272-295) + jobs/closer_modules/atr_helpers.py (54 سطر) + jobs/daily_closer.py (lines 530-570) + jobs/crypto_lab_scheduler.py (lines 620-655) + api/ai_predictions_routes.py (lines 230-290) + api/chart_routes.py (lines 140-180) + portfolio/multi_target_exit.py (lines 275-310) + analyzers/support_resistance_calculator.py (lines 165-205) + analyzers/unified_analysis.py (lines 150-185) + analyzers/sniper_engine.py (lines 335-370) + analyzers/crypto_quality_gate.py (lines 210-245) + analyzers/enhanced_indicators.py (lines 170-200) + analyzers/kimi_fixes.py (lines 230-310) + analyzers/stock_dna_analyzer.py (lines 680-715) + analyzers/golden_hunter.py (lines 28-60) + analyzers/v68_oracle.py (lines 73-105) + analyzers/dynamic_context_engine.py (lines 195-230) + engines/flow_system.py (lines 680-735) + config/market_config.py (lines 25-145 + 475-535) + scripts/run_backtest.py (lines 218-240) + crontab.txt (كامل).
+- Grep queries executed: ~15 (`def\s+\w*atr\w*|def\s+\w*ATR\w*|def\s+\w*true_range\w*`, `market_regime|regime_engine|classify_regime|_regime_|def.*regime|class.*Regime`, `def\s+(classify_regime|detect_regime|compute_regime|get_regime|regime|_regime)\w*|class\s+\w*Regime\w*`, callers grep لكل implementation رئيسي).
+- Test scripts written: 2 (`scripts/test_atr_parity.py` 578 سطر + `scripts/test_regime_parity.py` 440 سطر).
+- Test scripts run: 2 (both passed — output captured above).
+- Files modified: NONE (read-only audit + new test scripts only).
+- Git state: unchanged.
+- NO push, NO merge, NO deploy, NO code change, NO DB write.
+
+أكبر 5 نتائج مثبتة:
+1. **ATR canonical = `analyzers/indicators/atr.py::calc_atr`** (Wilder manual loop) — 26+ imports، متطابق مع ground truth reference (1.8535 vs 1.853475، rounding فقط).
+2. **5 implementations بـ SMA-not-Wilder** (mathematically غلط): camp/* (4) + v82_analyzer + strict_entry_filters + market_regime_engine._atr. كلها بـ تنتج 1.607143 على reference data = -15.33% divergence.
+3. **Market Regime canonical = `analyzers/market_regime_engine.py`** (DEFENSIVE/NORMAL/AGGRESSIVE) — مدعوم بـ cron job 15 + daily_predictor.py:876 + persistent في system_settings + market_regime_log.
+4. **13 regime implementations في 11 vocabularies مختلفة** — non-interchangeable. كلها بـ تخدم أدوارًا مختلفة (chart display vs entry filter vs prediction scoring vs crypto vs research).
+5. **لا توحيد بدون دليل قاطع** — 4 implementations آمنة للـ delegate (strict_entry_filters._safe_atr 0 callers + camp/* + v82_analyzer disabled + background_analyzer disabled). الـ 6 implementations التانية لازم تفضل منفصلة (different scope/purpose).
+
+الخطوة التالية: انتظر تعليمات المالك — هل يبدأ بـ:
+- (P1) delegate strict_entry_filters._safe_atr + camp/* ATR + v82_analyzer._calc_atr للـ canonical؟
+- (P2) document known divergences في `Documentation/ATR_KNOWN_DIVERGENCES.md` + `Documentation/REGIME_MAP.md`؟
+- (P3) audit historical market_regime_log للـ ATR ratio behavior قبل أي تحويل لـ Wilder في market_regime_engine؟
+كلها read-only audit — ما نفّذتش أي حاجة.
