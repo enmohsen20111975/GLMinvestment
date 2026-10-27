@@ -10103,3 +10103,101 @@ Stage Summary:
 - Git state: branch `alpha/icon-and-prediction-fixes`, changes unstaged (awaiting owner review).
 - NO push, NO merge, NO deploy.
 
+---
+Task ID: ALPHA-DAL-V2
+Agent: Alpha (Frontend Engineer — DAL finalization + incubator routing)
+Task: تكملة تكليف الـ owner المغلق — ربط incubator route بـ DbManager + تشديد getActivePredictions filters.
+
+Work Log:
+- Step 0 (State verification):
+  * أنا على main مع شغل ALPHA-DAL السابق committed (0466f04): db-manager.ts موجود (21KB)،
+    logo-helper بـ يحقن logo_url + logoUrl، sparkline route thin wrapper، PersonaTableView defensive.
+  * أنشأت فرع `alpha/dal-incubator-predictions` من main.
+
+- Step 1 (Update getActivePredictions filters — المرحلة 2 التكليف المغلق):
+  * حدّثت ANOMALY_THRESHOLD من 0.10 (10%) لـ 0.15 (15%) per owner directive.
+  * أضفت 4 filters صارمة في الـ row loop:
+    1. entry_price > 0 AND entry_price < 100000 (sanity — يمنع ADP entry=3.98 anomaly + absurd values)
+    2. stop_loss >= 0 (يمنع negative stop زي ADP's -135.94 support)
+    3. في صفقات الشراء (signal BUY/LONG/شراء): stop_loss < entry_price (ممنوع وقف فوق الدخول)
+    4. abs(cur - entry) / cur <= 0.15 (anomaly threshold)
+  * حدّثت الـ docstring بالـ filters الكاملة per التكليف.
+
+- Step 2 (Route incubator to DbManager — المرحلة 3.2):
+  * أعدت كتابة src/app/api/radar/incubator/route.ts كـ thin wrapper.
+  * أزلت: manual JSON file read + findLatestRadarJson + todayDateString + access/readFile logic (~90 LOC).
+  * استبدلت بـ: `import { getIncubatorData } from '@/lib/db-manager'`.
+  * الـ route بيرجع نفس الـ JSON contract (success/market/total_candidates/candidates/timestamp/source)
+    + is_fresh flag جديد + message. graceful empty (200 not 500) لو مفيش radar output.
+
+- Step 3 (enrichWithLogos in getIncubatorData — المرحلة 2 spec):
+  * أضفت enrichWithUnifiedLogos() call على candidates قبل إرجاعهم.
+  * ده بيحقن logo_url + logoUrl على كل candidate → الأيقونات تظهر في الحاضنة كمان.
+  * per التكليف: «يمرر المرشحين candidates عبر enrichWithLogos قبل إرجاعهم».
+
+- Step 4 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي → 0 errors.
+  * Live API test: GET /api/radar/incubator?market=EGX → 200 OK.
+    success: true, total_candidates: 0, source: 'no_radar_output', is_fresh: false.
+    graceful empty (مش 500) — الرادار لسه ما اشتغلش في الساندبوكس (defensive صح).
+
+Stage Summary:
+- Files modified (2):
+  * src/lib/db-manager.ts: ANOMALY_THRESHOLD 10%→15% + 4 safety filters in getActivePredictions + enrichWithUnifiedLogos in getIncubatorData.
+  * src/app/api/radar/incubator/route.ts: rewritten as thin wrapper (~90 LOC → ~55 LOC) calling DbManager.getIncubatorData.
+- المحظورات الالتزام:
+  * ممنوع `new Database()` في أي component — الـ sparkline + incubator routes كلها thin wrappers دلوقتي.
+  * ممنوع price_history.db كخيار أولي — DbManager.getLiveSparkline بيقرا stocks.db أولاً.
+  * ممنوع كسر اختبارات — lint + tsc clean.
+- Git state: branch `alpha/dal-incubator-predictions`, changes unstaged (awaiting owner review).
+- NO push, NO merge, NO deploy.
+
+Task ID: ALPHA-DAL-V2
+Agent: Alpha (Frontend Engineer — DAL finalization + incubator routing)
+Task: تكملة تكليف الـ owner المغلق — ربط incubator route بـ DbManager + تشديد getActivePredictions filters.
+
+Work Log:
+- Step 0 (State verification):
+  * أنا على main مع شغل ALPHA-DAL السابق committed (0466f04): db-manager.ts موجود (21KB)،
+    logo-helper بـ يحقن logo_url + logoUrl، sparkline route thin wrapper، PersonaTableView defensive.
+  * أنشأت فرع `alpha/dal-incubator-predictions` من main.
+
+- Step 1 (Update getActivePredictions filters — المرحلة 2 التكليف المغلق):
+  * حدّثت ANOMALY_THRESHOLD من 0.10 (10%) لـ 0.15 (15%) per owner directive.
+  * أضفت 4 filters صارمة في الـ row loop:
+    1. entry_price > 0 AND entry_price < 100000 (sanity — يمنع ADP entry=3.98 anomaly + absurd values)
+    2. stop_loss >= 0 (يمنع negative stop زي ADP's -135.94 support)
+    3. في صفقات الشراء (signal BUY/LONG/شراء): stop_loss < entry_price (ممنوع وقف فوق الدخول)
+    4. abs(cur - entry) / cur <= 0.15 (anomaly threshold)
+  * حدّثت الـ docstring بالـ filters الكاملة per التكليف.
+
+- Step 2 (Route incubator to DbManager — المرحلة 3.2):
+  * أعدت كتابة src/app/api/radar/incubator/route.ts كـ thin wrapper.
+  * أزلت: manual JSON file read + findLatestRadarJson + todayDateString + access/readFile logic (~90 LOC).
+  * استبدلت بـ: `import { getIncubatorData } from '@/lib/db-manager'`.
+  * الـ route بيرجع نفس الـ JSON contract (success/market/total_candidates/candidates/timestamp/source)
+    + is_fresh flag جديد + message. graceful empty (200 not 500) لو مفيش radar output.
+
+- Step 3 (enrichWithLogos in getIncubatorData — المرحلة 2 spec):
+  * أضفت enrichWithUnifiedLogos() call على candidates قبل إرجاعهم.
+  * ده بيحقن logo_url + logoUrl على كل candidate → الأيقونات تظهر في الحاضنة كمان.
+  * per التكليف: «يمرر المرشحين candidates عبر enrichWithLogos قبل إرجاعهم».
+
+- Step 4 (Verification):
+  * `bun run lint` → exit 0 (clean).
+  * `bunx tsc --noEmit` على ملفاتي → 0 errors.
+  * Live API test: GET /api/radar/incubator?market=EGX → 200 OK.
+    success: true, total_candidates: 0, source: 'no_radar_output', is_fresh: false.
+    graceful empty (مش 500) — الرادار لسه ما اشتغلش في الساندبوكس (defensive صح).
+
+Stage Summary:
+- Files modified (2):
+  * src/lib/db-manager.ts: ANOMALY_THRESHOLD 10%→15% + 4 safety filters in getActivePredictions + enrichWithUnifiedLogos in getIncubatorData.
+  * src/app/api/radar/incubator/route.ts: rewritten as thin wrapper (~90 LOC → ~55 LOC) calling DbManager.getIncubatorData.
+- المحظورات الالتزام:
+  * ممنوع `new Database()` في أي component — الـ sparkline + incubator routes كلها thin wrappers دلوقتي.
+  * ممنوع price_history.db كخيار أولي — DbManager.getLiveSparkline بيقرا stocks.db أولاً.
+  * ممنوع كسر اختبارات — lint + tsc clean.
+- Git state: branch `alpha/dal-incubator-predictions`, changes unstaged (awaiting owner review).
+- NO push, NO merge, NO deploy.

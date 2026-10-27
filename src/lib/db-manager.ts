@@ -371,10 +371,16 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
       return c.data_date === today || c.data_date >= today;
     });
 
+    // (المرحلة 2، التكليف المغلق): «يمرر المرشحين candidates عبر enrichWithLogos
+    // قبل إرجاعهم» عشان الأيقونات تظهر في الحاضنة كمان (root casing fix).
+    const enrichedCandidates = enrichWithUnifiedLogos(
+      filtered as unknown as Record<string, unknown>[],
+    ) as unknown as IncubatorCandidate[];
+
     return {
       market,
-      total_candidates: filtered.length,
-      candidates: filtered,
+      total_candidates: enrichedCandidates.length,
+      candidates: enrichedCandidates,
       timestamp: scanTs ? String(scanTs) : new Date().toISOString(),
       is_fresh: isFresh,
     };
@@ -476,14 +482,26 @@ export function enrichWithUnifiedLogos<T extends Record<string, unknown>>(
 }
 
 // ─── 4. getActivePredictions ──────────────────────────────────────────────
-// Owner directive: «يجلب التوقعات النظيفة بدون تكرار للـ ticker».
+// Owner directive (المرحلة 2، التكليف المغلق 2026-10-27):
+// «يجلب التوقعات النظيفة بدون تكرار للـ ticker» + فلاتر أمان صارمة:
+//   - entry_price > 0 AND entry_price < 100000
+//   - stop_loss >= 0
+//   - في صفقات الشراء: stop_loss < entry_price
+//   - انحراف السعر الحالي عن سعر الدخول لا يتجاوز 15%:
+//     Math.abs(current_price - entry_price) / current_price <= 0.15
 
-const ANOMALY_THRESHOLD = 0.10; // 10% deviation → hide (per owner directive)
+const ANOMALY_THRESHOLD = 0.15; // 15% deviation → hide (per owner directive)
 
 /**
  * Fetch active predictions from predictions.db.
  * Deduplicates by ticker (keeps most recent per ticker).
- * Filters out anomalies: abs(current - entry) / current > 10%.
+ *
+ * Safety filters (per owner directive — المرحلة 2، التكليف المغلق):
+ *   - entry_price > 0 AND entry_price < 100000
+ *   - stop_loss >= 0 (negative stop = invalid, e.g. ADP's -135.94)
+ *   - في صفقات الشراء: stop_loss < entry_price
+ *   - انحراف السعر الحالي عن الدخول لا يتجاوز 15%:
+ *     Math.abs(current_price - entry_price) / current_price <= 0.15
  */
 export function getActivePredictions(
   market: string = 'EGX',
@@ -552,7 +570,12 @@ export function getActivePredictions(
       }
     }
 
-    // Dedup by ticker (keep first/most recent) + anomaly filter.
+    // Dedup by ticker (keep first/most recent) + safety filters + anomaly filter.
+    // Per owner directive (المرحلة 2، التكليف المغلق 2026-10-27):
+    //   - entry_price > 0 AND entry_price < 100000
+    //   - stop_loss >= 0
+    //   - في صفقات الشراء: stop_loss < entry_price (لو signal=BUY/SRCTRS/Entry)
+    //   - abs(cur - entry) / cur <= 0.15
     const seen = new Set<string>();
     const result: ActivePrediction[] = [];
     for (const row of rows) {
@@ -560,11 +583,22 @@ export function getActivePredictions(
       if (!cleanTicker || seen.has(cleanTicker)) continue;
 
       const entryVal = row.entry_price != null ? Number(row.entry_price) : null;
+      const stopVal = row.stop_loss != null ? Number(row.stop_loss) : null;
       const curVal = livePrices.get(cleanTicker) ?? null;
+      const signal = (row.signal || '').toString().toUpperCase();
+      const isBuy = signal.includes('BUY') || signal.includes('LONG') || signal.includes('شراء');
 
-      // Anomaly filter: abs(cur - entry) / cur > 10% → skip (per owner directive).
+      // Filter 1: entry_price > 0 AND entry_price < 100000 (sanity).
+      if (entryVal == null || entryVal <= 0 || entryVal >= 100000) continue;
+
+      // Filter 2: stop_loss >= 0 (negative stop = invalid, e.g. ADP's -135.94 support).
+      if (stopVal != null && stopVal < 0) continue;
+
+      // Filter 3: في صفقات الشراء، stop_loss < entry_price (ممنوع وقف فوق الدخول).
+      if (isBuy && stopVal != null && stopVal >= entryVal) continue;
+
+      // Filter 4: anomaly — abs(cur - entry) / cur > 15% → skip (per owner directive).
       if (
-        entryVal != null &&
         curVal != null &&
         curVal > 0 &&
         Math.abs(curVal - entryVal) / curVal > ANOMALY_THRESHOLD
