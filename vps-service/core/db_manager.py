@@ -97,7 +97,7 @@ _DB_ALIASES: Dict[str, str] = {
     # الـ 8 المعتمدة رئيسياً
     'stocks': DBPaths.STOCKS_DB,
     'predictions': DBPaths.PREDICTIONS_DB,
-    'price_history': DBPaths.PRICE_HISTORY_DB,
+    'price_history': DBPaths.STOCKS_DB,  # WAVE-3: redirect to stocks.db (live) — price_history.db is stale Sept 2026
     'data_engine': DBPaths.DATA_ENGINE_DB,
     'intraday': DBPaths.INTRADAY_DB,
     'auth': DBPaths.AUTH_DB,
@@ -112,7 +112,7 @@ _DB_ALIASES: Dict[str, str] = {
     # v3.65.1: gold_prices canonical = data_engine.db (live, written by metals_forex_fetcher.py).
     # OLD: pointed at GOLD_PRICES_DB which defaulted to non-existent `gold_prices.db`.
     'gold_prices': DBPaths.DATA_ENGINE_DB,
-    'historical': getattr(DBPaths, 'HISTORICAL_DB', DBPaths.PRICE_HISTORY_DB),
+    'historical': DBPaths.STOCKS_DB,  # WAVE-3: redirect to stocks.db (live)
     'community': getattr(DBPaths, 'COMMUNITY_DB', DBPaths.STOCKS_DB),
 }
 

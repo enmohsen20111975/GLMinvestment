@@ -43,7 +43,7 @@ _PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 sys.path.insert(0, str(_PROJECT_ROOT / 'vps-service'))
 
 STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
-PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
+PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')  # WAVE-3: redirect to stocks.db (live)
 DATA_ENGINE_DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
 # DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
 # Was stocks.db (phantom — no market_news table there). market_news lives in news.db.
@@ -174,7 +174,7 @@ def _get_price_stats(ticker: str, days: int = 30, ref_price: float = 0.0) -> Dic
         # price_history فيها بيانات مختلطة قبل/بعد splits، فلازم نفلترها
         cur.execute(
             "SELECT date, open_price, high_price, low_price, close_price, volume "
-            "FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT ?",
+            "FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT ?",
             (ticker, days * 3)
         )
         rows = cur.fetchall()
@@ -490,7 +490,7 @@ def _get_sector_performance(market: str, sector: str) -> Optional[float]:
         cur = conn_ph.cursor()
         for t in tickers[:30]:  # عينة 30 سهم كحد أقصى
             cur.execute(
-                "SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 31",
+                "SELECT close FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 31",
                 (t,)
             )
             closes = [r[0] for r in cur.fetchall() if r[0]]
@@ -546,7 +546,7 @@ def _detect_market_regime(market: str) -> str:
         cur = conn_ph.cursor()
         for t in top_tickers:
             cur.execute(
-                "SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 31",
+                "SELECT close FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 31",
                 (t,)
             )
             closes = [r[0] for r in cur.fetchall() if r[0]]
@@ -793,8 +793,8 @@ def _calculate_support_resistance(ticker: str, current_price: float,
             # ناخد آخر 30 يوم ونفلتر الصفوف الشاذة (splits)
             # الأسعار لازم تكون ضمن 50%-200% من current_price
             cur.execute(
-                "SELECT high_price, low_price, close_price FROM price_history "
-                "WHERE ticker = ? ORDER BY date DESC LIMIT 30",
+                "SELECT high, low, close FROM stock_daily_prices "
+                "WHERE ticker = ? ORDER BY price_date DESC LIMIT 30",
                 (ticker,)
             )
             rows = cur.fetchall()
@@ -854,8 +854,8 @@ def _get_30d_max_high(ticker: str, current_price: float) -> float:
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT high_price FROM price_history "
-            "WHERE ticker = ? ORDER BY date DESC LIMIT 30",
+            "SELECT high FROM stock_daily_prices "
+            "WHERE ticker = ? ORDER BY price_date DESC LIMIT 30",
             (ticker,)
         )
         rows = cur.fetchall()

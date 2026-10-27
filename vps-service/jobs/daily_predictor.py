@@ -327,7 +327,7 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         _ph_ticker_col = 'ticker' if 'ticker' in _ph_cols else ('symbol' if 'symbol' in _ph_cols else None)
         if _ph_ticker_col:
             cur.execute(
-                f"SELECT DISTINCT {_ph_ticker_col} FROM price_history GROUP BY {_ph_ticker_col} HAVING COUNT(*) >= ? ORDER BY {_ph_ticker_col}",
+                f"SELECT DISTINCT {_ph_ticker_col} FROM stock_daily_prices GROUP BY {_ph_ticker_col} HAVING COUNT(*) >= ? ORDER BY {_ph_ticker_col}",
                 (min_days,),
             )
             raw_tickers = [row[0] for row in cur.fetchall()]
