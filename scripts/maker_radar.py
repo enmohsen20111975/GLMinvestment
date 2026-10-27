@@ -1086,7 +1086,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     _stop_loss = round(_entry_price - (1.5 * _atr_val), 2)
     _target_price = round(_entry_price + (2.7 * _atr_val), 2)  # R/R = 2.7/1.5 = 1.8
 
-    return {
+    result = {
         'ticker': ticker,
         'current_price': round(current_price, 2),
         'entry_price': _entry_price,
@@ -1160,6 +1160,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     # relative_volume_10d from TradingView Scanner API (stored in stocks.db).
     # This overrides the computed turnover_egp with the authoritative cash value.
     result = _enrich_result_with_scanner(result, ticker)
+    return result
 
 
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB

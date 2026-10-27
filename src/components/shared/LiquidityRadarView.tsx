@@ -487,6 +487,149 @@ export function LiquidityRadarView({
  <FlashingPriceCell price={row.current_price ?? null} />
  ),
  },
+ {
+ key: 'change_pct',
+ header: 'التغير%',
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.change_percent ?? 0,
+ filterValue: (row) => fmtPct(row.change_percent),
+ render: (row) => {
+ const pct = row.change_percent;
+ const isPositive = (pct ?? 0) >= 0;
+ return (
+ <span className={cn('font-mono tabular-nums font-semibold', isPositive ? 'text-profit' : 'text-loss')}>
+ {fmtPct(pct)}
+ </span>
+ );
+ },
+ },
+ {
+ key: 'phase',
+ header: '📊 المرحلة',
+ sortable: true,
+ width: 'w-28',
+ align: 'center',
+ sortValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
+ filterValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
+ render: (row) => {
+ const info = getPhaseInfo(row.phase, row.whale?.net_flow_egp);
+ return (
+ <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
+ <Layers className="w-3 h-3" />
+ {info.label}
+ </span>
+ );
+ },
+ },
+ {
+ key: 'entry',
+ header: 'الدخول',
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.entry_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.entry_level),
+ // GUEST: اعرض قفل بدل السعر
+ render: (row) => (
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-profit">
+ {fmtPrice(row.entry_defense?.entry_level)}
+ </span>
+ )
+ ),
+ },
+ {
+ key: 'defense',
+ header: 'الوقف',
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.defense_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.defense_level),
+ render: (row) => (
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-loss">
+ {fmtPrice(row.entry_defense?.defense_level)}
+ </span>
+ )
+ ),
+ },
+ {
+ key: 'target',
+ header: 'الهدف',
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.resistance_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.resistance_level),
+ render: (row) => (
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-whale">
+ {fmtPrice(row.entry_defense?.resistance_level)}
+ </span>
+ )
+ ),
+ },
+// ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): عمود الذكاء ──
+// بيعرض الـ 4 طبقات ذكاء (price_action + participant_flow + continuation +
+// data_quality) كـ badges مختصرة. لو كل الطبقات null → مخفي (Rule 27).
+{
+ key: 'intelligence',
+ header: '🧠 الذكاء',
+ align: 'center',
+ width: 'w-48',
+ sortable: false,
+ filterable: false,
+ render: (row) => (
+ <div className="flex flex-col items-center gap-1 py-1">
+ <IntelligenceBadges
+ price_action={row.price_action}
+ price_action_evidence={row.price_action_evidence}
+ participant_flow_assessment={row.participant_flow_assessment}
+ participant_evidence_level={row.participant_evidence_level}
+ participant_evidence={row.participant_evidence}
+ continuation_assessment={row.continuation_assessment}
+ data_quality_status={row.data_quality_status}
+ data_quality_reasons={row.data_quality_reasons}
+ classification_timestamp={row.classification_timestamp}
+ />
+ {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
+ {row.volume_surge === true && (
+ <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+ ⚡ حجم غير اعتيادي
+ </Badge>
+ )}
+ {/* (ALPHA-SCANNER-ALERTS): شارة الحركة لو movement_type موجود */}
+ {row.movement_type && row.movement_type !== 'FLAT' && (
+ <Badge variant="outline" className={cn(
+ 'text-[9px] px-1 py-0 h-4',
+ row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
+ : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
+ : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
+ : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
+ : 'border-border bg-muted/20 text-muted-foreground'
+ )}>
+ {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
+ : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
+ </Badge>
+ )}
+ </div>
+ ),
+},
  // P-TURNOVER: عمود السيولة المتداولة (Turnover / Cash) — يطابق شاشة TradingView
  {
  key: 'turnover',
@@ -534,35 +677,6 @@ export function LiquidityRadarView({
      </span>
    );
  },
- },
- {
- key: 'change_pct',
- header: 'التغير%',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.change_percent ?? 0,
- filterValue: (row) => fmtPct(row.change_percent),
- render: (row) => {
- const pct = row.change_percent;
- const isPositive = (pct ?? 0) >= 0;
- return (
- <span className={cn('font-mono tabular-nums font-semibold', isPositive ? 'text-profit' : 'text-loss')}>
- {fmtPct(pct)}
- </span>
- );
- },
- },
- {
- key: 'sparkline',
- header: 'شارت 7 أيام',
- sortable: true,
- width: 'w-28',
- align: 'center',
- sortValue: (row) => row.change_percent ?? 0,
- render: (row) => (
- <MiniSparkline ticker={row.ticker} height={35} width={90} showArea />
- ),
  },
  {
  key: 'whale_flow',
@@ -618,22 +732,15 @@ export function LiquidityRadarView({
  },
  },
  {
- key: 'phase',
- header: '📊 المرحلة',
+ key: 'sparkline',
+ header: 'شارت 7 أيام',
  sortable: true,
  width: 'w-28',
  align: 'center',
- sortValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
- filterValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
- render: (row) => {
- const info = getPhaseInfo(row.phase, row.whale?.net_flow_egp);
- return (
- <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
- <Layers className="w-3 h-3" />
- {info.label}
- </span>
- );
- },
+ sortValue: (row) => row.change_percent ?? 0,
+ render: (row) => (
+ <MiniSparkline ticker={row.ticker} height={35} width={90} showArea />
+ ),
  },
  // FRONTEND-2 Phase 2: مرحلة التصحيح — 3 حالات (صاعد / قرب التصحيح / في تصحيح)
  {
@@ -709,67 +816,6 @@ export function LiquidityRadarView({
  );
  },
  },
- {
- key: 'entry',
- header: 'الدخول',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.entry_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.entry_level),
- // GUEST: اعرض قفل بدل السعر
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-profit">
- {fmtPrice(row.entry_defense?.entry_level)}
- </span>
- )
- ),
- },
- {
- key: 'defense',
- header: 'الوقف',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.defense_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.defense_level),
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-loss">
- {fmtPrice(row.entry_defense?.defense_level)}
- </span>
- )
- ),
- },
- {
- key: 'target',
- header: 'الهدف',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.resistance_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.resistance_level),
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-whale">
- {fmtPrice(row.entry_defense?.resistance_level)}
- </span>
- )
- ),
- },
  // ─── TASK-A1 (Task 2-b): B3 classification status column ───────────────
  // HARD CONSTRAINT #5: render DATA_INVALID / INSUFFICIENT_DATA as a
  // SEPARATE state — show the `reasons` + `sanity_status` so the user
@@ -815,52 +861,6 @@ export function LiquidityRadarView({
  );
  },
  },
-// ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): عمود الذكاء ──
-// بيعرض الـ 4 طبقات ذكاء (price_action + participant_flow + continuation +
-// data_quality) كـ badges مختصرة. لو كل الطبقات null → مخفي (Rule 27).
-{
- key: 'intelligence',
- header: '🧠 الذكاء',
- align: 'center',
- width: 'w-48',
- sortable: false,
- filterable: false,
- render: (row) => (
- <div className="flex flex-col items-center gap-1 py-1">
- <IntelligenceBadges
- price_action={row.price_action}
- price_action_evidence={row.price_action_evidence}
- participant_flow_assessment={row.participant_flow_assessment}
- participant_evidence_level={row.participant_evidence_level}
- participant_evidence={row.participant_evidence}
- continuation_assessment={row.continuation_assessment}
- data_quality_status={row.data_quality_status}
- data_quality_reasons={row.data_quality_reasons}
- classification_timestamp={row.classification_timestamp}
- />
- {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
- {row.volume_surge === true && (
- <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
- ⚡ حجم غير اعتيادي
- </Badge>
- )}
- {/* (ALPHA-SCANNER-ALERTS): شارة الحركة لو movement_type موجود */}
- {row.movement_type && row.movement_type !== 'FLAT' && (
- <Badge variant="outline" className={cn(
- 'text-[9px] px-1 py-0 h-4',
- row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
- : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
- : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
- : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
- : 'border-border bg-muted/20 text-muted-foreground'
- )}>
- {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
- : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
- </Badge>
- )}
- </div>
- ),
-},
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
  ], []); // [] = stable — لا تتغير إلا عند mount
 
