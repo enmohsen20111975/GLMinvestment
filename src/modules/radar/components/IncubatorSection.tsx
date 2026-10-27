@@ -1062,7 +1062,7 @@ export function IncubatorSection({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm md:text-base font-bold text-foreground">
-                خلية فحص الأسهم
+                فحص السوق
               </h3>
               <Badge
                 variant="outline"
