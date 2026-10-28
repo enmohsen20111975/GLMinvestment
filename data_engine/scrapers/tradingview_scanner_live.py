@@ -512,6 +512,108 @@ def persist_to_daily_prices(conn: sqlite3.Connection, rows: List[Dict[str, Any]]
     return count
 
 
+# ─── INDICATORS TIME-SERIES (bravo-indicators-from-tv) ──────────────────────
+# Owner directive (2026-10-28): "بنحسب المؤشرات غلط خالص"
+# الحل: نسحب المؤشرات الفنية مباشرة من TradingView scanner (RSI, MACD,
+# SMA20/50/200, ATR, Recommend.All) ونخزنها كـ time-series في جدول
+# stock_indicators. الـ engines تقدر تقرأ منها بدل ما تحسب محلي غلط.
+
+INDICATOR_COLUMNS = {
+    "rsi": "REAL",
+    "macd": "REAL",
+    "macd_signal": "REAL",
+    "sma20": "REAL",
+    "sma50": "REAL",
+    "sma200": "REAL",
+    "atr": "REAL",
+    "recommend_all": "REAL",
+    "recommend_ma": "REAL",
+    "recommend_other": "REAL",
+    "volatility_daily": "REAL",
+    "volatility_weekly": "REAL",
+    "avg_volume_30d": "REAL",
+    "avg_volume_10d": "REAL",
+    "avg_volume_90d": "REAL",
+    "relative_volume_10d": "REAL",
+    "high_52w": "REAL",
+    "low_52w": "REAL",
+    "beta_1y": "REAL",
+}
+
+
+def _ensure_indicators_schema(conn: sqlite3.Connection) -> int:
+    """CREATE TABLE stock_indicators IF NOT EXISTS + index.
+
+    Schema:
+      ticker TEXT, market TEXT, date TEXT (YYYY-MM-DD),
+      rsi, macd, macd_signal, sma20, sma50, sma200, atr, ...
+      fetch_time TEXT, source TEXT (default 'tradingview')
+      PRIMARY KEY (ticker, date) — one row per stock per day
+    """
+    cur = conn.cursor()
+    col_defs = ['"ticker" TEXT NOT NULL', '"market" TEXT', '"date" TEXT NOT NULL']
+    for col, typ in INDICATOR_COLUMNS.items():
+        col_defs.append(f'"{col}" {typ}')
+    col_defs.append('"fetch_time" TEXT')
+    col_defs.append('"source" TEXT DEFAULT \'tradingview\'')
+    cur.execute(f'''
+        CREATE TABLE IF NOT EXISTS stock_indicators (
+            {", ".join(col_defs)},
+            PRIMARY KEY (ticker, date)
+        )
+    ''')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_si_date ON stock_indicators(date)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_si_ticker ON stock_indicators(ticker)')
+    conn.commit()
+    return 0
+
+
+def persist_indicators(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
+    """Persist technical indicators from TV scanner to stock_indicators table.
+
+    Stores RSI, MACD, SMA20/50/200, ATR, Recommend.All, volatility, etc.
+    as a time-series row (one per stock per day). Engines can read these
+    instead of computing locally (which was producing wrong values).
+    """
+    if not rows:
+        return 0
+    _ensure_indicators_schema(conn)
+    cur = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    count = 0
+    for row in rows:
+        ticker = row.get("symbol")
+        if not ticker:
+            continue
+        market_slug = row.get("market", "egypt")
+        # Build values dict for this row
+        vals = {"ticker": ticker, "market": market_slug, "date": today, "fetch_time": now_str}
+        for col in INDICATOR_COLUMNS:
+            if col in row:
+                v = row.get(col)
+                vals[col] = float(v) if v is not None else None
+        # Only insert if at least RSI or one indicator is present
+        has_indicator = any(vals.get(c) is not None for c in INDICATOR_COLUMNS)
+        if not has_indicator:
+            continue
+        try:
+            cols = list(vals.keys())
+            placeholders = ", ".join(["?"] * len(cols))
+            col_list = ", ".join(f'"{c}"' for c in cols)
+            update_set = ", ".join(f'"{c}" = COALESCE(excluded."{c}", stock_indicators."{c}")' for c in cols if c not in ("ticker", "date"))
+            cur.execute(
+                f'INSERT INTO stock_indicators ({col_list}) VALUES ({placeholders}) '
+                f'ON CONFLICT(ticker, date) DO UPDATE SET {update_set}',
+                tuple(vals[c] for c in cols)
+            )
+            count += 1
+        except Exception as e:
+            log(f"  ⚠️ persist_indicators error for {ticker}: {e}")
+    conn.commit()
+    return count
+
+
 def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
     """INSERT OR REPLACE rows into stocks table. Returns count saved."""
     if not rows:
@@ -618,6 +720,9 @@ def main() -> int:
             # RADAR-FIX: persist to stock_daily_prices for radar history
             persisted = persist_to_daily_prices(conn, rows)
             log(f"  📅 persisted {persisted} to stock_daily_prices (radar history)")
+            # INDICATORS-FROM-TV: persist technical indicators (RSI, MACD, SMA, ATR)
+            indicators_saved = persist_indicators(conn, rows)
+            log(f"  📊 persisted {indicators_saved} to stock_indicators (TV indicators)")
 
     if conn:
         conn.close()
