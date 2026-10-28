@@ -66,7 +66,7 @@ DEAD_MARKET_CEILING = 700_000
 #   3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
 # النتيجة: سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0)
 # Position size: 2% فقط (أقل من الـ bypass العادي 2.5%)
-EXPLOSIVE_SURGE_VOLUME_RATIO = 2.0      # × متوسط 20d (كان 2.5× — خفّض لـ 2.0× عشان نصطاد الأسهم اللي طارت بحجم أقل)
+EXPLOSIVE_SURGE_VOLUME_RATIO = 1.7      # BRAVO-EXPLOSIVE-MULTIDAY: 1.7× (was 2.0×) + max(last 3d) بدل avg(last 5d)
 EXPLOSIVE_SURGE_LOOKBACK = 5            # آخر 5 شموع للـ surge
 EXPLOSIVE_SURGE_BASE = 20               # متوسط 20 شموع
 EXPLOSIVE_SURGE_SMA_PERIOD = 20         # SMA20 للسعر
@@ -207,9 +207,13 @@ def is_explosive_surge(
     if not volumes or len(volumes) < base_lookback + surge_lookback:
         return False, f'بيانات حجم غير كافية ({len(volumes) if volumes else 0} < {base_lookback + surge_lookback})', details
 
-    # 1. Volume surge ≥ 2.0× (EXPLOSIVE_SURGE_VOLUME_RATIO)
+    # 1. Volume surge — BRAVO-EXPLOSIVE-MULTIDAY (2026-10-28):
+    # قبل كده: avg(last 5) >= 2.0× → فات ETEL (يوم 27 كان 1.54× بس، يوم 28 مات)
+    # دلوقتي: max(last 3) >= 1.7× + تأكيد سعري (price > SMA20)
+    # ده بيـ catch الـ surges اللي بتحصل وتنطفض بسرعة في EGX.
     recent_vol = volumes[-surge_lookback:]
-    recent_avg = sum(recent_vol) / len(recent_vol)
+    recent_3 = volumes[-3:] if len(volumes) >= 3 else recent_vol
+    recent_peak = max(recent_3) if recent_3 else 0
     # base = الـ 20 شمعة قبل الـ surge (مش شامله الـ surge نفسه)
     base_vol = volumes[-(surge_lookback + base_lookback):-surge_lookback]
     if len(base_vol) < base_lookback:
@@ -219,11 +223,15 @@ def is_explosive_surge(
     if base_avg <= 0:
         return False, 'متوسط الحجم 20d = 0', details
 
-    vol_ratio = recent_avg / base_avg
+    # BRAVO-EXPLOSIVE-MULTIDAY: vol_ratio = max(last 3) / base_avg
+    vol_ratio = recent_peak / base_avg
+    recent_avg = sum(recent_vol) / len(recent_vol)
     details['vol_ratio'] = round(vol_ratio, 2)
+    details['vol_ratio_avg5'] = round(recent_avg / base_avg, 2)
+    details['vol_peak_3d'] = round(recent_peak, 0)
 
     if vol_ratio < surge_ratio:
-        return False, f'vol_surge {vol_ratio:.2f} < {surge_ratio} (مطلوب ≥ 2.0×)', details
+        return False, f'vol_surge {vol_ratio:.2f} < {surge_ratio} (max last 3d / base 20d)', details
 
     # 2. السعر فوق SMA20
     if not closes or len(closes) < sma_period:

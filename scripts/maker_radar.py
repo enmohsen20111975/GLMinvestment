@@ -928,12 +928,73 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     # مسار ج: Early Break
     early_break, break_reason = is_early_break(closes, volumes, highs)
 
-    # تحديد المسار الفائز (ترتيب الأولوية الجديد):
+    # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
+    # BRAVO-BOUNCE-PATH (2026-10-28): money_flow اتـ moved قبل winner_path
+    # عشان مسار BOUNCE يقدر يستخدم buy_pct في شروطه.
+    money_flow = compute_money_flow(closes, volumes, highs, lows)
+    life_cycle = detect_life_cycle(closes, volumes, highs, lows)
+    limit_up = check_limit_up_trap(closes, volumes)
+    kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
+
+    # ─── مسار F: BOUNCE_AFTER_DECLINE (BRAVO-BOUNCE-PATH 2026-10-28) ───
+    # اكتشاف ارتداد بعد هبوط — detection only (NOT a buy recommendation).
+    # under_microscope=True, position_size=0, signal=HOLD (مراقبة فقط).
+    #
+    # الشروط (كلها مع بعض):
+    #   1. price_action = BOUNCE_AFTER_DECLINE (from _classify_price_action)
+    #   2. drop_from_peak بين -8% و -25% (مش سهم مكسور زي KORA -73%)
+    #   3. volume support: avg(volumes[-3:]) >= 1.2x avg_20d (sustained, not 1 day)
+    #   4. bounce magnitude: last_close >= recent_low * 1.03 (recovered >= 3%)
+    #   5. no strong distribution: buy_pct > 35 (مش تصريف صريح)
+    bounce_detected = False
+    bounce_reason = ''
+    bounce_details = {'signal_count': 0, 'signals_met': [], 'signals_failed': []}
+    _pa_early, _pa_ev = _classify_price_action(closes, volumes, highs, lows, change_percent=None)
+    _recent_low = min(closes[-5:]) if len(closes) >= 5 else closes[-1]
+    _bounce_pct = ((closes[-1] - _recent_low) / _recent_low * 100) if _recent_low > 0 else 0
+    _max_20_close = max(closes[-20:]) if len(closes) >= 20 else max(closes)
+    _drop_from_peak = ((closes[-1] - _max_20_close) / _max_20_close * 100) if _max_20_close > 0 else 0
+    _avg_vol_3d = sum(volumes[-3:]) / 3 if len(volumes) >= 3 else 0
+    # BRAVO-BOUNCE-TUNE: "at least 2 of last 3 days have vol > 1.2x avg_20d"
+    # (instead of avg — one dead day shouldn't kill a real 2-day bounce)
+    _vol_high_days = sum(1 for v in volumes[-3:] if v >= avg_volume_20d * 1.2) if len(volumes) >= 3 and avg_volume_20d > 0 else 0
+    _vol_support = _vol_high_days >= 2
+    _buy_pct = money_flow.get('buy_pct', 50) if money_flow else 50
+
+    if _pa_early == 'BOUNCE_AFTER_DECLINE':
+        bounce_details['signals_met'].append(f'1.price_action=BOUNCE_AFTER_DECLINE')
+        if -25 <= _drop_from_peak <= -8:
+            bounce_details['signals_met'].append(f'2.drop_from_peak={_drop_from_peak:.1f}% (in -8..-25 range)')
+        else:
+            bounce_details['signals_failed'].append(f'2.drop_from_peak={_drop_from_peak:.1f}% (outside -8..-25)')
+        if _vol_support:
+            bounce_details['signals_met'].append(f'3.vol_support({_vol_high_days}/3 days > 1.2x avg20d={avg_volume_20d:.0f})')
+        else:
+            bounce_details['signals_failed'].append(f'3.vol_support({_vol_high_days}/3 days > 1.2x avg20d={avg_volume_20d:.0f})')
+        if _bounce_pct >= 3:
+            bounce_details['signals_met'].append(f'4.bounce_pct={_bounce_pct:.1f}% >= 3%')
+        else:
+            bounce_details['signals_failed'].append(f'4.bounce_pct={_bounce_pct:.1f}% < 3%')
+        if _buy_pct > 25:
+            bounce_details['signals_met'].append(f'5.buy_pct={_buy_pct:.1f}% > 25% (no extreme distribution)')
+        else:
+            bounce_details['signals_failed'].append(f'5.buy_pct={_buy_pct:.1f}% <= 25% (extreme distribution)')
+
+        bounce_details['signal_count'] = len(bounce_details['signals_met'])
+        # BOUNCE requires ALL 5 conditions (strict — owner directive)
+        if bounce_details['signal_count'] == 5:
+            bounce_detected = True
+            bounce_reason = (f'BOUNCE_AFTER_DECLINE: +{_bounce_pct:.1f}% from low, '
+                             f'drop {_drop_from_peak:.1f}% from peak, vol supported, '
+                             f'buy_pct={_buy_pct:.1f}%. DETECTION ONLY (مراقبة).')
+
+    # تحديد المسار الفائز (ترتيب الأولوية):
     # 1. Pre-Surge (تجميع مبكر جدًا) → حجم 1.5%
-    # 2. Quiet Accumulation 5-6/6 → حجم 2%
+    # 2. Quiet Accumulation 5-6/6 → حجم 1.5%
     # 3. Quiet Accumulation 4/6 → حجم 1.5%
     # 4. Explosive Surge → حجم 2%
     # 5. Early Break → حجم 2.5%
+    # 6. BOUNCE (detection only) → حجم 0% (مراقبة فقط)
     winner_path = None
     winner_position_size = 0.0
     winner_reason = ''
@@ -959,12 +1020,11 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         winner_path = 'E_early_break'
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
-
-    # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
-    money_flow = compute_money_flow(closes, volumes, highs, lows)
-    life_cycle = detect_life_cycle(closes, volumes, highs, lows)
-    limit_up = check_limit_up_trap(closes, volumes)
-    kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
+    elif bounce_detected:
+        # BRAVO-BOUNCE-PATH: detection only — under_microscope=True, position=0
+        winner_path = 'F_bounce'
+        winner_position_size = 0.0  # NO buy — detection/monitoring only
+        winner_reason = bounce_reason
 
     # BRAVO-FLOW-GATE-ALL (2026-10-20, owner directive — P0-RADAR-FLOW-GATE-ALL):
     # تعميم الـ flow gate على كل المسارات الصاعدة (مش quiet بس).
@@ -1145,6 +1205,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'quiet_details': quiet_details,  # BRAVO-INCUBATOR: always include for incubator scanning
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
+        'bounce_details': bounce_details if bounce_detected else None,  # BRAVO-BOUNCE-PATH
     }
 
     # RADAR-INTELLIGENCE: add 4 independent classification layers
