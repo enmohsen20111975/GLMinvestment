@@ -56,7 +56,12 @@ MARKETS = [
     ("kuwait", "الكويت"),
     ("qatar", "قطر"),
     ("america", "أمريكا"),
+    ("crypto", "كريبتو"),  # BRAVO-SCANNER-EXPAND (2026-10-28)
 ]
+
+# Rate limiting: pause between market requests to avoid TradingView ban
+# Owner directive: "فاصل زمني 5 دقايق عشان الموقع مايعملناش حظر"
+MARKET_DELAY_SECONDS = 5  # 5 ثواني بين كل سوق (آمن — مش هيحظر)
 
 # Scanner API endpoint
 SCANNER_URL = "https://scanner.tradingview.com/{market}/scan"
@@ -90,6 +95,11 @@ API_COLUMNS = [
     "Recommend.All", "Recommend.MA", "Recommend.Other",
     "RSI", "MACD.macd", "MACD.signal",
     "ATR", "SMA20", "SMA50", "SMA200",
+    # BRAVO-SCANNER-EXPAND (2026-10-28): 8 extra fields for radar + pulse
+    "average_volume_30d_calc", "average_volume_10d_calc", "average_volume_90d_calc",
+    "Volatility.D", "Volatility.W",
+    "price_52_week_high", "price_52_week_low",
+    "beta_1_year",
     # description (6)
     "description", "sector", "industry", "currency", "exchange", "logoid",
 ]
@@ -149,6 +159,15 @@ FIELD_MAP: Dict[str, str] = {
     "SMA20": "sma20",
     "SMA50": "sma50",
     "SMA200": "sma200",
+    # BRAVO-SCANNER-EXPAND: 8 extra fields
+    "average_volume_30d_calc": "avg_volume_30d",
+    "average_volume_10d_calc": "avg_volume_10d",
+    "average_volume_90d_calc": "avg_volume_90d",
+    "Volatility.D": "volatility_daily",
+    "Volatility.W": "volatility_weekly",
+    "price_52_week_high": "high_52w",
+    "price_52_week_low": "low_52w",
+    "beta_1_year": "beta_1y",
     "description": "name_ar",
     "sector": "sector",
     "industry": "industry",
@@ -177,7 +196,12 @@ COLUMN_TYPES: Dict[str, str] = {
     "free_cash_flow": "REAL", "recommend_all": "REAL", "recommend_ma": "REAL",
     "recommend_other": "REAL", "rsi": "REAL", "macd": "REAL",
     "macd_signal": "REAL", "atr": "REAL", "sma20": "REAL", "sma50": "REAL",
-    "sma200": "REAL", "name_ar": "TEXT", "sector": "TEXT", "industry": "TEXT",
+    "sma200": "REAL",
+    # BRAVO-SCANNER-EXPAND: 8 extra fields
+    "avg_volume_30d": "REAL", "avg_volume_10d": "REAL", "avg_volume_90d": "REAL",
+    "volatility_daily": "REAL", "volatility_weekly": "REAL",
+    "high_52w": "REAL", "low_52w": "REAL", "beta_1y": "REAL",
+    "name_ar": "TEXT", "sector": "TEXT", "industry": "TEXT",
     "currency": "TEXT", "exchange": "TEXT", "logoid": "TEXT",
     "logo_url": "TEXT",
     "tabs_data": "TEXT",  # JSON: merged historical tab data (from migration)
@@ -234,7 +258,7 @@ def fetch_market(market_slug: str) -> Tuple[List[Dict[str, Any]], float]:
     """
     url = SCANNER_URL.format(market=market_slug)
     body = {
-        "range": [0, 1000],  # max 1000 stocks per market
+        "range": [0, 2000],  # BRAVO-SCANNER-EXPAND: was 1000 → 2000 (crypto needs more)
         "columns": API_COLUMNS,
         "sort": {"sortBy": "Value.Traded", "sortOrder": "desc"},
         "markets": [market_slug],
@@ -247,14 +271,33 @@ def fetch_market(market_slug: str) -> Tuple[List[Dict[str, Any]], float]:
         method="POST",
     )
     t0 = time.time()
-    try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
-            data = json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        log(f"  ❌ {market_slug}: HTTP {e.code} — {e.read().decode()[:200]}")
-        return [], 0
-    except Exception as e:
-        log(f"  ❌ {market_slug}: {type(e).__name__}: {e}")
+    # BRAVO-SCANNER-EXPAND: retry on HTTP 429 (rate limited) with backoff
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode())
+            break  # success
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < max_retries - 1:
+                wait = 10 * (attempt + 1)  # 10s, 20s, 30s
+                log(f"  ⚠️ {market_slug}: HTTP 429 (rate limited) — retry {attempt+1}/{max_retries} in {wait}s...")
+                time.sleep(wait)
+                # Rebuild request (urllib request is consumed)
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(body).encode(),
+                    headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
+                    method="POST",
+                )
+                continue
+            log(f"  ❌ {market_slug}: HTTP {e.code} — {e.read().decode()[:200]}")
+            return [], 0
+        except Exception as e:
+            log(f"  ❌ {market_slug}: {type(e).__name__}: {e}")
+            return [], 0
+    else:
+        log(f"  ❌ {market_slug}: max retries ({max_retries}) exceeded")
         return [], 0
 
     elapsed = (time.time() - t0) * 1000
@@ -462,7 +505,12 @@ def main() -> int:
     total_rows = 0
     total_time = 0.0
 
-    for slug, label in markets:
+    for midx, (slug, label) in enumerate(markets):
+        # BRAVO-SCANNER-EXPAND: rate limiting between markets
+        if midx > 0:
+            log(f"  ⏳ waiting {MARKET_DELAY_SECONDS}s before next market (rate limit)...")
+            time.sleep(MARKET_DELAY_SECONDS)
+
         log(f"🌍 fetching {slug} ({label})...")
         rows, elapsed = fetch_market(slug)
         total_time += elapsed
