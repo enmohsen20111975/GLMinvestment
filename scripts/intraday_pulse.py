@@ -228,7 +228,7 @@ def run_pulse(market: str = 'EGX') -> dict:
         WHERE (s.market = 'egypt' OR s.market = 'EGX')
           AND s.ticker IS NOT NULL AND s.ticker != ''
           AND s.ticker NOT LIKE 'EGS%'        -- exclude ISIN codes (bonds/sukuk)
-          AND s.ticker NOT LIKE '%_%' ESCAPE '\'        -- exclude adjusted tickers (LUTS_R1)
+          AND instr(s.ticker, '_') = 0        -- exclude adjusted tickers (LUTS_R1)
           AND length(s.ticker) <= 6           -- exclude long ISIN-like codes
           AND s.is_suspended IS NOT 1         -- exclude suspended stocks
         ORDER BY s.volume DESC
