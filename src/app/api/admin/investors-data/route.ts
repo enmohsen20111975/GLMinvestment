@@ -30,13 +30,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 const PROJECT_ROOT = process.cwd();
-const DB_PATH = path.join(PROJECT_ROOT, 'db', 'stocks.db');
+const DB_PATH = 'stocks.db';
 
 const CREATE_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS investors_data (
@@ -98,7 +97,13 @@ export async function POST(request: NextRequest) {
   const total_sells = egy_sells + arab_sells + foreign_sells;
 
   try {
-    const db = new Database(DB_PATH, { timeout: 5000 });
+    const db = openDbWritable(DB_PATH);
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'db_error', message: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
     db.exec(CREATE_TABLE_SQL);
 
     const upsert = db.prepare(`
@@ -156,7 +161,13 @@ export async function GET(request: NextRequest) {
   if (adminError) return adminError;
 
   try {
-    const db = new Database(DB_PATH, { readonly: true, timeout: 3000 });
+    const db = openDb(DB_PATH);
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'db_error', message: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
     const rows = db.prepare(`
       SELECT * FROM investors_data
       WHERE source IS NULL OR source != 'computed_estimate'

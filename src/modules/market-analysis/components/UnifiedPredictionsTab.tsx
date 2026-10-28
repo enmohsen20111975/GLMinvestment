@@ -27,6 +27,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAppStore } from '@/lib/store';
 import { PersonaTab } from '@/modules/market-analysis/components/PersonaTab';
+// (ALPHA-RADAR-MOMENTUM): توقعات زخم الرادار — مدمجة في نفس التبويب.
+import { RadarMomentumTab } from '@/modules/predictions/components/RadarMomentumTab';
 import type { MarketType } from '@/lib/store';
 
 // Lazy-load the heavy sub-views so each ships as its own JS chunk.
@@ -43,12 +45,14 @@ const ExecutiveReportView = lazy(() =>
  }))
 );
 
-type SubView = 'current' | 'performance' | 'summary';
+type SubView = 'current' | 'performance' | 'summary' | 'radar';
 
 const SUB_VIEWS: Array<{ value: SubView; label: string; icon: string }> = [
  { value: 'current', label: 'الحالية', icon: '⚡' },
  { value: 'performance', label: 'الأداء', icon: '📊' },
  { value: 'summary', label: 'الملخص', icon: '📋' },
+ // (ALPHA-RADAR-MOMENTUM): sub-view رابع — توقعات زخم الرادار.
+ { value: 'radar', label: 'زخم الرادار', icon: '📡' },
 ];
 
 interface UnifiedPredictionsTabProps {
@@ -89,6 +93,10 @@ export function UnifiedPredictionsTab({ market }: UnifiedPredictionsTabProps) {
  {subView === 'performance' && <PredictionTrackingDashboard market={market} />}
 
  {subView === 'summary' && <ExecutiveReportView market={market} />}
+
+ {/* (ALPHA-RADAR-MOMENTUM): توقعات زخم الرادار — عالية المخاطر.
+     مدمجة في نفس التبويب (مش شاشة جديدة) per owner directive. */}
+ {subView === 'radar' && <RadarMomentumTab market={market} />}
  </Suspense>
  </div>
  );

@@ -26,6 +26,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { computeRiskReward, preferComputedRiskReward } from '@/lib/risk-reward';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -144,17 +145,13 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
 
     // 2) Fallback — read from predictions.db
     try {
-      const path = require('path');
-      const fs = require('fs');
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      if (!fs.existsSync(dbPath)) {
+      const db = openDb('predictions.db');
+      if (!db) {
         return NextResponse.json(
           { success: false, error: 'تعذّر الوصول إلى قاعدة بيانات التوقعات', data: [], count: 0 },
           { status: 500 }
         );
       }
-      const Database = require('better-sqlite3');
-      const db = new Database(dbPath, { readonly: true });
 
       const placeH = markets.map(() => '?').join(',');
       // FIX: الـ status في الـ DB ممكن يكون lowercase ('active') أو uppercase ('ACTIVE').
@@ -178,9 +175,8 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       // Optional: pull sector + name_ar from stocks.db so the UI shows readable rows
       let stocksLookup: Map<string, { sector: string; name_ar: string }> = new Map();
       try {
-        const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-        if (fs.existsSync(stocksDbPath)) {
-          const stocksDb = new Database(stocksDbPath, { readonly: true });
+        const stocksDb = openDb('stocks.db');
+        if (stocksDb) {
           const stockRows = stocksDb
             .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
             .all() as Array<Record<string, unknown>>;

@@ -96,6 +96,11 @@ export interface Stock extends StockMini {
   // ─── 52-Week Range (Single Source of Truth) ───
   high_52w?: number | null;
   low_52w?: number | null;
+  // (ALPHA-SCANNER-LIVE, Task 5): حقول الحجم النسبي من TradingView Scanner.
+  // optional — تُملأ بعد دمج bravo/scanner-live. لو null → الشارة تختفي (no fabrication).
+  relative_volume_10d?: number | null;
+  volume_surge?: boolean | null;
+  volume_ratio_10d_vs_20d?: number | null;
 }
 
 export interface StockListResponse {
@@ -382,7 +387,7 @@ export type AppView =
   | 'stock-detail'       // تفاصيل السهم
   | 'trading-chart'      // الشارت التفاعلي (Task 40-B: added to AppView union)
   | 'liquidity-radar'    // رادار السيولة (Task 40-B: added to AppView union)
-  | 'incubator'          // حاضنة الأسهم — أسهم تحت المراقبة والتجميع
+  | 'incubator'          // خلية فحص الأسهم — أسهم تحت المراقبة والتجميع
   | 'sectors'            // حركة القطاعات — شاشة تتبع القطاعات المنفصلة
   | 'market-depth'       // عمق السوق — عملات/ذهب + سيولة + مستثمرون + ضغط جلسة (MARKET-DEPTH-VIEW)
   | 'market-status'      // حالة السوق (ALPHA-UX-FIX-7: standalone — moved from #recommendations tab)

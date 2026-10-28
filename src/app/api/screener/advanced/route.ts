@@ -29,6 +29,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
+// (ALPHA-DAL-WAVE3 — owner directive 2026-10-27):
+// «إزالة new Database(path) اليدوي. استبداله بـ: import { DbManager } from '@/lib/db-manager';
+//     const db = DbManager.openDb('stocks.db');»
+import { DbManager } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -74,19 +78,16 @@ export async function GET(req: NextRequest) {
     }
   } catch {}
 
-  // 2) Fallback — read from stocks.db
+  // 2) Fallback — read from stocks.db (via DbManager DAL gatekeeper)
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    // (ALPHA-DAL-WAVE3): استخدم DbManager.openDb — ممنوع new Database().
+    const db = DbManager.openDb('stocks.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'stocks.db not found' },
-        { status: 500 }
+        { status: 200 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
 
     // اكتشف الأعمدة المتاحة (الـ schema يختلف بين الإنتاج والـ init)
     const tableInfo = db.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;
@@ -161,6 +162,15 @@ export async function GET(req: NextRequest) {
     if (has('change_percent')) selectParts.push('change_percent AS change_percent_raw');
     if (has('turnover_egp')) selectParts.push('turnover_egp');
     else selectParts.push('(current_price * volume) AS turnover_egp');
+    // (ALPHA-SCANNER-LIVE, Task 4): value_traded — الكاش المنفّذ فعليًا من
+    // TradingView Scanner (يملأه برافو في stocks.db). لو العمود موجود نستخدمه،
+    // وإلا نعتمد على turnover_egp المحسوب.
+    if (has('value_traded')) selectParts.push('value_traded');
+    else selectParts.push('(current_price * volume) AS value_traded');
+    // (ALPHA-SCANNER-LIVE, Task 5): relative_volume_10d — الحجم النسبي الرسمي.
+    // optional: لو العمود مش موجود (pre-merge) نرجع NULL والـ UI بـ يخفي الشارة.
+    if (has('relative_volume_10d')) selectParts.push('relative_volume_10d');
+    else selectParts.push('NULL AS relative_volume_10d');
     if (has('market_cap')) selectParts.push('market_cap');
     else selectParts.push('0 AS market_cap');
     if (has('signal')) selectParts.push('signal');
@@ -226,6 +236,8 @@ export async function GET(req: NextRequest) {
       change_percent: Number(r.chg_pct ?? r.change_percent_raw ?? 0),
       volume: Number(r.volume || 0),
       turnover_egp: Number(r.turnover_egp || 0),
+      value_traded: Number(r.value_traded || 0),
+      relative_volume_10d: r.relative_volume_10d === null || r.relative_volume_10d === undefined ? null : Number(r.relative_volume_10d),
       market_cap: Number(r.market_cap || 0),
       signal: Number(r.signal || 0),
       rsi: r.rsi === null ? null : Number(r.rsi),

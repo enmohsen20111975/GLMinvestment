@@ -664,28 +664,39 @@ async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
     const db = openRobust(dbPath);
     if (!db) return [];
     try {
-      const rows = db.prepare('SELECT * FROM market_indices ORDER BY id ASC').all() as any[];
+      const rows = db.prepare(`
+        SELECT * FROM market_indices 
+        WHERE symbol IN ('EGX30', 'EGX70', 'EGX100', 'EGX33')
+        ORDER BY CASE symbol 
+          WHEN 'EGX30' THEN 1 
+          WHEN 'EGX70' THEN 2 
+          WHEN 'EGX100' THEN 3 
+          WHEN 'EGX33' THEN 4 
+          ELSE 9 END
+      `).all() as any[];
+      const defaultNames: Record<string, { name: string; name_ar: string }> = {
+        EGX30: { name: 'EGX 30 Index', name_ar: 'مؤشر EGX 30' },
+        EGX70: { name: 'EGX 70 EWI Index', name_ar: 'مؤشر إيجي إكس 70 للأسهم المتوسطة والصغيرة' },
+        EGX100: { name: 'EGX 100 EWI Index', name_ar: 'مؤشر إيجي إكس 100 الأوسع نطاقاً' },
+        EGX33: { name: 'EGX 33 Shariah Index', name_ar: 'مؤشر الشريعة EGX 33' },
+      };
       return rows
-        .filter((idx: any) => idx.symbol && String(idx.symbol).includes('EGX'))
         .map((idx: any) => {
-          const value = Number(idx.current_value) || 0;
+          const rawValue = Number(idx.value) || 0;
+          const synthValue = Number(idx.current_value) || 0;
+          const value = rawValue > 0 ? rawValue : synthValue;
           const previousClose = Number(idx.previous_close) || 0;
           const storedChange = Number(idx.change) || 0;
           const storedChangePct = Number(idx.change_percent) || 0;
-          // FRONTEND-CLEANUP-A-2 (Problem 3 — EGX50 change math):
-          // الـ change field في DB ممكن يكون غلط (بيانات قديمة أو bug في الـ scraper).
-          // Data integrity guard: لو value + previous_close موجودين، recomputehن change
-          // = value - previous_close + change_percent = (change / previous_close) × 100.
-          // ده مش "logic حسابي في الواجهة" (Rule 20) — ده basic data integrity في API route.
           const computedChange = (value > 0 && previousClose > 0) ? value - previousClose : storedChange;
           const computedChangePct = (previousClose > 0) ? (computedChange / previousClose) * 100 : storedChangePct;
-          // استخدم الـ computed لو الـ stored مختلف بشكل كبير (> 1 وحدة فرق)
           const finalChange = Math.abs(storedChange - computedChange) > 1 ? computedChange : storedChange;
           const finalChangePct = Math.abs(storedChangePct - computedChangePct) > 0.1 ? computedChangePct : storedChangePct;
+          const def = defaultNames[idx.symbol] || { name: '', name_ar: '' };
           return {
             symbol: idx.symbol,
-            name: idx.name || '',
-            name_ar: idx.name_ar || '',
+            name: idx.name || def.name,
+            name_ar: idx.name_ar || def.name_ar,
             value,
             previous_close: previousClose,
             change: finalChange,

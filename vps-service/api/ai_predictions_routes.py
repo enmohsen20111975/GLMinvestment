@@ -103,7 +103,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 # Database paths
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 PREDICTIONS_DB = str(PROJECT_ROOT / 'db' / 'predictions.db')
-PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
+PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')  # WAVE-2: was price_history.db (stale)
 
 
 # ============================================================================
@@ -221,8 +221,8 @@ def _get_historical_prices(symbol: str, limit: int = 30) -> List[Dict]:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             "SELECT date, open_price as open, high_price as high, low_price as low, "
-            "close_price as close, volume FROM price_history "
-            "WHERE ticker = ? ORDER BY date DESC LIMIT ?",
+            "close as close, volume FROM stock_daily_prices "
+            "WHERE ticker = ? ORDER BY price_date DESC LIMIT ?",
             (symbol.upper(), limit)
         ).fetchall()
         conn.close()
@@ -346,7 +346,7 @@ def get_current_price(symbol: str) -> Optional[float]:
 
         # Try price_history table
         history = query_db(PRICE_HISTORY_DB,
-            "SELECT close_price as close FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1",
+            "SELECT close as close FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 1",
             (symbol.upper(),))
 
         if history and history[0].get('close'):

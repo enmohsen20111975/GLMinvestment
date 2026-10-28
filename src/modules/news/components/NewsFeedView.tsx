@@ -656,27 +656,38 @@ export function NewsFeedView() {
  // UI-FIX-P2-P3 issue 2.11: paginate news feed — 12 per page (was rendering all at once, felt sparse when only ~7 came back from API)
  const [visibleCount, setVisibleCount] = useState(12);
 
- const fetchNews = useCallback(async () => {
+ const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+
+ const fetchNews = useCallback(async (silent = false) => {
  try {
- setLoading(true);
+   // FIX (2026-10-27): لا نعرض loading كامل أثناء التحديث الدوري.
+   const hasUsableData = data !== null;
+   if (silent && hasUsableData) {
+     setIsBackgroundRefreshing(true);
+   } else {
+     setLoading(true);
+   }
  setError(null);
  const res = await fetch('/api/news-feed', { cache: 'no-store' });
  const json = await res.json();
  if (json.success) {
  setData(json);
  } else {
- setError(json.error || t('news.feed.errorLoad'));
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!hasUsableData) setError(json.error || t('news.feed.errorLoad'));
  }
  } catch (err: any) {
- setError(err.message || t('news.feed.errorConnection'));
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!data) setError(err.message || t('news.feed.errorConnection'));
  } finally {
  setLoading(false);
+ setIsBackgroundRefreshing(false);
  }
- }, []);
+ }, [data, t]);
 
  useEffect(() => {
  fetchNews();
- const interval = setInterval(fetchNews, 3 * 60 * 1000);
+ const interval = setInterval(() => fetchNews(true), 3 * 60 * 1000);
  return () => clearInterval(interval);
  }, [fetchNews]);
 

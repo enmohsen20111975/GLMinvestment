@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaywallUser, applyPaywallToResults } from '@/lib/paywall';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -87,17 +88,13 @@ export async function GET(request: NextRequest) {
 
   // 2) Fallback — read from predictions.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const predictionsDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(predictionsDbPath)) {
+    const db = openDb('predictions.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'predictions.db not found', results: [] },
         { status: 500 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(predictionsDbPath, { readonly: true });
 
     // Prefer stored_analyses table if it exists (mirrors Python schema)
     const tableCheck = db
@@ -208,23 +205,24 @@ export async function GET(request: NextRequest) {
     // Join sector + name_ar from stocks.db if missing
     // BRAVO-FIX9: logo_url من data_engine.db (عقيدة السعر الواحد) عبر logo-helper
     let stocksLookup: Map<string, { sector: string; name_ar: string }> = new Map();
-    try {
-      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-      if (fs.existsSync(stocksDbPath)) {
-        const stocksDb = new Database(stocksDbPath, { readonly: true });
-        // FIX: stocks.db.stocks مش فيها logo_url — شيلناها من الـ query
-        const stockRows = stocksDb
-          .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
-          .all() as Array<Record<string, unknown>>;
-        for (const r of stockRows) {
-          stocksLookup.set(String(r.ticker), {
-            sector: String(r.sector || ''),
-            name_ar: String(r.name_ar || r.ticker || ''),
-          });
-        }
-        stocksDb.close();
+    {
+      const stocksDb = openDb('stocks.db');
+      if (stocksDb) {
+        try {
+          // FIX: stocks.db.stocks مش فيها logo_url — شيلناها من الـ query
+          const stockRows = stocksDb
+            .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
+            .all() as Array<Record<string, unknown>>;
+          for (const r of stockRows) {
+            stocksLookup.set(String(r.ticker), {
+              sector: String(r.sector || ''),
+              name_ar: String(r.name_ar || r.ticker || ''),
+            });
+          }
+        } catch {}
+        try { stocksDb.close(); } catch { /* ignore */ }
       }
-    } catch {}
+    }
 
     // BRAVO-FIX9: logo lookup من data_engine.db (الـ SSOT)
     const { getLogoUrl } = require('@/lib/logo-helper');

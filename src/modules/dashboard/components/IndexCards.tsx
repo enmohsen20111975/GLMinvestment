@@ -32,7 +32,7 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   EGX70: { accent: 'bg-warning', ring: 'ring-warning/20', text: 'text-warning ' },
   EGX100: { accent: 'bg-whale', ring: 'ring-whale/20', text: 'text-whale ' },
   EGX50: { accent: 'bg-whale', ring: 'ring-cyan-500/20', text: 'text-whale dark:text-whale' },
-  EGX33: { accent: 'bg-loss', ring: 'ring-loss/20', text: 'text-loss ' },
+  EGX33: { accent: 'bg-emerald-600', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
   // US
   '^GSPC': { accent: 'bg-primary', ring: 'ring-primary/20', text: 'text-primary ' },
   '^IXIC': { accent: 'bg-violet-500', ring: 'ring-violet-500/20', text: 'text-violet-600 dark:text-violet-400' },
@@ -145,7 +145,13 @@ function IndexCard({ index, colors }: { index: MarketIndex; colors: { accent: st
       </div>
 
       <div className="mt-2 -mx-1">
-        <MiniSparkline ticker={index.symbol} height={28} width={120} showArea={true} />
+        <MiniSparkline
+          ticker={index.symbol}
+          height={28}
+          width={120}
+          showArea={true}
+          stroke={isPositive ? '#10b981' : '#ef4444'}
+        />
       </div>
     </WidgetCard>
   );
@@ -182,8 +188,17 @@ export function IndexCards() {
 
   const fallbackPalette = MARKET_PALETTE[currentMarket] || MARKET_PALETTE.EGX;
 
+  const gridColsClass =
+    validIndices.length === 1
+      ? 'grid-cols-1'
+      : validIndices.length === 2
+      ? 'grid-cols-2'
+      : validIndices.length === 3
+      ? 'grid-cols-1 sm:grid-cols-3'
+      : 'grid-cols-2 lg:grid-cols-4';
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2" dir="rtl">
+    <div className={cn('grid gap-2', gridColsClass)} dir="rtl">
       {validIndices.map((index, i) => {
         const colors =
           INDEX_COLOR_MAP[index.symbol] ||

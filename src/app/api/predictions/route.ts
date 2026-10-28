@@ -11,8 +11,7 @@ import { getSessionUserId } from '@/lib/auth-helper';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { applyValidatedTargets } from '@/lib/targets-validator';
 import { trialExpiredResponse } from '@/lib/subscription-gate';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const revalidate = 30; // Cache for 30s
 
@@ -109,13 +108,8 @@ export async function GET(request: NextRequest) {
   // 8010 is down. Rule 67: maker-radar/stock + predictions.db are canonical.
   if (ticker) {
     try {
-      const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-      let db: Database.Database;
-      try {
-        db = new Database(dbPath, { readonly: true, timeout: 3000 });
-      } catch (e) {
-        db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-      }
+      const db = openDbDal('predictions.db');
+      if (!db) throw new Error('predictions.db unavailable');
       const tickerLimit = Math.min(Math.max(parseInt(requestedLimit, 10) || 10, 1), 20);
       // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
       // قبل كده: `WHERE ticker = ?` بس → كان بـ يرجع predictions من كل الأسواق
@@ -168,14 +162,15 @@ export async function GET(request: NextRequest) {
 
       // TASK-C: Fetch latest stored_analyses rows for this ticker in one shot
       // (so we can attach ai_reason / ai_narrative to each prediction).
-      // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-      // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
+      // BRAVO-FIX-D (freshness filter, Task PHASE-3 Rule 72): exclude analyses older
+      // than 48h so stale signals don't get attached to live predictions.
       let storedByTicker: any = null;
       try {
         const storedRows = db.prepare(
           `SELECT ticker, ai_reason, ai_narrative
            FROM stored_analyses
            WHERE ticker = ?
+             AND updated_at >= datetime('now', '-2 days')
            ORDER BY updated_at DESC
            LIMIT 1`
         ).all(ticker) as any[];
@@ -334,13 +329,8 @@ export async function GET(request: NextRequest) {
 
   // 2. Fallback: query predictions.db directly
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    let db: Database.Database;
-    try {
-      db = new Database(dbPath, { readonly: true, timeout: 3000 });
-    } catch (e) {
-      db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-    }
+    const db = openDbDal('predictions.db');
+    if (!db) throw new Error('predictions.db unavailable');
 
     // FIX (Aug 2026): aiPrediction table فاضي (0 صفوف) — استخدم predictions table
     // الـ schema: ticker, signal, prediction_date, entry_price, target_price, stop_loss,
@@ -399,8 +389,7 @@ export async function GET(request: NextRequest) {
     const predictions = db.prepare(query).all(...fbMarketParams, parseInt(limit)) as any[];
 
     // TASK-C: Batch-fetch the latest stored_analyses row per ticker (for ai_reason / ai_narrative)
-    // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-    // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
+    // BRAVO-FIX-D (freshness filter, Task PHASE-3 Rule 72): exclude analyses older than 48h.
     let storedByTicker: Record<string, any> = {};
     try {
       const tickers = Array.from(new Set(predictions.map((p) => p.ticker).filter(Boolean))) as string[];
@@ -410,6 +399,7 @@ export async function GET(request: NextRequest) {
           `SELECT ticker, ai_reason, ai_narrative
            FROM stored_analyses
            WHERE ticker IN (${placeholders})
+             AND updated_at >= datetime('now', '-2 days')
            ORDER BY updated_at DESC`
         ).all(...tickers) as any[];
         for (const r of rows) {

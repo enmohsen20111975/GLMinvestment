@@ -11,7 +11,7 @@ import {
   isCacheStale,
   isWarmupRunning,
 } from '@/modules/radar/lib/radar-cache';
-import Database from 'better-sqlite3';
+import { openDb } from '@/lib/db-manager';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { trialExpiredResponse } from '@/lib/subscription-gate';
 
@@ -103,17 +103,18 @@ export async function GET(req: NextRequest) {
   // FIX (Task DEEP-MARKET-SEPARATION): فلترة بـ market عشان ميبقاش في تداخل بين أسواق
   const liveMap = new Map<string, { current_price: number; change_percent: number; volume?: number; name_ar?: string }>();
   try {
-    const dbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
-    const db = new Database(dbPath, { readonly: true });
-    // DEEP-MARKET-SEPARATION: فلترة بـ market بتاع السوق المختار
-    const marketFilter = market === 'EGX' ? `AND market IN ('EGX','مصر')` : `AND market = '${market}'`;
-    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
-    for (const r of liveRows) {
-      if (r.ticker) {
-        liveMap.set(String(r.ticker).toUpperCase(), r);
+    const db = openDb('stocks.db');
+    if (db) {
+      // DEEP-MARKET-SEPARATION: فلترة بـ market بتاع السوق المختار
+      const marketFilter = market === 'EGX' ? `AND market IN ('EGX','مصر')` : `AND market = '${market}'`;
+      const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
+      for (const r of liveRows) {
+        if (r.ticker) {
+          liveMap.set(String(r.ticker).toUpperCase(), r);
+        }
       }
+      db.close();
     }
-    db.close();
   } catch (e) {
     console.error('[maker-radar] failed to read live prices from stocks.db:', e);
   }

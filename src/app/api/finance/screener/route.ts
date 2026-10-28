@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 
-const Database = require('better-sqlite3');
-const path = require('path');
+import { openDb } from '@/lib/db-manager';
 
 function getDataEngineDb() {
-  const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-  return new Database(dbPath);
+  return openDb('data_engine.db');
 }
 
 // Parse percentage values
@@ -40,6 +38,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = getDataEngineDb();
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'data_engine.db unavailable' }, { status: 200 });
+    }
 
     // Build query with filters
     let whereConditions: string[] = [];
@@ -214,6 +215,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const db = getDataEngineDb();
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'data_engine.db unavailable' }, { status: 200 });
+    }
 
     // Get distinct markets
     const markets = db.prepare(`

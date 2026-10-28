@@ -20,13 +20,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type Database from 'better-sqlite3';
+import { openDb as openDbDal, openDbWritable as openDbWritableDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const PREDICTIONS_DB_PATH = `${process.cwd()}/db/predictions.db`;
 const INTRADAY_DB_PATH = `${process.cwd()}/db/intraday.db`;
-const PRICE_HISTORY_DB_PATH = `${process.cwd()}/db/price_history.db`;
+const PRICE_HISTORY_DB_PATH = `${process.cwd()}/db/stocks.db`;  // WAVE-1: stocks.db (live)
 const DATA_ENGINE_DB_PATH = `${process.cwd()}/db/data_engine.db`;
 
 interface ThresholdResult {
@@ -43,18 +44,20 @@ interface ThresholdResult {
   p90?: number;
 }
 
-function openDb(path: string, readonly = true): Database.Database {
-  const Database = require('better-sqlite3');
-  return new Database(path, { readonly }) as Database.Database;
+function openDb(absolutePath: string, readonly = true): Database.Database {
+  // DAL takes a bare filename (e.g. 'predictions.db'). Extract the basename
+  // from the legacy absolute path and delegate.
+  const file = absolutePath.split('/').pop()!.split('\\').pop()!;
+  const db = readonly ? openDbDal(file) : openDbWritableDal(file);
+  if (!db) throw new Error(`${file} unavailable`);
+  return db;
 }
 
 function dbExists(path: string): boolean {
-  const fs = require('fs');
-  try {
-    return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
-    return false;
-  }
+  const file = path.split('/').pop()!.split('\\').pop()!;
+  const db = openDbDal(file);
+  if (db) { db.close(); return true; }
+  return false;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -87,14 +90,14 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
     }
   } else if (market === 'US') {
     if (!dbExists(PRICE_HISTORY_DB_PATH)) {
-      fallbackReason = 'price_history.db not found';
+      fallbackReason = 'stocks.db not found';
     } else {
       try {
         const db = openDb(PRICE_HISTORY_DB_PATH);
         const rows = db.prepare(`
-          SELECT volume FROM price_history
+          SELECT volume FROM stock_daily_prices
           WHERE market = 'US' AND volume IS NOT NULL AND volume > 0
-            AND date >= date('now', '-30 days')
+            AND price_date >= date('now', '-30 days')
         `).all() as Array<{ volume: number | string }>;
         volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();

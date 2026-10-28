@@ -17,8 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import { access } from 'fs/promises';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,8 +63,8 @@ const BANNED_SOURCES: Array<{ source: string; reason: string }> = [
   },
 ];
 
-const PRICE_HISTORY_DB = path.join(process.cwd(), 'db', 'price_history.db');
-const STOCKS_DB = path.join(process.cwd(), 'db', 'stocks.db');
+const PRICE_HISTORY_DB = 'price_history.db';
+const STOCKS_DB = 'stocks.db';
 
 interface MultiSourceConflict {
   ticker: string;
@@ -112,10 +111,8 @@ export async function GET(req: NextRequest) {
     let sampleConflicts: MultiSourceConflict[] = [];
 
     try {
-      await access(PRICE_HISTORY_DB);
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Database = require('better-sqlite3');
-      const db = new Database(PRICE_HISTORY_DB, { readonly: true, timeout: 5000 });
+      const db = openDb(PRICE_HISTORY_DB);
+      if (!db) throw new Error('price_history.db unavailable');
       db.pragma('busy_timeout = 5000');
 
       // Total tickers with >1 distinct source

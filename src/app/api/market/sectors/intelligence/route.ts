@@ -18,18 +18,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
-
-function openDb(dbPath: string): Database.Database {
-  try {
-    return new Database(dbPath, { readonly: true, timeout: 5000, fileMustExist: true });
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { readonly: true, timeout: 5000 });
-  }
-}
 
 // ✅ defensive: يتأكد إن العمود موجود قبل ما يطلبه في SELECT
 function getColumnNames(db: Database.Database, table: string): Set<string> {
@@ -94,14 +86,11 @@ export async function GET(request: NextRequest) {
   const minStocks = Math.max(1, Math.min(50, Number(searchParams.get('min_stocks') || '5')));
   const limit = Math.max(1, Math.min(100, Number(searchParams.get('limit') || '20')));
 
-  const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
+  const db = openDbDal('stocks.db');
 
-  let db: Database.Database | null = null;
-  try {
-    db = openDb(dbPath);
-  } catch (err) {
+  if (!db) {
     return NextResponse.json(
-      { success: false, error: `Failed to open stocks.db: ${String(err)}` },
+      { success: false, error: 'Failed to open stocks.db' },
       { status: 503 }
     );
   }

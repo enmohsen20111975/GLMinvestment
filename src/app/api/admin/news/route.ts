@@ -7,20 +7,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+import { openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
 // news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
 function getDataEngineDbPath() {
-  return path.join(process.cwd(), 'db', 'news.db');
+  return 'news.db';
 }
 
 function getPredictionsDbPath() {
-  return path.join(process.cwd(), 'db', 'predictions.db');
+  return 'predictions.db';
 }
 
 function safeParseJson<T>(val: Record<string, unknown>, fallback: T): T {
@@ -67,12 +65,10 @@ export async function GET(request: NextRequest) {
     const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
     const offset = (page - 1) * limit;
 
-    const dePath = getDataEngineDbPath();
-    if (!fs.existsSync(dePath)) {
+    const db = openDbWritable(getDataEngineDbPath());
+    if (!db) {
       return NextResponse.json({ success: true, news: [], total: 0, sources: [] });
     }
-
-    const db = new Database(dePath, { timeout: 4000 });
 
     // Ensure table exists
     db.exec(`
@@ -210,8 +206,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'عنوان الخبر مطلوب' }, { status: 400 });
     }
 
-    const dePath = getDataEngineDbPath();
-    const db = new Database(dePath, { timeout: 5000 });
+    const db = openDbWritable(getDataEngineDbPath());
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'news.db unavailable' }, { status: 500 });
+    }
     const now = new Date().toISOString();
 
     const analysisObj = {
@@ -297,8 +295,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'عنوان الخبر مطلوب' }, { status: 400 });
     }
 
-    const dePath = getDataEngineDbPath();
-    const db = new Database(dePath, { timeout: 5000 });
+    const db = openDbWritable(getDataEngineDbPath());
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'news.db unavailable' }, { status: 500 });
+    }
 
     const analysisObj = {
       recommended_action: sentiment === 'positive' ? 'buy_opportunity' : sentiment === 'negative' ? 'sell_signal' : 'monitor',
@@ -366,11 +366,8 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const action = body.action || 'delete_one';
 
-    const dePath = getDataEngineDbPath();
-    const predPath = getPredictionsDbPath();
-
-    const deDb = fs.existsSync(dePath) ? new Database(dePath, { timeout: 5000 }) : null;
-    const predDb = fs.existsSync(predPath) ? new Database(predPath, { timeout: 5000 }) : null;
+    const deDb = openDbWritable(getDataEngineDbPath());
+    const predDb = openDbWritable(getPredictionsDbPath());
 
     let deletedCount = 0;
 

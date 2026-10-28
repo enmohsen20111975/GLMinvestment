@@ -25,9 +25,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import { openDb } from '@/lib/db-manager';
 import { getSessionUserId } from '@/lib/auth-helper';
 
 function unauthorized() {
@@ -54,25 +52,13 @@ export async function GET(req: NextRequest) {
         ? Math.min(Math.max(reqTickerLimit, 1), 100)
         : 20;
 
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(dbPath)) {
+    const db = openDb('predictions.db');
+    if (!db) {
       return NextResponse.json({
         success: true,
         source: 'sqlite_fallback_empty',
         total: 0,
         message: 'predictions.db غير متاح',
-      });
-    }
-
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch {
-      return NextResponse.json({
-        success: true,
-        source: 'sqlite_fallback_empty',
-        total: 0,
-        message: 'تعذّر فتح predictions.db',
       });
     }
 

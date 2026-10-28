@@ -33,9 +33,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import * as path from 'path';
-import { existsSync } from 'fs';
+// (ALPHA-DAL-WAVE3 — owner directive 2026-10-27):
+// «تحويل الاتصال لـ DbManager.openDb('stocks.db').»
+// شيلنا import Database (runtime) + path + existsSync + local openDb() — كلها عبر الـ DAL دلوقتي.
+// type-only import للـ typing (Database.Database type) — مش runtime import.
+import type Database from 'better-sqlite3';
+import { DbManager } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -69,28 +72,9 @@ function safeNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/**
- * Open a SQLite database with readonly + busy_timeout, falling back to
- * read-write mode if readonly fails (Python service may be holding WAL pages
- * that break readonly open with "file is not a database").
- */
-function openDb(file: string): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', file);
-  if (!existsSync(dbPath)) {
-    throw new Error(`${file} not found at ${dbPath}`);
-  }
-  const busyTimeout = 8000;
-  try {
-    const db = new Database(dbPath, { readonly: true, timeout: busyTimeout });
-    db.pragma(`busy_timeout = ${busyTimeout}`);
-    return db;
-  } catch {
-    // Fallback — WAL reconcile requires read-write in some setups.
-    const db = new Database(dbPath, { timeout: busyTimeout });
-    db.pragma(`busy_timeout = ${busyTimeout}`);
-    return db;
-  }
-}
+// (ALPHA-DAL-WAVE3): local openDb() removed — all DB access now via DbManager.openDb.
+// The local function opened SQLite directly + had WAL fallback logic that's now
+// handled centrally in the DAL (busy_timeout + readonly + WAL reconcile).
 
 interface IntradayTick {
   ticker: string;
@@ -161,27 +145,33 @@ export async function GET(
   };
 
   try {
-    // ---------- 1. Current price from stocks.db ----------
+    // ---------- 1. Current price from stocks.db (via DbManager DAL) ----------
     let currentPrice = 0;
     let stocksDb: Database.Database | null = null;
     try {
-      stocksDb = openDb('stocks.db');
-      const row = stocksDb
-        .prepare('SELECT current_price FROM stocks WHERE ticker = ? LIMIT 1')
-        .get(rawTicker) as { current_price?: number | null } | undefined;
-      if (row?.current_price) {
-        currentPrice = safeNum(row.current_price);
+      // (ALPHA-DAL-WAVE3): DbManager.openDb — ممنوع openDb() محلية.
+      stocksDb = DbManager.openDb('stocks.db');
+      if (stocksDb) {
+        const row = stocksDb
+          .prepare('SELECT current_price FROM stocks WHERE ticker = ? LIMIT 1')
+          .get(rawTicker) as { current_price?: number | null } | undefined;
+        if (row?.current_price) {
+          currentPrice = safeNum(row.current_price);
+        }
+        stocksDb.close();
       }
-      stocksDb.close();
     } catch (e) {
       try { stocksDb?.close(); } catch { /* ignore */ }
       console.warn(`[depth] stocks.db lookup failed for ${rawTicker}:`, e instanceof Error ? e.message : e);
     }
 
-    // ---------- 2. Intraday ticks ----------
+    // ---------- 2. Intraday ticks (via DbManager DAL) ----------
     let intradayDb: Database.Database | null = null;
     try {
-      intradayDb = openDb('intraday.db');
+      intradayDb = DbManager.openDb('intraday.db');
+      if (!intradayDb) {
+        throw new Error('intraday.db not found');
+      }
     } catch (e) {
       console.warn(`[depth] intraday.db open failed:`, e instanceof Error ? e.message : e);
       return NextResponse.json({

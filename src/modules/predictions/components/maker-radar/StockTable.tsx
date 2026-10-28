@@ -21,6 +21,7 @@ import { FlashingPriceCell } from '@/components/shared/FlashingPriceCell';
 import { FlashingChangeCell } from '@/components/shared/FlashingChangeCell';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { StockIconMini } from '@/modules/stock-analysis/components/StockIcon';
+import { RelativeVolumeBadge } from '@/components/shared/RelativeVolumeBadge';
 import { ShariaBadge } from '@/modules/sharia/components/ShariaBadge';
 import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { buildStockDetailShareText } from '@/modules/publishing/lib/table-share-formatter';
@@ -293,8 +294,57 @@ const StockTable = memo(function StockTable({
  const volRatio = stock.volume_ratio_10d_vs_20d;
  const volHighlight = volRatio >= 1.4;
  return (
+ <div className="flex flex-col items-end gap-0.5">
  <span className={`font-mono ${volHighlight ? 'text-profit font-bold' : ''}`}>
  {(volRatio ?? 0).toFixed(2)}×
+ </span>
+ {/* (ALPHA-FUNDAMENTALS-AND-TABS، Task 3): شارة الحجم النسبي > 1.2x.
+     تأخذ relative_volume_10d الرسمي (برافو) أو volume_ratio_10d_vs_20d
+     أو volume_surge كـ fallback. لو القيمة طبيعية → لا تظهر. */}
+ <RelativeVolumeBadge
+ relativeVolume10d={stock.relative_volume_10d}
+ volumeRatio10dVs20d={stock.volume_ratio_10d_vs_20d}
+ volumeSurge={stock.volume_surge}
+ threshold={1.2}
+ size="sm"
+ />
+ </div>
+ );
+ },
+ },
+ {
+ // (ALPHA-FUNDAMENTALS-AND-TABS، Task 3): عمود السيولة الكاش المنفّذة —
+ // value_traded بالمليون (مثال: 767M لـ COMI، 626M لـ KORA).
+ // fallback على avg_turnover_20d لو value_traded مش متاح (pre-merge).
+ key: 'value_traded',
+ header: 'السيولة كاش',
+ align: 'right',
+ sortable: true,
+ filterable: true,
+ className: 'font-mono text-xs',
+ sortValue: (stock) => {
+ const v = stock.value_traded ?? stock.avg_turnover_20d;
+ return typeof v === 'number' && v > 0 ? v : -1;
+ },
+ render: (stock) => {
+ const cash = stock.value_traded ?? stock.avg_turnover_20d;
+ if (typeof cash !== 'number' || cash <= 0) {
+ return <span className="text-muted-foreground text-xs">—</span>;
+ }
+ const formatted = cash >= 1e6
+ ? `${(cash / 1e6).toFixed(1)}M`
+ : cash >= 1e3
+ ? `${(cash / 1e3).toFixed(0)}K`
+ : cash.toFixed(0);
+ // لون حسب الحجم: > 100M = سيولة قوية (أخضر)، 20-100M عادية، < 20M ضعيفة.
+ const isStrong = cash >= 100e6;
+ const isWeak = cash < 20e6;
+ return (
+ <span
+ className={`font-semibold ${isStrong ? 'text-profit ' : isWeak ? 'text-muted-foreground' : 'text-foreground/80'}`}
+ title={`القيمة المتداولة الكاش: ${cash.toLocaleString('en-US')} ج.م`}
+ >
+ {formatted}
  </span>
  );
  },

@@ -25,9 +25,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 interface StockRow {
   ticker: string;
@@ -69,12 +68,12 @@ function buildStockRow(r: Record<string, unknown>): StockRow {
 }
 
 function openRo(p: string): Database.Database | null {
-  try {
-    if (!fs.existsSync(p)) return null;
-    return new Database(p, { readonly: true });
-  } catch {
-    return null;
-  }
+  // openRo originally accepted an absolute path. The DAL needs just the bare
+  // filename — strip any directory components.
+  const file = p.includes('/') || p.includes('\\')
+    ? p.split('/').pop()!.split('\\').pop()!
+    : p;
+  return openDbDal(file);
 }
 
 export async function GET(req: NextRequest) {
@@ -98,7 +97,7 @@ export async function GET(req: NextRequest) {
     // ── CRYPTO ──────────────────────────────────────────────────────────────
     // RESTRUCT-CLEANUP-1: redirect crypto.db → data_engine.db.crypto_prices (live source).
     if (market === 'CRYPTO') {
-      const db = openRo(path.join(cwd, 'db', 'data_engine.db'));
+      const db = openRo(`${cwd}/db/data_engine.db`);
       if (!db) {
         return NextResponse.json({
           success: true,
@@ -170,7 +169,7 @@ export async function GET(req: NextRequest) {
     // ── GOLD ───────────────────────────────────────────────────────────────
     // RESTRUCT-CLEANUP-1: redirect gold_prices.db → data_engine.db.gold_prices (live source).
     if (market === 'GOLD') {
-      const db = openRo(path.join(cwd, 'db', 'data_engine.db'));
+      const db = openRo(`${cwd}/db/data_engine.db`);
       if (!db) {
         return NextResponse.json({
           success: true,
@@ -239,7 +238,7 @@ export async function GET(req: NextRequest) {
     }
 
     // ── STOCK MARKETS (EGX/TADAWUL/KSE/QSE/US) ─────────────────────────────
-    const db = openRo(path.join(cwd, 'db', 'stocks.db'));
+    const db = openRo(`${cwd}/db/stocks.db`);
     if (!db) {
       return NextResponse.json({
         success: true,

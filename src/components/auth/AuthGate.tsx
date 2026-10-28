@@ -357,7 +357,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
  u?.subscription_tier === 'premium' ||
  s?.is_admin === true ||
  s?.subscription_tier === 'admin' ||
- (userName && ['mohseny', 'admin'].includes(userName.toLowerCase())) ||
+ (userName && ['mohseny', 'admin', 'enmohsen20111975'].includes(userName.toLowerCase())) ||
  (userEmail && ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(userEmail.toLowerCase())) ||
  checkIsAdmin(userEmail, userName) ||
  checkIsAdmin(userName, userEmail);

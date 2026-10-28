@@ -797,13 +797,14 @@ class DatabaseManager:
         try:
             idx_rows = self.execute_query(
                 "SELECT symbol, current_value, previous_close, change_percent FROM market_indices "
-                "WHERE symbol IN ('EGX30','EGX70','EGX100') ORDER BY CASE symbol "
-                "WHEN 'EGX30' THEN 1 WHEN 'EGX70' THEN 2 WHEN 'EGX100' THEN 3 ELSE 9 END"
+                "WHERE symbol IN ('EGX30','EGX70','EGX100','EGX33') ORDER BY CASE symbol "
+                "WHEN 'EGX30' THEN 1 WHEN 'EGX70' THEN 2 WHEN 'EGX100' THEN 3 WHEN 'EGX33' THEN 4 ELSE 9 END"
             )
             name_map = {
                 'EGX30': ('EGX 30 Index', 'مؤشر EGX 30'),
                 'EGX70': ('EGX 70 Index', 'مؤشر EGX 70'),
                 'EGX100': ('EGX 100 Index', 'مؤشر EGX 100'),
+                'EGX33': ('EGX 33 Shariah Index', 'مؤشر الشريعة EGX 33'),
             }
             for r in idx_rows:
                 sym = r.get('symbol')

@@ -55,7 +55,7 @@ DB_DIR = PROJECT_ROOT / "db"
 STOCKS_DB_PATH = DB_DIR / "stocks.db"
 DATA_ENGINE_DB_PATH = DB_DIR / "data_engine.db"
 PREDICTIONS_DB_PATH = DB_DIR / "predictions.db"
-PRICE_HISTORY_DB_PATH = DB_DIR / "price_history.db"
+PRICE_HISTORY_DB_PATH = DB_DIR / 'stocks.db'  # WAVE-2: was price_history.db (stale)
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ class BagHolderRescue:
             self.stocks_db = Path(db_dir) / "stocks.db"
             self.data_engine_db = Path(db_dir) / "data_engine.db"
             self.predictions_db = Path(db_dir) / "predictions.db"
-            self.price_history_db = Path(db_dir) / "price_history.db"
+            self.price_history_db = Path(db_dir) / 'stocks.db'  # WAVE-2: was price_history.db (stale)
         else:
             self.stocks_db = STOCKS_DB_PATH
             self.data_engine_db = DATA_ENGINE_DB_PATH
@@ -154,11 +154,11 @@ class BagHolderRescue:
                         SELECT
                             MAX(high_price) AS h,
                             MIN(low_price)  AS l,
-                            (SELECT close_price FROM price_history
-                             WHERE ticker = ? AND close_price IS NOT NULL
+                            (SELECT close FROM stock_daily_prices
+                             WHERE ticker = ? AND close IS NOT NULL
                              ORDER BY date DESC LIMIT 1) AS last_close,
                             COUNT(*) AS cnt
-                        FROM price_history
+                        FROM stock_daily_prices
                         WHERE ticker = ?
                         """,
                         (ticker.upper(), ticker.upper()),
@@ -168,7 +168,7 @@ class BagHolderRescue:
                         historical_low = _safe_float(row["l"])
                         if row["last_close"]:
                             current_price = _safe_float(row["last_close"])
-                        source = "price_history.db"
+                        source = 'stocks.db'  # WAVE-2: was price_history.db (stale)
             except sqlite3.Error:
                 pass
             finally:
@@ -684,8 +684,8 @@ class BagHolderRescue:
                         row2 = conn.execute(
                             """SELECT COALESCE(close, close_price) as close
                                FROM stock_daily_prices
-                               WHERE ticker = ? AND COALESCE(close, close_price) IS NOT NULL
-                                     AND COALESCE(close, close_price) > 0
+                               WHERE ticker = ? AND COALESCE(close, close) IS NOT NULL
+                                     AND COALESCE(close, close) > 0
                                ORDER BY price_date DESC LIMIT 1""",
                             (ticker.upper().strip(),),
                         ).fetchone()
@@ -1141,8 +1141,8 @@ class BagHolderRescue:
                           COALESCE(low, low_price) as low,
                           COALESCE(close, close_price) as close, volume
                    FROM stock_daily_prices
-                   WHERE ticker = ? AND COALESCE(close, close_price) IS NOT NULL
-                         AND COALESCE(close, close_price) > 0
+                   WHERE ticker = ? AND COALESCE(close, close) IS NOT NULL
+                         AND COALESCE(close, close) > 0
                    ORDER BY price_date DESC LIMIT ?""",
                 (ticker.upper().strip(), limit),
             ).fetchall()

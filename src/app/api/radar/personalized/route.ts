@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
-import Database from 'better-sqlite3';
 import { readRadarCache } from '@/modules/radar/lib/radar-cache';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,13 +87,8 @@ function computeAverageHoldingDays(rows: PortfolioRow[]): number {
   return n > 0 ? Math.round(totalDays / n) : 0;
 }
 
-function openStocksDb(): Database.Database | null {
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  try {
-    return new Database(stocksDbPath, { readonly: true });
-  } catch {
-    return null;
-  }
+function openStocksDb() {
+  return openDb('stocks.db');
 }
 
 interface RadarStockLike {

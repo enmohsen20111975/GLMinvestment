@@ -32,10 +32,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,12 +44,9 @@ type SqlRow = Record<string, unknown>;
 const SORTABLE = new Set(['buy_date', 'pnl_pct', 'holding_days', 'sell_date']);
 
 function openDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  try {
-    return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-  }
+  const db = openDbDal('predictions.db');
+  if (!db) throw new Error('predictions.db unavailable');
+  return db;
 }
 
 export async function GET(req: NextRequest) {

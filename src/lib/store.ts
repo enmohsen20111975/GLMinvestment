@@ -931,6 +931,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   syncFromSession: (session: Session | null) => {
     if (session?.user) {
       const sessionUser = session.user as Record<string, unknown>;
+      const email = ((session.user.email as string) || '').toLowerCase().trim();
+      const username = ((sessionUser.username as string) || (session.user.name as string) || '').toLowerCase().trim();
+      const isAdminUser =
+        (sessionUser.is_admin as boolean) === true ||
+        (sessionUser.subscription_tier === 'admin') ||
+        ['mohseny', 'admin', 'enmohsen20111975'].includes(username) ||
+        ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(email);
+
       set({
         isAuthenticated: true,
         user: {
@@ -938,8 +946,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
           email: session.user.email || '',
           username: (sessionUser.username as string) || session.user.name || '',
           is_active: (sessionUser.is_active as boolean) ?? true,
-          is_admin: (sessionUser.is_admin as boolean) ?? false,
-          subscription_tier: (sessionUser.subscription_tier as string) || 'free',
+          is_admin: isAdminUser,
+          subscription_tier: isAdminUser ? 'admin' : ((sessionUser.subscription_tier as string) || 'free'),
           default_risk_tolerance: (sessionUser.default_risk_tolerance as string) || 'medium',
           created_at: new Date().toISOString(),
           last_login: new Date().toISOString(),

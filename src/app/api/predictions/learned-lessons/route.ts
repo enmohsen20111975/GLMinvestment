@@ -25,8 +25,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,12 +36,11 @@ type SqlRow = Record<string, unknown>;
 const SORTABLE = new Set(['occurrences', 'failure_rate', 'avg_return', 'updated_at']);
 
 function openDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  try {
-    return new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-  }
+  // Use the DAL's openDb. The DAL handles file-not-found defensively,
+  // returning null. This wrapper throws to preserve the original contract.
+  const db = openDbDal('predictions.db');
+  if (!db) throw new Error('predictions.db unavailable');
+  return db;
 }
 
 export async function GET(req: NextRequest) {

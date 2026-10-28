@@ -21,6 +21,7 @@ export type SortField =
   | 'change_percent'
   | 'volume'
   | 'turnover_egp'
+  | 'value_traded'
   | 'pe_ratio'
   | 'roe'
   | 'rsi'

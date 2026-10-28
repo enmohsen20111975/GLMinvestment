@@ -108,6 +108,12 @@ export interface RadarStock {
  company?: string | null;
  market?: string | null;
  currency?: string | null;
+ // ─── (ALPHA-FUNDAMENTALS-AND-TABS، Task 3 — owner directive 2026-10-27) ───
+ // حقول السيولة الكاش + الحجم النسبي من TradingView Scanner (برافو enrichment).
+ // optional — defensive: لو العمود مش موجود (pre-merge) → null → الـ UI بـ يخفي.
+ value_traded?: number | null; // الكاش المنفّذ فعليًا (مثال: 767M لـ COMI)
+ relative_volume_10d?: number | null; // الحجم النسبي الرسمي (مثال: 1.307)
+ volume_surge?: boolean | null; // علم الـ surge من الـ backend (fallback للشارة)
 }
 
 // ─── B3 (Task 2-a): canonical classification enum ──────────────────────

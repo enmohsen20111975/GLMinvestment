@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
-import { existsSync } from 'fs';
+import { openDb } from '@/lib/db-manager';
 
 export const revalidate = 0; // No cache - always fresh data
 export const dynamic = 'force-dynamic';
@@ -31,27 +29,25 @@ function resolveCanonicalTicker(rawTicker: string): string {
   };
   if (directMap[clean]) return directMap[clean];
 
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  if (existsSync(stocksDbPath)) {
-    try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 2000 });
-      // 1. Exact match
-      const exact = db.prepare('SELECT ticker FROM stocks WHERE ticker = ?').get(clean) as { ticker: string } | undefined;
-      if (exact) { db.close(); return exact.ticker; }
+  const db = openDb('stocks.db');
+  if (!db) return clean;
+  try {
+    // 1. Exact match
+    const exact = db.prepare('SELECT ticker FROM stocks WHERE ticker = ?').get(clean) as { ticker: string } | undefined;
+    if (exact) return exact.ticker;
 
-      // 2. Match by name or name_ar
-      const byName = db.prepare('SELECT ticker FROM stocks WHERE UPPER(name) = ? OR UPPER(name_ar) = ?').get(clean, clean) as { ticker: string } | undefined;
-      if (byName) { db.close(); return byName.ticker; }
+    // 2. Match by name or name_ar
+    const byName = db.prepare('SELECT ticker FROM stocks WHERE UPPER(name) = ? OR UPPER(name_ar) = ?').get(clean, clean) as { ticker: string } | undefined;
+    if (byName) return byName.ticker;
 
-      // 3. Deduplicate double letters (e.g. KORRA -> KORA)
-      const dedup = clean.replace(/(.)\1+/g, '$1');
-      const byDedup = db.prepare('SELECT ticker FROM stocks WHERE ticker = ? OR UPPER(name) = ?').get(dedup, dedup) as { ticker: string } | undefined;
-      if (byDedup) { db.close(); return byDedup.ticker; }
-
-      db.close();
-    } catch {
-      // ignore
-    }
+    // 3. Deduplicate double letters (e.g. KORRA -> KORA)
+    const dedup = clean.replace(/(.)\1+/g, '$1');
+    const byDedup = db.prepare('SELECT ticker FROM stocks WHERE ticker = ? OR UPPER(name) = ?').get(dedup, dedup) as { ticker: string } | undefined;
+    if (byDedup) return byDedup.ticker;
+  } catch {
+    // ignore
+  } finally {
+    try { db.close(); } catch { /* ignore */ }
   }
 
   return clean;
@@ -142,11 +138,10 @@ function getLocalIntradayData(
   freqMinutes: number,
   period: string
 ): ChartDataPoint[] | null {
-  const intradayDbPath = path.join(process.cwd(), 'db', 'intraday.db');
-  if (!existsSync(intradayDbPath)) return null;
+  const db = openDb('intraday.db');
+  if (!db) return null;
 
   try {
-    const db = new Database(intradayDbPath, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
 
     // Find anchor timestamp for this ticker so closed markets/weekends don't result in 0 rows
@@ -198,9 +193,8 @@ async function fetchYahooChartCandles(
     } else {
       let market = 'EGX';
       try {
-        const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-        if (existsSync(dbPath)) {
-          const db = new Database(dbPath, { readonly: true, timeout: 1500 });
+        const db = openDb('stocks.db');
+        if (db) {
           const row = db.prepare('SELECT market FROM stocks WHERE ticker = ? COLLATE NOCASE').get(sym) as { market?: string } | undefined;
           if (row?.market) market = row.market.toUpperCase();
           db.close();
@@ -383,10 +377,6 @@ function getLocalDailyData(
   period: string,
   interval: string
 ): ChartDataPoint[] | null {
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  const dataEngineDbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-  const priceHistoryDbPath = path.join(process.cwd(), 'db', 'price_history.db');
-
   const periodLimitMap: Record<string, number> = {
     '1d': 1, '5d': 5, '1w': 7, '2w': 14, '1m': 30, '3m': 90,
     '6m': 180, '1y': 365, '2y': 730, '5y': 1825, 'all': 10000,
@@ -396,10 +386,11 @@ function getLocalDailyData(
   const mergedMap = new Map<string, { date: string; open: number; high: number; low: number; close: number; volume: number; priority: number }>();
 
   // 1. price_history.db (Highest quality historical archive)
-  if (existsSync(priceHistoryDbPath)) {
-    try {
-      const db = new Database(priceHistoryDbPath, { readonly: true, timeout: 3000 });
-      db.pragma('busy_timeout = 3000');
+  {
+    const db = openDb('price_history.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 3000');
       const rows = db.prepare(`
         SELECT date,
                open_price as open,
@@ -433,21 +424,25 @@ function getLocalDailyData(
             date: dateKey,
             open, high, low, close,
             volume: Number(r.volume || 0),
-            priority: 3,
+            priority: 1,  // WAVE-1: price_history.db LOWEST (stale)
           });
         }
       }
     } catch (e) {
       console.warn(`[chart] price_history.db query failed for ${ticker}:`, e);
+    } finally {
+      try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 
   // 2. egksco_price_history (data_engine.db)
-  if (existsSync(dataEngineDbPath)) {
-    try {
-      const db = new Database(dataEngineDbPath, { readonly: true, timeout: 3000 });
-      db.pragma('busy_timeout = 3000');
-      let rows = db.prepare(`
+  {
+    const db = openDb('data_engine.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 3000');
+        let rows = db.prepare(`
         SELECT price_date AS date,
                open_price as open,
                high_price as high,
@@ -503,15 +498,19 @@ function getLocalDailyData(
       }
     } catch (e) {
       console.warn(`[chart] egksco_price_history query failed for ${ticker}:`, e);
+    } finally {
+      try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 
   // 3. stock_daily_prices (stocks.db)
-  if (existsSync(stocksDbPath)) {
-    try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
-      db.pragma('busy_timeout = 3000');
-      const rows = db.prepare(`
+  {
+    const db = openDb('stocks.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 3000');
+        const rows = db.prepare(`
         SELECT price_date as date,
                COALESCE(open, open_price) as open,
                COALESCE(high, high_price) as high,
@@ -523,7 +522,7 @@ function getLocalDailyData(
         ORDER BY price_date DESC
         LIMIT ?
       `).all(ticker, limit) as any[];
-      db.close();
+        db.close();
 
       if (rows && rows.length > 0) {
         for (const r of rows) {
@@ -546,13 +545,16 @@ function getLocalDailyData(
               date: dateKey,
               open, high, low, close,
               volume: Number(r.volume || 0),
-              priority: 1,
+              priority: 3,  // WAVE-1: stocks.db HIGHEST (live)
             });
           }
         }
       }
     } catch (e) {
       console.warn(`[chart] stock_daily_prices query failed for ${ticker}:`, e);
+    } finally {
+      try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 
@@ -869,11 +871,11 @@ export async function GET(
   // when no historical data exists in any DB. The stocks table has rich real-time
   // data (current_price, high_price, low_price, open_price, volume, previous_close)
   // that can produce at minimum a today-candle so the chart is NOT empty.
-  const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  if (existsSync(stocksDbPath)) {
-    try {
-      const db = new Database(stocksDbPath, { readonly: true, timeout: 3000 });
-      const stock = db.prepare(`
+  {
+    const db = openDb('stocks.db');
+    if (db) {
+      try {
+        const stock = db.prepare(`
         SELECT current_price, high_price, low_price, open_price,
                previous_close, volume, close, turnover_egp,
                ma_50, ma_200, rsi, support, resistance, signal, trend,
@@ -954,6 +956,8 @@ export async function GET(
       db.close();
     } catch (e) {
       console.warn(`[chart] stocks table fallback failed for ${resolvedTicker}:`, e);
+      try { db.close(); } catch { /* ignore */ }
+    }
     }
   }
 

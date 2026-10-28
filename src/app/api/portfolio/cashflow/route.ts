@@ -30,10 +30,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { openDb } from '@/lib/db-manager';
 
 function unauthorized() {
   return NextResponse.json(
@@ -94,27 +93,14 @@ export async function GET(req: NextRequest) {
       : 100;
     const typeFilter = searchParams.get('type');
 
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(dbPath)) {
+    const db = openDb('stocks.db');
+    if (!db) {
       return NextResponse.json({
         success: true,
         source: 'empty',
         cashflow: [],
         totals: emptyTotals(),
         message: 'stocks.db غير متاح',
-      });
-    }
-
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch {
-      return NextResponse.json({
-        success: true,
-        source: 'empty',
-        cashflow: [],
-        totals: emptyTotals(),
-        message: 'تعذّر فتح stocks.db',
       });
     }
 

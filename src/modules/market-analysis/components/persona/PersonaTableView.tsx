@@ -68,6 +68,57 @@ export function PersonaTableView({
     return map;
   }, [stocks]);
 
+  // ══════════════════════════════════════════════════════════════════════
+  // (ALPHA-ICON-FIX، Task — owner directive 2026-10-27):
+  // «منع تكرار وعرض التوصيات الشاذة في PersonaTableView».
+  //
+  // 1. DEDUP: منع تكرار نفس السهم (مهزلة ADP×5). نحتفظ بأول ظهور فقط.
+  // 2. ANOMALY FILTER: إخفاء أي صف فيه انحراف سعري شاذ:
+  //    abs(current_price - entry_price) / current_price > 0.10
+  //    (مثال: ADP entry=3.98, current=263.86 → 98.5% deviation → HIDE).
+  //    ده safety net client-side — برافو كمان بيعمل فلتر backend-side.
+  // ══════════════════════════════════════════════════════════════════════
+  const safeItems = useMemo(() => {
+    const seen = new Set<string>();
+    const result: typeof filteredItems = [];
+    for (const it of filteredItems) {
+      const cleanTicker = it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
+      // (1) DEDUP: skip duplicate tickers (keep first occurrence only).
+      if (seen.has(cleanTicker)) continue;
+      seen.add(cleanTicker);
+
+      // (2) ANOMALY CHECK: look up live price + entry to detect radical deviation.
+      const stockInfo = stocksMap.get(cleanTicker) || stocksMap.get(it.ticker.toUpperCase());
+      const pd =
+        it.analysisJson?.[_personaKey] || {
+          entry: it.entry?.price ?? null,
+        };
+      const entryVal = pd.entry != null ? Number(pd.entry) : null;
+      const curPrice = pickValidPrice(
+        stockInfo?.current_price,
+        stockInfo?.close,
+        pd.entry,
+        typeof it.entry === 'object' ? it.entry?.price : undefined,
+      );
+      const curVal = curPrice != null ? Number(curPrice) : null;
+
+      // Per owner directive: abs(cur - entry) / cur > 0.10 → anomalous → HIDE.
+      // لو entry أو cur null → ما نقدرش نحسب → نظهر الصف (ما نعاقبش على missing data).
+      if (
+        entryVal != null &&
+        curVal != null &&
+        curVal > 0 &&
+        Math.abs(curVal - entryVal) / curVal > 0.10
+      ) {
+        // صف شاذ (انحراف > 10%) → إخفاء. مثال: ADP entry=3.98 vs cur=263.86.
+        continue;
+      }
+
+      result.push(it);
+    }
+    return result;
+  }, [filteredItems, stocksMap, _personaKey]);
+
   return (
     <div className="rounded-md border overflow-x-auto bg-card">
       {/* ALPHA-FIX Task 4: Stage filter buttons — فلتر حركة السهم */}
@@ -109,7 +160,7 @@ export function PersonaTableView({
           </tr>
         </thead>
         <tbody>
-          {filteredItems.map((it, idx) => {
+          {safeItems.map((it, idx) => {
             // ALPHA-FIX Task 4: derive the stock's movement stage
             const _stage = deriveStage(it, _personaKey);
             const _stageInfo = STAGE_META[_stage];
@@ -184,12 +235,17 @@ export function PersonaTableView({
             // (2) فحص الهدف المحقق: current >= target → الصفقة منتهية بالهدف (TARGET_HIT)
             const _isTargetHit = _targetVal != null && _curVal != null && _curVal >= _targetVal;
 
-            // (3) فحص الشذوذ السعري: |cur - entry| / entry > 8% → بيانات قديمة
+            // (3) فحص الشذوذ السعري: |cur - entry| / cur > 10% → بيانات قديمة/شاذة
+            // (ALPHA-ICON-FIX): حدّثنا الـ threshold من 8% (entry-based) لـ 10% (current-based)
+            // per owner directive: abs(current_price - entry_price) / current_price > 0.10
+            // الـ rows الشاذة جداً (>10%) بتتخفي فوق في safeItems filter. الـ rows اللي
+            // هنا بتفوت عشان الـ filter شال الـ الأكبر من 10%، بس نحتفظ بالـ check
+            // للـ badge display لو فيه edge case.
             const _isPriceMismatch =
               _entryVal != null &&
               _curVal != null &&
-              _entryVal > 0 &&
-              Math.abs(_curVal - _entryVal) / _entryVal > 0.08;
+              _curVal > 0 &&
+              Math.abs(_curVal - _entryVal) / _curVal > 0.10;
 
             // (4) R/R غير صالح: لو الوقف أعلى من السعر الحالي
             const _isRRInvalid = _isStoppedOut;
@@ -227,7 +283,10 @@ export function PersonaTableView({
                       ticker={cleanTicker}
                       name={it.nameAr || it.name}
                       sector={it.sector}
-                      logoUrl={it.logoUrl}
+                      // (ALPHA-ICON-FIX): الـ API بيرجع logo_url (snake_case) بس الـ hook
+                      // بيـ map لـ logoUrl (camelCase). defensive: نقرا الاتنين + fallback
+                      // على stockInfo (الـ live stocks map من useAnalysisStore).
+                      logoUrl={it.logo_url || it.logoUrl || stockInfo?.logo_url || stockInfo?.logoUrl}
                       className="w-6 h-6"
                     />
                     <span>{cleanTicker}</span>

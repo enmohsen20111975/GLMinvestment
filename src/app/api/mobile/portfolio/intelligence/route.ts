@@ -22,11 +22,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { db } from '@/lib/db';
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
+import { openDb } from '@/lib/db-manager';
 import type { Prisma } from '@prisma/client';
 
 interface EnrichedHolding {
@@ -55,13 +54,12 @@ function round2(n: number): number {
 }
 
 function openRo(p: string): import('better-sqlite3').Database | null {
-  try {
-    if (!fs.existsSync(p)) return null;
-    const Database = require('better-sqlite3');
-    return new Database(p, { readonly: true });
-  } catch {
-    return null;
-  }
+  // The DAL resolves the filename to db/<p> under process.cwd(); callers pass
+  // the bare filename (e.g. 'stocks.db'). openDb returns null if missing.
+  const file = p.includes('/') || p.includes('\\')
+    ? p.split('/').pop()!.split('\\').pop()!
+    : p;
+  return openDb(file);
 }
 
 function fetchStockMeta(

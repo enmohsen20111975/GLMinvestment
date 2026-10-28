@@ -98,14 +98,20 @@ export async function GET(req: NextRequest) {
           }
           if (livePrice <= 0) {
             try {
+              // (ALPHA-DAL-WAVE2 — owner directive 2026-10-27):
+              // «جلب السعر المباشر من stocks.db.stock_daily_prices أو عمود stocks.current_price».
+              // نقرأ آخر إغلاق من stock_daily_prices (المصدر الحي المحدث يوميًا)
+              // بدل stock_price_history القديم.
               const histRow = db.prepare(
-                "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
+                "SELECT close_price FROM stock_daily_prices WHERE ticker = ? AND close_price > 0 ORDER BY price_date DESC LIMIT 1"
               ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) livePrice = Number(histRow.close_price);
             } catch { /* table may not exist */ }
           }
-          // ── P31 TASK 2: price_history.db fallback (yahoo_clean) ──
-          // stocks.db is frequently empty/stale — without this, master total stayed 0.
+          // ── P31 TASK 2: data_engine.db fallback (egksco_price_history) ──
+          // (ALPHA-DAL-WAVE2): updated from price_history.db (dead) to
+          // data_engine.db.egksco_price_history (migrated, working). Used as
+          // emergency fallback if stocks.db has no candle data.
           if (livePrice <= 0) {
             try {
               const cleanClose = await getLastCleanClose(asset.stock_ticker);

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * IncubatorSection — "رادار التربص وقيد التسخين" (The Stalking Radar UI)
+ * IncubatorSection — "خلية فحص الأسهم" (Live Stock Scan UI)
  * ============================================================================
  * Financial Design System Compliant (Clean, High Contrast, Compact).
  * - Matches platform tokens (bg-card, border-border, text-foreground).
@@ -40,6 +40,8 @@ import {
   Clock,
   Circle,
   AlertTriangle,
+  Radio,
+  TrendingDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +75,62 @@ export interface IncubatorCandidate {
   logo_url?: string;
   /** Optional path classification from maker_radar (e.g., 'B_quiet_accumulation_strong') */
   path?: string | null;
+  // (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27): enrichment fields
+  volume_surge?: boolean;
+  change_percent?: number;
+  rsi_scanner?: number | null;
+  value_traded_official?: number | null;
+  relative_volume_10d_official?: number | null;
+  turnover_egp?: number;
+  logoUrl?: string | null;
+  classification?: string;
+  // ─── (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء ──────────────────────────
+  price_action?: string | null;
+  price_action_evidence?: Record<string, unknown> | null;
+  participant_flow_assessment?: string | null;
+  participant_evidence_level?: string | null;
+  participant_evidence?: Record<string, unknown> | null;
+  continuation_assessment?: string | null;
+  data_quality_status?: string | null;
+  data_quality_reasons?: string[] | null;
+  classification_timestamp?: string | null;
+}
+
+/**
+ * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+ * تنبيه من بيانات السكانر الحية — نشاط غير معتاد (مش توصية شراء).
+ */
+export interface ScannerAlert {
+  ticker: string;
+  classification: 'SCANNER_ALERT';
+  path: 'F_scanner_alert';
+  name_ar?: string;
+  movement_type: 'SURGE_UP' | 'SURGE_DOWN' | 'UP' | 'DOWN' | 'FLAT';
+  movement_desc?: string;
+  change_percent: number;
+  volume_surge: boolean;
+  current_price: number;
+  relative_volume_10d_official?: number | null;
+  value_traded_official?: number | null;
+  rsi_scanner?: number | null;
+  turnover_egp?: number;
+  signal: 'HOLD';
+  signal_ar?: 'مراقبة';
+  readiness_pct: 0;
+  under_microscope: false;
+  score?: number;
+  logo_url?: string | null;
+  logoUrl?: string | null;
+  // ─── (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء ──────────────────────────
+  price_action?: string | null;
+  price_action_evidence?: Record<string, unknown> | null;
+  participant_flow_assessment?: string | null;
+  participant_evidence_level?: string | null;
+  participant_evidence?: Record<string, unknown> | null;
+  continuation_assessment?: string | null;
+  data_quality_status?: string | null;
+  data_quality_reasons?: string[] | null;
+  classification_timestamp?: string | null;
 }
 
 export interface IncubatorResponse {
@@ -80,6 +138,10 @@ export interface IncubatorResponse {
   market: string;
   total_candidates: number;
   candidates: IncubatorCandidate[];
+  /** (ALPHA-SCANNER-ALERTS): تنبيهات السكانر — نشاط غير معتاد. */
+  scanner_alerts?: ScannerAlert[];
+  /** (ALPHA-SCANNER-ALERTS): مرشحو الحاضنة تحت الميكروسكوب. */
+  under_microscope?: IncubatorCandidate[];
   timestamp: string;
   source?: string;
   message?: string;
@@ -370,7 +432,7 @@ function ConditionPanel({ candidate }: { candidate: IncubatorCandidate }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-semibold text-foreground">لوحة فحص الشروط</span>
+        <span className="text-[11px] font-semibold text-foreground">شروط الاختراق الفنية</span>
         <span className="text-[10px] text-muted-foreground font-mono">
           {candidate.signals_passed}/{candidate.total_signals} متحقق
         </span>
@@ -435,7 +497,7 @@ function CandidateAnalysisPanel({
                     : 'border-warning/30 bg-warning/10 text-warning',
                 )}
               >
-                {candidate.stage === 'APPROACHING_TRIGGER' ? '🔥 وشك' : '🌡️ تسخين'}
+                {candidate.stage === 'APPROACHING_TRIGGER' ? '⚡ جاهز للاختراق' : '🔍 قيد الفحص'}
               </Badge>
               {candidate.path && (
                 <span className="text-[10px] text-muted-foreground font-mono">{candidate.path}</span>
@@ -495,7 +557,7 @@ function CandidateAnalysisPanel({
             !reduceMotion && 'animate-in fade-in slide-in-from-bottom-1 duration-200 delay-200',
           )}
         >
-          <div className="text-[11px] font-semibold text-foreground mb-2">أهداف الترقية المحتملة</div>
+          <div className="text-[11px] font-semibold text-foreground mb-2">الأهداف الفنية المتوقعة</div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <div className="text-[10px] text-muted-foreground">الهدف</div>
@@ -614,7 +676,7 @@ function PanelView({
             <div className="flex items-center gap-1">
               <Zap className="size-3 text-warning" />
               <span className="font-mono text-warning font-semibold">{hotCount}</span>
-              <span className="text-muted-foreground">وشك الترقية</span>
+              <span className="text-muted-foreground">جاهز للاختراق</span>
             </div>
           )}
           {timestamp && (
@@ -669,11 +731,15 @@ function PanelView({
                   key={`${c.ticker}-${idx}`}
                   onClick={() => handleCandidateClick(idx)}
                   className={cn(
-                    'w-full text-right rounded-md border p-2 transition-colors duration-150',
+                    'w-full text-right rounded-md border p-2 transition-all duration-200',
                     isActive
-                      ? 'border-primary/40 bg-primary/5 shadow-sm'
+                      ? 'border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/20'
                       : 'border-transparent hover:bg-muted/40',
                   )}
+                  style={isActive ? {
+                    // P3-B: Transition Pulse — إطار glow خفيف
+                    boxShadow: '0 0 0 2px rgba(var(--primary-rgb, 99, 102, 241), 0.1), 0 1px 3px rgba(0,0,0,0.05)',
+                  } : undefined}
                   aria-current={isActive ? 'true' : undefined}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -688,11 +754,14 @@ function PanelView({
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                    {/* P1-A: مؤشر الجاهزية الحي — تدرج لوني 3 مراحل */}
+                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div
                         className={cn(
-                          'h-full rounded-full transition-all',
-                          c.readiness_pct >= 80 ? 'bg-profit' : 'bg-warning',
+                          'h-full rounded-full transition-all duration-500 ease-out',
+                          c.readiness_pct >= 80 ? 'bg-profit' :
+                          c.readiness_pct >= 50 ? 'bg-warning' :
+                          'bg-muted-foreground/40',
                         )}
                         style={{
                           width: `${Math.min(100, Math.max(0, c.readiness_pct))}%`,
@@ -701,12 +770,32 @@ function PanelView({
                     </div>
                     <span
                       className={cn(
-                        'text-[10px] font-mono font-bold shrink-0',
-                        c.readiness_pct >= 80 ? 'text-profit' : 'text-warning',
+                        'text-[10px] font-mono font-bold shrink-0 transition-colors duration-300',
+                        c.readiness_pct >= 80 ? 'text-profit' :
+                        c.readiness_pct >= 50 ? 'text-warning' :
+                        'text-muted-foreground',
                       )}
                     >
                       {c.readiness_pct}%
                     </span>
+                  </div>
+                  {/* P1-B: إثبات الفرصة — Evidence Chips مختصرة */}
+                  <div className="flex flex-wrap gap-0.5 mt-1">
+                    {c.signals_passed > 0 && (
+                      <span className="text-[8px] font-mono text-profit/70 bg-profit/5 px-1 py-0.5 rounded">
+                        ✅ {c.signals_passed}/{c.total_signals}
+                      </span>
+                    )}
+                    {c.trigger?.condition_ar && c.trigger?.type !== 'COMPLETE' && (
+                      <span className="text-[8px] font-mono text-warning/70 bg-warning/5 px-1 py-0.5 rounded">
+                        ⏳ {c.trigger.type === 'VOLUME_SURGE' ? 'فوليوم' : c.trigger.type === 'RESISTANCE_BREAK' ? 'اختراق' : 'تأكيد'}
+                      </span>
+                    )}
+                    {c.risk_reward > 0 && (
+                      <span className="text-[8px] font-mono text-info/70 bg-info/5 px-1 py-0.5 rounded">
+                        R/R {c.risk_reward.toFixed(1)}
+                      </span>
+                    )}
                   </div>
                 </button>
               );
@@ -743,7 +832,7 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setSubscribed(true);
-        new Notification('🔭 رادار التربص', {
+        new Notification('🔭 خلية فحص الأسهم', {
           body: `تم تفعيل التنبيه لـ ${c.ticker} — ستصلك إشارة فور اكتمال الشروط.`,
           icon: '/logo.svg',
         });
@@ -762,6 +851,10 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
   }, [c.trigger.distance_to_trigger_pct, c.trigger.type]);
 
   const isHot = c.stage === 'APPROACHING_TRIGGER' || c.readiness_pct >= 80;
+  // (ALPHA-SCANNER-ALERTS): enrichment fields من scanner.
+  const logo = c.logo_url || c.logoUrl || null;
+  const changePct = c.change_percent;
+  const hasVolumeSurge = c.volume_surge === true;
 
   return (
     <div
@@ -775,7 +868,7 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
       <div>
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <StockIconMini ticker={c.ticker} className="size-6 shrink-0" />
+            <StockIconMini ticker={c.ticker} name={c.name_ar} logoUrl={logo} className="size-6 shrink-0" />
             <div className="truncate">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-foreground font-mono">{c.ticker}</span>
@@ -788,8 +881,15 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
                       : 'border-warning/30 bg-warning/10 text-warning',
                   )}
                 >
-                  {isHot ? '🔥 وشك' : '🌡️ تسخين'}
+                  {isHot ? '⚡ جاهز للاختراق' : '🔍 قيد الفحص'}
                 </Badge>
+                {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
+                {hasVolumeSurge && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+                    <Zap className="size-2.5" />
+                    حجم
+                  </Badge>
+                )}
               </div>
               {c.name_ar && (
                 <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
@@ -803,7 +903,24 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
             <div className="font-mono font-bold text-sm text-foreground">
               {c.current_price > 0 ? c.current_price.toFixed(2) : '—'}
             </div>
-            <div className="text-[10px] text-muted-foreground">السعر الحالي</div>
+            {/* (ALPHA-SCANNER-ALERTS): عرض change_percent اليومي لو موجود */}
+            {changePct != null && (
+              <div className={cn(
+                'text-[10px] font-mono font-bold',
+                changePct > 0 ? 'text-profit' : changePct < 0 ? 'text-loss' : 'text-muted-foreground',
+              )}>
+                {changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%
+              </div>
+            )}
+            {/* (ALPHA-SCANNER-ALERTS): عرض RSI من scanner لو موجود */}
+            {c.rsi_scanner != null && (
+              <div className="text-[9px] text-muted-foreground font-mono">
+                RSI: {c.rsi_scanner.toFixed(1)}
+              </div>
+            )}
+            {changePct == null && c.rsi_scanner == null && (
+              <div className="text-[10px] text-muted-foreground">السعر الحالي</div>
+            )}
           </div>
         </div>
 
@@ -895,6 +1012,22 @@ function CandidateCard({ c }: { c: IncubatorCandidate }) {
           )}
         </Button>
       </div>
+
+      {/* (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء من برافو للحاضنة.
+          quiet_accumulation هتكون عندها price_action حقيقية (SURGE_UP, BREAKOUT, ...).
+          SCANNER_ALERT عندها price_action=INSUFFICIENT_DATA.
+          لو كل الطبقات null → لا تعرض شيئًا (Rule 27). */}
+      <IntelligenceBadges
+        price_action={c.price_action}
+        price_action_evidence={c.price_action_evidence}
+        participant_flow_assessment={c.participant_flow_assessment}
+        participant_evidence_level={c.participant_evidence_level}
+        participant_evidence={c.participant_evidence}
+        continuation_assessment={c.continuation_assessment}
+        data_quality_status={c.data_quality_status}
+        data_quality_reasons={c.data_quality_reasons}
+        classification_timestamp={c.classification_timestamp}
+      />
     </div>
   );
 }
@@ -975,6 +1108,343 @@ function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
   );
 }
 
+/**
+ * (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-27):
+ * 4 طبقات ذكاء من برافو — عرض مختصر كـ badges + تفاصيل قابلة للتوسيع.
+ *
+ * الطبقات:
+ *   1. price_action — تصنيف الحركة السعرية (14 قيمة)
+ *   2. participant_flow — تقييم المشاركين (INSTITUTIONAL_EVIDENCE, ...)
+ *   3. continuation — قابلية الاستمرار (SUPPORTIVE, MIXED, WEAK, ...)
+ *   4. data_quality — حالة البيانات (FRESH, STALE, VERY_STALE, ...)
+ *
+ * Rule 27: لو الحقل null → لا تعرض الطبقة (no fabrication).
+ */
+interface IntelligenceProps {
+  price_action?: string | null;
+  price_action_evidence?: Record<string, unknown> | null;
+  participant_flow_assessment?: string | null;
+  participant_evidence_level?: string | null;
+  participant_evidence?: Record<string, unknown> | null;
+  continuation_assessment?: string | null;
+  data_quality_status?: string | null;
+  data_quality_reasons?: string[] | null;
+  classification_timestamp?: string | null;
+}
+
+/** ترجمة قيم price_action لعربي مختصر. */
+const PRICE_ACTION_AR: Record<string, string> = {
+  SURGE_UP: 'ارتفاع قوي',
+  SURGE_DOWN: 'انخفاض قوي',
+  BULLISH_WAVE_START: 'بداية موجة صاعدة',
+  BEARISH_WAVE_START: 'بداية موجة هابطة',
+  BULLISH_CONTINUATION: 'استمرار صاعد',
+  BEARISH_CONTINUATION: 'استمرار هابط',
+  BOUNCE_AFTER_DECLINE: 'ارتداد بعد هبوط',
+  PULLBACK_AFTER_RALLY: 'تصحيح بعد صعود',
+  BREAKOUT: 'اختراق',
+  BREAKDOWN: 'كسر',
+  SIDEWAYS: 'عرضي',
+  MOMENTUM_EXHAUSTION: 'إرهاق الزخم',
+  UNCONFIRMED: 'غير مؤكد',
+  INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+
+/** ترجمة participant_flow لعربي. */
+const PARTICIPANT_FLOW_AR: Record<string, string> = {
+  INSTITUTIONAL_EVIDENCE: 'أدلة مؤسسية',
+  SPECULATIVE_PATTERN: 'نمط مضاربي',
+  MIXED_PARTICIPATION: 'مشاركة مختلطة',
+  UNCONFIRMED: 'غير مؤكد',
+  UNAVAILABLE: 'غير متاح',
+};
+
+/** ترجمة continuation لعربي. */
+const CONTINUATION_AR: Record<string, string> = {
+  SUPPORTIVE: 'داعم للاستمرار',
+  MIXED: 'مختلط',
+  WEAK: 'ضعيف',
+  UNCONFIRMED: 'غير مؤكد',
+  INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+
+/** ترجمة data_quality + لون الشارة. */
+const DATA_QUALITY_AR: Record<string, string> = {
+  FRESH: 'بيانات حديثة',
+  STALE: 'بيانات قديمة',
+  VERY_STALE: 'بيانات قديمة جدًا',
+  INSUFFICIENT_HISTORY: 'تاريخ ناقص',
+  GAPS: 'فجوات بيانات',
+  UNAVAILABLE: 'بيانات غير متاحة',
+  OK: 'بيانات سليمة',
+};
+
+function dataQualityColor(status: string | null | undefined): string {
+  if (!status) return 'border-border bg-muted/20 text-muted-foreground';
+  if (status === 'FRESH' || status === 'OK') return 'border-profit/30 bg-profit/10 text-profit';
+  if (status === 'STALE') return 'border-warning/30 bg-warning/10 text-warning';
+  if (status === 'VERY_STALE' || status === 'UNAVAILABLE' || status === 'GAPS' || status === 'INSUFFICIENT_HISTORY')
+    return 'border-loss/30 bg-loss/10 text-loss';
+  return 'border-border bg-muted/20 text-muted-foreground';
+}
+
+function IntelligenceBadges(props: IntelligenceProps) {
+  const [expanded, setExpanded] = useState(false);
+  const hasAny =
+    props.price_action || props.participant_flow_assessment ||
+    props.continuation_assessment || props.data_quality_status;
+
+  if (!hasAny) return null; // Rule 27: لو كل الطبقات null → لا تعرض شيئًا.
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {/* Layer 1: price_action */}
+      {props.price_action && (
+        <Badge
+          variant="outline"
+          className="text-[9px] px-1 py-0 h-4 border-primary/30 bg-primary/5 text-primary"
+          title={`الحركة السعرية: ${props.price_action}`}
+        >
+          {PRICE_ACTION_AR[props.price_action] || props.price_action}
+        </Badge>
+      )}
+
+      {/* Layer 2: participant_flow */}
+      {props.participant_flow_assessment && (
+        <Badge
+          variant="outline"
+          className="text-[9px] px-1 py-0 h-4 border-whale/30 bg-whale/5 text-whale"
+          title={`المشاركون: ${props.participant_flow_assessment}${props.participant_evidence_level ? ` (${props.participant_evidence_level})` : ''}`}
+        >
+          {PARTICIPANT_FLOW_AR[props.participant_flow_assessment] || props.participant_flow_assessment}
+        </Badge>
+      )}
+
+      {/* Layer 3: continuation */}
+      {props.continuation_assessment && (
+        <Badge
+          variant="outline"
+          className="text-[9px] px-1 py-0 h-4 border-violet-500/30 bg-violet-500/5 text-violet-600 dark:text-violet-400"
+          title={`قابلية الاستمرار: ${props.continuation_assessment}`}
+        >
+          {CONTINUATION_AR[props.continuation_assessment] || props.continuation_assessment}
+        </Badge>
+      )}
+
+      {/* Layer 4: data_quality */}
+      {props.data_quality_status && (
+        <Badge
+          variant="outline"
+          className={cn('text-[9px] px-1 py-0 h-4', dataQualityColor(props.data_quality_status))}
+          title={props.data_quality_reasons?.join('، ') || `حالة البيانات: ${props.data_quality_status}`}
+        >
+          {DATA_QUALITY_AR[props.data_quality_status] || props.data_quality_status}
+        </Badge>
+      )}
+
+      {/* Expand button — لو فيه أدلة تفصيلية */}
+      {(props.price_action_evidence || props.participant_evidence || (props.data_quality_reasons && props.data_quality_reasons.length > 0)) && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[9px] text-muted-foreground hover:text-foreground underline ml-1"
+        >
+          {expanded ? 'إخفاء' : 'تفاصيل'}
+        </button>
+      )}
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="w-full mt-1 p-2 rounded-md bg-muted/30 border border-border/40 text-[10px] space-y-1">
+          {props.price_action_evidence && Object.keys(props.price_action_evidence).length > 0 && (
+            <div>
+              <span className="font-bold text-primary">أدلة الحركة:</span>{' '}
+              {Object.entries(props.price_action_evidence).map(([k, v]) => `${k}=${String(v)}`).join('، ')}
+            </div>
+          )}
+          {props.participant_evidence && Object.keys(props.participant_evidence).length > 0 && (
+            <div>
+              <span className="font-bold text-whale">أدلة المشاركين:</span>{' '}
+              {Object.entries(props.participant_evidence).map(([k, v]) => `${k}=${String(v)}`).join('، ')}
+            </div>
+          )}
+          {props.data_quality_reasons && props.data_quality_reasons.length > 0 && (
+            <div>
+              <span className="font-bold text-loss">أسباب جودة البيانات:</span>{' '}
+              {props.data_quality_reasons.join('، ')}
+            </div>
+          )}
+          {props.classification_timestamp && (
+            <div className="text-muted-foreground">
+              وقت التصنيف: {new Date(props.classification_timestamp).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+ * قسم "تنبيهات السكانر" — نشاط غير معتاد (مش توصية شراء).
+ * يعرض الأسهم اللي فيها حركة سع/حجم غير اعتيادية حسب SCANNER_ALERT.
+ */
+function ScannerAlertsSection({ alerts }: { alerts: ScannerAlert[] }) {
+  if (!alerts || alerts.length === 0) {
+    return null; // ما تعرضش القسم لو مفيش تنبيهات (no noise).
+  }
+
+  return (
+    <div className="rounded-lg border border-warning/20 bg-warning/5 overflow-hidden">
+      <div className="flex items-center gap-2 p-2.5 border-b border-warning/20 bg-warning/10">
+        <Radio className="size-4 text-warning" />
+        <h3 className="text-sm font-bold text-warning">📡 تنبيهات السكانر</h3>
+        <Badge variant="outline" className="text-[10px] ml-auto border-warning/30 text-warning">
+          {alerts.length} نشاط
+        </Badge>
+      </div>
+      <div className="text-[10px] text-muted-foreground px-3 py-1.5 bg-muted/30 border-b border-border/40">
+        ⚠️ نشاط غير معتاد — <strong>مش توصية شراء</strong>. للمراقبة فقط.
+      </div>
+      <div className="divide-y divide-border/30 max-h-80 overflow-y-auto">
+        {alerts.map((alert, idx) => {
+          const logo = alert.logo_url || alert.logoUrl || null;
+          // (ALPHA-SCANNER-ALERTS): شارة الحركة حسب movement_type.
+          const movement = alert.movement_type;
+          const isSurgeUp = movement === 'SURGE_UP';
+          const isSurgeDown = movement === 'SURGE_DOWN';
+          const isUp = movement === 'UP' || isSurgeUp;
+          const isDown = movement === 'DOWN' || isSurgeDown;
+
+          const movementBadgeClass = isSurgeUp
+            ? 'border-profit/30 bg-profit/15 text-profit'
+            : isSurgeDown
+              ? 'border-loss/30 bg-loss/15 text-loss'
+              : isUp
+                ? 'border-profit/20 bg-profit/5 text-profit'
+                : isDown
+                  ? 'border-loss/20 bg-loss/5 text-loss'
+                  : 'border-border bg-muted/30 text-muted-foreground';
+
+          const movementArrow = isSurgeUp ? '↑↑' : isSurgeDown ? '↓↓' : isUp ? '↑' : isDown ? '↓' : '→';
+
+          // (ALPHA-SCANNER-ALERTS): value_traded بالمليون.
+          const cashMillions = alert.value_traded_official != null
+            ? (alert.value_traded_official / 1_000_000).toFixed(1) + 'M'
+            : alert.turnover_egp != null
+              ? (alert.turnover_egp / 1_000_000).toFixed(1) + 'M'
+              : null;
+
+          return (
+            <div
+              key={`${alert.ticker}-${idx}`}
+              className="flex items-center gap-2 p-2 hover:bg-muted/30 transition-colors"
+              title={alert.movement_desc || `${alert.ticker} — ${movement}`}
+            >
+              {/* الأيقونة */}
+              <StockIconMini
+                ticker={alert.ticker}
+                name={alert.name_ar}
+                logoUrl={logo}
+                className="size-7 shrink-0"
+              />
+
+              {/* التيكر + السعر */}
+              <div className="flex flex-col min-w-0 flex-shrink-0">
+                <span className="text-xs font-bold font-mono">{alert.ticker}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {alert.current_price?.toFixed(2) || '—'} EGP
+                </span>
+              </div>
+
+              {/* شارة الحركة */}
+              <div className={cn(
+                'flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[10px] font-bold',
+                movementBadgeClass,
+              )}>
+                <span>{movementArrow}</span>
+                <span>{(alert.change_percent ?? 0) > 0 ? '+' : ''}{(alert.change_percent ?? 0).toFixed(2)}%</span>
+              </div>
+
+              {/* شارة volume_surge ⚡ */}
+              {alert.volume_surge && (
+                <Badge variant="outline" className="text-[9px] gap-0.5 border-warning/30 bg-warning/10 text-warning px-1 py-0 shrink-0">
+                  <Zap className="size-2.5" />
+                  حجم غير اعتيادي
+                </Badge>
+              )}
+
+              {/* السيولة الكاش */}
+              {cashMillions && (
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                  <span>💰</span>
+                  <span className="font-mono">{cashMillions}</span>
+                </div>
+              )}
+
+              {/* RSI من scanner */}
+              {alert.rsi_scanner != null && (
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                  <span>RSI:</span>
+                  <span className={cn(
+                    'font-mono font-bold',
+                    alert.rsi_scanner < 30 ? 'text-profit' : alert.rsi_scanner > 70 ? 'text-loss' : 'text-foreground',
+                  )}>
+                    {alert.rsi_scanner.toFixed(1)}
+                  </span>
+                </div>
+              )}
+
+              {/* شارة "مراقبة" (مش شراء) */}
+              <Badge variant="outline" className="text-[9px] ml-auto border-muted-foreground/30 bg-muted/20 text-muted-foreground shrink-0">
+                👁️ مراقبة
+              </Badge>
+
+              {/* (ALPHA-RADAR-INTELLIGENCE): 4 طبقات ذكاء من برافو.
+                  price_action + participant_flow + continuation + data_quality.
+                  لو كل الطبقات null → لا تعرض شيئًا (Rule 27). */}
+              <div className="w-full">
+                <IntelligenceBadges
+                  price_action={alert.price_action}
+                  price_action_evidence={alert.price_action_evidence}
+                  participant_flow_assessment={alert.participant_flow_assessment}
+                  participant_evidence_level={alert.participant_evidence_level}
+                  participant_evidence={alert.participant_evidence}
+                  continuation_assessment={alert.continuation_assessment}
+                  data_quality_status={alert.data_quality_status}
+                  data_quality_reasons={alert.data_quality_reasons}
+                  classification_timestamp={alert.classification_timestamp}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RadarScannerSweep({ active = true }: { active?: boolean }) {
+  return (
+    <div className="relative size-6 flex items-center justify-center shrink-0" title="رادار المسح اللحظي نشط">
+      <svg className="size-6 text-primary/30" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" strokeDasharray="2 2" />
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </svg>
+      {active && (
+        <div className="absolute inset-0 animate-spin [animation-duration:4s]">
+          <svg className="size-6 text-primary" viewBox="0 0 24 24" fill="none">
+            <line x1="12" y1="12" x2="12" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 2 A10 10 0 0 1 20 8" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+          </svg>
+        </div>
+      )}
+      <span className="absolute size-1.5 rounded-full bg-profit animate-ping" />
+    </div>
+  );
+}
+
 // ============================================================================
 // Main IncubatorSection Component
 // ============================================================================
@@ -982,19 +1452,29 @@ function CandidateTable({ candidates }: { candidates: IncubatorCandidate[] }) {
 export function IncubatorSection({
   market = 'EGX',
   refreshIntervalMs = 60_000,
-  maxDisplay = 6,
+  maxDisplay = 0, // 0 = اعرض كل المرشحين (مش محدود بـ 6)
   className,
   defaultViewMode = 'panel',
   autoAdvanceMs = 4000,
 }: IncubatorSectionProps) {
   const [candidates, setCandidates] = useState<IncubatorCandidate[]>([]);
+  // (ALPHA-SCANNER-ALERTS): state لتنبيهات السكانر (نشاط غير معتاد — مش توصية).
+  const [scannerAlerts, setScannerAlerts] = useState<ScannerAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [viewMode, setViewMode] = useState<'panel' | 'grid' | 'table'>(defaultViewMode);
   const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
 
   const fetchIncubator = useCallback(async () => {
+    // FIX (2026-10-27): لا نمسح البيانات القديمة أثناء التحديث الدوري.
+    // لو فيه بيانات موجودة بالفعل، نعتبر ده "تحديث خلفي" ونحتفظ بالقديم
+    // حتى وصول البيانات الجديدة الصالحة.
+    const hasUsableData = candidates.length > 0;
+    if (hasUsableData) {
+      setIsBackgroundRefreshing(true);
+    }
     try {
       setError(null);
       const res = await fetch(`/api/radar/incubator?market=${encodeURIComponent(market)}`, {
@@ -1004,20 +1484,35 @@ export function IncubatorSection({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: IncubatorResponse = await res.json();
       if (data.success) {
-        setCandidates(data.candidates.slice(0, maxDisplay));
+        // FIX: maxDisplay=0 يعني اعرض الكل (مش محدود)
+        setCandidates(maxDisplay > 0 ? data.candidates.slice(0, maxDisplay) : data.candidates);
+        // (ALPHA-SCANNER-ALERTS): خزّن تنبيهات السكانر (نشاط غير معتاد — مش توصية).
+        setScannerAlerts(data.scanner_alerts || []);
         setLastTimestamp(data.timestamp || null);
       } else {
-        setCandidates([]);
+        // FIX: لا نمسح البيانات القديمة لو الـ API رجع success=false.
+        // فقط لو مفيش بيانات قديمة نعرض القائمة الفارغة.
+        if (!hasUsableData) {
+          setCandidates([]);
+          setScannerAlerts([]);
+        }
         setLastTimestamp(null);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setCandidates([]);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      // FIX: لو فيه بيانات قديمة، احتفظ بيها + اعرض الخطأ بشكل غير مزعج.
+      if (!hasUsableData) {
+        setError(errMsg);
+        setCandidates([]);
+      } else {
+        setError(errMsg); // اعرض الخطأ بس احتفظ بالبيانات
+      }
       setLastTimestamp(null);
     } finally {
       setLoading(false);
+      setIsBackgroundRefreshing(false);
     }
-  }, [market, maxDisplay]);
+  }, [market, maxDisplay, candidates.length]);
 
   useEffect(() => {
     fetchIncubator();
@@ -1038,11 +1533,11 @@ export function IncubatorSection({
       {/* Header Bar */}
       <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🔭</span>
+          <RadarScannerSweep active={!isCollapsed} />
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm md:text-base font-bold text-foreground">
-                رادار التربص وقيد التسخين
+                فحص السوق
               </h3>
               <Badge
                 variant="outline"
@@ -1110,6 +1605,70 @@ export function IncubatorSection({
         </div>
       </div>
 
+      {/* ============= Live Scan Status Bar ============= */}
+      {/* A2 FIX (2026-10-27): شريط حالة الفحص الحي — بيانات فعلية فقط من الـ API */}
+      {!isCollapsed && (
+        <div className="flex items-center justify-between flex-wrap gap-2 mt-2 px-3 py-2 rounded-lg bg-muted/20 border border-border/40">
+          <div className="flex items-center gap-3 flex-wrap text-[11px]">
+            {/* Scan status indicator */}
+            <div className="flex items-center gap-1.5">
+              <span className={cn(
+                'size-2 rounded-full',
+                isBackgroundRefreshing ? 'bg-info animate-pulse' :
+                error ? 'bg-loss' :
+                candidates.length > 0 ? 'bg-profit' : 'bg-muted-foreground'
+              )} />
+              <span className="text-muted-foreground font-medium">
+                {isBackgroundRefreshing ? 'جارٍ فحص السوق...' :
+                 error ? 'تعذّر التحديث' :
+                 candidates.length > 0 ? 'اكتمل الفحص' : 'بانتظار الفحص'}
+              </span>
+            </div>
+
+            {/* Candidates count (from API — not fabricated) */}
+            {candidates.length > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="font-mono text-foreground font-bold text-sm">{candidates.length}</span>
+                <span className="text-muted-foreground">سهم اجتاز الشروط</span>
+              </div>
+            )}
+
+            {/* Last scan timestamp (from API — not fabricated) */}
+            {lastTimestamp && (
+              <div className="text-muted-foreground font-mono">
+                آخر فحص: {new Date(lastTimestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+
+            {/* Error indicator (non-intrusive) */}
+            {error && candidates.length > 0 && (
+              <div className="text-[10px] text-loss/70">
+                ⚠️ عرض آخر بيانات صالحة
+              </div>
+            )}
+
+            {/* Auto-refresh indicator */}
+            {refreshIntervalMs > 0 && (
+              <div className="text-[10px] text-muted-foreground/60">
+                🔄 تحديث كل {Math.round(refreshIntervalMs / 1000)} ثانية
+              </div>
+            )}
+          </div>
+
+          {/* Manual refresh button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => fetchIncubator()}
+            disabled={isBackgroundRefreshing}
+            className="h-7 w-7 p-0"
+            title="تحديث الآن"
+          >
+            <RefreshCw className={cn('size-3', isBackgroundRefreshing && 'animate-spin')} />
+          </Button>
+        </div>
+      )}
+
       {/* Body Content */}
       {!isCollapsed && (
         <div className="pt-3">
@@ -1144,6 +1703,11 @@ export function IncubatorSection({
           )}
         </div>
       )}
+
+      {/* (ALPHA-SCANNER-ALERTS — owner directive 2026-10-27):
+          قسم "تنبيهات السكانر" — نشاط غير معتاد (مش توصية شراء).
+          بيظهر بشكل منفصل تحت الحاضنة. لو مفيش تنبيهات → لا يظهر (no noise). */}
+      <ScannerAlertsSection alerts={scannerAlerts} />
     </div>
   );
 }

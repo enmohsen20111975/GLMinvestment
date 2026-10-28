@@ -24,18 +24,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
-
-function openRo(p: string): Database.Database | null {
-  try {
-    if (!fs.existsSync(p)) return null;
-    return new Database(p, { readonly: true });
-  } catch {
-    return null;
-  }
-}
+import { openDb } from '@/lib/db-manager';
 
 function num(v: unknown, fallback = 0): number {
   const n = Number(v);
@@ -44,11 +33,8 @@ function num(v: unknown, fallback = 0): number {
 
 export async function GET(_req: NextRequest) {
   try {
-    const cwd = process.cwd();
-
     // 1. US / global market predictions from predictions.db.
-    const predictionsDbPath = path.join(cwd, 'db', 'predictions.db');
-    const pdb = openRo(predictionsDbPath);
+    const pdb = openDb('predictions.db');
     let usPredictions: Array<Record<string, unknown>> = [];
     let usLastDate: string | null = null;
     if (pdb) {
@@ -93,8 +79,7 @@ export async function GET(_req: NextRequest) {
     }
 
     // 2. Crypto prices from data_engine.db.crypto_prices (RESTRUCT-CLEANUP-1: was crypto.db).
-    const dataEnginePath = path.join(cwd, 'db', 'data_engine.db');
-    const dedb = openRo(dataEnginePath);
+    const dedb = openDb('data_engine.db');
     let cryptoPredictions: Array<Record<string, unknown>> = [];
     let cryptoLastDate: string | null = null;
     if (dedb) {
@@ -137,7 +122,7 @@ export async function GET(_req: NextRequest) {
 
     // 3. Gold signal (latest gold price row from data_engine.db.gold_prices).
     // RESTRUCT-CLEANUP-1: was gold_prices.db → now data_engine.db.gold_prices.
-    const dedb2 = openRo(dataEnginePath);
+    const dedb2 = openDb('data_engine.db');
     let goldSignal: Record<string, unknown> | null = null;
     if (dedb2) {
       try {

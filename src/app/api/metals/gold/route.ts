@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 30;
@@ -55,8 +54,10 @@ interface OuncePrice {
  */
 export async function GET() {
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-    const db = new Database(dbPath, { readonly: true, timeout: 5000 });
+    const db = openDb('data_engine.db');
+    if (!db) {
+      return NextResponse.json({ success: false, error: 'data_engine.db unavailable' }, { status: 200 });
+    }
     db.pragma('busy_timeout = 5000');
 
     // جلب كل أسعار الذهب + الفضة من آخر تحديث

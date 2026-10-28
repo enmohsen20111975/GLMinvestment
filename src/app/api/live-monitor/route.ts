@@ -15,6 +15,8 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+import { openDb } from '@/lib/db-manager';
+
 const PY = process.env.EGX_VPS_API_URL || process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
 interface Tick {
@@ -45,9 +47,6 @@ interface ActiveStock {
 async function getPortfolioSummary() {
   try {
     const { authDb } = await import('@/lib/db-auth');
-    const path = require('path');
-    const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
 
     const items = await authDb.portfolioItem.findMany({
       select: { symbol: true, name: true, shares: true, purchase_price: true, asset_type: true, currency: true },
@@ -59,9 +58,8 @@ async function getPortfolioSummary() {
 
     // جلب الأسعار الحالية + القطاع من stocks.db
     let stockInfoMap: Record<string, { current_price: number; previous_close: number | null; sector: string | null }> = {};
-    if (fs.existsSync(stocksDbPath)) {
-      const Database = require('better-sqlite3');
-      const stocksDb = new Database(stocksDbPath, { readonly: true });
+    const stocksDb = openDb('stocks.db');
+    if (stocksDb) {
       const tickers = items.filter(i => i.asset_type === 'stock' || !i.asset_type).map(i => i.symbol?.toUpperCase()).filter(Boolean);
       if (tickers.length > 0) {
         const placeholders = tickers.map(() => '?').join(',');
@@ -157,18 +155,13 @@ export async function GET() {
 
   // 2) Fallback — read from intraday.db + stocks.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const intradayDbPath = path.join(process.cwd(), 'db', 'intraday.db');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(intradayDbPath)) {
+    const intraDb = openDb('intraday.db');
+    if (!intraDb) {
       return NextResponse.json(
         { success: false, error: 'intraday.db not found' },
         { status: 500 }
       );
     }
-    const Database = require('better-sqlite3');
-    const intraDb = new Database(intradayDbPath, { readonly: true });
 
     const tickRows = intraDb
       .prepare(
@@ -199,8 +192,8 @@ export async function GET() {
     // Active stocks from stocks.db — top 30 by volume today
     // ملاحظة: الـ schema ممكن ما يكون فيه change_percent أو is_egx30 — نتعامل مع كل الحالات
     let activeStocks: ActiveStock[] = [];
-    if (fs.existsSync(stocksDbPath)) {
-      const stocksDb = new Database(stocksDbPath, { readonly: true });
+    const stocksDb = openDb('stocks.db');
+    if (stocksDb) {
       // اكتشف الأعمدة المتاحة
       const tableInfo = stocksDb.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;
       const colNames = new Set(tableInfo.map(c => c.name));

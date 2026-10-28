@@ -24,22 +24,24 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const fs = require('fs');
-const path = require('path');
+import { openDb as openDbDal } from '@/lib/db-manager';
 
-const PREDICTIONS_DB_PATH = path.join(process.cwd(), 'db', 'predictions.db');
+const PREDICTIONS_DB_PATH = 'predictions.db';
 
 function dbExists(p: string): boolean {
-  try {
-    return fs.existsSync(p) && fs.statSync(p).size > 0;
-  } catch {
-    return false;
-  }
+  const file = p.includes('/') || p.includes('\\')
+    ? p.split('/').pop()!.split('\\').pop()!
+    : p;
+  const db = openDbDal(file);
+  if (db) { db.close(); return true; }
+  return false;
 }
 
 function openDb(p: string): any {
-  const Database = require('better-sqlite3');
-  return new Database(p, { readonly: true });
+  const file = p.includes('/') || p.includes('\\')
+    ? p.split('/').pop()!.split('\\').pop()!
+    : p;
+  return openDbDal(file);
 }
 
 const WIN_STATUSES = new Set(['TARGET_HIT', 'closed_win', 'WIN', 'win']);

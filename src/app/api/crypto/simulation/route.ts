@@ -32,10 +32,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
 import { randomUUID } from 'crypto';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { openDb } from '@/lib/db-manager';
 
 function unauthorized() {
   return NextResponse.json(
@@ -71,10 +70,8 @@ function num(v: unknown, fallback = 0): number {
  */
 function fetchCryptoPrice(symbol: string): number {
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-    if (!fs.existsSync(dbPath)) return 0;
-    const Database = require('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDb('data_engine.db');
+    if (!db) return 0;
     let price = 0;
     try {
       const row = db
@@ -108,10 +105,8 @@ function fetchCryptoPrice(symbol: string): number {
  */
 function fetchGoldPrice(): number {
   try {
-    const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
-    if (!fs.existsSync(dbPath)) return 0;
-    const Database = require('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
+    const db = openDb('data_engine.db');
+    if (!db) return 0;
     let price = 0;
     try {
       const row = db

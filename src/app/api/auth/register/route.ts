@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         default_risk_tolerance: risk_tolerance || 'medium',
         subscription_tier: 'free',
         is_active: true,
-        last_login: new Date(),
+        last_login: new Date().toISOString(),
         trial_ends_at: trialEndsAt,
       },
     });

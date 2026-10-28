@@ -246,7 +246,7 @@ def _get_current_price(ticker: str) -> float:
 # ونرتب بـ fair_value_upside DESC.
 #
 # لو stocks.db مفيهوش change_1m مباشرة، نحسبه من stock_daily_prices (آخر 30 يوم).
-# لو مفيهوش volatility، نحسبه من stdev(close_price) لآخر 20 يوم.
+# لو مفيهوش volatility، نحسبه من stdev(close) لآخر 20 يوم.
 _STOCKS_FUNDAMENTALS_CACHE: dict = {'data': {}, 'ts': 0.0}
 _STOCKS_FUNDAMENTALS_TTL = 300  # 5 دقايق
 
@@ -271,7 +271,7 @@ def _load_price_history_metrics_batch() -> dict:
     result: dict = {}
     try:
         # price_history.db path
-        _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+        _ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')  # WAVE-2: was price_history.db (stale)
         if not os.path.exists(_ph_db):
             # لا price_history.db → رجّع فاضي (الـ fallback هيستخدم stocks.db)
             return result
@@ -291,8 +291,8 @@ def _load_price_history_metrics_batch() -> dict:
             WITH ranked AS (
                 SELECT ticker, date, close_price, volume,
                        ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY date DESC) AS rn
-                FROM price_history
-                WHERE close_price > 0 AND volume > 0
+                FROM stock_daily_prices
+                WHERE close > 0 AND volume > 0
             )
             SELECT ticker,
                    MAX(CASE WHEN rn = 1 THEN close_price END) AS last_close,
@@ -1202,11 +1202,15 @@ def get_status():
         cursor.execute('SELECT * FROM analysis_engine_status WHERE id = ?', ('main',))
         status_row = cursor.fetchone()
 
-        # بناء شرط السوق: لو market محدد → فلتر، غير كده → كل الأسواق (backward compat).
-        _market_clause = ''
+        # بناء شرط السوق + الفترة: لو market محدد → فلتر، غير كده → كل الأسواق (backward compat).
+        # BRAVO-FIX-D (freshness filter, Task PHASE-3 Rule 72): أضفنا شرط
+        # updated_at >= datetime('now', '-2 days') عشان منع عرض توصيات قديمة
+        # كأنها نشطة. التوصيات اللي عمرها أكتر من 48 ساعة مستثناة من الـ stats
+        # والـ recent list.
+        _market_clause = " WHERE updated_at >= datetime('now', '-2 days')"
         _market_args = []
         if market:
-            _market_clause = ' WHERE market = ?'
+            _market_clause = " WHERE market = ? AND updated_at >= datetime('now', '-2 days')"
             _market_args = [market]
 
         cursor.execute(f'''
@@ -1218,9 +1222,6 @@ def get_status():
             FROM stored_analyses
             {_market_clause}
         ''', _market_args)
-        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-        # TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses
-        #       from these stats (so old predictions don't inflate counts).
         stats_row = cursor.fetchone()
         
         cursor.execute(f'''
@@ -1230,8 +1231,6 @@ def get_status():
             ORDER BY updated_at DESC
             LIMIT 5
         ''', _market_args)
-        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-        # TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses
         recent = [dict(r) for r in cursor.fetchall()]
         conn.close()
         
@@ -1278,10 +1277,10 @@ def get_results():
                 turnover_egp
             FROM stored_analyses
             WHERE market = ?
+              AND updated_at >= datetime('now', '-2 days')
         '''
-        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
-        # TODO: Append `AND updated_at >= datetime('now', '-2 days')` after the WHERE clause
-        #       so stale analyses are excluded from /stored-analysis/results.
+        # BRAVO-FIX-D (freshness filter): exclude analyses older than 48h so stale
+        # signals don't appear as actionable recommendations to the user.
         params = [market]
 
         if recommendation:

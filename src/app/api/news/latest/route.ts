@@ -22,9 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import { openDb } from '@/lib/db-manager';
 
 function safeStripHtml(raw: unknown): string {
   if (typeof raw !== 'string') return '';
@@ -49,20 +47,8 @@ export async function GET(req: NextRequest) {
     const limit =
       Number.isFinite(reqLimit) ? Math.min(Math.max(reqLimit, 1), 100) : 20;
 
-    const dbPath = path.join(process.cwd(), 'db', 'news.db');
-    if (!fs.existsSync(dbPath)) {
-      return NextResponse.json({
-        success: true,
-        news: [],
-        total: 0,
-        source: 'sqlite_fallback_empty',
-      });
-    }
-
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(dbPath, { readonly: true });
-    } catch {
+    const db = openDb('news.db');
+    if (!db) {
       return NextResponse.json({
         success: true,
         news: [],

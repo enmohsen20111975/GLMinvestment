@@ -89,7 +89,7 @@ except ImportError:
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
-PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
+PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')  # WAVE-3: redirect to stocks.db (live)
 DATA_ENGINE_DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
 PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(_PROJECT_ROOT / 'db' / 'predictions.db'))
 
@@ -1260,7 +1260,7 @@ class SniperEngine:
         try:
             conn = _conn(self.price_history_db)
             rows = conn.execute(
-                "SELECT DISTINCT ticker as symbol FROM price_history ORDER BY ticker"
+                "SELECT DISTINCT ticker as symbol FROM stock_daily_prices ORDER BY ticker"
             ).fetchall()
             conn.close()
             if rows:

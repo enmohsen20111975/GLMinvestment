@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
 import { enforceWatchlistLimit, EnforcementError } from '@/lib/subscription-enforcement';
-import type Database from 'better-sqlite3';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,10 +70,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb: Database.Database = new Database(stocksDbPath, { readonly: true });
+    const stocksDb = openDb('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json({
+        success: true,
+        items: [],
+        total: 0,
+        message: 'stocks.db unavailable',
+      });
+    }
 
     const { clause, params } = buildUserIdClause(userIds, 'w.user_id');
 
@@ -98,13 +103,15 @@ export async function GET(request: NextRequest) {
       enrichedItems = rows.map((row) => {
         const stockInfo: StockInfo = { ticker: '', name: '', price: 0, change_percent: 0 };
         try {
-          const sdb: Database.Database = new Database(stocksDbPath, { readonly: true });
-          const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as { ticker?: string; name?: string; name_ar?: string } | undefined;
-          if (stockRow) {
-            stockInfo.ticker = stockRow.ticker || '';
-            stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
+          const sdb = openDb('stocks.db');
+          if (sdb) {
+            const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as { ticker?: string; name?: string; name_ar?: string } | undefined;
+            if (stockRow) {
+              stockInfo.ticker = stockRow.ticker || '';
+              stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
+            }
+            sdb.close();
           }
-          sdb.close();
         } catch {}
 
         if (stockInfo.ticker) {
@@ -196,10 +203,13 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const Database = require('better-sqlite3');
-    const path = require('path');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const stocksDb: Database.Database = new Database(stocksDbPath, { readonly: false });
+    const stocksDb = openDbWritable('stocks.db');
+    if (!stocksDb) {
+      return NextResponse.json(
+        { success: false, error: 'stocks.db unavailable' },
+        { status: 500 }
+      );
+    }
 
     let stockId: number | null = null;
     try {

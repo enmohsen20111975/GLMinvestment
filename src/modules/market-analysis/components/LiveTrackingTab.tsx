@@ -111,9 +111,17 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
  const [subTab, setSubTab] = useState<'active' | 'watchlist'>('active');
  const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
 
- const fetchData = useCallback(async () => {
+ const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+
+ const fetchData = useCallback(async (silent = false) => {
  try {
- setLoading(true);
+   // FIX (2026-10-27): لا نعرض loading كامل أثناء التحديث الدوري.
+   const hasUsableData = activeStatus.length > 0 || watchlist.length > 0;
+   if (silent && hasUsableData) {
+     setIsBackgroundRefreshing(true);
+   } else {
+     setLoading(true);
+   }
  // canonical: تتبع التوقعات النشطة من Python
  const [trackingRes, screenerRes] = await Promise.all([
  fetch(`/api/stored-analysis/live-tracking?market=${marketCode}&days=30&limit=20`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ predictions: { balanced: [] }, stats: {} })),
@@ -130,10 +138,12 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
  setWatchlist(Array.isArray(screenerStocks) ? screenerStocks : []);
  } catch (e) {
  console.error(e);
+ // FIX: لا نمسح البيانات القديمة عند الخطأ
  } finally {
  setLoading(false);
+ setIsBackgroundRefreshing(false);
  }
- }, [marketCode]);
+ }, [marketCode, activeStatus.length, watchlist.length]);
 
  useEffect(() => { fetchData(); }, [fetchData]);
 

@@ -12,7 +12,7 @@
  * Rule 30: emerald/teal/rose فقط
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,6 +36,8 @@ import {
 import { useAppStore } from '@/lib/store';
 import { isGuestUser } from '@/lib/subscription-gate';
 import { useSession } from '@/lib/next-auth-shim';
+// (ALPHA-RADAR-INTELLIGENCE-COLUMNS): الـ 4 طبقات اتقسمت لـ أعمدة منفصلة.
+// الـ IntelligenceBadges component مش مستخدم هنا دلوقتي — الـ translations نسخة محلية.
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
@@ -114,6 +116,24 @@ interface RadarStock {
  currency?: string | null;
  // Legacy lowercase data_quality from older cache (forward-compat).
  data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | 'invalid' | 'unavailable' | null;
+ // ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): 4 طبقات ذكاء ──
+ // price_action + participant_flow + continuation + data_quality من برافو.
+ // كلها optional + null-safe (Rule 27: null = null).
+ price_action?: string | null;
+ price_action_evidence?: Record<string, unknown> | null;
+ participant_flow_assessment?: string | null;
+ participant_evidence_level?: string | null;
+ participant_evidence?: Record<string, unknown> | null;
+ continuation_assessment?: string | null;
+ data_quality_reasons?: string[] | null;
+ classification_timestamp?: string | null;
+ // enrichment fields (from scanner)
+ volume_surge?: boolean | null;
+ rsi_scanner?: number | null;
+ value_traded_official?: number | null;
+ relative_volume_10d_official?: number | null;
+ movement_type?: string | null;
+ movement_desc?: string | null;
 }
 
 
@@ -131,6 +151,33 @@ import {
   describeRadarStatus,
   isDataInvalidStock,
 } from '@/components/shared/radar-filters';
+
+// (ALPHA-RADAR-INTELLIGENCE-COLUMNS): خرائط ترجمة الطبقات الـ 4 للفرز + الفلترة.
+// نسخة محلية (مش مستوردة من IntelligenceBadges) عشان الـ filterValue يستخدمها.
+const PRICE_ACTION_AR: Record<string, string> = {
+  SURGE_UP: 'ارتفاع قوي', SURGE_DOWN: 'انخفاض قوي',
+  BULLISH_WAVE_START: 'بداية موجة صاعدة', BEARISH_WAVE_START: 'بداية موجة هابطة',
+  BULLISH_CONTINUATION: 'استمرار صاعد', BEARISH_CONTINUATION: 'استمرار هابط',
+  BOUNCE_AFTER_DECLINE: 'ارتداد بعد هبوط', PULLBACK_AFTER_RALLY: 'تصحيح بعد صعود',
+  BREAKOUT: 'اختراق', BREAKDOWN: 'كسر',
+  SIDEWAYS: 'عرضي', MOMENTUM_EXHAUSTION: 'إرهاق الزخم',
+  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+const PARTICIPANT_FLOW_AR: Record<string, string> = {
+  INSTITUTIONAL_EVIDENCE: 'أدلة مؤسسية', SPECULATIVE_PATTERN: 'نمط مضاربي',
+  MIXED_PARTICIPATION: 'مشاركة مختلطة', UNCONFIRMED: 'غير مؤكد', UNAVAILABLE: 'غير متاح',
+};
+const CONTINUATION_AR: Record<string, string> = {
+  SUPPORTIVE: 'داعم للاستمرار', MIXED: 'مختلط', WEAK: 'ضعيف',
+  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+const DATA_QUALITY_AR: Record<string, string> = {
+  FRESH: 'بيانات حديثة', STALE: 'بيانات قديمة', VERY_STALE: 'قديمة جدًا',
+  INSUFFICIENT_HISTORY: 'تاريخ ناقص', GAPS: 'فجوات بيانات',
+  UNAVAILABLE: 'غير متاحة', OK: 'سليمة',
+  fresh: 'حديثة', stale: 'قديمة', very_stale: 'قديمة جدًا',
+  unknown: 'غير معروفة', invalid: 'غير صالحة', unavailable: 'غير متاحة',
+};
 
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
@@ -276,8 +323,21 @@ export function LiquidityRadarView({
  const storeStocks = useAppStore((s) => s.stocks);
  const user = useAppStore((s) => s.user);
  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
- const { status: authStatus } = useSession();
-  const isGuest = isGuestUser(user, isAuthenticated);
+ const { status: authStatus, data: session } = useSession();
+ const isAuth = isAuthenticated || (authStatus === 'authenticated' && !!session?.user);
+
+ const sessionUser = session?.user as Record<string, unknown> | undefined;
+ const uEmail = ((session?.user?.email as string) || user?.email || '').toLowerCase().trim();
+ const uName = ((session?.user?.name as string) || (sessionUser?.username as string) || user?.username || '').toLowerCase().trim();
+ const isUserAdmin =
+   user?.is_admin === true ||
+   user?.subscription_tier === 'admin' ||
+   sessionUser?.is_admin === true ||
+   sessionUser?.subscription_tier === 'admin' ||
+   ['mohseny', 'admin', 'enmohsen20111975'].includes(uName) ||
+   ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
+
+ const isGuest = !isUserAdmin && isGuestUser(user, isAuth);
   // PAYWALL-RELAX (owner directive 2026-10-26): GUEST_MAX_ROWS raised from 5 to 0 (= no slicing).
   const GUEST_MAX_ROWS = 0; // 0 = no slicing (ب + ج)
  const [showLockModal, setShowLockModal] = useState(false);
@@ -304,26 +364,53 @@ export function LiquidityRadarView({
  const [page, setPage] = useState(0);
  const currency = marketCurrency(market);
 
+ // FIX (2026-10-27 — In-Place Patching Blueprint):
+ // 3 حالات منفصلة تماماً:
+ // - isInitialLoading: فقط أول مرة data === null (نعرض skeleton)
+ // - isBackgroundRefreshing: تحديث دوري (نبض خفيف — لا نلمس الجدول)
+ // - error: تعذر التحديث (نحتفظ بالبيانات القديمة + Badge غير مزعج)
+ const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+ // useRef علشان نقرأ وجود بيانات قديمة بدون إعادة تعريف الدالة (يمنع dependency loop)
+ const dataRef = useRef<RadarResponse | null>(null);
+ dataRef.current = data;
+
  const fetchData = useCallback(async () => {
- setLoading(true);
- setError(null);
+ const hasUsableData = dataRef.current !== null && (dataRef.current.results?.length ?? 0) > 0;
+ // FIX: لو فيه بيانات موجودة، ما نعرضش loading كامل — مؤشر نبض خفيف فقط
+ if (hasUsableData) {
+   setIsBackgroundRefreshing(true);
+ } else {
+   setLoading(true);
+ }
+ // FIX: لا نمسح الخطأ القديم لو فيه بيانات — فقط لو أول تحميل
+ if (!hasUsableData) setError(null);
  try {
- // FRONTEND-2 Phase 1: switch to /api/v2/liquidity-radar (cache reader, 20+ fields, all markets)
- // was: /api/market/liquidity-radar (Python proxy, 9 fields, 10 LARGE_CAPS only — left 4 columns blank)
  const res = await fetch(
  `/api/v2/liquidity-radar?market=${encodeURIComponent(market)}`,
  { cache: 'no-store' },
  );
- if (!res.ok) { setError('تعذّر الاتصال بالخادم'); setData(null); return; }
+ if (!res.ok) {
+   // FIX: لا نمسح البيانات القديمة عند الخطأ — احتفظ بها
+   if (!hasUsableData) { setError('تعذّر الاتصال بالخادم'); setData(null); }
+   return;
+ }
  const json: RadarResponse = await res.json();
- if (!json.success) { setError(json.message || json.error || 'فشل المحرك'); setData(json); return; }
+ if (!json.success) {
+   // FIX: لو فيه بيانات قديمة، احتفظ بيها — لا تستبدلها
+   if (!hasUsableData) { setError(json.message || json.error || 'فشل المحرك'); setData(json); }
+   return;
+ }
+ // FIX: حدّث البيانات في مكانها — React هيعمل diff فقط (مش re-mount)
  setData(json);
+ setError(null); // امسح الخطأ لو التحديث نجح
  } catch {
- setError('تعذّر الاتصال بالخادم');
- setData(null);
+   // FIX: لا نمسح البيانات القديمة عند الخطأ
+   if (!hasUsableData) { setError('تعذّر الاتصال بالخادم'); setData(null); }
  } finally {
  setLoading(false);
+ setIsBackgroundRefreshing(false);
  }
+ // FIX (Blueprint Rule 5): شيل `data` من الـ deps — استخدمنا dataRef بدلاً منه
  }, [market]);
 
  useEffect(() => { fetchData(); }, [fetchData]);
@@ -395,8 +482,9 @@ export function LiquidityRadarView({
 
  React.useEffect(() => { setPage(0); }, [bucketFilter, hideInactive, activeMarket]);
 
- // ─── Build UnifiedTable columns ───
- const columns: Column<RadarStock>[] = [
+ // ─── Build UnifiedTable columns (Blueprint Rule 4: memoized with stable deps) ───
+ // FIX: columns تتعمل مرة واحدة فقط (useMemo with [] deps) — لا تتغير عند كل render
+ const columns: Column<RadarStock>[] = React.useMemo(() => [
  {
  key: 'ticker',
  header: 'السهم',
@@ -445,19 +533,290 @@ export function LiquidityRadarView({
  },
  },
  {
- key: 'sparkline',
- header: 'شارت 7 أيام',
+ key: 'phase',
+ header: '📊 المرحلة',
  sortable: true,
  width: 'w-28',
  align: 'center',
- sortValue: (row) => row.change_percent ?? 0,
+ sortValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
+ filterValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
+ render: (row) => {
+ const info = getPhaseInfo(row.phase, row.whale?.net_flow_egp);
+ return (
+ <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
+ <Layers className="w-3 h-3" />
+ {info.label}
+ </span>
+ );
+ },
+ },
+ {
+ key: 'entry',
+ header: 'الدخول',
+ sortable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — المستخدم يقدر يفتحه من column picker
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.entry_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.entry_level),
+ // GUEST: اعرض قفل بدل السعر
  render: (row) => (
- <MiniSparkline ticker={row.ticker} height={35} width={90} showArea />
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-profit">
+ {fmtPrice(row.entry_defense?.entry_level)}
+ </span>
+ )
  ),
+ },
+ {
+ key: 'defense',
+ header: 'الوقف',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.defense_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.defense_level),
+ render: (row) => (
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-loss">
+ {fmtPrice(row.entry_defense?.defense_level)}
+ </span>
+ )
+ ),
+ },
+ {
+ key: 'target',
+ header: 'الهدف',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
+ sortable: true,
+ width: 'w-20',
+ align: 'center',
+ sortValue: (row) => row.entry_defense?.resistance_level ?? 0,
+ filterValue: (row) => fmtPrice(row.entry_defense?.resistance_level),
+ render: (row) => (
+ isGuest ? (
+ <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
+ <Lock className="w-3 h-3" /> بعد التسجيل
+ </span>
+ ) : (
+ <span className="font-mono tabular-nums font-semibold text-whale">
+ {fmtPrice(row.entry_defense?.resistance_level)}
+ </span>
+ )
+ ),
+ },
+// ─── (ALPHA-RADAR-INTELLIGENCE-COLUMNS — owner directive 2026-10-28):
+// «فى عمود الذكاء موجود اكتر من تصنيف داخل العمود دة فا مش عارف ولا افلتر ولا افرز
+// ممكن تلم التصنيفات دى برة مع باقى التصنيفات العامة لسهولة التصنيف والفرز»
+// الحل: قسّمنا الـ 4 طبقات لـ 4 أعمدة منفصلة، كل واحد sortable + filterable.
+// ──────────────────────────────────────────────────────────────────────────
+// Layer 1: price_action — تصنيف الحركة السعرية (قابل للفرز + الفلترة)
+{
+ key: 'price_action',
+ header: '📊 الحركة',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.price_action || 'zzz',
+ filterValue: (row) => PRICE_ACTION_AR[row.price_action || ''] || row.price_action || '—',
+ render: (row) => {
+   const pa = row.price_action;
+   if (!pa) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = PRICE_ACTION_AR[pa] || pa;
+   const isBullish = pa.includes('BULLISH') || pa === 'BREAKOUT' || pa === 'SURGE_UP' || pa === 'BOUNCE_AFTER_DECLINE';
+   const isBearish = pa.includes('BEARISH') || pa === 'BREAKDOWN' || pa === 'SURGE_DOWN';
+   const cls = isBullish ? 'border-profit/30 bg-profit/10 text-profit'
+     : isBearish ? 'border-loss/30 bg-loss/10 text-loss'
+     : pa === 'INSUFFICIENT_DATA' || pa === 'UNCONFIRMED' ? 'border-muted-foreground/30 bg-muted/20 text-muted-foreground'
+     : 'border-border bg-muted/20 text-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={pa}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 2: participant_flow — تقييم المشاركين (قابل للفرز + الفلترة)
+{
+ key: 'participant_flow',
+ header: '🐋 المشاركون',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — ثانوي
+ sortValue: (row) => row.participant_flow_assessment || 'zzz',
+ filterValue: (row) => PARTICIPANT_FLOW_AR[row.participant_flow_assessment || ''] || row.participant_flow_assessment || '—',
+ render: (row) => {
+   const pf = row.participant_flow_assessment;
+   if (!pf) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = PARTICIPANT_FLOW_AR[pf] || pf;
+   const cls = pf === 'INSTITUTIONAL_EVIDENCE' ? 'border-whale/30 bg-whale/10 text-whale'
+     : pf === 'SPECULATIVE_PATTERN' ? 'border-warning/30 bg-warning/10 text-warning'
+     : pf === 'MIXED_PARTICIPATION' ? 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={pf + (row.participant_evidence_level ? ` (${row.participant_evidence_level})` : '')}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 3: continuation — قابلية الاستمرار (قابل للفرز + الفلترة)
+{
+ key: 'continuation',
+ header: '🔄 الاستمرار',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — ثانوي
+ sortValue: (row) => row.continuation_assessment || 'zzz',
+ filterValue: (row) => CONTINUATION_AR[row.continuation_assessment || ''] || row.continuation_assessment || '—',
+ render: (row) => {
+   const ca = row.continuation_assessment;
+   if (!ca) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = CONTINUATION_AR[ca] || ca;
+   const cls = ca === 'SUPPORTIVE' ? 'border-profit/30 bg-profit/10 text-profit'
+     : ca === 'WEAK' ? 'border-loss/30 bg-loss/10 text-loss'
+     : ca === 'MIXED' ? 'border-warning/30 bg-warning/10 text-warning'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={ca}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 4: data_quality — حالة البيانات (قابل للفرز + الفلترة)
+{
+ key: 'data_quality',
+ header: '📦 جودة البيانات',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.data_quality_status || row.data_quality || 'zzz',
+ filterValue: (row) => DATA_QUALITY_AR[row.data_quality_status || ''] || row.data_quality_status || row.data_quality || '—',
+ render: (row) => {
+   const dq = row.data_quality_status || row.data_quality;
+   if (!dq) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = DATA_QUALITY_AR[dq] || String(dq);
+   const cls = (dq === 'FRESH' || dq === 'OK' || dq === 'fresh') ? 'border-profit/30 bg-profit/10 text-profit'
+     : (dq === 'STALE' || dq === 'stale') ? 'border-warning/30 bg-warning/10 text-warning'
+     : (dq === 'VERY_STALE' || dq === 'very_stale' || dq === 'UNAVAILABLE' || dq === 'unavailable' || dq === 'INSUFFICIENT_HISTORY') ? 'border-loss/30 bg-loss/10 text-loss'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={Array.isArray(row.data_quality_reasons) ? row.data_quality_reasons.join('، ') : String(dq)}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// (ALPHA-SCANNER-ALERTS): شارات volume_surge + movement_type في عمود منفصل
+{
+ key: 'scanner_signals',
+ header: '⚡ إشارات السكانر',
+ align: 'center',
+ width: 'w-32',
+ sortable: false,
+ filterable: false,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — يظهر لو فيه إشارات
+ render: (row) => (
+   <div className="flex flex-col items-center gap-0.5 py-1">
+     {row.volume_surge === true && (
+       <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+         ⚡ حجم غير اعتيادي
+       </Badge>
+     )}
+     {row.movement_type && row.movement_type !== 'FLAT' && (
+       <Badge variant="outline" className={cn(
+         'text-[9px] px-1 py-0 h-4',
+         row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
+         : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
+         : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
+         : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
+         : 'border-border bg-muted/20 text-muted-foreground'
+       )}>
+         {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
+         : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
+       </Badge>
+     )}
+     {!row.volume_surge && (!row.movement_type || row.movement_type === 'FLAT') && (
+       <span className="text-muted-foreground text-[10px]">—</span>
+     )}
+   </div>
+ ),
+},
+ // P-TURNOVER: عمود السيولة المتداولة (Turnover / Cash) — يطابق شاشة TradingView
+ {
+ key: 'turnover',
+ header: 'السيولة المتداولة',
+ sortable: true,
+ width: 'w-28',
+ align: 'center',
+ // الفرز الافتراضي: تنازلي حسب السيولة (الأعلى سيولة أولاً)
+ defaultSort: 'desc',
+ sortValue: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   return turnover;
+ },
+ filterValue: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   return turnover > 0 ? fmtFlow(turnover) : '—';
+ },
+ render: (row) => {
+   let turnover = Number(row.turnover_egp ?? 0);
+   if (turnover === 0) {
+     const vol = Number(row.volume ?? 0);
+     const price = Number(row.current_price ?? 0);
+     if (vol > 0 && price > 0) turnover = vol * price;
+   }
+   if (turnover <= 0) return <span className="text-muted-foreground text-xs">—</span>;
+   // تلوين حسب حجم السيولة: >100M أخضر غامق، >10M أخضر فاتح، غير ذلك عادي
+   const isHighCash = turnover >= 100_000_000;
+   const isMidCash = turnover >= 10_000_000;
+   return (
+     <span className={cn(
+       'font-mono text-xs font-bold',
+       isHighCash ? 'text-profit' : isMidCash ? 'text-profit/70' : 'text-foreground'
+     )}>
+       {fmtFlow(turnover)}
+     </span>
+   );
+ },
  },
  {
  key: 'whale_flow',
  header: t('flow5d'),
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
@@ -472,6 +831,8 @@ export function LiquidityRadarView({
  {
  key: 'buy_sell_pressure',
  header: 'ضغط الشراء/البيع',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-32',
  align: 'center',
@@ -509,27 +870,24 @@ export function LiquidityRadarView({
  },
  },
  {
- key: 'phase',
- header: '📊 المرحلة',
+ key: 'sparkline',
+ header: 'شارت 7 أيام',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
- sortValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
- filterValue: (row) => getPhaseInfo(row.phase, row.whale?.net_flow_egp).label,
- render: (row) => {
- const info = getPhaseInfo(row.phase, row.whale?.net_flow_egp);
- return (
- <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border', info.cls)}>
- <Layers className="w-3 h-3" />
- {info.label}
- </span>
- );
- },
+ sortValue: (row) => row.change_percent ?? 0,
+ render: (row) => (
+ <MiniSparkline ticker={row.ticker} height={35} width={90} showArea />
+ ),
  },
  // FRONTEND-2 Phase 2: مرحلة التصحيح — 3 حالات (صاعد / قرب التصحيح / في تصحيح)
  {
  key: 'correction_phase',
  header: '🔄 التصحيح',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
@@ -571,6 +929,8 @@ export function LiquidityRadarView({
  {
  key: 'liquidity_bucket',
  header: '🏷️ تصنيف السيولة',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-32',
  align: 'center',
@@ -600,67 +960,6 @@ export function LiquidityRadarView({
  );
  },
  },
- {
- key: 'entry',
- header: 'الدخول',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.entry_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.entry_level),
- // GUEST: اعرض قفل بدل السعر
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-profit">
- {fmtPrice(row.entry_defense?.entry_level)}
- </span>
- )
- ),
- },
- {
- key: 'defense',
- header: 'الوقف',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.defense_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.defense_level),
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-loss">
- {fmtPrice(row.entry_defense?.defense_level)}
- </span>
- )
- ),
- },
- {
- key: 'target',
- header: 'الهدف',
- sortable: true,
- width: 'w-20',
- align: 'center',
- sortValue: (row) => row.entry_defense?.resistance_level ?? 0,
- filterValue: (row) => fmtPrice(row.entry_defense?.resistance_level),
- render: (row) => (
- isGuest ? (
- <span className="text-muted-foreground text-xs flex items-center justify-center gap-1">
- <Lock className="w-3 h-3" /> بعد التسجيل
- </span>
- ) : (
- <span className="font-mono tabular-nums font-semibold text-whale">
- {fmtPrice(row.entry_defense?.resistance_level)}
- </span>
- )
- ),
- },
  // ─── TASK-A1 (Task 2-b): B3 classification status column ───────────────
  // HARD CONSTRAINT #5: render DATA_INVALID / INSUFFICIENT_DATA as a
  // SEPARATE state — show the `reasons` + `sanity_status` so the user
@@ -688,6 +987,9 @@ export function LiquidityRadarView({
  ? 'bg-whale/10 text-whale border-whale/20'
  : row.classification === 'rule80_downtrend'
  ? 'bg-loss/10 text-loss border-loss/20'
+ // P-BREAKOUT: الأسهم المتفجرة (turnover > 100M + change > +5%) = breakout surge = أخضر
+ : (Number(row.turnover_egp ?? 0) >= 100_000_000 && (row.change_percent ?? 0) >= 5)
+ ? 'bg-profit/15 text-profit border-profit/30 ring-1 ring-profit/20'
  : 'bg-muted text-muted-foreground border-border';
  return (
  <div className="flex flex-col items-center gap-0.5" title={reasons.join(' | ')}>
@@ -704,7 +1006,7 @@ export function LiquidityRadarView({
  },
  },
  // TASK-PUBLISH: شيلنا عمود "نشر" من كل صف — النشر بقى للجدول كله فوق
- ];
+ ], []); // [] = stable — لا تتغير إلا عند mount
 
  return (
  <div className="space-y-4 p-4" dir="rtl">
@@ -734,7 +1036,7 @@ export function LiquidityRadarView({
 
  {/* ─── TAB 1: رادار السيولة ─── */}
  <TabsContent value="radar" className="space-y-4 mt-0">
- <PulseRibbon market={market} summary={data?.summary ?? null} scannedCount={scannedTotal} />
+ <PulseRibbon market={market} summary={data?.summary ?? null} scannedCount={scannedTotal} isRefreshing={isBackgroundRefreshing} error={error} />
 
  {/* A1 FIX: Scan stats display — إجمالي الأسهم المفحوصة + المصنّفة + غير المصنّفة */}
  {data && data.stocks && data.stocks.length > 0 && (
@@ -757,28 +1059,89 @@ export function LiquidityRadarView({
   </div>
  )}
 
- {loading ? (
+ {/* P1-C: خريطة حرارية مصغّرة — Heatmap Strip لتوزيع التصنيفات */}
+ {data && allScanned.length > 0 && (() => {
+   const counts = filterCounts;
+   const total = counts.all || 1;
+   const segments = [
+     { key: 'quiet_accumulation', label: 'تجميع', color: 'bg-profit', count: counts.quiet_accumulation || 0 },
+     { key: 'distribution', label: 'تصريف', color: 'bg-loss', count: counts.distribution || 0 },
+     { key: 'dead_trap', label: 'فخ', color: 'bg-loss/60', count: counts.dead_trap || 0 },
+     { key: 'liquidity_drought', label: 'جفاف', color: 'bg-warning/60', count: counts.liquidity_drought || 0 },
+     { key: 'rule80_downtrend', label: 'هبوط', color: 'bg-warning/40', count: counts.rule80_downtrend || 0 },
+     { key: 'unclassified', label: 'غير مصنف', color: 'bg-muted-foreground/30', count: counts.unclassified || 0 },
+     { key: 'data_invalid', label: 'بيانات خاطئة', color: 'bg-loss/30', count: counts.data_invalid || 0 },
+   ].filter(s => s.count > 0);
+   return (
+     <div className="flex items-center gap-1 h-6 w-full rounded-lg overflow-hidden border border-border/40">
+       {segments.map((seg) => {
+         const pct = (seg.count / total) * 100;
+         return (
+           <div
+             key={seg.key}
+             className={cn('h-full transition-all duration-500 ease-out flex items-center justify-center', seg.color)}
+             style={{ width: `${pct}%`, minWidth: '20px' }}
+             title={`${seg.label}: ${seg.count} سهم (${pct.toFixed(1)}%)`}
+           >
+             {pct > 8 && (
+               <span className="text-[9px] font-mono font-bold text-white/90 px-0.5">
+                 {seg.count}
+               </span>
+             )}
+           </div>
+         );
+       })}
+     </div>
+   );
+ })()}
+
+ {/* FIX (Blueprint Rule 1): Never unmount UnifiedTable after first mount.
+     - isInitialLoading (data === null && !error): skeleton فقط أول مرة
+     - بعد أول mount ناجح: الجدول يفضل في الـ DOM للأبد
+     - لو حصل خطأ أثناء polling: نعرض Badge فوق الجدول (مش نستبدله)
+ */}
+ {loading && !data ? (
+   // أول تحميل فقط — لا توجد بيانات بعد
  <div className="space-y-4">
  <Skeleton className="h-12 w-full rounded-xl" />
  <Skeleton className="h-64 w-full rounded-xl" />
  </div>
- ) : error || !data || allScanned.length === 0 ? (
+ ) : !data && error ? (
+   // أول تحميل فشل — مفيش بيانات ولا جدول
  <UnifiedEmptyState
- variant={error ? 'error' : 'empty'}
- title={error ? 'تعذّر تحميل الرادار' : 'لا توجد إشارات رادار حالياً'}
- description={error || (
- // TASK-A1: if summary says scanned > 0 but `results` is empty, that's
- // a backend bug — show honest message. Otherwise, the engine hasn't
- // scanned yet — show the standard "scanning" message.
- (data?.summary && (data.summary.scanned_count ?? 0) > 0)
- ? 'تم الفحص لكن لا توجد تصنيفات — تحقق من سجلات المحرك'
- : 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'
- )}
+ variant="error"
+ title="تعذّر تحميل الرادار"
+ description={error}
  actionLabel="إعادة المحاولة"
  onAction={fetchData}
  />
+ ) : !data || allScanned.length === 0 ? (
+   // أول تحميل — مفيش بيانات أو لم يتم رصد أسهم
+ <UnifiedEmptyState
+ variant="empty"
+ title="لا توجد إشارات رادار حالياً"
+ description={
+   (data?.summary && (data.summary.scanned_count ?? 0) > 0)
+     ? 'تم الفحص لكن لا توجد تصنيفات — تحقق من سجلات المحرك'
+     : 'المحرّك بيفحص السوق كل 5 دقائق — ستظهر الأسهم هنا فور رصدها'
+ }
+ />
  ) : (
  <>
+ {/* ─── Background refresh indicator (Blueprint Rule 1) ─── */}
+ {isBackgroundRefreshing && (
+   <div className="flex items-center gap-2 px-3 py-1 mb-2 rounded-lg bg-info/5 border border-info/20 text-[11px] text-info">
+     <RefreshCw className="size-3 animate-spin" />
+     <span>جارٍ تحديث البيانات...</span>
+   </div>
+ )}
+ {/* ─── Error badge (non-intrusive — keeps table visible) ─── */}
+ {error && data && allScanned.length > 0 && (
+   <div className="flex items-center gap-2 px-3 py-1 mb-2 rounded-lg bg-loss/5 border border-loss/20 text-[11px] text-loss/70">
+     <AlertTriangle className="size-3" />
+     <span>تعذّر التحديث اللحظي — معروض آخر بيانات صالحة</span>
+   </div>
+ )}
  {/* ─── TASK-PUBLISH: نشر الجدول كله + فلتر الأسهم الخاملة ─── */}
  <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
  <UnifiedPublishButton
@@ -826,6 +1189,25 @@ export function LiquidityRadarView({
  />
  إخفاء الأسهم الخاملة (&lt;100K)
  </label>
+ {/* P-HIGHEST-CASH: زر تصفية الأعلى سيولة كاش (يطابق TradingView) */}
+ <button
+   onClick={() => {
+     if (bucketFilter !== 'highest_cash') {
+       setBucketFilter('highest_cash' as RadarFilterKey);
+     } else {
+       setBucketFilter('all');
+     }
+   }}
+   className={cn(
+     'px-2 py-1 rounded-lg text-xs font-semibold transition-all border',
+     bucketFilter === 'highest_cash'
+       ? 'bg-profit/15 text-profit border-profit/30 shadow-sm'
+       : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
+   )}
+   title="الأعلى سيولة كاش (Value.Traded) — يطابق شاشة TradingView"
+ >
+   💰 الأعلى كاش
+ </button>
  </div>
 
  {/* ─── UnifiedTable (paginated) ─── */}
@@ -919,10 +1301,14 @@ function PulseRibbon({
  market,
  scannedCount,
  summary,
+ isRefreshing,
+ error,
 }: {
  market: string;
  scannedCount: number;
  summary?: RadarSummary | null;
+ isRefreshing?: boolean;
+ error?: string | null;
 }) {
  // TASK-A1: surface the canonical summary counts. NO fabrication — if the
  // backend didn't send `summary`, we show only the scanned count (which
@@ -930,15 +1316,41 @@ function PulseRibbon({
  const classified = summary?.classified_count ?? null;
  const unclassified = summary?.unclassified_count ?? null;
  const dataErrors = summary?.data_error_count ?? null;
+ const scanTime = summary?.scan_timestamp ?? null;
+
+ // P0-A (2026-10-27): نبض السيولة — حساب المتقدمين/المتأخرين من الـ results
+ // مفيش fabrication — الأرقام بتيجي من بيانات الـ API الفعلية
+ const advancers = React.useMemo(() => {
+   // نحسب من allScanned لو موجودة في الـ scope — بس هنا PulseRibbon مش واصلها
+   // فبنعتمد على الـ summary لو فيه، وإلا نعرض "—"
+   return null; // PulseRibbon ما عندوش access لـ results — نعتمد على الـ summary
+ }, []);
+
+ // P0-A: تحويل timestamp لوقت مقروء
+ const formattedTime = scanTime
+   ? new Date(scanTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+   : null;
+
  return (
  <div className="w-full bg-muted px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm rounded-xl border border-border">
  <div className="flex items-center gap-3">
+ {/* P0-A: النبض الحي — نقطة خضراء نابضة (أو كهرمانية لو بيتحدّث) */}
  <div className="flex items-center gap-1.5">
  <span className="relative flex h-2.5 w-2.5">
- <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
+ {isRefreshing ? (
+ // أثناء التحديث: نقطة كهرمانية نابضة
+ <>
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
+ <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
+ </>
+ ) : (
+ // طبيعي: نقطة خضراء ثابتة
  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-profit" />
+ )}
  </span>
- <span className="font-mono text-[10px] text-profit uppercase tracking-widest">رادار سيولة صانع السوق</span>
+ <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: isRefreshing ? 'var(--warning)' : 'var(--profit)' }}>
+ {isRefreshing ? 'جارٍ التحديث...' : 'رادار سيولة صانع السوق'}
+ </span>
  </div>
  <div className="h-4 w-px bg-border" />
  <div className="flex items-center gap-1.5 text-xs">
@@ -952,12 +1364,14 @@ function PulseRibbon({
  <span>بروتوكول Rule 80 نشط</span>
  </div>
  <div className="h-4 w-px bg-border" />
+ {/* P0-A: المرقوب — عدد الأسهم المفحوصة */}
  <span className="font-mono text-[10px] text-muted-foreground">
  مرقوب: <span className="text-foreground font-semibold">{scannedCount}</span> سهم
  </span>
  {classified != null && (
  <>
  <div className="h-4 w-px bg-border" />
+ {/* P0-A: المصنّف — بلون أخضر */}
  <span className="font-mono text-[10px] text-profit">
  مصنّف: {classified}
  </span>
@@ -976,6 +1390,24 @@ function PulseRibbon({
  <div className="h-4 w-px bg-border" />
  <span className="font-mono text-[10px] text-warning" title="بيانات غير صالحة / غير مكتملة">
  بيانات خاطئة: {dataErrors}
+ </span>
+ </>
+ )}
+ {/* P0-A: آخر تحديث — وقت حقيقي من scan_timestamp */}
+ {formattedTime && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-muted-foreground">
+ ⏱ آخر فحص: <span className="text-foreground font-semibold">{formattedTime}</span>
+ </span>
+ </>
+ )}
+ {/* P0-A: مؤشر الخطأ (غير مزعج) */}
+ {error && scannedCount > 0 && (
+ <>
+ <div className="h-4 w-px bg-border" />
+ <span className="font-mono text-[10px] text-loss/70">
+ ⚠️ تعذّر التحديث
  </span>
  </>
  )}

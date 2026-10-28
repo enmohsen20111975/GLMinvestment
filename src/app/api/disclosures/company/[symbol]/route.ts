@@ -16,17 +16,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const fs = require('fs');
-const path = require('path');
-
-function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
-}
-
-function openDb(p: string, readonly = true): any {
-  const Database = require('better-sqlite3');
-  return new Database(p, { readonly });
-}
+import { openDb as openDbDal } from '@/lib/db-manager';
 
 export async function GET(
   request: NextRequest,
@@ -44,89 +34,92 @@ export async function GET(
     const disclosures: any[] = [];
 
     // 1) Try predictions.db.corporate_actions
-    const predictionsDbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (dbExists(predictionsDbPath)) {
-      try {
-        const db = openDb(predictionsDbPath);
-        const rows = db.prepare(`
-          SELECT ticker, action_type, action_date, details, source, created_at
-          FROM corporate_actions
-          WHERE UPPER(ticker) = ?
-          ORDER BY action_date DESC
-          LIMIT 50
-        `).all(symbol) as any[];
-        for (const r of rows) {
-          disclosures.push({
-            type: r.action_type,
-            date: r.action_date,
-            details: r.details,
-            source: r.source || 'corporate_actions',
-            created_at: r.created_at,
-          });
-        }
+    {
+      const db = openDbDal('predictions.db');
+      if (db) {
+        try {
+          const rows = db.prepare(`
+            SELECT ticker, action_type, action_date, details, source, created_at
+            FROM corporate_actions
+            WHERE UPPER(ticker) = ?
+            ORDER BY action_date DESC
+            LIMIT 50
+          `).all(symbol) as any[];
+          for (const r of rows) {
+            disclosures.push({
+              type: r.action_type,
+              date: r.action_date,
+              details: r.details,
+              source: r.source || 'corporate_actions',
+              created_at: r.created_at,
+            });
+          }
+        } catch { /* ignore */ }
         db.close();
-      } catch { /* ignore */ }
+      }
     }
 
     // 2) Try stocks.db.news_items (filter by ticker, type='disclosure')
     // DATA-ENGINE-UNIFY-1 / News Stage 2: read from news.db.market_news (canonical)
     // Column renamed to image_paths (canonical market_news column; news_items is legacy/empty).
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (dbExists(stocksDbPath)) {
-      try {
-        const db = openDb(stocksDbPath);
-        // Check if news_items table has ticker column
-        const cols = (db.prepare("PRAGMA table_info(news_items)").all() as any[]).map(c => c.name);
-        if (cols.includes('ticker')) {
-          const rows = db.prepare(`
-            SELECT title, content, ticker, published_at, url, image_paths, source
-            FROM news_items
-            WHERE UPPER(ticker) = ?
-            ORDER BY published_at DESC
-            LIMIT 30
-          `).all(symbol) as any[];
-          for (const r of rows) {
-            disclosures.push({
-              type: 'news',
-              date: r.published_at,
-              title: r.title,
-              details: r.content,
-              url: r.url,
-              image_paths: r.image_paths,
-              source: r.source || 'news_items',
-            });
+    {
+      const db = openDbDal('stocks.db');
+      if (db) {
+        try {
+          // Check if news_items table has ticker column
+          const cols = (db.prepare("PRAGMA table_info(news_items)").all() as any[]).map(c => c.name);
+          if (cols.includes('ticker')) {
+            const rows = db.prepare(`
+              SELECT title, content, ticker, published_at, url, image_paths, source
+              FROM news_items
+              WHERE UPPER(ticker) = ?
+              ORDER BY published_at DESC
+              LIMIT 30
+            `).all(symbol) as any[];
+            for (const r of rows) {
+              disclosures.push({
+                type: 'news',
+                date: r.published_at,
+                title: r.title,
+                details: r.content,
+                url: r.url,
+                image_paths: r.image_paths,
+                source: r.source || 'news_items',
+              });
+            }
           }
-        }
+        } catch { /* ignore */ }
         db.close();
-      } catch { /* ignore */ }
+      }
     }
 
     // 3) Try news.db.market_news (filter by tickers LIKE %symbol%)
-    const newsDbPath = path.join(process.cwd(), 'db', 'news.db');
-    if (dbExists(newsDbPath)) {
-      try {
-        const db = openDb(newsDbPath);
-        const rows = db.prepare(`
-          SELECT title, content, summary_ar, tickers, published_at, url, image_paths, source
-          FROM market_news
-          WHERE tickers LIKE ?
-          ORDER BY published_at DESC
-          LIMIT 30
-        `).all(`%${symbol}%`) as any[];
-        for (const r of rows) {
-          disclosures.push({
-            type: 'market_news',
-            date: r.published_at,
-            title: r.title,
-            details: r.content || r.summary_ar,
-            url: r.url,
-            image_paths: r.image_paths,
-            source: r.source || 'market_news',
-            tickers: r.tickers,
-          });
-        }
+    {
+      const db = openDbDal('news.db');
+      if (db) {
+        try {
+          const rows = db.prepare(`
+            SELECT title, content, summary_ar, tickers, published_at, url, image_paths, source
+            FROM market_news
+            WHERE tickers LIKE ?
+            ORDER BY published_at DESC
+            LIMIT 30
+          `).all(`%${symbol}%`) as any[];
+          for (const r of rows) {
+            disclosures.push({
+              type: 'market_news',
+              date: r.published_at,
+              title: r.title,
+              details: r.content || r.summary_ar,
+              url: r.url,
+              image_paths: r.image_paths,
+              source: r.source || 'market_news',
+              tickers: r.tickers,
+            });
+          }
+        } catch { /* ignore */ }
         db.close();
-      } catch { /* ignore */ }
+      }
     }
 
     return NextResponse.json({

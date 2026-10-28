@@ -90,8 +90,8 @@ const IndexDetailView = withErrorBoundary(
   'تفاصيل المؤشر',
 );
 const IncubatorStandaloneView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="حاضنة الأسهم" /> }),
-  'حاضنة الأسهم',
+  dynamicImport(() => import('@/modules/radar/components/IncubatorSection').then(m => ({ default: m.IncubatorSection })), { ssr: false, loading: () => <LazyTabLoader label="الفحص الحي للأسهم" /> }),
+  'الفحص الحي للأسهم',
 );
 const HistoricalTradesView = withErrorBoundary(
   dynamicImport(() => import('@/modules/market-analysis/components/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })), { ssr: false, loading: () => <LazyTabLoader label="الصفقات التاريخية" /> }),
@@ -400,15 +400,30 @@ function UrlHashSync() {
  * so every component that reads `useAppStore().user` sees real auth data.
  */
 function SessionSync() {
+  const { data: session, status } = useSession();
+  const syncFromSession = useAppStore((s) => s.syncFromSession);
   const user = useAppStore((s) => s.user);
-  const currentView = useAppStore((s) => s.currentView);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
 
   React.useEffect(() => {
-    if (user && currentView === 'auth') {
-      setCurrentView('dashboard');
+    if (status === 'authenticated') {
+      const sessionUser = session?.user as Record<string, unknown> | undefined;
+      if (!user || user.id !== session?.user?.id || user.email !== session?.user?.email) {
+        syncFromSession(session ?? null);
+      }
+    } else if (status === 'unauthenticated' && user) {
+      syncFromSession(null);
     }
-  }, [user, currentView, setCurrentView]);
+  }, [status, session, syncFromSession, user]);
+
+  React.useEffect(() => {
+    if (status === 'authenticated' && user) {
+      const { currentView } = useAppStore.getState();
+      if (currentView === 'auth') {
+        setCurrentView('dashboard');
+      }
+    }
+  }, [status, user, setCurrentView]);
 
   return null;
 }
@@ -477,8 +492,21 @@ function AppShell() {
   // Guest (unauthenticated) بيوصل لـ AppShell محدود (market + radar-limited + news).
   // لو ضغط view مقفول → AuthGate route guard بيـ redirect لـ dashboard + LoginPromptModal.
   // + renderView بيـ restrict لو الـ view مش في GUEST_ALLOWED_VIEWS.
-  const { status: authStatus } = useSession();
-  const isGuest = isGuestUser(user, isAuthenticated);
+  const { status: authStatus, data: session } = useSession();
+  const sessionUser = session?.user as Record<string, unknown> | undefined;
+  const isAuth = isAuthenticated || (authStatus === 'authenticated' && !!session?.user);
+
+  const uEmail = ((session?.user?.email as string) || user?.email || '').toLowerCase().trim();
+  const uName = ((session?.user?.name as string) || (sessionUser?.username as string) || user?.username || '').toLowerCase().trim();
+  const isUserAdmin =
+    user?.is_admin === true ||
+    user?.subscription_tier === 'admin' ||
+    sessionUser?.is_admin === true ||
+    sessionUser?.subscription_tier === 'admin' ||
+    ['mohseny', 'admin', 'enmohsen20111975'].includes(uName) ||
+    ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(uEmail);
+
+  const isGuest = !isUserAdmin && isGuestUser(user, isAuth);
 
   // ─── Subscription: فحص حالة الـ trial كل 5 دقايق ───
   // لو الـ trial انتهى (isExpired=true)، نعرض TrialExpiredModal (block كامل)
@@ -611,16 +639,18 @@ function AppShell() {
             <Footer />
           </div>
         );
-      case 'incubator':
+      case 'incubator': {
+        const normalizedMarket = currentMarket === 'SAUDI' || currentMarket === 'KSA' ? 'TADAWUL' : currentMarket;
         return (
           <div className="min-h-screen flex flex-col bg-background">
-            <Header title="حاضنة الأسهم" subtitle={`أسهم تحت المراقبة والتسخين والتجميع الهادئ — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
+            <Header title="الفحص الحي للأسهم" subtitle={`أسهم تحت المراقبة والفحص المستمر — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />
             <main className="flex-1 p-3 md:p-4 page-transition" dir="rtl">
-              <IncubatorStandaloneView market={currentMarket} />
+              <IncubatorStandaloneView market={normalizedMarket} maxDisplay={0} />
             </main>
             <Footer />
           </div>
         );
+      }
       case 'historical-trades':
         // ALPHA-UX-FIX-7: standalone route (moved from #recommendations tab to السوق nav)
         return (

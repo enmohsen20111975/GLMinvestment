@@ -16,8 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import { access } from 'fs/promises';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +44,7 @@ interface NewsHealthResponse {
   known_broken_sources: Array<{ source: string; reason: string }>;
 }
 
-const DB_PATH = path.join(process.cwd(), 'db', 'news.db');
+const DB_PATH = 'news.db';
 
 // Known broken sources — appear in vps-service/news-collector code but
 // never successfully wrote any articles (returning HTML instead of RSS).
@@ -83,9 +82,8 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    try {
-      await access(DB_PATH);
-    } catch {
+    const db = openDb(DB_PATH);
+    if (!db) {
       return NextResponse.json(
         {
           success: false,
@@ -95,19 +93,6 @@ export async function GET(req: NextRequest) {
         { status: 503 },
       );
     }
-
-    let Database: any;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      Database = require('better-sqlite3');
-    } catch (e) {
-      return NextResponse.json(
-        { success: false, error: 'better_sqlite3_missing', detail: String(e) },
-        { status: 503 },
-      );
-    }
-
-    const db = new Database(DB_PATH, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
 
     // Get per-source counts + last fetch

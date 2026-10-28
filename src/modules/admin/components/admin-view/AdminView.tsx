@@ -62,6 +62,8 @@ import { PlatformPerformanceView } from '@/modules/admin/components/platform-per
 import { BacktestTab } from '@/modules/admin/components/BacktestTab';
 import { DbBackupPanel } from '@/modules/admin/components/DbBackupPanel';
 import { SystemMonitorPanel } from '@/modules/admin/components/SystemMonitorPanel';
+// (ALPHA-SYSTEM-TOPOLOGY): خريطة النظام الحية — رسم هندسي تفاعلي + حالة كل node.
+import { SystemTopologyView } from '@/modules/admin/components/SystemTopologyView';
 // ADMIN-CLEANUP: switched from UserManagementPanel (legacy, 904 LOC, fetches /users/[id] directly)
 // to UsersManagement (newer, split into users-mgmt/ folder, uses adminFetch helper)
 import { UsersManagement } from '@/modules/admin/components/UsersManagement';
@@ -267,6 +269,11 @@ export function AdminView() {
  {/* ADMIN-CONSOLIDATION: merged cron-health into system-monitor */}
  <CronHealthTab />
  </div>
+ )}
+
+ {/* ==================== SYSTEM TOPOLOGY TAB (ALPHA-SYSTEM-TOPOLOGY) ==================== */}
+ {s.activeTab === 'system-topology' && (
+ <SystemTopologyView />
  )}
 
  {/* ==================== ENGINE CONTROL TAB (merged: engine-control-room + general + data-engine) ==================== */}

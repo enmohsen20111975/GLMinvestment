@@ -617,6 +617,50 @@ def promote_incubator_candidates(market: str = 'EGX') -> list:
             if not triggered:
                 continue
 
+            # BRAVO-FIX-A (Risk Gate fail-closed): قبل ما ننشر توصية قابلة للتنفيذ
+            # (BUY) في predictions.db، لازم نمرّها على بوابة المخاطر. لو الـ gate
+            # رفضت أو فشلت → نمنع الكتابة + نسجّل السبب في decision_log.
+            # ده تنفيذ لـ Issue #4 directive: "لا مسار يصدر توصية قابلة للتنفيذ
+            # دون Risk Gate ناجحة" + "fail-closed مع رسالة تشخيصية واضحة".
+            try:
+                from core.risk_gate_wrapper import safe_apply_risk_gate
+                _rr_for_gate = cand.get('risk_reward') or 0.0
+                _score_for_gate = cand.get('readiness_pct', 80) or 0.0
+                _allowed, _reason, _final_signal = safe_apply_risk_gate(
+                    signal='BUY',
+                    master_score=float(_score_for_gate),
+                    risk_reward=float(_rr_for_gate),
+                    conviction_level='MEDIUM',
+                    data_quality='fresh',
+                )
+                if not _allowed:
+                    # fail-closed: skip this ticker + log the rejection reason.
+                    logger.warning(
+                        f"⛔ RISK_GATE blocked {ticker}: {_reason}"
+                    )
+                    try:
+                        from analyzers.decision_logger import log_decision
+                        log_decision(
+                            symbol=ticker,
+                            decision_type='reject_entry',
+                            reason_code='risk_gate_blocked',
+                            reason_text=f'Risk gate blocked: {_reason}',
+                            flag_active='RISK_GATE',
+                            market='EGX',
+                            scan_date=_dt.now().strftime('%Y-%m-%d'),
+                        )
+                    except Exception as _le:
+                        logger.error(f"log_decision failed for {ticker}: {_le}", exc_info=True)
+                    continue
+            except Exception as _ge:
+                # If the risk_gate wrapper itself throws (shouldn't — it's
+                # fail-closed internally), we STILL block to be safe.
+                logger.error(
+                    f"⛔ RISK_GATE wrapper error for {ticker} — blocking (fail-closed): {_ge}",
+                    exc_info=True,
+                )
+                continue
+
             # سجّل التوقع في predictions.db
             # B2 FIX (Task 1-b, Bravo): replace `INSERT OR IGNORE` (which silently
             # dropped updates AND created one row per 5-min scan = up to 60 dup
@@ -719,32 +763,73 @@ def promote_incubator_candidates(market: str = 'EGX') -> list:
                     promoted.append(ticker)
                 else:
                     # No existing row for today → INSERT a new one.
-                    pred_cur.execute("""
-                        INSERT INTO predictions (
-                            ticker, signal, signal_type, entry_price, stop_loss, target_price,
-                            risk_reward, confidence, track, notes, prediction_date, created_at,
-                            persona, market, updated_at, update_count
-                        ) VALUES (?, 'BUY', 'BUY', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                    """, (
-                        ticker,
-                        cand.get('current_price', live_price),
-                        cand.get('stop_loss_if_promoted'),
-                        cand.get('target_if_promoted'),
-                        cand.get('risk_reward'),
-                        cand.get('readiness_pct', 80),
-                        _track_val,
-                        _notes_val,
-                        _now_full,
-                        _now_iso,
-                        _persona_val,
-                        _market_val,
-                        _now_iso,
-                    ))
-                    logger.info(
-                        f"🚀 INCUBATOR PROMOTED (NEW INSERT): {ticker} — "
-                        f"trigger={trigger_type}, live_price={live_price}"
-                    )
-                    promoted.append(ticker)
+                    # BRAVO-FIX-C (dedup hardening): wrap INSERT in try/except
+                    # IntegrityError. The UNIQUE INDEX idx_predictions_dedup
+                    # (ticker, substr(prediction_date,1,10), persona, market, track)
+                    # will abort a duplicate INSERT. If two scanner runs race
+                    # between the SELECT check and this INSERT, the loser gets
+                    # IntegrityError → we retry as UPDATE (preserve original).
+                    try:
+                        pred_cur.execute("""
+                            INSERT INTO predictions (
+                                ticker, signal, signal_type, entry_price, stop_loss, target_price,
+                                risk_reward, confidence, track, notes, prediction_date, created_at,
+                                persona, market, updated_at, update_count
+                            ) VALUES (?, 'BUY', 'BUY', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                        """, (
+                            ticker,
+                            cand.get('current_price', live_price),
+                            cand.get('stop_loss_if_promoted'),
+                            cand.get('target_if_promoted'),
+                            cand.get('risk_reward'),
+                            cand.get('readiness_pct', 80),
+                            _track_val,
+                            _notes_val,
+                            _now_full,
+                            _now_iso,
+                            _persona_val,
+                            _market_val,
+                            _now_iso,
+                        ))
+                        logger.info(
+                            f"🚀 INCUBATOR PROMOTED (NEW INSERT): {ticker} — "
+                            f"trigger={trigger_type}, live_price={live_price}"
+                        )
+                        promoted.append(ticker)
+                    except sqlite3.IntegrityError as ie:
+                        # Race condition: another process inserted the same
+                        # (ticker, day, persona, market, track) between our
+                        # SELECT and INSERT. Retry as UPDATE to preserve the
+                        # original row and refresh mutable fields.
+                        logger.warning(
+                            f"⚠️ INSERT race for {ticker} (IntegrityError) — retrying as UPDATE: {ie}"
+                        )
+                        pred_cur.execute("""
+                            UPDATE predictions SET
+                                signal = 'BUY',
+                                signal_type = 'BUY',
+                                risk_reward = ?,
+                                confidence = ?,
+                                notes = ?,
+                                updated_at = ?,
+                                update_count = update_count + 1
+                            WHERE ticker = ?
+                              AND substr(prediction_date,1,10) = ?
+                              AND persona = ?
+                              AND market = ?
+                              AND track = ?
+                        """, (
+                            cand.get('risk_reward'),
+                            cand.get('readiness_pct', 80),
+                            _notes_val,
+                            _now_iso,
+                            ticker,
+                            _today_str,
+                            _persona_val,
+                            _market_val,
+                            _track_val,
+                        ))
+                        promoted.append(ticker)
 
                 pred_conn.commit()
                 pred_conn.close()

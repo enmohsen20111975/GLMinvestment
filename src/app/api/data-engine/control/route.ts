@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
+import { openDb } from '@/lib/db-manager';
 
 // Database paths
 const DATA_DIR = path.join(process.cwd(), 'db');
-const DATA_ENGINE_DB = path.join(DATA_DIR, 'data_engine.db');
-const STOCKS_DB = path.join(DATA_DIR, 'stocks.db');
-const NEWS_DB = path.join(DATA_DIR, 'news.db');  // market_news table (Rule 44; FIX-WAVE-2-DATA: was news_articles)
-const HISTORICAL_DB = path.join(DATA_DIR, 'data_engine.db');  // historical في data_engine.db (egksco_price_history)
 const ENGINE_STATUS_FILE = path.join(DATA_DIR, 'engine_status.json');
 const HISTORICAL_STATUS_FILE = path.join(DATA_DIR, 'historical_status.json');
 
@@ -123,100 +119,109 @@ function getAllDbStats() {
   };
 
   // Data engine DB
-  try {
-    const db = new Database(DATA_ENGINE_DB, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
-      (stats.data_engine as Record<string, number>).stocks = result?.count || 0;
-    } catch {}
-    
-    try {
-      const marketRows = db.prepare('SELECT market, COUNT(*) as count FROM stocks GROUP BY market').all() as { market: string; count: number }[];
-      for (const row of marketRows) {
-        (stats.by_market as Record<string, number>)[row.market] = row.count;
+  {
+    const db = openDb('data_engine.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 5000');
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
+          (stats.data_engine as Record<string, number>).stocks = result?.count || 0;
+        } catch {}
+
+        try {
+          const marketRows = db.prepare('SELECT market, COUNT(*) as count FROM stocks GROUP BY market').all() as { market: string; count: number }[];
+          for (const row of marketRows) {
+            (stats.by_market as Record<string, number>)[row.market] = row.count;
+          }
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM crypto_prices').get() as { count: number };
+          (stats.data_engine as Record<string, number>).crypto = result?.count || 0;
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM gold_prices').get() as { count: number };
+          (stats.data_engine as Record<string, number>).gold = result?.count || 0;
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM silver_prices').get() as { count: number };
+          (stats.data_engine as Record<string, number>).silver = result?.count || 0;
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM exchange_rates').get() as { count: number };
+          (stats.data_engine as Record<string, number>).forex = result?.count || 0;
+        } catch {}
+      } catch (e) {
+        console.error('Error reading data_engine.db:', e);
+      } finally {
+        try { db.close(); } catch { /* ignore */ }
       }
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM crypto_prices').get() as { count: number };
-      (stats.data_engine as Record<string, number>).crypto = result?.count || 0;
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM gold_prices').get() as { count: number };
-      (stats.data_engine as Record<string, number>).gold = result?.count || 0;
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM silver_prices').get() as { count: number };
-      (stats.data_engine as Record<string, number>).silver = result?.count || 0;
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM exchange_rates').get() as { count: number };
-      (stats.data_engine as Record<string, number>).forex = result?.count || 0;
-    } catch {}
-    
-    db.close();
-  } catch (e) {
-    console.error('Error reading data_engine.db:', e);
+    }
   }
 
   // Stocks DB
-  try {
-    const db = new Database(STOCKS_DB, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
-      (stats.stocks_db as Record<string, number>).stocks = result?.count || 0;
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM stock_daily_prices').get() as { count: number };
-      (stats.stocks_db as Record<string, number>).daily_prices = result?.count || 0;
-    } catch {}
-    
-    db.close();
-  } catch {}
+  {
+    const db = openDb('stocks.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 5000');
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
+          (stats.stocks_db as Record<string, number>).stocks = result?.count || 0;
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM stock_daily_prices').get() as { count: number };
+          (stats.stocks_db as Record<string, number>).daily_prices = result?.count || 0;
+        } catch {}
+      } catch {}
+      try { db.close(); } catch { /* ignore */ }
+    }
+  }
 
   // Historical DB
-  try {
-    const db = new Database(HISTORICAL_DB, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
-    
-    try {
-      const result = db.prepare('SELECT COUNT(*) as count FROM historical_prices').get() as { count: number };
-      (stats.historical as Record<string, unknown>).records = result?.count || 0;
-    } catch {}
-    
-    try {
-      const result = db.prepare('SELECT COUNT(DISTINCT symbol) as count FROM historical_prices').get() as { count: number };
-      (stats.historical as Record<string, unknown>).symbols = result?.count || 0;
-    } catch {}
-    
-    try {
-      const rows = db.prepare(`
-        SELECT category, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
-        FROM historical_prices GROUP BY category
-      `).all() as { category: string; symbols: number; records: number }[];
-      (stats.historical as Record<string, unknown>).categories = rows;
-    } catch {}
-    
-    db.close();
-  } catch {}
+  {
+    const db = openDb('data_engine.db');
+    if (db) {
+      try {
+        db.pragma('busy_timeout = 5000');
+        try {
+          const result = db.prepare('SELECT COUNT(*) as count FROM historical_prices').get() as { count: number };
+          (stats.historical as Record<string, unknown>).records = result?.count || 0;
+        } catch {}
+
+        try {
+          const result = db.prepare('SELECT COUNT(DISTINCT symbol) as count FROM historical_prices').get() as { count: number };
+          (stats.historical as Record<string, unknown>).symbols = result?.count || 0;
+        } catch {}
+
+        try {
+          const rows = db.prepare(`
+            SELECT category, COUNT(DISTINCT symbol) as symbols, COUNT(*) as records
+            FROM historical_prices GROUP BY category
+          `).all() as { category: string; symbols: number; records: number }[];
+          (stats.historical as Record<string, unknown>).categories = rows;
+        } catch {}
+      } catch {}
+      try { db.close(); } catch { /* ignore */ }
+    }
+  }
 
   // News DB
-  try {
-    const db = new Database(NEWS_DB, { readonly: true, timeout: 5000 });
-    db.pragma('busy_timeout = 5000');
-    // FIX-WAVE-2-DATA (AUDIT-DEEP-5 #4): news_articles renamed → market_news per Rule 44.
-    const result = db.prepare('SELECT COUNT(*) as count FROM market_news').get() as { count: number };
-    stats.news = result?.count || 0;
-    db.close();
-  } catch {}
+  {
+    const db = openDb('news.db');
+    if (db) {
+      db.pragma('busy_timeout = 5000');
+      // FIX-WAVE-2-DATA (AUDIT-DEEP-5 #4): news_articles renamed → market_news per Rule 44.
+      const result = db.prepare('SELECT COUNT(*) as count FROM market_news').get() as { count: number };
+      stats.news = result?.count || 0;
+      db.close();
+    }
+  }
 
   return stats;
 }

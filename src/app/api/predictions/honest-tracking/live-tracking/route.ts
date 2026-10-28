@@ -9,22 +9,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import type Database from 'better-sqlite3';
+// (ALPHA-DAL-WAVE4): استخدم openDbWritable من الـ DAL — ممنوع new Database().
+import { openDbWritable } from '@/lib/db-manager';
 import { ensureSchema } from '@/lib/honest-tracking/maestro';
 import { applyProtectionFilter, isProtectionActive, getProtectionDescription, getProtectionSqlFilter } from '@/lib/protection/display-protection';
 
 export const dynamic = 'force-dynamic';
 
 function openDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-  try {
-    const db = new Database(dbPath, { timeout: 3000 });
-    ensureSchema(db);
-    return db;
-  } catch {
-    return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
-  }
+  // (ALPHA-DAL-WAVE4): DAL gatekeeper — ممنوع new Database().
+  const db = openDbWritable('predictions.db');
+  if (!db) throw new Error('predictions.db not found');
+  ensureSchema(db);
+  return db;
 }
 
 function inferMarket(ticker: string, marketCol: string | null): string {

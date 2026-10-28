@@ -424,6 +424,9 @@ export function UnifiedTable<T extends object>({
  onColumnVisibilityChange,
  showColumnToggle = false,
 }: UnifiedTableProps<T>) {
+ // FIX (Blueprint Rule 5): dataRef — علشان نقرأ data في useCallback بدون وضعها في deps
+ const dataRef = useRef(data);
+ dataRef.current = data;
  // ref للـ table wrapper عشان نقدر نلتقطه كصورة
  const tableWrapperRef = useRef<HTMLDivElement>(null);
  // ref للـ <table> element (للـ auto-size + DOM queries)
@@ -779,8 +782,9 @@ export function UnifiedTable<T extends object>({
  }, [columns]);
 
  // detect numeric column (peek at first non-null value)
+ // FIX (Blueprint Rule 5): use dataRef instead of data in deps — prevents re-creation on every poll
  const isNumericColumn = useCallback((colKey: string): boolean => {
- for (const row of data) {
+ for (const row of dataRef.current) {
  const v = getCellFilterValue(row, colKey);
  if (v == null || v === '') continue;
  if (typeof v === 'number') return true;
@@ -788,17 +792,17 @@ export function UnifiedTable<T extends object>({
  return false; // found non-null non-numeric → text column
  }
  return false;
- }, [data, getCellFilterValue]);
+ }, [getCellFilterValue]);
 
  const getDistinctValues = useCallback((colKey: string): string[] => {
  const set = new Set<string>();
- for (const row of data) {
+ for (const row of dataRef.current) {
  const v = getCellFilterValue(row, colKey);
  if (v == null || v === '') continue;
  set.add(String(v));
  }
  return Array.from(set).sort((a, b) => a.localeCompare(b, 'ar', { numeric: true }));
- }, [data, getCellFilterValue]);
+ }, [getCellFilterValue]);
 
  const isColumnFilterActive = useCallback((colKey: string): boolean => {
  if (multiSelectFilters[colKey] && multiSelectFilters[colKey].size > 0) return true;

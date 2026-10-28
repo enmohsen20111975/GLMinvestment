@@ -34,6 +34,7 @@ import {
  Brain,
  Calculator,
  FileText,
+ Search,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -129,6 +130,24 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  const [journalReason, setJournalReason] = useState('');
  // Guard so the auto-open profiler effect fires at most once per result.
  const lastAutoTriggeredResultRef = useRef<RescueResult | null>(null);
+
+ // P-RESCUE-SELECTOR: جلب أسهم المحفظة تلقائيًا عند فتح الشاشة
+ useEffect(() => {
+   fetch('/api/portfolio/holdings', { cache: 'no-store' })
+     .then(r => r.ok ? r.json() : Promise.reject())
+     .then(data => {
+       if (data.holdings && Array.isArray(data.holdings)) {
+         setPortfolioHoldings(data.holdings.map((h: any) => ({
+           ticker: h.ticker || h.symbol || '',
+           name_ar: h.name_ar || h.name || h.ticker || '',
+           quantity: Number(h.quantity || h.shares || 0),
+           avg_buy_price: Number(h.avg_buy_price || h.purchase_price || h.buy_price || 0),
+           current_price: Number(h.current_price || h.last_price || 0),
+         })).filter((h: any) => h.ticker && h.quantity > 0));
+       }
+     })
+     .catch(() => {/* المحفظة مش متاحة — العميل يستخدم البحث */});
+ }, []);
 
  // ── Task 7: Auto-fill from props when a losing position is clicked ──
  useEffect(() => {
@@ -381,20 +400,121 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  عندك سهم لبسته بخسارة؟ ادخله والنظام هيقولك: اصبر، اعمل متوسط، ولا اقطع الخسارة — مع السبب.
  </p>
 
- {/* Input form — TASK 31-C: added buy_date input → 5 cols */}
- <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
- {/* P31 TASK 3: StockSearchDropdown replaces the plain ticker Input */}
- <div className="sm:col-span-1">
- <StockSearchDropdown
- value={ticker}
- onSelect={(tk, _name, currentPrice) => {
- setTicker(tk);
- // Auto-fill buy price with the live price as a sensible default
- if (currentPrice > 0 && !buyPrice) {
- setBuyPrice(String(currentPrice));
- }
- }}
- />
+ {/* P-RESCUE-SELECTOR: المينو الموحد — اختيار من المحفظة أو بحث عن أي سهم */}
+ <div className="sm:col-span-1 space-y-1">
+   {/* أزرار التبديل */}
+   <div className="flex gap-1">
+     <Button
+       size="sm"
+       variant={showPortfolioList ? 'secondary' : 'ghost'}
+       onClick={() => { setShowPortfolioList(!showPortfolioList); setShowAllStocksSearch(false); }}
+       className="h-7 px-2 text-[10px] gap-1 flex-1"
+       title="اختر من أسهم محفظتك"
+     >
+       <Wallet className="size-3" />
+       محفظتي
+       {portfolioHoldings.length > 0 && (
+         <span className="font-mono text-[9px] opacity-70">({portfolioHoldings.length})</span>
+       )}
+     </Button>
+     <Button
+       size="sm"
+       variant={showAllStocksSearch ? 'secondary' : 'ghost'}
+       onClick={() => { setShowAllStocksSearch(!showAllStocksSearch); setShowPortfolioList(false); }}
+       className="h-7 px-2 text-[10px] gap-1 flex-1"
+       title="ابحث عن أي سهم في السوق"
+     >
+       <Search className="size-3" />
+       بحث
+     </Button>
+   </div>
+
+   {/* قائمة أسهم المحفظة */}
+   {showPortfolioList && (
+     <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-card">
+       {portfolioHoldings.length > 0 ? (
+         portfolioHoldings.map((h) => (
+           <button
+             key={h.ticker}
+             onClick={() => {
+               setTicker(h.ticker);
+               setBuyPrice(h.avg_buy_price > 0 ? String(h.avg_buy_price) : '');
+               setQuantity(String(h.quantity));
+               setShowPortfolioList(false);
+             }}
+             className={cn(
+               'w-full text-right px-2 py-1.5 text-xs hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0',
+               ticker === h.ticker && 'bg-primary/5',
+             )}
+           >
+             <div className="flex items-center justify-between">
+               <div className="min-w-0">
+                 <span className="font-bold font-mono">{h.ticker}</span>
+                 <span className="text-muted-foreground mr-1 truncate">{h.name_ar}</span>
+               </div>
+               <div className="text-left shrink-0">
+                 <div className="font-mono text-[10px] text-muted-foreground">
+                   متوسط: {h.avg_buy_price > 0 ? h.avg_buy_price.toFixed(2) : '—'}
+                 </div>
+                 <div className="font-mono text-[10px] text-muted-foreground">
+                   كمية: {h.quantity}
+                 </div>
+               </div>
+             </div>
+             {h.current_price > 0 && (
+               <div className="font-mono text-[10px] mt-0.5">
+                 السعر الحالي: <span className={cn('font-bold', h.current_price < h.avg_buy_price ? 'text-loss' : 'text-profit')}>
+                   {h.current_price.toFixed(2)}
+                 </span>
+                 {h.avg_buy_price > 0 && (
+                   <span className={cn('mr-1', h.current_price < h.avg_buy_price ? 'text-loss' : 'text-profit')}>
+                     ({h.current_price < h.avg_buy_price ? '↓' : '↑'}{Math.abs(((h.current_price - h.avg_buy_price) / h.avg_buy_price) * 100).toFixed(1)}%)
+                   </span>
+                 )}
+               </div>
+             )}
+           </button>
+         ))
+       ) : (
+         <div className="p-3 text-center text-xs text-muted-foreground">
+           مفيش أسهم في محفظتك لسه. استخدم "بحث" لتحليل أي سهم.
+         </div>
+       )}
+     </div>
+   )}
+
+   {/* بحث عن أي سهم */}
+   {showAllStocksSearch && (
+     <StockSearchDropdown
+       value={ticker}
+       onSelect={(tk, _name, currentPrice) => {
+         setTicker(tk);
+         setShowAllStocksSearch(false);
+         if (currentPrice > 0 && !buyPrice) {
+           setBuyPrice(String(currentPrice));
+         }
+       }}
+     />
+   )}
+
+   {/* عرض السهم المختار */}
+   {!showPortfolioList && !showAllStocksSearch && ticker && (
+     <div className="px-2 py-1.5 rounded-md border border-border bg-muted/20 text-xs">
+       <span className="font-bold font-mono">{ticker}</span>
+       <button
+         onClick={() => { setTicker(''); setBuyPrice(''); setQuantity(''); }}
+         className="mr-2 text-muted-foreground hover:text-loss"
+         title="مسح"
+       >✕</button>
+     </div>
+   )}
+
+   {/* لو مفيش سهم مختار ومفيش قائمة مفتوحة */}
+   {!showPortfolioList && !showAllStocksSearch && !ticker && (
+     <div className="px-2 py-1.5 text-[10px] text-muted-foreground">
+       اختر من محفظتك أو ابحث عن سهم
+     </div>
+   )}
  </div>
  <Input
  type="number"
@@ -422,7 +542,6 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LifeBuoy className="h-4 w-4" />}
  حلّل
  </Button>
- </div>
 
  {/* Result */}
  {result && (
@@ -900,6 +1019,109 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  <p className="text-xs text-muted-foreground italic">{breakeven.formula}</p>
  </div>
  )}
+
+ {/* === حاسبة ظبط المتوسط التفاعلية === */}
+ {/* معادلة: Q = Q0 × (A0 - T) / (T - P) */}
+ {result && result.current_price > 0 && result.quantity > 0 && (() => {
+   const [targetAvg, setTargetAvg] = useState<string>('');
+   const Q0 = result.quantity;
+   const A0 = result.buy_price;
+   const P = result.current_price;
+   const T = parseFloat(targetAvg) || 0;
+
+   // Q = Q0 × (A0 - T) / (T - P)
+   let Q = 0;
+   let cost = 0;
+   let newAvg = A0;
+   let validCalc = false;
+   if (T > 0 && T > P && T < A0) {
+     Q = Math.ceil(Q0 * (A0 - T) / (T - P));
+     cost = Q * P;
+     newAvg = (Q0 * A0 + Q * P) / (Q0 + Q);
+     validCalc = true;
+   }
+
+   return (
+     <div className="p-3 rounded-md border border-primary/20 bg-primary/5 space-y-3">
+       <div className="flex items-center gap-2 font-semibold text-sm">
+         <Calculator className="h-4 w-4 text-primary" />
+         حاسبة ظبط المتوسط — كم سهم تحتاج شراءه؟
+       </div>
+
+       {/* المعطيات الحالية */}
+       <div className="grid grid-cols-3 gap-2 text-xs">
+         <div className="p-2 rounded-md bg-background/60">
+           <div className="text-muted-foreground">الكمية الحالية</div>
+           <div className="font-bold font-mono">{AR_NUM.format(Q0)}</div>
+         </div>
+         <div className="p-2 rounded-md bg-background/60">
+           <div className="text-muted-foreground">متوسط التكلفة</div>
+           <div className="font-bold font-mono">{A0.toFixed(3)}</div>
+         </div>
+         <div className="p-2 rounded-md bg-background/60">
+           <div className="text-muted-foreground">السعر الحالي</div>
+           <div className="font-bold font-mono text-warning">{P.toFixed(2)}</div>
+         </div>
+       </div>
+
+       {/* إدخال المتوسط المستهدف */}
+       <div className="space-y-1">
+         <label className="text-xs text-muted-foreground">المتوسط المستهدف (يجب أن يكون بين السعر الحالي والمتوسط الحالي)</label>
+         <Input
+           type="number"
+           step="0.01"
+           placeholder="مثال: 2.50"
+           value={targetAvg}
+           onChange={(e) => setTargetAvg(e.target.value)}
+           className="h-8 text-sm font-mono"
+         />
+       </div>
+
+       {/* النتائج */}
+       {validCalc ? (
+         <div className="space-y-2">
+           <div className="grid grid-cols-2 gap-2">
+             <div className="p-2.5 rounded-md bg-warning/10 border border-warning/20">
+               <div className="text-xs text-muted-foreground">عدد الأسهم المطلوب شراؤها</div>
+               <div className="text-lg font-bold font-mono text-warning">
+                 {AR_NUM.format(Q)}
+               </div>
+             </div>
+             <div className="p-2.5 rounded-md bg-profit/10 border border-profit/20">
+               <div className="text-xs text-muted-foreground">المبلغ المطلوب</div>
+               <div className="text-lg font-bold font-mono text-profit">
+                 {AR_NUM.format(Math.round(cost))} ج.م
+               </div>
+             </div>
+           </div>
+           <div className="p-2 rounded-md bg-background/60 text-xs space-y-1">
+             <div className="flex justify-between">
+               <span className="text-muted-foreground">المتوسط الجديد بعد الشراء:</span>
+               <span className="font-bold font-mono">{newAvg.toFixed(3)}</span>
+             </div>
+             <div className="flex justify-between">
+               <span className="text-muted-foreground">إجمالي الأسهم بعد الشراء:</span>
+               <span className="font-bold font-mono">{AR_NUM.format(Q0 + Q)}</span>
+             </div>
+             <div className="flex justify-between">
+               <span className="text-muted-foreground">إجمالي الاستثمار بعد الشراء:</span>
+               <span className="font-bold font-mono">{AR_NUM.format(Math.round(Q0 * A0 + cost))} ج.م</span>
+             </div>
+           </div>
+           {/* تنبيه المخاطرة */}
+           <div className="text-[10px] text-warning/70 flex items-start gap-1">
+             <AlertTriangle className="size-3 shrink-0 mt-0.5" />
+             <span>تنبيه: ظبط المتوسط بيضيف مخاطرة تركيز على نفس السهم. لا تستثمر أكثر من 10-15% من محفظتك في سهم واحد.</span>
+           </div>
+         </div>
+       ) : targetAvg ? (
+         <div className="text-xs text-loss p-2 rounded-md bg-loss/5">
+           ⚠️ المتوسط المستهدف لازم يكون بين السعر الحالي ({P.toFixed(2)}) والمتوسط الحالي ({A0.toFixed(3)}) — وإلا فالعملية لا تقلل المتوسط.
+         </div>
+       ) : null}
+     </div>
+   );
+ })()}
  </>
  );
  })()}

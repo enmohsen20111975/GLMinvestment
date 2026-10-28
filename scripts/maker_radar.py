@@ -1025,6 +1025,8 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         winner_path = 'F_bounce'
         winner_position_size = 0.0  # NO buy — detection/monitoring only
         winner_reason = bounce_reason
+    # NOTE: money_flow + life_cycle + limit_up + kill_triggered already computed
+    # above (before winner_path selection) so BOUNCE can use buy_pct in its conditions.
 
     # BRAVO-FLOW-GATE-ALL (2026-10-20, owner directive — P0-RADAR-FLOW-GATE-ALL):
     # تعميم الـ flow gate على كل المسارات الصاعدة (مش quiet بس).

@@ -18,12 +18,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const DATA_ENGINE_DB = path.join(process.cwd(), 'db', 'data_engine.db');
+import { openDb as openDbDal } from '@/lib/db-manager';
+
+const DATA_ENGINE_DB = 'data_engine.db';
 
 const CONSENSUS_MIN = 6;
 
@@ -38,12 +39,9 @@ type SqliteDb = {
 };
 
 function dbOpen(): SqliteDb | null {
-  const fs = require('fs');
-  if (!fs.existsSync(DATA_ENGINE_DB)) return null;
-  const Database = require('better-sqlite3');
-  const db = new Database(DATA_ENGINE_DB, { readonly: true, fileMustExist: true, timeout: 15000 });
-  db.pragma('busy_timeout = 15000');
-  return db as SqliteDb;
+  const db = openDbDal(DATA_ENGINE_DB) as unknown as SqliteDb | null;
+  if (db) db.pragma('busy_timeout = 15000');
+  return db;
 }
 
 function tableExists(db: SqliteDb, name: string): boolean {
@@ -134,11 +132,8 @@ export async function GET(req: NextRequest) {
         )
         .all(symbol);
       const price = (() => {
-        const fs = require('fs');
-        const stocksDb = path.join(process.cwd(), 'db', 'stocks.db');
-        if (!fs.existsSync(stocksDb)) return null;
-        const D = require('better-sqlite3');
-        const sdb = new D(stocksDb, { readonly: true, timeout: 10000 });
+        const sdb = openDbDal('stocks.db');
+        if (!sdb) return null;
         const row = sdb
           .prepare('SELECT ticker, name, current_price, dividend_yield, sector FROM stocks WHERE UPPER(ticker) = ?')
           .get(symbol);

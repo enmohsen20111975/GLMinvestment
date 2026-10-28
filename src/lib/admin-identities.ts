@@ -38,6 +38,7 @@ const DEFAULT_ADMIN_EMAILS: readonly string[] = Object.freeze([
 const DEFAULT_ADMIN_USERNAMES: readonly string[] = Object.freeze([
   'mohseny',
   'admin',
+  'enmohsen20111975',
 ]);
 
 /**

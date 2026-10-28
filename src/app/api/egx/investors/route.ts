@@ -26,10 +26,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const fs = require('fs');
-const path = require('path');
+import { openDbWritable } from '@/lib/db-manager';
 
-const STOCKS_DB_PATH = path.join(process.cwd(), 'db', 'stocks.db');
+const STOCKS_DB_PATH = 'stocks.db';
 
 // Historical EGX participation ratios (long-term averages).
 const EGX_RATIO_EGYPTIANS = 0.70;
@@ -85,7 +84,9 @@ INSERT OR REPLACE INTO investors_data (
 
 function dbExists(p: string): boolean {
   try {
-    return fs.existsSync(p) && fs.statSync(p).size > 0;
+    const db = openDbWritable(p);
+    if (db) { db.close(); return true; }
+    return false;
   } catch {
     return false;
   }
@@ -418,8 +419,26 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const Database = require('better-sqlite3');
-    const db = new Database(STOCKS_DB_PATH, { readonly: false, timeout: 15000 });
+    const db = openDbWritable(STOCKS_DB_PATH);
+    if (!db) {
+      return NextResponse.json({
+        success: true,
+        market: 'EGX',
+        source: 'none',
+        latest,
+        days,
+        rows: [],
+        stats: {
+          total_sessions: 0,
+          avg_individuals_net: 0,
+          avg_arab_net: 0,
+          avg_foreign_net: 0,
+          total_trades: 0,
+        },
+        note: 'stocks.db not found',
+        generated_at: new Date().toISOString(),
+      });
+    }
     db.pragma('busy_timeout = 15000');
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');

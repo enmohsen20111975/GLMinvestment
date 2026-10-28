@@ -26,6 +26,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+import { openDb } from '@/lib/db-manager';
+
 const PY = process.env.EGXPY_SERVICE_URL || process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
 
 interface PersonaStat {
@@ -83,17 +85,13 @@ export async function handleV4Stats(_req: NextRequest): Promise<NextResponse> {
 
   // 2) Fallback — compute stats from predictions.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(dbPath)) {
+    const db = openDb('predictions.db');
+    if (!db) {
       return NextResponse.json(
         { success: false, error: 'predictions.db not found' },
         { status: 500 }
       );
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
 
     const overall = db
       .prepare(

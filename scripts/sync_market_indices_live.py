@@ -118,7 +118,21 @@ def get_latest_index_close(db_path, symbol):
                 "SELECT close FROM index_daily_prices WHERE symbol = ? AND close > 0 "
                 "AND price_date < ? ORDER BY price_date DESC LIMIT 1", (symbol, today)
             ).fetchone()
-            return float(row[0]) if row else None
+            if row and row[0] and float(row[0]) > 0:
+                val = float(row[0])
+                # Sanity guard: EGX30 in 2026 should be > 45,000 to prevent poisoned baseline
+                if symbol == 'EGX30' and val < 45000:
+                    pass
+                else:
+                    return val
+
+            m_row = conn.execute("SELECT previous_close, value FROM market_indices WHERE symbol = ?", (symbol,)).fetchone()
+            if m_row:
+                if m_row[0] and float(m_row[0]) > 0:
+                    return float(m_row[0])
+                if m_row[1] and float(m_row[1]) > 0:
+                    return float(m_row[1])
+            return None
     except Exception:
         return None
 

@@ -4,6 +4,7 @@ export const revalidate = 0;
 export const runtime = 'nodejs';
 
 import { fetchMarketIndices, MARKET_NAMES_AR, MARKET_ALIASES } from '@/lib/market-data-access';
+import { openDb } from '@/lib/db-manager';
 
 const PYTHON_BACKEND = process.env.EGXPY_SERVICE_URL || process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
@@ -35,14 +36,10 @@ export async function GET(req: NextRequest) {
 
   // 3) Fallback — compute from stocks.db
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    if (!fs.existsSync(stocksDbPath)) {
+    const db = openDb('stocks.db');
+    if (!db) {
       return NextResponse.json({ success: false, error: 'stocks.db not found' }, { status: 500 });
     }
-    const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
 
     const stocks = db.prepare("SELECT change_percent FROM stocks WHERE market = ? AND change_percent IS NOT NULL").all(market);
     db.close();

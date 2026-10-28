@@ -45,17 +45,14 @@
  *     heuristic on `signal_type`, `notes`, and `explosive_label` columns.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { existsSync } from 'fs';
-import path from 'path';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
+import { openDb } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const maxDuration = 15; // should be <100ms typically
-
-const PROJECT_ROOT = process.cwd();
 
 // ─── Radar path definitions (mirror MultiMarketRadarTab + MakerRadarTab) ──
 interface PathDef {
@@ -104,14 +101,14 @@ interface DbHandle {
 
 function openPredictionsDb(): DbHandle | null {
   const candidates = [
-    { path: path.join(PROJECT_ROOT, 'db', 'predictions.db'), source: 'predictions_db' },
-    { path: path.join(PROJECT_ROOT, 'db', 'predictions.db.original'), source: 'predictions_db_original' },
+    { file: 'predictions.db', source: 'predictions_db' },
+    { file: 'predictions.db.original', source: 'predictions_db_original' },
   ];
 
   for (const c of candidates) {
-    if (!existsSync(c.path)) continue;
+    const db = openDb(c.file);
+    if (!db) continue;
     try {
-      const db = new Database(c.path, { readonly: true, fileMustExist: true });
       const tables = db
         .prepare("SELECT name FROM sqlite_master WHERE type='table'")
         .all() as { name: string }[];
@@ -124,6 +121,7 @@ function openPredictionsDb(): DbHandle | null {
       }
       return { db, source: c.source, hasRadarTrackingTable, hasPredictionsTable };
     } catch {
+      try { db.close(); } catch { /* ignore */ }
       continue;
     }
   }

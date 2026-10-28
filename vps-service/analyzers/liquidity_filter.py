@@ -971,7 +971,7 @@ class LiquidityFilter:
         # 2. Get 30-day average volume and turnover from price_history.db
         try:
             from pathlib import Path
-            price_history_db = str(Path(self.db_path).parent / 'price_history.db')
+            price_history_db = str(Path(self.db_path).parent / 'stocks.db')  # WAVE-2: was price_history.db (stale)
             if Path(price_history_db).exists():
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
@@ -979,7 +979,7 @@ class LiquidityFilter:
                 cursor = conn.cursor()
                 cursor.execute('''
                     SELECT AVG(volume), AVG(volume * close_price)
-                    FROM price_history
+                    FROM stock_daily_prices
                     WHERE ticker = ?
                     AND date >= date('now', '-30 days')
                 ''', (ticker,))
@@ -996,7 +996,7 @@ class LiquidityFilter:
                             from core.db_manager import db_manager
                             conn = db_manager.get_connection(price_history_db, writable=False)
                             cursor = conn.cursor()
-                            cursor.execute('SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1', (ticker,))
+                            cursor.execute('SELECT close FROM stock_daily_prices WHERE ticker = ? ORDER BY price_date DESC LIMIT 1', (ticker,))
                             res_price = cursor.fetchone()
                             if res_price and res_price[0]:
                                 current_price = float(res_price[0])

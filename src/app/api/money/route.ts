@@ -16,8 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import Database from 'better-sqlite3';
-import path from 'path';
+import { openDb } from '@/lib/db-manager';
 import { getSessionUserId } from '@/lib/auth-helper';
 
 export const revalidate = 10;
@@ -49,8 +48,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
-    const db = new Database(dbPath, { readonly: true, timeout: 5000 });
+    const db = openDb('stocks.db');
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'stocks.db unavailable', data: EMPTY_DATA },
+        { status: 200 }
+      );
+    }
     db.pragma('busy_timeout = 5000');
 
     // AUTHENTICATED userId from session — never read another user's data.

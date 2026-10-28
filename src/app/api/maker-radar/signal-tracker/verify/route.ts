@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync with async access
-// from fs/promises in fetchPricesAfter / openTrackerDb so the verify POST
-// handler never blocks the event loop per price-source candidate.
 import { access } from 'fs/promises';
 import path from 'path';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
+import { openDb, openDbWritable } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -31,7 +29,7 @@ const PROJECT_ROOT = process.cwd();
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface PriceSource {
-  dbPath: string;
+  dbFile: string;
   table: string;
   tickerCol: string;
   dateCol: string;
@@ -43,7 +41,7 @@ interface PriceSource {
 const PRICE_SOURCES: PriceSource[] = [
   // 1. data_engine.db.egksco_price_history (price_date column)
   {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
+    dbFile: 'data_engine.db',
     table: 'egksco_price_history',
     tickerCol: 'symbol',
     dateCol: 'price_date',
@@ -53,7 +51,7 @@ const PRICE_SOURCES: PriceSource[] = [
   },
   // 2. stocks.db.egksco_price_history (date column — different schema!)
   {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
+    dbFile: 'stocks.db',
     table: 'egksco_price_history',
     tickerCol: 'symbol',
     dateCol: 'date',
@@ -63,7 +61,7 @@ const PRICE_SOURCES: PriceSource[] = [
   },
   // 3. stocks.db.stock_daily_prices
   {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
+    dbFile: 'stocks.db',
     table: 'stock_daily_prices',
     tickerCol: 'ticker',
     dateCol: 'price_date',
@@ -73,7 +71,7 @@ const PRICE_SOURCES: PriceSource[] = [
   },
   // 4. data_engine.db.historical_data (non-EGX fallback)
   {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
+    dbFile: 'data_engine.db',
     table: 'historical_data',
     tickerCol: 'symbol',
     dateCol: 'date',
@@ -99,14 +97,9 @@ async function fetchPricesAfter(
   limit: number
 ): Promise<{ prices: PricePoint[]; source: string | null }> {
   for (const src of PRICE_SOURCES) {
+    const db = openDb(src.dbFile);
+    if (!db) continue;
     try {
-      await access(src.dbPath);
-    } catch {
-      continue;
-    }
-    let db: Database.Database | null = null;
-    try {
-      db = new Database(src.dbPath, { readonly: true, fileMustExist: true });
       // Quick table existence check
       const tbl = db
         .prepare(
@@ -163,21 +156,19 @@ async function fetchPricesAfter(
 // Tracker DB resolver — reuses the radar-db pattern (prefer stocks.db)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TRACKER_DB_CANDIDATES = [
-  path.join(PROJECT_ROOT, 'db', 'stocks.db'),
-  path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
-];
+const TRACKER_DB_CANDIDATES = ['stocks.db', 'data_engine.db'];
 
 // P0-14-ASYNC fix (2026-09-27): openTrackerDb is now async — uses access().
 async function openTrackerDb(): Promise<Database.Database | null> {
-  for (const p of TRACKER_DB_CANDIDATES) {
-    try {
-      await access(p);
-      const db = new Database(p);
-      ensureSchema(db);
-      return db;
-    } catch {
-      // try next candidate
+  for (const file of TRACKER_DB_CANDIDATES) {
+    const db = openDbWritable(file);
+    if (db) {
+      try {
+        ensureSchema(db);
+        return db;
+      } catch {
+        try { db.close(); } catch { /* ignore */ }
+      }
     }
   }
   return null;

@@ -667,10 +667,25 @@ export function getTierNameArExtended(tier: string): string {
  * (authChecked بيـ guarded عشان ميفضلش false في أول load.)
  */
 export function isGuestUser(
-  user: { subscription_tier?: string | null } | null | undefined,
+  user: {
+    subscription_tier?: string | null;
+    is_admin?: boolean;
+    email?: string | null;
+    username?: string | null;
+  } | null | undefined,
   isAuthenticated: boolean
 ): boolean {
-  if (isAuthenticated && user) return false;
+  if (user?.is_admin || user?.subscription_tier === 'admin') return false;
+  const email = (user?.email || '').toLowerCase().trim();
+  const username = (user?.username || '').toLowerCase().trim();
+  if (
+    ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(email) ||
+    ['mohseny', 'admin', 'enmohsen20111975'].includes(username)
+  ) {
+    return false;
+  }
+  if (isAuthenticated) return false;
+  if (user) return false;
   return true; // لا session + لا user → guest
 }
 

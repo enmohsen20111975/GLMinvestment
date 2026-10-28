@@ -325,6 +325,9 @@ export interface StoredAnalysisItem {
  name?: string;
  nameAr?: string;
  logoUrl?: string | null;
+ // (ALPHA-ICON-FIX): الـ API بيرجع logo_url (snake_case) — defensive field
+ // عشان الكومبوننت يقدر يقرا الاتنين: it.logo_url || it.logoUrl
+ logo_url?: string | null;
  maestroScore: number;
  recommendation?: string;
  recommendationAr?: string;
