@@ -128,6 +128,11 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  const [journalDecision, setJournalDecision] = useState<'HOLD' | 'AVERAGE_DOWN' | 'CUT_LOSS' | ''>('');
  const [journalSaving, setJournalSaving] = useState(false);
  const [journalReason, setJournalReason] = useState('');
+ // FIX (BRAVO-DISASTER 2026-10-28): showPortfolioList + showAllStocksSearch were
+ // USED at lines 409-513 but NEVER DECLARED — caused ReferenceError crash that
+ // broke the entire Portfolio panel + triggered React hydration errors #425/#422.
+ const [showPortfolioList, setShowPortfolioList] = useState(false);
+ const [showAllStocksSearch, setShowAllStocksSearch] = useState(false);
  // Guard so the auto-open profiler effect fires at most once per result.
  const lastAutoTriggeredResultRef = useRef<RescueResult | null>(null);
 
