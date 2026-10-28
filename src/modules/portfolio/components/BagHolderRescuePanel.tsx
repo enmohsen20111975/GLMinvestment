@@ -133,6 +133,11 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  // broke the entire Portfolio panel + triggered React hydration errors #425/#422.
  const [showPortfolioList, setShowPortfolioList] = useState(false);
  const [showAllStocksSearch, setShowAllStocksSearch] = useState(false);
+ // FIX (BRAVO-DISASTER 2026-10-28 part 2): portfolioHoldings + setPortfolioHoldings
+ // were USED at lines 145 (setPortfolioHoldings) + 421-441 (portfolioHoldings.map)
+ // but NEVER DECLARED — caused 'ReferenceError: portfolioHoldings is not defined'
+ // that crashed the Portfolio + BagHolderRescue panels.
+ const [portfolioHoldings, setPortfolioHoldings] = useState<Array<{ ticker: string; name?: string; buyPrice?: number; quantity?: number; market?: string }>>([]);
  // Guard so the auto-open profiler effect fires at most once per result.
  const lastAutoTriggeredResultRef = useRef<RescueResult | null>(null);
 

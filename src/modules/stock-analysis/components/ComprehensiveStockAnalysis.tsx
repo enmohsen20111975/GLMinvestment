@@ -1378,18 +1378,18 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
  <p className="text-sm mt-1">{professional.summary}</p>
  </div>
  )}
- {professional.target_price && (
+ {professional.target_price ? (
  <div className="flex items-center gap-2">
  <span className="text-xs text-muted-foreground">الهدف:</span>
- <span className="font-bold">{formatPrice(professional.target_price)}</span>
+ <span className="font-bold">{formatPrice(Number(professional.target_price))}</span>
  </div>
- )}
- {professional.risks && (
+ ) : null}
+ {professional.risks ? (
  <div>
  <span className="text-xs text-muted-foreground">المخاطر:</span>
- <p className="text-sm mt-1 text-loss">{professional.risks}</p>
+ <p className="text-sm mt-1 text-loss">{String(professional.risks)}</p>
  </div>
- )}
+ ) : null}
  </div>
  )}
  </WidgetCard>

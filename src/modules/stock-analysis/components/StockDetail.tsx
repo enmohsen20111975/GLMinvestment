@@ -1363,7 +1363,7 @@ export function StockDetail() {
  name: stock.name,
  nameAr: stock.name_ar,
  price: stock.current_price,
- change: stock.price_change,
+ change: stock.price_change ?? undefined,
  recommendation: deepAnalysis?.action,
  recommendationAr: deepAnalysis?.action_ar,
  confidence: deepAnalysis?.overall_score,
@@ -1402,11 +1402,11 @@ export function StockDetail() {
  signal: unifiedData?.canonical?.signal ?? deepAnalysis?.action,
  signalAr: unifiedData?.canonical?.signal_ar ?? deepAnalysis?.action_ar,
  score: unifiedData?.canonical?.master_score ?? deepAnalysis?.overall_score,
- confidence: deepAnalysis?.confidence,
+ confidence: (deepAnalysis as any)?.confidence,
  // UNIFIED-API — use prediction.entry_price/target_price/stop_loss when available.
  targetPrice: unifiedData?.prediction?.target_price ?? deepAnalysis?.price_targets?.upside_target,
  stopLoss: unifiedData?.prediction?.stop_loss ?? stock.support_level ?? undefined,
- reasons: deepAnalysis?.reasons,
+ reasons: (deepAnalysis as any)?.reasons,
  }}
  />
  <StockPublisher

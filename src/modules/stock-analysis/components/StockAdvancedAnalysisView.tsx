@@ -302,8 +302,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  const changePct = prevClose > 0 ? (change / prevClose) * 100 : 0;
 
  setChartData({
- success: true,
- data: {
+ // FIX (BRAVO-DISASTER 2026-10-28): ChartData type doesn't have success/data wrappers — was leftover from API response shape
  ticker,
  ohlcv: ohlcvList,
  indicators: {
@@ -313,7 +312,6 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  currentPrice: lastClose,
  priceChange24h: change,
  priceChangePercent24h: changePct,
- },
  },
  });
  }

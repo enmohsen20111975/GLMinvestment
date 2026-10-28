@@ -32,5 +32,11 @@
  *
  * Rule 75: commit + push after success. z-ai-web-dev-sdk NOT used.
  */
+// FIX (BRAVO-DISASTER 2026-10-28): was `export default SubscriptionView;` which
+// references `SubscriptionView` as a local binding — but `export { X } from './y'`
+// is a re-export that does NOT create a local binding. This caused
+// `ReferenceError: SubscriptionView is not defined` at runtime when the dynamic
+// import in page.tsx tried to read the default export.
+// Fix: use the re-export form for default too (no local binding needed).
 export { SubscriptionView } from './subscription-view';
-export default SubscriptionView;
+export { SubscriptionView as default } from './subscription-view';

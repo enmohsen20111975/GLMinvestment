@@ -17,6 +17,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+// FIX (BRAVO-DISASTER 2026-10-28): TableCell + TableRow were used but never imported
+import { TableCell, TableRow } from '@/components/ui/table';
 
 // Types
 interface TreasuryBond {

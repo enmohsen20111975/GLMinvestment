@@ -212,7 +212,8 @@ export function useStocksViewState(): StocksViewState {
 
   // ── Filtered stocks ──
   const filteredStocks = useMemo(() => {
-    const validStocks = stocks.filter((stock): stock is Stock => stock != null && stock.ticker);
+    // FIX (BRAVO-DISASTER 2026-10-28): `stock.ticker` could be string — coerce to boolean
+    const validStocks = stocks.filter((stock): stock is Stock => stock != null && Boolean(stock.ticker));
 
     const pMin = priceMin !== '' ? Number(priceMin) : null;
     const pMax = priceMax !== '' ? Number(priceMax) : null;
@@ -334,13 +335,14 @@ export function useStocksViewState(): StocksViewState {
     return presetDisplayData.filter((stock: Record<string, unknown>) => {
       if (debouncedSearch) {
         const q = debouncedSearch.toLowerCase();
-        const ticker = (stock.ticker || '').toLowerCase();
-        const name = (stock.name || '').toLowerCase();
-        const name_ar = stock.name_ar || '';
+        // FIX (BRAVO-DISASTER 2026-10-28): coerce to string before .toLowerCase() — Record<string, unknown> doesn't know types
+        const ticker = String(stock.ticker || '').toLowerCase();
+        const name = String(stock.name || '').toLowerCase();
+        const name_ar = String(stock.name_ar || '');
         if (!ticker.includes(q) && !name.includes(q) && !name_ar.includes(q)) return false;
       }
       if (selectedSector !== 'الكل' && stock.sector !== selectedSector) return false;
-      if (selectedSectors.length > 0 && !selectedSectors.includes(stock.sector || '')) return false;
+      if (selectedSectors.length > 0 && !selectedSectors.includes(String(stock.sector || ''))) return false;
       if (selectedIndex === 'egx30' && !stock.egx30_member) return false;
       if (selectedIndex === 'egx70' && !stock.egx70_member) return false;
       if (selectedIndex === 'egx100' && !stock.egx100_member) return false;

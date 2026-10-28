@@ -275,7 +275,7 @@ function SentimentDistribution({ news }: { news: NewsArticle[] }) {
 // ==================== NEWS CARD ====================
 
 function NewsCard({ article }: { article: NewsArticle }) {
- const relevancePercent = Math.round(article.relevance_score * 100);
+ const relevancePercent = Math.round((article.relevance_score ?? 0) * 100);
 
  return (
  <Card className="group hover:shadow-md transition-shadow duration-200 border-border/60">

@@ -73,16 +73,16 @@ export function StocksTable({
             <span className="font-bold text-sm text-profit ">
               {formatCleanTicker(String(row.ticker ?? ''))}
             </span>
-            {row.egx30_member && (
+            {row.egx30_member ? (
               <span className="text-xs px-1 py-0.5 rounded bg-profit/10 text-profit border border-profit/20 font-medium">
                 30
               </span>
-            )}
-            {row.egx70_member && (
+            ) : null}
+            {row.egx70_member ? (
               <span className="text-xs px-1 py-0.5 rounded bg-warning/10 text-warning dark:text-warning border border-warning/20/30 font-medium">
                 70
               </span>
-            )}
+            ) : null}
           </div>
         ),
       },
@@ -212,7 +212,7 @@ export function StocksTable({
         sortable: true,
         filterable: true,
         render: (row) => {
-          const change1w = row.change_1w ?? null;
+          const change1w = row.change_1w != null ? Number(row.change_1w) : null;
           return <TrendIndicator value={change1w} format="percent" size="xs" />;
         },
       },
@@ -227,7 +227,7 @@ export function StocksTable({
         filterable: true,
         hidden: true,
         render: (row) => {
-          const change1m = row.change_1m ?? null;
+          const change1m = row.change_1m != null ? Number(row.change_1m) : null;
           return <TrendIndicator value={change1m} format="percent" size="xs" />;
         },
       });
@@ -296,9 +296,9 @@ export function StocksTable({
               <span
                 className={cn(
                   'text-xs tabular-nums font-medium',
-                  fairValue != null && currentPrice && fairValue > currentPrice
+                  fairValue != null && currentPrice && Number(fairValue) > Number(currentPrice)
                     ? 'text-profit '
-                    : fairValue != null && currentPrice && fairValue < currentPrice
+                    : fairValue != null && currentPrice && Number(fairValue) < Number(currentPrice)
                       ? 'text-loss '
                       : 'text-muted-foreground',
                 )}
@@ -320,8 +320,8 @@ export function StocksTable({
               <span
                 className={cn(
                   'text-xs tabular-nums font-medium',
-                  upside != null && upside > 5 ? 'text-profit ' :
-                  upside != null && upside < -5 ? 'text-loss ' :
+                  upside != null && Number(upside) > 5 ? 'text-profit ' :
+                  upside != null && Number(upside) < -5 ? 'text-loss ' :
                   'text-muted-foreground',
                 )}
               >
@@ -338,10 +338,10 @@ export function StocksTable({
           filterable: true,
           hidden: true,
           render: (row) => {
-            const peRatio = row.pe_ratio ?? null;
+            const peRatio = Number(row.pe_ratio) || null;
             return (
               <span className="text-xs tabular-nums">
-                {peRatio != null && peRatio > 0 ? (peRatio as number).toFixed(1) : '—'}
+                {peRatio != null && peRatio > 0 ? peRatio.toFixed(1) : '—'}
               </span>
             );
           },

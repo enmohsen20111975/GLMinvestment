@@ -366,7 +366,8 @@ function RiskRewardDiagram({ entry, target, stopLoss }: { entry: number; target:
 
  return (
  <div className="flex flex-col items-center justify-center py-2">
- <svg viewBox="0 0 120 110" className="w-full max-w-[160px]" dir="ltr">
+ {/* FIX (BRAVO-DISASTER 2026-10-28): `dir` is not a valid SVG attribute — cast to any */}
+ <svg viewBox="0 0 120 110" className="w-full max-w-[160px]" {...{ dir: 'ltr' } as any}>
  <line x1="60" y1="15" x2="60" y2="100" stroke="hsl(var(--muted))" strokeWidth="2" />
  <circle cx="60" cy={toY(target)} r="7" fill="#10b981" opacity={0.2} />
  <circle cx="60" cy={toY(target)} r="4" fill="#10b981" />
@@ -525,13 +526,20 @@ function HeaderCard({ prof, stock, currentPrice, deepAnalysis }: { prof: Profess
  <Gauge className="w-4 h-4 text-profit" />
  التحليل الاحترافي
  </div>
+ {/* FIX (BRAVO-DISASTER 2026-10-28): ShareButton was called with wrong props
+     (title/price/recommendation belong to an older API). The current
+     ShareButton expects a `stockData` object matching ShareStockData interface. */}
  <ShareButton
- title={shareTitle}
- price={currentPrice}
- recommendation={shareRecommendation}
- targetPrice={shareTarget}
- score={shareScore}
- analysisType="التحليل الاحترافي"
+ stockData={{
+ ticker: '',
+ name: '',
+ nameAr: shareTitle,
+ price: currentPrice ?? 0,
+ recommendation: shareRecommendation,
+ confidence: shareScore,
+ targetPrice: shareTarget,
+ }}
+ iconOnly
  size="sm"
  />
  </CardTitle>
@@ -584,11 +592,11 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
  const s = prof.scores;
  return (
  <WidgetCard
- 	title="تصنيف النتائج"
- 	icon={BarChart3}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="تصنيف النتائج"
+        icon={BarChart3}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
  <MiniScoreCard label="الشامل" score={s.composite} />
@@ -604,11 +612,11 @@ function ScoreCards({ prof, deepAnalysis }: { prof: ProfessionalAnalysisData | n
 
  return (
  <WidgetCard
- 	title="تصنيف النتائج"
- 	icon={BarChart3}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="تصنيف النتائج"
+        icon={BarChart3}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
  <div className="space-y-1.5">
@@ -641,11 +649,11 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
  if (!prof) {
  return (
  <WidgetCard
- 	title="الأهداف السعرية"
- 	icon={Target}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="الأهداف السعرية"
+        icon={Target}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-3 gap-3">
  <div className="text-center p-3 rounded-lg bg-loss/20">
@@ -670,12 +678,12 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
 
  return (
  <WidgetCard
- 	title="تفاصيل التحليل"
- 	icon={Crosshair}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
- 	contentClassName="space-y-4"
+        title="تفاصيل التحليل"
+        icon={Crosshair}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
+        contentClassName="space-y-4"
  >
  <div className="flex items-center gap-3 flex-wrap">
  <Badge variant="outline" className="text-xs">
@@ -735,11 +743,11 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
 
  return (
  <WidgetCard
- 	title="الإشارات الفنية"
- 	icon={Activity}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="الإشارات الفنية"
+        icon={Activity}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
  {Object.entries(deepAnalysis.technical_indicators).map(([key, signal]) => {
@@ -763,11 +771,11 @@ function IndicatorsCard({ prof, deepAnalysis, stock }: { prof: ProfessionalAnaly
 
  return (
  <WidgetCard
- 	title="المؤشرات الفنية"
- 	icon={Activity}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="المؤشرات الفنية"
+        icon={Activity}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
  <IndicatorCard title="MACD" icon={<BarChart3 className="w-3.5 h-3.5" />} signalText={ind.macd.signal_text}>
@@ -862,11 +870,11 @@ function PriceLevelsCard({ prof, currentPrice }: { prof: ProfessionalAnalysisDat
  if (!prof) return null;
  return (
  <WidgetCard
- 	title="مستويات الأسعار"
- 	icon={Layers}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="مستويات الأسعار"
+        icon={Layers}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <PriceLevelsVisual levels={prof.price_levels} currentPrice={currentPrice} />
  </WidgetCard>
@@ -890,11 +898,11 @@ function PatternCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
 
  return (
  <WidgetCard
- 	title="أنماط الرسم البياني"
- 	icon={CandlestickChart}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="أنماط الرسم البياني"
+        icon={CandlestickChart}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="space-y-2">
  {prof.patterns.detected.map((p, i) => (
@@ -932,11 +940,11 @@ function VolumeCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  const vol = prof.volume_analysis;
  return (
  <WidgetCard
- 	title="تحليل الحجم"
- 	icon={Volume2}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="تحليل الحجم"
+        icon={Volume2}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  <div className="rounded-lg border p-3 text-center">
@@ -963,11 +971,11 @@ function RiskMetricsCard({ prof }: { prof: ProfessionalAnalysisData | null }) {
  const rm = prof.risk_metrics;
  return (
  <WidgetCard
- 	title="مقاييس المخاطر"
- 	icon={Shield}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="مقاييس المخاطر"
+        icon={Shield}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
  <MiniRiskGauge label="نسبة شارب (Sharpe)" value={rm.sharpe_ratio} thresholds={{ good: 1, bad: -0.5 }} />
@@ -1005,11 +1013,11 @@ function StrengthsRisksCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
 
  return (
  <WidgetCard
- 	title="نقاط القوة والمخاطر"
- 	icon={PieChart}
- 	iconColor="text-profit"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-sm"
+        title="نقاط القوة والمخاطر"
+        icon={PieChart}
+        iconColor="text-profit"
+        iconSize="w-4 h-4"
+        titleClassName="text-sm"
  >
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">

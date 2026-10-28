@@ -49,4 +49,9 @@
  * ============================================================================
  */
 
-export { EnhancedPortfolioView, default } from './enhanced-portfolio/EnhancedPortfolioView';
+// FIX (BRAVO-DISASTER 2026-10-28): was `export { EnhancedPortfolioView, default } from '...'`
+// — invalid syntax. `default` is not a regular identifier in a named export list.
+// This caused `ReferenceError` when consumers tried to use the default export.
+// Fix: export named + default separately with correct syntax.
+export { EnhancedPortfolioView } from './enhanced-portfolio/EnhancedPortfolioView';
+export { EnhancedPortfolioView as default } from './enhanced-portfolio/EnhancedPortfolioView';

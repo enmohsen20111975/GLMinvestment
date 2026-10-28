@@ -157,7 +157,7 @@ export function StockSelector({
  }
 
  // Filter out null/undefined stocks first
- const validStocks = stocks.filter((stock): stock is Stock => stock != null && stock.ticker);
+ const validStocks = stocks.filter((stock): stock is Stock => stock != null && Boolean(stock.ticker));
 
  // When no query, show first 50 stocks (sorted by volume already from API)
  if (!debouncedQuery.trim()) {
