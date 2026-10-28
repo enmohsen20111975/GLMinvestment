@@ -771,8 +771,8 @@ class DailyCloser:
                             log_decision(ticker, 'force_exit', _exit_code,
                                 _force['reason'][:200], _flag, market='STOCKS',
                                 scan_date=_sh_current_date)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning(f"silent except: {e}")
                         return self._mark_closed(
                             pred_id, ticker, 'FORCE_EXIT', ((close - entry_price) / entry_price * 100),
                             highest_price_reached, lowest_price, days_elapsed,
@@ -848,8 +848,8 @@ class DailyCloser:
                                     print(f"[V68-TRAIL] {ticker} {day.get('date','')}: "
                                           f"MFE={_v68_mfe_r:.2f}R → trail_sl={trailing_stop_level:.2f} "
                                           f"(ATR_sl={_effective_highest - atr_at_entry * trail_mult:.2f})", flush=True)
-                except Exception:
-                    pass  # safe-by-design: لو V68 فشل → استخدم ATR trailing العادي
+                except Exception as e:
+                    logger.warning(f"silent except: {e}")  # safe-by-design: لو V68 فشل → استخدم ATR trailing العادي
 
             # ── V72 KILL SWITCH EXIT (المرحلة 5 — 2026-08-31) ──
             # Pine V72: kill_switch = is_dirty_dist or choch_bear → exit immediately
@@ -897,8 +897,8 @@ class DailyCloser:
                             lowest_price_reached=lowest_price_reached,
                             holding_days=days_elapsed,
                         )
-                except Exception:
-                    pass  # safe-by-design
+                except Exception as e:
+                    logger.warning(f"silent except: {e}")  # safe-by-design
 
             days_elapsed = i + 1 if not (i == 0 and day.get('date') == start_date) else i
 
@@ -926,8 +926,8 @@ class DailyCloser:
                                 WHERE id = ?
                             """, (_tp1_price, day.get('date', ''), _tp1_return, entry_price, pred_id))
                             _tp1_conn.commit()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"silent except: {e}")
                     # فعل الوقف المتحرك (trailing stop) بنسبة 2.5% تحت أعلى سعر
                     _new_trailing = highest_price_reached * (1 - _trailing_pct / 100)
                     if _new_trailing > current_stop:
@@ -1047,8 +1047,8 @@ class DailyCloser:
                         else:
                             # SMART-HOLD: لا تبع — السهم يستاهل الفرصة
                             print(f"[SMART-HOLD] {ticker}: تحت breakeven بس فيه T2={target_price_2:.2f} → استني", flush=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"silent except: {e}")
 
             # RECOMMENDATION 7: خروج سريع من الخسائر — SMART version
             # -10% في 3 أيام = انهيار → بِع فوراً
@@ -1703,8 +1703,8 @@ class DailyCloser:
             try:
                 _vol_window = [float(full_history[k].get('volume', 0) or 0) for k in range(max(0, j-20), j)]
                 _vol_avg_20 = sum(_vol_window) / len(_vol_window) if _vol_window else 0
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"silent except: {e}")
             _vol_ratio_today = (_vol_today / _vol_avg_20) if _vol_avg_20 > 0 else 1.0
             _momentum_alive = (m5 > 2.0) and (_vol_ratio_today > 0.8) and trend_intact
             _momentum_weakening = (m5 < 0) or (not trend_intact) or (_vol_ratio_today < 0.6)
@@ -3182,8 +3182,8 @@ class DailyCloser:
                             return_pct=actual_return,
                             name_ar='',
                         )
-            except Exception:
-                pass  # safe-by-design
+            except Exception as e:
+                logger.warning(f"silent except: {e}")  # safe-by-design
 
             # ── CRITICAL-DIRECTIVE: write data_quality for SPLIT_EXCLUDED / LOSS_CAPPED ──
             # لو الـ guard اللي فوق عمل split_excluded أو cap للخسارة → نكتب data_quality
@@ -3232,8 +3232,8 @@ class DailyCloser:
                             "SELECT entry_price FROM predictions WHERE id = ?",
                             (pred_id,)
                         ).fetchone()[0] or 0)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"silent except: {e}")
                     if _has_dq:
                         _tcur.execute(
                             "UPDATE predictions SET data_quality = 'toxic' WHERE id = ?",
@@ -3330,8 +3330,8 @@ class DailyCloser:
                 exit_reason=exit_type,
                 source='daily_closer',
             )
-        except Exception:
-            pass  # safe-by-design: لو النوتبوك فشل → نكمّل
+        except Exception as e:
+            logger.warning(f"silent except: {e}")  # safe-by-design: لو النوتبوك فشل → نكمّل
 
         return CloseResult(
             prediction_id=pred_id, ticker=ticker, old_status='PENDING', new_status=status,
