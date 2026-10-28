@@ -61,41 +61,36 @@ export async function POST(request: NextRequest) {
       console.warn('[unified-learning/iterative] Python backend unavailable, using stub:', err);
     }
 
-    // Fallback: stub
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with fabricated
+    // stub metrics (iteration:0, accuracy:0.5, loss:1.0) — Rule 27 NO-FAKE-DATA.
     return NextResponse.json({
-      success: true,
+      success: false,
+      error: 'python_backend_unavailable',
       iteration: 0,
-      accuracy: 0.5,
-      loss: 1.0,
+      accuracy: 0,
+      loss: 0,
       requested_iterations: iterations,
       learning_rate: learningRate,
-      source: 'stub',
-      message: 'تم استخدام ردود افتراضية لأن خدمة التعلم التكراري غير متاحة',
-    });
+      source: 'unavailable',
+      message: 'خدمة التعلم التكراري غير متاحة حالياً — لا يمكن تشغيل دورة تعلم',
+    }, { status: 503 });
   } catch (err) {
     console.error('[unified-learning/iterative] Error:', err);
     return NextResponse.json(
       {
-        success: true,
-        iteration: 0,
-        accuracy: 0.5,
-        loss: 1.0,
-        source: 'stub',
-        error: 'حدث خطأ غير متوقع، تم إرجاع رد افتراضي',
+        success: false,
+        error: 'internal_error',
+        message: 'حدث خطأ غير متوقع في endpoint التعلم التكراري',
       },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    success: true,
+    success: false,
+    error: 'method_not_allowed',
     message: 'هذا endpoint يستقبل POST فقط. الرجاء تمرير body يحتوي iterations, learning_rate',
-    stub_response: {
-      iteration: 0,
-      accuracy: 0.5,
-      loss: 1.0,
-    },
-  });
+  }, { status: 405 });
 }

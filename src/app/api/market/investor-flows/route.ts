@@ -32,16 +32,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true — Rule 27 NO-FAKE-DATA
     return NextResponse.json({
-      success: true,
+      success: false,
+      error: 'python_backend_unavailable',
       available: false,
-      message: 'Python backend unavailable',
-    });
+      message: 'Python backend unavailable — investor flows data not available',
+    }, { status: 503 });
   } catch {
     return NextResponse.json({
-      success: true,
+      success: false,
+      error: 'python_backend_timeout',
       available: false,
-      message: 'Python backend timeout',
-    });
+      message: 'Python backend timeout — investor flows did not respond in time',
+    }, { status: 504 });
   }
 }

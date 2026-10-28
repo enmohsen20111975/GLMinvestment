@@ -62,11 +62,17 @@ export async function GET(request: NextRequest) {
     console.warn('[unified-learning/status] Python backend unavailable, using stub:', err);
   }
 
-  // Fallback: stub
+  // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with fabricated
+  // stub metrics (status:'idle', patterns_count:0, accuracy:0) — Rule 27
+  // NO-FAKE-DATA. Now honestly reports the outage.
   return NextResponse.json({
-    success: true,
-    ...buildStubStatus(),
-    source: 'stub',
-    message: 'تم استخدام رد افتراضي لأن خدمة التعلم الموحّد غير متاحة',
-  });
+    success: false,
+    error: 'python_backend_unavailable',
+    status: 'unavailable',
+    last_run: null,
+    patterns_count: 0,
+    accuracy: 0,
+    source: 'unavailable',
+    message: 'خدمة التعلم الموحّد غير متاحة حالياً — لا يمكن قراءة حالة النظام',
+  }, { status: 503 });
 }

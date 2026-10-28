@@ -19,8 +19,21 @@ export async function GET() {
         headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' },
       });
     }
-    return NextResponse.json({ success: true, gold: null, forex: null, message: 'Python backend unavailable' });
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with null data — Rule 27 NO-FAKE-DATA
+    return NextResponse.json({
+      success: false,
+      error: 'python_backend_unavailable',
+      gold: null,
+      forex: null,
+      message: 'Python backend unavailable — metals/forex summary not available',
+    }, { status: 503 });
   } catch {
-    return NextResponse.json({ success: true, gold: null, forex: null, message: 'Python backend timeout' });
+    return NextResponse.json({
+      success: false,
+      error: 'python_backend_timeout',
+      gold: null,
+      forex: null,
+      message: 'Python backend timeout — metals/forex summary did not respond',
+    }, { status: 504 });
   }
 }

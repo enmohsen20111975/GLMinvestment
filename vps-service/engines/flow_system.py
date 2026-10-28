@@ -1155,31 +1155,60 @@ class FlowSystemEngine:
 
     def get_flow_summary(self) -> Dict:
         """ملخص نظام التدفقات للسوق كله"""
+        egx30_change = None  # FIX (BRAVO-DISASTER 2026-10-28): was hardcoded 0 on failure
         try:
             conn = self._get_connection()
             cur = conn.cursor()
 
             egx30_row = cur.execute("SELECT change_percent FROM market_indices WHERE symbol = 'EGX30'").fetchone()
-            egx30_change = self._safe_float(egx30_row['change_percent']) if egx30_row else 0
+            egx30_change = self._safe_float(egx30_row['change_percent']) if egx30_row else None
             conn.close()
-        except:
-            egx30_change = 0
+        except Exception as e:
+            # FIX (BRAVO-DISASTER 2026-10-28): was bare except: egx30_change = 0
+            # which fabricated a value and emitted a fake "neutral market" verdict.
+            # Now we log and propagate the unavailable state downstream.
+            import logging
+            logging.getLogger(__name__).error(
+                '[flow_system] get_flow_summary: failed to read EGX30 change — %s', e,
+                exc_info=True
+            )
+            egx30_change = None
 
-        # Top 10 flow stocks (wrapped in try/except inside)
+        # Top 10 flow stocks
         try:
             top_stocks = self.get_top_flow_stocks(10)
-        except:
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(
+                '[flow_system] get_top_flow_stocks failed — %s', e, exc_info=True
+            )
             top_stocks = []
 
         # Sector heatmap
         try:
             heatmap = self.get_sector_heatmap()
-        except:
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(
+                '[flow_system] get_sector_heatmap failed — %s', e, exc_info=True
+            )
             heatmap = []
 
-        # Market flow assessment
-        fire_count = len([s for s in top_stocks if s['label_en'] == 'FIRE'])
-        spark_count = len([s for s in top_stocks if s['label_en'] == 'SPARK'])
+        # Market flow assessment — only if we have real EGX30 data
+        if egx30_change is None:
+            # FIX: don't fabricate a verdict on missing data — report unavailable
+            return {
+                'available': False,
+                'reason': 'EGX30 index data unavailable',
+                'top_stocks': top_stocks,
+                'heatmap': heatmap,
+                'market_assessment': 'البيانات غير متاحة - تعطل المصدر',
+                'market_action': 'انتظار',
+                'egx30_change': None,
+            }
+
+        fire_count = len([s for s in top_stocks if s.get('label_en') == 'FIRE'])
+        spark_count = len([s for s in top_stocks if s.get('label_en') == 'SPARK'])
 
         if egx30_change > 1.0 and fire_count >= 3:
             market_assessment = "السوق نشط - تيارات قوية"

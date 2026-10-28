@@ -40,34 +40,15 @@ export async function GET(
     console.warn(`[smart-confluence] Python backend unavailable for ${symbol}:`, err);
   }
 
-  // 2) Fallback: return a neutral analysis with complete structure
+  // 2) FIX (BRAVO-DISASTER 2026-10-28): was returning a fabricated analysis
+  // with entry_price=0, target_price=0, stop_loss=0 — Rule 27 NO-FAKE-DATA
+  // violation. Now we honestly report the outage so the frontend can show
+  // "backend unavailable" instead of rendering fake trading levels.
   return NextResponse.json({
-    success: true,
+    success: false,
+    error: 'python_backend_unavailable',
+    message: 'Smart Confluence analysis unavailable — Python backend is down',
+    data: null,
     source: 'fallback',
-    data: {
-      symbol,
-      name: symbol,
-      market: market || 'مصر',
-      signal: 'HOLD',
-      confidence: 20,
-      entry_price: 0,
-      target_price: 0,
-      stop_loss: 0,
-      confluence_score: 40,
-      technical_score: 40,
-      fundamental_score: 40,
-      volume_seasonal_score: 40,
-      rsi: 50,
-      macd_signal: 'NEUTRAL',
-      pe_ratio: null,
-      roe: null,
-      technical_rating: '',
-      phase_scores: {
-        technical: { rsi_score: 15, macd_score: 0, ma_score: 10, rating_score: 10 },
-        fundamental: { pe_score: 10, roe_score: 10, margin_score: 10 },
-        volume_seasonal: { volume: 50, seasonal_bonus: 0 },
-        sentiment: { score: 0, max: 10, components: { sma_trend: 0, volume_surge: 0, rsi_sweet_spot: 0 } },
-      },
-    }
-  });
+  }, { status: 503 });
 }

@@ -32,20 +32,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with empty
+    // arrays — Rule 27 NO-FAKE-DATA. Now honestly reports outage.
     return NextResponse.json({
-      success: true,
+      success: false,
+      error: 'python_backend_unavailable',
       data: [],
       stocks: [],
       items: [],
-      message: 'Python backend unavailable',
-    });
+      message: 'Python backend unavailable — liquidity radar data not available',
+    }, { status: 503 });
   } catch {
     return NextResponse.json({
-      success: true,
+      success: false,
+      error: 'python_backend_timeout',
       data: [],
       stocks: [],
       items: [],
-      message: 'Python backend timeout',
-    });
+      message: 'Python backend timeout — liquidity radar did not respond in time',
+    }, { status: 504 });
   }
 }

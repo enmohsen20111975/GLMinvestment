@@ -77,48 +77,35 @@ export async function POST(request: NextRequest) {
       console.warn('[walk-forward/run] Python backend unavailable, using stub:', err);
     }
 
-    // Fallback: stub
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with fabricated
+    // stub periods (6 fake periods with return:0, sharpe:0, drawdown:0) — Rule 27
+    // NO-FAKE-DATA. Now honestly reports the outage.
     return NextResponse.json({
-      success: true,
-      results: {
-        periods: buildStubPeriods(body.start_date, body.end_date),
-        avg_return: 0,
-        sharpe_ratio: 0,
-        max_drawdown: 0,
-        strategy: String(body.strategy ?? 'default'),
-        ticker: String(body.ticker ?? ''),
-      },
-      source: 'stub',
-      message: 'تم استخدام ردود افتراضية لأن خدمة Walk-Forward غير متاحة',
-    });
+      success: false,
+      error: 'python_backend_unavailable',
+      results: null,
+      strategy: String(body.strategy ?? 'default'),
+      ticker: String(body.ticker ?? ''),
+      source: 'unavailable',
+      message: 'خدمة Walk-Forward غير متاحة حالياً — لا يمكن تشغيل التحليل',
+    }, { status: 503 });
   } catch (err) {
     console.error('[walk-forward/run] Error:', err);
     return NextResponse.json(
       {
-        success: true,
-        results: {
-          periods: buildStubPeriods(undefined, undefined),
-          avg_return: 0,
-          sharpe_ratio: 0,
-          max_drawdown: 0,
-        },
-        source: 'stub',
-        error: 'حدث خطأ غير متوقع، تم إرجاع رد افتراضي',
+        success: false,
+        error: 'internal_error',
+        message: 'حدث خطأ غير متوقع في endpoint Walk-Forward',
       },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    success: true,
+    success: false,
+    error: 'method_not_allowed',
     message: 'هذا endpoint يستقبل POST فقط. الرجاء تمرير body يحتوي strategy, ticker, start_date, end_date',
-    stub_results: {
-      periods: buildStubPeriods(undefined, undefined),
-      avg_return: 0,
-      sharpe_ratio: 0,
-      max_drawdown: 0,
-    },
-  });
+  }, { status: 405 });
 }

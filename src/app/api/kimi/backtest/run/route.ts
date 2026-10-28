@@ -82,52 +82,34 @@ export async function POST(request: NextRequest) {
       console.warn('[kimi/backtest/run] Python backend unavailable, using stub:', err);
     }
 
-    // Fallback: stub
+    // FIX (BRAVO-DISASTER 2026-10-28): was returning success:true with fabricated
+    // stub backtest results (total_return:0, win_rate:0, fake equity_curve of 30
+    // days) — Rule 27 NO-FAKE-DATA. Now honestly reports the outage.
     return NextResponse.json({
-      success: true,
-      results: {
-        total_return: 0,
-        win_rate: 0,
-        trades_count: 0,
-        equity_curve: buildStubEquityCurve(initialCapital),
-        strategy: String(body.strategy ?? 'default'),
-        start_date: body.start_date ?? null,
-        end_date: body.end_date ?? null,
-        initial_capital: initialCapital,
-        final_capital: initialCapital,
-      },
-      source: 'stub',
-      message: 'تم استخدام ردود افتراضية لأن خدمة Kimi backtest غير متاحة',
-    });
+      success: false,
+      error: 'python_backend_unavailable',
+      results: null,
+      strategy: String(body.strategy ?? 'default'),
+      source: 'unavailable',
+      message: 'خدمة Kimi backtest غير متاحة حالياً — لا يمكن تشغيل الـ backtest',
+    }, { status: 503 });
   } catch (err) {
     console.error('[kimi/backtest/run] Error:', err);
     return NextResponse.json(
       {
-        success: true,
-        results: {
-          total_return: 0,
-          win_rate: 0,
-          trades_count: 0,
-          equity_curve: buildStubEquityCurve(100000),
-        },
-        source: 'stub',
-        error: 'حدث خطأ غير متوقع، تم إرجاع رد افتراضي',
+        success: false,
+        error: 'internal_error',
+        message: 'حدث خطأ غير متوقع في endpoint Kimi backtest',
       },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }
 
 export async function GET() {
-  // GET endpoint بسيط يرجّع الحالة الافتراضية
   return NextResponse.json({
-    success: true,
+    success: false,
+    error: 'method_not_allowed',
     message: 'هذا endpoint يستقبل POST فقط. الرجاء تمرير body يحتوي strategy, start_date, end_date, initial_capital, tickers',
-    stub_results: {
-      total_return: 0,
-      win_rate: 0,
-      trades_count: 0,
-      equity_curve: buildStubEquityCurve(100000),
-    },
-  });
+  }, { status: 405 });
 }
