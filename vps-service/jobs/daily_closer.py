@@ -72,28 +72,26 @@ def _is_egx_market_hours_now() -> bool:
     market_close = now.replace(hour=14, minute=30, second=0, microsecond=0)
     return market_open <= now < market_close
 
-# Apply SQLite WAL and timeout patches globally to prevent DB locks
+# BATCH-B FIX (2026-10-28): removed global monkey-patching of sqlite3.connect.
+# The patch replaced sqlite3.connect globally, affecting ALL Python code in the
+# process — not just daily_closer. This is dangerous because:
+# 1. It changes behavior of unrelated modules silently
+# 2. If the patch has a bug, ALL DB access breaks
+# 3. It makes debugging impossible (sqlite3.connect doesn't behave as documented)
+#
+# Replacement: explicit _safe_connect() helper that applies WAL + busy_timeout
+# to connections opened by daily_closer ONLY.
 import sqlite3
-_original_connect = sqlite3.connect
-def _patched_connect(*args, **kwargs):
-    if len(args) > 1:
-        args = list(args)
-        args[1] = max(args[1], 30.0)
-        args = tuple(args)
-    else:
-        if 'timeout' not in kwargs:
-            kwargs['timeout'] = 30.0
-        else:
-            kwargs['timeout'] = max(kwargs['timeout'], 30.0)
-            
-    conn = _original_connect(*args, **kwargs)
+
+def _safe_connect(db_path: str, timeout: float = 30.0) -> sqlite3.Connection:
+    """Open a DB connection with WAL + busy_timeout (replaces monkey-patch)."""
+    conn = sqlite3.connect(db_path, timeout=timeout)
     try:
         conn.execute('PRAGMA journal_mode=WAL')
         conn.execute('PRAGMA busy_timeout=30000')
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"_safe_connect: PRAGMA setup failed for {db_path}: {e}")
     return conn
-sqlite3.connect = _patched_connect
 
 
 logger = logging.getLogger(__name__)
@@ -274,7 +272,7 @@ class DailyCloser:
             from core.db_manager import db_manager
             conn = db_manager.get_connection(db_path, writable=True)
         except Exception:
-            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn = _safe_connect(db_path, 30.0)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn
@@ -659,7 +657,7 @@ class DailyCloser:
                     from core.db_manager import db_manager
                     _idb_conn = db_manager.get_connection('intraday', writable=False)
                 except Exception:
-                    _idb_conn = sqlite3.connect(_intraday_db, timeout=10.0)
+                    _idb_conn = _safe_connect(_intraday_db, 10.0)
                 _idb_conn.row_factory = sqlite3.Row
                 _idb_row = _idb_conn.execute('''
                     SELECT MAX(high) as max_high
@@ -772,7 +770,7 @@ class DailyCloser:
                         from core.db_manager import db_manager
                         _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
-                        _div_conn = sqlite3.connect(_div_db, timeout=5.0)
+                        _div_conn = _safe_connect(_div_db, 5.0)
                     _div_row = _div_conn.execute('''
                         SELECT COUNT(*) as cnt FROM DividendCalendar
                         WHERE ticker = ? AND date(ex_dividend_date) = date(?)
@@ -1916,7 +1914,7 @@ class DailyCloser:
                         from core.db_manager import db_manager
                         _div_conn = db_manager.get_connection('data_engine', writable=False)
                     except Exception:
-                        _div_conn = sqlite3.connect(_div_db, timeout=5.0)
+                        _div_conn = _safe_connect(_div_db, 5.0)
                     _div_row = _div_conn.execute('''
                         SELECT COUNT(*) as cnt FROM DividendCalendar
                         WHERE ticker = ? AND date(ex_dividend_date) = date(?)

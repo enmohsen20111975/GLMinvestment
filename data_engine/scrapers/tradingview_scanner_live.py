@@ -504,8 +504,10 @@ def persist_to_daily_prices(conn: sqlite3.Connection, rows: List[Dict[str, Any]]
                 (ticker, ticker, today, open_p, high_p, low_p, close, volume, change_pct, market_slug, now_str)
             )
             count += 1
-        except Exception:
-            pass  # skip rows that fail (e.g. UNIQUE constraint without ON CONFLICT support)
+        except Exception as e:
+            # BATCH-A FIX: log the error instead of silently swallowing it
+            # Silent pass hides DB corruption, UNIQUE constraint issues, and write failures
+            log(f"  ⚠️ persist_to_daily_prices error for {ticker}: {e}")
     conn.commit()
     return count
 

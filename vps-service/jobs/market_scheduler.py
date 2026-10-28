@@ -17,29 +17,21 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Callable
 
-# Apply SQLite WAL and timeout patches globally to prevent DB locks
+# BATCH-B FIX (2026-10-28): removed global monkey-patching of sqlite3.connect.
+# Replacement: explicit _safe_connect() helper — same WAL + busy_timeout + FK,
+# but only for connections opened by market_scheduler (not globally).
 import sqlite3
-_original_connect = sqlite3.connect
-def _patched_connect(*args, **kwargs):
-    if len(args) > 1:
-        args = list(args)
-        args[1] = max(args[1], 30.0)
-        args = tuple(args)
-    else:
-        if 'timeout' not in kwargs:
-            kwargs['timeout'] = 30.0
-        else:
-            kwargs['timeout'] = max(kwargs['timeout'], 30.0)
-            
-    conn = _original_connect(*args, **kwargs)
+
+def _safe_connect(db_path: str, timeout: float = 30.0) -> sqlite3.Connection:
+    """Open a DB connection with WAL + busy_timeout + FK (replaces monkey-patch)."""
+    conn = sqlite3.connect(db_path, timeout=timeout)
     try:
         conn.execute('PRAGMA journal_mode=WAL')
         conn.execute('PRAGMA busy_timeout=30000')
-        conn.execute('PRAGMA foreign_keys=ON')  # P14-PHASE-B (DATA-02): enforce FK constraints
-    except Exception:
-        pass
+        conn.execute('PRAGMA foreign_keys=ON')
+    except Exception as e:
+        logger.warning(f"_safe_connect: PRAGMA setup failed for {db_path}: {e}")
     return conn
-sqlite3.connect = _patched_connect
 
 
 logger = logging.getLogger(__name__)
@@ -250,7 +242,7 @@ class MarketScheduler:
                 from core.db_manager import db_manager
                 conn_stocks = db_manager.get_connection('stocks', writable=False)
             except Exception:
-                conn_stocks = sqlite3.connect(stocks_db, timeout=30)
+                conn_stocks = _safe_connect(stocks_db, 30.0)
 
             # ─── 1. أخد أكتر 50 سهم سيولة ───
             try:
