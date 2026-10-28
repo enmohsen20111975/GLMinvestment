@@ -1,11 +1,12 @@
 # 02 — كيف يفكر النظام (How It Thinks)
 
-> **آخر تحديث:** 2026-10-27 | **Branch:** `bravo/docs-consolidation` | **Agent:** Bravo V2
+> **آخر تحديث:** 2026-10-28 | **Branch:** `main` (merge `bravo/backend-decomposition`) | **Agent:** Bravo V2
 > **الأساس:** فحص فعلي لـ `vps-service/jobs/daily_predictor.py` + `vps-service/analyzers/master_analyzer.py`
 > + `vps-service/core/risk_gate.py` + `vps-service/core/risk_gate_wrapper.py`
 > + `vps-service/analyzers/decision_logger.py` + `vps-service/analyzers/short_holding_exit.py`
 > + `vps-service/analyzers/market_regime_engine.py` + `vps-service/engines/persona_engine.py`
-> + `scripts/maker_radar.py` + `vps-service/analyzers/indicators/`.
+> + `scripts/maker_radar.py` (BOUNCE path + 4 intelligence layers + regime filter)
+> + `vps-service/analyzers/indicators/`.
 
 ---
 
@@ -310,21 +311,56 @@ def _rsi(closes, period=14):
 
 ## 5. محركات السيولة (Liquidity Engines)
 
-### 5.1 `maker_radar.py` (5 paths)
+### 5.1 `maker_radar.py` (6 paths + 4 intelligence layers)
 
-**الملف:** `scripts/maker_radar.py` (2,367 LOC).
+**الملف:** `scripts/maker_radar.py` (2,847 LOC).
 
-**الـ 5 paths (ترتيب الأولوية):**
+**الـ 6 paths (ترتيب الأولوية):**
 
 | Path | الاسم | شرط التفعيل | حجم الصفقة |
 |------|------|--------------|------------|
 | **A** | `A_pre_surge` | 4/4 pre-surge signals (regime-aware) | 1.5% (`PRE_SURGE_POSITION_SIZE`) |
-| **B** | `B_quiet_accumulation_strong` | Quiet accumulation 5-6/6 signals | 2% (`QUIET_ACCUMULATION_POSITION_SIZE`) |
+| **B** | `B_quiet_accumulation_strong` | Quiet accumulation 5-6/6 signals | 1.5% (`QUIET_ACCUMULATION_POSITION_SIZE`) |
 | **C** | `C_quiet_accumulation_weak` | Quiet accumulation 4/6 signals | 1.5% |
-| **D** | `D_explosive_surge` | volume spike + price surge | 2% (`EXPLOSIVE_SURGE_POSITION_SIZE`) |
+| **D** | `D_explosive_surge` | volume spike (max last 3d ≥ 1.7×) + price surge | 2% (`EXPLOSIVE_SURGE_POSITION_SIZE`) |
 | **E** | `E_early_break` | breakout above resistance + volume | 2.5% |
+| **F** | `F_bounce` | BOUNCE_AFTER_DECLINE (detection only) | **0%** (مراقبة) |
 
-**الـ 5 paths كلها bullish.** لو `net_flow < 0` على مسار bullish → kill switch (reject).
+**الـ 5 paths الأولى (A-E) كلها bullish.** لو `net_flow < 0` على مسار bullish → kill switch (reject).
+
+**Path F (BOUNCE) — NEW (2026-10-28):**
+- **detection only** — `position_size=0`، `under_microscope=True`، `signal=HOLD`.
+- **مش توصية شراء** — مجرد اكتشاف ارتداد بعد هبوط للمراقبة.
+- **الشروط (5/5 required):**
+  1. `price_action = BOUNCE_AFTER_DECLINE` (from `_classify_price_action`)
+  2. `drop_from_peak` بين -8% و -25% (مش سهم مكسور زي KORA -73%)
+  3. `vol_support`: 2/3 آخر أيام volume > 1.2× avg_20d (sustained)
+  4. `bounce_pct >= 3%` (recovered at least 3% from recent low)
+  5. `buy_pct > 25%` (no extreme distribution)
+- **Regime filter:** BOUNCE disabled في `DEFENSIVE` regime (54.5% dead-cat rate في backtest).
+- **مش في `_BULLISH_PATHS`** → Flow Gate مش بيتأثر.
+
+**Explosive multi-day fix (2026-10-28):**
+- قبل: `avg(last 5 days) >= 2.0× avg_20d` → فات ETEL (يوم 27 كان 1.54× بس)
+- بعد: `max(last 3 days) >= 1.7× avg_20d` → بـ catch surges اللي بتنطفض بسرعة
+- شروط السعر (price > SMA20 + range < 18%) بقاوا كما هم.
+
+### 5.1a الـ 4 Intelligence Layers (وصفية — مش توصية)
+
+**`_add_intelligence_layers()` في `scripts/maker_radar.py`:**
+
+4 طبقات وصفية بـ تتـ calculate لكل سهم عنده تاريخ سعرى كافي (≥15 يوم).
+الطبقات دي **مش بتـ تغير** الـ buy/sell signal — بتـ describe الحالة فقط.
+
+| Layer | الدالة | القيم |
+|-------|-------|-------|
+| **price_action** | `_classify_price_action()` | 14 قيمة: SURGE_UP, SURGE_DOWN, BULLISH_CONTINUATION, BEARISH_CONTINUATION, BREAKOUT, BREAKDOWN, BOUNCE_AFTER_DECLINE, PULLBACK_AFTER_RALLY, MOMENTUM_EXHAUSTION, SIDEWAYS, BULLISH_WAVE_START, BEARISH_WAVE_START, UNCONFIRMED, INSUFFICIENT_DATA |
+| **participant_flow** | `_assess_participant_flow()` | INSTITUTIONAL_EVIDENCE, MIXED_PARTICIPATION, SPECULATIVE_PATTERN, UNCONFIRMED, UNAVAILABLE |
+| **continuation** | `_assess_continuation()` | SUPPORTIVE, MIXED, WEAK, UNCONFIRMED, INSUFFICIENT_DATA |
+| **data_quality** | `_assess_data_quality()` | FRESH, STALE, VERY_STALE, INSUFFICIENT_HISTORY, UNAVAILABLE, INVALID |
+
+**ملاحظة:** مفيش بيانات مؤسسية مباشرة في EGX → `participant_flow` تقديري.
+`net_flow < 0` بيـ trigger Flow Gate (يحول المسار لـ `distribution`).
 
 ### 5.2 B3 JSON Data Contract — 8 classifications
 

@@ -1,7 +1,8 @@
 # 02 — قواعد البيانات والبيانات (Databases & Data Layer)
 
-> **آخر تحديث:** 2026-10-27 | **Branch:** `bravo/docs-consolidation` | **Agent:** Bravo V2
+> **آخر تحديث:** 2026-10-28 | **Branch:** `main` (merge `bravo/backend-decomposition`) | **Agent:** Bravo V2
 > **الأساس:** فحص فعلي لـ `db/` + `vps-service/utils/db_paths.py` + `vps-service/core/db_manager.py`
+> + `vps-service/core/db_helpers.py` (NEW — Phase 7.3 canonical DB gate helper)
 > + `data_engine/scrapers/tradingview_scanner_live.py` + `scripts/migrate_data_engine_to_stocks.py`
 > + `scripts/reconcile_and_clean_historical_data.py` + `vps-service/analyzers/indicators/`.
 
@@ -324,6 +325,64 @@ _DB_ALIASES: Dict[str, str] = {
 - الـ EMERGENCY FALLBACK: `price_history.db.price_history` (مكشوف صراحةً كـ comment).
 مفيش أي ملف تاني مسموح له يفتح `price_history.db` مباشرة.
 
+### 6.3 `core/db_helpers.py` — Canonical DB Gate Helper (Phase 7.3 + Forensic Fix)
+
+**الملف:** `vps-service/core/db_helpers.py` (NEW — 2026-10-28).
+
+**الهدف:** Single Source of Truth لـ `_open_db` context manager. قبل كده كان فيه
+7+ نسخ identical من `_open_db` مكررة في كل ملف (engines/backtest_engine.py،
+ai/trade_recorder.py، analyzers/prediction_optimizer.py، analyzers/backtest_engine.py،
+analyzers/prediction_tracker.py، api/portfolio_routes.py، api/admin_routes.py،
+api/misc_routes.py). دلوقتي كلهم بـ import من `core/db_helpers.py`.
+
+**الـ 9 consumers (كلهم بـ import من canonical):**
+
+| Consumer | Variant | ملاحظة |
+|----------|---------|-------|
+| `engines/backtest_engine.py` | `_open_db(db_path, writable)` | path-based |
+| `ai/trade_recorder.py` | `_open_db(db_path, writable)` | path-based |
+| `analyzers/prediction_optimizer.py` | `_open_db(db_path, writable)` | path-based |
+| `analyzers/backtest_engine.py` | `_open_db(db_path, writable)` | path-based |
+| `analyzers/prediction_tracker.py` | `_open_db(db_path, writable)` | path-based |
+| `api/portfolio_routes.py` | `_open_db(db_path, writable)` | path-based |
+| `jobs/predictor_modules/db_helpers.py` | re-export shim | backward compat |
+| `api/admin_routes.py` | `open_db_aliased(db_alias, db_path, writable)` | alias-based |
+| `api/misc_routes.py` | `open_db_aliased(db_alias, db_path, writable)` | alias-based |
+
+**FORENSIC FIX (2026-10-28 — owner directive):**
+
+النسخة القديمة كانت بـ catch `except Exception:` وبتـ fall back لـ `sqlite3.connect()`
+الخام. ده كان bypass معماري:
+- **readonly bypass:** الـ fallback ما كانش بـ set `PRAGMA query_only=1` →
+  readonly connection ممكن يـ write لو `db_manager` فشل.
+- **writable bypass:** الـ fallback كان بـ open أي `db_path` بدون alias/path validation.
+
+**النسخة الحالية (بعد الإصلاح):**
+```python
+# core/db_helpers.py — NO fallback to raw sqlite3.connect
+@contextmanager
+def _open_db(db_path: str, writable: bool = False):
+    if not DBM_AVAILABLE:
+        raise RuntimeError("db_manager not available — DB access blocked")
+    conn = dbm.get_connection(db_path, writable=writable)  # FAIL LOUD
+    try:
+        yield conn
+    finally:
+        conn.close()
+```
+
+**القاعدة:** `db_manager` هو البوابة الوحيدة. لو فشل → error واضح، مش silent bypass.
+
+**التحقق (8 regression tests — كلها نجحت):**
+1. readonly: `query_only=1` enforced ✅
+2. readonly blocks writes ✅
+3. writable: WAL enabled ✅
+4. db_manager fail → error propagated (no bypass) ✅
+5. unknown alias → no DB created ✅
+6. DBM_AVAILABLE=False → RuntimeError ✅
+7. connections closed properly ✅
+8. consumer aliases valid ✅
+
 ---
 
 ## 7. `decision_log.db` — سجل القرارات
@@ -587,6 +646,7 @@ m = macd(closes)                                       # {line, signal, histogra
 - `Documentation/P0-UNIQUE-CONSTRAINT-DESIGN.md` — `idx_predictions_dedup` design
 - `vps-service/utils/db_paths.py` — SSOT للمسارات + `get_db_for_table()`
 - `vps-service/core/db_manager.py` — البوابة المركزية + `_DB_ALIASES`
+- `vps-service/core/db_helpers.py` — Canonical `_open_db` helper (Phase 7.3 + forensic fix)
 - `agent-ctx/P0-8-DB-UNIFY-REPORT.md` — per-table consolidation decisions
 
 ---
@@ -596,3 +656,6 @@ m = macd(closes)                                       # {line, signal, histogra
 > كمخزن لمخرجات المحركات (33 جدول، 1,349 توقع نشط بعد التنظيف بـ `idx_predictions_dedup`).
 > `price_history.db` معزول WAVE 1-3 وبيـ redirect شفاف لـ `stocks.db` عبر `_DB_ALIASES`.
 > كل المؤشرات الفنية بـ تتحسب من `analyzers/indicators/` (Wilder's smoothing — Rule 67).
+> **بوابة DB:** `core/db_helpers.py` هو الـ canonical helper (Phase 7.3) —
+> كل 9 consumers بـ import منه. الـ fallback لـ raw sqlite3.connect اتـ removed تمامًا
+> (forensic fix 2026-10-28) — `db_manager` هو البوابة الوحيدة، والفشل بـ fail loud.
