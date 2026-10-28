@@ -1,6 +1,6 @@
 # 02 — كيف يفكر النظام (How It Thinks)
 
-> **آخر تحديث:** 2026-10-28 (v2) | **Branch:** `main` | **Agent:** Bravo V2
+> **آخر تحديث:** 2026-10-28 (v3) | **Branch:** `main` | **Agent:** Bravo V2
 > **الأساس:** فحص فعلي لـ `vps-service/jobs/daily_predictor.py` + `vps-service/analyzers/master_analyzer.py`
 > + `vps-service/core/risk_gate.py` + `vps-service/core/risk_gate_wrapper.py`
 > + `vps-service/analyzers/decision_logger.py` + `vps-service/analyzers/short_holding_exit.py`
@@ -957,14 +957,48 @@ _canonical = get_canonical_source(market)
 | الخاصية | القيمة |
 |---------|--------|
 | Endpoint | `POST https://scanner.tradingview.com/{market}/scan` |
-| الأسواق | `egypt, saudi, kuwait, qatar, america` (5 أسواق) |
-| الحقول | **60 field** (10 session + 7 valuation + 5 earnings + 6 profitability + 7 balance + 4 income + 4 cash flow + 10 technicals + 6 description + 1 logoid) |
-| السرعة | **3.3 ثانية لـ 5 أسواق** (egypt ~230ms وحدها) |
-| الـ range | `[0, 1000]` لكل سوق |
+| الأسواق | `egypt, ksa, kuwait, qatar, america, crypto` (**6 أسواق** — crypto added 2026-10-28) |
+| الحقول | **67 field** (60 original + 8 new: avg_volume_30d/10d/90d + Volatility.D/W + high_52w/low_52w + beta_1y) |
+| السرعة | ~45 ثانية لـ 6 أسواق (مع 5s delay بين الأسواق) |
+| الـ range | `[0, 2000]` لكل سوق (was 1000) |
 | الـ sort | `Value.Traded DESC` (الأكثر سيولة الأول) |
 | اللغة | `lang: 'ar'` |
 | HTTP timeout | 20s |
-| الـ output | `db/stocks.db.stocks` (66 col — idempotent CREATE + ALTER) |
+| Rate limiting | 5 ثواني بين كل سوق + retry على HTTP 429 (3 محاولات: 10s/20s/30s backoff) |
+| الـ output | `db/stocks.db.stocks` (97 col — idempotent CREATE + ALTER) + `stock_daily_prices` |
+| Smart schedule | `is_market_open_now()` — يـ skip الأسواق المقفولة أوتوماتيك |
+
+**جدول العمل (MARKET_HOURS_UTC):**
+
+| السوق | أيام العمل | ساعات UTC | ساعات محلي |
+|-------|-----------|-----------|-----------|
+| egypt | Sun-Thu | 08:00-12:30 | 10:00-14:30 Cairo |
+| ksa | Sun-Thu | 07:00-12:00 | 10:00-15:00 Riyadh |
+| kuwait | Sun-Thu | 06:00-10:00 | 09:00-13:00 Kuwait |
+| qatar | Sun-Thu | 06:30-10:15 | 09:30-13:15 Qatar |
+| america | Mon-Fri | 14:30-21:00 | 09:30-16:00 ET |
+| crypto | 7/7 | 00:00-23:59 | 24 ساعة |
+
+**الـ 8 fields الإضافية (2026-10-28):**
+
+| API field | DB column | الفائدة |
+|-----------|-----------|---------|
+| `average_volume_30d_calc` | `avg_volume_30d` | حجم نسبي حقيقي (للـ pulse + radar) |
+| `average_volume_10d_calc` | `avg_volume_10d` | متوسط حجم 10 أيام |
+| `average_volume_90d_calc` | `avg_volume_90d` | متوسط حجم 90 يوم |
+| `Volatility.D` | `volatility_daily` | تقلب يومي % (risk assessment) |
+| `Volatility.W` | `volatility_weekly` | تقلب أسبوعي % |
+| `price_52_week_high` | `high_52w` | قمة 52 أسبوع (drop_from_peak دقيق) |
+| `price_52_week_low` | `low_52w` | قاع 52 أسبوع |
+| `beta_1_year` | `beta_1y` | بيتا (مخاطرة نسبية للسوق) |
+
+**CLI:**
+```bash
+python3 data_engine/scrapers/tradingview_scanner_live.py              # كل الأسواق
+python3 data_engine/scrapers/tradingview_scanner_live.py --market egypt
+python3 data_engine/scrapers/tradingview_scanner_live.py --dry-run     # بدون حفظ
+python3 data_engine/scrapers/tradingview_scanner_live.py --force       # تجاوز الجدول (للاختبار)
+```
 
 **CLI:**
 ```bash
@@ -1044,63 +1078,79 @@ def calc_atr(highs, lows, closes, period=14) -> Optional[float]:
 
 ---
 
-## 16. الـ Cron Jobs (الجدول الزمني الإنتاجي)
+## 16. الـ Cron Jobs (V3 — 2026-10-28)
 
-**الجدول الكامل من `crontab.txt` (CANONICAL V2):**
+**الـ crontab.txt V3:** الـ scanner ذكي — بيـ skip الأسواق المقفولة أوتوماتيك.
 
 ### المرحلة 1: صيانة منتصف الليل (01:00-02:30 UTC)
 
-| Time (UTC) | Time (Cairo) | Job | الملف |
-|------------|-------------|-----|------|
-| 01:00 | 03:00 | فحص صحة DBs | `scripts/data_heartbeat_checker.py` |
-| 01:30 | 03:30 | نسخة احتياطية ذكية | `vps-service/scripts/smart_db_backup.py` |
-| 02:00 | 04:00 | تحقق مصير إشارات الرادار | `POST /api/maker-radar/signal-tracker/verify` |
+| Time (UTC) | Job | الملف |
+|------------|-----|------|
+| 01:00 | فحص صحة DBs | `scripts/data_heartbeat_checker.py` |
+| 01:30 | نسخة احتياطية | `vps-service/scripts/smart_db_backup.py` |
+| 02:00 | تحقق مصير إشارات الرادار | `POST /api/maker-radar/signal-tracker/verify` |
 
 ### المرحلة 2: ما قبل الجلسة (02:45-05:00 UTC)
 
-| Time (UTC) | Time (Cairo) | Job | الملف |
-|------------|-------------|-----|------|
-| 02:45 | 04:45 | تحديث حالة السوق (Market Regime) | `analyzers/market_regime_engine.py` |
-| 03:00 | 05:00 | **توليد توقعات اليوم** | `daily_predictor.py --today-only` |
-| 03:00 | 05:00 | تخفيض الاشتراكات المنتهية | `scripts/downgrade-expired-subscriptions.ts` |
-| 04:00 | 06:00 | أخبار الاكتتابات + توزيعات | `jobs/fetch_corporate_actions.py` |
+| Time (UTC) | Job | الملف |
+|------------|-----|------|
+| 02:45 | تحديث Market Regime | `analyzers/market_regime_engine.py` |
+| 03:00 | **توليد توقعات اليوم** | `daily_predictor.py --today-only` |
+| 03:00 | تخفيض اشتراكات منتهية | `scripts/downgrade-expired-subscriptions.ts` |
+| 04:00 | أخبار اكتتابات + توزيعات | `jobs/fetch_corporate_actions.py` |
 
-### المرحلة 3: أثناء الجلسة (08:00-12:30 UTC = 10:00-14:30 Cairo)
-
-| التوقيت | Job | الملف |
-|---------|-----|------|
-| **كل دقيقتين** | سحب الأسعار اللحظية من TradingView | `data_engine/scrapers/tradingview_scanner_live.py` |
-| **كل دقيقتين** | حفظ لقطات لحظية في intraday.db | `data_engine/intraday_storage.py --stocks` |
-| **كل 5 دقائق** | تحديث رادار السيولة (كل الأسواق) | `bash scripts/cron_radar.sh` |
-| **كل 5 دقائق** | فحص الاختراقات اللحظية | `vps-service/jobs/intraday_scanner.py` |
-| **كل 15 دقيقة** | رادار الأسهم الساخنة | `vps-service/jobs/hot_candidate_detector.py` |
-| كل ساعتين | سحب إفصاحات البورصة | `analyzers/egx_disclosure_engine.py` |
-
-> **Intraday Pulse:** `scripts/intraday_pulse.py` (يُضاف للـ cron كل 5 دقائق أثناء الجلسة)
-
-### المرحلة 4: بعد الإغلاق (12:45-15:00 UTC)
-
-| Time (UTC) | Time (Cairo) | Job | الملف |
-|------------|-------------|-----|------|
-| 12:45 | 14:45 | تثبيت إغلاقات الجلسة | `tradingview_scanner_live.py` (EOD) |
-| 13:00 | 15:00 | رادار ختامي | `bash scripts/cron_radar.sh` |
-| 13:15 | 15:15 | **إغلاق الصفقات** | `vps-service/jobs/daily_closer.py` |
-| 13:30 | 15:30 | حساب PnL + تحديث الأداء | `scripts/post_market_feedback.py` |
-| 13:35 | 15:35 | مزامنة Hunter Pick Tracking | `scripts/sync_hunter_pick_tracking.py` |
-| 14:00 | 16:00 | محرك التعلم الذاتي | `vps-service/jobs/learning_engine.py` |
-| 14:30 | 16:30 | تقرير تيليجرام الشامل | `scripts/telegram_comprehensive_report.py` |
-| 15:00 | 17:00 | توليد توقعات الغد | `daily_predictor.py --yesterday-only` |
-
-### المرحلة 5: الأسواق العالمية (24/7)
+### المرحلة 3: أثناء الجلسة (الـ scanner ذكي 24/7)
 
 | التوقيت | Job | الملف |
 |---------|-----|------|
-| كل 5 دقائق 24/7 | رادار الكريبتو | `maker_radar.py --market CRYPTO` |
-| كل 5 دقائق 24/7 | رادار الذهب | `maker_radar.py --market GOLD` |
-| كل ساعة (09-22) | multi-market scraper | `data_engine/scrapers/multi_market_scraper.py` |
-| 22:00 UTC (Mon-Fri) | إغلاقات الأسهم الأمريكية | `data_engine/scrapers/us_stock_scraper.py` |
+| **كل 5 دقايق 24/7** | **Scanner ذكي** (يـ skip المقفول) | `tradingview_scanner_live.py` |
+| كل دقيقتين (08-12 UTC) | لقطات لحظية في intraday.db | `intraday_storage.py --stocks` |
+| كل 5 دقائق (08-12 UTC) | رادار السيولة | `bash scripts/cron_radar.sh` |
+| كل 5 دقائق (08-12 UTC) | **نبض لحظي** (ALERT ONLY) | `scripts/intraday_pulse.py` |
+| كل 5 دقائق (08-12 UTC) | فحص اختراقات لحظية | `intraday_scanner.py` |
+| كل 15 دقيقة (08-12 UTC) | أسهم ساخنة | `hot_candidate_detector.py` |
+| كل ساعتين (08-12 UTC) | إفصاحات البورصة | `egx_disclosure_engine.py` |
 
----
+> **الـ scanner الذكي:** بيشتغل 24/7 بس بيسحب بس الأسواق المفتوحة.
+> أمريكا بتتسحب 14:30-21:00 UTC أوتوماتيك.
+> الكريبتو بتتسحب 24/7 أوتوماتيك.
+> الأسواق العربية بتتسحب في وقتها.
+> الأسواق المقفولة بتـ skip في <1ms (مفيش هدر).
+
+### المرحلة 4: بعد الإغلاق (12:45-17:00 UTC)
+
+| Time (UTC) | Job | الملف |
+|------------|-----|------|
+| 12:45 | تثبيت إغلاقات الجلسة | `tradingview_scanner_live.py` (EOD) |
+| 13:00 | رادار ختامي | `bash scripts/cron_radar.sh` |
+| 13:15 | **إغلاق الصفقات** | `daily_closer.py` |
+| 13:30 | حساب PnL + تحديث الأداء | `post_market_feedback.py` |
+| 13:35 | مزامنة Hunter Pick | `sync_hunter_pick_tracking.py` |
+| 14:00 | محرك التعلم الذاتي | `learning_engine.py` |
+| 14:30 | تقرير تيليجرام | `telegram_comprehensive_report.py` |
+| 15:00 | توقعات الغد | `daily_predictor.py --yesterday-only` |
+
+### المرحلة 5: 24/7 (كريبتو + ذهب)
+
+| التوقيت | Job | الملف |
+|---------|-----|------|
+| كل 5 دقائق 24/7 | رادار كريبتو | `maker_radar.py --market CRYPTO` |
+| كل 5 دقائق 24/7 | رادار ذهب | `maker_radar.py --market GOLD` |
+| كل ساعة (09-22) | multi-market scraper | `multi_market_scraper.py` |
+
+> **ملاحظة:** `us_stock_scraper.py` اتشال — أمريكا بتيجي من TradingView Scanner مباشرة.
+> **ملاحظة:** الـ scanner القديم `*/2 8-12` اتشال — الـ scanner الذكي `*/5 * * * *` 24/7 بديله.
+
+### المرحلة 6: مهام أسبوعية + شهرية
+
+| التوقيت | Job | الملف |
+|---------|-----|------|
+| Sat 02:55 UTC | Market regime (كل الأسواق) | `market_regime_engine.py --all` |
+| Sat 14:00 UTC | Fundamentals | `egx_fundamental_fetcher.py` |
+| Sat 15:30 UTC | توافق شرعي | `sharia_compliance_scraper.py` |
+| Sun 04:00 UTC | تعدين دروس | `mine_learned_lessons.py` |
+| Sun 06:00 UTC | تقرير أسبوعي | `weekly_radar_report.py` |
+| يوم 1 كل شهر 05:00 | Exit optimizer | `exit_policy_optimizer.py` |
 
 ## 17. مراجع خارجية
 
