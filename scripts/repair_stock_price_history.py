@@ -2,7 +2,8 @@ import sqlite3
 import shutil
 from pathlib import Path
 
-DB_DIR = Path("/home/meme/my_apps/GLMinvestment/db")
+# BATCH-D FIX: removed hardcoded path. Use relative path from script location.
+DB_DIR = Path(__file__).resolve().parent.parent / "db"
 stocks_db_path = DB_DIR / "stocks.db"
 ph_db_path = DB_DIR / "price_history.db"
 

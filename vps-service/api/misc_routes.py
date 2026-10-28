@@ -1647,7 +1647,8 @@ def rebuild_predictions():
             if request.method == 'POST':
                 import subprocess, sys
                 mode = request.args.get('type') or request.args.get('mode') or 'daily'
-                python_bin = sys.executable or '/home/meme/my_apps/GLMinvestment/.venv/bin/python3'
+                # BATCH-D FIX: removed hardcoded path fallback. sys.executable is always set.
+                python_bin = sys.executable or 'python3'
                 env = os.environ.copy()
                 env['BYPASS_PRED_CAP'] = '1'
                 env['V76_SECTOR_INTRADAY'] = '1'
