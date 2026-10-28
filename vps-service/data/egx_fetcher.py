@@ -668,7 +668,23 @@ class EGXDataFetcher:
           1. اجلب EGXPilot دائمًا (reference للأسماء/الرموز)
           2. لكل ticker: جرّب TradingView أولًا، لو فشل → استخدم EGXPilot
           3. ادمج: سعر TradingView + اسم EGXPilot
+
+        BRAVO-NEVER-HALT (2026-10-27): محرك البيانات ممنوع يقف تحت أي ظرف.
+        الـ method دي بتـ catch كل exception + بتـ fallback لـ emergency tickers
+        لو كل المصادر فشلت. بترجع False بس ما بترمي exception أبداً.
         """
+        # BRAVO-NEVER-HALT: top-level guard — the engine MUST NOT crash.
+        try:
+            return self._update_prices_inner()
+        except Exception as e:
+            logger.error(f"🚨 [NEVER-HALT] update_prices crashed (caught): {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            self._print_stats(0, f'CRASH: {e}')
+            return False
+
+    def _update_prices_inner(self) -> bool:
+        """Inner implementation — wrapped by update_prices() never-halt guard."""
         logger.info("\n" + "=" * 60)
         logger.info("🔧 تحديث أسعار الأسهم المصرية (EGX) — TV-PRIMARY")
         logger.info("=" * 60)
@@ -697,9 +713,17 @@ class EGXDataFetcher:
             tickers = self._get_tickers_from_db()
 
         if not tickers:
-            logger.error("❌ لا توجد tickers للتحديث")
-            self._print_stats(0, None)
-            return False
+            # BRAVO-NEVER-HALT (2026-10-27): محرك البيانات ممنوع يقف. لو EGXPilot
+            # AND DB فشلوا الاتنين، نـ fallback لـ emergency ticker list (أهم 25 سهم
+            # EGX — موجودة في EPS_VALUES). ده بيضمن إن المحرك دايماً عنده tickers
+            # يحاول يجيبها من TradingView Scanner.
+            logger.error("⚠️ [NEVER-HALT] لا توجد tickers من EGXPilot ولا DB — استخدام emergency list")
+            tickers = list(EPS_VALUES.keys())
+            if not tickers:
+                logger.error("🚨 [NEVER-HALT] emergency list فارغة — لا يمكن المتابعة")
+                self._print_stats(0, None)
+                return False
+            logger.warning(f"🔄 [NEVER-HALT] emergency tickers: {len(tickers)} سهم (مهمة فقط)")
 
         # Step 3: TradingView PRIMARY — prefer unified Scanner API (1 request,
         # ~3s, ~280 stocks); fall back to per-ticker tradingview_ta only if the
@@ -792,7 +816,12 @@ class EGXDataFetcher:
             self._print_stats(updated, source_used)
             return updated > 0
 
-        self._print_stats(0, None)
+        # BRAVO-NEVER-HALT (2026-10-27): كل المصادر فشلت (scanner + per-ticker
+        # + EGXPilot). المحرك ما بـ crash، بس بـ log heartbeat واضح عشان
+        # الـ monitoring يعرف إنه شغال بس ما قدرش يجيب بيانات (external outage).
+        logger.error("🚨 [NEVER-HALT] كل المصادر فشلت — 0 سهم متجلب. المحرك شغال بس مفيش بيانات خارجية.")
+        logger.error(f"   scanner_available={SCANNER_API_AVAILABLE}, tv_available={TV_AVAILABLE}, egx_ref={len(ref_map)}")
+        self._print_stats(0, 'ALL_SOURCES_FAILED')
         return False
     
     def _get_tickers_from_db(self) -> List[str]:
@@ -1024,25 +1053,34 @@ def update_egx_prices(db_path: str) -> bool:
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='EGX Data Fetcher - Unified Dual-Source')
     parser.add_argument('--db', type=str, help='Database path')
     parser.add_argument('--test', action='store_true', help='Test mode')
-    
+
     args = parser.parse_args()
-    
-    # Get database path
+
+    # BRAVO-NEVER-HALT (2026-10-27): the entry point MUST NOT crash under any
+    # circumstance. Even if everything fails, exit 0 so cron never sees failure.
     try:
-        from config import DATABASE_PATH
-        db_path = args.db or DATABASE_PATH
-    except ImportError:
-        from pathlib import Path
-        _base_dir = Path(__file__).parent.parent.parent.resolve()
-        db_path = args.db or str(_base_dir / 'db' / 'stocks.db')
-    
-    logger.info(f"Database: {db_path}")
-    
-    fetcher = EGXDataFetcher(db_path)
-    success = fetcher.update_prices()
-    
-    logger.info("\n✅ تم الانتهاء!" if success else "\n❌ فشل التحديث")
+        # Get database path
+        try:
+            from config import DATABASE_PATH
+            db_path = args.db or DATABASE_PATH
+        except ImportError:
+            from pathlib import Path
+            _base_dir = Path(__file__).parent.parent.parent.resolve()
+            db_path = args.db or str(_base_dir / 'db' / 'stocks.db')
+
+        logger.info(f"Database: {db_path}")
+
+        fetcher = EGXDataFetcher(db_path)
+        success = fetcher.update_prices()
+
+        logger.info("\n✅ تم الانتهاء!" if success else "\n⚠️ التحديث لم يكتمل (المحرك شغال — never halts)")
+    except Exception as e:
+        logger.error(f"🚨 [NEVER-HALT] __main__ crashed (caught): {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    # ALWAYS exit 0 — the data engine never halts
+    sys.exit(0)

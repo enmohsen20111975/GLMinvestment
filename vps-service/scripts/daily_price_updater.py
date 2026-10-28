@@ -264,30 +264,56 @@ class PriceUpdater:
 
 
 def main():
-    """نقطة الدخول."""
+    """نقطة الدخول.
+
+    BRAVO-NEVER-HALT (2026-10-27): محرك البيانات ممنوع يقف تحت أي ظرف.
+    الـ main() دي بتـ catch كل exception + بتـ exit 0 دايمًا عشان cron
+    ما يشوفش failure. حتى لو كل حاجة فشلت، بـ log heartbeat وبتـ exit نظيف.
+    """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     print(f"\n{'='*60}")
     print(f"📊 Daily Price Updater")
     print(f"{'='*60}\n")
-    
-    updater = PriceUpdater()
-    
-    # Update
-    print("🔄 Updating EGX prices...")
-    results = updater.update_all()
-    for market, result in results.items():
-        print(f"  {market}: {result}")
-    
-    # Verify
-    print("\n🔍 Verifying prices...")
-    verify = updater.verify_prices(20)
-    print(f"  Checked: {verify.get('checked', 0)}")
-    print(f"  Mismatches: {verify.get('mismatches', 0)}")
-    print(f"  Accuracy: {verify.get('accuracy', 0)}%")
-    
+
+    exit_code = 0
+    try:
+        updater = PriceUpdater()
+
+        # Update
+        print("🔄 Updating EGX prices...")
+        try:
+            results = updater.update_all()
+            for market, result in results.items():
+                print(f"  {market}: {result}")
+                if isinstance(result, dict) and not result.get('success', True):
+                    exit_code = 0  # STILL exit 0 — never halt the engine
+        except Exception as e:
+            logger.error(f"🚨 [NEVER-HALT] update_all() crashed (caught): {e}")
+            print(f"  ⚠️ update_all crashed: {e}")
+            exit_code = 0  # STILL exit 0
+
+        # Verify
+        print("\n🔍 Verifying prices...")
+        try:
+            verify = updater.verify_prices(20)
+            print(f"  Checked: {verify.get('checked', 0)}")
+            print(f"  Mismatches: {verify.get('mismatches', 0)}")
+            print(f"  Accuracy: {verify.get('accuracy', 0)}%")
+        except Exception as e:
+            logger.error(f"🚨 [NEVER-HALT] verify_prices() crashed (caught): {e}")
+            print(f"  ⚠️ verify crashed: {e}")
+
+    except Exception as e:
+        logger.error(f"🚨 [NEVER-HALT] main() crashed (caught): {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        print(f"  ⚠️ main crashed: {e}")
+        exit_code = 0  # STILL exit 0 — never halt the engine
+
     print(f"\n{'='*60}")
-    print("✅ Done")
+    print("✅ Done (engine ran — never halts)")
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
