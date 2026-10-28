@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetCard } from '@/components/shared/WidgetCard';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, TrendingUp, TrendingDown, Minus, Target, Shield, AlertTriangle, Activity } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 interface ExpertAnalysis {
  ticker: string;
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export function ExpertAnalysisPanel({ ticker, className }: Props) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [analysis, setAnalysis] = useState<ExpertAnalysis | null>(null);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  if (!ticker) return;
  setLoading(true);
  setError(null);
- fetch(`/api/stocks/${encodeURIComponent(ticker)}/expert-analysis`, { cache: 'no-store' })
+ fetch(`/api/stocks/${encodeURIComponent(ticker)}/expert-analysis?market=${encodeURIComponent(currentMarket)}`, { cache: 'no-store' })
  .then((res) => {
  if (!res.ok) throw new Error(`HTTP ${res.status}`);
  return res.json();
@@ -75,7 +77,7 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  })
  .catch((err) => setError(err.message))
  .finally(() => setLoading(false));
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (loading) {
  return (
@@ -130,13 +132,13 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
 
  {/* Entry / Targets / Stop Loss */}
  <WidgetCard
- 	title="نقطة الدخول والأهداف"
- 	icon={Target}
- 	iconColor="text-primary"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
- 	className="mb-4"
- 	contentClassName="space-y-3"
+        title="نقطة الدخول والأهداف"
+        icon={Target}
+        iconColor="text-primary"
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        className="mb-4"
+        contentClassName="space-y-3"
  >
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
  <PriceBox label="نقطة الدخول" value={analysis.entry.price} rationale={analysis.entry.rationale_ar} color="emerald" />
@@ -157,12 +159,12 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
  <div className="grid md:grid-cols-2 gap-4">
  {/* Technical Analysis */}
  <WidgetCard
- 	title="التحليل الفني"
- 	icon={Activity}
- 	iconColor="text-primary"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
- 	contentClassName="space-y-3 text-sm"
+        title="التحليل الفني"
+        icon={Activity}
+        iconColor="text-primary"
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3 text-sm"
  >
  <AnalysisRow
  label="RSI"
@@ -191,12 +193,12 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
 
  {/* Fundamental Analysis */}
  <WidgetCard
- 	title="التحليل الأساسي"
- 	icon={TrendingUp}
- 	iconColor="text-primary"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
- 	contentClassName="space-y-3 text-sm"
+        title="التحليل الأساسي"
+        icon={TrendingUp}
+        iconColor="text-primary"
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        contentClassName="space-y-3 text-sm"
  >
  <AnalysisRow
  label="مكرر الربحية (P/E)"
@@ -232,13 +234,13 @@ export function ExpertAnalysisPanel({ ticker, className }: Props) {
 
  {/* Risk Assessment */}
  <WidgetCard
- 	title="تقييم المخاطر"
- 	icon={Shield}
- 	iconColor="text-primary"
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
- 	className="mt-4"
- 	contentClassName="space-y-2 text-sm"
+        title="تقييم المخاطر"
+        icon={Shield}
+        iconColor="text-primary"
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
+        className="mt-4"
+        contentClassName="space-y-2 text-sm"
  >
  <div className="flex items-center justify-between">
  <span className="text-muted-foreground">مستوى المخاطرة</span>

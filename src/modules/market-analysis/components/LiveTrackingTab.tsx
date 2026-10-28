@@ -109,7 +109,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
  const [watchlist, setWatchlist] = useState<Array<Record<string, unknown>>>([]);
  const [loading, setLoading] = useState(true);
  const [subTab, setSubTab] = useState<'active' | 'watchlist'>('active');
- const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
+ const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : (MARKET_CODES[market] || market);
 
  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
 
@@ -248,7 +248,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
  const [predictions, setPredictions] = useState<Array<Record<string, unknown>>>([]);
  const [loading, setLoading] = useState(true);
  const [sendingTelegram, setSendingTelegram] = useState(false);
- const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
+ const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : (MARKET_CODES[market] || market);
 
  const fetchData = useCallback(async () => {
  try {

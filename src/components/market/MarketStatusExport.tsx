@@ -59,8 +59,9 @@ export function MarketStatusExport() {
  setLoading(true);
  setError(null);
  try {
+ const marketCode = MARKET_CODES[currentMarket] === 'KSA' ? 'TADAWUL' : MARKET_CODES[currentMarket];
  const res = await fetch(
- `/api/stocks?market=${MARKET_CODES[currentMarket]}&limit=500`,
+ `/api/stocks?market=${marketCode}&limit=500`,
  { cache: 'no-store' },
  );
  if (res.ok) {

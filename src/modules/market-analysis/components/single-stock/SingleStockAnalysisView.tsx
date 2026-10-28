@@ -119,7 +119,7 @@ export function SingleStockAnalysisView({
       setError(null);
       if (!isCrypto) {
         setCanonicalLoading(true);
-        fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+        fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?market=${encodeURIComponent(currentMarket)}&_t=${Date.now()}`)
           .then((r) => (r.ok ? r.json() : null))
           .then((json: CanonicalData) => setCanonical(json))
           .catch((e) => {
@@ -153,7 +153,7 @@ export function SingleStockAnalysisView({
         setLoading(false);
       }
     },
-    [user?.id, isCrypto],
+    [user?.id, isCrypto, currentMarket],
   );
 
   useEffect(() => {

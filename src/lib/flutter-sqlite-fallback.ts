@@ -25,6 +25,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { normalizeMarket, sqlMarketVariants } from '@/lib/market-utils';
 
 const STOCKS_DB_PATH = join(process.cwd(), 'db', 'stocks.db');
 const PREDICTIONS_DB_PATH = join(process.cwd(), 'db', 'predictions.db');
@@ -182,10 +183,17 @@ export function getTopMoversFallback(
     // from THAT market. Default: omit the filter (returns all markets) —
     // the route layer is responsible for defaulting to 'EGX' when no
     // market is specified.
-    const whereClause = market
-      ? `WHERE is_active = 1 AND change_percent IS NOT NULL AND UPPER(market) = UPPER(?) AND ABS(change_percent) < 100.0`
+    // FIX (FIX-API-MARKET #12/#13): use `sqlMarketVariants()` so the query
+    // also matches rows stored under Arabic aliases (e.g. 'مصر' / 'السعودية' /
+    // 'الكويت' / 'قطر') — previously `UPPER(market) = UPPER(?)` would miss
+    // those rows when callers passed a canonical market name.
+    const canonical = market ? normalizeMarket(market) : null;
+    const variants = canonical ? sqlMarketVariants(canonical) : [];
+    const placeholders = variants.map(() => '?').join(',');
+    const whereClause = canonical
+      ? `WHERE is_active = 1 AND change_percent IS NOT NULL AND market IN (${placeholders}) AND ABS(change_percent) < 100.0`
       : `WHERE is_active = 1 AND change_percent IS NOT NULL AND ABS(change_percent) < 100.0`;
-    const stmtArgs = market ? [market] : [];
+    const stmtArgs = variants;
     const rows = db
       .prepare(
         `SELECT ticker, name, name_ar, current_price, close AS close_price, previous_close,
@@ -388,12 +396,20 @@ export function getPredictionsFallback(
     }
 
     if (market && market !== 'ALL') {
-      const mUpper = market.toUpperCase();
-      if (mUpper === 'EGX' || mUpper === 'EGYPT' || mUpper === 'مصر') {
-        conditions.push(`UPPER(market) = 'EGX' AND ticker NOT GLOB '[0-9]*'`);
-      } else {
-        conditions.push(`UPPER(market) = ?`);
-        params.push(mUpper);
+      // FIX (FIX-API-MARKET #10/#14): use `sqlMarketVariants()` so the query
+      // also matches rows stored under Arabic aliases ('مصر' / 'السعودية' / 'الكويت' /
+      // 'قطر') as well as legacy keys like 'KSA' for TADAWUL — previously the
+      // helper did `UPPER(market) = ?` which missed all those variants.
+      const canonical = normalizeMarket(market);
+      if (canonical) {
+        const variants = sqlMarketVariants(canonical);
+        const placeholders = variants.map(() => '?').join(',');
+        if (canonical === 'EGX') {
+          conditions.push(`UPPER(market) IN (${placeholders}) AND ticker NOT GLOB '[0-9]*'`);
+        } else {
+          conditions.push(`UPPER(market) IN (${placeholders})`);
+        }
+        params.push(...variants.map((v) => v.toUpperCase()));
       }
     }
 

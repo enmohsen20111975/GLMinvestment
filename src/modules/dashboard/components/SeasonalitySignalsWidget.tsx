@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useApiQuery } from '@/hooks/use-api-query';
+import { useAppStore } from '@/lib/store';
 import { WidgetCard } from '@/components/shared/WidgetCard';
 import { WidgetStat, WidgetStatGrid } from '@/components/shared/WidgetStat';
 
@@ -39,6 +40,11 @@ const safeNum = (val: unknown, fallback: number = 0): number => {
 };
 
 export function SeasonalitySignalsWidget() {
+ // /api/seasonality-signals is computed from EGX historical data only.
+ // Don't render the widget (and don't fire the query) for non-EGX markets.
+ const currentMarket = useAppStore((s) => s.currentMarket);
+ if (currentMarket !== 'EGX') return null;
+
  // F2.2: useApiQuery replaces manual fetch + useState.
  const { data: rawData, isLoading: loading, isFetching: refreshing, refetch } = useApiQuery<SeasonalityResponse>('/api/seasonality-signals', {
    queryOptions: { refetchOnWindowFocus: false },

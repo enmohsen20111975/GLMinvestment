@@ -510,18 +510,20 @@ function DetailSkeleton() {
 
 // Flow Score + Explosive Score + Fundamentals from Python backend
 function FlowScoreCard({ ticker }: { ticker: string }) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [flow, setFlow] = useState<Record<string, unknown> | null>(null);
  const [explosive, setExplosive] = useState<Record<string, unknown> | null>(null);
 
  useEffect(() => {
  if (!ticker) return;
- fetch(`/api/flow/${ticker}`).then(r => r.json()).then(d => {
+ const mkt = encodeURIComponent(currentMarket);
+ fetch(`/api/flow/${ticker}?market=${mkt}`).then(r => r.json()).then(d => {
  if (d.success) setFlow(d.data);
  }).catch(() => {});
- fetch(`/api/explosive/${ticker}`).then(r => r.json()).then(d => {
+ fetch(`/api/explosive/${ticker}?market=${mkt}`).then(r => r.json()).then(d => {
  if (d.success) setExplosive(d.data);
  }).catch(() => {});
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (!flow && !explosive) return null;
 
@@ -565,15 +567,16 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
 
 // Fundamentals from data-engine.db (9 Tables Integrated)
 function FundamentalsCard({ ticker }: { ticker: string }) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [profile, setProfile] = useState<Record<string, any> | null>(null);
  const [activeTab, setActiveTab] = useState<'valuation' | 'statements' | 'dividends' | 'technical'>('valuation');
 
  useEffect(() => {
  if (!ticker) return;
- fetch(`/api/stock-profile/${ticker}`).then(r => r.json()).then(d => {
+ fetch(`/api/stock-profile/${ticker}?market=${encodeURIComponent(currentMarket)}`).then(r => r.json()).then(d => {
  if (d.success) setProfile(d.data);
  }).catch(() => {});
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (!profile) {
  return (
@@ -1064,6 +1067,9 @@ export function StockDetail() {
  currentMarket,
  chartPreference,
  } = useAppStore();
+ // MARKET-FILTER-COMPLETE: per-ticker endpoints need ?market= so the backend
+ // disambiguates cross-market ticker collisions (e.g. COMI in EGX vs US).
+ const mkt = encodeURIComponent(currentMarket);
  const [exporting, setExporting] = useState(false);
  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
  const [footprintData, setFootprintData] = useState<any>(null);
@@ -1079,12 +1085,12 @@ export function StockDetail() {
  useEffect(() => {
  if (!selectedTicker) { setFeelData(null); return; }
  let cancelled = false;
- fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}`)
+ fetch(`/api/stock-screener/analyze?ticker=${encodeURIComponent(selectedTicker)}&market=${mkt}`)
  .then(r => r.json())
  .then(d => { if (!cancelled && d) setFeelData(d); })
  .catch(() => {});
  return () => { cancelled = true; };
- }, [selectedTicker]);
+ }, [selectedTicker, mkt]);
  // Auto-load news and liquidity footprint when stock is selected
  useEffect(() => {
  if (selectedTicker && selectedStock) {
@@ -1093,7 +1099,7 @@ export function StockDetail() {
  // قبل كده: الـ fetches دي كانت بدون `?market=` → الـ API بـ يرجع أي سهم
  // بالـ ticker ده بغض النظر عن السوق المختار. لو فيه ticker متكرر بين EGX و US
  // بيرجع الأول → بيانات خاطئة. الحل: نمرر currentMarket لكل fetch.
- const mkt = encodeURIComponent(currentMarket);
+ // (mkt is declared at the top of the component so it's reused here.)
  // PHASE4-APIS (Task PHASE4-APIS, Rule 27 + Rule 73):
  // قبل كده: fetch لـ /api/maker-radar/footprint (410 Gone — كان بـ يستخدم
  // naive 70/30 split بناءً على لون الشمعة، مش real order flow).
@@ -1104,7 +1110,7 @@ export function StockDetail() {
  // flow.sell_pressure → sell_volume
  // flow.net_flow → delta_volume
  // poc_price / vah_price / val_price = null (volume-profile concepts غير متوفرة في money-flow API)
- fetch(`/api/flow/${encodeURIComponent(selectedTicker)}`)
+ fetch(`/api/flow/${encodeURIComponent(selectedTicker)}?market=${mkt}`)
  .then((res) => (res.ok ? res.json() : null))
  .then((data) => {
  if (data?.success && data?.flow) {
@@ -1134,7 +1140,7 @@ export function StockDetail() {
  })
  .catch((err) => console.error('[unified] fetch failed:', err));
  }
- }, [selectedTicker, selectedStock, loadStockNews, currentMarket]);
+ }, [selectedTicker, selectedStock, loadStockNews, currentMarket, mkt]);
 
  const handleExportPDF = async () => {
  setExporting(true);

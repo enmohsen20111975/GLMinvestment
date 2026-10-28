@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { analyzeGates, type GateAnalysisInput, type GateAnalysisOutput, type GatePersona } from '@/lib/gate-analyzer';
+import { useAppStore } from '@/lib/store';
 
 interface GateAnalysisViewProps {
  ticker: string;
@@ -46,6 +47,7 @@ function buildPineScript(t: string, r: GateAnalysisOutput, i: GateAnalysisInput)
 }
 
 export default function GateAnalysisView({ ticker, currentPrice, stockName }: GateAnalysisViewProps) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [persona, setPersona] = useState<GatePersona>('gambler');
  const [result, setResult] = useState<GateAnalysisOutput | null>(null);
  const [loading, setLoading] = useState(true);
@@ -62,9 +64,10 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
  // response to the legacy `pd.data` shape so the downstream consumer
  // code (indicators / price_levels / volume_analysis / stock / prediction)
  // keeps working without changes.
+ const mkt = encodeURIComponent(currentMarket);
  const [uRes, vRes] = await Promise.allSettled([
- fetch(`/api/stocks/${ticker}/unified`),
- fetch(`/api/python/v2/cached-analysis/${ticker}`),
+ fetch(`/api/stocks/${ticker}/unified?market=${mkt}`),
+ fetch(`/api/python/v2/cached-analysis/${ticker}?market=${mkt}`),
  ]);
  const unified = uRes.status === 'fulfilled' && uRes.value.ok
  ? (await uRes.value.json() as any)
@@ -133,7 +136,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
  setCachedInput(input);
  setResult(analyzeGates(input, persona));
  } catch { setError(true); } finally { setLoading(false); }
- }, [ticker, currentPrice, persona]);
+ }, [ticker, currentPrice, persona, currentMarket]);
 
  useEffect(() => { fetchAndAnalyze(); }, [fetchAndAnalyze]);
 

@@ -39,6 +39,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAppStore } from '@/lib/store';
 
 /* ------------------------------------------------------------------ */
 /* Types - التحليل الذكي للسهم Output */
@@ -265,6 +266,7 @@ interface StockAdvancedAnalysisViewProps {
 }
 
 export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: StockAdvancedAnalysisViewProps) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
  const [chartData, setChartData] = useState<ChartData['data'] | null>(null);
@@ -274,7 +276,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
 
  const fetchData = async () => {
  if (!ticker) return;
- 
+
  setLoading(true);
  setError(null);
  
@@ -282,7 +284,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  // Chart data from unified chart endpoint
  try {
  const periodParam = days <= 30 ? '1m' : days <= 90 ? '3m' : '1y';
- const chartResponse = await fetch(`/api/chart/${ticker}?interval=1d&period=${periodParam}`);
+ const chartResponse = await fetch(`/api/chart/${ticker}?interval=1d&period=${periodParam}&market=${encodeURIComponent(currentMarket)}`);
  if (chartResponse.ok) {
  const chartJson = await chartResponse.json();
  if (chartJson.success && Array.isArray(chartJson.data) && chartJson.data.length > 0) {
@@ -321,7 +323,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  }
 
  // Python analysis (source of truth for recommendations)
- const analysisResponse = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010`);
+ const analysisResponse = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010&market=${encodeURIComponent(currentMarket)}`);
  
  // Python analysis (source of truth for recommendations)
  const analysisJson = await analysisResponse.json();
@@ -330,7 +332,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  } else {
  // If no cached analysis, trigger a new one
  try {
- const analyzeResponse = await fetch(`/api/python/v2/analyze/${ticker}?XTransformPort=8010`);
+ const analyzeResponse = await fetch(`/api/python/v2/analyze/${ticker}?XTransformPort=8010&market=${encodeURIComponent(currentMarket)}`);
  const analyzeJson = await analyzeResponse.json();
  if (analyzeJson.success && analyzeJson.data) {
  setPythonAnalysis(analyzeJson.data);
@@ -350,7 +352,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
 
  useEffect(() => {
  fetchData();
- }, [ticker, days]);
+ }, [ticker, days, currentMarket]);
 
  if (loading) {
  return <LoadingSkeleton />;
@@ -472,10 +474,10 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
  {/* Score Breakdown */}
  <WidgetCard
- 	title="تفصيل الدرجة"
- 	titleClassName="text-base"
- 	className="md:col-span-1"
- 	contentClassName="space-y-4"
+        title="تفصيل الدرجة"
+        titleClassName="text-base"
+        className="md:col-span-1"
+        contentClassName="space-y-4"
  >
  {updatedAnalysis ? (
  <>
@@ -538,10 +540,10 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  {/* Risk Profile - Use updatedAnalysis with current price */}
  {updatedAnalysis?.risk_profile && (
  <WidgetCard
- 	title="ملف المخاطر"
- 	icon={Shield}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
+        title="ملف المخاطر"
+        icon={Shield}
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
  >
  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
  <div className="text-center p-3 bg-muted/50 rounded-lg">
@@ -583,10 +585,10 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
  {/* Market Regime & Sector Overview - wired July 2026 */}
  {updatedAnalysis && (updatedAnalysis.market_regime_ar || updatedAnalysis.sector_relative_score != null) && (
  <WidgetCard
- 	title="نظرة عامة على السوق والقطاع"
- 	icon={Globe}
- 	iconSize="w-4 h-4"
- 	titleClassName="text-base"
+        title="نظرة عامة على السوق والقطاع"
+        icon={Globe}
+        iconSize="w-4 h-4"
+        titleClassName="text-base"
  >
  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
  <div className="text-center p-3 bg-muted/50 rounded-lg">

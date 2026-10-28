@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import type { SqliteDatabase } from '@/lib/sqlite-wrapper';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -125,8 +126,17 @@ export async function GET(req: NextRequest) {
     //     (or whose ticker belongs to that market in `stocks`, or system-wide
     //     with no market set). Cross-market notifications MUST NOT leak.
     const portfolioOnly = url.searchParams.get('portfolio_only') === '1';
+    // FIX (FIX-API-MARKET #16): normalise the `market` param via the shared
+    // helper so 'KSA' → 'TADAWUL', 'NYSE' → 'US', etc. The previous code only
+    // uppercased the input — `market=KSA` would never match rows stored as
+    // 'TADAWUL' or 'السعودية'. We now use `sqlMarketVariants()` to bind ALL
+    // stored aliases (canonical + Arabic + legacy) into the SQL filter.
     const marketParam = url.searchParams.get('market');
-    const normalizedMarket = marketParam ? String(marketParam).trim().toUpperCase() : '';
+    const canonicalMarket: CanonicalMarket | null = marketParam
+      ? normalizeMarket(marketParam)
+      : null;
+    const marketVariants = canonicalMarket ? sqlMarketVariants(canonicalMarket) : [];
+    const marketPlaceholders = marketVariants.map(() => '?').join(',');
 
     let db: SqliteDatabase;
     try {
@@ -184,16 +194,20 @@ export async function GET(req: NextRequest) {
     // is NULL but `ticker` is set — we look it up in `stocks`).
     // ------------------------------------------------------------------
     let marketTickers: Set<string> | null = null;
-    if (normalizedMarket) {
+    if (canonicalMarket && marketVariants.length > 0) {
       marketTickers = new Set<string>();
       try {
+        // FIX (FIX-API-MARKET #16): use `market IN (?, ?, ?)` with the canonical
+        // market's variants so the lookup also matches rows stored under
+        // Arabic aliases (e.g. 'السعودية') — previously `UPPER(market) = ?`
+        // silently dropped those rows.
         const rows = db.prepare(
           `SELECT DISTINCT UPPER(ticker) AS t
            FROM stocks
            WHERE ticker IS NOT NULL
              AND TRIM(ticker) != ''
-             AND UPPER(market) = ?`
-        ).all(normalizedMarket) as { t: string | null }[];
+             AND market IN (${marketPlaceholders})`
+        ).all(...marketVariants) as { t: string | null }[];
         for (const r of rows) {
           if (r.t) marketTickers.add(r.t);
         }
@@ -230,21 +244,21 @@ export async function GET(req: NextRequest) {
     // market=X → keep notifications where:
     //   • market column is NULL (truly system-wide announcement) AND ticker is
     //     NULL OR ticker belongs to a stock in the requested market — pass
-    //   • OR market column matches the requested market — pass
+    //   • OR market column matches the requested market (any alias) — pass
     //   • Otherwise (cross-market ticker or explicit cross-market column) — DROP.
-    if (normalizedMarket) {
+    if (canonicalMarket && marketVariants.length > 0) {
       const marketTickerPlaceholders =
         marketTickers && marketTickers.size > 0
           ? Array.from(marketTickers).map(() => '?').join(', ')
           : "''";
       sql += ` AND (
         (market IS NULL AND (ticker IS NULL OR UPPER(ticker) IN (${marketTickerPlaceholders})))
-        OR UPPER(market) = ?
+        OR market IN (${marketPlaceholders})
       )`;
       if (marketTickers && marketTickers.size > 0) {
         for (const t of marketTickers) params.push(t);
       }
-      params.push(normalizedMarket);
+      params.push(...marketVariants);
     }
 
     sql += ` ORDER BY created_at DESC LIMIT ?`;

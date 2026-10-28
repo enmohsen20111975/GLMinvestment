@@ -3,6 +3,7 @@ import { access } from 'fs/promises';
 import path from 'path';
 import type Database from 'better-sqlite3';
 import { openDb, openDbWritable } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -91,11 +92,18 @@ interface PricePoint {
 /** Fetch up to `limit` trading-day prices strictly AFTER signalDate for ticker. */
 // P0-14-ASYNC fix (2026-09-27): now async — uses access() instead of existsSync
 // per candidate DB so the event loop is not blocked.
+// FIX (FIX-API-MARKET #7): accept an optional canonical market so the price-source
+// query doesn't hardcode `market = 'EGX'`. When the caller passes a market, we
+// bind `sqlMarketVariants()` placeholders so cross-market contamination (e.g.
+// US-tagged rows for an EGX ticker) is filtered out for the right market.
 async function fetchPricesAfter(
   ticker: string,
   signalDate: string,
-  limit: number
+  limit: number,
+  market: CanonicalMarket = 'EGX'
 ): Promise<{ prices: PricePoint[]; source: string | null }> {
+  const marketVariants = sqlMarketVariants(market);
+  const marketPlaceholders = marketVariants.map(() => '?').join(',');
   for (const src of PRICE_SOURCES) {
     const db = openDb(src.dbFile);
     if (!db) continue;
@@ -110,11 +118,16 @@ async function fetchPricesAfter(
         db.close();
         continue;
       }
-      // C2 FIX: check if table has market column, add EGX filter to prevent
+      // C2 FIX: check if table has market column, add market filter to prevent
       // cross-market contamination (US-tagged rows for EGX tickers).
+      // FIX (FIX-API-MARKET #7): use bound `IN (?, ?, ?)` with the canonical
+      // market's variants so TADAWUL signals also match rows stored as 'KSA'
+      // or 'السعودية', etc.
       const tableInfo = db.prepare(`PRAGMA table_info(${src.table})`).all() as any[];
       const hasMarketCol = tableInfo.some((c: any) => c.name === 'market');
-      const marketClause = hasMarketCol ? `AND market = 'EGX'` : '';
+      const marketClause = hasMarketCol
+        ? `AND market IN (${marketPlaceholders})`
+        : '';
       const rows = db
         .prepare(
           `SELECT ${src.dateCol} AS d, ${src.closeCol} AS c,
@@ -128,7 +141,12 @@ async function fetchPricesAfter(
            ORDER BY ${src.dateCol} ASC
            LIMIT ?`
         )
-        .all(ticker, signalDate, limit) as any[];
+        .all(
+          ticker,
+          signalDate,
+          ...(hasMarketCol ? marketVariants : []),
+          limit
+        ) as any[];
 
       if (rows.length === 0) {
         db.close();
@@ -213,6 +231,10 @@ export async function POST(req: NextRequest) {
       body = {};
     }
     const maxAgeDays = Math.max(7, Math.min(180, Number(body?.max_age_days ?? 45)));
+    // FIX (FIX-API-MARKET #7): read optional `market` from the request body so
+    // callers can verify signals for non-EGX markets. Defaults to EGX to preserve
+    // existing behaviour.
+    const market: CanonicalMarket = normalizeMarket(body?.market) || 'EGX';
 
     const db = await openTrackerDb();
     if (!db) {
@@ -289,7 +311,7 @@ export async function POST(req: NextRequest) {
 
         try {
           // Fetch up to 30 trading days after signal_date.
-          const { prices } = await fetchPricesAfter(ticker, signalDate, 30);
+          const { prices } = await fetchPricesAfter(ticker, signalDate, 30, market);
           if (prices.length === 0) {
             // No price data available yet — leave as pending.
             continue;

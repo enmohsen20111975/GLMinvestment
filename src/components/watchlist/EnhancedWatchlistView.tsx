@@ -139,7 +139,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
  }
  setSearching(true);
  try {
- const res = await fetch(`/api/stocks?query=${encodeURIComponent(q.trim())}&page_size=10`);
+ const res = await fetch(`/api/stocks?query=${encodeURIComponent(q.trim())}&page_size=10&market=${encodeURIComponent(currentMarket)}`);
  const data = await res.json();
  const stocks: StockSearchResult[] = (data.stocks || []).map((s: Record<string, unknown>) => ({
  id: s.id as number,

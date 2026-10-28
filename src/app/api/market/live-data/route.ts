@@ -13,6 +13,7 @@ import {
   vpsQuotesToLiveStocks,
 } from '@/lib/vps-adapter';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -124,7 +125,7 @@ async function fetchFromVps(): Promise<{
 // Strategy 3: Database fallback
 // ---------------------------------------------------------------------------
 
-function fetchFromDatabase(limit: number, offset: number): {
+function fetchFromDatabase(limit: number, offset: number, market: CanonicalMarket): {
   stocks: LiveStock[];
   source: string;
   message?: string;
@@ -133,14 +134,20 @@ function fetchFromDatabase(limit: number, offset: number): {
   try {
     // Use light DB singleton (stocks.db, ~200KB) — cached in memory, no disk I/O
     const db = getLightDb();
+    // FIX (FIX-API-MARKET #9): apply the requested market filter so we don't
+    // return cross-market stocks when the caller asks for TADAWUL/KSE/QSE/US.
+    // Uses `sqlMarketVariants()` so Arabic aliases like 'مصر' / 'السعودية' /
+    // 'الكويت' / 'قطر' are also matched.
+    const marketVariants = sqlMarketVariants(market);
+    const marketPlaceholders = marketVariants.map(() => '?').join(',');
     // FIX-WAVE-3-HIGH / AUDIT-DEEP-4 #8: paginated DB fallback (Rule 56 — parameterized)
     const totalRow = db
-      .prepare('SELECT COUNT(*) AS c FROM stocks WHERE is_active = 1 AND current_price > 0')
-      .get() as { c: number } | undefined;
+      .prepare(`SELECT COUNT(*) AS c FROM stocks WHERE is_active = 1 AND current_price > 0 AND market IN (${marketPlaceholders})`)
+      .get(...marketVariants) as { c: number } | undefined;
     const total = totalRow?.c ?? 0;
     const rows = db
-      .prepare('SELECT ticker, name_ar, current_price, previous_close, volume, last_update FROM stocks WHERE is_active = 1 AND current_price > 0 LIMIT ? OFFSET ?')
-      .all(limit, offset) as Array<{ ticker: string; name_ar: string; current_price: number; previous_close: number; volume: number; last_update: string | null }>;
+      .prepare(`SELECT ticker, name_ar, current_price, previous_close, volume, last_update FROM stocks WHERE is_active = 1 AND current_price > 0 AND market IN (${marketPlaceholders}) LIMIT ? OFFSET ?`)
+      .all(...marketVariants, limit, offset) as Array<{ ticker: string; name_ar: string; current_price: number; previous_close: number; volume: number; last_update: string | null }>;
 
     const now = new Date().toISOString();
     const stocks: LiveStock[] = rows.map((r) => ({
@@ -176,7 +183,11 @@ export async function GET(request: NextRequest) {
     // FIX-WAVE-3-HIGH / AUDIT-DEEP-4 #8: pagination params (applied to DB fallback)
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '100', 10), 1), 1000);
     const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0);
-    const cacheKey = 'egx-live-data';
+    // FIX (FIX-API-MARKET #9): scope the DB fallback to the requested market.
+    // Defaults to EGX to preserve existing behaviour. Cache key is now
+    // per-market so a TADAWUL response doesn't shadow an EGX one (and vice versa).
+    const market: CanonicalMarket = normalizeMarket(searchParams.get('market')) || 'EGX';
+    const cacheKey = `egx-live-data-${market}`;
 
     // Check cache (only when default pagination is used — otherwise bypass)
     if (!noCache && offset === 0 && limit === 100) {
@@ -213,7 +224,7 @@ export async function GET(request: NextRequest) {
 
     // --- Strategy 3: Database ---
     if (stocks.length === 0) {
-      const dbResult = fetchFromDatabase(limit, offset);
+      const dbResult = fetchFromDatabase(limit, offset, market);
       stocks = dbResult.stocks;
       source = dbResult.source;
       message = dbResult.message;

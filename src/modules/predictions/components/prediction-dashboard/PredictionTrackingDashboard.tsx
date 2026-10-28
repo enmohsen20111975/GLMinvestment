@@ -72,7 +72,7 @@ export function PredictionTrackingDashboard({
  const res = await fetch('/api/predictions/honest-tracking/verify-pending', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ limit: 500 }),
+ body: JSON.stringify({ limit: 500, market }),
  });
  const result = await res.json();
  if (result.success) {
@@ -85,7 +85,7 @@ export function PredictionTrackingDashboard({
  } catch (e) {
  toast.error('فشل في التحقق من التوقعات المعلقة');
  }
- }, [s]);
+ }, [s, market]);
 
  return (
  <div className={cn('space-y-5 dir-rtl', className)}>

@@ -46,7 +46,9 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. SQLite fallback — reuse daily top movers as weekly proxy
-  const { gainers, losers, most_active } = getTopMoversFallback(20);
+  // FIX (FIX-API-MARKET #13): pass `market` through so non-EGX markets return
+  // their own movers instead of all-market cross-contamination.
+  const { gainers, losers, most_active } = getTopMoversFallback(20, market);
 
   if (format === 'text') {
     const lines: string[] = [

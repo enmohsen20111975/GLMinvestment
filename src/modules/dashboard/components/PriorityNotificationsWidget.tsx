@@ -118,7 +118,7 @@ export function PriorityNotificationsWidget() {
     (async () => {
       try {
         const res = await fetch(
-          `/api/notifications/priority?limit=3`,
+          `/api/notifications/priority?limit=3&market=${encodeURIComponent(currentMarket)}`,
           { cache: 'no-store' }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

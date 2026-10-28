@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 interface DeltaData {
  latest: {
@@ -55,6 +56,7 @@ const MAKER_CONFIG: Record<string, { label: string; color: string; desc: string 
 };
 
 export function DeltaVolumeBar({ ticker }: { ticker: string }) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [data, setData] = useState<DeltaData | null>(null);
  const [loading, setLoading] = useState(true);
  const [animateWidth, setAnimateWidth] = useState(false);
@@ -64,7 +66,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
  let mounted = true;
  async function fetchDelta() {
  try {
- const res = await fetch(`/api/stocks/delta-volume?ticker=${ticker}&days=14`);
+ const res = await fetch(`/api/stocks/delta-volume?ticker=${ticker}&days=14&market=${encodeURIComponent(currentMarket)}`);
  const json = await res.json();
  if (mounted && json.success) {
  setData(json);
@@ -79,7 +81,7 @@ export function DeltaVolumeBar({ ticker }: { ticker: string }) {
  }
  fetchDelta();
  return () => { mounted = false; };
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (loading) {
  return (

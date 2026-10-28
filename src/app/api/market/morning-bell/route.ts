@@ -22,9 +22,13 @@ const PYTHON_BACKEND =
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const limit = searchParams.get('limit') || '3';
+  // FIX (FIX-API-MARKET #8): read `market` and forward to Python so callers
+  // can scope the morning bell to a non-EGX market. Python endpoint currently
+  // EGX-only — param forwarded for future use.
+  const marketParam = searchParams.get('market') || 'EGX';
 
   const backendUrl =
-    `${PYTHON_BACKEND.replace(/\/$/, '')}/api/market/morning-bell?limit=${encodeURIComponent(limit)}`;
+    `${PYTHON_BACKEND.replace(/\/$/, '')}/api/market/morning-bell?limit=${encodeURIComponent(limit)}&market=${encodeURIComponent(marketParam)}`;
 
   try {
     const controller = new AbortController();

@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
   const targetUrl = `${PY}/api/market-pulse${qs ? `?${qs}` : ''}`;
+  // FIX (FIX-API-MARKET #14): read `market` and pass it through to the SQLite
+  // fallback so non-EGX markets return their own predictions instead of all
+  // cross-market rows.
+  const market = url.searchParams.get('market') || undefined;
 
   // 1. Try Python
   try {
@@ -33,7 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. SQLite fallback — predictions.db top recommendations
-  const preds = getPredictionsFallback(50, 'active');
+  const preds = getPredictionsFallback(50, 'active', market);
   const insights = preds
     .filter((p) => p.master_score != null)
     .sort((a, b) => Number(b.master_score) - Number(a.master_score))
