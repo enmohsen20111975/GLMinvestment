@@ -41,20 +41,20 @@ def get_stocks_db_connection():
     conn.execute('''
         CREATE TABLE IF NOT EXISTS stock_daily_prices (
             ticker TEXT,
-            symbol TEXT,
             price_date TEXT,
             open REAL,
             high REAL,
             low REAL,
             close REAL,
-            close_price REAL,
             volume REAL,
             change_percent REAL,
-            market TEXT,
             fetch_time TEXT,
             open_price REAL,
             high_price REAL,
-            low_price REAL
+            low_price REAL,
+            close_price REAL,
+            turnover REAL,
+            market TEXT
         )
     ''')
     # UNIQUE index عشان الـ UPSERT يشتغل
@@ -96,45 +96,50 @@ def get_last_date_in_stocks_db(stocks_conn, ticker):
 
 
 def get_missing_prices_from_egksco(de_conn, ticker, last_date, days_limit=60):
-    """الأسعار الناقصة من egksco_price_history (EGX فقط)."""
+    """الأسعار الناقصة من egksco_price_history (EGX فقط).
+
+    INDICATORS-FIX (2026-10-28): بـ نجيب كل الأسعار من egksco (مش بس الأحدث من last_date)
+    عشان نـ fix الأسعار الـ flat الغلط في stocks.db. egksco هو المصدر الرسمي المصري
+    → قيمته تـ override أي قيمة flat في stocks.db.
+    """
     if last_date:
-        # الأسعار الأحدث من آخر تاريخ موجود
+        # كل الأسعار من egksco (للـ flat-fix) — مش بس الأحدث
         rows = de_conn.execute(
-            '''SELECT symbol, price_date, open_price, high_price, low_price, 
+            '''SELECT symbol, price_date, open_price, high_price, low_price,
                       close_price, volume
-               FROM egksco_price_history 
-               WHERE symbol = ? AND price_date > ?
+               FROM egksco_price_history
+               WHERE symbol = ?
                ORDER BY price_date ASC''',
-            (ticker, last_date)
+            (ticker,)
         ).fetchall()
     else:
-        # مفيش أي تاريخ → انسخ آخر N يوم
         rows = de_conn.execute(
-            '''SELECT symbol, price_date, open_price, high_price, low_price, 
+            '''SELECT symbol, price_date, open_price, high_price, low_price,
                       close_price, volume
-               FROM egksco_price_history 
+               FROM egksco_price_history
                WHERE symbol = ?
                ORDER BY price_date DESC LIMIT ?''',
             (ticker, days_limit)
         ).fetchall()
-        rows = list(reversed(rows))  # ترتيب تصاعدي
+        rows = list(reversed(rows))
     return rows
 
 
 def get_missing_prices_from_historical(de_conn, ticker, market, last_date, days_limit=60):
     """الأسعار الناقصة من historical_data (كل الأسواق)."""
     if last_date:
+        # كل الأسعار (للـ flat-fix) — مش بس الأحدث
         rows = de_conn.execute(
             '''SELECT symbol, date, open, high, low, close, volume
-               FROM historical_data 
-               WHERE symbol = ? AND date > ?
+               FROM historical_data
+               WHERE symbol = ?
                ORDER BY date ASC''',
-            (ticker, last_date)
+            (ticker,)
         ).fetchall()
     else:
         rows = de_conn.execute(
             '''SELECT symbol, date, open, high, low, close, volume
-               FROM historical_data 
+               FROM historical_data
                WHERE symbol = ?
                ORDER BY date DESC LIMIT ?''',
             (ticker, days_limit)
@@ -143,51 +148,81 @@ def get_missing_prices_from_historical(de_conn, ticker, market, last_date, days_
     return rows
 
 
-def upsert_price_row(stocks_conn, ticker, price_date, open_p, high_p, low_p, 
-                     close_p, volume, change_pct, market):
-    """UPSERT صف واحد في stock_daily_prices (بترتيب الأعمدة الصح)."""
-    # تأكد إن كل قيمة numeric أو NULL (مش string)
+def upsert_price_row(stocks_conn, ticker, price_date, open_p, high_p, low_p,
+                     close_p, volume, change_pct, market, source='historical'):
+    """UPSERT صف واحد في stock_daily_prices (بترتيب الأعمدة الصح).
+
+    INDICATORS-FIX (2026-10-28): لو source='egksco' (المصدر الرسمي المصري)
+    → نـ override الأسعار الموجودة (مش بس COALESCE). ده ضروري عشان نـ fix
+    الأسعار الـ flat الغلط في stocks.db. لو source='historical' → COALESCE بس
+    (لا نـ override قيم موجودة من مصدر أحسن).
+    """
     def safe_num(v):
         if v is None: return None
         try: return float(v)
         except (ValueError, TypeError): return None
-    
+
     open_p = safe_num(open_p)
     high_p = safe_num(high_p)
     low_p = safe_num(low_p)
     close_p = safe_num(close_p)
     volume = safe_num(volume)
     change_pct = safe_num(change_pct)
-    
-    # لو close مش موجود، استخدم close_price كـ fallback
+
     if close_p is None:
         return False
-    
+
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
     try:
-        stocks_conn.execute(
-            '''INSERT INTO stock_daily_prices 
-               (ticker, symbol, price_date, open, high, low, close, close_price, 
-                volume, change_percent, market, fetch_time, open_price, high_price, low_price)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(ticker, price_date) DO UPDATE SET
-                open = COALESCE(excluded.open, stock_daily_prices.open),
-                high = COALESCE(excluded.high, stock_daily_prices.high),
-                low = COALESCE(excluded.low, stock_daily_prices.low),
-                close = COALESCE(excluded.close, stock_daily_prices.close),
-                close_price = COALESCE(excluded.close_price, stock_daily_prices.close_price),
-                volume = COALESCE(excluded.volume, stock_daily_prices.volume),
-                change_percent = COALESCE(excluded.change_percent, stock_daily_prices.change_percent),
-                market = COALESCE(excluded.market, stock_daily_prices.market),
-                fetch_time = excluded.fetch_time,
-                open_price = COALESCE(excluded.open_price, stock_daily_prices.open_price),
-                high_price = COALESCE(excluded.high_price, stock_daily_prices.high_price),
-                low_price = COALESCE(excluded.low_price, stock_daily_prices.low_price)
-            ''',
-            (ticker, ticker, price_date, open_p, high_p, low_p, close_p, close_p,
-             volume, change_pct, market, now_str, open_p, high_p, low_p)
-        )
+        if source == 'egksco':
+            # egksco = المصدر الرسمي → override القيم الموجودة
+            stocks_conn.execute(
+                '''INSERT INTO stock_daily_prices
+                   (ticker, price_date, open, high, low, close, close_price,
+                    volume, change_percent, market, fetch_time, open_price, high_price, low_price)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(ticker, price_date) DO UPDATE SET
+                    open = excluded.open,
+                    high = excluded.high,
+                    low = excluded.low,
+                    close = excluded.close,
+                    close_price = excluded.close_price,
+                    volume = CASE WHEN excluded.volume > 0 THEN excluded.volume ELSE stock_daily_prices.volume END,
+                    change_percent = CASE WHEN excluded.change_percent IS NOT NULL THEN excluded.change_percent ELSE stock_daily_prices.change_percent END,
+                    market = COALESCE(excluded.market, stock_daily_prices.market),
+                    fetch_time = excluded.fetch_time,
+                    open_price = excluded.open_price,
+                    high_price = excluded.high_price,
+                    low_price = excluded.low_price
+                ''',
+                (ticker, price_date, open_p, high_p, low_p, close_p, close_p,
+                 volume, change_pct, market, now_str, open_p, high_p, low_p)
+            )
+        else:
+            # historical → COALESCE بس (لا override)
+            stocks_conn.execute(
+                '''INSERT INTO stock_daily_prices
+                   (ticker, price_date, open, high, low, close, close_price,
+                    volume, change_percent, market, fetch_time, open_price, high_price, low_price)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(ticker, price_date) DO UPDATE SET
+                    open = COALESCE(excluded.open, stock_daily_prices.open),
+                    high = COALESCE(excluded.high, stock_daily_prices.high),
+                    low = COALESCE(excluded.low, stock_daily_prices.low),
+                    close = COALESCE(excluded.close, stock_daily_prices.close),
+                    close_price = COALESCE(excluded.close_price, stock_daily_prices.close_price),
+                    volume = COALESCE(excluded.volume, stock_daily_prices.volume),
+                    change_percent = COALESCE(excluded.change_percent, stock_daily_prices.change_percent),
+                    market = COALESCE(excluded.market, stock_daily_prices.market),
+                    fetch_time = excluded.fetch_time,
+                    open_price = COALESCE(excluded.open_price, stock_daily_prices.open_price),
+                    high_price = COALESCE(excluded.high_price, stock_daily_prices.high_price),
+                    low_price = COALESCE(excluded.low_price, stock_daily_prices.low_price)
+                ''',
+                (ticker, price_date, open_p, high_p, low_p, close_p, close_p,
+                 volume, change_pct, market, now_str, open_p, high_p, low_p)
+            )
         return True
     except Exception as e:
         print(f'    ⚠️  UPSERT error for {ticker} @ {price_date}: {e}', flush=True)
@@ -265,7 +300,8 @@ def sync_market(market_filter: str = None, dry_run: bool = False, days_limit: in
             ok = upsert_price_row(
                 stocks_conn, ticker, date_str,
                 data['open'], data['high'], data['low'], data['close'],
-                data['volume'], data['change_pct'], market
+                data['volume'], data['change_pct'], market,
+                source=data['source']
             )
             if ok:
                 upserted += 1
