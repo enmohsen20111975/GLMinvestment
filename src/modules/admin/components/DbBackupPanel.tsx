@@ -155,7 +155,7 @@ export function DbBackupPanel() {
 
  // Form options
  const [selectedDbs, setSelectedDbs] = useState<Set<string>>(new Set());
- const [maxPartSizeMb, setMaxPartSizeMb] = useState<number>(60);
+ const [maxPartSizeMb, setMaxPartSizeMb] = useState<number>(45);
  const [uploadToGithub, setUploadToGithub] = useState<boolean>(true);
  const [pruneOld, setPruneOld] = useState<boolean>(false);
 
@@ -165,6 +165,12 @@ export function DbBackupPanel() {
  const [selectedArchives, setSelectedArchives] = useState<Set<string>>(new Set());
  const [rollbackLastCommit, setRollbackLastCommit] = useState<boolean>(false);
  const [deleteRemoteBeforePush, setDeleteRemoteBeforePush] = useState<Set<string>>(new Set());
+ // BRAVO-DB-BACKUP-BRANCH (2026-10-28): رفع على فرع منفصل بدل main
+ // default: مفعل + branch='db-backups' + force=true
+ // ده بـ يحل مشكلة "main behind بـ hundreds of commits" اللي بـ تـ block الـ push
+ const [useSeparateBranch, setUseSeparateBranch] = useState<boolean>(true);
+ const [pushBranch, setPushBranch] = useState<string>('db-backups');
+ const [pushBranchForce, setPushBranchForce] = useState<boolean>(true);
  const [gitStatus, setGitStatus] = useState<{
  ahead: number;
  behind: number;
@@ -362,6 +368,9 @@ export function DbBackupPanel() {
  push_strategy: pushStrategy,
  rollback_last_commit: rollbackLastCommit || undefined,
  delete_remote_archives_before_push: deleteRemoteBeforePush.size > 0 ? Array.from(deleteRemoteBeforePush) : undefined,
+ // BRAVO-DB-BACKUP-BRANCH: لو مفعل، ارفع على فرع منفصل بدل main
+ push_branch: useSeparateBranch && pushToGithub ? pushBranch.trim() : undefined,
+ push_branch_force: useSeparateBranch && pushToGithub ? pushBranchForce : undefined,
  }),
  });
 
@@ -704,6 +713,57 @@ export function DbBackupPanel() {
  >
  {showAdvancedPush ? 'إخفاء' : 'إظهار'}
  </Button>
+ </div>
+
+ {/* BRAVO-DB-BACKUP-BRANCH (2026-10-28): رفع على فرع منفصل */}
+ <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3 space-y-2">
+ <label className="flex items-start gap-2 cursor-pointer">
+ <input
+ type="checkbox"
+ checked={useSeparateBranch}
+ onChange={(e) => setUseSeparateBranch(e.target.checked)}
+ className="mt-1"
+ />
+ <div className="flex-1">
+ <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+ 🌿 رفع على فرع منفصل (مُوصى به)
+ </span>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ بدل الرفع على main (اللي ممكن يكون behind بـ hundreds of commits → conflicts)،
+ ارفع على فرع منفصل. ده بـ يحل مشكلة فشل الـ push تماماً.
+ </p>
+ </div>
+ </label>
+ {useSeparateBranch && (
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
+ <div>
+ <label className="text-xs text-muted-foreground">اسم الفرع</label>
+ <input
+ type="text"
+ value={pushBranch}
+ onChange={(e) => setPushBranch(e.target.value)}
+ placeholder="db-backups"
+ className="w-full rounded border bg-background px-2 py-1 text-sm font-mono mt-0.5"
+ />
+ </div>
+ <div className="flex items-end">
+ <label className="flex items-center gap-2 cursor-pointer text-xs">
+ <input
+ type="checkbox"
+ checked={pushBranchForce}
+ onChange={(e) => setPushBranchForce(e.target.checked)}
+ />
+ <span>force-push (آمن على الفرع المنفصل)</span>
+ </label>
+ </div>
+ </div>
+ )}
+ {gitStatus && gitStatus.behind > 50 && (
+ <div className="text-xs text-amber-600 dark:text-amber-400 pl-6 mt-1">
+ ⚠️ main behind بـ {gitStatus.behind} commits — الرفع على main هيـ conflict.
+ فعّل الفرع المنفصل ده.
+ </div>
+ )}
  </div>
 
  {/* Git Status */}

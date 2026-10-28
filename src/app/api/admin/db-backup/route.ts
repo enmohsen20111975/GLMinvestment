@@ -21,7 +21,10 @@ const execFileAsync = promisify(execFile);
 
 const DB_DIR = join(process.cwd(), 'db');
 const DATA_DIR = join(process.cwd(), 'data');
-const DEFAULT_MAX_ZIP_MB = 60; // 60MB default per archive
+// BRAVO-DB-BACKUP-SIZE (2026-10-28): GitHub hard limit = 100MB per file (بدون LFS).
+// حدّ الـ default لـ 45MB عشان نـ leave margin (zip headers + git blob overhead).
+// الـ owner لو حب يرفع لأكبر، يقدر يوصل لـ 95MB (max في الـ POST validator).
+const DEFAULT_MAX_ZIP_MB = 45;
 
 // System PATH injection to prevent spawn ENOENT under PM2 / WSL
 const SYSTEM_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
@@ -263,8 +266,17 @@ interface PostBody {
   force_no_rebase?: boolean;
   // لو true، بيمسح الأرشيفات القديمة من GitHub قبل الرفع (دعم DELETE من GitHub)
   delete_remote_archives_before_push?: string[];
-  // لو true، بيعمل rollback للـ commit الأخير قبل الـ push
+  // لو true، يعمل rollback للـ commit الأخير قبل الـ push
   rollback_last_commit?: boolean;
+  // BRAVO-DB-BACKUP-BRANCH (2026-10-28): رفع على فرع منفصل بدل main.
+  // default: 'db-backups'. ده بـ يفصل الـ DB backups عن الـ main branch
+  // (اللي ممكن يكون ahead/behind بـ hundreds of commits). الفرع ده:
+  //   - بيتـ create تلقائياً لو مش موجود (git checkout -b + push -u)
+  //   - بيتـ force-push دايماً (آمن لأنه فرع منفصل مفيش حد بيشتغل عليه)
+  //   - بـ يـ avoid conflicts اللي بتحصل مع rebase/merge على main
+  push_branch?: string;
+  // لو true (default للـ branch المنفصل)، استخدم force-push للـ branch
+  push_branch_force?: boolean;
 }
 
 interface BackupResult {
@@ -457,6 +469,14 @@ async function runBackupJob(jobId: string, body: PostBody) {
           included_dbs: dbNames,
         });
       }
+
+      // BRAVO-DB-BACKUP-SIZE (2026-10-28): تحذير لو أي ملف > 90MB (قريب من حد GitHub 100MB)
+      const lastArch = createdArchives[createdArchives.length - 1];
+      if (lastArch && lastArch.size_bytes > 90 * 1024 * 1024) {
+        const warnMsg = `⚠️ ${lastArch.archive_name} = ${(lastArch.size_bytes / 1024 / 1024).toFixed(1)}MB — GitHub هيرفض لو > 100MB. قلل max_part_size_mb.`;
+        await appendLog(jobId, `[size] ${warnMsg}`);
+        addWarning(jobId, warnMsg);
+      }
     }
 
     // Optional GitHub upload — خيارات متعددة للرفع (Task PUSH-STRATEGY-2026-10-06)
@@ -564,6 +584,83 @@ async function runBackupJob(jobId: string, body: PostBody) {
         gitResult.push_strategy = strategy;
         await appendLog(jobId, `[fetch] استراتيجية الرفع: ${strategy}`);
 
+        // BRAVO-DB-BACKUP-BRANCH (2026-10-28): لو طُلب رفع على فرع منفصل،
+        // نـ skip الـ fetch/rebase/merge على main وندخل مسار الـ branch المنفصل.
+        // ده بـ يحل مشكلة "main ahead/behind بـ hundreds of commits" اللي بـ تـ block
+        // الـ push تماماً. الفرع الافتراضي = 'db-backups'.
+        const pushBranch = body.push_branch?.trim() || '';
+        if (pushBranch) {
+          const useForce = body.push_branch_force !== false; // default true
+          await appendLog(jobId, `[branch] رفع على فرع منفصل: '${pushBranch}' (force=${useForce})`);
+          try {
+            // تحقق إن اسم الـ branch آمن (حروف/أرقام/-/_/ فقط)
+            if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(pushBranch) || pushBranch.length > 100) {
+              throw new Error(`invalid branch name: '${pushBranch}'`);
+            }
+
+            // (a) اعمل fetch الأول عشان نشوف لو الـ branch موجود على الـ remote
+            try {
+              await runGit(['fetch', 'origin', pushBranch], cwd);
+              await appendLog(jobId, `[branch] ✅ الـ branch '${pushBranch}' موجود على الـ remote`);
+            } catch {
+              await appendLog(jobId, `[branch] الـ branch '${pushBranch}' مش موجود على الـ remote — هيتـ create`);
+            }
+
+            // (b) اعمل commit للـ archives على الـ current branch (تم في خطوة 5)
+            //     بعدها انقل الـ commit لـ pushBranch بدل ما نـ modify الـ main
+            //     الاستراتيجية: checkout -B pushBranch (create/reset local branch)
+            //     ثم push -u origin pushBranch
+            const currentBranch = (await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], cwd)).stdout.trim();
+            await appendLog(jobId, `[branch] الـ branch الحالي: '${currentBranch}'`);
+
+            // لو مش نفس الـ branch، اعمل checkout -B (create or reset)
+            if (currentBranch !== pushBranch) {
+              await runGit(['checkout', '-B', pushBranch], cwd);
+              await appendLog(jobId, `[branch] ✅ تم checkout -B ${pushBranch} (local branch جاهز)`);
+            }
+
+            // (c) push للـ remote branch
+            const pushArgs = useForce
+              ? ['push', '--force', '-u', 'origin', pushBranch]
+              : ['push', '-u', 'origin', pushBranch];
+            await appendLog(jobId, `[push] جاري رفع لـ origin/${pushBranch} (force=${useForce}, ${archivesToPush.length} ملف)`);
+            await runGit(pushArgs, cwd);
+
+            gitResult.pushed = true;
+            gitResult.push_strategy = `branch:${pushBranch}${useForce ? ':force' : ''}`;
+            gitResult.message = `تم رفع ${archivesToPush.length} ملف أرشيف إلى فرع '${pushBranch}' المنفصل بنجاح.`;
+            gitResult.warnings?.push(`✅ رفع على فرع منفصل '${pushBranch}' — main branch غير متأثر`);
+            await appendLog(jobId, `[push] ✅ تم الرفع لـ origin/${pushBranch} بنجاح`);
+
+            // سجّل كل archive اترفع
+            for (const arch of archivesToPush) {
+              addArchivePushed(jobId, arch.archive_name);
+            }
+
+            // ارجع للـ main branch (عشان ما نسيبش الـ repo على db-backups)
+            if (currentBranch !== pushBranch) {
+              try {
+                await runGit(['checkout', currentBranch], cwd);
+                await appendLog(jobId, `[branch] ✅ تم الرجوع لـ ${currentBranch}`);
+              } catch (e) {
+                gitResult.warnings?.push(`checkout back to ${currentBranch} failed: ${e instanceof Error ? e.message.slice(0, 80) : 'unknown'}`);
+              }
+            }
+          } catch (e) {
+            const errMsg = `push to branch '${pushBranch}' failed: ${e instanceof Error ? e.message.slice(0, 200) : 'unknown'}`;
+            gitResult.message = errMsg;
+            addError(jobId, errMsg);
+            await appendLog(jobId, `[branch] ❌ ${errMsg}`);
+            // ارجع للـ main branch لو كنت غيرت
+            try {
+              const cur = (await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], cwd)).stdout.trim();
+              if (cur === pushBranch) {
+                await runGit(['checkout', 'main'], cwd).catch(() => {});
+              }
+            } catch { /* ignore */ }
+          }
+        } else {
+        // ─── مسار main branch التقليدي (fetch/rebase/merge/force) ───
         // نفحص ahead/behind الأول (لو الـ fetch يشتغل)
         updatePhase(jobId, 'fetch', 70);
         try {
@@ -576,6 +673,11 @@ async function runBackupJob(jobId: string, body: PostBody) {
           const [ahead, behind] = abStdout.trim().split(/\s+/).map(n => parseInt(n, 10) || 0);
           gitResult.ahead_behind = { ahead, behind };
           await appendLog(jobId, `[fetch] ahead=${ahead}, behind=${behind}`);
+          // BRAVO-WARN: لو behind كبير (>50)، نحذر إن الـ rebase هيطول/هيـ conflict
+          if (behind > 50) {
+            gitResult.warnings?.push(`⚠️ behind=${behind} commits — rebase هيطول جداً/ممكن يـ conflict. استخدم فرع منفصل (push_branch='db-backups').`);
+            await appendLog(jobId, `[fetch] ⚠️ WARNING: behind=${behind} — استخدم push_branch='db-backups' لتجنب الـ conflicts`);
+          }
         } catch (e) {
           gitResult.warnings?.push(`fetch failed (network?): ${e instanceof Error ? e.message.slice(0, 100) : 'unknown'}`);
         }
@@ -652,6 +754,7 @@ async function runBackupJob(jobId: string, body: PostBody) {
           addError(jobId, errMsg);
           await appendLog(jobId, `[push] ❌ ${errMsg}`);
         }
+        } // end of else (main branch path) — BRAVO-DB-BACKUP-BRANCH
       } catch (e) {
         const errMsg = `git error: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`;
         gitResult.message = errMsg;
