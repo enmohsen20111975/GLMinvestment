@@ -89,42 +89,139 @@ def get_last_prediction_date(market_code: str) -> str | None:
         return None
 
 
-def get_existing_tickers(market_code: str, scan_date: str) -> set:
-    """الأسهم اللي ليها توقع بالفعل في اليوم ده."""
+def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: str) -> tuple[list[str], int]:
+    """
+    فلتر التوقعات الموجودة — بس بشكل ذكي.
+    
+    مش بنـ skip السهم بالكامل (غلط! السهم ممكن يتحرك ويتغير إتجاهه).
+    بنـ skip بس لو:
+      1. فيه توقع نشط (مش CLOSED) لنفس اليوم
+      2. سعر السهم ما تغيرش بشكل ملحوظ من آخر تحليل (أقل من 1%)
+    
+    لو السهم ليه توع لكن تحرك أكتر من 1%، نحلله تاني (ممكن إشارة جديدة).
+    """
+    if not tickers:
+        return [], 0
+    
     try:
-        conn = sqlite3.connect(str(PREDICTIONS_DB))
-        rows = conn.execute(
-            "SELECT ticker FROM predictions WHERE market = ? AND prediction_date LIKE ?",
+        conn_pred = sqlite3.connect(str(PREDICTIONS_DB))
+        conn_stocks = sqlite3.connect(str(STOCKS_DB))
+        
+        # الأسهم اللي ليها توقعات نشطة في اليوم ده
+        existing = conn_pred.execute(
+            """SELECT ticker, entry_price FROM predictions 
+               WHERE market = ? AND prediction_date LIKE ? 
+               AND (outcome_date IS NULL OR exit_type IS NULL)""",
             (market_code, f"{scan_date}%")
         ).fetchall()
-        conn.close()
-        return {r[0] for r in rows}
+        conn_pred.close()
+        
+        # خد أسعار الأسهم الحالية
+        placeholders = ','.join(['?'] * len(tickers))
+        stock_rows = conn_stocks.execute(
+            f"SELECT ticker, current_price FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            (*tickers, market_code)
+        ).fetchall()
+        conn_stocks.close()
+        
+        current_prices = {r[0]: r[1] for r in stock_rows if r[1]}
+        existing_map = {r[0]: r[1] for r in existing}  # ticker → entry_price
+        
+        to_reanalyze = []
+        skipped_count = 0
+        
+        for ticker in tickers:
+            if ticker not in existing_map:
+                # مفيهوش توقع → حلله
+                to_reanalyze.append(ticker)
+                continue
+            
+            # فيه توقع نشط — نتأكد إن السعر ما تغيرش بشكل ملحوظ
+            entry_price = existing_map[ticker]
+            current_price = current_prices.get(ticker)
+            
+            if entry_price and current_price and entry_price > 0:
+                change_pct = abs((current_price - entry_price) / entry_price * 100)
+                if change_pct < 1.0:
+                    # السعر ما تغيرش → skip (التوقع لسه valid)
+                    skipped_count += 1
+                    continue
+            
+            # السعر تحرك أكتر من 1% → نحلله تاني (ممكن إشارة جديدة)
+            to_reanalyze.append(ticker)
+        
+        return to_reanalyze, skipped_count
+    except Exception as e:
+        print(f"  ⚠️  فشل filter_stale_predictions: {e}", flush=True)
+        return tickers, 0
+
+
+def get_candidate_tickers(market_code: str) -> tuple[list[str], str]:
+    """
+    اختر الأسهم المرشحة للتحليل.
+    
+    الـ strategy:
+      1. كل الأسهم النشطة في السوق (الأصل — مش من الـ radar)
+      2. الـ radar ممكن يستخدم كـ signal تكميلي (مش المصدر الوحيد)
+    
+    ليه مش بنستخدم الـ radar كمصدر وحيد؟
+      لأن الـ radar بياخد بياناته من حسابات التوقعات (دوامة دائرية):
+        predictions → radar → predictor → predictions → radar → ...
+      ده هيخليك دايماً تـ predict نفس الأسهم وماتكتشفش فرص جديدة.
+    
+    الـ radar يستخدم كـ confidence booster (لو السهم في الـ radar = سيولة عالية)
+    مش كـ filter حصري.
+    """
+    # 1. كل الأسهم النشطة في السوق (الأصل)
+    all_active = get_active_tickers(market_code)
+    if not all_active:
+        return [], 'no_active'
+    
+    # 2. اقرأ الـ radar كـ reference (مش filter)
+    radar_picks = get_radar_picks(market_code)
+    radar_tickers = set()
+    if radar_picks:
+        for pick in radar_picks:
+            if isinstance(pick, dict):
+                ticker = pick.get('ticker') or pick.get('symbol')
+                if ticker:
+                    radar_tickers.add(ticker)
+    
+    # 3. رجّع كل الأسهم النشطة + الـ radar tickers كـ set للـ confidence
+    #    (المحدد هو filter_dead_stocks + filter_liquidity، مش الـ radar)
+    return all_active, 'all_active'
+
+
+def get_radar_picks(market_code: str) -> set:
+    """
+    اقرأ آخر radar JSON للسوق ده — كـ set من tickers للـ confidence boost.
+    مش بتستخدم كـ filter حصري (عشان نتجنب الدوامة الدائرية).
+    """
+    pattern = f"maker_radar_{market_code}_*.json"
+    files = sorted(RADAR_OUTPUT_DIR.glob(pattern), reverse=True)
+    if not files:
+        return set()
+    try:
+        with open(files[0]) as f:
+            data = json.load(f)
+        stocks = data.get('stocks') or data.get('predictions') or []
+        if isinstance(stocks, dict):
+            stocks = list(stocks.values())
+        if not isinstance(stocks, list):
+            return set()
+        tickers = set()
+        for pick in stocks:
+            if isinstance(pick, dict):
+                ticker = pick.get('ticker') or pick.get('symbol')
+                if ticker:
+                    tickers.add(ticker)
+        return tickers
     except Exception:
         return set()
 
 
-def get_radar_picks(market_code: str) -> list[dict]:
-    """اقرأ آخر radar JSON للسوق ده."""
-    pattern = f"maker_radar_{market_code}_*.json"
-    files = sorted(RADAR_OUTPUT_DIR.glob(pattern), reverse=True)
-    if not files:
-        return []
-    try:
-        with open(files[0]) as f:
-            data = json.load(f)
-        # الـ radar بيرجع {stocks: [...]} أو {predictions: [...]}
-        stocks = data.get('stocks') or data.get('predictions') or []
-        if isinstance(stocks, dict):
-            # ممكن يكون dict بدل list
-            stocks = list(stocks.values())
-        return stocks if isinstance(stocks, list) else []
-    except Exception as e:
-        print(f"  ⚠️  فشل قراءة radar للـ {market_code}: {e}", flush=True)
-        return []
-
-
 def get_active_tickers(market_code: str) -> list[str]:
-    """fallback: كل الأسهم النشطة (لو الـ radar فاضي)."""
+    """كل الأسهم النشطة في السوق (لها سعر وحجم)."""
     try:
         conn = sqlite3.connect(str(STOCKS_DB))
         rows = conn.execute(
@@ -230,22 +327,13 @@ def run_smart(market_code: str, start_date: str | None = None,
         print("  ℹ️  مفيش أيام تداول في الفترة دي", flush=True)
         return
     
-    # 3. الأسهم النشطة من الـ radar
-    radar_picks = get_radar_picks(canonical)
-    if radar_picks:
-        candidate_tickers = []
-        for pick in radar_picks:
-            if isinstance(pick, dict):
-                ticker = pick.get('ticker') or pick.get('symbol')
-                if ticker:
-                    candidate_tickers.append(ticker)
-        print(f"  📡 radar picks: {len(candidate_tickers)} سهم", flush=True)
+    # 3. الأسهم المرشحة (كل الأسهم النشطة — مش من الـ radar عشان نتجنب الدوامة)
+    candidate_tickers = get_active_tickers(canonical)
+    radar_set = get_radar_picks(canonical)  # confidence boost فقط
+    if candidate_tickers:
+        radar_boost = len([t for t in candidate_tickers if t in radar_set])
+        print(f"  📊 أسهم نشطة: {len(candidate_tickers)} | منها في الـ radar: {radar_boost}", flush=True)
     else:
-        # fallback: كل الأسهم النشطة
-        candidate_tickers = get_active_tickers(canonical)
-        print(f"  ⚠️  radar فاضي → fallback لكل الأسهم النشطة: {len(candidate_tickers)}", flush=True)
-    
-    if not candidate_tickers:
         print("  ℹ️  مفيش أسهم نشطة", flush=True)
         return
     
@@ -258,11 +346,10 @@ def run_smart(market_code: str, start_date: str | None = None,
     for scan_date in scan_dates:
         print(f"\n  📅 {scan_date}:", flush=True)
         
-        # 4a. فلتر الأسهم اللي ليها توقع بالفعل
-        existing = get_existing_tickers(canonical, scan_date)
-        todo = [t for t in candidate_tickers if t not in existing]
-        total_skipped_existing += len(candidate_tickers) - len(todo)
-        print(f"    - ليها توقع بالفعل: {len(candidate_tickers) - len(todo)} | متبقي: {len(todo)}", flush=True)
+        # 4a. فلتر التوقعات الموجودة (بشكل ذكي — مش skip لو السعر تغير)
+        todo, skipped_existing = filter_stale_predictions(candidate_tickers, canonical, scan_date)
+        total_skipped_existing += skipped_existing
+        print(f"    - توقعات لسه valid (السعر ما تغيرش): {skipped_existing} | متبقي: {len(todo)}", flush=True)
         
         # 4b. فلتر الأسهم الميتة
         alive = filter_dead_stocks(todo, canonical)
