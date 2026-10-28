@@ -493,15 +493,15 @@ def persist_to_daily_prices(conn: sqlite3.Connection, rows: List[Dict[str, Any]]
         market_slug = row.get("market", "egypt")
         try:
             cur.execute(
-                "INSERT INTO stock_daily_prices (ticker, symbol, price_date, open, high, low, close, volume, change_percent, market, fetch_time) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                "INSERT INTO stock_daily_prices (ticker, price_date, open, high, low, close, volume, change_percent, market, fetch_time) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                 "ON CONFLICT(ticker, price_date) DO UPDATE SET "
                 "close = excluded.close, volume = excluded.volume, "
                 "open = COALESCE(excluded.open, stock_daily_prices.open), "
                 "high = MAX(CASE WHEN excluded.high > 0 THEN excluded.high ELSE stock_daily_prices.high END, stock_daily_prices.high), "
                 "low = MIN(CASE WHEN excluded.low > 0 THEN excluded.low ELSE stock_daily_prices.low END, stock_daily_prices.low), "
                 "change_percent = excluded.change_percent, fetch_time = excluded.fetch_time",
-                (ticker, ticker, today, open_p, high_p, low_p, close, volume, change_pct, market_slug, now_str)
+                (ticker, today, open_p, high_p, low_p, close, volume, change_pct, market_slug, now_str)
             )
             count += 1
         except Exception as e:
