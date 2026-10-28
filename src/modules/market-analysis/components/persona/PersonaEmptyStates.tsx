@@ -4,19 +4,15 @@
  * persona/PersonaEmptyStates.tsx
  * ============================================================================
  * F-Phase3-Split-PersonaTab — Loading / Error / Empty states (extracted).
- * ----------------------------------------------------------------------------
- * Originally lines 1489-1582 of `../PersonaTab.tsx`. Returns the appropriate
- * empty-state card based on the hook state:
  *
- *   - loading → 4× Skeleton (h-44)
- *   - error → destructive card with retry button
- *   - items.length === 0 → REGIME-FIX (2026-10-05) 3-way ternary:
- *       1. loading=true → "جاري تحليل الفرص"
- *       2. regime=DEFENSIVE → "السوق في وضع دفاعي"
- *       3. regime=NORMAL/AGGRESSIVE → "لا توجد فرص متاحة حالياً"
+ * (ALPHA-UX-FIX — owner directive 2026-10-28):
+ * «ممكن تخلى القرف دة شكلة احسن بدل ما هو ظاهر للعميل كما لوكان عيب فى النظام»
  *
- * Returns `null` when none of the empty-state branches apply (so the caller
- * can proceed to render the main view).
+ * Redesigned the defensive state to be:
+ *   1. Shorter + cleaner (no wall of text)
+ *   2. Actionable (links to prediction-tracking + radar)
+ *   3. Positive framing (protection, not failure)
+ *   4. No technical jargon (SMA20, breadth, drawdown — customer doesn't care)
  * ============================================================================
  */
 
@@ -24,7 +20,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Shield, TrendingUp, Activity } from 'lucide-react';
 import type { PersonaEmptyStatesProps } from './types';
 
 export function PersonaEmptyStates({
@@ -63,76 +59,132 @@ export function PersonaEmptyStates({
   }
 
   if (itemsLength === 0) {
-    // REGIME-FIX (2026-10-05): بـ نفرّق بين 3 حالات لما items.length === 0:
-    // 1. loading=true → التحليل لسه بـ يشتغل (نعرض "جاري التحليل")
-    // 2. regime=DEFENSIVE → التحليل خلص بس السوق هابط (نعرض "السوق دفاعي — مفيش فرص آمنة")
-    // 3. regime=NORMAL/AGGRESSIVE → التحليل خلص ومفيش فرص مؤسسية (نعرض "مفيش فرص حالياً")
     const isDefensive = marketRegime?.regime === 'DEFENSIVE';
     const hasRegimeData = marketRegime !== null;
-    const headline = loading
-      ? 'جاري تحليل الفرص — سيتم التحديث خلال دقائق'
-      : isDefensive
-        ? 'السوق في وضع دفاعي — لا توجد فرص آمنة حالياً'
-        : hasRegimeData
-          ? 'لا توجد فرص متاحة حالياً'
-          : 'جاري تحليل الفرص — سيتم التحديث خلال دقائق';
-    const subtext = loading
-      ? isLongTerm
-        ? 'محرك المستثمر يبحث عن فرص تناسب الشخصية طويلة المدى (6-12 شهر). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-        : persona === 'balanced'
-          ? 'محرك المتوازن يبحث عن فرص متوسطة المدى (2-6 أسابيع). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-          : 'محرك المضارب يبحث عن فرص زخم قصيرة المدى (يومي-أسبوعي). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-      : isDefensive
-        ? 'محرك التحليل فحص كل أسهم EGX ولم يجد فرصة واحدة تجتاز معايير السوق الدفاعي. هذا الإجراء لحماية رأس مالك — السوق هابط والـ engine يرفع شروط الدخول تلقائياً. ستعود الفرص عند تحسن السوق (تجاوز المؤشر للمتوسطات + ارتفاع breadth فوق 25%).'
-        : hasRegimeData
-          ? 'محرك التحليل فحص كل الأسهم ولم يجد فرصة واحدة تستوفي معايير الدخول الصارمة. هذا طبيعي — النظام ينتظر ظهور سهم قوي بزخم مؤسسي. تحدّث البيانات كل 15 دقيقة تلقائياً.'
-          : isLongTerm
-            ? 'محرك المستثمر يبحث عن فرص تناسب الشخصية طويلة المدى (6-12 شهر). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-            : persona === 'balanced'
-              ? 'محرك المتوازن يبحث عن فرص متوسطة المدى (2-6 أسابيع). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.'
-              : 'محرك المضارب يبحث عن فرص زخم قصيرة المدى (يومي-أسبوعي). تتحدث البيانات كل 15 دقيقة تلقائياً — لا يوجد تحليل لحظي على هذه الشاشة.';
-    const emoji = loading
-      ? headerTheme.emoji
-      : isDefensive
-        ? '🛡️'
-        : hasRegimeData
-          ? '📊'
-          : headerTheme.emoji;
-    const headlineColor = isDefensive
-      ? 'text-warning '
-      : hasRegimeData && !loading
-        ? 'text-muted-foreground'
-        : '';
+
+    // (ALPHA-UX-FIX): redesigned — shorter, positive, actionable.
+    if (loading) {
+      return (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <Activity className="h-8 w-8 mx-auto mb-3 text-primary animate-pulse" />
+            <p className="text-lg font-semibold mb-1">جاري تحليل الفرص</p>
+            <p className="text-sm text-muted-foreground">
+              {isLongTerm
+                ? 'محرك المستثمر يبحث عن فرص (6-12 شهر). تحديث تلقائي كل 15 دقيقة.'
+                : persona === 'balanced'
+                  ? 'محرك المتوازن يبحث عن فرص (2-6 أسابيع). تحديث تلقائي كل 15 دقيقة.'
+                  : 'محرك المضارب يبحث عن فرص زخم (يومي-أسبوعي). تحديث تلقائي كل 15 دقيقة.'}
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (isDefensive) {
+      // (ALPHA-UX-FIX): defensive state — clean, short, actionable.
+      return (
+        <Card className="border-warning/30 bg-gradient-to-br from-warning/5 to-transparent">
+          <CardContent className="p-6 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-warning/10 border border-warning/20 mb-3">
+              <Shield className="h-6 w-6 text-warning" />
+            </div>
+            <p className="text-base font-bold text-warning mb-1">
+              وضع حماية رأس المال
+            </p>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+              السوق في حالة هبوط قوي. النظام يرفع شروط الدخول تلقائيًا لحماية استثماراتك.
+              تابع الفرص البديلة أدناه.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.hash = 'prediction-tracking';
+                  }
+                }}
+                className="gap-1.5"
+              >
+                <TrendingUp className="h-4 w-4" />
+                عرض التوقعات النشطة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.hash = 'liquidity-radar';
+                  }
+                }}
+                className="gap-1.5"
+              >
+                <Activity className="h-4 w-4" />
+                رادار السيولة
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRetry}
+                className="gap-1.5"
+              >
+                <RefreshCw className="h-4 w-4" />
+                إعادة الفحص
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (hasRegimeData) {
+      // Normal/Aggressive regime but no picks found.
+      return (
+        <Card className="border-dashed">
+          <CardContent className="p-6 text-center">
+            <span className="text-3xl mb-2 block">📊</span>
+            <p className="text-base font-semibold mb-1">لا توجد فرص متاحة حالياً</p>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+              النظام ينتظر ظهور سهم قوي بزخم مؤسسي. تحدّث البيانات كل 15 دقيقة تلقائياً.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.hash = 'liquidity-radar';
+                  }
+                }}
+                className="gap-1.5"
+              >
+                <Activity className="h-4 w-4" />
+                استكشف رادار السيولة
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onRetry} className="gap-1.5">
+                <RefreshCw className="h-4 w-4" />
+                تحديث الآن
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Fallback — no regime data.
     return (
-      <Card className={isDefensive ? 'border-warning bg-warning/10 /10' : 'border-dashed'}>
-        <CardContent className="p-8 text-center">
-          <span className="text-4xl mb-3 block">{emoji}</span>
-          <p className={`text-lg font-semibold mb-1 ${headlineColor}`}>{headline}</p>
-          <p className="text-sm text-muted-foreground mb-4 whitespace-pre-line">{subtext}</p>
-          {isDefensive && marketRegime?.reasons && marketRegime.reasons.length > 0 && (
-            <ul className="text-xs text-muted-foreground mb-4 max-w-md mx-auto text-right space-y-1">
-              {marketRegime.reasons.slice(0, 4).map((r, i) => (
-                <li key={i} className="flex items-start gap-1 justify-end">
-                  <span className="text-warning mt-0.5">•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 ml-2" />
-              تحديث الآن
-            </Button>
-            <a
-              href="https://invist.m2y.net"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              invist.m2y.net
-            </a>
-          </div>
+      <Card className="border-dashed">
+        <CardContent className="p-6 text-center">
+          <Activity className="h-8 w-8 mx-auto mb-3 text-primary animate-pulse" />
+          <p className="text-base font-semibold mb-1">جاري تحليل الفرص</p>
+          <p className="text-sm text-muted-foreground">
+            {isLongTerm
+              ? 'محرك المستثمر يبحث عن فرص (6-12 شهر).'
+              : persona === 'balanced'
+                ? 'محرك المتوازن يبحث عن فرص (2-6 أسابيع).'
+                : 'محرك المضارب يبحث عن فرص زخم (يومي-أسبوعي).'}
+          </p>
         </CardContent>
       </Card>
     );
