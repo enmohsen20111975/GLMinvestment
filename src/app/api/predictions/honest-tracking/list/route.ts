@@ -353,19 +353,23 @@ export async function GET(request: NextRequest) {
     // في الـ schema migrations من قبل (maestro.ts:349-350) فبنعتبرها دايماً موجودة.
     let hasTargetPrice2 = false;
     let hasV40Fields = false;
+    let hasLifecycleStatus = false; // FIX (BRAVO-DISASTER 2026-10-28): column may not exist in local DB
     try {
       const cols = db.prepare("PRAGMA table_info(predictions)").all() as Array<{ name: string }>;
       hasTargetPrice2 = cols.some((c) => c.name === 'target_price_2');
       // V40.1: evidence_count, morning_bell, kill_filter_result (added by V40 generator)
       hasV40Fields = cols.some((c) => c.name === 'evidence_count')
         && cols.some((c) => c.name === 'morning_bell');
+      hasLifecycleStatus = cols.some((c) => c.name === 'lifecycle_status');
     } catch {
       hasTargetPrice2 = false;
       hasV40Fields = false;
+      hasLifecycleStatus = false;
     }
     const targetPrice2Sel = hasTargetPrice2 ? ', target_price_2' : '';
     // V40.1: evidence_count + morning_bell + kill_filter_result (schema-aware)
     const v40Sel = hasV40Fields ? ', evidence_count, morning_bell, kill_filter_result' : '';
+    const lifecycleStatusSel = hasLifecycleStatus ? ', lifecycle_status' : '';
     // FIX (Aug 2026): ضيف LIMIT في الـ SQL بدل ما نـ fetch كل الصفوف ونعمل pagination في JS
     // عشان نمنع OOM على 5000+ توقع
     const maxRows = 500; // حد أقصى للصفوف اللي بترجع من DB
@@ -401,8 +405,8 @@ export async function GET(request: NextRequest) {
         outcome_date, exit_price, actual_return, exit_reason,
         hit_target, hit_stop, is_correct, holding_days,
         notes, created_at, highest_price_reached, lowest_price_reached,
-        atr_at_entry, risk_reward, exit_type, status, lifecycle_status, pnl_pct, closed_at,
-        persona${targetPrice2Sel}${v40Sel}
+        atr_at_entry, risk_reward, exit_type, status, pnl_pct, closed_at,
+        persona${targetPrice2Sel}${v40Sel}${lifecycleStatusSel}
         ${hasV40Fields ? ', analysis_json' : ''}
       FROM predictions
       ${whereWithFreshness}
