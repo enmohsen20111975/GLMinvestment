@@ -253,13 +253,19 @@ def compute_market_composite(prices, market, base_value, symbol, name, name_ar):
 
 
 def upsert_index(conn, idx, now_iso):
-    """INSERT OR REPLACE في market_indices"""
+    """INSERT OR REPLACE في market_indices.
+
+    INDICATORS-FIX (2026-10-28): بـ نكتب في `value` كمان (مش بس `current_value`)
+    عشان الـ API (market-data-access.ts) بـ يقرا `value` كأولوية. قبل كده كان
+    `value` بتفضي NULL → الـ API بيرجّع 0 أو null.
+    """
     conn.execute("""
         INSERT INTO market_indices
-        (symbol, name, name_ar, current_value, previous_close, change, change_percent, is_shariah, last_update, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (symbol, name, name_ar, current_value, value, previous_close, change, change_percent, is_shariah, last_update, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(symbol) DO UPDATE SET
             current_value = excluded.current_value,
+            value = excluded.value,
             previous_close = excluded.previous_close,
             change = excluded.change,
             change_percent = excluded.change_percent,
@@ -268,7 +274,8 @@ def upsert_index(conn, idx, now_iso):
             source = excluded.source
     """, (
         idx['symbol'], idx['name'], idx['name_ar'],
-        idx['current_value'], idx['previous_close'], idx['change'],
+        idx['current_value'], idx['current_value'],  # value = current_value (API reads `value`)
+        idx['previous_close'], idx['change'],
         idx['change_percent'], idx['is_shariah'], now_iso,
         f'sync_live ({idx.get("coverage", "")})'
     ))
