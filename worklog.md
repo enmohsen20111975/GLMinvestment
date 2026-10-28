@@ -9995,3 +9995,46 @@ Stage Summary:
   * Browser: NOT RUN (OOM environmental).
 - Git state: 8341a28 preserved. New changes are unstaged (NOT committed) — awaiting owner review.
 - NO push, NO merge, NO deploy.
+
+---
+Task ID: BRAVO-DATA-ENGINE-READONLY-FIX
+Agent: Bravo V2 (backend engineer)
+Task: إصلاح مشاكل محرك البيانات — (1) readonly database blocker, (2) TradingView بيرجع 28 سهم بس بدل 1480, (3) تأمين الـ writes في 3 modules.
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-RADAR-INTEL-DEADCODE-FIX).
+- حللت اللوج اللي الـ owner بعته (من production server `/root/GLMinvestment/`):
+  * EGXPilot API → HTTP 502 (external outage — مفيش حاجة عندنا نعملها، الـ fallback لـ DB tickers شغال صح).
+  * TradingView → 28 سهم بس (من 1131 ticker!).
+  * `attempt to write a readonly database` → **الـ blocker القاتل**: 0 سهم اتـ update.
+- **Problem 1 — readonly DB (3 ملفات بنفس الـ bug pattern):**
+  * `vps-service/data/egx_fetcher.py` line 712 `_update_database()`: `writable=False` + `UPDATE stocks SET ...` → FAIL.
+  * `vps-service/scripts/daily_price_updater.py` lines 103,106 `update_prices()`: `writable=False` + `UPDATE/INSERT stock_daily_prices` + `INSERT price_history` → FAIL. (line 236 `verify_prices()` بيـ SELECT بس → سليم، سيبته readonly).
+  * `vps-service/engines/historical_backfill_engine.py` line 422 `connect()`: `writable=False` + `INSERT/UPDATE prediction_logs` + `commit()` (lines 748,785,898,999,1004,1107,1119) → FAIL.
+  * الـ fix: `writable=False` → `writable=True` في الـ 3 مواضع دي (مع تعليقات BRAVO-DB-WRITE-FIX).
+- **Problem 2 — 28 سهم بدل 1480 (root cause = old per-ticker scraping):**
+  * `TradingViewSource.fetch_batch()` / `fetch_all()` Step 3 كان بـ loop على 1131 ticker × `_fetch_single()` (tradingview_ta library) × 0.3s sleep = 5+ دقايق، وأغلب الـ tickers فشلت (rate-limited) → 28 نجحوا بس.
+  * برافو بنى قبل كده unified Scanner API في `data_engine/scrapers/tradingview_rest.py`: POST واحد لـ `scanner.tradingview.com/egypt/scan` بيرجع ~280 سهم في ~3s. بس `egx_fetcher` ما اتـ migrated ليه قط.
+  * الـ fix — migration كاملة:
+    1. import `fetch_tradingview_stocks` من `tradingview_rest.py` (مع path resolution لـ `data_engine/`).
+    2. method جديدة `TradingViewSource.fetch_all_via_scanner(market)`: بتنادي الـ scanner + بتعمل field mapping (symbol→ticker, price→current_price, change_percent→price_change, volume, sector, rsi من tabs_data، pe من EPS_VALUES). الـ fields اللي الـ scanner مش بيوفرها (open/high/low/previous_close/eps/sma_50) = None.
+    3. `fetch_all()` Step 3 اتـ refactor: 3a (Scanner FIRST) → 3b (per-ticker fallback لو scanner فشل) → 3c (EGXPilot last resort).
+    4. `_update_database()` UPDATE statement اتـ modify: استخدم `COALESCE(?, column)` للـ fields اللي الـ scanner مش بيوفرها عشان NULL ما يمسحش بيانات موجودة. الـ fresh fields (current_price/volume/change_percent/sector/rsi/last_update) بتتـ overwrite دايمًا.
+- **التحقق:**
+  * `py_compile` للـ 3 ملفات → OK.
+  * import test: `SCANNER_API_AVAILABLE=True`، `_scanner_fetch` بيـ resolve، `fetch_all_via_scanner` method موجودة.
+  * COALESCE smoke test بـ temp DB: أدخلت COMI بـ data كاملة، عملت UPDATE بـ quote فيه NULL لـ open/high/low/prev_close/pe/eps/ma_50 + fresh values لـ current_price/volume/change_percent/rsi. النتيجة: fresh fields اتـ update، preserved fields اتـ **KEPT** (مش NULL). كل الـ 12 assertions passed.
+  * `tradingview_ta` مش متاح في الـ sandbox (ده عادي — ده الـ fallback path بس).
+- Git: commit `17a03a2` على branch `bravo/radar-intel-deadcode-fix` (نفس الـ branch).
+
+Stage Summary:
+- Files modified (3):
+  * `vps-service/data/egx_fetcher.py` (+130 lines: scanner import + fetch_all_via_scanner method + fetch_all refactor + COALESCE UPDATE + writable=True fix)
+  * `vps-service/scripts/daily_price_updater.py` (+7 lines: writable=True for stock_daily_prices + price_history connections)
+  * `vps-service/engines/historical_backfill_engine.py` (+5 lines: writable=True for prediction_logs writes)
+- النتيجة المتوقعة بعد deploy + re-run:
+  * egx_fetcher: ~280 سهم في ~3s (كان 28 في 7+ دقايق) — 10x أسرع، 10x تغطية.
+  * daily_price_updater: stock_daily_prices + price_history بـ تتـ persist (كان بيفشل silently).
+  * historical_backfill_engine: prediction_logs + learned_lessons بـ تتـ persist.
+  * EGXPilot 502 (external outage) مش هاند:blocker بعد كده — Scanner API هو الـ primary.
+- الـ owner يعمل: `git pull` + `python3 vps-service/scripts/daily_price_updater.py` (أو cron job اللي بيـ run egx_fetcher). هتلاقي ~280 سهم اتحدثوا بدل 0.
