@@ -287,6 +287,96 @@ function marketCurrency(market: string): string {
 // Main Component
 // ============================================================================
 
+
+// (ALPHA-INTRADAY-PULSE — owner directive 2026-10-28):
+// «اربط الـ intraday pulse بالـ API» — نبض لحظي فوق جدول الرادار.
+function IntradayPulseBar({ market }: { market: string }) {
+  const [pulse, setPulse] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchPulse = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/intraday-pulse', { cache: 'no-store', signal: AbortSignal.timeout(15_000) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (mounted) {
+          setPulse(data);
+          setError(null);
+        }
+      } catch (e) {
+        if (mounted) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchPulse();
+    const interval = setInterval(fetchPulse, 30_000); // كل 30 ثانية
+    return () => { mounted = false; clearInterval(interval); };
+  }, [market]);
+
+  // استخرج الأسهم النشطة (SURGE_UP / SURGE_DOWN / VOLUME_SPIKE — بدون STALE)
+  const activeStocks = useMemo(() => {
+    if (!pulse?.results) return [];
+    return pulse.results.filter((r: any) => {
+      const flags = r.flags || [];
+      return flags.some((f: string) => f !== 'STALE' && f !== 'SUSPICIOUS_DATA' && f !== 'QUIET');
+    });
+  }, [pulse]);
+
+  // لو مفيش أسهم نشطة → أخفي القسم (مفيش ضوضاء)
+  if (activeStocks.length === 0 && !loading) return null;
+
+  return (
+    <Card className="border-warning/20 bg-gradient-to-r from-warning/5 to-transparent">
+      <CardContent className="p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Radio className="w-4 h-4 text-warning animate-pulse" />
+          <span className="text-sm font-bold text-warning">نبض لحظي</span>
+          {loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+          {pulse?.summary && (
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              {new Date(pulse.summary.generated_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+        {activeStocks.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {activeStocks.map((r: any, i: number) => (
+              <div
+                key={i}
+                className={cn(
+                  'flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs',
+                  r.flags?.includes('SURGE_UP_LIVE') ? 'border-profit/30 bg-profit/10 text-profit'
+                  : r.flags?.includes('SURGE_DOWN_LIVE') ? 'border-loss/30 bg-loss/10 text-loss'
+                  : 'border-warning/30 bg-warning/10 text-warning'
+                )}
+                title={r.flags?.join('، ')}
+              >
+                <span className="font-bold font-mono">{r.symbol}</span>
+                <span className="font-mono">{r.current_price?.toFixed(2)}</span>
+                <span className={cn(
+                  'font-mono font-bold',
+                  (r.change_from_open_pct ?? 0) > 0 ? 'text-profit' : 'text-loss'
+                )}>
+                  {(r.change_from_open_pct ?? 0) > 0 ? '+' : ''}{(r.change_from_open_pct ?? 0).toFixed(1)}%
+                </span>
+                {r.flags?.includes('VOLUME_SPIKE_LIVE') && <Zap className="w-3 h-3" />}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">جاري فحص السوق...</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export function LiquidityRadarView({
  market: marketProp,
  initialTab = 'radar',
@@ -986,6 +1076,9 @@ export function LiquidityRadarView({
 
  return (
  <div className="space-y-4 p-4" dir="rtl">
+ {/* (ALPHA-INTRADAY-PULSE): نبض لحظي فوق الجدول */}
+ <IntradayPulseBar market={activeMarket} />
+
  {/* ─── Market Selector Bar ─── */}
  <MarketSelectorBar activeMarket={market} onSelect={setActiveMarket} currency={currency} />
 
