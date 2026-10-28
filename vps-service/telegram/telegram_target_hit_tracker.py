@@ -914,7 +914,8 @@ def record_target_hit_in_db(item: Dict) -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does UPDATE predictions SET status='TARGET_HIT' + commit (line 248 con_p stays read-only)
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
         cursor = conn.cursor()
 
         # فحص إذا كان هناك توقع نشط مسجل لهذا السهم

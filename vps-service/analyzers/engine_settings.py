@@ -1310,7 +1310,8 @@ def update_setting(key: str, value: Any, updated_by: str = "admin") -> bool:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(STOCKS_DB, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but update_setting does CREATE TABLE + INSERT + commit (get_setting at 511 stays read-only)
+        conn = db_manager.get_connection(STOCKS_DB, writable=True)
         _ensure_schema(conn)
         # Determine type
         if isinstance(value, bool):

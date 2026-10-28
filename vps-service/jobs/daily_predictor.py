@@ -3699,7 +3699,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         _core_result = _cse.analyze(
                             ticker=ticker,
                             price_data=_price_data,
-                            market='EGX',
+                            market=market_code.upper() if market_code else 'EGX',
                             persona='trader',
                         )
                         if _core_result and _core_result.score is not None:
@@ -4190,14 +4190,18 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                 # ── TASK-A: شرح فني شامل يظهر في الـ UI ──
                                 'technical_explanation': _sa_tech,
                             }, ensure_ascii=False)
-                            sa_id = f"v40_{sig['ticker']}_EGX"
+                            sa_id = f"v40_{sig['ticker']}_{market_code.upper()}"
+                            # FIX (BRAVO-DISASTER C1, 2026-10-28): was hardcoded 'EGX' — so all
+                            # TADAWUL/KSE/QSE predictions were silently persisted as market='EGX'.
+                            # This is why the user found 0 TADAWUL predictions: they were saved
+                            # under EGX. Now we pass market_code as a bound parameter.
                             cur_sa.execute('''
                                 INSERT INTO stored_analyses (
                                     id, ticker, market, maestro_score, recommendation, recommendation_ar,
                                     confidence, entry_price, target_price, stop_loss, risk_reward,
                                     prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity,
                                     ai_reason, ai_narrative
-                                ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)
                                 ON CONFLICT(ticker, market) DO UPDATE SET
                                     maestro_score = excluded.maestro_score,
                                     recommendation = excluded.recommendation,
@@ -4215,7 +4219,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                     ai_reason = excluded.ai_reason,
                                     ai_narrative = excluded.ai_narrative
                             ''', (
-                                sa_id, sig['ticker'], sig['tech_score'], sig['signal'],
+                                sa_id, sig['ticker'], market_code.upper(),
+                                sig['tech_score'], sig['signal'],
                                 'شراء قوي' if 'STRONG' in sig['signal'] else 'شراء',
                                 # UNIFY-FIX (Rule 20): confidence ديناميكي = master_score
                                 # كان hardcoded=85 — كل التوقعات عندها نفس الثقة (مخالفة Rule 73)

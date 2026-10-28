@@ -225,7 +225,8 @@ def record_win_lesson_from_close(
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does INSERT INTO learned_lessons + commit
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
         cur = conn.cursor()
         for lesson_type, condition in (
             ('prediction_outcome', persona_condition),

@@ -4994,7 +4994,8 @@ def admin_reset_user_trial(user_id):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(str(_auth_db), writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but admin_reset_user_trial does UPDATE User SET trial_ends_at + commit
+        conn = db_manager.get_connection(str(_auth_db), writable=True)
         try:
             # Check user exists
             row = conn.execute("SELECT id, subscription_tier, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
@@ -5054,7 +5055,8 @@ def admin_extend_user_trial(user_id):
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(str(_auth_db), writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but admin_extend_user_trial does UPDATE User SET trial_ends_at + commit
+        conn = db_manager.get_connection(str(_auth_db), writable=True)
         try:
             row = conn.execute("SELECT id, trial_ends_at FROM User WHERE id = ?", (user_id,)).fetchone()
             if not row:

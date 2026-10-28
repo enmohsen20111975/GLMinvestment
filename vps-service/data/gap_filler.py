@@ -95,10 +95,12 @@ def check_and_fill_gaps(force_days=None, force=False):
     logger.info(f"[GapFiller] Connecting to databases to fetch {days_to_fetch} days...")
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    s_conn = db_manager.get_connection(STOCKS_DB, writable=False)
+    # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does INSERT OR IGNORE + UPDATE + commit
+    s_conn = db_manager.get_connection(STOCKS_DB, writable=True)
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
+    # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does INSERT OR IGNORE + UPDATE + commit
+    ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=True)
 
     # Get all active stocks with their market
     cur = s_conn.execute("SELECT ticker, market FROM stocks")

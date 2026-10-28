@@ -275,7 +275,8 @@ def fill_price_history_gap(
     # ── 2. اتصل بـ price_history.db ──
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    ph_conn = db_manager.get_connection(ph_db, writable=False)
+    # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does CREATE TABLE + INSERT + commit
+    ph_conn = db_manager.get_connection(ph_db, writable=True)
     ph_conn.execute('PRAGMA busy_timeout = 30000')
     if not _ensure_price_history_schema(ph_conn):
         ph_conn.close()

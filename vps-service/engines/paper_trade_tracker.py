@@ -222,7 +222,8 @@ class PaperTradeTracker:
         """الاتصال بقاعدة البيانات"""
         # Phase 7.1: migrated
         from core.db_manager import db_manager
-        self.conn = db_manager.get_connection(self.db_path, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but used for ALL writes: CREATE TABLE + INSERT + UPDATE + commit
+        self.conn = db_manager.get_connection(self.db_path, writable=True)
         self.conn.row_factory = sqlite3.Row
         self._ensure_tables()
         logger.info("Database connected and tables ensured")

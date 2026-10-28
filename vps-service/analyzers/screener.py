@@ -64,7 +64,8 @@ def _get_de_conn() -> sqlite3.Connection:
 def _get_stocks_conn() -> sqlite3.Connection:
     # Phase 7.1: migrated to db_manager (writable=False)
     from core.db_manager import db_manager
-    conn = db_manager.get_connection(STOCKS_DB, writable=False)
+    # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but save_results() does DELETE + INSERT + commit (only caller of this helper)
+    conn = db_manager.get_connection(STOCKS_DB, writable=True)
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -1642,7 +1642,8 @@ class MarketScheduler:
                         try:
                             # Phase 7.1: migrated to db_manager (writable=False)
                             from core.db_manager import db_manager
-                            conn = db_manager.get_connection(db_path, writable=False)
+                            # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but EGXPilot path does UPDATE stocks + commit
+                            conn = db_manager.get_connection(db_path, writable=True)
                             cur = conn.cursor()
                             updated = 0
                             for ticker, data in price_map.items():
@@ -1753,7 +1754,8 @@ class MarketScheduler:
                 errors = 0
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn = db_manager.get_connection(db_path, writable=False)
+                # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but TradingView fallback does UPDATE stocks + commit
+                conn = db_manager.get_connection(db_path, writable=True)
                 try:
                     cur = conn.cursor()
 
@@ -1888,7 +1890,8 @@ class MarketScheduler:
 
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.get_connection(stocks_db, writable=False)
+            # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does CREATE TABLE screener_presets + INSERT + commit
+            conn = db_manager.get_connection(stocks_db, writable=True)
             conn.row_factory = sqlite3.Row
 
             # Ensure table exists
@@ -2085,7 +2088,8 @@ class MarketScheduler:
             db_path = _os.path.join(_root, 'db', 'stocks.db')
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.get_connection(db_path, writable=False)
+            # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but _update_portfolio_live_prices does UPDATE portfolio_assets + commit
+            conn = db_manager.get_connection(db_path, writable=True)
             try:
                 conn.row_factory = sqlite3.Row
                 cur = conn.cursor()

@@ -483,7 +483,8 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but _insert_prediction does INSERT INTO predictions + commit
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
         cur = conn.cursor()
         now_iso = datetime.now().isoformat()
         try:
@@ -537,7 +538,8 @@ def _clear_existing_for_tickers(tickers: List[str], persona: str = None) -> int:
     try:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(PREDICTIONS_DB, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but _clear_existing_for_tickers does DELETE FROM predictions + commit
+        conn = db_manager.get_connection(PREDICTIONS_DB, writable=True)
         cur = conn.cursor()
         placeholders = ','.join(['?'] * len(tickers))
         upper_tickers = [t.upper() for t in tickers]

@@ -108,7 +108,8 @@ class EODHDFetcher:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(self.stocks_db, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does UPDATE stocks + INSERT + commit
+        conn = db_manager.get_connection(self.stocks_db, writable=True)
         cur = conn.cursor()
         added = 0
         updated = 0
@@ -186,7 +187,8 @@ class EODHDFetcher:
         # ده الكانونيكال لـ stocks.db. price_history.db بيتحدث من خلال sync منفصل.
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(self.stocks_db, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does INSERT OR REPLACE INTO stock_daily_prices + UPDATE stocks + commit
+        conn = db_manager.get_connection(self.stocks_db, writable=True)
         cur = conn.cursor()
         saved_daily = 0
         # BRAVO-FIX-C2 (2026-10-26): resolve market via get_market_for_ticker
@@ -322,7 +324,8 @@ class EODHDFetcher:
 
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(self.stocks_db, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does UPDATE stocks + commit
+        conn = db_manager.get_connection(self.stocks_db, writable=True)
         cur = conn.cursor()
         updated = 0
         errors = 0

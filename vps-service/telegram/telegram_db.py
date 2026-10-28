@@ -32,7 +32,8 @@ class DatabaseManager:
         """الحصول على اتصال بقاعدة البيانات"""
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(self.db_path, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but module does CREATE TABLE + INSERT + UPDATE + commit
+        conn = db_manager.get_connection(self.db_path, writable=True)
         conn.row_factory = sqlite3.Row
         try:
             yield conn

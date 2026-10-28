@@ -105,7 +105,8 @@ class LearningEngine:
     def _conn(self, db_path: str = None) -> sqlite3.Connection:
         # Phase 7.1: migrated to db_manager (writable=False)
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(db_path or self.predictions_db, writable=False)
+        # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but _ensure_tables() does CREATE TABLE + commit
+        conn = db_manager.get_connection(db_path or self.predictions_db, writable=True)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn

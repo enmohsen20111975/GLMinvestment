@@ -662,7 +662,8 @@ class EGKSCOScraper:
         try:
             # Phase 7.1: migrated to db_manager (writable=False)
             from core.db_manager import db_manager
-            conn = db_manager.get_connection(self.db.db_path, writable=False)
+            # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does UPDATE stocks + INSERT + commit
+            conn = db_manager.get_connection(self.db.db_path, writable=True)
             cursor = conn.cursor()
             
             for stock in stocks:
@@ -728,7 +729,8 @@ class EGKSCOScraper:
             try:
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_hist = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=False)
+                # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does ALTER TABLE + INSERT + commit
+                conn_hist = db_manager.get_connection(PRICE_HISTORY_DB_PATH, writable=True)
                 cursor_hist = conn_hist.cursor()
                 today = datetime.now().strftime('%Y-%m-%d')
                 
@@ -811,7 +813,8 @@ class EGKSCOScraper:
                 )
                 # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                conn_de = db_manager.get_connection(data_engine_db_path, writable=False)
+                # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does ALTER TABLE + INSERT + commit
+                conn_de = db_manager.get_connection(data_engine_db_path, writable=True)
                 cursor_de = conn_de.cursor()
 
                 # Ensure delta columns exist in data_engine.db.egksco_price_history

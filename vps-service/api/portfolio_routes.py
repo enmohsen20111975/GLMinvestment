@@ -125,7 +125,8 @@ def _get_portfolio_conn():
         import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     # Phase 7.1: migrated
     from core.db_manager import db_manager
-    conn = db_manager.get_connection(_get_portfolio_db_path(), writable=False)
+    # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but _save_portfolio_state does INSERT + DELETE + INSERT + commit
+    conn = db_manager.get_connection(_get_portfolio_db_path(), writable=True)
     conn.row_factory = sqlite3.Row
     return conn
 
