@@ -417,9 +417,12 @@ class HistoricalBackfillEngine:
     
     def connect(self):
         """الاتصال بقاعدة البيانات"""
-        # Phase 7.1: migrated
+        # BRAVO-DB-WRITE-FIX (2026-10-27): this engine does INSERT/UPDATE on
+        # prediction_logs, learned_lessons, regime_indicator_weights + commit()
+        # (lines ~748, 785, 898, 999, 1004, 1107, 1119). MUST open writable=True.
+        # Previously writable=False (readonly) would fail on every write.
         from core.db_manager import db_manager
-        self.conn = db_manager.get_connection(self.db_path, writable=False)
+        self.conn = db_manager.get_connection(self.db_path, writable=True)
         self.conn.row_factory = sqlite3.Row
         logger.info("Database connected")
     

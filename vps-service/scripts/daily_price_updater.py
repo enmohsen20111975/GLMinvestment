@@ -98,12 +98,13 @@ class PriceUpdater:
 
         today = datetime.now().strftime('%Y-%m-%d')
 
-        # Phase 7.1: migrated to db_manager (writable=False)
+        # BRAVO-DB-WRITE-FIX (2026-10-27): this method does UPDATE/INSERT on
+        # stock_daily_prices (conn) and price_history (ph_conn via write_guarded).
+        # MUST open writable=True. Previously writable=False (readonly) caused
+        # "attempt to write a readonly database" and 0 rows persisted.
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(STOCKS_DB, writable=False)
-        # Phase 7.1: migrated to db_manager (writable=False)
-        from core.db_manager import db_manager
-        ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
+        conn = db_manager.get_connection(STOCKS_DB, writable=True)
+        ph_conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=True)
 
         try:
             stocks = conn.execute('''

@@ -80,6 +80,21 @@ except ImportError:
     TV_AVAILABLE = False
     logger.warning("✗ TradingView TA not available")
 
+# BRAVO-SCANNER-MIGRATION (2026-10-27): import the unified TradingView Scanner
+# REST API (POST to scanner.tradingview.com/egypt/scan). This fetches ALL EGX
+# stocks in ONE request (~3s) instead of the old per-ticker tradingview_ta
+# loop (50 ticker max × 0.3s sleep = 15s, mostly failing → only 28 stocks).
+try:
+    # data_engine/scrapers/ is a sibling of vps-service/ — add to path
+    _data_engine_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data_engine'))
+    if _data_engine_root not in sys.path:
+        sys.path.insert(0, _data_engine_root)
+    from scrapers.tradingview_rest import fetch_tradingview_stocks as _scanner_fetch
+    SCANNER_API_AVAILABLE = True
+except Exception as _e:
+    SCANNER_API_AVAILABLE = False
+    _scanner_fetch = None
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -296,6 +311,70 @@ class TradingViewSource:
         if eps and eps > 0 and price > 0:
             return round(price / eps, 2)
         return None
+
+    # BRAVO-SCANNER-MIGRATION (2026-10-27): unified batch fetch via Scanner API.
+    # Replaces the per-ticker tradingview_ta loop (50 max × 0.3s = 15s, ~28
+    # stocks succeeded) with a single POST that returns ALL ~280 EGX stocks
+    # in ~3 seconds. Returns quote dicts in the SAME shape _update_database
+    # expects (ticker, current_price, volume, change_percent, rsi, etc.).
+    # Fields the scanner doesn't provide (open/high/low/previous_close/pe/
+    # eps/sma_50) are set to None — the UPDATE statement uses COALESCE to
+    # preserve existing DB values for those columns.
+    def fetch_all_via_scanner(self, market: str = 'egypt') -> Tuple[Optional[List[Dict]], str]:
+        """Fetch ALL stocks via the unified TradingView Scanner REST API."""
+        if not SCANNER_API_AVAILABLE or _scanner_fetch is None:
+            return None, "Scanner API غير متاح (tradingview_rest.py غير مستورد)"
+
+        logger.info(f"📡 TradingView Scanner REST → جلب كل أسهم {market} في طلب واحد...")
+        try:
+            stocks, status = _scanner_fetch(market)
+        except Exception as e:
+            return None, f"Scanner API استثناء: {e}"
+
+        if not stocks:
+            return None, f"Scanner API فشل: {status}"
+
+        quotes: List[Dict] = []
+        now_iso = datetime.now().isoformat()
+        for s in stocks:
+            symbol = (s.get('symbol') or '').strip()
+            if not symbol:
+                continue
+            price = s.get('price') or 0
+            if not price or price <= 0:
+                continue
+            tabs = s.get('tabs_data') or {}
+            change_pct = s.get('change_percent') or 0
+            vol_str = s.get('volume') or ''
+            volume = parse_volume(vol_str) if vol_str else 0
+            sector = s.get('sector') or SECTOR_MAP.get(symbol)
+            name = s.get('name') or symbol
+            eps_val = EPS_VALUES.get(symbol)
+            pe_val = self._calculate_pe(symbol, price)
+            rsi_val = tabs.get('rsi') if tabs else None
+
+            quotes.append({
+                'ticker': symbol,
+                'current_price': round(price, 4),
+                'previous_close': None,      # scanner doesn't provide; COALESCE preserves DB
+                'open_price': None,           # scanner doesn't provide; COALESCE preserves DB
+                'high_price': None,           # scanner doesn't provide; COALESCE preserves DB
+                'low_price': None,            # scanner doesn't provide; COALESCE preserves DB
+                'volume': volume,
+                'price_change': round(change_pct, 4),
+                'pe_ratio': pe_val,
+                'eps': eps_val,
+                'sector': sector,
+                'rsi': round(rsi_val, 2) if rsi_val else None,
+                'sma_50': None,               # scanner doesn't provide; COALESCE preserves DB
+                'last_update': now_iso,
+                'source': 'TradingView Scanner',
+                'name': name,
+            })
+
+        msg = f"تم استلام {len(quotes)} سهم من Scanner API"
+        logger.info(f"✅ {self.name} (Scanner): {msg}")
+        return quotes, msg
 
 
 # ============================================================================
@@ -622,13 +701,42 @@ class EGXDataFetcher:
             self._print_stats(0, None)
             return False
 
-        # Step 3: TradingView PRIMARY — per-ticker fetch with EGXPilot fallback
+        # Step 3: TradingView PRIMARY — prefer unified Scanner API (1 request,
+        # ~3s, ~280 stocks); fall back to per-ticker tradingview_ta only if the
+        # scanner fails. BRAVO-SCANNER-MIGRATION (2026-10-27): the old per-ticker
+        # loop (1131 tickers × 0.3s sleep = 5+ min, ~28 stocks succeeded) is now
+        # the FALLBACK, not the primary path.
         quotes = []
         tv_success = 0
         egx_fallback = 0
+        source_used = None
 
-        if TV_AVAILABLE:
-            logger.info(f"\n📡 TradingView (أساسي): جلب أسعار+مؤشرات لـ {len(tickers)} سهم...")
+        # ── 3a: Try unified Scanner API FIRST ──
+        if SCANNER_API_AVAILABLE:
+            scanner_quotes, sc_msg = self.tradingview.fetch_all_via_scanner('egypt')
+            if scanner_quotes and len(scanner_quotes) > 0:
+                # Enrich with EGXPilot name/sector where available
+                for q in scanner_quotes:
+                    ref = ref_map.get(q.get('ticker'), {})
+                    if ref:
+                        if ref.get('name') and not q.get('name'):
+                            q['name'] = ref['name']
+                        if not q.get('sector') and ref.get('sector'):
+                            q['sector'] = ref['sector']
+                        if not q.get('eps') and ref.get('eps'):
+                            q['eps'] = ref['eps']
+                quotes = scanner_quotes
+                tv_success = len(scanner_quotes)
+                source_used = 'TradingView Scanner'
+                self.stats['tradingview_success'] = tv_success
+                self.stats['egxpilot_fallback_used'] = 0
+                logger.info(f"✅ Scanner API: {tv_success} سهم في طلب واحد (بدلاً من per-ticker loop)")
+            else:
+                logger.warning(f"⚠️ Scanner API فشل ({sc_msg}) — fallback لـ per-ticker")
+
+        # ── 3b: Fallback — per-ticker tradingview_ta (slow, limited coverage) ──
+        if not quotes and TV_AVAILABLE:
+            logger.info(f"\n📡 TradingView per-ticker (fallback): جلب لـ {len(tickers)} سهم...")
             import time as _time
             for idx, ticker in enumerate(tickers):
                 try:
@@ -664,13 +772,14 @@ class EGXDataFetcher:
                         quotes.append(ref)
                         egx_fallback += 1
 
-            logger.info(f"✅ TradingView: {tv_success} سهم | EGXPilot fallback: {egx_fallback} سهم")
+            logger.info(f"✅ TradingView per-ticker: {tv_success} سهم | EGXPilot fallback: {egx_fallback} سهم")
             source_used = 'TradingView'
             self.stats['tradingview_success'] = tv_success
             self.stats['egxpilot_fallback_used'] = egx_fallback
-        else:
-            # TradingView TA not available → use EGXPilot entirely
-            logger.warning("⚠️ TradingView TA غير متاح — استخدام EGXPilot بالكامل (fallback)")
+
+        # ── 3c: Last resort — EGXPilot entirely (if both scanner + TV failed) ──
+        if not quotes:
+            logger.warning("⚠️ TradingView (Scanner + per-ticker) فشل — استخدام EGXPilot بالكامل (fallback)")
             quotes = list(ref_map.values()) if ref_map else []
             source_used = 'EGXPilot'
             self.stats['egxpilot_fallback_used'] = len(quotes)
@@ -707,27 +816,35 @@ class EGXDataFetcher:
             return 0
         
         try:
-            # Phase 7.1: migrated to db_manager (writable=False)
+            # BRAVO-DB-WRITE-FIX (2026-10-27): this method does UPDATE stocks SET ...
+            # → MUST open with writable=True. Previously writable=False (readonly)
+            # which caused "attempt to write a readonly database" and 0 stocks persisted.
             from core.db_manager import db_manager
-            conn = db_manager.get_connection(self.db_path, writable=False)
+            conn = db_manager.get_connection(self.db_path, writable=True)
             cursor = conn.cursor()
             updated = 0
             
             for quote in quotes:
+                # BRAVO-SCANNER-MIGRATION (2026-10-27): use COALESCE for fields
+                # the Scanner API doesn't provide (previous_close, open, high,
+                # low, pe_ratio, eps, ma_50). When the quote value is NULL, the
+                # UPDATE preserves the existing DB value instead of wiping it.
+                # current_price / volume / change_percent / sector / rsi / last_update
+                # are always overwritten (the scanner provides fresh values for these).
                 cursor.execute('''
                     UPDATE stocks SET
                         current_price = ?,
-                        previous_close = ?,
-                        open_price = ?,
-                        high_price = ?,
-                        low_price = ?,
+                        previous_close = COALESCE(?, previous_close),
+                        open_price = COALESCE(?, open_price),
+                        high_price = COALESCE(?, high_price),
+                        low_price = COALESCE(?, low_price),
                         volume = ?,
                         change_percent = ?,
-                        pe_ratio = ?,
-                        eps = ?,
-                        sector = ?,
-                        rsi = ?,
-                        ma_50 = ?,
+                        pe_ratio = COALESCE(?, pe_ratio),
+                        eps = COALESCE(?, eps),
+                        sector = COALESCE(?, sector),
+                        rsi = COALESCE(?, rsi),
+                        ma_50 = COALESCE(?, ma_50),
                         last_update = ?,
                         updated_at = datetime('now')
                     WHERE ticker = ?
