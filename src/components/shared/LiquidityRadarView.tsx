@@ -37,7 +37,7 @@ import { useAppStore } from '@/lib/store';
 import { isGuestUser } from '@/lib/subscription-gate';
 import { useSession } from '@/lib/next-auth-shim';
 // (ALPHA-RADAR-INTELLIGENCE-COLUMNS): الـ 4 طبقات اتقسمت لـ أعمدة منفصلة.
-// الـ IntelligenceBadges component مش مستخدم هنا دلوقتي — الـ translations نسخة محلية.
+// (ALPHA-FRONTEND-DECOMPOSITION): IntelligenceBadges + maps مستوردة من المصدر الموحد.
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
@@ -152,32 +152,8 @@ import {
   isDataInvalidStock,
 } from '@/components/shared/radar-filters';
 
-// (ALPHA-RADAR-INTELLIGENCE-COLUMNS): خرائط ترجمة الطبقات الـ 4 للفرز + الفلترة.
-// نسخة محلية (مش مستوردة من IntelligenceBadges) عشان الـ filterValue يستخدمها.
-const PRICE_ACTION_AR: Record<string, string> = {
-  SURGE_UP: 'ارتفاع قوي', SURGE_DOWN: 'انخفاض قوي',
-  BULLISH_WAVE_START: 'بداية موجة صاعدة', BEARISH_WAVE_START: 'بداية موجة هابطة',
-  BULLISH_CONTINUATION: 'استمرار صاعد', BEARISH_CONTINUATION: 'استمرار هابط',
-  BOUNCE_AFTER_DECLINE: 'ارتداد بعد هبوط', PULLBACK_AFTER_RALLY: 'تصحيح بعد صعود',
-  BREAKOUT: 'اختراق', BREAKDOWN: 'كسر',
-  SIDEWAYS: 'عرضي', MOMENTUM_EXHAUSTION: 'إرهاق الزخم',
-  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
-};
-const PARTICIPANT_FLOW_AR: Record<string, string> = {
-  INSTITUTIONAL_EVIDENCE: 'أدلة مؤسسية', SPECULATIVE_PATTERN: 'نمط مضاربي',
-  MIXED_PARTICIPATION: 'مشاركة مختلطة', UNCONFIRMED: 'غير مؤكد', UNAVAILABLE: 'غير متاح',
-};
-const CONTINUATION_AR: Record<string, string> = {
-  SUPPORTIVE: 'داعم للاستمرار', MIXED: 'مختلط', WEAK: 'ضعيف',
-  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
-};
-const DATA_QUALITY_AR: Record<string, string> = {
-  FRESH: 'بيانات حديثة', STALE: 'بيانات قديمة', VERY_STALE: 'قديمة جدًا',
-  INSUFFICIENT_HISTORY: 'تاريخ ناقص', GAPS: 'فجوات بيانات',
-  UNAVAILABLE: 'غير متاحة', OK: 'سليمة',
-  fresh: 'حديثة', stale: 'قديمة', very_stale: 'قديمة جدًا',
-  unknown: 'غير معروفة', invalid: 'غير صالحة', unavailable: 'غير متاحة',
-};
+// (ALPHA-FRONTEND-DECOMPOSITION): IntelligenceBadges + maps مستوردة من المصدر الموحد.
+import { IntelligenceBadges, PRICE_ACTION_AR, PARTICIPANT_FLOW_AR, CONTINUATION_AR, DATA_QUALITY_AR, dataQualityColor } from '@/components/shared/IntelligenceBadges';
 
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
