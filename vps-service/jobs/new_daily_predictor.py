@@ -174,20 +174,16 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
 
 
 def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list[float], list[float]]:
-    """جيب آخر N يوم من الأسعار والأحجام من stock_daily_prices."""
+    """
+    جيب آخر N يوم من الأسعار والأحجام.
+    بتستخدم الـ DAL الموحد (db_manager.get_price_history) اللي بيقرا من:
+      1. data_engine.db.egksco_price_history (EGX رسمي)
+      2. data_engine.db.historical_data (كل الأسواق)
+      3. stocks.db.stock_daily_prices (fallback)
+    """
     try:
-        conn = sqlite3.connect(str(STOCKS_DB))
-        rows = conn.execute(
-            """SELECT close_price, volume FROM stock_daily_prices 
-               WHERE ticker = ? ORDER BY price_date DESC LIMIT ?""",
-            (ticker, days)
-        ).fetchall()
-        conn.close()
-        if not rows:
-            return [], []
-        # رجّع بترتيب تصاعدي (من الأقدم للأحدث)
-        prices = [float(r[0]) for r in reversed(rows) if r[0] is not None]
-        volumes = [float(r[1]) for r in reversed(rows) if r[1] is not None]
+        from core.db_manager import get_price_history as dal_get_prices
+        prices, volumes = dal_get_prices(ticker, market_code, days)
         return prices, volumes
     except Exception:
         return [], []

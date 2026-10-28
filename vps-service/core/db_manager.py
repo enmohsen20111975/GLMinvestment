@@ -533,3 +533,169 @@ if __name__ == '__main__':
             print(f"     error: {result.get('error', result.get('integrity', 'unknown'))}")
     print()
     print("Stats:", db_manager.get_stats())
+
+
+# ===========================================================================
+# Domain-Specific Helpers (Phase 8.2 — DAL Extension)
+# ===========================================================================
+# Owner directive (2026-10-28): "مولد التوقعات لازم ياخد بياناته السليمة"
+# الـ helpers دي بتوفر وصول موحد للأسعار التاريخية والـ fundamentals
+# من المصدر الصحيح (data_engine.db للأسعار التاريخية، stocks.db للـ snapshot).
+# ===========================================================================
+
+# Market code → stocks.db market value (canonical)
+_MARKET_CANONICAL = {
+    'KSA': 'TADAWUL', 'SAUDI': 'TADAWUL', 'السعودية': 'TADAWUL',
+    'EGX': 'EGX', 'مصر': 'EGX',
+    'KSE': 'KSE', 'الكويت': 'KSE',
+    'QSE': 'QSE', 'قطر': 'QSE',
+    'US': 'US', 'CRYPTO': 'CRYPTO',
+}
+
+
+def normalize_market(market_code: str) -> str:
+    """حوّل أي alias للسوق للقيمة الـ canonical في stocks.db."""
+    if not market_code:
+        return 'EGX'
+    return _MARKET_CANONICAL.get(market_code.strip().upper(), market_code.strip().upper())
+
+
+def get_price_history(ticker: str, market: str = 'EGX', days: int = 60) -> tuple:
+    """
+    جيب آخر N يوم من الأسعار والأحجام لسهم معين.
+
+    المصادر (بالترتيب):
+      1. data_engine.db.egksco_price_history (EGX فقط — المصدر الرسمي المصري)
+      2. data_engine.db.historical_data (كل الأسواق — Yahoo + مصادر)
+      3. stocks.db.stock_daily_prices (fallback — بيانات الـ scanner)
+
+    Args:
+        ticker: رمز السهم
+        market: السوق (EGX, TADAWUL, KSE, QSE, US)
+        days: عدد الأيام المطلوبة (default: 60)
+
+    Returns:
+        (prices: List[float], volumes: List[float]) — مرتبة تصاعدي (الأقدم للأحدث)
+    """
+    canonical = normalize_market(market)
+    prices = []
+    volumes = []
+
+    # 1. egksco_price_history (EGX فقط)
+    if canonical == 'EGX':
+        try:
+            rows = db_manager.query('data_engine', '''
+                SELECT close_price, volume
+                FROM egksco_price_history
+                WHERE symbol = ?
+                ORDER BY price_date DESC
+                LIMIT ?
+            ''', (ticker, days))
+            if rows:
+                rows.reverse()  # تصاعدي
+                prices = [float(r['close_price']) for r in rows if r['close_price'] is not None]
+                volumes = [float(r['volume']) for r in rows if r['volume'] is not None]
+                return prices, volumes
+        except Exception:
+            pass
+
+    # 2. historical_data (كل الأسواق)
+    try:
+        rows = db_manager.query('data_engine', '''
+            SELECT close, volume
+            FROM historical_data
+            WHERE symbol = ? AND market = ?
+            ORDER BY date DESC
+            LIMIT ?
+        ''', (ticker, canonical, days))
+        if rows:
+            rows.reverse()
+            prices = [float(r['close']) for r in rows if r['close'] is not None]
+            volumes = [float(r['volume']) for r in rows if r['volume'] is not None]
+            return prices, volumes
+    except Exception:
+        pass
+
+    # 3. fallback: stocks.db.stock_daily_prices
+    try:
+        rows = db_manager.query('stocks', '''
+            SELECT close, volume
+            FROM stock_daily_prices
+            WHERE ticker = ?
+            ORDER BY price_date DESC
+            LIMIT ?
+        ''', (ticker, days))
+        if rows:
+            rows.reverse()
+            prices = [float(r['close']) for r in rows if r['close'] is not None]
+            volumes = [float(r['volume']) for r in rows if r['volume'] is not None]
+    except Exception:
+        pass
+
+    return prices, volumes
+
+
+def get_fundamentals(ticker: str) -> dict:
+    """
+    جيب الـ fundamentals لسهم معين من الـ 8 جداول المالية.
+
+    المصادر:
+      1. stocks.db.stocks (snapshot — الـ 60 column من الـ scanner)
+      2. data_engine.db.tab_* tables (fundamentals تفصيلية)
+
+    Returns:
+        dict فيه كل الـ fundamentals متجمعة من المصدرين
+    """
+    result = {}
+
+    # 1. snapshot من stocks.db
+    try:
+        row = db_manager.query_one('stocks', 'SELECT * FROM stocks WHERE ticker = ? LIMIT 1', (ticker,))
+        if row:
+            result['snapshot'] = row
+    except Exception:
+        pass
+
+    # 2. fundamentals تفصيلية من data_engine.db
+    tab_tables = [
+        'tab_valuation', 'tab_profitability', 'tab_balance_sheet',
+        'tab_income_statement', 'tab_cash_flow', 'tab_dividends',
+        'tab_performance', 'tab_technical_analysis',
+    ]
+    for table in tab_tables:
+        try:
+            row = db_manager.query_one('data_engine', f'SELECT * FROM {table} WHERE symbol = ? LIMIT 1', (ticker,))
+            if row:
+                result[table] = row
+        except Exception:
+            continue
+
+    return result
+
+
+def get_active_tickers(market: str = 'EGX') -> list:
+    """كل الأسهم النشطة في سوق معين (لها سعر وحجم)."""
+    canonical = normalize_market(market)
+    try:
+        rows = db_manager.query('stocks', '''
+            SELECT ticker FROM stocks
+            WHERE market = ? AND is_active = 1 AND current_price > 0
+        ''', (canonical,))
+        return [r['ticker'] for r in rows]
+    except Exception:
+        return []
+
+
+def get_last_prediction_date(market: str) -> str | None:
+    """آخر تاريخ في predictions table للسوق ده."""
+    canonical = normalize_market(market)
+    try:
+        row = db_manager.query_one('predictions', '''
+            SELECT MAX(prediction_date) as max_date
+            FROM predictions WHERE market = ?
+        ''', (canonical,))
+        if row and row['max_date']:
+            return str(row['max_date'])[:10]
+    except Exception:
+        pass
+    return None
