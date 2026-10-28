@@ -37,7 +37,7 @@ export interface IntelligenceProps {
 
 // ─── Arabic translations ──────────────────────────────────────────────────
 
-const PRICE_ACTION_AR: Record<string, string> = {
+export const PRICE_ACTION_AR: Record<string, string> = {
   SURGE_UP: 'ارتفاع قوي',
   SURGE_DOWN: 'انخفاض قوي',
   BULLISH_WAVE_START: 'بداية موجة صاعدة',
@@ -54,7 +54,7 @@ const PRICE_ACTION_AR: Record<string, string> = {
   INSUFFICIENT_DATA: 'بيانات ناقصة',
 };
 
-const PARTICIPANT_FLOW_AR: Record<string, string> = {
+export const PARTICIPANT_FLOW_AR: Record<string, string> = {
   INSTITUTIONAL_EVIDENCE: 'أدلة مؤسسية',
   SPECULATIVE_PATTERN: 'نمط مضاربي',
   MIXED_PARTICIPATION: 'مشاركة مختلطة',
@@ -62,7 +62,7 @@ const PARTICIPANT_FLOW_AR: Record<string, string> = {
   UNAVAILABLE: 'غير متاح',
 };
 
-const CONTINUATION_AR: Record<string, string> = {
+export const CONTINUATION_AR: Record<string, string> = {
   SUPPORTIVE: 'داعم للاستمرار',
   MIXED: 'مختلط',
   WEAK: 'ضعيف',
@@ -70,23 +70,26 @@ const CONTINUATION_AR: Record<string, string> = {
   INSUFFICIENT_DATA: 'بيانات ناقصة',
 };
 
-const DATA_QUALITY_AR: Record<string, string> = {
+export const DATA_QUALITY_AR: Record<string, string> = {
   FRESH: 'بيانات حديثة',
   STALE: 'بيانات قديمة',
-  VERY_STALE: 'بيانات قديمة جدًا',
+  VERY_STALE: 'قديمة جدًا',
   INSUFFICIENT_HISTORY: 'تاريخ ناقص',
   GAPS: 'فجوات بيانات',
-  UNAVAILABLE: 'بيانات غير متاحة',
-  OK: 'بيانات سليمة',
+  UNAVAILABLE: 'غير متاحة',
+  OK: 'سليمة',
+  // lowercase fallback (from LiquidityRadarView legacy)
+  fresh: 'حديثة', stale: 'قديمة', very_stale: 'قديمة جدًا',
+  unknown: 'غير معروفة', invalid: 'غير صالحة', unavailable: 'غير متاحة',
 };
 
 // ─── Color helpers ─────────────────────────────────────────────────────────
 
-function dataQualityColor(status: string | null | undefined): string {
+export function dataQualityColor(status: string | null | undefined): string {
   if (!status) return 'border-border bg-muted/20 text-muted-foreground';
-  if (status === 'FRESH' || status === 'OK') return 'border-profit/30 bg-profit/10 text-profit';
-  if (status === 'STALE') return 'border-warning/30 bg-warning/10 text-warning';
-  if (status === 'VERY_STALE' || status === 'UNAVAILABLE' || status === 'GAPS' || status === 'INSUFFICIENT_HISTORY')
+  if (status === 'FRESH' || status === 'OK' || status === 'fresh') return 'border-profit/30 bg-profit/10 text-profit';
+  if (status === 'STALE' || status === 'stale') return 'border-warning/30 bg-warning/10 text-warning';
+  if (status === 'VERY_STALE' || status === 'very_stale' || status === 'UNAVAILABLE' || status === 'unavailable' || status === 'GAPS' || status === 'INSUFFICIENT_HISTORY' || status === 'invalid' || status === 'unknown')
     return 'border-loss/30 bg-loss/10 text-loss';
   return 'border-border bg-muted/20 text-muted-foreground';
 }
