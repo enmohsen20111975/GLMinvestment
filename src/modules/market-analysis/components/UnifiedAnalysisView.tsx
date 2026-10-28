@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useAppStore } from '@/lib/store'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -115,10 +116,14 @@ function ScoreBar({ value, label, color = 'bg-whale' }: {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function UnifiedAnalysisView() {
+ // Sync the local market selector with the global store's currentMarket so
+ // that navigating to this view with a non-EGX market selected in the header
+ // doesn't silently fall back to EGX in the analyze/scan/compare POSTs.
+ const currentMarket = useAppStore((s) => s.currentMarket)
  // State
  const [markets, setMarkets] = useState<MarketInfo[]>([])
  const [personas, setPersonas] = useState<PersonaInfo[]>([])
- const [selectedMarket, setSelectedMarket] = useState('EGX')
+ const [selectedMarket, setSelectedMarket] = useState(currentMarket)
  const [selectedPersona, setSelectedPersona] = useState('trader')
  const [effectiveConfig, setEffectiveConfig] = useState<EffectiveConfig | null>(null)
 

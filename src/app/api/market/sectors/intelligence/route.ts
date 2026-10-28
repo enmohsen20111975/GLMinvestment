@@ -14,12 +14,14 @@
  * GET /api/market/sectors/intelligence
  *   ?min_stocks=5    // minimum stocks per sector to be ranked (default 5)
  *   ?limit=20        // max items per category (default 20)
- *   ?market=EGX      // reserved for future filter (stocks.db is EGX-only)
+ *   ?market=EGX      // scope to a market (EGX|TADAWUL|KSE|QSE|US). Uses
+ *                    // sqlMarketVariants() so Arabic aliases also match.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import type Database from 'better-sqlite3';
 import { openDb as openDbDal } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +87,13 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const minStocks = Math.max(1, Math.min(50, Number(searchParams.get('min_stocks') || '5')));
   const limit = Math.max(1, Math.min(100, Number(searchParams.get('limit') || '20')));
+  // FIX (FIX-API-MARKET #11): read `market` and filter the SQL query accordingly
+  // so non-EGX markets get their own sector intelligence. The doc comment above
+  // previously said "stocks.db is EGX-only" — that's stale; stocks.db now holds
+  // EGX/TADAWUL/KSE/QSE/US rows.
+  const market: CanonicalMarket = normalizeMarket(searchParams.get('market')) || 'EGX';
+  const marketVariants = sqlMarketVariants(market);
+  const marketPlaceholders = marketVariants.map(() => '?').join(',');
 
   const db = openDbDal('stocks.db');
 
@@ -103,14 +112,17 @@ export async function GET(request: NextRequest) {
       .concat(optionalCols.filter(c => stockCols.has(c)))
       .join(', ');
 
-    // ── 1) Load all active EGX stocks with sector ──
+    // ── 1) Load all active stocks (filtered by market) with sector ──
     //    ✅ بنجيب last_updated كمان عشان نحسب freshness الأسعار في كل قطاع
+    //    FIX (FIX-API-MARKET #11): scope by `market IN (...)` using sqlMarketVariants
+    //    so non-EGX markets get their own sector view.
     const stocks = db.prepare(`
       SELECT ${selectCols}
       FROM stocks
       WHERE is_active = 1
+        AND market IN (${marketPlaceholders})
         AND sector IS NOT NULL AND sector != '' AND sector != '—'
-    `).all() as StockRow[];
+    `).all(...marketVariants) as StockRow[];
 
     // فضّل الاسم العربي لو موجود
     for (const s of stocks) {
@@ -259,7 +271,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       generated_at: new Date().toISOString(),
-      params: { min_stocks: minStocks, limit, market: 'EGX' },
+      params: { min_stocks: minStocks, limit, market },
       summary: {
         total_stocks_analyzed: stocks.length,
         total_sectors: sectorStats.length,

@@ -299,10 +299,15 @@ interface PulseStock {
 }
 
 function IntradayPulseBar() {
+  // /api/intraday-pulse runs the Cairo/EGX Python intraday scanner — EGX-only.
+  // On non-EGX markets we skip the fetch entirely (no point hitting an EGX-only
+  // Python service for a Saudi/Kuwait/Qatar/US/Crypto view) and render nothing.
+  const market = useAppStore((s) => s.currentMarket);
   const [pulse, setPulse] = useState<PulseStock[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchPulse = useCallback(async () => {
+    if (market !== 'EGX') return;
     try {
       const res = await fetch('/api/intraday-pulse', { cache: 'no-store' as RequestCache });
       if (!res.ok) return;
@@ -327,7 +332,7 @@ function IntradayPulseBar() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [market]);
 
   useEffect(() => {
     fetchPulse();
@@ -335,6 +340,7 @@ function IntradayPulseBar() {
     return () => clearInterval(interval);
   }, [fetchPulse]);
 
+  if (market !== 'EGX') return null;
   if (loading || !pulse || pulse.length === 0) return null;
 
   const surgers = pulse.filter((s) => s.flags.includes('SURGE_UP_LIVE'));

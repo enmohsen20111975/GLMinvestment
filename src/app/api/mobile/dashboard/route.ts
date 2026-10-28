@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMarketIndices } from '@/lib/egx-db';
 import { openDb } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
@@ -38,23 +39,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const marketMap: Record<string, string> = {
-      EGX: 'EGX',
-      TADAWUL: 'TADAWUL',
-      KSA: 'TADAWUL',
-      KSE: 'KSE',
-      QSE: 'QSE',
-    };
-    const dbMarket = marketMap[market.toUpperCase()] || 'EGX';
+    // FIX (FIX-API-MARKET #2): use shared normalizeMarket() so the local map
+    // includes US/CRYPTO and all Arabic aliases. Previously the local MARKET_MAP
+    // silently dropped US and CRYPTO requests to 'EGX'.
+    const canonical: CanonicalMarket = normalizeMarket(market) || 'EGX';
+    const marketVariants = sqlMarketVariants(canonical);
+    const marketPlaceholders = marketVariants.map(() => '?').join(',');
+    const dbMarket = canonical;
 
     const stocks: any[] = sdb
       .prepare(
         `SELECT ticker, name_ar, name, current_price, previous_close,
                 change_percent, volume, value_traded, turnover_egp, sector
-         FROM stocks WHERE market = ? COLLATE NOCASE
+         FROM stocks WHERE market IN (${marketPlaceholders})
          AND current_price IS NOT NULL AND current_price > 0`
       )
-      .all(dbMarket);
+      .all(...marketVariants);
 
     const advancing = stocks.filter((s) => Number(s.change_percent) > 0).length;
     const declining = stocks.filter((s) => Number(s.change_percent) < 0).length;
@@ -119,11 +119,11 @@ export async function GET(req: NextRequest) {
             `SELECT ticker, signal, prediction_date, entry_price, target_price,
                     stop_loss, master_score, status
              FROM predictions
-             WHERE market = ? COLLATE NOCASE
+             WHERE market IN (${marketPlaceholders})
              ORDER BY prediction_date DESC
              LIMIT 10`
           )
-          .all(dbMarket);
+          .all(...marketVariants);
       } catch {}
       pdb.close();
     }

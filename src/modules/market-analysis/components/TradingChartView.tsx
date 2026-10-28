@@ -537,7 +537,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  // UNIFY-FIX: جلب موازٍ من unified API — المصدر الكنسي الوحيد للقرار (Rule 73)
  // signal/score/entry/stop/target تأتي ONLY من هنا (predictions.db — Python V40.2)
  if (!isCrypto) {
- fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+ fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?market=${encodeURIComponent(currentMarket)}&_t=${Date.now()}`)
  .then((r) => (r.ok ? r.json() : null))
  .then((json: UnifiedStockData | null) => setCanonical(json))
  .catch(() => setCanonical(null));
@@ -564,7 +564,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  } finally {
  setLoading(false);
  }
- }, [isCrypto]);
+ }, [isCrypto, currentMarket]);
 
  useEffect(() => {
  fetchData(ticker, timeframe);

@@ -9,6 +9,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Zap, Flame, ArrowDownCircle, Activity } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 interface PulseStock {
   symbol: string;
@@ -22,10 +23,15 @@ interface PulseStock {
 }
 
 export function IntradayPulseBar() {
+  // /api/intraday-pulse runs the Cairo/EGX Python intraday scanner — EGX-only.
+  // Hide the bar entirely on non-EGX markets to avoid a noisy fetch that will
+  // never return useful data.
+  const currentMarket = useAppStore((s) => s.currentMarket);
   const [pulse, setPulse] = useState<PulseStock[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchPulse = useCallback(async () => {
+    if (currentMarket !== 'EGX') return;
     try {
       const res = await fetch('/api/intraday-pulse', { cache: 'no-store' as RequestCache });
       if (!res.ok) return;
@@ -50,7 +56,7 @@ export function IntradayPulseBar() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentMarket]);
 
   useEffect(() => {
     fetchPulse();
@@ -58,6 +64,7 @@ export function IntradayPulseBar() {
     return () => clearInterval(interval);
   }, [fetchPulse]);
 
+  if (currentMarket !== 'EGX') return null;
   if (loading || !pulse || pulse.length === 0) return null;
 
   const surgers = pulse.filter((s) => s.flags.includes('SURGE_UP_LIVE'));

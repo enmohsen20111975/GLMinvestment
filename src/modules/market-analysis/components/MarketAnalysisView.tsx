@@ -99,7 +99,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
  const _activeTab = 'predictions'; // legacy compat (some code may reference)
  const { currentMarket, setCurrentMarket } = useAppStore();
  const t = useTranslation();
- const marketCode = MARKET_CODES[currentMarket];
+ const marketCode = MARKET_CODES[currentMarket] === 'KSA' ? 'TADAWUL' : MARKET_CODES[currentMarket];
  // V40.4 §5: derive the currency label dynamically (EGP/SAR/KWD/QAR/USDT)
  // so the same shell renders the correct currency for every market.
  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket];

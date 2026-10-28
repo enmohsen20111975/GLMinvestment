@@ -213,7 +213,13 @@ export function classifyStockPhase(
 // ============================================================================
 // Run: npx tsx src/lib/canonical-signal.ts
 
-if (typeof require !== 'undefined' && require.main === module) {
+// Browser-safe: only run the self-test when invoked directly via `npx tsx` /
+// `node`. We deliberately wrap in try/catch because Turbopack statically
+// replaces `typeof require` / `typeof module` with compile-time constants
+// while leaving the bare `module` reference intact — which would otherwise
+// throw `ReferenceError: module is not defined` in the browser bundle.
+try {
+  if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   const assert = (cond: boolean, msg: string) => {
     if (!cond) {
       console.error('❌ ' + msg);
@@ -268,4 +274,7 @@ if (typeof require !== 'undefined' && require.main === module) {
   console.log(`ETCL buy_pct=75.7%, sell_pct=24.3% → money_flow = ${classifyMoneyFlow(75.7, 24.3)}`);
   console.log(`ETCL buy_pct=75.7%, roc_10d=-2% → phase = ${classifyStockPhase(75.7, -2)}`);
   console.log('\nالنتيجة: TS port matches Python port ✅');
+  }
+} catch {
+  // Browser context — `module` is not defined; self-test is skipped.
 }

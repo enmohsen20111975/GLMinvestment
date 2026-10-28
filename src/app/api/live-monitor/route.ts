@@ -16,6 +16,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 import { openDb } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
+import type { NextRequest } from 'next/server';
 
 const PY = process.env.EGX_VPS_API_URL || process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
@@ -138,10 +140,20 @@ async function getPortfolioSummary() {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // FIX (FIX-API-MARKET #6): accept ?market= so callers can scope the active-stocks
+  // list to a non-EGX market. Defaults to EGX to preserve existing behaviour.
+  const url = new URL(req.url);
+  const marketParam = url.searchParams.get('market') || 'EGX';
+  const market: CanonicalMarket = normalizeMarket(marketParam) || 'EGX';
+  const marketVariants = sqlMarketVariants(market);
+  const marketPlaceholders = marketVariants.map(() => '?').join(',');
+  // Forward the param to Python as well (Python endpoint may still be EGX-only —
+  // param forwarded for future use).
+  const pyQs = new URLSearchParams({ market });
   // 1) Try Python first (5s timeout)
   try {
-    const res = await fetch(`${PY}/api/live-monitor`, {
+    const res = await fetch(`${PY}/api/live-monitor?${pyQs.toString()}`, {
       signal: AbortSignal.timeout(5000),
       headers: { Accept: 'application/json' },
     });
@@ -208,13 +220,13 @@ export async function GET() {
           ${hasIsEgx30 ? ', is_egx30' : hasEgx30Member ? ', egx30_member AS is_egx30' : ''}
           ${colNames.has('is_egx100') ? ', is_egx100' : colNames.has('egx100_member') ? ', egx100_member AS is_egx100' : ''}
         FROM stocks
-        WHERE market = 'EGX'
+        WHERE market IN (${marketPlaceholders})
         ORDER BY volume DESC
         LIMIT 30
       `;
       const stockRows = stocksDb
         .prepare(selectSql)
-        .all() as Array<Record<string, unknown>>;
+        .all(...marketVariants) as Array<Record<string, unknown>>;
       activeStocks = stockRows.map((r) => {
         // احسب change_percent لو مفيش column
         let chgPct = 0;

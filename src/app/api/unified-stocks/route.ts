@@ -27,6 +27,7 @@ export const runtime = 'nodejs';
 
 import type Database from 'better-sqlite3';
 import { openDb as openDbDal } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 interface StockRow {
   ticker: string;
@@ -79,13 +80,16 @@ function openRo(p: string): Database.Database | null {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const marketRaw = (searchParams.get('market') || 'EGX').toUpperCase();
-    const market =
-      ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO', 'GOLD'].includes(
-        marketRaw
-      )
-        ? marketRaw
-        : 'EGX';
+    const marketRaw = searchParams.get('market') || 'EGX';
+    // FIX (FIX-API-MARKET #5): drop the whitelist — accept any alias and normalise
+    // via the shared helper so 'KSA'→'TADAWUL', 'NYSE'/'NASDAQ'→'US', etc.
+    // 'CRYPTO' and 'GOLD' are special asset-class markers (not stock markets with
+    // aliases) so we pass them through untouched when the caller requests them.
+    const marketRawUpper = marketRaw.toUpperCase();
+    const market: 'CRYPTO' | 'GOLD' | CanonicalMarket =
+      marketRawUpper === 'CRYPTO' || marketRawUpper === 'GOLD'
+        ? marketRawUpper
+        : (normalizeMarket(marketRaw) || 'EGX');
     const reqLimit = parseInt(searchParams.get('limit') || '100', 10);
     const limit = Number.isFinite(reqLimit)
       ? Math.min(Math.max(reqLimit, 1), 500)
@@ -237,7 +241,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // ── STOCK MARKETS (EGX/TADAWUL/KSE/QSE/US) ─────────────────────────────
+    // ── STOCK MARKETS (EGX/TADAWUL/KSE/QSE/US) ────────────────────────────
     const db = openRo(`${cwd}/db/stocks.db`);
     if (!db) {
       return NextResponse.json({
@@ -251,8 +255,13 @@ export async function GET(req: NextRequest) {
       });
     }
     try {
-      const conditions: string[] = ['market = ?'];
-      const params: unknown[] = [market];
+      // FIX (FIX-API-MARKET #5): use `market IN (?, ?, ?)` with bound params
+      // from sqlMarketVariants() so the query also matches rows stored under
+      // Arabic aliases like 'مصر' / 'السعودية' / 'الكويت' / 'قطر'.
+      const marketVariants = sqlMarketVariants(market as CanonicalMarket);
+      const marketPlaceholders = marketVariants.map(() => '?').join(',');
+      const conditions: string[] = [`market IN (${marketPlaceholders})`];
+      const params: unknown[] = [...marketVariants];
       if (search) {
         conditions.push(
           '(UPPER(ticker) LIKE ? OR UPPER(name) LIKE ? OR UPPER(name_ar) LIKE ?)'

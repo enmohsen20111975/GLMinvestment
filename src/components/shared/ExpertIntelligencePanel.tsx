@@ -191,7 +191,7 @@ export function ExpertIntelligencePanel({
  const fetchSectorIntel = useCallback(async () => {
  setSectorIntelLoading(true);
  try {
- const res = await fetch('/api/market/sectors/intelligence?min_stocks=5&limit=10');
+ const res = await fetch(`/api/market/sectors/intelligence?min_stocks=5&limit=10&market=${encodeURIComponent(marketCode)}`);
  const data = await res.json();
  if (data.success) setSectorIntel(data);
  } catch (e) {
@@ -199,13 +199,13 @@ export function ExpertIntelligencePanel({
  } finally {
  setSectorIntelLoading(false);
  }
- }, []);
+ }, [marketCode]);
 
  const fetchConsensusList = useCallback(async (verdict: string = 'all') => {
  setConsensusLoading(true);
  try {
  const verdictParam = verdict && verdict !== 'all' ? `&verdict=${verdict}` : '';
- const res = await fetch(`/api/predictions/expert-consensus?limit=15&min_score=40${verdictParam}`);
+ const res = await fetch(`/api/predictions/expert-consensus?limit=15&min_score=40${verdictParam}&market=${encodeURIComponent(marketCode)}`);
  const data = await res.json();
  if (data.success) {
  setConsensusList(data.consensus_list || []);
@@ -216,13 +216,13 @@ export function ExpertIntelligencePanel({
  } finally {
  setConsensusLoading(false);
  }
- }, []);
+ }, [marketCode]);
 
  const fetchSingleConsensus = useCallback(async (ticker: string) => {
  if (!ticker) return;
  setSingleConsensusLoading(true);
  try {
- const res = await fetch(`/api/predictions/expert-consensus?ticker=${ticker.toUpperCase()}`);
+ const res = await fetch(`/api/predictions/expert-consensus?ticker=${ticker.toUpperCase()}&market=${encodeURIComponent(marketCode)}`);
  const data = await res.json();
  if (data.success) setSingleConsensus(data.consensus || null);
  else setSingleConsensus({ error: data.error || 'غير موجود', ticker: '' });
@@ -232,7 +232,7 @@ export function ExpertIntelligencePanel({
  } finally {
  setSingleConsensusLoading(false);
  }
- }, []);
+ }, [marketCode]);
 
  // Auto-load on mount
  useEffect(() => {

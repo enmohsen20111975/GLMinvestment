@@ -20,6 +20,7 @@ import {
  BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppStore } from '@/lib/store';
 
 // Types
 interface SeasonalitySignal {
@@ -77,6 +78,10 @@ const safeNum = (val: unknown, fallback: number = 0): number => {
 };
 
 export function SeasonalityDashboard() {
+ // /api/seasonality-signals scans EGX historical data — EGX-only. On non-EGX
+ // markets we render a small placeholder instead of running the EGX scan.
+ const currentMarket = useAppStore((s) => s.currentMarket);
+
  const [loading, setLoading] = useState(true);
  const [refreshing, setRefreshing] = useState(false);
  const [signals, setSignals] = useState<SeasonalitySignal[]>([]);
@@ -111,6 +116,25 @@ export function SeasonalityDashboard() {
  useEffect(() => {
  fetchData();
  }, [fetchData]);
+
+ // EGX-only gate — placed AFTER all hook calls to respect the Rules of Hooks.
+ if (currentMarket !== 'EGX') {
+ return (
+ <div className="p-6" dir="rtl">
+ <Alert className="border-warning/20 bg-warning/5">
+ <AlertTriangle className="h-4 w-4 text-warning" />
+ <AlertDescription className="text-sm text-warning">
+ <span className="font-semibold">
+ بيانات الموسمية متاحة لسوق EGX (البورصة المصرية) فقط.
+ </span>
+ <span className="block mt-1 text-xs text-warning/80">
+ بدّل السوق إلى 🇪🇬 مصر من قائمة الأسواق لعرض إشارات الموسمية.
+ </span>
+ </AlertDescription>
+ </Alert>
+ </div>
+ );
+ }
 
  const handleRefresh = async () => {
  setRefreshing(true);
@@ -212,9 +236,9 @@ export function SeasonalityDashboard() {
 
  {/* Signals Table */}
  <WidgetCard
- 	title="الإشارات النشطة"
- 	icon={BarChart3}
- 	iconSize="h-5 w-5"
+        title="الإشارات النشطة"
+        icon={BarChart3}
+        iconSize="h-5 w-5"
  >
 
  {signals.length === 0 ? (

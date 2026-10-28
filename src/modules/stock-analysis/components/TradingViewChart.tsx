@@ -739,7 +739,7 @@ export const TradingViewChart = React.memo(function TradingViewChart({
  // 3. Fallback to /api/stocks/[ticker]/history if chart endpoint failed
  if (!json || !json.data || json.data.length === 0) {
  const days = isIntraday ? 30 : 365;
- const historyRes = await fetch(`/api/stocks/${ticker}/history?days=${days}`);
+ const historyRes = await fetch(`/api/stocks/${ticker}/history?days=${days}&market=${encodeURIComponent(currentMarket)}`);
  if (historyRes.ok) {
  json = await historyRes.json();
  usedMarketClosedFallback = true;
@@ -795,7 +795,7 @@ export const TradingViewChart = React.memo(function TradingViewChart({
  return () => {
  cancelled = true;
  };
- }, [ticker, timeframe, currentRange, retryKey]);
+ }, [ticker, timeframe, currentRange, retryKey, currentMarket]);
 
  const handleResolutionChange = (resKey: string) => {
  setTimeframe(resKey);

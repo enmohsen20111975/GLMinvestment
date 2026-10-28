@@ -1,5 +1,8 @@
 // PriceInfoCard + MetricRow + EstimatedBadge — extracted (Phase 3)
 
+import { useState, useEffect } from 'react';
+import { useAppStore } from '@/lib/store';
+
 function PriceInfoCard({ label, value, icon, className }: PriceInfoCardProps) {
  return (
  <Card className={cn('py-2 px-3 sm:py-3 sm:px-4 gap-1 sm:gap-2', className)}>
@@ -77,18 +80,20 @@ function DetailSkeleton() {
 
 // Flow Score + Explosive Score + Fundamentals from Python backend
 function FlowScoreCard({ ticker }: { ticker: string }) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [flow, setFlow] = useState<Record<string, unknown> | null>(null);
  const [explosive, setExplosive] = useState<Record<string, unknown> | null>(null);
 
  useEffect(() => {
  if (!ticker) return;
- fetch(`/api/flow/${ticker}`).then(r => r.json()).then(d => {
+ const mkt = encodeURIComponent(currentMarket);
+ fetch(`/api/flow/${ticker}?market=${mkt}`).then(r => r.json()).then(d => {
  if (d.success) setFlow(d.data);
  }).catch(() => {});
- fetch(`/api/explosive/${ticker}`).then(r => r.json()).then(d => {
+ fetch(`/api/explosive/${ticker}?market=${mkt}`).then(r => r.json()).then(d => {
  if (d.success) setExplosive(d.data);
  }).catch(() => {});
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (!flow && !explosive) return null;
 
@@ -132,15 +137,16 @@ function FlowScoreCard({ ticker }: { ticker: string }) {
 
 // Fundamentals from data-engine.db (9 Tables Integrated)
 function FundamentalsCard({ ticker }: { ticker: string }) {
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [profile, setProfile] = useState<Record<string, any> | null>(null);
  const [activeTab, setActiveTab] = useState<'valuation' | 'statements' | 'dividends' | 'technical'>('valuation');
 
  useEffect(() => {
  if (!ticker) return;
- fetch(`/api/stock-profile/${ticker}`).then(r => r.json()).then(d => {
+ fetch(`/api/stock-profile/${ticker}?market=${encodeURIComponent(currentMarket)}`).then(r => r.json()).then(d => {
  if (d.success) setProfile(d.data);
  }).catch(() => {});
- }, [ticker]);
+ }, [ticker, currentMarket]);
 
  if (!profile) {
  return (

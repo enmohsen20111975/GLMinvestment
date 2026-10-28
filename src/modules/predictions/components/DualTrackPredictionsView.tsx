@@ -166,7 +166,8 @@ export function DualTrackPredictionsView() {
 
  const fetchStats = useCallback(async () => {
  try {
- const res = await fetch('/api/predictions/dual-track/stats', { cache: 'no-store' });
+ const market = useAppStore.getState().currentMarket;
+ const res = await fetch(`/api/predictions/dual-track/stats?market=${encodeURIComponent(market)}`, { cache: 'no-store' });
  if (res.ok) {
  const data = await res.json();
  if (data.success) setStats(data);
@@ -212,7 +213,12 @@ export function DualTrackPredictionsView() {
 
  const onRecalcThreshold = async () => {
  try {
- await fetch('/api/predictions/dual-track/threshold', { method: 'POST' });
+ const market = useAppStore.getState().currentMarket;
+ await fetch('/api/predictions/dual-track/threshold', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ market }),
+ });
  await fetchStats();
  } catch (e) {
  console.error('[DualTrack] threshold error:', e);
@@ -223,8 +229,9 @@ export function DualTrackPredictionsView() {
  setBacktestLoading(true);
  setBacktestResult(null);
  try {
+ const market = useAppStore.getState().currentMarket;
  const res = await fetch(
- '/api/predictions/dual-track/backtest?execute=1&days=90',
+ `/api/predictions/dual-track/backtest?execute=1&days=90&market=${encodeURIComponent(market)}`,
  { method: 'POST' }
  );
  if (res.ok) {

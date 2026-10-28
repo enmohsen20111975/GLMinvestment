@@ -647,6 +647,7 @@ function NewsCard({ item }: { item: NewsItem }) {
 
 export function NewsFeedView() {
  const t = useTranslation();
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [data, setData] = useState<NewsFeedData | null>(null);
  const [loading, setLoading] = useState(true);
  const [refreshing, setRefreshing] = useState(false);
@@ -668,7 +669,7 @@ export function NewsFeedView() {
      setLoading(true);
    }
  setError(null);
- const res = await fetch('/api/news-feed', { cache: 'no-store' });
+ const res = await fetch(`/api/news-feed?market=${encodeURIComponent(currentMarket)}`, { cache: 'no-store' });
  const json = await res.json();
  if (json.success) {
  setData(json);
@@ -683,7 +684,7 @@ export function NewsFeedView() {
  setLoading(false);
  setIsBackgroundRefreshing(false);
  }
- }, [data, t]);
+ }, [data, t, currentMarket]);
 
  useEffect(() => {
  fetchNews();

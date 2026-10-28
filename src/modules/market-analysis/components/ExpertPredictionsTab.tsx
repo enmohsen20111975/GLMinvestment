@@ -153,7 +153,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  setError(null);
  try {
  // استخدام API الأسهم
- const marketCode = MARKET_CODES[market];
+ const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
  const allStocks = cache.stocks;
@@ -164,7 +164,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  setLoading(false);
  return;
  }
- const res = await fetch(`/api/stocks?market=${MARKET_CODES[market]}&limit=20`);
+ const res = await fetch(`/api/stocks?market=${marketCode}&limit=20`);
  if (res.ok) {
  const data = await res.json();
  const allStocks = data.stocks || [];
@@ -185,7 +185,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  }, [market]);
 
  useEffect(() => {
- const marketCode = MARKET_CODES[market];
+ const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
  const allStocks = cache.stocks;

@@ -240,13 +240,13 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
  // If this fails, we fall back to comprehensive-only display.
  useEffect(() => {
  if (!ticker) return;
- fetch(`/api/stocks/${encodeURIComponent(ticker)}/unified`)
+ fetch(`/api/stocks/${encodeURIComponent(ticker)}/unified?market=${encodeURIComponent(market)}`)
  .then((res) => (res.ok ? res.json() : null))
  .then((d) => {
  if (d?.success) setUnifiedData(d);
  })
  .catch((err) => console.error('[unified] fetch failed:', err));
- }, [ticker]);
+ }, [ticker, market]);
 
  if (loading) {
  return <LoadingSkeleton />;

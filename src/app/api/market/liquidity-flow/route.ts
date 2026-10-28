@@ -27,6 +27,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 import { openDb as openDbDal } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 const STOCKS_DB_PATH = 'stocks.db';
 
@@ -131,8 +132,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = new URL(req.url);
-    const marketParam = (url.searchParams.get('market') || 'EGX').toUpperCase();
-    const market = ['EGX', 'TADAWUL', 'KSE', 'QSE'].includes(marketParam) ? marketParam : 'EGX';
+    // FIX (FIX-API-MARKET #1): drop whitelist — use normalizeMarket() so aliases
+    // like 'KSA'/'SAUDI'/'NYSE'/'NASDAQ' resolve to the canonical market instead
+    // of being silently downgraded to EGX.
+    const marketParam = url.searchParams.get('market') || 'EGX';
+    const market: CanonicalMarket = normalizeMarket(marketParam) || 'EGX';
+    const marketVariants = sqlMarketVariants(market);
+    const marketPlaceholders = marketVariants.map(() => '?').join(',');
     const days = Math.max(1, Math.min(180, parseInt(url.searchParams.get('days') || '30', 10) || 30));
 
     const db = openDbDal(STOCKS_DB_PATH);
@@ -152,11 +158,14 @@ export async function GET(req: NextRequest) {
     }
 
     // 1) tickers + metadata للسوق ده
+    // FIX (FIX-API-MARKET #1): use `WHERE market IN (?, ?, ?)` with bound params
+    // from sqlMarketVariants() so 'TADAWUL' also matches rows stored as 'KSA' or
+    // 'السعودية', etc. Prevents the DB query from returning 0 rows for known aliases.
     const stockRows = db.prepare(`
       SELECT ticker, name_ar, name, sector, current_price
       FROM stocks
-      WHERE market = ? AND is_active = 1
-    `).all(market) as StockMeta[];
+      WHERE market IN (${marketPlaceholders}) AND is_active = 1
+    `).all(...marketVariants) as StockMeta[];
     if (stockRows.length === 0) {
       db.close();
       return NextResponse.json({

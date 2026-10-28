@@ -25,8 +25,14 @@ export async function GET(request: NextRequest) {
   const params = new URLSearchParams();
   const limit = searchParams.get('limit') || '20';
   const ticker = searchParams.get('ticker');
+  // FIX (FIX-API-MARKET #10): accept an optional `market` query param and pass
+  // it through to the SQLite fallback so non-EGX markets don't return EGX-only
+  // predictions. No default — `undefined` means "no market filter" (preserve
+  // existing behaviour when the param is absent).
+  const market = searchParams.get('market') || undefined;
   params.set('limit', limit);
   if (ticker) params.set('ticker', ticker.toUpperCase());
+  if (market) params.set('market', market);
 
   const backendUrl = `${PYTHON_BACKEND.replace(/\/$/, '')}/api/market/exit-status?${params.toString()}`;
 
@@ -50,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. SQLite fallback — predictions.db active predictions
-  const preds = getPredictionsFallback(parseInt(limit, 10), 'active');
+  const preds = getPredictionsFallback(parseInt(limit, 10), 'active', market);
   const filtered = ticker
     ? preds.filter(
         (p) => String(p.ticker).toUpperCase() === ticker.toUpperCase()

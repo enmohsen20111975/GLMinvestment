@@ -30,7 +30,7 @@ import { IncubatorSection } from '@/modules/radar/components/IncubatorSection';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { useMakerRadarData } from '@/hooks/useMakerRadarData';
 import { useRealtimeUpdates } from '@/lib/ws-client';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, MARKET_CODES } from '@/lib/store';
 import { getMarketStatus } from '@/lib/market-hours';
 import { getRadarAccess, getTrialStatus } from '@/lib/subscription-gate';
 import { MarketRegimeBanner } from '@/components/market/MarketRegimeBanner';
@@ -422,7 +422,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
  return (
  <div className="space-y-4" dir="rtl">
  <IncubatorSection
- market={market === 'TADAWUL' || market === 'KSA' ? 'TADAWUL' : 'EGX'}
+ market={MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : (MARKET_CODES[market] || market)}
  refreshIntervalMs={60_000}
  maxDisplay={6}
  />

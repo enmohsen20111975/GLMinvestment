@@ -253,7 +253,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  if (!silent) setLoading(true);
  setError(null);
  try {
- const marketCode = MARKET_CODES[market];
+ const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
  setStocks(cache.stocks);
@@ -587,11 +587,11 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  <div className="grid gap-3 md:grid-cols-2">
  {/* اتساع السوق (Breadth) — Donut */}
  <WidgetCard
- 	title="اتساع السوق (Breadth)"
- 	icon={PieChart}
- 	iconColor="text-profit"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-sm"
+        title="اتساع السوق (Breadth)"
+        icon={PieChart}
+        iconColor="text-profit"
+        iconSize="h-4 w-4"
+        titleClassName="text-sm"
  >
  <ResponsiveContainer width="100%" height={200}>
  <PieChart>
@@ -624,11 +624,11 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
  {/* أبرز الرابحين والخاسرين — Bar */}
  <WidgetCard
- 	title="أبرز الرابحين والخاسرين"
- 	icon={BarChart3}
- 	iconColor="text-whale"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-sm"
+        title="أبرز الرابحين والخاسرين"
+        icon={BarChart3}
+        iconColor="text-whale"
+        iconSize="h-4 w-4"
+        titleClassName="text-sm"
  >
  <ResponsiveContainer width="100%" height={200}>
  <BarChart
@@ -654,12 +654,12 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
 
  {/* توزيع القطاعات — Horizontal Bar */}
  <WidgetCard
- 	title="توزيع القطاعات (عدد الأسهم)"
- 	icon={BarChart3}
- 	iconColor="text-warning"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-sm"
- 	className="md:col-span-2"
+        title="توزيع القطاعات (عدد الأسهم)"
+        icon={BarChart3}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-sm"
+        className="md:col-span-2"
  >
  <ResponsiveContainer width="100%" height={Math.max(160, Object.keys(weekStats.sectors).length * 26)}>
  <BarChart

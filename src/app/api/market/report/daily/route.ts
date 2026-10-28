@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. SQLite fallback — compose minimal daily snapshot
-  const { gainers, losers, most_active } = getTopMoversFallback(10);
+  // FIX (FIX-API-MARKET #12): pass `market` through so non-EGX markets return
+  // their own movers instead of all-market cross-contamination.
+  const { gainers, losers, most_active } = getTopMoversFallback(10, market);
   const marketStatus = getMarketStatusFallback();
 
   if (format === 'text') {

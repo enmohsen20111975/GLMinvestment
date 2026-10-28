@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { openDb } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 const CACHE_DURATION = 300;
 let newsCache: { timestamp: number; data: any[] } | null = null;
@@ -66,22 +67,47 @@ function cleanNewsTitle(title: string): string {
     .trim() || 'خبر اقتصادي';
 }
 
-function fetchNewsSignals(limit = 50): NewsItem[] {
+function fetchNewsSignals(limit = 50, market?: CanonicalMarket): NewsItem[] {
   const items: NewsItem[] = [];
+
+  // FIX (FIX-API-MARKET #15): when a canonical market is supplied, filter the
+  // market_news query by `market IN (?, ?, ?)` using sqlMarketVariants() so we
+  // only return rows tagged for that market (incl. Arabic aliases). If the
+  // `market` column doesn't exist on the table (legacy schema), the filter is
+  // skipped silently to preserve backward compatibility.
+  const marketVariants = market ? sqlMarketVariants(market) : [];
+  const marketPlaceholders = marketVariants.map(() => '?').join(',');
 
   // 1. Fetch from news.db -> market_news (single source of truth — News Agent posts here)
   try {
     const dePath = getDataEngineDbPath();
     const db = openDb(dePath);
     if (db) {
+      // Defensive: detect if `market` column exists on market_news (schema varies).
+      let hasMarketCol = false;
+      try {
+        const cols = db.prepare('PRAGMA table_info(market_news)').all() as { name: string }[];
+        hasMarketCol = cols.some((c) => c.name === 'market');
+      } catch {
+        hasMarketCol = false;
+      }
+      const marketClause =
+        market && hasMarketCol && marketVariants.length > 0
+          ? `AND market IN (${marketPlaceholders})`
+          : '';
+      const stmtParams =
+        market && hasMarketCol && marketVariants.length > 0
+          ? [...marketVariants, limit]
+          : [limit];
       const rows = db.prepare(`
         SELECT id, title, content, summary_ar, summary_en, source, url,
                tickers, importance, sentiment, impact_type, image_paths, ocr_text,
                raw_analysis, published_at, fetched_at
         FROM market_news
+        WHERE 1=1 ${marketClause}
         ORDER BY id DESC
         LIMIT ?
-      `).all(limit) as any[];
+      `).all(...stmtParams) as any[];
       db.close();
 
       for (const row of rows) {
@@ -133,13 +159,30 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
           | undefined
       )?.name === 'news_signals';
       if (hasNewsSignals) {
+        // Defensive: detect `market` column on news_signals (schema varies).
+        let hasMarketCol = false;
+        try {
+          const cols = db.prepare('PRAGMA table_info(news_signals)').all() as { name: string }[];
+          hasMarketCol = cols.some((c) => c.name === 'market');
+        } catch {
+          hasMarketCol = false;
+        }
+        const marketClause =
+          market && hasMarketCol && marketVariants.length > 0
+            ? `AND market IN (${marketPlaceholders})`
+            : '';
+        const stmtParams =
+          market && hasMarketCol && marketVariants.length > 0
+            ? [...marketVariants, limit]
+            : [limit];
         const rows = db.prepare(`
         SELECT id, title, body, source, url, published_at, tickers,
                importance, sentiment, impact_type, summary_ar, reasoning, received_at
         FROM news_signals
+        WHERE 1=1 ${marketClause}
         ORDER BY COALESCE(importance, 0) DESC, received_at DESC
         LIMIT ?
-      `).all(limit) as any[];
+      `).all(...stmtParams) as any[];
 
       for (const row of rows) {
         const hasValidReasoning = Boolean(
@@ -333,8 +376,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const marketFilter = (searchParams.get('market') || 'all').toLowerCase();
     const isCryptoMode = marketFilter === 'crypto';
+    // FIX (FIX-API-MARKET #15): normalise the `market` param so non-crypto
+    // markets (EGX/TADAWUL/KSE/QSE/US) are forwarded to fetchNewsSignals and
+    // filtered at the SQL level instead of returning cross-market rows.
+    const canonicalMarket: CanonicalMarket | null =
+      marketFilter === 'all' || marketFilter === 'crypto'
+        ? null
+        : normalizeMarket(marketFilter);
     const now = Date.now();
-    const cacheKey = isCryptoMode ? 'crypto' : 'all';
+    // Per-market cache key so a TADAWUL feed doesn't shadow an EGX one.
+    const cacheKey = isCryptoMode ? 'crypto' : canonicalMarket ? canonicalMarket : 'all';
     const cached = cryptoCache[cacheKey];
     if (cached && (now - cached.timestamp) < CACHE_DURATION * 1000) {
       return NextResponse.json({
@@ -352,7 +403,9 @@ export async function GET(request: NextRequest) {
       getFearGreedIndex(),
       getCryptoPrices(),
       getGlobalMarketData(),
-      Promise.resolve(fetchNewsSignals(50)),
+      // FIX (FIX-API-MARKET #15): pass canonical market through to fetchNewsSignals
+      // so the SQL filter is applied (when the schema exposes a `market` column).
+      Promise.resolve(fetchNewsSignals(50, canonicalMarket ?? undefined)),
     ]);
 
     const news: NewsItem[] = [];

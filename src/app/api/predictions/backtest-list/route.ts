@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { preferComputedRiskReward } from '@/lib/risk-reward';
 import { openDb as openDbDal } from '@/lib/db-manager';
+import { normalizeMarket, sqlMarketVariants, type CanonicalMarket } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -76,7 +77,18 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const marketParam = (url.searchParams.get('market') || 'EGX').toUpperCase().trim();
-    const market = ['EGX', 'CRYPTO', 'ALL'].includes(marketParam) ? marketParam : 'EGX';
+    // FIX (FIX-API-MARKET #4): drop whitelist that excluded TADAWUL/KSE/QSE/US.
+    // 'ALL' is a special value that selects every market; otherwise normalise
+    // aliases (e.g. 'KSA' → 'TADAWUL') via the shared helper so the caller's
+    // intent is preserved instead of silently downgrading to EGX.
+    const market: 'ALL' | CanonicalMarket =
+      marketParam === 'ALL' ? 'ALL' : (normalizeMarket(marketParam) || 'EGX');
+    // Build the SQL variants for the chosen market so 'TADAWUL' also matches
+    // rows stored as 'KSA' or 'السعودية' in predictions.db.
+    const marketVariants = market === 'ALL' ? [] : sqlMarketVariants(market);
+    const marketPlaceholders = marketVariants.map(() => '?').join(',');
+    const marketClause =
+      market === 'ALL' ? '' : `AND (market IN (${marketPlaceholders}) OR market IS NULL)`;
 
     const db = openDb(PREDICTIONS_DB_PATH);
 
@@ -99,10 +111,10 @@ export async function GET(req: NextRequest) {
                  actual_return, holding_days, risk_reward, is_correct
           FROM predictions
           WHERE prediction_date IS NOT NULL
-            AND (market = ? OR market IS NULL)
+            ${marketClause}
           ORDER BY prediction_date DESC
           LIMIT 100
-        `).all(market) as BacktestRow[];
+        `).all(...marketVariants) as BacktestRow[];
       }
     } catch (queryErr) {
       // الـ column اسمه ممكن signal_type بدلاً من signal
@@ -124,10 +136,10 @@ export async function GET(req: NextRequest) {
                    actual_return, holding_days, risk_reward, is_correct
             FROM predictions
             WHERE prediction_date IS NOT NULL
-              AND (market = ? OR market IS NULL)
+              ${marketClause}
             ORDER BY prediction_date DESC
             LIMIT 100
-          `).all(market) as BacktestRow[];
+          `).all(...marketVariants) as BacktestRow[];
         }
       } catch (err2) {
         db.close();
