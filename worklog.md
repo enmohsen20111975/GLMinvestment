@@ -10279,3 +10279,39 @@ Stage Summary:
   * مفيش regression على المسارات القديمة (pre_surge/quiet/explosive/early_break) ✅
   * position=0 لـ BOUNCE ✅
 - **downstream:** مراقبة أسبوع للإشارات الجديدة قبل أي توسعة (مرحلة 2 مقفولة).
+
+---
+Task ID: BRAVO-RADAR-BOUNCE-BACKTEST
+Agent: Bravo V2 (backend engineer)
+Task: Backtest الـ BOUNCE path + باقي المسارات على شهر تاريخي (2026-09-15 → 2026-10-18).
+
+Work Log:
+- كتبت `scripts/backtest_bounce.py` — بيـ simulate الرادار يوم بيوم (no future leakage).
+- شغلت backtest على 5 أسابيع (23 يوم تداول، ~610 سهم، 17,457 scan).
+- **النتايج (forward returns بعد 5 و 10 أيام):**
+
+| path | detections | avg_5d% | win% | loss% | avg_10d% | loss%_10d |
+|---|---|---|---|---|---|---|
+| B_quiet_accumulation | 1245 | -2.10% | 5.5% | 21.8% | -3.48% | 38.9% |
+| A_pre_surge | 700 | -2.17% | 8.0% | 21.6% | -4.62% | 41.5% |
+| **F_bounce** | **33** | **-6.15%** | **9.1%** | **54.5%** | **-9.33%** | **66.7%** |
+| D_explosive_surge | 128 | -8.68% | 4.7% | 57.8% | -11.05% | 72.7% |
+| E_early_break | 21 | -5.47% | 4.8% | 42.9% | -5.57% | 52.4% |
+
+- **الـ key findings:**
+  1. السوق كان DEFENSIVE طول الفترة → كل المسارات أداءها سلبي (متوقع).
+  2. **F_bounce: 54.5% loss rate (5d)** — أكثر من نص الـ BOUNCE detections كانت dead-cat bounces.
+  3. **F_bounce أداءه أسوأ من quiet/pre_surge** بس أحسن من explosive_surge.
+  4. معظم BOUNCE detections تجمعت حول 2026-10-05 (يوم crash كبير) → كلها ارتدوا بعدها السوق كمّل هبوط.
+  5. BOUNCE = position=0 → مفيش خسارة مالية، بس جودة الإشارة ضعيفة في السوق الهابط.
+- **التوصية:**
+  1. إضافة regime filter: BOUNCE يـ fire بس في NORMAL/AGGRESSIVE (مش DEFENSIVE).
+  2. أو تقوية الشروط في DEFENSIVE (buy_pct > 50 بدل > 25).
+  3. الـ BOUNCE path لسه valid كـ detection-only — بس الـ owner لازم يعرف إن في DEFENSIVE معظمها dead-cat.
+- Git: backtest script في `scripts/backtest_bounce.py` (مش مرفوع على main بعد).
+
+Stage Summary:
+- Backtest على 5 أسابيع: 33 BOUNCE detections، 54.5% dead-cat rate.
+- كل المسارات أداءها سلبي في DEFENSIVE regime (متوقع).
+- BOUNCE يحتاج regime filter أو تقوية شروط في DEFENSIVE.
+- الـ backtest script جاهز لإعادة التشغيل على أي فترة.
