@@ -10171,3 +10171,38 @@ Stage Summary:
 - في **ترتيب أولويات** في scan_ticker: pre_surge > quiet(5/6) > quiet(4/6) > explosive > early_break. ده صحيح — pre_surge أهم لأنه أصعب.
 - الـ Flow Gate بيمنع الأسهم ذات net_flow<0 من المسارات الصاعدة (يحولها لـ 'distribution'). ده صحيح — منع توصيات شراء لأسهم بتـ تصرف.
 - الـ Kill Switch بيـ halve الـ position size لو فيه توزيع قاتل/حبس/تدوير وهمي. ده صحيح — حماية رأس المال.
+
+---
+Task ID: BRAVO-RADAR-BOUNCE-STAGE1
+Agent: Bravo V2 (backend engineer)
+Task: المرحلة الأولى من تحسين حساسية الرادار — مسار BOUNCE + Explosive multi-day (بناءً على تحقيق ETEL/KORA/LUTS).
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-RADAR-DEEP-REVIEW).
+- عملت التحقيق على بيانات حقيقية (نزلت الـ DBs من GitHub main):
+  * ETEL: نزل من 140 لـ 117 (-16%)، ارتد لـ 126.77 (+8.4% بحجم 1.54×). الرادار فاته.
+  * KORA: نازل -73% من القمة → rule80_downtrend (مفيش مسار هبوطي أصيل).
+  * LUTS: نازل -37% من القمة → rule80_downtrend (نفس المشكلة).
+- **الـ fixes (المرحلة الأولى المُوافق عليها):**
+  1. **مسار BOUNCE (F_bounce)** — detection only، position=0، under_microscope=True.
+     * 5 شروط ALL required: price_action=BOUNCE_AFTER_DECLINE + drop_from_peak في [-8%,-25%] + vol_support (2/3 أيام > 1.2× avg_20d) + bounce_pct >= 3% + buy_pct > 25%.
+     * أولوية أخيرة (بعد early_break) — بـ catches الأسهم اللي مش بتـ qualify لأي مسار شراء.
+     * مش في _BULLISH_PATHS → Flow Gate مش بيتأثر.
+  2. **Explosive multi-day** — max(last 3) >= 1.7× بدل avg(last 5) >= 2.0×.
+     * بـ catches الـ surges اللي بتحصل وتنطفض بسرعة في EGX.
+     * price > SMA20 + range < 18% بقاوا كما هم (تأكيد سعري).
+- **التحقق (before/after على نفس اللقطة 2026-10-28):**
+  * before: under_microscope=1 (4230 quiet), ETEL/KORA/LUTS كلهم فاتوا.
+  * after: under_microscope=3 (4230 quiet + 1831 bounce + ETEL bounce), 0 lost.
+  * ETEL: 5/5 BOUNCE conditions ✅
+  * KORA + LUTS: لسه rule80_downtrend (NOT buy) ✅
+  * مفيش false positives.
+  * مفيش auto-buy (position=0 للـ BOUNCE).
+- Git: commit `c93108a` على branch `bravo/radar-bounce-path`.
+
+Stage Summary:
+- Files modified (2):
+  * `scripts/maker_radar.py` (+77 lines: BOUNCE path + money_flow restructure + bounce_details in result)
+  * `vps-service/utils/shared_liquidity.py` (+18 lines: explosive max(last 3) + 1.7× threshold)
+- النتيجة: ETEL اكتشف، KORA/LUTS لسه مكتشفين صح، +2 إشارات جديدة، 0 lost.
+- المرحلة الثانية (بعد قياس أثر المرحلة الأولى): trend_filter relaxation inside BOUNCE + مسار تحذيري هبوطي.
