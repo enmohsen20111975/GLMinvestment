@@ -865,6 +865,29 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         tickers_offset: skip أول N tickers (للـ resume بعد run سابق).
         force: تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل.
     """
+    # FIX (BRAVO-DISASTER C1-FINAL, 2026-10-28):
+    # CLI accepts --market KSA but stocks.db stores Saudi stocks as
+    # market='TADAWUL'. Previous bug: stored analyses under 'KSA' (or 'EGX'),
+    # breaking every downstream query (WHERE market='TADAWUL' finds nothing)
+    # AND breaking radar integration (looks for maker_radar_KSA_*.json but
+    # cron_radar.sh creates maker_radar_TADAWUL_*.json).
+    #
+    # Solution: normalize market_code to the CANONICAL DB value at the entry
+    # point. Everything downstream (radar lookup, sa_id, INSERT, regime)
+    # uses the canonical value consistently.
+    _CANONICAL_MARKET = {
+        'KSA': 'TADAWUL',
+        'SAUDI': 'TADAWUL',
+        'TADAWUL': 'TADAWUL',
+        'EGX': 'EGX',
+        'KSE': 'KSE',
+        'QSE': 'QSE',
+        'US': 'US',
+        'CRYPTO': 'CRYPTO',
+    }.get(market_code.strip().upper(), market_code.strip().upper())
+    market_code = _CANONICAL_MARKET
+    print(f"  [MARKET-NORMALIZE] canonical market_code = {market_code}", flush=True)
+
     print("=" * 80, flush=True)
     print("  V40.2 Prediction Generator (CLI-enabled)", flush=True)
     print(f"  Period: {start_date} → {end_date} | Scan every {scan_interval} days", flush=True)
