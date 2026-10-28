@@ -54,12 +54,8 @@ except ImportError as e:
 #   - data.analyses.persist_analysis_with_persona → أي كتابة لتحليل
 #   - core.db_manager.db_manager → أي استعلامات تانية (WAL + busy_timeout)
 # ممنوع sqlite3.connect() مباشر في الـ routes ده (Phase 8: Stability & Data Hygiene).
-try:
-    from core.db_manager import db_manager as _dbm
-    _DBM_AVAILABLE = True
-except Exception as _e:
-    _DBM_AVAILABLE = False
-    print(f"[misc_routes] Warning: db_manager not available ({_e}) — falling back to legacy sqlite3")
+# Phase 7.3 dedup: import canonical _open_db (aliased variant) + dbm from core.db_helpers
+from core.db_helpers import open_db_aliased as _open_db, dbm as _dbm, DBM_AVAILABLE as _DBM_AVAILABLE
 
 try:
     from data.prices import load_price_history as _load_price_history
@@ -78,57 +74,6 @@ except Exception as _e:
 # Module-level logger (إصلاح bug: live_refresh كان بيستخدم logger بدون تعريف)
 import logging as _logging
 _logger = _logging.getLogger('misc_routes')
-
-
-# ─── Rule 54 / Phase 3: db_manager helper (WAL + busy_timeout + fallback) ───
-# غلاف مركزي لفتح connection عبر db_manager.connection() مع fallback sqlite3.connect.
-# الـ fallback بيحافظ على نفس الـ row_factory (sqlite3.Row) عشان الكود اللي بـ
-# يستخدم row['column'] / dict(row) يفضل شغّال بدون تعديل.
-from contextlib import contextmanager as _ctxmgr
-
-
-@_ctxmgr
-def _open_db(db_alias: str, db_path: str, writable: bool = False):
-    """Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect.
-
-    Args:
-        db_alias: اسم الـ DB المختصر ('stocks', 'predictions', 'data_engine', 'intraday', ...)
-        db_path: مسار الـ DB على القرص (للـ fallback)
-        writable: True للكتابة (WAL)، False للقراءة (readonly/immutable)
-
-    Yields:
-        sqlite3.Connection مع row_factory = sqlite3.Row (موحّد على المسارين).
-    """
-    ctx = None
-    conn = None
-    try:
-        if _DBM_AVAILABLE:
-            conn = _dbm.get_connection(db_alias, writable=writable)
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        # fallback: raw sqlite3.connect (backward compat)
-        import sqlite3 as _sqlite3_fb
-        conn = _sqlite3_fb.connect(db_path, timeout=30.0)
-        conn.row_factory = _sqlite3_fb.Row
-        try:
-            conn.execute('PRAGMA busy_timeout=30000')
-            if writable:
-                conn.execute('PRAGMA journal_mode=WAL')
-                conn.execute('PRAGMA synchronous=NORMAL')
-        except Exception:
-            pass
-        ctx = None
-    try:
-        yield conn
-    finally:
-        try:
-            if ctx is not None:
-                ctx.__exit__(None, None, None)
-            else:
-                conn.close()
-        except Exception:
-            pass
 
 
 # ─── Stock names cache (يوليو 2026) ──────────────────────────────────

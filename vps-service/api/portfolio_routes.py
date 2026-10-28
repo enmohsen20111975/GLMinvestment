@@ -35,45 +35,8 @@ import logging
 import sqlite3
 from contextlib import contextmanager
 
-# Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
-try:
-    from core.db_manager import db_manager as _dbm
-    _PORT_ROUTES_DBM_AVAILABLE = True
-except Exception as _pr_err:
-    _PORT_ROUTES_DBM_AVAILABLE = False
-    print(f"[portfolio_routes] db_manager not available ({_pr_err}) — falling back to raw sqlite3")
-
-
-@contextmanager
-def _open_db(db_path: str, writable: bool = False):
-    """Rule 54 / Phase 3: استخدم db_manager.connection() مع fallback sqlite3.connect."""
-    ctx = None
-    conn = None
-    try:
-        if _PORT_ROUTES_DBM_AVAILABLE:
-            conn = _dbm.get_connection(db_path, writable=writable)
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        conn = sqlite3.connect(db_path, timeout=30.0)
-        try:
-            conn.execute('PRAGMA busy_timeout=30000')
-            if writable:
-                conn.execute('PRAGMA journal_mode=WAL')
-                conn.execute('PRAGMA synchronous=NORMAL')
-        except Exception:
-            pass
-        ctx = None
-    try:
-        yield conn
-    finally:
-        try:
-            if ctx is not None:
-                ctx.__exit__(None, None, None)
-            else:
-                conn.close()
-        except Exception:
-            pass
+# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
+from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _PORT_ROUTES_DBM_AVAILABLE
 
 logger = logging.getLogger(__name__)
 

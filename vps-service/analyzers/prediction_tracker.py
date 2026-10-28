@@ -20,58 +20,9 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 
-# Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect
-try:
-    from core.db_manager import db_manager as _dbm
-    _PRED_TRACKER_DBM_AVAILABLE = True
-except Exception as _pt_err:
-    _PRED_TRACKER_DBM_AVAILABLE = False
-    print(f"[PredictionTracker] db_manager not available ({_pt_err}) — falling back to raw sqlite3")
-
-
-@contextmanager
-def _open_db(db_path: str, writable: bool = False):
-    """Rule 54 / Phase 3: استخدم db_manager.connection() مع fallback sqlite3.connect.
-
-    Args:
-        db_path: مسار الـ DB على القرص (ممكن يكون predictions.db أو stocks.db —
-                 db_manager بيتعامل مع الـ absolute path مباشرة).
-        writable: True للكتابة (WAL + busy_timeout)، False للقراءة فقط.
-
-    Yields:
-        sqlite3.Connection — بيستخدم raw sqlite3.connect عادي (بدون row_factory=Row)
-        عشان الكود الموجود بـ يستخدم index-based access (row[0], row[1], ...).
-        db_manager بـ يضيف row_factory=Row تلقائياً، و Row بـ يدعم index access
-        زي tuples بالظبط، فمفيش مشكلة backward compat.
-    """
-    ctx = None
-    conn = None
-    try:
-        if _PRED_TRACKER_DBM_AVAILABLE:
-            conn = _dbm.get_connection(db_path, writable=writable)
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        # fallback: raw sqlite3.connect (backward compat)
-        conn = sqlite3.connect(db_path, timeout=30.0)
-        try:
-            conn.execute('PRAGMA busy_timeout=30000')
-            if writable:
-                conn.execute('PRAGMA journal_mode=WAL')
-                conn.execute('PRAGMA synchronous=NORMAL')
-        except Exception:
-            pass
-        ctx = None
-    try:
-        yield conn
-    finally:
-        try:
-            if ctx is not None:
-                ctx.__exit__(None, None, None)
-            else:
-                conn.close()
-        except Exception:
-            pass
+# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
+# (docstring + behavior preserved in core/db_helpers.py)
+from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _PRED_TRACKER_DBM_AVAILABLE
 
 # v3.29.0: Holiday-aware prediction dates — prevents predictions on Fri/Sat/holidays
 try:
