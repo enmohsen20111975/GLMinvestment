@@ -36,7 +36,8 @@
 45 2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.market_regime_engine import MarketRegimeEngine; MarketRegimeEngine('EGX').update_regime()" >> /tmp/regime_engine.log 2>&1
 
 # 03:00 UTC (05:00 القاهرة) — توليد توقعات اليوم الصباحية بناءً على حالة السوق
-0 3 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5 >> /tmp/v40_2_morning.log 2>&1
+# SMART MODE (2026-10-28): فلتر الأسهم الميتة + أيام الإجازات + التوقعات اللي لسه valid
+0 3 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --smart --max-picks 5 >> /tmp/v40_2_morning.log 2>&1
 
 # 03:00 UTC (05:00 القاهرة) — مراجعة وتخفيض الاشتراكات المنتهية (Prisma/Bun)
 0 3 * * * cd /root/GLMinvestment && /root/GLMinvestment/node_modules/.bin/bun run scripts/downgrade-expired-subscriptions.ts >> /tmp/downgrade_expired_subs.log 2>&1
@@ -99,7 +100,7 @@
 30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/telegram_comprehensive_report.py --send >> /tmp/telegram_report.log 2>&1
 
 # 15:00 UTC (17:00 القاهرة) — توليد أولي لتوقعات الغد بعد استيعاب إغلاق اليوم
-0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
+0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --yesterday-only --smart --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
 
 
 # ============================================================================

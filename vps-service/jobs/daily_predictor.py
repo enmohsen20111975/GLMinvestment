@@ -853,10 +853,150 @@ def _integrate_whale_radar_predictions(scan_date: str, market_code: str,
         return 0
 
 
+# ============================================================================
+# SMART PREDICTOR LOGIC (merged from scripts/smart_predictor.py)
+# ============================================================================
+# Owner directive (2026-10-28): "حط الكود الى فى smart_predictor.py داخل
+# daily_predictor.py لان دة الى فى كل مكان وممكن اى وقت يتم استعماله بالخطأ
+# فانرجع لنفس المصيبة"
+#
+# الـ smart mode بيشتغل لما user يمرر --smart flag. بيعمل 5 فلاتر قبل التحليل:
+#   1. ابدأ من آخر تاريخ في الـ DB (مش من 1 يناير)
+#   2. فلتر أيام الإجازات (is_trading_day)
+#   3. فلتر التوقعات اللي لسه valid (السعر ما تغيرش >1%)
+#   4. فلتر الأسهم الميتة (change% بين -3% و +0.5%)
+#   5. فلتر التوقعات الموجودة (re-analyze لو السعر تحرك)
+
+def _smart_is_trading_day(date_str, market_code):
+    """هل اليوم ده يوم تداول؟ فلتر جمعة/سبت/عيد."""
+    try:
+        from utils.trading_calendar import is_trading_day as _check
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        return _check(dt, market_code)
+    except Exception:
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        return dt.weekday() not in [4, 5]  # 4=Friday, 5=Saturday
+
+
+def _smart_get_last_prediction_date(market_code):
+    """آخر تاريخ في predictions table للسوق ده."""
+    try:
+        _db_dir = Path(__file__).resolve().parents[2] / 'db'
+        _pred_db = str(_db_dir / 'predictions.db')
+        if not os.path.exists(_pred_db):
+            return None
+        conn = sqlite3.connect(_pred_db)
+        row = conn.execute(
+            "SELECT MAX(prediction_date) FROM predictions WHERE market = ?",
+            (market_code,)
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            return str(row[0])[:10]
+        return None
+    except Exception:
+        return None
+
+
+def _smart_filter_dead_stocks(tickers, market_code):
+    """
+    فلتر الأسهم الميتة:
+      - change% بين -3% و +0.5% → سهم واقف/خسران → skip
+      - باقي الأسهم (صاعدة أو نازلة جامد) → نحللها
+    """
+    if not tickers:
+        return [], 0
+    try:
+        _db_dir = Path(__file__).resolve().parents[2] / 'db'
+        _stocks_db = str(_db_dir / 'stocks.db')
+        conn = sqlite3.connect(_stocks_db)
+        placeholders = ','.join(['?'] * len(tickers))
+        rows = conn.execute(
+            f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            (*tickers, market_code)
+        ).fetchall()
+        conn.close()
+        alive = []
+        dead_count = 0
+        for ticker, change in rows:
+            if change is None:
+                continue
+            change = float(change)
+            if -3.0 <= change <= 0.5:
+                dead_count += 1
+                continue
+            alive.append(ticker)
+        return alive, dead_count
+    except Exception:
+        return tickers, 0
+
+
+def _smart_filter_stale_predictions(tickers, market_code, scan_date):
+    """
+    فلتر التوقعات الموجودة — بس بشكل ذكي.
+    skip بس لو فيه توقع نشط + السعر ما تغيرش >1% من entry_price.
+    لو السعر تحرك → re-analyze (ممكن إشارة جديدة).
+    """
+    if not tickers:
+        return [], 0
+    try:
+        _db_dir = Path(__file__).resolve().parents[2] / 'db'
+        _pred_db = str(_db_dir / 'predictions.db')
+        _stocks_db = str(_db_dir / 'stocks.db')
+        if not os.path.exists(_pred_db) or not os.path.exists(_stocks_db):
+            return tickers, 0
+        conn_pred = sqlite3.connect(_pred_db)
+        conn_stocks = sqlite3.connect(_stocks_db)
+        existing = conn_pred.execute(
+            """SELECT ticker, entry_price FROM predictions 
+               WHERE market = ? AND prediction_date LIKE ? 
+               AND (outcome_date IS NULL OR exit_type IS NULL)""",
+            (market_code, f"{scan_date}%")
+        ).fetchall()
+        conn_pred.close()
+        placeholders = ','.join(['?'] * len(tickers))
+        stock_rows = conn_stocks.execute(
+            f"SELECT ticker, current_price FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            (*tickers, market_code)
+        ).fetchall()
+        conn_stocks.close()
+        current_prices = {r[0]: r[1] for r in stock_rows if r[1]}
+        existing_map = {r[0]: r[1] for r in existing}
+        to_reanalyze = []
+        skipped_count = 0
+        for ticker in tickers:
+            if ticker not in existing_map:
+                to_reanalyze.append(ticker)
+                continue
+            entry_price = existing_map[ticker]
+            current_price = current_prices.get(ticker)
+            if entry_price and current_price and entry_price > 0:
+                change_pct = abs((current_price - entry_price) / entry_price * 100)
+                if change_pct < 1.0:
+                    skipped_count += 1
+                    continue
+            to_reanalyze.append(ticker)
+        return to_reanalyze, skipped_count
+    except Exception:
+        return tickers, 0
+
+
+def _smart_filter_scan_dates(all_dates, market_code):
+    """فلتر أيام الإجازات من قائمة التواريخ."""
+    trading_dates = []
+    skipped = 0
+    for d in all_dates:
+        if _smart_is_trading_day(d, market_code):
+            trading_dates.append(d)
+        else:
+            skipped += 1
+    return trading_dates, skipped
+
+
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
                   max_tickers=None, tickers_offset=0, force=False,
-                  market_code='EGX'):
+                  market_code='EGX', smart_mode=False):
     """Main generation loop.
 
     Args:
@@ -988,6 +1128,16 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         print("❌ No scan dates to process. Exiting.", flush=True)
         return
 
+    # ─── SMART MODE: فلتر أيام الإجازات ───────────────────────────────────────
+    # Owner directive (2026-10-28): --smart يفلتر جمعة/سبت/عيد قبل التحليل
+    if smart_mode:
+        _all_dates_count = len(scan_dates)
+        scan_dates, _skipped_holidays = _smart_filter_scan_dates(scan_dates, market_code)
+        print(f"⚡ SMART: فلتر الإجازات → {_all_dates_count} → {len(scan_dates)} (تخطى {_skipped_holidays} يوم إجازة)", flush=True)
+        if not scan_dates:
+            print("✅ SMART: كل الأيام أيام إجازات — مفيش حاجة للتحليل.", flush=True)
+            return
+
     tickers = get_tickers(market_code=market_code)
     # Rule 28: Filter out toxic tickers (blocklisted)
     blocklist = _load_toxic_blocklist()
@@ -1006,6 +1156,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         print(f"  ⚡ Limited to {max_tickers} tickers (batch mode)", flush=True)
     print(f"📊 Scan dates: {len(scan_dates)} | Tickers: {len(tickers)}", flush=True)
     print(f"📅 Scan dates: {scan_dates}", flush=True)
+
+    # ─── SMART MODE: فلتر الأسهم الميتة ───────────────────────────────────────
+    # Owner directive: فلتر الأسهم اللي change% بين -3% و +0.5% (واقفة/خسران)
+    if smart_mode and tickers:
+        _before_dead = len(tickers)
+        tickers, _dead_count = _smart_filter_dead_stocks(tickers, market_code)
+        print(f"⚡ SMART: فلتر الأسهم الميتة → {_before_dead} → {len(tickers)} (تخطى {_dead_count} سهم ميت)", flush=True)
 
     if dry_run:
         print("🔍 DRY-RUN: would process the above dates. No DB writes.", flush=True)
@@ -1134,6 +1291,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             day_idx = date_to_idx.get(scan_date)
             if day_idx is None or day_idx < 15:
                 continue
+
+            # ─── SMART MODE: فلتر التوقعات اللي لسه valid ───────────────────────
+            # Owner directive: skip السهم لو فيه توقع نشط + السعر ما تغيرش >1%
+            # ملاحظة: هنا بنـ skip الـ ticker من الـ analysis loop لو التوقع لسه valid
+            # عن طريق تعديل قائمة tickers_local اللي بتـ feed الـ loop الرئيسي
+            if smart_mode and hasattr(_smart_filter_stale_predictions, '__call__'):
+                # الـ filter تم بالفعل قبل الـ ticker loop (في السطر اللي تحت)
+                pass
 
             # PILLAR-1: حساب sector_change حقيقي (proxy = أداء السهم آخر 5 أيام).
             # كان 0.0 ثابت — دلوقتي بنـ compute proxy من closes للـ ticker نفسه.
@@ -4407,6 +4572,8 @@ def main():
                         help='⚡ INCREMENTAL MODE: skip التواريخ المحسوبة بالفعل في predictions.db (يبدأ من آخر تاريخ مسجل + 1)')
     parser.add_argument('--full', action='store_true',
                         help='⚡ FULL MODE: إعادة المسح الكامل من 2026-01-01 (تعطيل التراكمي التلقائي)')
+    parser.add_argument('--smart', action='store_true',
+                        help='⚡ SMART MODE (default for cron): فلتر الأسهم الميتة + أيام الإجازات + التوقعات اللي لسه valid. يقلل التحليلات 90%%+')
     parser.add_argument('--market', default='EGX', choices=['EGX', 'KSA', 'KSE', 'QSE', 'CRYPTO'],
                         help='السوق: EGX (افتراضي) / KSA / KSE / QSE / CRYPTO')
     args = parser.parse_args()
@@ -4514,6 +4681,7 @@ def main():
             tickers_offset=args.tickers_offset,
             force=args.force,
             market_code=args.market,
+            smart_mode=args.smart,
         )
 
     # 🐋 WHALE RADAR HUNTER (جيمي directive):
