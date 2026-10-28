@@ -1,12 +1,13 @@
 # 02 — كيف يفكر النظام (How It Thinks)
 
-> **آخر تحديث:** 2026-10-28 | **Branch:** `main` (merge `bravo/backend-decomposition`) | **Agent:** Bravo V2
+> **آخر تحديث:** 2026-10-28 (v2) | **Branch:** `main` | **Agent:** Bravo V2
 > **الأساس:** فحص فعلي لـ `vps-service/jobs/daily_predictor.py` + `vps-service/analyzers/master_analyzer.py`
 > + `vps-service/core/risk_gate.py` + `vps-service/core/risk_gate_wrapper.py`
 > + `vps-service/analyzers/decision_logger.py` + `vps-service/analyzers/short_holding_exit.py`
 > + `vps-service/analyzers/market_regime_engine.py` + `vps-service/engines/persona_engine.py`
-> + `scripts/maker_radar.py` (BOUNCE path + 4 intelligence layers + regime filter)
-> + `vps-service/analyzers/indicators/`.
+> + `scripts/maker_radar.py` (6 paths: A_pre_surge / B_quiet / C_quiet / D_explosive / E_early_break / **F_bounce**)
+> + `scripts/intraday_pulse.py` (**نبض لحظي جوه الجلسة — ALERT ONLY**)
+> + `vps-service/analyzers/indicators/` + `vps-service/core/db_helpers.py` (DB gate).
 
 ---
 
@@ -825,16 +826,77 @@ threshold_multiplier = {
 
 راجع §5.2 — التصنيفات الـ 8: `quiet_accumulation`, `distribution`, `dead_trap`, `liquidity_drought`, `rule80_downtrend`, `unclassified`, `DATA_INVALID`, `INSUFFICIENT_DATA`.
 
-### 11.2 Incubator
+### 11.2 الـ 6 Paths (ترتيب الأولوية)
+
+| Path | الاسم | شرط التفعيل | حجم الصفقة |
+|------|------|--------------|------------|
+| **A** | `A_pre_surge` | 3/4 pre-surge signals (regime-aware) | 1.5% |
+| **B** | `B_quiet_accumulation_strong` | Quiet 5-6/6 signals | 1.5% |
+| **C** | `C_quiet_accumulation_weak` | Quiet 4/6 signals | 1.5% |
+| **D** | `D_explosive_surge` | max(last 3d vol) ≥ 1.7× avg_20d + price > SMA20 | 2% |
+| **E** | `E_early_break` | breakout + volume | 2.5% |
+| **F** | `F_bounce` | BOUNCE_AFTER_DECLINE (detection only) | **0%** |
+
+**Path F (BOUNCE) — NEW (2026-10-28):**
+- **detection only** — `position_size=0`، `under_microscope=True`، `signal=HOLD`.
+- **مش توصية شراء** — مجرد اكتشاف ارتداد بعد هبوط للمراقبة.
+- **5 شروط ALL required:** price_action=BOUNCE_AFTER_DECLINE + drop_from_peak في [-8%,-25%] + vol_support (2/3 أيام > 1.2× avg_20d) + bounce_pct ≥ 3% + buy_pct > 25%.
+- **Regime filter:** BOUNCE disabled في `DEFENSIVE` regime (54.5% dead-cat rate في backtest على 5 أسابيع).
+- **مش في `_BULLISH_PATHS`** → Flow Gate مش بيتأثر.
+
+### 11.3 Incubator
 
 الـ radar بيـ inject أسهم الـ "Whale Radar" في `predictions.db.stored_analyses` (via `core/sync_scanner_to_db.py`).
 لو سهم تحت الـ microscope اشتغل trigger (مثلاً `volume >= 2× avg` + `price > entry`), الـ incubator بيـ promote السهم لـ `predictions` table كـ BUY signal (track=`RADAR_PROMOTED`).
 
-### 11.3 `radar_signal_tracking` (in predictions.db)
+### 11.4 `radar_signal_tracking` (in predictions.db)
 
 كاتبها: `vps-service/camp/state_history_tracker.py`.
 Schema: `ticker, canonical_state, signal_date, days_in_state, transition_*`.
 يُقرأ من: `camp/canonical_state_shadow.py` + `analyzers/institutional_levels.py` (marker radar).
+
+### 11.5 Intraday Pulse — `scripts/intraday_pulse.py` (NEW 2026-10-28)
+
+**طبقة إنذار لحظي جوه الجلسة، منفصلة عن maker_radar اليومي.**
+
+| الخاصية | القيمة |
+|---------|--------|
+| المصدر | `db/stocks.db` → جدول `stocks` (يـ update كل دقيقتين من TradingView Scanner) |
+| Fallback | `stock_daily_prices.close` (آخر يوم) لو `current_price=0` |
+| الـ output | JSON (`--json-only`) أو API (`GET /api/intraday-pulse`) |
+| التحديث | كل 30 ثانية في الواجهة |
+| الهدف | **جرس إنذار** — مش توصية شراء |
+
+**الـ Flags (وصفية فقط):**
+
+| Flag | الشرط |
+|------|-------|
+| `SURGE_UP_LIVE` | change_from_open ≥ +3% (مع volume > 0) |
+| `SURGE_DOWN_LIVE` | change_from_open ≤ -3% (مع volume > 0) |
+| `VOLUME_SPIKE_LIVE` | vol_ratio ≥ 2.0 (مع حركة سعرية) |
+| `BREAKING_DAY_HIGH` | current ≥ high × 0.998 (مع volume > 0) |
+| `BREAKING_DAY_LOW` | current ≤ low × 1.002 (مع volume > 0) |
+| `NO_TRADE_LIVE` | volume = 0 (لا يوجد تداول) |
+| `STALE` | last_update > 5 دقائق أو current_price ≤ 0 |
+| `SUSPICIOUS_DATA` | change_from_open > ±50% (بيانات فاسدة) |
+| `QUIET_LIVE` | مفيش شرط من اللي فوق |
+
+**الربط مع السياق اليومي:**
+- `under_microscope` + `SURGE_UP_LIVE` → "حركة لحظية على سهم تحت المراقبة اليومية"
+- `rule80_downtrend` + `SURGE_UP_LIVE` → "ارتداد لحظي داخل ترند هابط (تحذير)"
+- `distribution` + أي surge → "حركة مع سياق تصريف يومي (تحذير)"
+
+**Volume Gate (مهم):**
+لو `volume = 0` → مفيش تداول فعلي → **مفيش SURGE flags**. ده بمنع الإشارات الكاذبة
+من الأسهم اللي `current_price=0` (الـ scanner فشل) والـ fallback بياخد سعر أمس.
+
+**فلاتر الجودة:**
+- EGS* ISIN codes (سندات) → مفلترة
+- Tickers بـ `_` (LUTS_R1) → مفلترة
+- `is_suspended=1` → مفلترة
+- `open_price=0` → مفلترة (مش نقدر نحسب change)
+
+**الواجهة:** `IntradayPulseBar` component في `LiquidityRadarView.tsx` — بيظهر فوق جدول الرادار، بـ fetch من `/api/intraday-pulse` كل 30 ثانية، وبيعرض بس الأسهم اللي فيها حركة حقيقية (SURGE/VOLUME/BREAKING).
 
 ---
 
@@ -982,21 +1044,61 @@ def calc_atr(highs, lows, closes, period=14) -> Optional[float]:
 
 ---
 
-## 16. الـ Cron Jobs (الجدول الزمني)
+## 16. الـ Cron Jobs (الجدول الزمني الإنتاجي)
 
-| Time (Cairo) | Job | الملف |
-|--------------|-----|------|
-| 09:30 Sun-Thu | Market open + intraday_scanner | `intraday_scanner.py` |
-| 10:00 Sun-Thu | Live AI monitor | `ai/live_ai_monitor.py` |
-| 14:30 Sun-Thu | Market close | — |
-| 14:30 + 30min | **daily_predictor** (الـ brain) | `daily_predictor.py --yesterday-only` |
-| 15:00 Sun-Thu | **daily_closer** (force-exit + outcomes) | `daily_closer.py` |
-| 15:30 Sun-Thu | Learning engine | `jobs/learning_engine.py` |
-| 03:00 daily | **Nightly quant job** (SMFI + Monte Carlo cache) | `analyzers/nightly_quant_job.py` |
-| 03:30 daily | WAL checkpoint + backup | `jobs/wal_checkpoint.py` + `scripts/daily_backup.py` |
-| 04:00 daily | TradingView Scanner Live | `data_engine/scrapers/tradingview_scanner_live.py` |
-| Hourly | Resource metrics (5min/1h snapshots) | `scripts/data_heartbeat_checker.py` |
-| Every 5 min | Intraday aggregator | `jobs/intraday_aggregator.py` |
+**الجدول الكامل من `crontab.txt` (CANONICAL V2):**
+
+### المرحلة 1: صيانة منتصف الليل (01:00-02:30 UTC)
+
+| Time (UTC) | Time (Cairo) | Job | الملف |
+|------------|-------------|-----|------|
+| 01:00 | 03:00 | فحص صحة DBs | `scripts/data_heartbeat_checker.py` |
+| 01:30 | 03:30 | نسخة احتياطية ذكية | `vps-service/scripts/smart_db_backup.py` |
+| 02:00 | 04:00 | تحقق مصير إشارات الرادار | `POST /api/maker-radar/signal-tracker/verify` |
+
+### المرحلة 2: ما قبل الجلسة (02:45-05:00 UTC)
+
+| Time (UTC) | Time (Cairo) | Job | الملف |
+|------------|-------------|-----|------|
+| 02:45 | 04:45 | تحديث حالة السوق (Market Regime) | `analyzers/market_regime_engine.py` |
+| 03:00 | 05:00 | **توليد توقعات اليوم** | `daily_predictor.py --today-only` |
+| 03:00 | 05:00 | تخفيض الاشتراكات المنتهية | `scripts/downgrade-expired-subscriptions.ts` |
+| 04:00 | 06:00 | أخبار الاكتتابات + توزيعات | `jobs/fetch_corporate_actions.py` |
+
+### المرحلة 3: أثناء الجلسة (08:00-12:30 UTC = 10:00-14:30 Cairo)
+
+| التوقيت | Job | الملف |
+|---------|-----|------|
+| **كل دقيقتين** | سحب الأسعار اللحظية من TradingView | `data_engine/scrapers/tradingview_scanner_live.py` |
+| **كل دقيقتين** | حفظ لقطات لحظية في intraday.db | `data_engine/intraday_storage.py --stocks` |
+| **كل 5 دقائق** | تحديث رادار السيولة (كل الأسواق) | `bash scripts/cron_radar.sh` |
+| **كل 5 دقائق** | فحص الاختراقات اللحظية | `vps-service/jobs/intraday_scanner.py` |
+| **كل 15 دقيقة** | رادار الأسهم الساخنة | `vps-service/jobs/hot_candidate_detector.py` |
+| كل ساعتين | سحب إفصاحات البورصة | `analyzers/egx_disclosure_engine.py` |
+
+> **Intraday Pulse:** `scripts/intraday_pulse.py` (يُضاف للـ cron كل 5 دقائق أثناء الجلسة)
+
+### المرحلة 4: بعد الإغلاق (12:45-15:00 UTC)
+
+| Time (UTC) | Time (Cairo) | Job | الملف |
+|------------|-------------|-----|------|
+| 12:45 | 14:45 | تثبيت إغلاقات الجلسة | `tradingview_scanner_live.py` (EOD) |
+| 13:00 | 15:00 | رادار ختامي | `bash scripts/cron_radar.sh` |
+| 13:15 | 15:15 | **إغلاق الصفقات** | `vps-service/jobs/daily_closer.py` |
+| 13:30 | 15:30 | حساب PnL + تحديث الأداء | `scripts/post_market_feedback.py` |
+| 13:35 | 15:35 | مزامنة Hunter Pick Tracking | `scripts/sync_hunter_pick_tracking.py` |
+| 14:00 | 16:00 | محرك التعلم الذاتي | `vps-service/jobs/learning_engine.py` |
+| 14:30 | 16:30 | تقرير تيليجرام الشامل | `scripts/telegram_comprehensive_report.py` |
+| 15:00 | 17:00 | توليد توقعات الغد | `daily_predictor.py --yesterday-only` |
+
+### المرحلة 5: الأسواق العالمية (24/7)
+
+| التوقيت | Job | الملف |
+|---------|-----|------|
+| كل 5 دقائق 24/7 | رادار الكريبتو | `maker_radar.py --market CRYPTO` |
+| كل 5 دقائق 24/7 | رادار الذهب | `maker_radar.py --market GOLD` |
+| كل ساعة (09-22) | multi-market scraper | `data_engine/scrapers/multi_market_scraper.py` |
+| 22:00 UTC (Mon-Fri) | إغلاقات الأسهم الأمريكية | `data_engine/scrapers/us_stock_scraper.py` |
 
 ---
 
@@ -1025,4 +1127,20 @@ def calc_atr(highs, lows, closes, period=14) -> Optional[float]:
 > regime (`DEFENSIVE/NORMAL/AGGRESSIVE`) بيـ override معايير V40.2 بناءً على 7 مؤشرات
 > للسوق (hysteresis 2-3 أيام). الـ persona engine (7 personas) بـ يعدل العتبات
 > والأوزان per-persona. الرادار (`maker_radar.py`) بـ يصنف الأسهم في 8 B3 classifications
-> عبر 5 paths (A_pre_surge / B_quiet_strong / C_quiet_weak / D_explosive / E_early_break).
+> عبر **6 paths** (A_pre_surge / B_quiet_strong / C_quiet_weak / D_explosive / E_early_break / **F_bounce**).
+> الـ BOUNCE path (detection only, position=0) بـ يـ detect الارتدادات في NORMAL/AGGRESSIVE
+> بس (disabled في DEFENSIVE — 54.5% dead-cat rate). الـ 4 intelligence layers (price_action +
+> participant_flow + continuation + data_quality) بـ توصف الحالة بدون تغيير التوصية.
+>
+> **النبض اللحظي** (`intraday_pulse.py`) بـ يـ monitor الحركة جوه الجلسة كل 30 ثانية —
+> SURGE_UP/DOWN + VOLUME_SPIKE + BREAKING_HIGH/LOW. **Alert only — مش توصية.**
+> Volume gate بيمنع الإشارات الكاذبة من الأسهم اللي مفيشهاش تداول. بيظهر في الواجهة
+> كـ `IntradayPulseBar` فوق جدول الرادار.
+>
+> **بوابة DB:** `core/db_helpers.py` هو الـ canonical helper (Phase 7.3) —
+> كل 9 consumers بـ import منه. الـ fallback لـ raw sqlite3.connect اتـ removed تمامًا
+> (forensic fix 2026-10-28) — `db_manager` هو البوابة الوحيدة، والفشل بـ fail loud.
+>
+> **الـ data pipeline:** TradingView Scanner Live (كل دقيقتين) → `stocks.db` (stocks +
+> stock_daily_prices) + `intraday.db` (شموع 2-دقيقة). الرادار بـ read آخر 40 يوم.
+> الـ MasterAnalyzer بـ read آخر 100 يوم. كل الحسابات على **daily** timeframe.
