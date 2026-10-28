@@ -20,14 +20,36 @@ Usage:
 """
 import sys
 import os
+import json
 import argparse
 import sqlite3
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
 os.chdir(PROJECT_ROOT)
+
+# ============================================================
+# Logging — سجل مفصل لكل حاجة بتحصل
+# ============================================================
+LOG_DIR = PROJECT_ROOT / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / f'v3_predictor_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s',
+    handlers=[
+        logging.FileHandler(str(LOG_FILE), encoding='utf-8'),
+        logging.StreamHandler(sys.stdout),
+    ]
+)
+logger = logging.getLogger(__name__)
+logger.info(f'=' * 60)
+logger.info(f'V3 Smart Predictor started — log file: {LOG_FILE}')
+logger.info(f'=' * 60)
 
 # ============================================================
 # Smart Filters (من الـ smart logic اللي اتدمج قبل كده)
@@ -179,22 +201,36 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
     """
     حلل سهم بـ النظام الذكي V3 (orchestrator + executor).
     """
+    logger.info(f'--- {ticker} ({market_code}) — V3 Analysis Start ---')
+    logger.info(f'  input: {len(prices)} prices, {len(volumes)} volumes')
+    if prices:
+        logger.info(f'  price range: {min(prices):.2f} → {max(prices):.2f} (current={prices[-1]:.2f})')
+    
     try:
         from core.orchestrator_v3 import create_v3_plan
         from core.executor_v3 import execute_v3
         
         # 1. المنسّق: يخطط التحليل
+        logger.info(f'  [orchestrator] creating plan...')
         plan = create_v3_plan(
             ticker=ticker,
             prices=prices,
             volumes=volumes,
             market=market_code,
-            fund_available=True,  # نفترض إن البيانات متاحة
+            fund_available=True,
             event_available=False,
         )
+        logger.info(f'  [orchestrator] state_code={plan.state_code} | market_regime={plan.market_regime} | stock_regime={plan.stock_regime}')
+        logger.info(f'  [orchestrator] selected_engines={plan.selected_engines}')
+        logger.info(f'  [orchestrator] execution_order={plan.execution_order}')
+        logger.info(f'  [orchestrator] normalized_weights={plan.normalized_weights}')
+        logger.info(f'  [orchestrator] decision_policy={plan.decision_policy}')
+        if plan.no_trade_reason:
+            logger.info(f'  [orchestrator] no_trade_reason={plan.no_trade_reason}')
         
         # Gate: لو no_trade من البداية
         if plan.decision_policy == 'no_trade':
+            logger.warning(f'  {ticker}: NO_TRADE (orchestrator) — {plan.no_trade_reason}')
             return {
                 'ticker': ticker,
                 'signal': 'NO_TRADE',
@@ -204,7 +240,22 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
             }
         
         # 2. المنفّذ: ينفذ الخطة
+        logger.info(f'  [executor] executing plan (id={plan.plan_id[:8]})...')
         result = execute_v3(plan, prices=prices, volumes=volumes, ticker=ticker, market=market_code)
+        
+        logger.info(f'  [executor] complete={result.complete}')
+        logger.info(f'  [executor] final_signal={result.final_signal}')
+        logger.info(f'  [executor] signal_score={result.signal_score}')
+        logger.info(f'  [executor] confidence={result.confidence}')
+        logger.info(f'  [executor] position_size={result.position_size_pct}%')
+        logger.info(f'  [executor] engine_scores={result.engine_scores}')
+        logger.info(f'  [executor] engine_signals={result.engine_signals}')
+        if result.warnings:
+            logger.warning(f'  [executor] warnings={result.warnings[:5]}')
+        if result.errors:
+            logger.error(f'  [executor] errors={result.errors[:5]}')
+        if result.no_trade_reason:
+            logger.info(f'  [executor] no_trade_reason={result.no_trade_reason}')
         
         return {
             'ticker': ticker,
@@ -222,6 +273,7 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
             'no_trade_reason': result.no_trade_reason,
         }
     except Exception as e:
+        logger.error(f'  {ticker}: EXCEPTION — {e}', exc_info=True)
         return {
             'ticker': ticker,
             'signal': 'ERROR',
@@ -233,9 +285,11 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
 def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
     """احفظ التوقع في predictions.db."""
     if result.get('signal') not in ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL']:
+        logger.info(f'  {result["ticker"]}: save skipped (signal={result.get("signal")})')
         return False
     
     try:
+        logger.info(f'  {result["ticker"]}: saving prediction (signal={result.get("signal")}, score={result.get("score",0):.1f})...')
         conn = sqlite3.connect(str(PREDICTIONS_DB))
         # تأكد إن الجدول موجود
         conn.execute("""
@@ -283,9 +337,10 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
         ))
         conn.commit()
         conn.close()
+        logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db')
         return True
     except Exception as e:
-        print(f"    ⚠️  فشل حفظ التوقع: {e}", flush=True)
+        logger.error(f'  {result["ticker"]}: ✗ save failed — {e}', exc_info=True)
         return False
 
 
@@ -390,6 +445,7 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
                 print(f"    {ticker}: ERROR — {result.get('reason','?')[:80]}", flush=True)
             else:
                 # BUY / SELL
+                logger.info(f'  {ticker}: {signal} ✓ (state={state}, score={result.get("score",0):.1f}, conf={result.get("confidence",0):.1f})')
                 if not dry_run:
                     saved = save_prediction(result, canonical, scan_date)
                     if saved:
@@ -397,6 +453,17 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
                 print(f"    {ticker}: {signal} ✓ (state={state}, score={result.get('score',0):.1f}, conf={result.get('confidence',0):.1f})", flush=True)
     
     # 6. ملخص
+    summary = {
+        'market': canonical,
+        'scan_dates_count': len(scan_dates),
+        'total_analyzed': total_analyzed,
+        'total_saved': total_saved,
+        'total_no_trade': total_no_trade,
+        'total_errors': total_errors,
+        'skipped_stale': total_skipped_stale,
+        'skipped_dead': total_skipped_dead,
+        'timestamp': datetime.now().isoformat(),
+    }
     print(f"\n{'='*60}", flush=True)
     print(f"  ✅ الملخص — {canonical}", flush=True)
     print(f"    - أيام التداول: {len(scan_dates)}", flush=True)
@@ -407,6 +474,20 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
     print(f"    - تخطى (stale): {total_skipped_stale}", flush=True)
     print(f"    - تخطى (dead): {total_skipped_dead}", flush=True)
     print(f"{'='*60}", flush=True)
+    
+    # سجل الملخص في الـ log file
+    logger.info(f'=' * 60)
+    logger.info(f'SUMMARY — {canonical}')
+    for k, v in summary.items():
+        logger.info(f'  {k}: {v}')
+    logger.info(f'=' * 60)
+    logger.info(f'Log file saved to: {LOG_FILE}')
+    
+    # احفظ الملخص في ملف JSON كمان
+    summary_file = LOG_DIR / f'v3_summary_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+    with open(summary_file, 'w', encoding='utf-8') as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
+    logger.info(f'Summary JSON saved to: {summary_file}')
 
 
 def main():
