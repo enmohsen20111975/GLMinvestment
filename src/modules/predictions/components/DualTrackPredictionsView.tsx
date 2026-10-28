@@ -22,7 +22,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
  TrendingUp, TrendingDown, Droplets, BarChart3, Activity,
  RefreshCw, Target, Zap, Eye, AlertTriangle, CheckCircle2,
- Loader2, Brain, ArrowUpCircle, ArrowDownCircle, Layers, Radio,
+ Loader2, Brain, ArrowUpCircle, ArrowDownCircle, Layers,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { WidgetCard } from '@/components/shared/WidgetCard';
@@ -37,8 +37,6 @@ import {
 } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
-// (ALPHA-RADAR-MOMENTUM): قسم توقعات زخم الرادار — عالية المخاطر.
-import { RadarMomentumTab } from '@/modules/predictions/components/RadarMomentumTab';
 
 interface TrackStats {
  track: string;
@@ -160,7 +158,7 @@ const topTickerColumns: Column<Record<string, unknown>>[] = [
 export function DualTrackPredictionsView() {
  const [stats, setStats] = useState<StatsResponse | null>(null);
  const [predictions, setPredictions] = useState<Prediction[]>([]);
- const [trackFilter, setTrackFilter] = useState<'all' | 'full_analysis' | 'liquidity' | 'radar_momentum'>('all');
+ const [trackFilter, setTrackFilter] = useState<'all' | 'full_analysis' | 'liquidity'>('all');
  const [loading, setLoading] = useState(true);
  const [loadingPreds, setLoadingPreds] = useState(false);
  const [backtestLoading, setBacktestLoading] = useState(false);
@@ -206,12 +204,10 @@ export function DualTrackPredictionsView() {
  }, [fetchStats, fetchPredictions]);
 
  const onTabChange = (value: string) => {
- const track = value as 'all' | 'full_analysis' | 'liquidity' | 'radar_momentum';
+ const track = value as 'all' | 'full_analysis' | 'liquidity';
  setTrackFilter(track);
- // (ALPHA-RADAR-MOMENTUM): لا نجلب توقعات dual-track لما نختار tab الرادار.
- if (track !== 'radar_momentum') {
  fetchPredictions(track);
- }
+
  };
 
  const onRecalcThreshold = async () => {
@@ -220,7 +216,7 @@ export function DualTrackPredictionsView() {
  await fetchStats();
  } catch (e) {
  console.error('[DualTrack] threshold error:', e);
- }
+
  };
 
  const onRunBacktest = async () => {
@@ -246,7 +242,7 @@ export function DualTrackPredictionsView() {
  setBacktestResult(`Error: ${(e as Error).message}`);
  } finally {
  setBacktestLoading(false);
- }
+
  };
 
  if (loading) {
@@ -448,20 +444,8 @@ export function DualTrackPredictionsView() {
  <span className="hidden sm:inline">سيولة</span>
  <span className="sm:hidden">💧 سيولة</span>
  </TabsTrigger>
- {/* (ALPHA-RADAR-MOMENTUM): تبويب توقعات زخم الرادار — عالية المخاطر. */}
- <TabsTrigger value="radar_momentum" className="text-xs sm:text-xs px-1 sm:px-3 py-1.5">
- <Radio className="w-3 h-3 ml-1 text-warning" />
- <span className="hidden sm:inline">زخم الرادار</span>
- <span className="sm:hidden">📡 زخم</span>
- </TabsTrigger>
  </TabsList>
 
- {/* (ALPHA-RADAR-MOMENTUM): محتوى tab الرادار منفصل عن dual-track. */}
- {trackFilter === 'radar_momentum' ? (
- <div className="mt-3">
- <RadarMomentumTab market={(typeof window !== 'undefined' ? (window as any).__currentMarket : undefined) || 'EGX'} />
- </div>
- ) : (
  <TabsContent value={trackFilter} className="mt-3">
  {loadingPreds ? (
  <div className="flex items-center justify-center py-8">
@@ -484,7 +468,6 @@ export function DualTrackPredictionsView() {
  </div>
  )}
  </TabsContent>
- )}
  </Tabs>
  </CardContent>
  </Card>
@@ -647,4 +630,6 @@ function PredictionRow({ pred }: { pred: Prediction }) {
  </div>
  </div>
  );
+}
+}
 }

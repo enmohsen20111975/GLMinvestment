@@ -45,14 +45,12 @@ const ExecutiveReportView = lazy(() =>
  }))
 );
 
-type SubView = 'current' | 'performance' | 'summary' | 'radar';
+type SubView = 'current' | 'performance' | 'summary';
 
 const SUB_VIEWS: Array<{ value: SubView; label: string; icon: string }> = [
  { value: 'current', label: 'الحالية', icon: '⚡' },
  { value: 'performance', label: 'الأداء', icon: '📊' },
  { value: 'summary', label: 'الملخص', icon: '📋' },
- // (ALPHA-RADAR-MOMENTUM): sub-view رابع — توقعات زخم الرادار.
- { value: 'radar', label: 'زخم الرادار', icon: '📡' },
 ];
 
 interface UnifiedPredictionsTabProps {
@@ -94,9 +92,6 @@ export function UnifiedPredictionsTab({ market }: UnifiedPredictionsTabProps) {
 
  {subView === 'summary' && <ExecutiveReportView market={market} />}
 
- {/* (ALPHA-RADAR-MOMENTUM): توقعات زخم الرادار — عالية المخاطر.
-     مدمجة في نفس التبويب (مش شاشة جديدة) per owner directive. */}
- {subView === 'radar' && <RadarMomentumTab market={market} />}
  </Suspense>
  </div>
  );

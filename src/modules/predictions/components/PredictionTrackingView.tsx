@@ -693,6 +693,23 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  </div>
  </CardHeader>
  <CardContent className="p-0 sm:p-2">
+ {picks.length === 0 && !loadingList ? (
+ <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+ <div className="rounded-2xl bg-warning/5 border border-warning/20 p-5 max-w-md">
+ <div className="text-3xl mb-2">🛡️</div>
+ <p className="text-sm font-bold text-warning mb-1">السوق في وضع دفاعي</p>
+ <p className="text-xs text-muted-foreground mb-3">
+ محرك التحليل يرفع شروط الدخول لحماية رأس مالك. ستعود الفرص عند تحسن السوق.
+ </p>
+ <div className="text-[10px] text-muted-foreground/70 bg-muted/30 rounded-lg p-2">
+ DEFENSIVE: المؤشر تحت المتوسطات + انخفاض &gt; 0.7%
+ </div>
+ </div>
+ <div className="mt-2 text-[11px] text-muted-foreground/60">
+ 💡 شوف فرص الرادار عالية المخاطر تحت ↓
+ </div>
+ </div>
+ ) : (
  <UnifiedTable<TrackedPick>
  columns={getPredictionColumns(t)}
  data={picks}
@@ -706,6 +723,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  maxHeight="h-[60vh] sm:h-[65vh]"
  rowClassName={() => 'hover:bg-muted/40'}
  />
+ )}
  </CardContent>
  </Card>
 
