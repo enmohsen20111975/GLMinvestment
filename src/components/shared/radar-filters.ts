@@ -148,18 +148,21 @@ export const RADAR_FILTERS: readonly RadarFilterDef[] = [
     icon: '🩸',
     cls: 'bg-loss/10 text-loss border-loss/20',
   },
-  {
-    key: 'unclassified',
-    label: 'غير مصنف',
-    icon: '❓',
-    cls: 'bg-muted text-muted-foreground border-border',
-  },
-  {
-    key: 'data_invalid',
-    label: 'بيانات غير مكتملة',
-    icon: '🚫',
-    cls: 'bg-warning/10 text-warning border-warning/20',
-  },
+  // (ALPHA-UX-FIX): أخفينا «غير مصنف» + «بيانات غير مكتملة» من العميل.
+  // مش مفروض العميل يشوف بيانات ناقصة أو غير مصنفة — ده بـ يخوّفه.
+  // الكلاسيفكيشنز لسه موجودة في البيانات (للشفافية الداخلية) لكن مش بتظهر كـ filter chips.
+  // {
+  //   key: 'unclassified',
+  //   label: 'غير مصنف',
+  //   icon: '❓',
+  //   cls: 'bg-muted text-muted-foreground border-border',
+  // },
+  // {
+  //   key: 'data_invalid',
+  //   label: 'بيانات غير مكتملة',
+  //   icon: '🚫',
+  //   cls: 'bg-warning/10 text-warning border-warning/20',
+  // },
 ] as const;
 
 // ============================================================================
