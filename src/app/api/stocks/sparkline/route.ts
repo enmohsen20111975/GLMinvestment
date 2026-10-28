@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getLiveSparkline, getLiveSparklines, getIntradaySparkline } from '@/lib/db-manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,17 +9,23 @@ export const dynamic = 'force-dynamic';
 // المسار ده دلوقتي thin wrapper — كل الـ DB access بيحصل جوه DbManager (DAL المقفل).
 // المحظور: «ممنوع كتابة SELECT أو new Database() داخل أي مسار UI أو component.»
 
-import { getLiveSparkline, getLiveSparklines } from '@/lib/db-manager';
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const rawTicker = searchParams.get('ticker') || '';
     const tickersParam = searchParams.get('tickers') || '';
     const days = Math.min(90, Math.max(7, parseInt(searchParams.get('days') || '30', 10)));
+    // BRAVO-INTRADAY-SPARK (2026-10-28): support intraday timeframe
+    const timeframe = (searchParams.get('timeframe') || 'daily').toLowerCase();
 
     if (!rawTicker && !tickersParam) {
       return NextResponse.json({ success: false, error: 'ticker or tickers required' }, { status: 400 });
+    }
+
+    // BRAVO-INTRADAY-SPARK: if timeframe=intraday, read from intraday.db
+    if (timeframe === 'intraday' && rawTicker) {
+      const result = getIntradaySparkline(rawTicker);
+      return NextResponse.json({ success: true, ...result });
     }
 
     if (tickersParam) {

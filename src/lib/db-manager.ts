@@ -455,6 +455,43 @@ export function getLiveSparklines(tickers: string[], days: number = 30): Record<
   return results;
 }
 
+// ─── BRAVO-INTRADAY-SPARK (2026-10-28): intraday sparkline from intraday.db ─
+/**
+ * Fetch intraday sparkline data from intraday.db.stock_intraday.
+ * Returns 2-minute candles for the current trading day.
+ * Falls back to daily sparkline if intraday data is unavailable.
+ */
+export function getIntradaySparkline(ticker: string): SparklineData {
+  const candidates = getCandidateTickers(ticker);
+  const intradayDb = openDb('intraday.db');
+
+  if (intradayDb) {
+    try {
+      for (const cand of candidates) {
+        const rows = intradayDb.prepare(`
+          SELECT timestamp as date, price
+          FROM stock_intraday
+          WHERE ticker = ? AND price > 0
+          ORDER BY timestamp DESC
+          LIMIT 120
+        `).all(cand) as { date: string; price: number }[];
+        if (rows.length > 0) {
+          rows.reverse();
+          const result = buildSparklineResult(ticker, rows, 'intraday.db.stock_intraday');
+          intradayDb.close();
+          return result;
+        }
+      }
+    } catch {
+      // fall through to daily fallback
+    }
+    intradayDb.close();
+  }
+
+  // Fallback: daily sparkline (last 7 days)
+  return getLiveSparkline(ticker, 7);
+}
+
 // ─── 2. getIncubatorData ───────────────────────────────────────────────────
 // Owner directive: «يقرأ المرشحين من أحدث ملف maker_radar_{market}_*.json
 // مع فلترة أي سهم أسعاره أقدم من جلسة اليوم».
