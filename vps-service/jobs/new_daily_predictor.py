@@ -97,11 +97,16 @@ def get_active_tickers(market_code: str) -> list[str]:
 
 
 def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str], int]:
-    """فلتر الأسهم الميتة (change% بين -3% و +0.5%) عبر DAL."""
+    """فلتر الأسهم الميتة عبر DAL.
+    
+    فلترين:
+      1. change% بين -3% و +0.5% (سهم واقف/خسران النهاردة)
+      2. الأسعار التاريخية flat (نفس السعر كل الأيام = ميت تاريخياً)
+    """
     if not tickers:
         return [], 0
     try:
-        from core.db_manager import db_manager
+        from core.db_manager import db_manager, get_price_history
         placeholders = ','.join(['?'] * len(tickers))
         rows = db_manager.query('stocks',
             f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
@@ -115,6 +120,11 @@ def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str],
                 continue
             change = float(change)
             if -3.0 <= change <= 0.5:
+                dead_count += 1
+                continue
+            # فلتر 2: اتأكد إن الأسعار التاريخية مش flat
+            prices, _ = get_price_history(r['ticker'], market_code, 30)
+            if prices and len(set(prices)) <= 2:
                 dead_count += 1
                 continue
             alive.append(r['ticker'])
