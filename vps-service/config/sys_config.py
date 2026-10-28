@@ -29,7 +29,8 @@ def get_database_path() -> str:
     # Check environment variable first
     env_path = os.environ.get('DATABASE_PATH', '')
     if env_path:
-        print(f"[CONFIG] Using DATABASE_PATH from env: {env_path}")
+        import sys as _sys
+        print(f"[CONFIG] Using DATABASE_PATH from env: {env_path}", file=_sys.stderr)
         return env_path
 
     # Use project root /db folder
@@ -40,7 +41,8 @@ def get_database_path() -> str:
     db_dir = project_root / 'db'
     db_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"[CONFIG] Using primary database: {db_path}")
+    import sys as _sys
+    print(f"[CONFIG] Using primary database: {db_path}", file=_sys.stderr)
     return str(db_path)
 
 

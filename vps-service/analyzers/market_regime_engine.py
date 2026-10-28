@@ -1299,15 +1299,19 @@ class MarketRegimeEngine:
                 f"[regime] {self.market} regime CHANGED: {previous.value} → {new_effective.value} "
                 f"(raw={result.raw_regime.value}, candidate_days={new_days})"
             )
+            import sys as _sys
             print(
                 f"🔄 [REGIME-ENGINE] {self.market}: {previous.value} → {new_effective.value} "
                 f"(raw={result.raw_regime.value}, candidate_days={new_days})",
+                file=_sys.stderr,
                 flush=True,
             )
         else:
+            import sys as _sys
             print(
                 f"📊 [REGIME-ENGINE] {self.market}: {new_effective.value} (raw={result.raw_regime.value}, "
                 f"candidate={new_candidate.value}/{new_days}d)",
+                file=_sys.stderr,
                 flush=True,
             )
         return result

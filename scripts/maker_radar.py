@@ -121,11 +121,13 @@ def _find_radar_db(market: str = 'EGX'):
 
     MARKET_CANDIDATES: dict = {
         'EGX': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
-            # 1. stocks.db.stock_daily_prices — production source-of-truth المحدث يومياً
+            # PREDICTIONS-CLEANUP-2 (2026-10-27): stocks.db FIRST (live data from
+            # tradingview_scanner_live + daily_price_updater). price_history.db is
+            # stale (last update 24 Sept 2026) — moved to LAST fallback only.
+            # 1. stocks.db.stock_daily_prices — LIVE production source-of-truth
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             # 2. data_engine.db.egksco_price_history — fallback (archive)
@@ -136,7 +138,9 @@ def _find_radar_db(market: str = 'EGX'):
             ),
             # 3. data_engine.db.historical_data — last-resort (mixed markets)
             HISTORICAL_DATA_TUPLE,
-            # 4. sandbox fallbacks
+            # 4. price_history.db — STALE ARCHIVE (last resort only, Sept 2026)
+            PRICE_HISTORY_TUPLE,
+            # 5. sandbox fallbacks
             (
                 'db/production_snapshot.db', 'stock_daily_prices',
                 'ticker', 'close', 'volume', 'turnover',
@@ -150,33 +154,49 @@ def _find_radar_db(market: str = 'EGX'):
         ],
         # الأسواق الخليجية — stocks.db.stock_daily_prices الأول ثم historical_data
         'TADAWUL': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
         'KSE': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
         'QSE': [
-            PRICE_HISTORY_TUPLE,  # Phase 3: PRIMARY canonical source
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live)
             (
                 'db/stocks.db', 'stock_daily_prices',
-                'ticker', 'close', 'volume', 'turnover',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
                 'price_date', 'open', 'high', 'low',
             ),
             HISTORICAL_DATA_TUPLE,
+            # price_history.db — STALE ARCHIVE (last resort)
+            PRICE_HISTORY_TUPLE,
         ],
-        'US':      [PRICE_HISTORY_TUPLE, HISTORICAL_DATA_TUPLE],  # Phase 3: price_history PRIMARY
+        'US':      [
+            # PREDICTIONS-CLEANUP-2: stocks.db FIRST (live US data from scanner)
+            (
+                'db/stocks.db', 'stock_daily_prices',
+                'ticker', 'close', 'volume', None,  # turnover computed from close × volume
+                'price_date', 'open', 'high', 'low',
+            ),
+            # price_history.db — fallback (US archive)
+            PRICE_HISTORY_TUPLE,
+            HISTORICAL_DATA_TUPLE,
+        ],
         # CRYPTO + GOLD — جداول منفصلة في data_engine.db
         'CRYPTO':  [CRYPTO_PRICES_TUPLE],
         'GOLD':    [GOLD_PRICES_TUPLE],
@@ -249,7 +269,10 @@ DB_SOURCE_ID = None
 
 
 def log(msg):
-    print(msg, flush=True)
+    # BRAVO-JSON-STDOUT-FIX (2026-10-28): print to stderr so --json-only can
+    # emit pure JSON on stdout without log contamination.
+    import sys as _sys
+    print(msg, file=_sys.stderr, flush=True)
 
 
 def parse_volume(v):
@@ -281,6 +304,129 @@ def compute_turnover(row):
     close = row.get(PRICE_COL) or row.get('close') or 0.0
     vol = parse_volume(row.get(VOL_COL) or row.get('volume'))
     return float(close) * float(vol)
+
+
+# ============================================================================
+# SCANNER-LIVE-2 (2026-10-27): Enrichment from stocks.db (unified scanner)
+# ============================================================================
+# Owner directive: use official `value_traded` (cash) + `relative_volume_10d`
+# from the TradingView Scanner API (stored in stocks.db by tradingview_scanner_live.py)
+# as the authoritative liquidity + volume-surge metrics, instead of computing
+# them from historical close × volume (which is an approximation).
+#
+# The enrichment is OPTIONAL: if stocks.db doesn't have the columns or the
+# ticker isn't found, we fall back to the computed values (backward compat).
+# ============================================================================
+
+# Cache: ticker → {value_traded, relative_volume_10d, ...} from stocks.db
+_SCANNER_ENRICHMENT_CACHE: dict = {}  # keyed by market_code
+
+
+def _load_scanner_enrichment(market_code: str = 'EGX'):
+    """Load value_traded + relative_volume_10d from stocks.db for all tickers.
+
+    Caches at module level PER MARKET (one DB read per market per radar run).
+    Returns empty dict if stocks.db or columns don't exist (backward compat).
+    """
+    global _SCANNER_ENRICHMENT_CACHE
+    if market_code in _SCANNER_ENRICHMENT_CACHE:
+        return _SCANNER_ENRICHMENT_CACHE[market_code]
+
+    cache: dict = {}
+    db_path = PROJECT_ROOT / 'db' / 'stocks.db'
+    if not db_path.exists():
+        _SCANNER_ENRICHMENT_CACHE[market_code] = cache
+        return cache
+
+    try:
+        conn = sqlite3.connect(str(db_path))
+        # Check if the new columns exist
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(stocks)").fetchall()}
+        needed = {'value_traded', 'relative_volume_10d', 'turnover_egp'}
+        if not needed.issubset(cols):
+            log(f"  ℹ️ stocks.db missing scanner columns {needed - cols}, skipping enrichment")
+            conn.close()
+            _SCANNER_ENRICHMENT_CACHE[market_code] = cache  # P2 FIX: per-market key
+            return cache
+
+        # Map market_code → scanner market slug
+        market_slug_map = {'EGX': 'egypt', 'TADAWUL': 'saudi', 'KSE': 'kuwait',
+                           'QSE': 'qatar', 'US': 'america', 'CRYPTO': None}
+        market_slug = market_slug_map.get(market_code, 'egypt')
+
+        # P2 FIX: CRYPTO maps to None — skip query (crypto not in stocks.db)
+        if market_slug is None:
+            conn.close()
+            _SCANNER_ENRICHMENT_CACHE[market_code] = cache
+            return cache
+
+        # RADAR-INTEL-V2: try both lowercase slug AND uppercase market_code
+        # (laptop DB might use 'EGX' instead of 'egypt')
+        rows = conn.execute(
+            "SELECT symbol, value_traded, relative_volume_10d, turnover_egp, "
+            "pe_ratio, roe, profit_margin, eps, dividend_yield, rsi, volume "
+            "FROM stocks WHERE market = ? OR market = ?",
+            (market_slug, market_code)
+        ).fetchall()
+        for r in rows:
+            ticker, vt, rv, te, pe, roe, pm, eps, dy, rsi, vol = r
+            cache[ticker] = {
+                'value_traded': vt,
+                'relative_volume_10d': rv,
+                'turnover_egp': te,
+                'pe_ratio': pe,
+                'roe': roe,
+                'profit_margin': pm,
+                'eps': eps,
+                'dividend_yield': dy,
+                'rsi_scanner': rsi,
+                'volume': vol,
+            }
+        conn.close()
+        log(f"  📊 scanner enrichment: {len(cache)} tickers from stocks.db (market={market_slug})")
+    except Exception as e:
+        log(f"  ⚠️ scanner enrichment failed: {e}")
+
+    _SCANNER_ENRICHMENT_CACHE[market_code] = cache
+    return cache
+
+
+def _enrich_result_with_scanner(result: dict, ticker: str) -> dict:
+    """Enrich a radar result dict with official value_traded + relative_volume_10d.
+
+    Mutates + returns the result dict. If ticker not in cache, leaves computed
+    values unchanged (backward compat).
+    """
+    # RADAR-INTEL-V2: use 'EGX' as default (result may not have 'market' set)
+    market_code = result.get('market') or 'EGX'
+    cache = _load_scanner_enrichment(market_code)
+    if not cache or ticker not in cache:
+        return result
+
+    enrichment = cache[ticker]
+
+    # Official cash value (overrides computed turnover_egp if available)
+    official_vt = enrichment.get('value_traded')
+    if official_vt and official_vt > 0:
+        result['value_traded_official'] = round(official_vt, 2)
+        result['turnover_egp_official'] = round(official_vt, 2)
+        # Use the official value as the canonical turnover_egp
+        result['turnover_egp'] = round(official_vt, 2)
+
+    # Official relative volume (from TradingView, 10d calc)
+    official_rv = enrichment.get('relative_volume_10d')
+    if official_rv and official_rv > 0:
+        result['relative_volume_10d_official'] = round(official_rv, 3)
+        # Flag unusual volume surge if > 1.2 (per owner directive)
+        result['volume_surge'] = official_rv > 1.2
+
+    # Fundamentals (bonus — from scanner, may differ from computed)
+    for field in ['pe_ratio', 'roe', 'profit_margin', 'eps', 'dividend_yield']:
+        val = enrichment.get(field)
+        if val is not None:
+            result[f'{field}_scanner'] = val
+
+    return result
 
 
 # ============================================================================
@@ -402,11 +548,325 @@ def is_early_break(closes, volumes, highs=None):
     return True, f'break: close {last_close:.2f} > max_20 {max_20:.2f}, vol {vol_ratio:.2f}×, range {range_pct:.1f}%'
 
 
+def _scanner_fallback(ticker, regime='NORMAL', market_code='EGX'):
+    """RADAR-FIX: Create a minimal radar result from scanner data when historical
+    data is insufficient (< 15 rows). STANDALONE function — does NOT replace
+    the 5 detection paths inside scan_ticker.
+
+    Classification: SCANNER_ALERT (not a buy/sell recommendation).
+    Returns None if no scanner data available.
+    """
+    cache = _load_scanner_enrichment(market_code)
+    if not cache or ticker not in cache:
+        return None
+
+    e = cache[ticker]
+    value_traded = e.get('value_traded')
+    relvol = e.get('relative_volume_10d')
+    rsi = e.get('rsi_scanner') or e.get('rsi')
+    volume = e.get('volume')
+
+    # P1 FIX: require current_price (not value_traded) — don't hide price movements
+    # due to missing liquidity data
+    try:
+        conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+        # P1 FIX: filter by market to avoid cross-market ticker collision
+        market_slug_map = {'EGX': 'egypt', 'TADAWUL': 'saudi', 'KSE': 'kuwait',
+                           'QSE': 'qatar', 'US': 'america'}
+        market_slug = market_slug_map.get(market_code, 'egypt')
+        r = conn.execute("SELECT current_price, change_percent, volume FROM stocks WHERE symbol = ? AND market = ?", (ticker, market_slug)).fetchone()
+        conn.close()
+        if r:
+            current_price = r[0]
+            change_pct = r[1] or 0
+            volume = r[2] or volume or 0
+        else:
+            return None
+    except Exception:
+        return None
+
+    if not current_price or current_price <= 0:
+        return None
+
+    vol_surge = relvol and relvol > 1.2
+    is_bullish = change_pct > 0
+    is_bearish = change_pct < 0
+
+    if vol_surge and is_bullish:
+        movement_type = 'SURGE_UP'
+        movement_desc = f'ارتفاع +{change_pct:.1f}% مع حجم نسبي {relvol:.2f}x'
+    elif vol_surge and is_bearish:
+        movement_type = 'SURGE_DOWN'
+        movement_desc = f'انخفاض {change_pct:.1f}% مع حجم نسبي {relvol:.2f}x'
+    elif is_bullish:
+        movement_type = 'UP'
+        movement_desc = f'ارتفاع +{change_pct:.1f}% (حجم عادي)'
+    elif is_bearish:
+        movement_type = 'DOWN'
+        movement_desc = f'انخفاض {change_pct:.1f}% (حجم عادي)'
+    else:
+        movement_type = 'FLAT'
+        movement_desc = 'حركة محدودة'
+
+    result = {
+        'ticker': ticker,
+        'current_price': round(current_price, 2),
+        'path': 'F_scanner_alert',
+        'classification': 'SCANNER_ALERT',
+        'movement_type': movement_type,
+        'movement_desc': movement_desc,
+        'volume_surge': vol_surge or False,
+        'relative_volume_10d_official': round(relvol, 3) if relvol else None,
+        'value_traded_official': round(value_traded, 2) if value_traded else None,
+        'turnover_egp': round(value_traded, 2) if value_traded else 0,
+        'rsi_scanner': round(rsi, 1) if rsi else None,
+        'change_percent': round(change_pct, 2),
+        'readiness_pct': 0,
+        'under_microscope': False,
+        'reason': f'SCANNER_ALERT: {movement_desc} (بيانات تاريخية غير كافية للتحليل الكامل)',
+        'data_quality': 'scanner_only',
+        'stale_flag': False,
+        'last_close_date': datetime.now().strftime('%Y-%m-%d'),
+        'staleness_days': 0,
+        'score': 0,
+        'signal': 'HOLD',
+        'signal_ar': 'مراقبة',
+        'entry': None,
+        'target': None,
+        'stop_loss': None,
+        'risk_reward': 0,
+        'evidence': 0,
+        'master_score': 0,
+        'tech_score': 0,
+        'money_flow': {'buy_pct': 0, 'sell_pct': 0, 'net_flow_egp': 0,
+                       'buy_value_m': 0, 'sell_value_m': 0,
+                       'liquidity_state': 'unknown', 'money_flow_state': 'unknown'},
+        'life_cycle': 'unknown',
+        'pre_surge_details': None,
+        'quiet_details': None,
+        'explosive_details': None,
+        'break_reason': None,
+        'distribution_flag': False,
+        'avg_turnover_20d': 0,
+        'avg_volume_20d': 0,
+        'avg_volume_10d': 0,
+        'volume_ratio_10d_vs_20d': 0,
+        'volume': int(volume) if volume else 0,
+        'price_bucket': classify_price_bucket(current_price),
+        'price_stability': 0,
+        'range_10d_pct': 0,
+        'roc_10d': 0,
+        'roc_30d': 0,
+        'maker_activity': 'unknown',
+        'accumulation': 'unknown',
+        'correction_status': 'unknown',
+        'drop_from_peak': 0,
+        'expected': 0,
+        'buy_days': 0,
+        'sell_days': 0,
+        'limit_up_trap': False,
+        'kill_switch': False,
+        'kill_reason': None,
+        'position_size': 0,
+        'final_reason': f'SCANNER_ALERT: {movement_desc}',
+    }
+
+    _add_intelligence_layers(
+        result,
+        closes=None, volumes=None,
+        vol_ratio=relvol,
+        value_traded=value_traded,
+        change_percent=change_pct,
+        staleness_days=0,
+        last_close_date=datetime.now().strftime('%Y-%m-%d'),
+        rows=None,
+    )
+    return result
+
+
+# ============================================================================
+# RADAR-INTELLIGENCE: Independent classification layers
+# These describe what's happening — they do NOT change buy/sell signals.
+# ============================================================================
+
+def _classify_price_action(closes, volumes, highs=None, lows=None, change_percent=None):
+    """Classify the price action into a movement type."""
+    evidence = {'change_pct': change_percent, 'history_len': len(closes) if closes else 0}
+    if not closes or len(closes) < 2:
+        return 'INSUFFICIENT_DATA', evidence
+    last_close = closes[-1]
+    prev_close = closes[-2]
+    daily_change = ((last_close - prev_close) / prev_close * 100) if prev_close > 0 else 0
+    evidence['daily_change_pct'] = round(daily_change, 2)
+    effective_change = change_percent if change_percent is not None else daily_change
+    vol_ratio = 1.0
+    if volumes and len(volumes) >= 20:
+        avg_20 = sum(volumes[-20:]) / 20
+        vol_ratio = volumes[-1] / avg_20 if avg_20 > 0 else 0
+    elif volumes and len(volumes) >= 5:
+        avg_5 = sum(volumes[-5:]) / 5
+        vol_ratio = volumes[-1] / avg_5 if avg_5 > 0 else 0
+    evidence['volume_ratio'] = round(vol_ratio, 2)
+    if effective_change is not None and effective_change > 5 and vol_ratio > 1.5:
+        return 'SURGE_UP', evidence
+    if effective_change is not None and effective_change < -5 and vol_ratio > 1.5:
+        return 'SURGE_DOWN', evidence
+    if len(closes) < 5:
+        if effective_change is not None and effective_change > 2:
+            return 'BULLISH_WAVE_START', evidence
+        if effective_change is not None and effective_change < -2:
+            return 'BEARISH_WAVE_START', evidence
+        return 'UNCONFIRMED', evidence
+    last_7 = closes[-7:] if len(closes) >= 7 else closes
+    roc_7d = ((last_close - last_7[0]) / last_7[0] * 100) if last_7[0] > 0 else 0
+    evidence['roc_7d'] = round(roc_7d, 2)
+    if len(closes) >= 10:
+        prev_7 = closes[-10:-3]
+        decline = ((prev_7[-1] - prev_7[0]) / prev_7[0] * 100) if prev_7[0] > 0 else 0
+        recovery = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if decline < -5 and recovery > 2:
+            evidence['bounce'] = True
+            return 'BOUNCE_AFTER_DECLINE', evidence
+        rally = ((prev_7[-1] - prev_7[0]) / prev_7[0] * 100) if prev_7[0] > 0 else 0
+        pullback = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if rally > 5 and pullback < -2:
+            evidence['pullback'] = True
+            return 'PULLBACK_AFTER_RALLY', evidence
+    if roc_7d > 3 and effective_change is not None and effective_change > 0:
+        return 'BULLISH_CONTINUATION', evidence
+    if roc_7d < -3 and effective_change is not None and effective_change < 0:
+        return 'BEARISH_CONTINUATION', evidence
+    if len(closes) >= 20:
+        max_20 = max(closes[-21:-1]) if len(closes) >= 21 else max(closes[:-1])
+        if last_close > max_20 and vol_ratio > 1.2:
+            evidence['breakout_level'] = round(max_20, 2)
+            return 'BREAKOUT', evidence
+        min_20 = min(closes[-21:-1]) if len(closes) >= 21 else min(closes[:-1])
+        if last_close < min_20 and vol_ratio > 1.2:
+            evidence['breakdown_level'] = round(min_20, 2)
+            return 'BREAKDOWN', evidence
+    if len(closes) >= 7:
+        range_7 = (max(last_7) - min(last_7)) / min(last_7) * 100 if min(last_7) > 0 else 0
+        if range_7 < 3 and abs(effective_change or 0) < 1:
+            evidence['range_7d'] = round(range_7, 2)
+            return 'SIDEWAYS', evidence
+    if len(closes) >= 10:
+        prev_5 = ((closes[-5] - closes[-10]) / closes[-10] * 100) if closes[-10] > 0 else 0
+        last_3 = ((closes[-1] - closes[-3]) / closes[-3] * 100) if closes[-3] > 0 else 0
+        if prev_5 > 8 and last_3 < prev_5 * 0.3:
+            evidence['exhaustion'] = True
+            return 'MOMENTUM_EXHAUSTION', evidence
+    return 'UNCONFIRMED', evidence
+
+
+def _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent):
+    """Assess institutional vs speculative participation. NO direct data available."""
+    evidence = {'vol_ratio': vol_ratio, 'value_traded': value_traded}
+    if not volumes or len(volumes) < 5:
+        return 'UNAVAILABLE', 'UNAVAILABLE', evidence
+    sustained_vol = False
+    if len(volumes) >= 10:
+        r5 = sum(volumes[-5:]) / 5
+        p5 = sum(volumes[-10:-5]) / 5
+        if p5 > 0 and r5 > p5 * 1.3:
+            sustained_vol = True
+            evidence['sustained_volume'] = True
+    sharp_move = change_percent is not None and abs(change_percent) > 5
+    one_day_spike = vol_ratio and vol_ratio > 2.0 and not sustained_vol
+    if sharp_move and one_day_spike:
+        return 'SPECULATIVE_PATTERN', 'INDIRECT', evidence
+    if sustained_vol:
+        return 'MIXED_PARTICIPATION', 'INDIRECT', evidence
+    return 'UNCONFIRMED', 'WEAK', evidence
+
+
+def _assess_continuation(closes, volumes, vol_ratio, price_action):
+    """Assess continuation likelihood."""
+    if not closes or len(closes) < 3:
+        return 'INSUFFICIENT_DATA'
+    signals = []
+    if vol_ratio and vol_ratio > 1.5:
+        signals.append('vol_support')
+    if price_action in ('BULLISH_CONTINUATION', 'BREAKOUT'):
+        signals.append('trend_aligned')
+    if price_action == 'MOMENTUM_EXHAUSTION':
+        signals.append('fading')
+    if len(closes) >= 5:
+        green = sum(1 for i in range(1, 5) if closes[-i] > closes[-i-1])
+        if green >= 3:
+            signals.append('majority_green')
+        elif green <= 1:
+            signals.append('majority_red')
+    pos = sum(1 for s in signals if s in ('vol_support', 'trend_aligned', 'majority_green'))
+    neg = sum(1 for s in signals if s in ('fading', 'majority_red'))
+    if pos >= 2 and neg == 0:
+        return 'SUPPORTIVE'
+    if pos >= 1 and neg <= 1:
+        return 'MIXED'
+    if neg >= 2:
+        return 'WEAK'
+    return 'UNCONFIRMED'
+
+
+def _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date):
+    """Assess data quality with specific reasons."""
+    reasons = []
+    if not rows or not closes:
+        return 'UNAVAILABLE', ['no_price_data']
+    if len(closes) < 15:
+        reasons.append(f'insufficient_history:{len(closes)}<15')
+        return 'INSUFFICIENT_HISTORY', reasons
+    if staleness_days is not None and staleness_days > 3:
+        reasons.append(f'very_stale:{staleness_days}d')
+        return 'VERY_STALE', reasons
+    if staleness_days is not None and staleness_days > 1:
+        reasons.append(f'stale:{staleness_days}d')
+    if not volumes or all(v == 0 for v in volumes[-5:]):
+        reasons.append('volume_unavailable')
+    if reasons:
+        return 'STALE', reasons
+    return 'FRESH', reasons
+
+
+def _add_intelligence_layers(result, closes=None, volumes=None, highs=None, lows=None,
+                              vol_ratio=None, value_traded=None, change_percent=None,
+                              staleness_days=None, last_close_date=None, rows=None):
+    """Add 4 intelligence layers to result dict. Does NOT change buy/sell signals."""
+    try:
+        pa, pa_ev = _classify_price_action(closes, volumes, highs, lows, change_percent)
+        result['price_action'] = pa
+        result['price_action_evidence'] = pa_ev
+        pf, pfl, pf_ev = _assess_participant_flow(volumes, closes, vol_ratio, value_traded, change_percent)
+        result['participant_flow_assessment'] = pf
+        result['participant_evidence_level'] = pfl
+        result['participant_evidence'] = pf_ev
+        cont = _assess_continuation(closes, volumes, vol_ratio, pa)
+        result['continuation_assessment'] = cont
+        dq, dq_r = _assess_data_quality(rows, closes, volumes, staleness_days, last_close_date)
+        result['data_quality_status'] = dq
+        result['data_quality_reasons'] = dq_r
+        result['classification_timestamp'] = datetime.now().isoformat()
+    except Exception as e:
+        import traceback
+        print(f'[INTELLIGENCE-ERROR] {result.get("ticker", "?")}: {e}', flush=True)
+        traceback.print_exc()
+        result['price_action'] = 'ERROR'
+        result['price_action_evidence'] = {'error': str(e)}
+        result['participant_flow_assessment'] = 'UNAVAILABLE'
+        result['participant_evidence_level'] = 'UNAVAILABLE'
+        result['participant_evidence'] = {'error': str(e)}
+        result['continuation_assessment'] = 'INSUFFICIENT_DATA'
+        result['data_quality_status'] = 'ERROR'
+        result['data_quality_reasons'] = [str(e)]
+        result['classification_timestamp'] = datetime.now().isoformat()
+    return result
+
+
 def scan_ticker(rows, ticker, regime='NORMAL'):
     """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
     # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
     if len(rows) < 15:
-        return None
+        return None  # historical analysis needs >= 15 rows — scanner_fallback handled by caller
 
     closes = [r['close'] for r in rows if r['close'] and r['close'] > 0]
     volumes = [parse_volume(r['volume']) for r in rows]
@@ -503,7 +963,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
     money_flow = compute_money_flow(closes, volumes, highs, lows)
     life_cycle = detect_life_cycle(closes, volumes, highs, lows)
-    limit_up = check_limit_up_trap(closes)
+    limit_up = check_limit_up_trap(closes, volumes)
     kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
 
     # BRAVO-FLOW-GATE-ALL (2026-10-20, owner directive — P0-RADAR-FLOW-GATE-ALL):
@@ -629,7 +1089,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     _stop_loss = round(_entry_price - (1.5 * _atr_val), 2)
     _target_price = round(_entry_price + (2.7 * _atr_val), 2)  # R/R = 2.7/1.5 = 1.8
 
-    return {
+    result = {
         'ticker': ticker,
         'current_price': round(current_price, 2),
         'entry_price': _entry_price,
@@ -686,6 +1146,24 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,
     }
+
+    # RADAR-INTELLIGENCE: add 4 independent classification layers
+    _add_intelligence_layers(
+        result,
+        closes=closes, volumes=volumes, highs=highs, lows=lows,
+        vol_ratio=volume_ratio_10d_vs_20d if volume_ratio_10d_vs_20d else None,
+        value_traded=result.get('turnover_egp'),
+        change_percent=result.get('change_percent') if result.get('change_percent') is not None else result.get('change_1d'),
+        staleness_days=staleness_days,
+        last_close_date=last_close_date_str,
+        rows=rows,
+    )
+
+    # SCANNER-LIVE-2 (2026-10-27): enrich with official value_traded +
+    # relative_volume_10d from TradingView Scanner API (stored in stocks.db).
+    # This overrides the computed turnover_egp with the authoritative cash value.
+    result = _enrich_result_with_scanner(result, ticker)
+    return result
 
 
 # Task IMPROVEMENT-22-2026-10-07: تسجيل إشارات الرادار في DB
@@ -1122,6 +1600,7 @@ B3_CLASSIFICATIONS = (
     'unclassified',
     'DATA_INVALID',
     'INSUFFICIENT_DATA',
+    'SCANNER_ALERT',  # RADAR-FIX: scanner-based detection (no historical analysis)
 )
 
 # Allowed data_quality (lowercase — backward compat with existing TS consumer)
@@ -1189,6 +1668,15 @@ def _build_insufficient_result(
         'avg_volume_10d': 0,
         'volume_ratio_10d_vs_20d': 0,
         'turnover_egp': 0,
+        'price_action': 'INSUFFICIENT_DATA',
+        'price_action_evidence': {'reason': reason},
+        'participant_flow_assessment': 'UNAVAILABLE',
+        'participant_evidence_level': 'UNAVAILABLE',
+        'participant_evidence': {'reason': 'no_data'},
+        'continuation_assessment': 'INSUFFICIENT_DATA',
+        'data_quality_status': data_quality_status,
+        'data_quality_reasons': reasons,
+        'classification_timestamp': scan_timestamp,
         'volume': 0,
         'price_stability': 0,
         'range_10d_pct': 0,
@@ -1245,6 +1733,9 @@ def _classify_scanned_result(result: dict, args) -> str:
       7. otherwise → 'unclassified'
     """
     path = result.get('path') or ''
+    # 0. SCANNER_ALERT (radar-fix: scanner-based detection, no historical analysis)
+    if path == 'F_scanner_alert' or result.get('classification') == 'SCANNER_ALERT':
+        return 'SCANNER_ALERT'
     # 1. distribution
     if path == 'distribution' or result.get('distribution_flag'):
         return 'distribution'
@@ -1333,7 +1824,7 @@ def _build_summary(
     scanned_count = len(results)
     valid_data_count = sum(
         1 for r in results
-        if r.get('classification') not in ('DATA_INVALID', 'INSUFFICIENT_DATA')
+        if r.get('classification') not in ('DATA_INVALID', 'INSUFFICIENT_DATA', 'SCANNER_ALERT')
     )
     data_error_count = sum(
         1 for r in results
@@ -1562,6 +2053,25 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+            # RADAR-FIX: also include tickers from stocks table (scanner data)
+            # This ensures newly-scanned stocks appear in the radar even if
+            # they were just added to stock_daily_prices today.
+            try:
+                stocks_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+                scanner_tickers = [r[0] for r in stocks_conn.execute(
+                    "SELECT DISTINCT symbol FROM stocks WHERE market = 'egypt'"
+                ).fetchall()]
+                stocks_conn.close()
+                # Merge: add scanner tickers that aren't already in the list
+                existing = set(tickers)
+                for t in scanner_tickers:
+                    if t not in existing:
+                        tickers.append(t)
+                        existing.add(t)
+                if scanner_tickers:
+                    log(f"  + {len(scanner_tickers)} tickers from stocks table (scanner)")
+            except Exception:
+                pass  # non-fatal — continue with PROD_TABLE tickers only
     else:
         # TADAWUL/KSE/QSE/US مع historical_data في db/data_engine.db —
         # مفيش stocks table في نفس الـ DB. اعمل cross-DB lookup في
@@ -1603,6 +2113,25 @@ def main():
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
+            # RADAR-FIX: also include tickers from stocks table (scanner data)
+            # This ensures newly-scanned stocks appear in the radar even if
+            # they were just added to stock_daily_prices today.
+            try:
+                stocks_conn = sqlite3.connect(str(PROJECT_ROOT / 'db' / 'stocks.db'))
+                scanner_tickers = [r[0] for r in stocks_conn.execute(
+                    "SELECT DISTINCT symbol FROM stocks WHERE market = 'egypt'"
+                ).fetchall()]
+                stocks_conn.close()
+                # Merge: add scanner tickers that aren't already in the list
+                existing = set(tickers)
+                for t in scanner_tickers:
+                    if t not in existing:
+                        tickers.append(t)
+                        existing.add(t)
+                if scanner_tickers:
+                    log(f"  + {len(scanner_tickers)} tickers from stocks table (scanner)")
+            except Exception:
+                pass  # non-fatal — continue with PROD_TABLE tickers only
     if args.limit > 0:
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")
@@ -1716,8 +2245,21 @@ def main():
     for i, ticker in enumerate(tickers, 1):
         rows = fetch_ticker_series(conn, ticker, days=40)
 
-        # ─── B3: insufficient history → INSUFFICIENT_DATA (NOT dropped) ──
+        # ─── B3: insufficient history → try scanner fallback first ──
+        # RADAR-FIX: if historical rows < 15, call scan_ticker which now
+        # has _scanner_fallback. If scanner data is available, it returns
+        # a SCANNER_ALERT result instead of None.
         if not rows or len(rows) < 15:
+            result = _scanner_fallback(ticker, regime=regime_name, market_code=args.market.upper())
+            if result and result.get('classification') == 'SCANNER_ALERT':
+                # Scanner fallback worked — enrich + add to BOTH lists
+                identity = identity_map.get(ticker, {})
+                result = _enrich_result_with_scanner(result, ticker)
+                result = _enrich_result_with_b3_fields(result, identity, args, scan_timestamp)
+                contract_results.append(result)
+                results.append(result)  # P1 FIX: also add to legacy results (UI reads this)
+                continue
+            # Scanner fallback also failed → truly insufficient
             identity = identity_map.get(ticker, {})
             contract_results.append(_build_insufficient_result(
                 ticker=ticker,
@@ -2152,6 +2694,12 @@ def main():
         log(f"⚠️ Signal tracking failed: {_track_err}")
 
     if args.json_only:
+        # BRAVO-JSON-STDOUT-FIX (2026-10-28): --json-only المفروض يطبع JSON على stdout
+        # عشان redirect (> file) يشتغل. قبل كده كان بـ return 0 بدون print → ملف فاضي.
+        # دلوقتي بنطبع JSON على stdout + نـ suppress كل الـ logs (نطبعها على stderr).
+        import sys as _sys
+        with open(json_path, "r", encoding="utf-8") as f:
+            _sys.stdout.write(f.read())
         return 0
 
     # تقرير عربي
