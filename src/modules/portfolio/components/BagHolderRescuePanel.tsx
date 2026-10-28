@@ -73,6 +73,17 @@ interface RescueResult {
  urgency: 'low' | 'medium' | 'high';
  reasoning: string;
  journal_template?: string;
+ // FIX (BRAVO-DISASTER 2026-10-28): fields used in render but missing from interface
+ sparkline_data?: number[];
+ technical?: {
+   rsi?: number;
+   macd?: string;
+   trend?: string;
+   support?: number;
+   resistance?: number;
+   [key: string]: unknown;
+ };
+ [key: string]: unknown;
 }
 
 const REC_COLORS: Record<string, string> = {
@@ -128,6 +139,9 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  const [journalDecision, setJournalDecision] = useState<'HOLD' | 'AVERAGE_DOWN' | 'CUT_LOSS' | ''>('');
  const [journalSaving, setJournalSaving] = useState(false);
  const [journalReason, setJournalReason] = useState('');
+ // FIX (BRAVO-DISASTER 2026-10-28): journalSaved + activeTab were USED but NEVER DECLARED
+ const [journalSaved, setJournalSaved] = useState(false);
+ const [activeTab, setActiveTab] = useState<'overview' | 'technical' | 'fundamentals'>('overview');
  // FIX (BRAVO-DISASTER 2026-10-28): showPortfolioList + showAllStocksSearch were
  // USED at lines 409-513 but NEVER DECLARED — caused ReferenceError crash that
  // broke the entire Portfolio panel + triggered React hydration errors #425/#422.
@@ -137,7 +151,25 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  // were USED at lines 145 (setPortfolioHoldings) + 421-441 (portfolioHoldings.map)
  // but NEVER DECLARED — caused 'ReferenceError: portfolioHoldings is not defined'
  // that crashed the Portfolio + BagHolderRescue panels.
- const [portfolioHoldings, setPortfolioHoldings] = useState<Array<{ ticker: string; name?: string; buyPrice?: number; quantity?: number; market?: string }>>([]);
+ // FIX (part 3): the type was too narrow — code accesses avg_buy_price, current_price,
+ // name_ar, sparkline_data etc. Use a permissive Record<string, unknown> shape.
+ interface PortfolioHolding {
+   ticker: string;
+   name?: string;
+   name_ar?: string;
+   market?: string;
+   buyPrice?: number;
+   avg_buy_price?: number;
+   current_price?: number;
+   quantity?: number;
+   qty?: number;
+   change_percent?: number;
+   changePct?: number;
+   sparkline_data?: number[];
+   sector?: string;
+   [key: string]: unknown;
+ }
+ const [portfolioHoldings, setPortfolioHoldings] = useState<PortfolioHolding[]>([]);
  // Guard so the auto-open profiler effect fires at most once per result.
  const lastAutoTriggeredResultRef = useRef<RescueResult | null>(null);
 

@@ -38,6 +38,11 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "archive",
+    "vps-service",
+    "telegram-events",
+    "mini-services",
+    "scripts"
   ]
 }
