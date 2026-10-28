@@ -36,6 +36,9 @@ if str(_VPS_ROOT) not in sys.path:
 from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
 from analyzers.indicators.atr import calc_atr as _canonical_calc_atr
 from analyzers.indicators.ma import sma as _canonical_sma, ema as _canonical_ema, macd as _canonical_macd
+# Phase 7.3 dedup: reuse canonical analyzer_modules instead of local duplicates
+from analyzer_modules.fibonacci import _calc_fibonacci_levels
+from analyzer_modules.candlestick import _detect_candlestick_patterns
 
 logger = logging.getLogger(__name__)
 
@@ -326,108 +329,9 @@ def _calc_macd(closes, fast=12, slow=26, signal=9):
     return macd_line, signal_line, histogram
 
 
-def _detect_candlestick_patterns(ohlcv):
-    """كشف أنماط الشموع اليابانية على آخر شمعتين.
-
-    يُرجع قائمة من dicts: {name, name_ar, signal, strength}.
-    signal: 'bullish' | 'bearish' | 'neutral'
-    strength: 'weak' | 'medium' | 'strong'
-    """
-    patterns = []
-    if len(ohlcv) < 2:
-        return patterns
-    last = ohlcv[-1]
-    prev = ohlcv[-2]
-
-    o, c = float(last.get('open', 0)), float(last.get('close', 0))
-    h, l = float(last.get('high', 0)), float(last.get('low', 0))
-    po, pc = float(prev.get('open', 0)), float(prev.get('close', 0))
-
-    body = abs(c - o)
-    range_ = h - l
-    if range_ <= 0:
-        return patterns
-
-    lower_wick = min(o, c) - l
-    upper_wick = h - max(o, c)
-
-    # Doji (تردد)
-    if body / range_ < 0.1:
-        patterns.append({'name': 'Doji', 'name_ar': 'دوجي',
-                         'signal': 'neutral', 'strength': 'weak'})
-
-    # Hammer (مطرقة - إيجابي عند القاع)
-    if body > 0 and lower_wick > 2 * body and upper_wick < body * 0.5:
-        patterns.append({'name': 'Hammer', 'name_ar': 'مطرقة',
-                         'signal': 'bullish', 'strength': 'medium'})
-
-    # Shooting Star (نجم هابط - سلبي عند القمة)
-    if body > 0 and upper_wick > 2 * body and lower_wick < body * 0.5:
-        patterns.append({'name': 'Shooting Star', 'name_ar': 'نجم هابط',
-                         'signal': 'bearish', 'strength': 'medium'})
-
-    # Bullish Engulfing (ابتلاع صعودي)
-    if po > 0 and pc < po and c > o:
-        if c >= po and o <= pc:
-            patterns.append({'name': 'Bullish Engulfing', 'name_ar': 'ابتلاع صعودي',
-                             'signal': 'bullish', 'strength': 'strong'})
-
-    # Bearish Engulfing (ابتلاع هبوطي)
-    if po > 0 and pc > po and c < o:
-        if o >= pc and c <= po:
-            patterns.append({'name': 'Bearish Engulfing', 'name_ar': 'ابتلاع هبوطي',
-                             'signal': 'bearish', 'strength': 'strong'})
-
-    return patterns
-
-
 # ============================================================================
 # TOOLKIT-UNIFY-013: Fibonacci + Fundamental Score + Multi-TF (unify maestro)
 # ============================================================================
-
-def _calc_fibonacci_levels(closes, highs, lows, lookback=30):
-    """حساب مستويات فيبوناتشي (0%, 23.6%, 38.2%, 50%, 61.8%, 78.6%, 100%).
-
-    يحدد آخر swing high/low خلال آخر `lookback` شمعة ثم يحسب المستويات بينهما.
-    لو مفيش بيانات كافية → يرجع None.
-    المستويات تُحسب نسبةً للاتجاه (up/down):
-      - لو close[-1] > close[-lookback] → uptrend: low=0%, high=100%
-      - عكسه → downtrend: high=0%, low=100%
-    """
-    n = len(closes)
-    if n < 5 or not highs or not lows:
-        return None
-    window = min(lookback, n)
-    sub_highs = highs[-window:]
-    sub_lows = lows[-window:]
-    swing_high = max(sub_highs) if sub_highs else None
-    swing_low = min(sub_lows) if sub_lows else None
-    if swing_high is None or swing_low is None or swing_high <= swing_low:
-        return None
-
-    diff = swing_high - swing_low
-    # Determine direction: if last close > midpoint → uptrend (retracement from high)
-    last_close = closes[-1]
-    direction = 'up' if last_close >= (swing_high + swing_low) / 2.0 else 'down'
-
-    # Standard fib retracement levels
-    fib_ratios = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
-    levels = {}
-    for r in fib_ratios:
-        # In uptrend: 0% = swing_high (target), 100% = swing_low (support)
-        # In downtrend: 0% = swing_low (target), 100% = swing_high (resistance)
-        if direction == 'up':
-            price = swing_high - diff * r
-        else:
-            price = swing_low + diff * r
-        levels[f'{int(r * 1000) / 10}%'] = round(price, 4)
-    # Also include the absolute levels for convenience
-    levels['swing_high'] = round(swing_high, 4)
-    levels['swing_low'] = round(swing_low, 4)
-    levels['direction'] = direction
-    levels['lookback_window'] = window
-    return levels
-
 
 def _compute_fundamental_score(fundamentals):
     """حساب fundamental_score (0-100) من الـ fundamentals dict.
