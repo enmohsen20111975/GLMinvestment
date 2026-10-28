@@ -982,11 +982,20 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
 
         bounce_details['signal_count'] = len(bounce_details['signals_met'])
         # BOUNCE requires ALL 5 conditions (strict — owner directive)
-        if bounce_details['signal_count'] == 5:
+        # BRAVO-BOUNCE-REGIME-FILTER (2026-10-28): BOUNCE يـ fire بس في NORMAL/AGGRESSIVE.
+        # في DEFENSIVE، 54.5% من الـ bounces كانت dead-cat (backtest 5 أسابيع).
+        # لو النظام DEFENSIVE → skip BOUNCE تمامًا (المسارات التانية مش متأثرة).
+        _regime_upper = str(regime).upper()
+        if _regime_upper == 'DEFENSIVE':
+            if bounce_details['signal_count'] == 5:
+                # Log ليه اتـ skipped (للـ diagnostics)
+                bounce_details['signals_failed'].append(f'6.regime_filter(DEFENSIVE — BOUNCE disabled)')
+                bounce_details['signal_count'] = 5  # keep count for transparency
+        elif bounce_details['signal_count'] == 5:
             bounce_detected = True
             bounce_reason = (f'BOUNCE_AFTER_DECLINE: +{_bounce_pct:.1f}% from low, '
                              f'drop {_drop_from_peak:.1f}% from peak, vol supported, '
-                             f'buy_pct={_buy_pct:.1f}%. DETECTION ONLY (مراقبة).')
+                             f'buy_pct={_buy_pct:.1f}%. DETECTION ONLY (مراقبة). regime={regime}')
 
     # تحديد المسار الفائز (ترتيب الأولوية):
     # 1. Pre-Surge (تجميع مبكر جدًا) → حجم 1.5%

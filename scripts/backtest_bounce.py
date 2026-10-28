@@ -123,7 +123,7 @@ def get_forward_prices(conn, ticker, detection_date, lookforward_days=(1, 3, 5, 
     return result
 
 
-def run_backtest(start_date, end_date, sample_limit=0):
+def run_backtest(start_date, end_date, sample_limit=0, regime='DEFENSIVE'):
     """Run the backtest."""
     conn = db_manager.get_connection(str(mr.PROD_DB), writable=False)
     conn.row_factory = sqlite3.Row
@@ -150,7 +150,7 @@ def run_backtest(start_date, end_date, sample_limit=0):
                 rows = fetch_series_up_to(conn, ticker, scan_date, days=40)
                 if not rows or len(rows) < 15:
                     continue
-                result = mr.scan_ticker(rows, ticker, regime='NORMAL')
+                result = mr.scan_ticker(rows, ticker, regime=regime)
                 if not result:
                     continue
                 total_scans += 1
@@ -234,12 +234,13 @@ def main():
     parser.add_argument('--start', default='2026-09-15', help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end', default='2026-10-28', help='End date (YYYY-MM-DD)')
     parser.add_argument('--limit', type=int, default=0, help='Limit tickers (0=all)')
+    parser.add_argument('--regime', default='DEFENSIVE', help='Market regime to simulate (NORMAL/DEFENSIVE/AGGRESSIVE)')
     parser.add_argument('--output', default='/tmp/backtest_bounce_report.json')
     args = parser.parse_args()
 
     print(f'[backtest] period: {args.start} → {args.end}', file=sys.stderr)
 
-    detections, total_scans, errors = run_backtest(args.start, args.end, args.limit)
+    detections, total_scans, errors = run_backtest(args.start, args.end, args.limit, args.regime)
     stats = analyze_detections(detections)
 
     # Save full report
