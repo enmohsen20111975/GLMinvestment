@@ -10315,3 +10315,39 @@ Stage Summary:
 - كل المسارات أداءها سلبي في DEFENSIVE regime (متوقع).
 - BOUNCE يحتاج regime filter أو تقوية شروط في DEFENSIVE.
 - الـ backtest script جاهز لإعادة التشغيل على أي فترة.
+
+---
+Task ID: BRAVO-RADAR-BOUNCE-REGIME-FILTER
+Agent: Bravo V2 (backend engineer)
+Task: تنفيذ Option A — regime filter على F_bounce (يـ fire بس في NORMAL/AGGRESSIVE).
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-RADAR-BOUNCE-BACKTEST).
+- **الـ backtest أثبت:** F_bounce في DEFENSIVE = 54.5% dead-cat rate.
+- **التعديل:** في `scan_ticker`، لو `regime == DEFENSIVE`:
+  * BOUNCE conditions تتـ evaluated (للـ diagnostics)
+  * بس `bounce_detected` يفضل `False`
+  * `bounce_details['signals_failed']` بتـ记录 `6.regime_filter(DEFENSIVE — BOUNCE disabled)`
+  * المسارات التانية (pre_surge, quiet, explosive, early_break) مش متأثرة
+- **إعادة backtest على نفس الفترة (Sep 15 → Oct 18, DEFENSIVE):**
+
+| path | BEFORE (NORMAL) | AFTER (DEFENSIVE) |
+|---|---|---|
+| F_bounce | 33 (54.5% loss) | **0** ✅ |
+| A_pre_surge | 700 | 1589 (DEFENSIVE relaxed) |
+| B_quiet | 1245 | 1313 |
+| D_explosive | 128 | 87 |
+| E_early_break | 21 | 13 |
+
+- **ETEL يوم 27-28 أكتوبر:**
+  * DEFENSIVE (الواقع): path=None (BOUNCE disabled) ← متوقع ومقبول
+  * NORMAL (محاكاة): path=F_bounce ← BOUNCE يـ fire صح
+- **الـ filter شغال:** 0 BOUNCE في DEFENSIVE، 103 BOUNCE في NORMAL (يومين بس).
+- Git: commit `a8069d0` على main (مرفوع).
+
+Stage Summary:
+- F_bounce: 33 → 0 في DEFENSIVE (dead-cats eliminated) ✅
+- ETEL مش بـ F_bounce في DEFENSIVE (متوقع — السوق هابط) ✅
+- ETEL بـ F_bounce في NORMAL (BOUNCE يـ fire لما السوق يتحسن) ✅
+- المسارات التانية مش متأثرة ✅
+- position=0 لسه واقف ✅
