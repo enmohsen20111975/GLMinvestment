@@ -393,7 +393,7 @@ export function PredictionTrackingView() {
  // UI-STABILITY fix (2026-09-28): silent polling — only first load sets loadingList(true)
  if (silent) setRefreshingList(true); else setLoadingList(true);
  try {
- const params = new URLSearchParams({ market, limit: '200' });
+ const params = new URLSearchParams({ market, limit: '200', qualityMode: 'all' });
  if (status !== 'all') params.set('status', status);
  // UNIFY-FIX (Rule 73): رحّلنا /api/predictions/tracking/list (deprecated 410)
  // إلى /api/predictions/honest-tracking/list (canonical)
