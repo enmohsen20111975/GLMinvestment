@@ -79,81 +79,71 @@ def is_trading_day(date_str: str, market_code: str) -> bool:
 
 
 def get_last_prediction_date(market_code: str) -> str | None:
+    """آخر تاريخ في predictions table عبر DAL."""
     try:
-        conn = sqlite3.connect(str(PREDICTIONS_DB))
-        row = conn.execute(
-            "SELECT MAX(prediction_date) FROM predictions WHERE market = ?",
-            (market_code,)
-        ).fetchone()
-        conn.close()
-        return str(row[0])[:10] if row and row[0] else None
+        from core.db_manager import get_last_prediction_date as dal_last_date
+        return dal_last_date(market_code)
     except Exception:
         return None
 
 
 def get_active_tickers(market_code: str) -> list[str]:
-    """كل الأسهم النشطة في السوق."""
+    """كل الأسهم النشطة في السوق عبر DAL."""
     try:
-        conn = sqlite3.connect(str(STOCKS_DB))
-        rows = conn.execute(
-            "SELECT ticker FROM stocks WHERE market = ? AND is_active = 1 AND current_price > 0",
-            (market_code,)
-        ).fetchall()
-        conn.close()
-        return [r[0] for r in rows]
+        from core.db_manager import get_active_tickers as dal_active
+        return dal_active(market_code)
     except Exception:
         return []
 
 
 def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str], int]:
-    """فلتر الأسهم الميتة (change% بين -3% و +0.5%)."""
+    """فلتر الأسهم الميتة (change% بين -3% و +0.5%) عبر DAL."""
     if not tickers:
         return [], 0
     try:
-        conn = sqlite3.connect(str(STOCKS_DB))
+        from core.db_manager import db_manager
         placeholders = ','.join(['?'] * len(tickers))
-        rows = conn.execute(
+        rows = db_manager.query('stocks',
             f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
             (*tickers, market_code)
-        ).fetchall()
-        conn.close()
+        )
         alive = []
         dead_count = 0
-        for ticker, change in rows:
+        for r in rows:
+            change = r.get('change_percent')
             if change is None:
                 continue
             change = float(change)
             if -3.0 <= change <= 0.5:
                 dead_count += 1
                 continue
-            alive.append(ticker)
+            alive.append(r['ticker'])
         return alive, dead_count
     except Exception:
         return tickers, 0
 
 
 def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: str) -> tuple[list[str], int]:
-    """skip لو فيه توقع نشط + السعر ما تغيرش >1%."""
+    """skip لو فيه توقع نشط + السعر ما تغيرش >1% عبر DAL."""
     if not tickers:
         return [], 0
     try:
-        conn_pred = sqlite3.connect(str(PREDICTIONS_DB))
-        conn_stocks = sqlite3.connect(str(STOCKS_DB))
-        existing = conn_pred.execute(
+        from core.db_manager import db_manager
+        # الأسهم اللي ليها توقعات نشطة في اليوم ده
+        existing_rows = db_manager.query('predictions',
             """SELECT ticker, entry_price FROM predictions 
                WHERE market = ? AND prediction_date LIKE ? 
                AND (outcome_date IS NULL OR exit_type IS NULL)""",
             (market_code, f"{scan_date}%")
-        ).fetchall()
-        conn_pred.close()
+        )
+        # الأسعار الحالية
         placeholders = ','.join(['?'] * len(tickers))
-        stock_rows = conn_stocks.execute(
+        stock_rows = db_manager.query('stocks',
             f"SELECT ticker, current_price FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
             (*tickers, market_code)
-        ).fetchall()
-        conn_stocks.close()
-        current_prices = {r[0]: r[1] for r in stock_rows if r[1]}
-        existing_map = {r[0]: r[1] for r in existing}
+        )
+        current_prices = {r['ticker']: r['current_price'] for r in stock_rows if r.get('current_price')}
+        existing_map = {r['ticker']: r['entry_price'] for r in existing_rows}
         to_reanalyze = []
         skipped_count = 0
         for ticker in tickers:
@@ -279,39 +269,26 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
 
 
 def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
-    """احفظ التوقع في predictions.db."""
+    """احفظ التوقع في predictions.db عبر DAL."""
     if result.get('signal') not in ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL']:
         logger.info(f'  {result["ticker"]}: save skipped (signal={result.get("signal")})')
         return False
     
     try:
+        from core.db_manager import db_manager
         logger.info(f'  {result["ticker"]}: saving prediction (signal={result.get("signal")}, score={result.get("score",0):.1f})...')
-        conn = sqlite3.connect(str(PREDICTIONS_DB))
-        # تأكد إن الجدول موجود
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS predictions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ticker TEXT, market TEXT, signal TEXT, signal_type TEXT,
-                prediction_date TEXT, entry_price REAL, target_price REAL,
-                stop_loss REAL, master_score REAL, confidence REAL,
-                persona TEXT, status TEXT DEFAULT 'active',
-                created_at TEXT, notes TEXT
-            )
-        """)
         
-        # خد السعر الحالي
-        stocks_conn = sqlite3.connect(str(STOCKS_DB))
-        price_row = stocks_conn.execute(
+        # خد السعر الحالي عبر DAL
+        price_row = db_manager.query_one('stocks',
             "SELECT current_price FROM stocks WHERE ticker = ? AND market = ?",
             (result['ticker'], market_code)
-        ).fetchone()
-        stocks_conn.close()
+        )
         
-        entry_price = float(price_row[0]) if price_row and price_row[0] else 0
+        entry_price = float(price_row['current_price']) if price_row and price_row.get('current_price') else 0
         confidence = result.get('confidence', 0)
         score = result.get('score', 0)
         
-        # احسب target/stop بسيط (ممكن نحسّنها بعدين)
+        # احسب target/stop بسيط
         signal = result['signal']
         if 'BUY' in signal:
             target_price = entry_price * 1.05 if entry_price > 0 else 0
@@ -320,7 +297,7 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
             target_price = entry_price * 0.95 if entry_price > 0 else 0
             stop_loss = entry_price * 1.03 if entry_price > 0 else 0
         
-        conn.execute("""
+        db_manager.execute('predictions', """
             INSERT INTO predictions (ticker, market, signal, signal_type, 
                                     prediction_date, entry_price, target_price, stop_loss,
                                     master_score, confidence, persona, status, created_at, notes)
@@ -331,8 +308,6 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
             score, confidence, 'v3_smart', datetime.now().isoformat(),
             f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}"
         ))
-        conn.commit()
-        conn.close()
         logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db')
         return True
     except Exception as e:
