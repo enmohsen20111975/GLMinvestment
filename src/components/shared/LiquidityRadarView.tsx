@@ -554,6 +554,8 @@ export function LiquidityRadarView({
  key: 'entry',
  header: 'الدخول',
  sortable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — المستخدم يقدر يفتحه من column picker
  width: 'w-20',
  align: 'center',
  sortValue: (row) => row.entry_defense?.entry_level ?? 0,
@@ -574,6 +576,8 @@ export function LiquidityRadarView({
  {
  key: 'defense',
  header: 'الوقف',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-20',
  align: 'center',
@@ -594,6 +598,8 @@ export function LiquidityRadarView({
  {
  key: 'target',
  header: 'الهدف',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-20',
  align: 'center',
@@ -651,6 +657,8 @@ export function LiquidityRadarView({
  width: 'w-28',
  sortable: true,
  filterable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — ثانوي
  sortValue: (row) => row.participant_flow_assessment || 'zzz',
  filterValue: (row) => PARTICIPANT_FLOW_AR[row.participant_flow_assessment || ''] || row.participant_flow_assessment || '—',
  render: (row) => {
@@ -676,6 +684,8 @@ export function LiquidityRadarView({
  width: 'w-28',
  sortable: true,
  filterable: true,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — ثانوي
  sortValue: (row) => row.continuation_assessment || 'zzz',
  filterValue: (row) => CONTINUATION_AR[row.continuation_assessment || ''] || row.continuation_assessment || '—',
  render: (row) => {
@@ -726,6 +736,8 @@ export function LiquidityRadarView({
  width: 'w-32',
  sortable: false,
  filterable: false,
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا — يظهر لو فيه إشارات
  render: (row) => (
    <div className="flex flex-col items-center gap-0.5 py-1">
      {row.volume_surge === true && (
@@ -803,6 +815,8 @@ export function LiquidityRadarView({
  {
  key: 'whale_flow',
  header: t('flow5d'),
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
@@ -817,6 +831,8 @@ export function LiquidityRadarView({
  {
  key: 'buy_sell_pressure',
  header: 'ضغط الشراء/البيع',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-32',
  align: 'center',
@@ -856,6 +872,8 @@ export function LiquidityRadarView({
  {
  key: 'sparkline',
  header: 'شارت 7 أيام',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
@@ -868,6 +886,8 @@ export function LiquidityRadarView({
  {
  key: 'correction_phase',
  header: '🔄 التصحيح',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-28',
  align: 'center',
@@ -909,6 +929,8 @@ export function LiquidityRadarView({
  {
  key: 'liquidity_bucket',
  header: '🏷️ تصنيف السيولة',
+ hideable: true,
+ hidden: true, // (ALPHA-MOBILE): مخفي افتراضيًا
  sortable: true,
  width: 'w-32',
  align: 'center',
