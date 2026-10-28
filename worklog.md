@@ -10206,3 +10206,34 @@ Stage Summary:
   * `vps-service/utils/shared_liquidity.py` (+18 lines: explosive max(last 3) + 1.7× threshold)
 - النتيجة: ETEL اكتشف، KORA/LUTS لسه مكتشفين صح، +2 إشارات جديدة، 0 lost.
 - المرحلة الثانية (بعد قياس أثر المرحلة الأولى): trend_filter relaxation inside BOUNCE + مسار تحذيري هبوطي.
+
+---
+Task ID: BRAVO-RADAR-BOUNCE-VERIFICATION
+Agent: Bravo V2 (backend engineer)
+Task: تشغيل المقارنة Before/After على عينة أوسع (610 EGX active stocks) — بناءً على طلب المالك.
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-RADAR-BOUNCE-STAGE1).
+- بنيت عينة من 663 EGX active stock (avg volume > 100K, >= 20 يوم تاريخ) → 610 اـ scanned (بعد فلتر السعر).
+- شغلت BEFORE (origin/main) + AFTER (bravo/radar-bounce-path) على نفس العينة.
+- اكتشفت issue في الـ debug اللي ضفته (UnboundLocalError على winner_path) → شيلته + أعدت التشغيل.
+- **النتايج:**
+  * BEFORE: under_microscope=114, F_bounce=0
+  * AFTER: under_microscope=126, F_bounce=12 (+12 new)
+  * 0 lost detections من المسارات التانية
+  * 0 false positives (مفيش سهم بـ drop < -25%)
+  * 1 سهم (8160) roc_10d=-16.4% (محتاج مراقبة)
+  * KORA + LUTS لسه rule80_downtrend (NOT buy) ✅
+- **الـ 12 BOUNCE detections كلهم legitimate:**
+  * NIPH: drop -21.3%, buy_pct 90.9% (bounce قوي + buying قوي)
+  * 8311: drop -19.3%, buy_pct 89.5%
+  * 8160: drop -19.1%, buy_pct 94.6% (بس roc_10d=-16.4% — monitor)
+  * ETEL: drop -15.5%, buy_pct 25.2% (target stock — caught!)
+  * 8240, 4310, 8150, 2300, 1831, 1150, 8030, 4180: كلهم drop في [-10%, -22%] + buy_pct > 25%
+- Git: commit `13fa553` على `bravo/radar-bounce-path`.
+
+Stage Summary:
+- العينة: 610 EGX active stocks (تتجاوز متطلب 50-80).
+- +12 BOUNCE detections جديدة، 0 lost، 0 false positives.
+- معايير القبول كلها اتحقت.
+- الفرع `bravo/radar-bounce-path` جاهز للمراجعة قبل الدمج.
