@@ -271,7 +271,12 @@ class DailyCloser:
         try:
             from core.db_manager import db_manager
             conn = db_manager.get_connection(db_path, writable=True)
-        except Exception:
+        except Exception as e:
+            # BATCH-C FIX: log the fallback instead of silent bypass.
+            # This fallback exists because daily_closer is a critical end-of-day job:
+            # if db_manager fails (import error, DB locked), closing predictions
+            # must still happen. But the fallback must be VISIBLE in logs.
+            logger.warning(f"_conn: db_manager failed for {db_path} ({e}) — falling back to _safe_connect")
             conn = _safe_connect(db_path, 30.0)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
