@@ -209,6 +209,12 @@ def run_pulse(market: str = 'EGX') -> dict:
     # BRAVO-PULSE-FALLBACK: if current_price = 0 (scanner failed to write),
     # use stock_daily_prices.close (latest day) as fallback.
     # This is READ-ONLY — no writes to stocks.db.
+    #
+    # BRAVO-PULSE-FILTER (2026-10-28): filter out:
+    # 1. EGS* ISIN codes (bonds/sukuk — not regular stocks)
+    # 2. Tickers with suffixes like _R1, A, etc. (adjusted duplicates)
+    # 3. Stocks with volume=0 AND open_price=0 (suspended/inactive)
+    # 4. Stocks with current_price=0 AND no daily fallback (dead)
     cur.execute("""
         SELECT s.ticker,
                COALESCE(NULLIF(s.current_price, 0),
@@ -221,6 +227,10 @@ def run_pulse(market: str = 'EGX') -> dict:
         FROM stocks s
         WHERE (s.market = 'egypt' OR s.market = 'EGX')
           AND s.ticker IS NOT NULL AND s.ticker != ''
+          AND s.ticker NOT LIKE 'EGS%'        -- exclude ISIN codes (bonds/sukuk)
+          AND s.ticker NOT LIKE '%_%' ESCAPE '\'        -- exclude adjusted tickers (LUTS_R1)
+          AND length(s.ticker) <= 6           -- exclude long ISIN-like codes
+          AND s.is_suspended IS NOT 1         -- exclude suspended stocks
         ORDER BY s.volume DESC
     """)
 
@@ -229,7 +239,32 @@ def run_pulse(market: str = 'EGX') -> dict:
 
     results = []
     for row in rows:
+        # BRAVO-PULSE-FILTER: skip stocks with no real data
+        cp = row.get('current_price') or 0
+        op = row.get('open_price') or 0
+        vol = row.get('volume') or 0
+
+        # Skip if price = 0 (dead stock — no fallback worked)
+        if cp <= 0:
+            continue
+
+        # Skip if volume = 0 AND open = 0 (suspended, never traded today)
+        if vol == 0 and op == 0:
+            continue
+
+        # Skip if open_price = 0 but price > 0 (corrupted OHLC — can't calculate change)
+        if op <= 0:
+            continue
+
         result = classify_stock(row, daily_ctx.get(row.get('ticker', '')))
+
+        # BRAVO-PULSE-SANITY: flag absurd change percentages as SUSPICIOUS
+        chg = result.get('change_from_open_pct')
+        if chg is not None and abs(chg) > 50:
+            result['flags'] = ['SUSPICIOUS_DATA']
+            result['data_status'] = 'INVALID'
+            result['note_ar'] = f'بيانات مشبوهة (تغير {chg}%) — تجاهل'
+
         results.append(result)
 
     # Summary
@@ -243,6 +278,7 @@ def run_pulse(market: str = 'EGX') -> dict:
         'volume_spike_count': sum(1 for r in results if 'VOLUME_SPIKE_LIVE' in r['flags']),
         'breaking_high_count': sum(1 for r in results if 'BREAKING_DAY_HIGH' in r['flags']),
         'breaking_low_count': sum(1 for r in results if 'BREAKING_DAY_LOW' in r['flags']),
+        'suspicious_count': sum(1 for r in results if 'SUSPICIOUS_DATA' in r['flags']),
         'stale_count': sum(1 for r in results if r['data_status'] in ('STALE', 'INVALID')),
         'quiet_count': sum(1 for r in results if 'QUIET_LIVE' in r['flags']),
     }
