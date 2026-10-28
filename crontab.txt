@@ -1,12 +1,19 @@
 # ============================================================================
-# crontab.txt — جدول المهام الإنتاجي الشامل والمنظم زمنيًا (CANONICAL V2)
+# crontab.txt — جدول المهام الإنتاجي الشامل (CANONICAL V3 — 2026-10-28)
 # ============================================================================
-# المسار الأساسي: /root/GLMinvestment (أو عدله حسب مجلد المشروع)
+# المسار الأساسي: /root/GLMinvestment
 # بيئة التشغيل: /root/GLMinvestment/.venv/bin/python3
 # التوقيت: السيرفر بتوقيت UTC (توقيت القاهرة = UTC + 2 شتوي / UTC + 3 صيفي)
 # أيام التداول للأسواق العربية: الأحد - الخميس (cron: 0-4)
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l
+#
+# BRAVO-SCANNER-SMART-SCHEDULE (2026-10-28):
+# الـ scanner دلوقتي ذكي — بيـ skip الأسواق المقفولة أوتوماتيك.
+# مش محتاجين نحده بوقت محدد لكل سوق. الـ scanner نفسه بيعرف إمتى كل سوق مفتوح.
+# أمريكا بتتسحب لما تفتح (14:30 UTC) أوتوماتيك.
+# الكريبتو بتتسحب 24/7.
+# الأسواق العربية بتتسحب في وقتها (08:00-12:30 UTC).
 # ============================================================================
 
 # ============================================================================
@@ -39,31 +46,38 @@
 
 
 # ============================================================================
-# ─── المرحلة 3: أثناء جلسة التداول اللحظية (08:00 - 12:30 UTC = 10:00 - 14:30 القاهرة) ─
+# ─── المرحلة 3: أثناء جلسة التداول اللحظية ─────────────────────────────────
 # ============================================================================
-# كل دقيقتين — سحب الأسعار اللحظية والسيولة من TradingView Scanner وضخها في stocks.db
-*/2 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scanner_live.py >> /tmp/tradingview_scanner.log 2>&1
+# الـ scanner ذكي — بيـ skip الأسواق المقفولة أوتوماتيك.
+# بيشتغل 24/7 بس بيسحب بس الأسواق المفتوحة فعلاً.
 
-# كل دقيقتين — حفظ لقطات الأسعار اللحظية في intraday.db لصيد الانفجارات السعرية
+# كل 5 دقايق 24/7 — سحب الأسعار اللحظية من TradingView Scanner لكل الأسواق المفتوحة
+# الـ scanner بيـ skip الأسواق المقفولة أوتوماتيك (BRAVO-SCANNER-SMART-SCHEDULE)
+*/5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scanner_live.py >> /tmp/tradingview_scanner.log 2>&1
+
+# كل دقيقتين (08-12 UTC) — حفظ لقطات الأسعار اللحظية في intraday.db لصيد الانفجارات
 */2 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/intraday_storage.py --stocks >> /tmp/intraday_storage.log 2>&1
 
-# كل 5 دقائق بالتتابع — تحديث رادار السيولة والحاضنة لكل الأسواق بدون إجهاد المعالج
+# كل 5 دقائق (08-12 UTC) — تحديث رادار السيولة والحاضنة لكل الأسواق
 */5 8-12 * * 0-4 cd /root/GLMinvestment && bash scripts/cron_radar.sh >> /tmp/radar_cron.log 2>&1
 
-# كل 5 دقائق — فحص الاختراقات اللحظية والسيولة السريعة (Intraday Scanner)
+# كل 5 دقائق (08-12 UTC) — نبض لحظي جوه الجلسة (ALERT ONLY — مش توصية)
+*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/intraday_pulse.py --json-only >> /tmp/intraday_pulse.log 2>&1
+
+# كل 5 دقائق (08-12 UTC) — فحص الاختراقات اللحظية والسيولة السريعة (Intraday Scanner)
 */5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
 
-# كل 15 دقيقة — رادار اصطياد الأسهم الساخنة تحت ضغط الشراء (Hot Candidates)
+# كل 15 دقيقة (08-12 UTC) — رادار اصطياد الأسهم الساخنة تحت ضغط الشراء (Hot Candidates)
 */15 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/hot_candidate_detector.py >> /tmp/hot_candidate.log 2>&1
 
-# كل ساعتين — سحب إفصاحات وأخبار البورصة الرسمية
+# كل ساعتين (08-12 UTC) — سحب إفصاحات وأخبار البورصة الرسمية
 0 8-12/2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; print(fetch_and_store_disclosures(50))" >> /tmp/disclosures.log 2>&1
 
 
 # ============================================================================
-# ─── المرحلة 4: بعد إغلاق الجلسة والتقييم والإغلاق (12:45 - 15:30 UTC) ──────
+# ─── المرحلة 4: بعد إغلاق الجلسة والتقييم والإغلاق (12:45 - 17:00 UTC) ─────
 # ============================================================================
-# 12:45 UTC (14:45 القاهرة) — سحب وتثبيت إغلاقات الجلسة الرسمية من TradingView
+# 12:45 UTC (14:45 القاهرة) — تثبيت إغلاقات الجلسة (الـ scanner الذكي هيسحب الأسواق المفتوحة فقط)
 45 12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scanner_live.py >> /tmp/tradingview_scanner_eod.log 2>&1
 
 # 13:00 UTC (15:00 القاهرة) — تشغيل رادار ختامي لإغلاق اليوم لكل الأسواق
@@ -89,8 +103,12 @@
 
 
 # ============================================================================
-# ─── المرحلة 5: الأسواق العالمية والمستمرة 24/7 (ذهب، كريبتو، وسوق أمريكي) ──
+# ─── المرحلة 5: الأسواق العالمية والمستمرة 24/7 (كريبتو + ذهب) ──────────────
 # ============================================================================
+# ملاحظة: أمريكا بتتسحب أوتوماتيك من الـ scanner الذكي (14:30-21:00 UTC)
+# ملاحظة: الكريبتو بتتسحب أوتوماتيك من الـ scanner الذكي (24/7)
+# ملاحظة: us_stock_scraper.py اتشال — أمريكا بتيجي من TradingView Scanner مباشرة
+
 # كل 5 دقائق 24/7 — رادار الكريبتو الحاضنة والسيولة
 */5 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/maker_radar.py --market CRYPTO --json-only >> /tmp/maker_radar_crypto.log 2>&1
 
@@ -99,9 +117,6 @@
 
 # كل ساعة — سكرابر متعدد الأسواق (Multi-Market Scraper)
 0 9-22 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/multi_market_scraper.py >> /tmp/multi_scraper.log 2>&1
-
-# 22:00 UTC (00:00 القاهرة) — جلب إغلاقات الأسهم الأمريكية (US Stocks) من Yahoo
-0 22 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/us_stock_scraper.py >> /tmp/us_scraper.log 2>&1
 
 
 # ============================================================================
