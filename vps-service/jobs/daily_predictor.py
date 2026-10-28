@@ -296,8 +296,49 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
     الحل: filter_egx_tickers بيرجّع بس الـ tickers المصرية الصحيحة (289 سهم من
     EGX_CANONICAL_TV + EGX_ISIN_NAMES). كل ticker بيتطبّع لـ رمز نظيف موجود في
     TradingView.
+
+    MULTI-MARKET SUPPORT (2026-10-28): لما market_code != 'EGX'، بنفلتر
+    بالـ market column في stocks.db مباشرةً بدل الـ egx_gate (اللي هو EGX-only).
+    ده معناه:
+      - market_code='KSA' → tickers TADAWUL من stocks.db WHERE market='TADAWUL'
+      - market_code='KSE' → tickers KSE من stocks.db WHERE market='KSE'
+      - market_code='QSE' → tickers QSE من stocks.db WHERE market='QSE'
+      - market_code='EGX' → نفس السلوك القديم (egx_gate filter)
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
+
+    # ── MULTI-MARKET PATH: non-EGX markets filter by stocks.db.market column ──
+    # Skip the EGX-only gate for TADAWUL/KSE/QSE/US — use the stocks table
+    # market column directly (those markets have clean ticker codes already).
+    if market_code != 'EGX':
+        # Map CLI market code → stocks.db market value
+        # (TADAWUL is stored as 'TADAWUL' in stocks.db, but CLI uses 'KSA')
+        db_market = {
+            'KSA': 'TADAWUL',
+            'TADAWUL': 'TADAWUL',
+            'KSE': 'KSE',
+            'QSE': 'QSE',
+            'US': 'US',
+        }.get(market_code, market_code)
+        try:
+            if not _V402_DBM_AVAILABLE:
+                raise RuntimeError("db_manager unavailable")
+            _stocks_db_path = str(_db_dir / 'stocks.db')
+            conn = _dbm.get_connection(_stocks_db_path, writable=False)
+            cur = conn.cursor()
+            # Active stocks with current_price > 0 in this market
+            cur.execute(
+                "SELECT ticker FROM stocks WHERE market = ? AND is_active = 1 AND current_price > 0 ORDER BY ticker",
+                (db_market,),
+            )
+            tickers = [row[0] for row in cur.fetchall()]
+            conn.close()
+            print(f"[V40.2] stocks.db (market={db_market}) — {len(tickers)} tickers", flush=True)
+            return tickers
+        except Exception as _mm_err:
+            import logging as _mm_log
+            _mm_log.warning(f"[daily_predictor] multi-market path failed for {market_code}: {_mm_err}")
+            # Fall through to EGX-style sources as last resort (will likely return [])
 
     # EGX-MARKET-ISOLATION: استيراد الـ gate
     try:

@@ -41,17 +41,26 @@ class FeedbackLoop:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or str(PREDICTIONS_DB)
 
-    def _conn(self):
-        # Phase 7.1: migrated to db_manager (writable=False)
+    def _conn(self, writable: bool = False):
+        """افتح اتصال بـ predictions.db.
+
+        Phase 7.1 migration left a bug: this was hard-coded to writable=False,
+        but ensure_table() needs to CREATE TABLE — so it threw
+        "attempt to write a readonly database" on every prediction run.
+
+        FIX (2026-10-28): allow callers to request a writable connection.
+        Read paths (evaluations, lookups) pass writable=False (default).
+        Write paths (ensure_table, save_outcome) pass writable=True.
+        """
         from core.db_manager import db_manager
-        conn = db_manager.get_connection(self.db_path, writable=False)
+        conn = db_manager.get_connection(self.db_path, writable=writable)
         conn.row_factory = sqlite3.Row
         return conn
 
     def ensure_table(self) -> bool:
         """أنشئ جدول prediction_outcomes لو مش موجود (بـ schema جديد)."""
         try:
-            conn = self._conn()
+            conn = self._conn(writable=True)  # FIX: need writable to CREATE TABLE
             # Check if table exists with old schema
             cols = [col[1] for col in conn.execute('PRAGMA table_info(prediction_outcomes)').fetchall()]
             if cols and 'ticker' not in cols:
@@ -128,7 +137,7 @@ class FeedbackLoop:
         stats = {'evaluated': 0, 'wins': 0, 'losses': 0, 'neutral': 0, 'errors': 0}
         
         try:
-            conn = self._conn()
+            conn = self._conn(writable=True)  # FIX: evaluate_outcomes does INSERTs
             # Get predictions that are old enough but not yet evaluated
             cutoff_date = (datetime.now() - timedelta(days=days_threshold)).strftime('%Y-%m-%d')
             
