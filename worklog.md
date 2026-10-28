@@ -10237,3 +10237,45 @@ Stage Summary:
 - +12 BOUNCE detections جديدة، 0 lost، 0 false positives.
 - معايير القبول كلها اتحقت.
 - الفرع `bravo/radar-bounce-path` جاهز للمراجعة قبل الدمج.
+
+---
+Task ID: RADAR-BOUNCE-1
+Agent: Bravo V2 (backend engineer)
+Task: دمج محدود لـ BOUNCE path + Explosive multi-day في main (بناءً على موافقة المالك بعد تثبيت المرحلة الأولى على اللابتوب).
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-RADAR-BOUNCE-VERIFICATION).
+- **النتايج على اللابتوب (تأكيد المالك):**
+  * total=734, under_micro=155, BOUNCE=9
+  * ETEL = F_bounce ✅
+  * KORA/LUTS = rule80_downtrend (NOT buy) ✅
+  * 0 false positives
+- **الدمج المحدود تم في commit `deac6c6`:**
+  * مسار `F_bounce` (detection only، position=0، under_microscope=True)
+  * Explosive: max(last 3 days volume) >= 1.7× avg_20d (بدل avg last 5 >= 2.0×)
+- **المحظورات (كلها محترمة):**
+  * ممنوع أي ربط بتوصية شراء → position_size=0 للـ BOUNCE ✅
+  * ممنوع تعديل risk gate / master analyzer → مفيش تغييرات في check_kill_switch / Flow Gate / Risk Gate ✅
+  * ممنوع refactor أو تفكيك maker_radar.py → الملف لسه 2846 سطر (unsplit) ✅
+  * ممنوع إدخال مرحلة 2 (trend_filter / مسار هبوطي) → مش موجود ✅
+- **التحقق بعد الدمج (smoke test على ETEL + 3 من قائمة الـ 9):**
+  * ETEL: F_bounce, under_micro=True, position=0.0 ✅
+  * NIPH: F_bounce, under_micro=True, position=0.0 ✅
+  * 8311: F_bounce, under_micro=True, position=0.0 ✅
+  * 8160: F_bounce, under_micro=True, position=0.0 ✅
+  * KORA: None, under_micro=False, rule80_downtrend ✅ (NOT buy)
+  * LUTS: None, under_micro=False, rule80_downtrend ✅ (NOT buy)
+- **F_bounce مش في _BULLISH_PATHS** → Flow Gate مش بيتأثر ✅
+- Git: commit `deac6c6` على main (مرفوع على origin/main).
+
+Stage Summary:
+- Files modified (في الـ merge):
+  * `scripts/maker_radar.py` (BOUNCE path + money_flow restructure)
+  * `vps-service/utils/shared_liquidity.py` (Explosive multi-day + 1.7×)
+- **RADAR-BOUNCE-1: detection-only bounce path + explosive multi-day 1.7x — no auto BUY**
+- معايير النجاح كلها اتحقت:
+  * ETEL = F_bounce / under_microscope ✅
+  * KORA/LUTS NOT buy ✅
+  * مفيش regression على المسارات القديمة (pre_surge/quiet/explosive/early_break) ✅
+  * position=0 لـ BOUNCE ✅
+- **downstream:** مراقبة أسبوع للإشارات الجديدة قبل أي توسعة (مرحلة 2 مقفولة).
