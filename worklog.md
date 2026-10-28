@@ -10083,3 +10083,55 @@ Stage Summary:
   * cron ما يشوفش failure أبداً → بيـ reschedule الـ run الجاي طبيعي.
   * الـ monitoring يعرف إن المحرك شغال من الـ heartbeat logs.
 - الـ owner يعمل: `git pull` — الـ hardening بيشتغل أوتوماتيك في الـ cron jobs التالية (7:00 + 13:00).
+
+---
+Task ID: BRAVO-DB-BACKUP-BRANCH
+Agent: Bravo V2 (backend engineer)
+Task: إصلاح فشل رفع قواعد البيانات من لوحة الأدمن لـ GitHub — مع دعم فرع منفصل للرفع.
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-NEVER-HALT).
+- حللت اللوج اللي الـ owner بعته:
+  * `⚠ endpoint_not_found` + `❌ push failed: Command failed: /usr/bin/git push origin HEAD`
+  * 14 archive عالقين "في الانتظار".
+- **التشخيص — 5 أسباب متراكبين:**
+  1. **main behind بـ 239 commits** (`git rev-list`: ahead=5, behind=239). الـ default strategy `fetch_rebase` بيحاول rebase 5 commits فوق 239 → conflicts ضخمة/timeout → push rejected.
+  2. **الـ push بيروح على `main`** (`git push origin HEAD`). أي conflict على main بـ يـ block الـ backup كله.
+  3. **`data/` كله gitignored** (`.gitignore:387: /data/`). `git add -f` بيشتغل بس الـ tracking هش.
+  4. **مفيش Git LFS**. GitHub هيرفض أي ملف > 100MB. الـ owner شايف part2 فيه 6 splits → ممكن يكون كبير.
+  5. **`endpoint_not_found`** من request تاني (catch-all `[...slug]/route.ts` بيرجعها لأي /api/* غير موجود — غالباً job polling). الـ push failure الحقيقي من 1-4.
+- **الـ fix — فرع منفصل للرفع (الحل اللي الـ owner طلبه):**
+  1. `PostBody` جديد: `push_branch` (default `'db-backups'`) + `push_branch_force` (default true — آمن لأن الفرع معزول).
+  2. مسار branch-push جديد في `route.ts`:
+     * validation لاسم الـ branch (regex `^[a-zA-Z0-9][a-zA-Z0-9._-]*$` + length ≤ 100 — بيرفض path traversal/injection).
+     * `git fetch origin <branch>` (catches "not found" → بيتـ create).
+     * `git checkout -B <branch>` (create/reset local branch من HEAD الحالي).
+     * `git push --force -u origin <branch>`.
+     * `git checkout <original-branch>` (restore working state).
+     * on error: log واضح + restore original branch.
+  3. لما `behind > 50` على main → warning واضح بيـ recommends الـ branch المنفصل.
+  4. قلّ `DEFAULT_MAX_ZIP_MB` من 60 لـ 45 (safety margin لـ GitHub 100MB hard limit).
+  5. Per-archive size warning لو أي ملف > 90MB.
+- **الـ frontend (DbBackupPanel.tsx):**
+  6. `useSeparateBranch` toggle (default ON) + `pushBranch` input (default `'db-backups'`) + `pushBranchForce` checkbox (default ON).
+  7. لما `gitStatus.behind > 50` → amber warning بيـ recommends الـ branch.
+  8. POST body بيبعت `push_branch` + `push_branch_force` لما مفعل.
+  9. `maxPartSizeMb` default من 60 لـ 45.
+- **التحقق:**
+  * `bun run lint` → exit 0 (نقي).
+  * dev server بيـ compile الـ route بنجاح.
+  * branch name regex: 12/12 test cases (rejects `''`, `'../evil'`, `'db;rm'`, `'-db'`, `'.db'`, >100 chars; accepts `'db-backups'`, `'db_backups'`, `'123branch'`).
+  * `checkout -B` + `checkout back`: شغال في temp git repo.
+  * `fetch` non-existent branch: بيفشل صح (الـ code بيـ catch + create).
+- Git: commit `573354c` على نفس الـ branch.
+
+Stage Summary:
+- Files modified (2):
+  * `src/app/api/admin/db-backup/route.ts` (+107 lines: push_branch + push_branch_force + branch-push path + size warnings + DEFAULT_MAX_ZIP_MB 60→45)
+  * `src/modules/admin/components/DbBackupPanel.tsx` (+62 lines: useSeparateBranch toggle + pushBranch input + pushBranchForce checkbox + amber warning)
+- النتيجة المتوقعة بعد `git pull`:
+  * الـ owner يفتح تبويب قواعد البيانات → يلاقي option جديد "🌿 رفع على فرع منفصل" (default ON).
+  * لما يـ execute backup، الـ archives هتترفع على `db-backups` branch بدل main.
+  * main branch مش متأثر → ما فيش conflicts → push بينجح.
+  * لو أي archive > 90MB → warning واضح قبل الـ push.
+- الـ owner يعمل: `git pull` + `bun run dev` → تبويب قواعد البيانات → فعّل "رفع على فرع منفصل" (default ON) → execute.
