@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/tooltip';
 // (ALPHA-RADAR-MOMENTUM): قسم توقعات زخم الرادار — مدمج في نفس الشاشة.
 import { RadarMomentumTab } from '@/modules/predictions/components/RadarMomentumTab';
+import { IntradayPulseBar } from '@/components/shared/IntradayPulseBar';
 import {
  Activity,
  CheckCircle2,
