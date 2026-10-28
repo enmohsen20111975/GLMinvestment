@@ -314,7 +314,11 @@ class DailyCloser:
         return conn
 
     def _ensure_columns(self):
-        """Add new columns to predictions table if they don't exist (migration)."""
+        """Add new columns to predictions table if they don't exist (migration).
+
+        SAFETY FIX: Only 'duplicate column' errors are safe to ignore.
+        Any other OperationalError (permissions, DB locked, disk full) must raise.
+        """
         new_columns = [
             ('is_trend_following', 'INTEGER DEFAULT 0'),
             ('exit_type', 'TEXT'),
@@ -323,27 +327,29 @@ class DailyCloser:
             ('atr_at_entry', 'REAL'),
             ('highest_price_reached', 'REAL'),
             ('lowest_price_reached', 'REAL'),
-            # PRIORITY-2: Exit policy columns (partial at 1R + trailing)
             ('partial_exit_price', 'REAL'),
             ('partial_exit_date', 'TEXT'),
             ('partial_return_pct', 'REAL'),
             ('exit_policy', "TEXT DEFAULT 'fixed'"),
-            # RL-FIX-6: Second target column for two-tier take-profit display
-            # (المستهدف الأول + المستهدف الثاني) — requested by owner 2026-08-10.
             ('target_price_2', 'REAL'),
         ]
+        conn = self._conn(self.predictions_db)
+        cursor = conn.cursor()
         try:
-            conn = self._conn(self.predictions_db)
-            cursor = conn.cursor()
             for col_name, col_type in new_columns:
                 try:
                     cursor.execute(f"ALTER TABLE predictions ADD COLUMN {col_name} {col_type}")
-                except sqlite3.OperationalError:
-                    pass  # Column already exists
+                except sqlite3.OperationalError as e:
+                    # Only safe to ignore if column already exists
+                    if 'duplicate column' in str(e).lower() or 'already exists' in str(e).lower():
+                        pass  # Column already exists — expected, safe
+                    else:
+                        # Real error: permissions, disk full, DB locked — RAISE
+                        logger.error(f"_ensure_columns: ALTER failed for {col_name}: {e}")
+                        raise
             conn.commit()
+        finally:
             conn.close()
-        except Exception as e:
-            logger.warning(f"Migration check failed: {e}")
 
     def get_pending_predictions(self, market_filter: str = None) -> List[Dict]:
         """جلب كل التوقعات المعلقة.
@@ -352,14 +358,14 @@ class DailyCloser:
             market_filter: لو 'EGX' → بيرجع بس توقعات EGX.
                            لو 'CRYPTO' → بيرجع بس توقعات CRYPTO.
                            لو None → بيرجع الكل.
+
+        Raises:
+            Exception on DB failure — does NOT return [] to hide errors.
+            Caller must handle the exception (run() will log + skip the batch).
         """
+        conn = self._conn(self.predictions_db)
+        cursor = conn.cursor()
         try:
-            conn = self._conn(self.predictions_db)
-            cursor = conn.cursor()
-            # FIX (July 2026): predictions table has NO 'status' column.
-            # Use outcome_date IS NULL to find pending predictions.
-            # FIX (Aug 2026): لو market_filter محدد، بـ يـ filter على market column
-            # عشان نمنع ghost closures لتوقعات CRYPTO من مصادر أس EGX.
             if market_filter:
                 cursor.execute("""
                     SELECT *
@@ -376,11 +382,9 @@ class DailyCloser:
                     ORDER BY created_at ASC
                 """)
             rows = cursor.fetchall()
-            conn.close()
             return [dict(r) for r in rows]
-        except Exception as e:
-            logger.error(f"Error getting pending predictions: {e}")
-            return []
+        finally:
+            conn.close()
 
     def get_price_history(self, ticker: str, start_date: str, end_date: str) -> List[Dict]:
         """جلب تاريخ الأسعار لتوقيت معين — P0-v18: auto-detect من كل الـ sources.

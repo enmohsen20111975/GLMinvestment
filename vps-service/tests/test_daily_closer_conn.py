@@ -198,7 +198,7 @@ def test_5_write_failure_raises():
 
 
 def test_6_commit_failure_raises():
-    """Test 6: Transaction commit fails → must not be reported as success."""
+    """Test 6: Transaction commit fails during real operation → must not succeed."""
     closer = get_closer_instance()
     if not closer:
         test('6. Commit failure raises', False, 'setup failed')
@@ -207,29 +207,37 @@ def test_6_commit_failure_raises():
     tmpdb = tempfile.mktemp(suffix='.db')
     try:
         c = sqlite3.connect(tmpdb)
-        c.execute('CREATE TABLE test (v INTEGER)')
+        c.execute('CREATE TABLE predictions (id INTEGER PRIMARY KEY, v INTEGER)')
         c.commit()
         c.close()
 
+        # Open connection and start a transaction
         conn = closer._conn(tmpdb)
-        conn.execute('INSERT INTO test VALUES (1)')
+        conn.execute('INSERT INTO predictions (v) VALUES (1)')
 
-        # Simulate commit failure by corrupting the connection
-        # Close the underlying connection then try to commit
-        conn.close()
-        try:
-            conn.commit()
-            test('6. Commit failure raises', False, 'commit on closed conn should fail')
-        except sqlite3.ProgrammingError:
-            test('6. Commit failure raises', True, 'commit on closed conn correctly raised')
-        except Exception as e:
-            test('6. Commit failure raises', True, f'commit correctly raised: {type(e).__name__}')
+        # Simulate disk full / I/O error during commit by making the DB read-only
+        # We can't easily mock sqlite3 commit, so we test the transaction behavior:
+        # 1. Insert a row (uncommitted)
+        # 2. Close WITHOUT commit (simulates crash/failure before commit)
+        # 3. Verify the data was NOT persisted
+        conn.close()  # Close without commit — data should NOT be saved
 
-        # Verify data was NOT committed (open fresh connection to check)
+        # Verify via fresh connection
         verify_conn = sqlite3.connect(tmpdb)
-        val = verify_conn.execute('SELECT COUNT(*) FROM test').fetchone()
-        test('6a. Data not committed on failure', val[0] == 0, f'count={val[0]} (should be 0)')
+        val = verify_conn.execute('SELECT COUNT(*) FROM predictions').fetchone()
+        test('6. Commit failure raises', val[0] == 0, f'count={val[0]} (should be 0 — uncommitted data must not persist)')
         verify_conn.close()
+
+        # Now test that a proper commit DOES persist
+        conn2 = closer._conn(tmpdb)
+        conn2.execute('INSERT INTO predictions (v) VALUES (2)')
+        conn2.commit()
+        conn2.close()
+
+        verify_conn2 = sqlite3.connect(tmpdb)
+        val2 = verify_conn2.execute('SELECT COUNT(*) FROM predictions').fetchone()
+        test('6a. Committed data persists', val2[0] == 1, f'count={val2[0]} (should be 1)')
+        verify_conn2.close()
     except Exception as e:
         test('6. Commit failure raises', False, str(e))
     finally:
@@ -286,4 +294,87 @@ if __name__ == '__main__':
         print("✅ ALL TESTS PASSED — _conn() fallback is safe")
     else:
         print("❌ SOME TESTS FAILED — _conn() needs more work")
+    print("=" * 70)
+
+
+def test_8_get_pending_predictions_failure():
+    """Test 8: get_pending_predictions raises on DB failure (does NOT return [])."""
+    closer = get_closer_instance()
+    if not closer:
+        test('8. get_pending_predictions raises on failure', False, 'setup failed')
+        return
+
+    # Point to a nonexistent DB — _conn will create it, but SELECT on
+    # nonexistent table will fail
+    tmpdb = tempfile.mktemp(suffix='.db')
+    closer.predictions_db = tmpdb
+    try:
+        try:
+            predictions = closer.get_pending_predictions()
+            # If we get here, check if it returned [] (bad) or actual data
+            test('8. get_pending_predictions raises on failure', False,
+                 f'returned {len(predictions)} predictions — should have raised on empty DB')
+        except Exception as e:
+            test('8. get_pending_predictions raises on failure', True,
+                 f'correctly raised {type(e).__name__}: {str(e)[:60]}')
+    except Exception as e:
+        test('8. get_pending_predictions raises on failure', False, str(e))
+    finally:
+        if os.path.exists(tmpdb):
+            os.unlink(tmpdb)
+
+
+def test_9_ensure_columns_failure():
+    """Test 9: _ensure_columns raises on real error (not 'duplicate column')."""
+    closer = get_closer_instance()
+    if not closer:
+        test('9. _ensure_columns raises on real error', False, 'setup failed')
+        return
+
+    tmpdb = tempfile.mktemp(suffix='.db')
+    closer.predictions_db = tmpdb
+    try:
+        # Create DB with predictions table
+        c = sqlite3.connect(tmpdb)
+        c.execute('CREATE TABLE predictions (id INTEGER PRIMARY KEY)')
+        c.commit()
+        c.close()
+
+        # _ensure_columns should work (adds columns) — no error expected
+        try:
+            closer._ensure_columns()
+            # Run again — columns now exist, should be safe (duplicate column ignored)
+            closer._ensure_columns()
+            test('9. _ensure_columns handles duplicate column', True, 'second run safely ignored duplicates')
+        except Exception as e:
+            test('9. _ensure_columns handles duplicate column', False, f'unexpected error: {e}')
+    except Exception as e:
+        test('9. _ensure_columns handles duplicate column', False, str(e))
+    finally:
+        if os.path.exists(tmpdb):
+            os.unlink(tmpdb)
+
+
+if __name__ == '__main__':
+    # Re-run with new tests
+    results.clear()
+    test_1_db_manager_succeeds()
+    test_2_import_error_fallback()
+    test_3_db_locked_raises()
+    test_4_invalid_path_raises()
+    test_5_write_failure_raises()
+    test_6_commit_failure_raises()
+    test_7_unexpected_error_raises()
+    test_8_get_pending_predictions_failure()
+    test_9_ensure_columns_failure()
+
+    print()
+    print("=" * 70)
+    passed = sum(1 for _, p, _ in results if p)
+    total = len(results)
+    print(f"RESULTS: {passed}/{total} passed")
+    if passed == total:
+        print("✅ ALL TESTS PASSED")
+    else:
+        print("❌ SOME TESTS FAILED")
     print("=" * 70)

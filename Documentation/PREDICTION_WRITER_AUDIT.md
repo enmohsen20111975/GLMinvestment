@@ -101,13 +101,21 @@
 | `signal` | prediction_tracker | prediction_tracker (UPDATE) | ❌ never | Low — only tracker updates signal |
 | `target_price` | prediction_tracker | ❌ never | ❌ never | None |
 | `stop_loss` | prediction_tracker | ❌ never | ❌ never | None |
-| `status` | prediction_tracker ('active') | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** — two closers |
-| `outcome_date` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** — two closers |
-| `exit_price` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** — two closers |
-| `actual_return` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** |
-| `hit_target` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** |
-| `hit_stop` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** |
-| `highest_price_reached` | ❌ never | intraday_scanner | intraday_scanner + daily_closer | **MEDIUM** |
+| `status` | prediction_tracker ('active') | ❌ never | daily_closer ONLY | None — sole closer |
+| `outcome_date` | ❌ never | ❌ never | daily_closer ONLY | None — sole closer |
+| `exit_price` | ❌ never | ❌ never | daily_closer ONLY | None |
+| `actual_return` | ❌ never | ❌ never | daily_closer ONLY | None |
+| `hit_target` | ❌ never | ❌ never | daily_closer ONLY | None |
+| `hit_stop` | ❌ never | ❌ never | daily_closer ONLY | None |
+| `highest_price_reached` | ❌ never | ❌ never | daily_closer ONLY | None |
+
+**CORRECTION (2026-10-28 V3):** Previous version incorrectly listed intraday_scanner
+as writing to `status`, `outcome_date`, `exit_price`, etc. This was WRONG.
+Verified by examining actual SQL: intraday_scanner UPDATEs only touch
+`signal`, `signal_type`, `risk_reward`, `confidence`, `notes`, `updated_at`,
+`update_count`, `kill_filter_result`, `entry_price_min/max`, `support/resistance levels`.
+It NEVER writes `status`, `outcome_date`, `exit_price`, `actual_return`,
+`hit_target`, `hit_stop`, or `highest_price_reached`. Daily_closer is the SOLE closer.
 
 ---
 

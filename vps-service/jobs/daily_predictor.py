@@ -314,8 +314,8 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         _v402_gt_ctx = None
         try:
             if _V402_DBM_AVAILABLE:
-                _v402_gt_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gt_dbm.get_connection(_ph_db_path)
+                _ph_db_path = str(_db_dir / 'price_history.db')
+                conn = _dbm.get_connection(_ph_db_path, writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception as _gt_err:
@@ -323,7 +323,6 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
             import logging as _gt_log
             _gt_log.warning(f"[daily_predictor] get_tickers: db_manager failed for price_history.db ({_gt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
-            _v402_gt_ctx = None
         cur = conn.cursor()
         cur.execute("PRAGMA table_info(price_history)")
         _ph_cols = [r[1] for r in cur.fetchall()]
@@ -361,15 +360,14 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         _v402_gt2_ctx = None
         try:
             if _V402_DBM_AVAILABLE:
-                _v402_gt2_ctx = _dbm.connection(str(_db_dir / 'data_engine.db'))
-                conn = _v402_gt2_dbm.get_connection(_ph_db_path)
+                _de_db_path = str(_db_dir / 'data_engine.db')
+                conn = _dbm.get_connection(_de_db_path, writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception as _gt2_err:
             import logging as _gt2_log
             _gt2_log.warning(f"[daily_predictor] get_tickers: db_manager failed for data_engine.db ({_gt2_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-            _v402_gt2_ctx = None
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
@@ -399,16 +397,14 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         _v402_gt3_ctx = None
         try:
             if _V402_DBM_AVAILABLE:
-                _v402_gt3_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gt3_dbm.get_connection(_ph_db_path)
+                _stocks_db_path = str(_db_dir / 'stocks.db')
+                conn = _dbm.get_connection(_stocks_db_path, writable=False)
             else:
                 raise RuntimeError("db_manager unavailable")
         except Exception as _gt3_err:
-            # REMEDIATION: log the fallback — don't silently bypass db_manager
             import logging as _gt3_log
             _gt3_log.warning(f"[daily_predictor] get_tickers: db_manager failed for stocks.db ({_gt3_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
-            _v402_gt3_ctx = None
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT ticker FROM stock_daily_prices GROUP BY ticker HAVING COUNT(*) >= ? ORDER BY ticker",
