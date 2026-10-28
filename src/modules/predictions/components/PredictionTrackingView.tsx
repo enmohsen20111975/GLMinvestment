@@ -42,12 +42,15 @@ import {
  TooltipProvider,
  TooltipTrigger,
 } from '@/components/ui/tooltip';
+// (ALPHA-RADAR-MOMENTUM): قسم توقعات زخم الرادار — مدمج في نفس الشاشة.
+import { RadarMomentumTab } from '@/modules/predictions/components/RadarMomentumTab';
 import {
  Activity,
  CheckCircle2,
  XCircle,
  Clock,
  Trophy,
+ Radio,
  TrendingUp,
  TrendingDown,
  RefreshCw,
@@ -703,6 +706,24 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — ${t('predictions.t
  maxHeight="h-[60vh] sm:h-[65vh]"
  rowClassName={() => 'hover:bg-muted/40'}
  />
+ </CardContent>
+ </Card>
+
+ {/* (ALPHA-RADAR-MOMENTUM): قسم توقعات زخم الرادار — عالية المخاطر.
+     مدمج في نفس شاشة التوقعات (مش شاشة جديدة) per owner directive.
+     بيعرض مرشحي الرادار من /api/radar/incubator مع تحذير مخاطر واضح. */}
+ <Card className="border-warning/20" key="radar-momentum-section">
+ <CardHeader className="pb-2">
+ <CardTitle className="text-base flex items-center gap-2">
+ <Radio className="w-5 h-5 text-warning" />
+ 📡 توقعات زخم الرادار — عالية المخاطر
+ </CardTitle>
+ <CardDescription className="text-xs">
+ توقعات مضاربية مبنية على الزخم ونشاط التداول كما يرصدها رادار السيولة — منفصلة عن التوقعات الاستثمارية
+ </CardDescription>
+ </CardHeader>
+ <CardContent className="pt-0">
+ <RadarMomentumTab market={currentMarket} />
  </CardContent>
  </Card>
 
