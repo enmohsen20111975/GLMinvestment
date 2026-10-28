@@ -36,8 +36,8 @@ import {
 import { useAppStore } from '@/lib/store';
 import { isGuestUser } from '@/lib/subscription-gate';
 import { useSession } from '@/lib/next-auth-shim';
-// (ALPHA-RADAR-INTELLIGENCE): شارات الـ 4 طبقات ذكاء — shared component.
-import { IntelligenceBadges } from '@/components/shared/IntelligenceBadges';
+// (ALPHA-RADAR-INTELLIGENCE-COLUMNS): الـ 4 طبقات اتقسمت لـ أعمدة منفصلة.
+// الـ IntelligenceBadges component مش مستخدم هنا دلوقتي — الـ translations نسخة محلية.
 // TASK-I18N: useTranslation for bilingual support (ar ↔ en).
 import { useTranslation } from '@/lib/i18n-context';
 // BLUEPRINT Phase 1: unified component library
@@ -151,6 +151,33 @@ import {
   describeRadarStatus,
   isDataInvalidStock,
 } from '@/components/shared/radar-filters';
+
+// (ALPHA-RADAR-INTELLIGENCE-COLUMNS): خرائط ترجمة الطبقات الـ 4 للفرز + الفلترة.
+// نسخة محلية (مش مستوردة من IntelligenceBadges) عشان الـ filterValue يستخدمها.
+const PRICE_ACTION_AR: Record<string, string> = {
+  SURGE_UP: 'ارتفاع قوي', SURGE_DOWN: 'انخفاض قوي',
+  BULLISH_WAVE_START: 'بداية موجة صاعدة', BEARISH_WAVE_START: 'بداية موجة هابطة',
+  BULLISH_CONTINUATION: 'استمرار صاعد', BEARISH_CONTINUATION: 'استمرار هابط',
+  BOUNCE_AFTER_DECLINE: 'ارتداد بعد هبوط', PULLBACK_AFTER_RALLY: 'تصحيح بعد صعود',
+  BREAKOUT: 'اختراق', BREAKDOWN: 'كسر',
+  SIDEWAYS: 'عرضي', MOMENTUM_EXHAUSTION: 'إرهاق الزخم',
+  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+const PARTICIPANT_FLOW_AR: Record<string, string> = {
+  INSTITUTIONAL_EVIDENCE: 'أدلة مؤسسية', SPECULATIVE_PATTERN: 'نمط مضاربي',
+  MIXED_PARTICIPATION: 'مشاركة مختلطة', UNCONFIRMED: 'غير مؤكد', UNAVAILABLE: 'غير متاح',
+};
+const CONTINUATION_AR: Record<string, string> = {
+  SUPPORTIVE: 'داعم للاستمرار', MIXED: 'مختلط', WEAK: 'ضعيف',
+  UNCONFIRMED: 'غير مؤكد', INSUFFICIENT_DATA: 'بيانات ناقصة',
+};
+const DATA_QUALITY_AR: Record<string, string> = {
+  FRESH: 'بيانات حديثة', STALE: 'بيانات قديمة', VERY_STALE: 'قديمة جدًا',
+  INSUFFICIENT_HISTORY: 'تاريخ ناقص', GAPS: 'فجوات بيانات',
+  UNAVAILABLE: 'غير متاحة', OK: 'سليمة',
+  fresh: 'حديثة', stale: 'قديمة', very_stale: 'قديمة جدًا',
+  unknown: 'غير معروفة', invalid: 'غير صالحة', unavailable: 'غير متاحة',
+};
 
 const PAGE_SIZE = 25;
 const INACTIVE_VOLUME_THRESHOLD = 100_000; // 100K EGP — below = inactive
@@ -584,50 +611,145 @@ export function LiquidityRadarView({
  )
  ),
  },
-// ─── (ALPHA-RADAR-INTELLIGENCE — owner directive 2026-10-28): عمود الذكاء ──
-// بيعرض الـ 4 طبقات ذكاء (price_action + participant_flow + continuation +
-// data_quality) كـ badges مختصرة. لو كل الطبقات null → مخفي (Rule 27).
+// ─── (ALPHA-RADAR-INTELLIGENCE-COLUMNS — owner directive 2026-10-28):
+// «فى عمود الذكاء موجود اكتر من تصنيف داخل العمود دة فا مش عارف ولا افلتر ولا افرز
+// ممكن تلم التصنيفات دى برة مع باقى التصنيفات العامة لسهولة التصنيف والفرز»
+// الحل: قسّمنا الـ 4 طبقات لـ 4 أعمدة منفصلة، كل واحد sortable + filterable.
+// ──────────────────────────────────────────────────────────────────────────
+// Layer 1: price_action — تصنيف الحركة السعرية (قابل للفرز + الفلترة)
 {
- key: 'intelligence',
- header: '🧠 الذكاء',
+ key: 'price_action',
+ header: '📊 الحركة',
  align: 'center',
- width: 'w-48',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.price_action || 'zzz',
+ filterValue: (row) => PRICE_ACTION_AR[row.price_action || ''] || row.price_action || '—',
+ render: (row) => {
+   const pa = row.price_action;
+   if (!pa) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = PRICE_ACTION_AR[pa] || pa;
+   const isBullish = pa.includes('BULLISH') || pa === 'BREAKOUT' || pa === 'SURGE_UP' || pa === 'BOUNCE_AFTER_DECLINE';
+   const isBearish = pa.includes('BEARISH') || pa === 'BREAKDOWN' || pa === 'SURGE_DOWN';
+   const cls = isBullish ? 'border-profit/30 bg-profit/10 text-profit'
+     : isBearish ? 'border-loss/30 bg-loss/10 text-loss'
+     : pa === 'INSUFFICIENT_DATA' || pa === 'UNCONFIRMED' ? 'border-muted-foreground/30 bg-muted/20 text-muted-foreground'
+     : 'border-border bg-muted/20 text-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={pa}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 2: participant_flow — تقييم المشاركين (قابل للفرز + الفلترة)
+{
+ key: 'participant_flow',
+ header: '🐋 المشاركون',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.participant_flow_assessment || 'zzz',
+ filterValue: (row) => PARTICIPANT_FLOW_AR[row.participant_flow_assessment || ''] || row.participant_flow_assessment || '—',
+ render: (row) => {
+   const pf = row.participant_flow_assessment;
+   if (!pf) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = PARTICIPANT_FLOW_AR[pf] || pf;
+   const cls = pf === 'INSTITUTIONAL_EVIDENCE' ? 'border-whale/30 bg-whale/10 text-whale'
+     : pf === 'SPECULATIVE_PATTERN' ? 'border-warning/30 bg-warning/10 text-warning'
+     : pf === 'MIXED_PARTICIPATION' ? 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={pf + (row.participant_evidence_level ? ` (${row.participant_evidence_level})` : '')}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 3: continuation — قابلية الاستمرار (قابل للفرز + الفلترة)
+{
+ key: 'continuation',
+ header: '🔄 الاستمرار',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.continuation_assessment || 'zzz',
+ filterValue: (row) => CONTINUATION_AR[row.continuation_assessment || ''] || row.continuation_assessment || '—',
+ render: (row) => {
+   const ca = row.continuation_assessment;
+   if (!ca) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = CONTINUATION_AR[ca] || ca;
+   const cls = ca === 'SUPPORTIVE' ? 'border-profit/30 bg-profit/10 text-profit'
+     : ca === 'WEAK' ? 'border-loss/30 bg-loss/10 text-loss'
+     : ca === 'MIXED' ? 'border-warning/30 bg-warning/10 text-warning'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={ca}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// Layer 4: data_quality — حالة البيانات (قابل للفرز + الفلترة)
+{
+ key: 'data_quality',
+ header: '📦 جودة البيانات',
+ align: 'center',
+ width: 'w-28',
+ sortable: true,
+ filterable: true,
+ sortValue: (row) => row.data_quality_status || row.data_quality || 'zzz',
+ filterValue: (row) => DATA_QUALITY_AR[row.data_quality_status || ''] || row.data_quality_status || row.data_quality || '—',
+ render: (row) => {
+   const dq = row.data_quality_status || row.data_quality;
+   if (!dq) return <span className="text-muted-foreground text-[10px]">—</span>;
+   const label = DATA_QUALITY_AR[dq] || String(dq);
+   const cls = (dq === 'FRESH' || dq === 'OK' || dq === 'fresh') ? 'border-profit/30 bg-profit/10 text-profit'
+     : (dq === 'STALE' || dq === 'stale') ? 'border-warning/30 bg-warning/10 text-warning'
+     : (dq === 'VERY_STALE' || dq === 'very_stale' || dq === 'UNAVAILABLE' || dq === 'unavailable' || dq === 'INSUFFICIENT_HISTORY') ? 'border-loss/30 bg-loss/10 text-loss'
+     : 'border-muted-foreground/30 bg-muted/20 text-muted-foreground';
+   return (
+     <Badge variant="outline" className={cn('text-[9px] px-1 py-0 h-4', cls)} title={Array.isArray(row.data_quality_reasons) ? row.data_quality_reasons.join('، ') : String(dq)}>
+       {label}
+     </Badge>
+   );
+ },
+},
+// (ALPHA-SCANNER-ALERTS): شارات volume_surge + movement_type في عمود منفصل
+{
+ key: 'scanner_signals',
+ header: '⚡ إشارات السكانر',
+ align: 'center',
+ width: 'w-32',
  sortable: false,
  filterable: false,
  render: (row) => (
- <div className="flex flex-col items-center gap-1 py-1">
- <IntelligenceBadges
- price_action={row.price_action}
- price_action_evidence={row.price_action_evidence}
- participant_flow_assessment={row.participant_flow_assessment}
- participant_evidence_level={row.participant_evidence_level}
- participant_evidence={row.participant_evidence}
- continuation_assessment={row.continuation_assessment}
- data_quality_status={row.data_quality_status}
- data_quality_reasons={row.data_quality_reasons}
- classification_timestamp={row.classification_timestamp}
- />
- {/* (ALPHA-SCANNER-ALERTS): شارة volume_surge ⚡ لو true */}
- {row.volume_surge === true && (
- <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
- ⚡ حجم غير اعتيادي
- </Badge>
- )}
- {/* (ALPHA-SCANNER-ALERTS): شارة الحركة لو movement_type موجود */}
- {row.movement_type && row.movement_type !== 'FLAT' && (
- <Badge variant="outline" className={cn(
- 'text-[9px] px-1 py-0 h-4',
- row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
- : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
- : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
- : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
- : 'border-border bg-muted/20 text-muted-foreground'
- )}>
- {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
- : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
- </Badge>
- )}
- </div>
+   <div className="flex flex-col items-center gap-0.5 py-1">
+     {row.volume_surge === true && (
+       <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-warning/30 bg-warning/10 text-warning">
+         ⚡ حجم غير اعتيادي
+       </Badge>
+     )}
+     {row.movement_type && row.movement_type !== 'FLAT' && (
+       <Badge variant="outline" className={cn(
+         'text-[9px] px-1 py-0 h-4',
+         row.movement_type === 'SURGE_UP' ? 'border-profit/30 bg-profit/10 text-profit'
+         : row.movement_type === 'SURGE_DOWN' ? 'border-loss/30 bg-loss/10 text-loss'
+         : row.movement_type === 'UP' ? 'border-profit/20 bg-profit/5 text-profit'
+         : row.movement_type === 'DOWN' ? 'border-loss/20 bg-loss/5 text-loss'
+         : 'border-border bg-muted/20 text-muted-foreground'
+       )}>
+         {row.movement_type === 'SURGE_UP' ? '↑↑' : row.movement_type === 'SURGE_DOWN' ? '↓↓'
+         : row.movement_type === 'UP' ? '↑' : row.movement_type === 'DOWN' ? '↓' : '→'} {(row.change_percent ?? 0) > 0 ? '+' : ''}{(row.change_percent ?? 0).toFixed(1)}%
+       </Badge>
+     )}
+     {!row.volume_surge && (!row.movement_type || row.movement_type === 'FLAT') && (
+       <span className="text-muted-foreground text-[10px]">—</span>
+     )}
+   </div>
  ),
 },
  // P-TURNOVER: عمود السيولة المتداولة (Turnover / Cash) — يطابق شاشة TradingView
