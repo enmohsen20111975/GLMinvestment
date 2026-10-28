@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""
+new_daily_predictor.py — التوقعات بالـ V3 المنسق/المنفذ
+============================================================
+بيلغي V40.2 القديم (الـ brute force) ويستخدم النظام الذكي:
+  - orchestrator_v3: بيخطط مسار التحليل حسب حالة السوق
+  - executor_v3: بينفذ الخطة بـ المحركات الصغيرة المتخصصة
+
+الـ filters (من الـ smart mode):
+  1. ابدأ من آخر تاريخ في الـ DB
+  2. فلتر أيام الإجازات
+  3. فلتر الأسهم الميتة
+  4. فلتر التوقعات اللي لسه valid
+
+Usage:
+    python3 vps-service/jobs/new_daily_predictor.py --market EGX --today-only
+    python3 vps-service/jobs/new_daily_predictor.py --market TADAWUL --yesterday-only
+    python3 vps-service/jobs/new_daily_predictor.py --all-markets --yesterday-only
+    python3 vps-service/jobs/new_daily_predictor.py --market EGX --today-only --dry-run
+"""
+import sys
+import os
+import argparse
+import sqlite3
+from pathlib import Path
+from datetime import datetime, timedelta
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+os.chdir(PROJECT_ROOT)
+
+# ============================================================
+# Smart Filters (من الـ smart logic اللي اتدمج قبل كده)
+# ============================================================
+
+CANONICAL_MARKET = {
+    'KSA': 'TADAWUL', 'SAUDI': 'TADAWUL', 'TADAWUL': 'TADAWUL',
+    'EGX': 'EGX', 'KSE': 'KSE', 'QSE': 'QSE', 'US': 'US', 'CRYPTO': 'CRYPTO',
+}
+
+STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
+PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
+
+
+def normalize_market(market_code: str) -> str:
+    return CANONICAL_MARKET.get(market_code.strip().upper(), market_code.strip().upper())
+
+
+def is_trading_day(date_str: str, market_code: str) -> bool:
+    try:
+        from utils.trading_calendar import is_trading_day as _check
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        return _check(dt, market_code)
+    except Exception:
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        return dt.weekday() not in [4, 5]
+
+
+def get_last_prediction_date(market_code: str) -> str | None:
+    try:
+        conn = sqlite3.connect(str(PREDICTIONS_DB))
+        row = conn.execute(
+            "SELECT MAX(prediction_date) FROM predictions WHERE market = ?",
+            (market_code,)
+        ).fetchone()
+        conn.close()
+        return str(row[0])[:10] if row and row[0] else None
+    except Exception:
+        return None
+
+
+def get_active_tickers(market_code: str) -> list[str]:
+    """كل الأسهم النشطة في السوق."""
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        rows = conn.execute(
+            "SELECT ticker FROM stocks WHERE market = ? AND is_active = 1 AND current_price > 0",
+            (market_code,)
+        ).fetchall()
+        conn.close()
+        return [r[0] for r in rows]
+    except Exception:
+        return []
+
+
+def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str], int]:
+    """فلتر الأسهم الميتة (change% بين -3% و +0.5%)."""
+    if not tickers:
+        return [], 0
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        placeholders = ','.join(['?'] * len(tickers))
+        rows = conn.execute(
+            f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            (*tickers, market_code)
+        ).fetchall()
+        conn.close()
+        alive = []
+        dead_count = 0
+        for ticker, change in rows:
+            if change is None:
+                continue
+            change = float(change)
+            if -3.0 <= change <= 0.5:
+                dead_count += 1
+                continue
+            alive.append(ticker)
+        return alive, dead_count
+    except Exception:
+        return tickers, 0
+
+
+def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: str) -> tuple[list[str], int]:
+    """skip لو فيه توقع نشط + السعر ما تغيرش >1%."""
+    if not tickers:
+        return [], 0
+    try:
+        conn_pred = sqlite3.connect(str(PREDICTIONS_DB))
+        conn_stocks = sqlite3.connect(str(STOCKS_DB))
+        existing = conn_pred.execute(
+            """SELECT ticker, entry_price FROM predictions 
+               WHERE market = ? AND prediction_date LIKE ? 
+               AND (outcome_date IS NULL OR exit_type IS NULL)""",
+            (market_code, f"{scan_date}%")
+        ).fetchall()
+        conn_pred.close()
+        placeholders = ','.join(['?'] * len(tickers))
+        stock_rows = conn_stocks.execute(
+            f"SELECT ticker, current_price FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            (*tickers, market_code)
+        ).fetchall()
+        conn_stocks.close()
+        current_prices = {r[0]: r[1] for r in stock_rows if r[1]}
+        existing_map = {r[0]: r[1] for r in existing}
+        to_reanalyze = []
+        skipped_count = 0
+        for ticker in tickers:
+            if ticker not in existing_map:
+                to_reanalyze.append(ticker)
+                continue
+            entry_price = existing_map[ticker]
+            current_price = current_prices.get(ticker)
+            if entry_price and current_price and entry_price > 0:
+                change_pct = abs((current_price - entry_price) / entry_price * 100)
+                if change_pct < 1.0:
+                    skipped_count += 1
+                    continue
+            to_reanalyze.append(ticker)
+        return to_reanalyze, skipped_count
+    except Exception:
+        return tickers, 0
+
+
+def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list[float], list[float]]:
+    """جيب آخر N يوم من الأسعار والأحجام من stock_daily_prices."""
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        rows = conn.execute(
+            """SELECT close_price, volume FROM stock_daily_prices 
+               WHERE ticker = ? ORDER BY price_date DESC LIMIT ?""",
+            (ticker, days)
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return [], []
+        # رجّع بترتيب تصاعدي (من الأقدم للأحدث)
+        prices = [float(r[0]) for r in reversed(rows) if r[0] is not None]
+        volumes = [float(r[1]) for r in reversed(rows) if r[1] is not None]
+        return prices, volumes
+    except Exception:
+        return [], []
+
+
+# ============================================================
+# V3 Engine Runner
+# ============================================================
+
+def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes: list[float]) -> dict:
+    """
+    حلل سهم بـ النظام الذكي V3 (orchestrator + executor).
+    """
+    try:
+        from core.orchestrator_v3 import create_v3_plan
+        from core.executor_v3 import execute_v3
+        
+        # 1. المنسّق: يخطط التحليل
+        plan = create_v3_plan(
+            ticker=ticker,
+            prices=prices,
+            volumes=volumes,
+            market=market_code,
+            fund_available=True,  # نفترض إن البيانات متاحة
+            event_available=False,
+        )
+        
+        # Gate: لو no_trade من البداية
+        if plan.decision_policy == 'no_trade':
+            return {
+                'ticker': ticker,
+                'signal': 'NO_TRADE',
+                'reason': plan.no_trade_reason,
+                'state': plan.state_code,
+                'complete': False,
+            }
+        
+        # 2. المنفّذ: ينفذ الخطة
+        result = execute_v3(plan, prices=prices, volumes=volumes, ticker=ticker, market=market_code)
+        
+        return {
+            'ticker': ticker,
+            'signal': result.final_signal,
+            'confidence': result.confidence,
+            'score': result.signal_score,
+            'state': plan.state_code,
+            'market_regime': plan.market_regime,
+            'engines_ran': list(result.engine_scores.keys()),
+            'risk_profile': result.risk_profile,
+            'position_size': result.position_size_pct,
+            'warnings': result.warnings[:3] if isinstance(result.warnings, list) else [],
+            'errors': result.errors[:3] if isinstance(result.errors, list) else [],
+            'complete': result.complete,
+            'no_trade_reason': result.no_trade_reason,
+        }
+    except Exception as e:
+        return {
+            'ticker': ticker,
+            'signal': 'ERROR',
+            'reason': str(e)[:200],
+            'complete': False,
+        }
+
+
+def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
+    """احفظ التوقع في predictions.db."""
+    if result.get('signal') not in ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL']:
+        return False
+    
+    try:
+        conn = sqlite3.connect(str(PREDICTIONS_DB))
+        # تأكد إن الجدول موجود
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT, market TEXT, signal TEXT, signal_type TEXT,
+                prediction_date TEXT, entry_price REAL, target_price REAL,
+                stop_loss REAL, master_score REAL, confidence REAL,
+                persona TEXT, status TEXT DEFAULT 'active',
+                created_at TEXT, notes TEXT
+            )
+        """)
+        
+        # خد السعر الحالي
+        stocks_conn = sqlite3.connect(str(STOCKS_DB))
+        price_row = stocks_conn.execute(
+            "SELECT current_price FROM stocks WHERE ticker = ? AND market = ?",
+            (result['ticker'], market_code)
+        ).fetchone()
+        stocks_conn.close()
+        
+        entry_price = float(price_row[0]) if price_row and price_row[0] else 0
+        confidence = result.get('confidence', 0)
+        score = result.get('score', 0)
+        
+        # احسب target/stop بسيط (ممكن نحسّنها بعدين)
+        signal = result['signal']
+        if 'BUY' in signal:
+            target_price = entry_price * 1.05 if entry_price > 0 else 0
+            stop_loss = entry_price * 0.97 if entry_price > 0 else 0
+        else:
+            target_price = entry_price * 0.95 if entry_price > 0 else 0
+            stop_loss = entry_price * 1.03 if entry_price > 0 else 0
+        
+        conn.execute("""
+            INSERT INTO predictions (ticker, market, signal, signal_type, 
+                                    prediction_date, entry_price, target_price, stop_loss,
+                                    master_score, confidence, persona, status, created_at, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        """, (
+            result['ticker'], market_code, signal, signal,
+            scan_date, entry_price, target_price, stop_loss,
+            score, confidence, 'v3_smart', datetime.now().isoformat(),
+            f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}"
+        ))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"    ⚠️  فشل حفظ التوقع: {e}", flush=True)
+        return False
+
+
+# ============================================================
+# Main Runner
+# ============================================================
+
+def run(market_code: str, start_date: str | None = None, end_date: str | None = None,
+        dry_run: bool = False, max_tickers: int | None = None):
+    """شغّل الـ V3 predictor لسوق معين."""
+    canonical = normalize_market(market_code)
+    today = datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # 1. حدد نطاق التواريخ
+    if start_date is None:
+        last_date = get_last_prediction_date(canonical)
+        if last_date:
+            last_dt = datetime.strptime(last_date, '%Y-%m-%d')
+            start_date = (last_dt + timedelta(days=1)).strftime('%Y-%m-%d')
+            print(f"  📅 آخر توقع: {last_date} → نبدأ من {start_date}", flush=True)
+        else:
+            start_date = yesterday
+            print(f"  📅 مفيش توقعات قديمة → نبدأ من {start_date}", flush=True)
+    if end_date is None:
+        end_date = today
+    
+    print(f"\n{'='*60}", flush=True)
+    print(f"  V3 Smart Predictor — {canonical}", flush=True)
+    print(f"  Period: {start_date} → {end_date}", flush=True)
+    print(f"  Dry-run: {dry_run}", flush=True)
+    print(f"{'='*60}\n", flush=True)
+    
+    # 2. فلتر أيام الإجازات
+    start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    all_dates = []
+    current = start_dt
+    while current <= end_dt:
+        all_dates.append(current.strftime('%Y-%m-%d'))
+        current += timedelta(days=1)
+    
+    scan_dates = [d for d in all_dates if is_trading_day(d, canonical)]
+    print(f"  📅 إجمالي: {len(all_dates)} | بعد فلتر الإجازات: {len(scan_dates)}", flush=True)
+    
+    if not scan_dates:
+        print("  ℹ️  مفيش أيام تداول", flush=True)
+        return
+    
+    # 3. الأسهم المرشحة
+    candidate_tickers = get_active_tickers(canonical)
+    if not candidate_tickers:
+        print("  ℹ️  مفيش أسهم نشطة", flush=True)
+        return
+    print(f"  📊 أسهم نشطة: {len(candidate_tickers)}", flush=True)
+    
+    # 4. لكل يوم، فلتر وحلل
+    total_analyzed = 0
+    total_saved = 0
+    total_skipped_stale = 0
+    total_skipped_dead = 0
+    total_no_trade = 0
+    total_errors = 0
+    
+    for scan_date in scan_dates:
+        print(f"\n  📅 {scan_date}:", flush=True)
+        
+        # 4a. فلتر التوقعات اللي لسه valid
+        todo, skipped_stale = filter_stale_predictions(candidate_tickers, canonical, scan_date)
+        total_skipped_stale += skipped_stale
+        
+        # 4b. فلتر الأسهم الميتة
+        alive, dead_count = filter_dead_stocks(todo, canonical)
+        total_skipped_dead += dead_count
+        print(f"    - after filters: {len(alive)} (skip stale={skipped_stale}, dead={dead_count})", flush=True)
+        
+        if not alive:
+            print(f"    ℹ️  مفيش أسهم تستاهل", flush=True)
+            continue
+        
+        # 4c. limit
+        if max_tickers and len(alive) > max_tickers:
+            alive = alive[:max_tickers]
+        
+        # 5. حلل بـ V3
+        for ticker in alive:
+            prices, volumes = get_price_history(ticker, canonical)
+            if len(prices) < 50:
+                continue  # V3 محتاج 50+ يوم
+            
+            result = analyze_with_v3(ticker, canonical, prices, volumes)
+            total_analyzed += 1
+            
+            signal = result.get('signal', 'NO_TRADE')
+            state = result.get('state', '?')
+            
+            if signal == 'NO_TRADE':
+                total_no_trade += 1
+                print(f"    {ticker}: NO_TRADE (state={state}, reason={result.get('no_trade_reason','?')[:50]})", flush=True)
+            elif signal == 'ERROR':
+                total_errors += 1
+                print(f"    {ticker}: ERROR — {result.get('reason','?')[:80]}", flush=True)
+            else:
+                # BUY / SELL
+                if not dry_run:
+                    saved = save_prediction(result, canonical, scan_date)
+                    if saved:
+                        total_saved += 1
+                print(f"    {ticker}: {signal} ✓ (state={state}, score={result.get('score',0):.1f}, conf={result.get('confidence',0):.1f})", flush=True)
+    
+    # 6. ملخص
+    print(f"\n{'='*60}", flush=True)
+    print(f"  ✅ الملخص — {canonical}", flush=True)
+    print(f"    - أيام التداول: {len(scan_dates)}", flush=True)
+    print(f"    - أسهم تحللت: {total_analyzed}", flush=True)
+    print(f"    - توقعات محفوظة: {total_saved}", flush=True)
+    print(f"    - NO_TRADE: {total_no_trade}", flush=True)
+    print(f"    - errors: {total_errors}", flush=True)
+    print(f"    - تخطى (stale): {total_skipped_stale}", flush=True)
+    print(f"    - تخطى (dead): {total_skipped_dead}", flush=True)
+    print(f"{'='*60}", flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='V3 Smart Predictor — التوقعات بالـ orchestrator/executor')
+    parser.add_argument('--market', default='EGX', choices=['EGX','KSA','TADAWUL','KSE','QSE','US'])
+    parser.add_argument('--all-markets', action='store_true')
+    parser.add_argument('--today-only', action='store_true')
+    parser.add_argument('--yesterday-only', action='store_true')
+    parser.add_argument('--start', default=None)
+    parser.add_argument('--end', default=None)
+    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--max-tickers', type=int, default=None)
+    args = parser.parse_args()
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    start_date = args.start
+    end_date = args.end
+    if args.today_only:
+        start_date = end_date = today
+    elif args.yesterday_only:
+        start_date = end_date = yesterday
+    
+    if args.all_markets:
+        for m in ['EGX','KSA','KSE','QSE']:
+            print(f"\n{'#'*60}\n# {m}\n{'#'*60}", flush=True)
+            run(m, start_date, end_date, args.dry_run, args.max_tickers)
+    else:
+        run(args.market, start_date, end_date, args.dry_run, args.max_tickers)
+
+
+if __name__ == '__main__':
+    main()
