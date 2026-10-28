@@ -318,7 +318,10 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
                 conn = _v402_gt_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _gt_err:
+            # REMEDIATION: log the fallback — don't silently bypass db_manager
+            import logging as _gt_log
+            _gt_log.warning(f"[daily_predictor] get_tickers: db_manager failed for price_history.db ({_gt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
             _v402_gt_ctx = None
         cur = conn.cursor()
@@ -362,7 +365,9 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
                 conn = _v402_gt2_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _gt2_err:
+            import logging as _gt2_log
+            _gt2_log.warning(f"[daily_predictor] get_tickers: db_manager failed for data_engine.db ({_gt2_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
             _v402_gt2_ctx = None
         cur = conn.cursor()
@@ -398,8 +403,10 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
                 conn = _v402_gt3_dbm.get_connection(_ph_db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
-            # CATEGORY A fallback (safety net — per Bravo rule)
+        except Exception as _gt3_err:
+            # REMEDIATION: log the fallback — don't silently bypass db_manager
+            import logging as _gt3_log
+            _gt3_log.warning(f"[daily_predictor] get_tickers: db_manager failed for stocks.db ({_gt3_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
             _v402_gt3_ctx = None
         cur = conn.cursor()

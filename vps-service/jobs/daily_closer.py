@@ -268,16 +268,47 @@ class DailyCloser:
         }
 
     def _conn(self, db_path: str) -> sqlite3.Connection:
+        """Open a writable DB connection via db_manager (DAL).
+
+        FALLBACK POLICY (owner-approved 2026-10-28):
+        - ImportError (db_manager unavailable): allow fallback to _safe_connect.
+          This is safe because the DB file path is still explicit and validated.
+        - OperationalError (DB locked / SQLITE_BUSY): retry with backoff, then
+          raise. Do NOT silently bypass — a locked DB means another process
+          is writing, and writing concurrently could corrupt data.
+        - Any other error: raise. Do NOT guess that a fallback is safe.
+
+        The fallback is NARROW (ImportError only), not a catch-all.
+        """
         try:
             from core.db_manager import db_manager
-            conn = db_manager.get_connection(db_path, writable=True)
-        except Exception as e:
-            # BATCH-C FIX: log the fallback instead of silent bypass.
-            # This fallback exists because daily_closer is a critical end-of-day job:
-            # if db_manager fails (import error, DB locked), closing predictions
-            # must still happen. But the fallback must be VISIBLE in logs.
-            logger.warning(f"_conn: db_manager failed for {db_path} ({e}) — falling back to _safe_connect")
+        except ImportError as e:
+            # db_manager module unavailable — safe to fallback (path is explicit)
+            logger.warning(f"_conn: db_manager import failed ({e}) — using _safe_connect for {db_path}")
             conn = _safe_connect(db_path, 30.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA busy_timeout=30000')
+            return conn
+
+        # db_manager available — use it. If it fails, do NOT silently fallback.
+        try:
+            conn = db_manager.get_connection(db_path, writable=True)
+        except sqlite3.OperationalError as e:
+            # DB locked / SQLITE_BUSY — retry once with 5s backoff
+            logger.warning(f"_conn: DB busy for {db_path} ({e}) — retrying in 5s...")
+            import time as _time
+            _time.sleep(5)
+            try:
+                conn = db_manager.get_connection(db_path, writable=True)
+            except sqlite3.OperationalError as e2:
+                # Still locked — raise. Do NOT bypass with _safe_connect.
+                logger.error(f"_conn: DB still locked for {db_path} after retry ({e2}) — RAISING")
+                raise
+        except Exception as e:
+            # Unexpected error — raise. Do NOT silently fallback.
+            logger.error(f"_conn: db_manager.get_connection failed for {db_path} ({e}) — RAISING")
+            raise
+
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA busy_timeout=30000')
         return conn
