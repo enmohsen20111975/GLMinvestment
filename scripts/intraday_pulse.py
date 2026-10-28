@@ -90,13 +90,17 @@ def classify_stock(row: dict, daily_context: dict | None) -> dict:
         vol_ratio = round(volume / avg_volume, 2)
 
     # ─── Classify flags ───
+    # BRAVO-PULSE-VOLUME-GATE: if volume = 0, stock hasn't traded today.
+    # Any price change is from fallback data (yesterday's close) — NOT a real surge.
+    # Only issue SURGE/BREAKING flags if volume > 0 (actual trading happened).
     flags = []
+    has_real_volume = volume > 0
 
     if data_status in ('STALE', 'INVALID'):
         flags.append('STALE')
     else:
-        # A) Surge detection
-        if change_from_open_pct is not None:
+        # A) Surge detection — requires real volume (volume > 0)
+        if has_real_volume and change_from_open_pct is not None:
             if change_from_open_pct >= SURGE_UP_PCT:
                 flags.append('SURGE_UP_LIVE')
             elif change_from_open_pct <= SURGE_DOWN_PCT:
@@ -108,19 +112,24 @@ def classify_stock(row: dict, daily_context: dict | None) -> dict:
             if change_from_open_pct is not None and abs(change_from_open_pct) > 0.1:
                 flags.append('VOLUME_SPIKE_LIVE')
 
-        # C) Breaking day high/low
-        if high_price > 0 and current_price > 0:
+        # C) Breaking day high/low — requires real volume
+        if has_real_volume and high_price > 0 and current_price > 0:
             if current_price >= high_price * BREAKING_HIGH_TOLERANCE:
                 if change_from_open_pct is not None and change_from_open_pct > 0:
                     flags.append('BREAKING_DAY_HIGH')
 
-        if low_price > 0 and current_price > 0:
+        if has_real_volume and low_price > 0 and current_price > 0:
             if current_price <= low_price * BREAKING_LOW_TOLERANCE:
                 if change_from_open_pct is not None and change_from_open_pct < 0:
                     flags.append('BREAKING_DAY_LOW')
 
     if not flags:
-        flags.append('QUIET_LIVE')
+        # If volume=0 but data is OK, it's a no-trade stock (not quiet — just inactive)
+        if not has_real_volume and data_status == 'OK':
+            flags.append('NO_TRADE_LIVE')
+            note_ar = 'لا يوجد تداول (حجم = 0)'
+        else:
+            flags.append('QUIET_LIVE')
 
     # ─── Daily context link ───
     ctx = None
