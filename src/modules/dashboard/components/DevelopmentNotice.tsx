@@ -5,8 +5,25 @@ import { AlertTriangle, Construction } from 'lucide-react';
 import { useAppStore, MarketType } from '@/lib/store';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Markets that are under development (incomplete data)
-const DEVELOPMENT_MARKETS: MarketType[] = ['TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'US']; // PHASE3-MARKET-SEGREGATION: US added (no stocks/predictions yet)
+// Markets that are under development (incomplete data).
+// This list MUST reflect what's actually in stocks.db — DO NOT keep stale
+// entries here, otherwise we lie to the user ("تحت التطوير") when real data
+// is already available.
+//
+// As of 2026-10-28 (verified via `SELECT market, COUNT(*) FROM stocks GROUP BY market`):
+//   EGX      → 460 stocks (132 active)    ✅ production-ready
+//   TADAWUL  → 395 stocks (395 active)    ✅ production-ready
+//   KSE      → 180 stocks (179 active)    ✅ production-ready
+//   QSE      →  67 stocks ( 67 active)    ✅ production-ready
+//   US       →  63 stocks ( 63 active)    ✅ production-ready
+//   CRYPTO   → handled via /api/crypto (separate from stocks.db)
+//   DFM      → 0 stocks in DB             ❌ genuinely not yet supported
+//   BSE      → 0 stocks in DB             ❌ genuinely not yet supported
+//
+// So only DFM and BSE remain "under development" — those markets have zero
+// stocks in the database. Every other market has real data and must NOT
+// show this banner.
+const DEVELOPMENT_MARKETS: MarketType[] = ['DFM', 'BSE'];
 
 export function DevelopmentNotice() {
  const { currentMarket } = useAppStore();
