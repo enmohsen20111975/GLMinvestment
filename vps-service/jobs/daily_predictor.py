@@ -307,32 +307,31 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
         _egx_gate_available = False
 
     # Phase 5 (DATA-UNIFICATION): price_history.db is now PRIMARY (canonical, 1.4M rows)
-    # Legacy: egksco_price_history was PRIMARY — now fallback (was frozen/stale)
-    # 1. PRIMARY: price_history.db.price_history (canonical — 1.4M rows, 1557 tickers)
+    # Source 1: price_history.db.price_history (canonical — 1.4M rows, 1557 tickers)
+    # FIX: use DAL only — no raw sqlite3.connect fallback.
+    # FIX: query the CORRECT table (price_history, not stock_daily_prices).
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gt_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _ph_db_path = str(_db_dir / 'price_history.db')
-                conn = _dbm.get_connection(_ph_db_path, writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _gt_err:
-            # REMEDIATION: log the fallback — don't silently bypass db_manager
-            import logging as _gt_log
-            _gt_log.warning(f"[daily_predictor] get_tickers: db_manager failed for price_history.db ({_gt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
+        if not _V402_DBM_AVAILABLE:
+            raise RuntimeError("db_manager unavailable — skipping price_history.db source")
+        _ph_db_path = str(_db_dir / 'price_history.db')
+        conn = _dbm.get_connection(_ph_db_path, writable=False)
         cur = conn.cursor()
-        cur.execute("PRAGMA table_info(price_history)")
-        _ph_cols = [r[1] for r in cur.fetchall()]
-        _ph_ticker_col = 'ticker' if 'ticker' in _ph_cols else ('symbol' if 'symbol' in _ph_cols else None)
-        if _ph_ticker_col:
-            cur.execute(
-                f"SELECT DISTINCT {_ph_ticker_col} FROM stock_daily_prices GROUP BY {_ph_ticker_col} HAVING COUNT(*) >= ? ORDER BY {_ph_ticker_col}",
-                (min_days,),
-            )
-            raw_tickers = [row[0] for row in cur.fetchall()]
+        # Check which table exists in this DB
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('price_history', 'stock_daily_prices')")
+        _ph_table_row = cur.fetchone()
+        _ph_table = _ph_table_row[0] if _ph_table_row else None
+        if _ph_table:
+            cur.execute(f"PRAGMA table_info({_ph_table})")
+            _ph_cols = [r[1] for r in cur.fetchall()]
+            _ph_ticker_col = 'ticker' if 'ticker' in _ph_cols else ('symbol' if 'symbol' in _ph_cols else None)
+            if _ph_ticker_col:
+                cur.execute(
+                    f"SELECT DISTINCT {_ph_ticker_col} FROM {_ph_table} GROUP BY {_ph_ticker_col} HAVING COUNT(*) >= ? ORDER BY {_ph_ticker_col}",
+                    (min_days,),
+                )
+                raw_tickers = [row[0] for row in cur.fetchall()]
+            else:
+                raw_tickers = []
         else:
             raw_tickers = []
         conn.close()
@@ -351,23 +350,17 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
                 print(f"[V40.2] Using price_history.db ({_ph_ticker_col}) — {len(tickers)} tickers "
                       f"(⚠️ EGX gate not available — no filtering)", flush=True)
             return tickers
-    except Exception:
-        pass
+    except Exception as _src1_err:
+        import logging as _src1_log
+        _src1_log.warning(f"[daily_predictor] Source 1 (price_history.db) failed: {_src1_err} — trying next source")
 
-    # Phase 5 FALLBACK 1: data_engine.db (egksco_price_history — legacy, was PRIMARY)
+    # Source 2: data_engine.db (egksco_price_history — legacy fallback)
+    # FIX: use DAL only — no raw sqlite3.connect fallback.
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gt2_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _de_db_path = str(_db_dir / 'data_engine.db')
-                conn = _dbm.get_connection(_de_db_path, writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _gt2_err:
-            import logging as _gt2_log
-            _gt2_log.warning(f"[daily_predictor] get_tickers: db_manager failed for data_engine.db ({_gt2_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        if not _V402_DBM_AVAILABLE:
+            raise RuntimeError("db_manager unavailable — skipping data_engine.db source")
+        _de_db_path = str(_db_dir / 'data_engine.db')
+        conn = _dbm.get_connection(_de_db_path, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
@@ -388,23 +381,17 @@ def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
             else:
                 tickers = raw_tickers
             return tickers
-    except Exception:
-        pass
+    except Exception as _src2_err:
+        import logging as _src2_log
+        _src2_log.warning(f"[daily_predictor] Source 2 (data_engine.db) failed: {_src2_err} — trying next source")
 
-    # 3. Fallback أخير: stocks.db (stock_daily_prices — 1,023 tickers)
+    # Source 3: stocks.db (stock_daily_prices — last resort)
+    # FIX: use DAL only — no raw sqlite3.connect fallback.
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v402_gt3_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _stocks_db_path = str(_db_dir / 'stocks.db')
-                conn = _dbm.get_connection(_stocks_db_path, writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _gt3_err:
-            import logging as _gt3_log
-            _gt3_log.warning(f"[daily_predictor] get_tickers: db_manager failed for stocks.db ({_gt3_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
+        if not _V402_DBM_AVAILABLE:
+            raise RuntimeError("db_manager unavailable — skipping stocks.db source")
+        _stocks_db_path = str(_db_dir / 'stocks.db')
+        conn = _dbm.get_connection(_stocks_db_path, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT ticker FROM stock_daily_prices GROUP BY ticker HAVING COUNT(*) >= ? ORDER BY ticker",
