@@ -22,7 +22,9 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 # Setup paths
-VPS_ROOT = Path(__file__).resolve().parent.parent.parent
+# test file is at vps-service/tests/test_daily_closer_conn.py
+# parent=tests/, parent.parent=vps-service/ (the VPS root with jobs/ package)
+VPS_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(VPS_ROOT))
 sys.path.insert(0, str(VPS_ROOT / 'jobs'))
 
