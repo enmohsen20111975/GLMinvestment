@@ -10038,3 +10038,48 @@ Stage Summary:
   * historical_backfill_engine: prediction_logs + learned_lessons بـ تتـ persist.
   * EGXPilot 502 (external outage) مش هاند:blocker بعد كده — Scanner API هو الـ primary.
 - الـ owner يعمل: `git pull` + `python3 vps-service/scripts/daily_price_updater.py` (أو cron job اللي بيـ run egx_fetcher). هتلاقي ~280 سهم اتحدثوا بدل 0.
+
+---
+Task ID: BRAVO-NEVER-HALT
+Agent: Bravo V2 (backend engineer)
+Task: تفعيل directive المالك: "محرك البيانات ممنوع منعا باتا انة يقف تحت اى ظرف اى كان" — المحرك ما يقدرش يقف/crash تحت أي ظرف.
+
+Work Log:
+- قريت `/home/z/my-project/worklog.md` (آخر entry: BRAVO-DATA-ENGINE-READONLY-FIX).
+- عملت audit شامل لكل halt points في الـ data engine flow:
+  1. `EGXDataFetcher.update_prices()` — مفيهاش top-level try/except → أي exception بيـ propagate.
+  2. `tickers` empty branch (EGXPilot + DB فشلوا) → `return False` → 0 سهم.
+  3. كل المصادر فشلت (scanner + per-ticker + EGXPilot) → `quotes=[]` → 0 سهم silently.
+  4. `daily_price_updater.main()` — مفيهاش try/except → أي exception بيـ exit non-zero → cron يشوف failure.
+  5. `egx_fetcher __main__` — مفيهاش try/except → نفس المشكلة.
+- **الـ fix — 5 طبقات حماية (BRAVO-NEVER-HALT):**
+  1. `update_prices()` → split لـ `update_prices()` (guard) + `_update_prices_inner()` (logic). الـ guard بيـ catch كل exception + بيرجع False (NEVER raises).
+  2. Empty-tickers fallback: لو EGXPilot + DB رجعوا 0 tickers → fallback لـ `EPS_VALUES.keys()` (25 سهم EGX مهمة). ده بيضمن إن المحرك دايماً عنده tickers يحاول يجيبها.
+  3. All-sources-failed path: لو scanner + per-ticker + EGXPilot فشلوا → log heartbeat واضح (`🚨 ALL_SOURCES_FAILED — engine alive but no external data`) + return False gracefully.
+  4. `egx_fetcher __main__` → try/except + `sys.exit(0)` دايمًا.
+  5. `daily_price_updater.main()` → 3 nested try/except (update_all + verify + outer) + `sys.exit(0)` دايمًا.
+- **التحقق (4 tests):**
+  * Crash test 1 (كل المصادر فاشلة + DB فارغة): EGXPilot→None, DB→[], scanner→None, per-ticker→None. المحرك فـ fallback لـ emergency tickers (25 سهم) + رجع False بدون crash ✅.
+  * Crash test 2 (scanner نجح + الباقي فشل): emergency tickers activated → scanner delivered 1 stock → `_update_database` اتـ call → رجع True ✅.
+  * Structure test 3: `main()` فيها outer try/except + `sys.exit(0)` ✅.
+  * Structure test 4: `__main__` فيها try/except + `sys.exit(0)` ✅.
+  * `py_compile` للملفين → OK.
+- Git: commit `a0ee605` على نفس الـ branch `bravo/radar-intel-deadcode-fix`.
+
+Stage Summary:
+- Files modified (2):
+  * `vps-service/data/egx_fetcher.py` (+62 lines: update_prices guard + _update_prices_inner split + emergency tickers + all-sources-failed heartbeat + __main__ hardening)
+  * `vps-service/scripts/daily_price_updater.py` (+42 lines: main() 3-layer try/except + sys.exit(0))
+- الـ 5 halt points كلها اتـ قفلت:
+  | Halt Point | قبل | بعد |
+  |---|---|---|
+  | uncaught exception in update_prices | propagate → crash | caught → return False |
+  | empty tickers (EGXPilot+DB fail) | return False, 0 stocks | emergency list (25 stocks) |
+  | all sources fail | silent 0 stocks | heartbeat log + graceful False |
+  | __main__ exception | non-zero exit | sys.exit(0) always |
+  | main() exception | non-zero exit | sys.exit(0) always |
+- النتيجة: محرك البيانات ما يقدرش يقف. حتى لو:
+  * EGXPilot 502 + TradingView down + DB locked → المحرك بـ log heartbeat + بيـ exit 0.
+  * cron ما يشوفش failure أبداً → بيـ reschedule الـ run الجاي طبيعي.
+  * الـ monitoring يعرف إن المحرك شغال من الـ heartbeat logs.
+- الـ owner يعمل: `git pull` — الـ hardening بيشتغل أوتوماتيك في الـ cron jobs التالية (7:00 + 13:00).
