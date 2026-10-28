@@ -205,12 +205,15 @@ export function DashboardView() {
  // 10. شيل إشارات الموسمية
  const widgets: WidgetDescriptor[] = useMemo(() => [
  // 6. ملخص السوق + المؤشرات (مدموج — Owner directive)
- // FIX (Task MARKET-SEPARATION): إخفاء مؤشرات EGX في الأسواق التانية
- // EGX30/70/100 ملهاش معنى في السوق الأمريكي أو الكريبتو.
+ // FIX (BRAVO-DISASTER 2026-10-28): was `visible: () => currentMarket === 'EGX'`
+ // which hid ALL indices for non-EGX markets. But IndexCards is market-aware —
+ // each market shows its OWN indices (EGX30/70/100, TASI, KSE_COMPOSITE, QSE,
+ // ^GSPC/^IXIC/^DJI). Only CRYPTO has no stock indices (uses separate widgets).
+ // Now visible for all markets except CRYPTO.
  {
  id: 'market-summary',
  title: 'ملخص السوق والمؤشرات',
- visible: () => currentMarket === 'EGX',
+ visible: () => currentMarket !== 'CRYPTO',
  render: () => (
  <div className="space-y-3">
  <MarketSummary />
@@ -219,12 +222,13 @@ export function DashboardView() {
  ),
  },
  // 1. نبض السوق + مؤشر المشاعر (مدموج — Owner directive)
- // FIX (Task MARKET-SEPARATION): MarketPulse + Sentiment للـ EGX فقط
- // (بيجيبوا EGX30/70 data من /api/market-pulse).
+ // FIX (BRAVO-DISASTER 2026-10-28): MarketPulseWidget is market-aware (uses
+ // /api/market-pulse?market=) — was hidden for non-EGX markets incorrectly.
+ // MarketSentiment shows AI insights which are also per-market.
  {
  id: 'market-pulse',
  title: 'نبض السوق والمشاعر',
- visible: () => currentMarket === 'EGX',
+ visible: () => currentMarket !== 'CRYPTO',
  render: () => (
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
  <MarketPulseWidget />
