@@ -63,6 +63,81 @@ MARKETS = [
 # Owner directive: "فاصل زمني 5 دقايق عشان الموقع مايعملناش حظر"
 MARKET_DELAY_SECONDS = 5  # 5 ثواني بين كل سوق (آمن — مش هيحظر)
 
+# BRAVO-SCANNER-SMART-SCHEDULE (2026-10-28): market trading hours in UTC
+# Owner directive: "الأسواق ليها أوقات محددة — مش هافضل طول اليوم أسحب"
+# Format: 'market_slug': {'days': [weekday numbers], 'open_utc': (h,m), 'close_utc': (h,m)}
+# weekday: Mon=0, Tue=1, ... Sun=6
+# crypto = 24/7 (always open)
+MARKET_HOURS_UTC: Dict[str, Dict] = {
+    "egypt": {
+        "days": [6, 0, 1, 2, 3],      # Sun-Thu
+        "open_utc": (8, 0),            # 10:00 Cairo = 08:00 UTC
+        "close_utc": (12, 30),         # 14:30 Cairo = 12:30 UTC
+        "label": "EGX 10:00-14:30 Cairo",
+    },
+    "ksa": {
+        "days": [6, 0, 1, 2, 3],      # Sun-Thu
+        "open_utc": (7, 0),            # 10:00 Riyadh = 07:00 UTC
+        "close_utc": (12, 0),          # 15:00 Riyadh = 12:00 UTC
+        "label": "Tadawul 10:00-15:00 Riyadh",
+    },
+    "kuwait": {
+        "days": [6, 0, 1, 2, 3],      # Sun-Thu
+        "open_utc": (6, 0),            # 09:00 Kuwait = 06:00 UTC
+        "close_utc": (10, 0),          # 13:00 Kuwait = 10:00 UTC
+        "label": "Boursa 09:00-13:00 Kuwait",
+    },
+    "qatar": {
+        "days": [6, 0, 1, 2, 3],      # Sun-Thu
+        "open_utc": (6, 30),           # 09:30 Qatar = 06:30 UTC
+        "close_utc": (10, 15),         # 13:15 Qatar = 10:15 UTC
+        "label": "QSE 09:30-13:15 Qatar",
+    },
+    "america": {
+        "days": [0, 1, 2, 3, 4],      # Mon-Fri
+        "open_utc": (14, 30),          # 09:30 ET = 14:30 UTC (winter) / 13:30 (summer)
+        "close_utc": (21, 0),          # 16:00 ET = 21:00 UTC (winter) / 20:00 (summer)
+        "label": "NYSE 09:30-16:00 ET (14:30-21:00 UTC)",
+    },
+    "crypto": {
+        "days": [0, 1, 2, 3, 4, 5, 6], # 7/7
+        "open_utc": (0, 0),            # 24/7
+        "close_utc": (23, 59),
+        "label": "Crypto 24/7",
+    },
+}
+
+
+def is_market_open_now(market_slug: str) -> bool:
+    """Check if a market is currently open based on UTC time.
+    
+    Returns True if:
+    - Today is a trading day for this market
+    - Current UTC time is within market hours
+    - Crypto is always True (24/7)
+    """
+    schedule = MARKET_HOURS_UTC.get(market_slug)
+    if not schedule:
+        return True  # unknown market → fetch anyway (fail-open)
+
+    # Crypto = 24/7
+    if market_slug == "crypto":
+        return True
+
+    now_utc = datetime.now(__import__("datetime").timezone.utc).replace(tzinfo=None)
+    today = now_utc.weekday()  # Mon=0, Sun=6
+
+    # Check trading day
+    if today not in schedule["days"]:
+        return False
+
+    # Check trading hours
+    now_minutes = now_utc.hour * 60 + now_utc.minute
+    open_minutes = schedule["open_utc"][0] * 60 + schedule["open_utc"][1]
+    close_minutes = schedule["close_utc"][0] * 60 + schedule["close_utc"][1]
+
+    return open_minutes <= now_minutes < close_minutes
+
 # Scanner API endpoint
 SCANNER_URL = "https://scanner.tradingview.com/{market}/scan"
 
@@ -475,9 +550,10 @@ def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="TradingView Scanner Live — unified scraper")
-    ap.add_argument("--market", default="all", help="market slug (egypt/saudi/kuwait/qatar/america) or 'all'")
+    ap.add_argument("--market", default="all", help="market slug (egypt/saudi/kuwait/qatar/america/crypto) or 'all'")
     ap.add_argument("--dry-run", action="store_true", help="fetch only, no DB save")
     ap.add_argument("--db", default=str(DB_PATH), help="DB path")
+    ap.add_argument("--force", action="store_true", help="force fetch even if market is closed (skip schedule check)")
     args = ap.parse_args()
 
     markets = MARKETS if args.market == "all" else [(m, l) for m, l in MARKETS if m == args.market]
@@ -510,6 +586,13 @@ def main() -> int:
         if midx > 0:
             log(f"  ⏳ waiting {MARKET_DELAY_SECONDS}s before next market (rate limit)...")
             time.sleep(MARKET_DELAY_SECONDS)
+
+        # BRAVO-SCANNER-SMART-SCHEDULE: skip closed markets (unless --force)
+        schedule = MARKET_HOURS_UTC.get(slug)
+        if schedule and not args.force and not is_market_open_now(slug):
+            now_utc = datetime.now(__import__("datetime").timezone.utc).replace(tzinfo=None)
+            log(f"  🔒 {slug} ({label}) CLOSED — skipping (hours: {schedule['label']}, now UTC: {now_utc.strftime('%H:%M')})")
+            continue
 
         log(f"🌍 fetching {slug} ({label})...")
         rows, elapsed = fetch_market(slug)
