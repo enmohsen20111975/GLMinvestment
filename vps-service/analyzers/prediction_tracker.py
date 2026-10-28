@@ -719,7 +719,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _rec_pred_ctx = None
         cursor = conn.cursor()
@@ -856,7 +858,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _uo_ctx = None
         cursor = conn.cursor()
@@ -965,7 +969,9 @@ class PredictionTracker:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _pt_err:
+                import logging as _pt_log
+                _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
                 _svo_ctx = None
             cursor = conn.cursor()
@@ -1021,7 +1027,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _gop_ctx = None
         conn.row_factory = sqlite3.Row
@@ -1075,7 +1083,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path, writable=True)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _tm_ctx = None
         conn.row_factory = sqlite3.Row
@@ -1188,7 +1198,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _lff_ctx = None
         conn.row_factory = sqlite3.Row
@@ -1263,7 +1275,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _gas_ctx = None
         cursor = conn.cursor()
@@ -1338,7 +1352,9 @@ class PredictionTracker:
                 conn = _dbm.get_connection(self.db_path)
             else:
                 raise RuntimeError("db_manager unavailable")
-        except Exception:
+        except Exception as _pt_err:
+            import logging as _pt_log
+            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
             conn = sqlite3.connect(self.db_path)
             _gpp_ctx = None
         cursor = conn.cursor()

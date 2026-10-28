@@ -420,8 +420,8 @@ def system_topology():
                 cursor.execute("SELECT COUNT(*) FROM stocks WHERE ticker IS NOT NULL")
                 stocks_count = cursor.fetchone()[0]
                 conn.close()
-        except Exception:
-            pass
+        except Exception as _ar_e:
+            import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
 
         return jsonify({
             'success': True,
@@ -4621,8 +4621,8 @@ def admin_build_stock_profiles():
         try:
             from analyzers.stock_dna_analyzer import invalidate_profile_cache
             invalidate_profile_cache()
-        except Exception:
-            pass
+        except Exception as _ar_e:
+            import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
 
         log_admin_action('build_stock_profiles', {
             'market': market,
@@ -5017,8 +5017,8 @@ def admin_reset_user_trial(user_id):
                     'reset_trial',
                     {'user_id': user_id, 'new_trial_ends_at': new_trial_ends.isoformat()}
                 )
-            except Exception:
-                pass
+            except Exception as _ar_e:
+                import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
 
             return jsonify(admin_response(True, {
                 'user_id': user_id,

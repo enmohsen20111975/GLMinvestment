@@ -121,8 +121,8 @@ def _get_portfolio_conn():
         if _PORT_ROUTES_DBM_AVAILABLE:
             _ctx = _dbm.connection(_get_portfolio_db_path(), writable=True)
             return 
-    except Exception:
-        pass
+    except Exception as _ar_e:
+        import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     # Phase 7.1: migrated
     from core.db_manager import db_manager
     conn = db_manager.get_connection(_get_portfolio_db_path(), writable=False)
@@ -472,8 +472,8 @@ def evaluate_position():
         try:
             from utils.risk_reward import compute_risk_reward
             risk_reward = compute_risk_reward(entry_price, target, stop_loss, fallback=risk_reward)
-        except Exception:
-            pass  # keep inline risk_reward computed above
+        except Exception as _ar_e:
+            import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")  # keep inline risk_reward computed above
         heat_contribution = (current_price * shares * (1 - stop_loss/entry_price)) / 100000  # per 100K portfolio
         
         return jsonify({
@@ -2017,8 +2017,8 @@ def _get_portfolio_value_for_user(user_id: str) -> float:
         conn.close()
         if row and row['value'] is not None:
             return float(row['value'])
-    except Exception:
-        pass
+    except Exception as _ar_e:
+        import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     # fallback: لو portfolio_state فارغة، نحاول نجمع current_value من stocks.db
     try:
         # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
@@ -2039,8 +2039,8 @@ def _get_portfolio_value_for_user(user_id: str) -> float:
         stocks_conn.close()
         if row and row['total'] is not None and float(row['total']) > 0:
             return float(row['total'])
-    except Exception:
-        pass
+    except Exception as _ar_e:
+        import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     return 100000.0
 
 
@@ -2070,8 +2070,8 @@ def _get_existing_position_value(user_id: str, ticker: str) -> float:
         conn.close()
         if row and row['current_value'] is not None:
             return float(row['current_value'])
-    except Exception:
-        pass
+    except Exception as _ar_e:
+        import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     return 0.0
 
 
@@ -2096,8 +2096,8 @@ def _get_total_exposure_value(user_id: str) -> float:
         conn.close()
         if row and row['total'] is not None:
             return float(row['total'])
-    except Exception:
-        pass
+    except Exception as _ar_e:
+        import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     return 0.0
 
 
@@ -2213,8 +2213,8 @@ def calculate_position_size():
             try:
                 from utils.risk_reward import compute_risk_reward
                 risk_reward = compute_risk_reward(entry, target, stop, fallback=risk_reward)
-            except Exception:
-                pass  # keep inline risk_reward computed above
+            except Exception as _ar_e:
+                import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")  # keep inline risk_reward computed above
 
         response = {
             "success": True,

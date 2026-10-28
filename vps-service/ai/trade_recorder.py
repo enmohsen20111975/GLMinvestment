@@ -100,7 +100,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.executescript(
                 """
@@ -208,7 +210,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             cur = conn.execute(
                 """INSERT INTO user_trades
@@ -293,7 +297,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cur = conn.execute(
@@ -467,7 +473,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -509,7 +517,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             if user_id:
@@ -561,7 +571,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             if user_id:
@@ -689,7 +701,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             if user_id:
@@ -715,8 +729,8 @@ class TradeRecorder:
             logger.info("مفيش trade_outcomes جديدة للتحليل ✓")
             try:
                 conn.close()
-            except Exception:
-                pass
+            except Exception as _tr_e:
+                import logging as _tr_l; _tr_l.warning(f"trade_recorder silent: {_tr_e}")
             return {
                 "analyzed_count": 0,
                 "win_rate": 0.0,
@@ -800,8 +814,8 @@ class TradeRecorder:
 
         try:
             conn.close()
-        except Exception:
-            pass
+        except Exception as _tr_e:
+            import logging as _tr_l; _tr_l.warning(f"trade_recorder silent: {_tr_e}")
 
         win_rate = (
             (win_count / analyzed_count * 100) if analyzed_count > 0 else 0.0
@@ -850,7 +864,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
@@ -911,7 +927,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
@@ -971,7 +989,9 @@ class TradeRecorder:
                     conn = _dbm.get_connection(self.db_path, writable=True)
                 else:
                     raise RuntimeError("db_manager unavailable")
-            except Exception:
+            except Exception as _tr_err:
+                import logging as _tr_log
+                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
                 conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
@@ -1015,8 +1035,8 @@ class TradeRecorder:
                         conn = _dbm.get_connection(PRICE_HISTORY_DB)
                     else:
                         raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(PRICE_HISTORY_DB)
+                except Exception as _tr_e:
+                    import logging as _tr_l; _tr_l.warning(f"trade_recorder: db_manager failed ({_tr_e}) — direct connect"); conn = sqlite3.connect(PRICE_HISTORY_DB)
                     _ph_ctx = None
                 conn.row_factory = sqlite3.Row
                 rows = conn.execute(

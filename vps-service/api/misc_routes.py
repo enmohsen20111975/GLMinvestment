@@ -653,8 +653,8 @@ def radar_incubator():
                     if row and row[0]:
                         cand['logo_url'] = row[0]
             logo_conn.close()
-    except Exception:
-        pass  # logos are non-critical (frontend has fallback)
+    except Exception as _mr_e:
+        import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")  # logos are non-critical (frontend has fallback)
 
     return jsonify({
         'success': True,
@@ -1422,8 +1422,8 @@ def refresh_persona_flags():
     if SKIP_STORED_ANALYSES_WRITE:
         try:
             _logger.info('[SINGLE-WRITER] Skipping refresh_persona_flags stored_analyses writes — use daily_predictor.py')
-        except Exception:
-            pass
+        except Exception as _mr_e:
+            import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
         return jsonify({
             'success': True,
             'skipped': True,
@@ -2048,13 +2048,13 @@ def rebuild_predictions():
                     try:
                         conn.execute("DELETE FROM predictions WHERE 1=1")
                         deleted_count += conn.total_changes
-                    except Exception:
-                        pass
+                    except Exception as _mr_e:
+                        import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
                     # لا تمسح stored_analyses — الـ UPSERT بيستبدل تلقائياً
                     # لا تمسح aiPrediction — بتفضل ظاهرة كأرشيف
                     conn.commit()
-            except Exception:
-                pass
+            except Exception as _mr_e:
+                import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
         # 2. تشغيل RealBacktester (الـ backtest engine الموجود)
         # RealBacktester(db_path=stocks.db, history_db_path=price_history.db)
@@ -2454,8 +2454,8 @@ def _b4_read_regime_from_settings(market_key: str) -> dict:
                     updated_by TEXT DEFAULT 'system'
                 )
             """)
-        except Exception:
-            pass
+        except Exception as _mr_e:
+            import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
         row = conn.execute(
             "SELECT value FROM system_settings WHERE key = ?",
             (settings_key,),
@@ -3307,8 +3307,8 @@ def unified_predictions():
                 try:
                     from utils.risk_reward import compute_risk_reward
                     _calc_rr = compute_risk_reward(entry_price, target_price, stop_loss, fallback=_calc_rr)
-                except Exception:
-                    pass  # keep inline _calc_rr computed above
+                except Exception as _mr_e:
+                    import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")  # keep inline _calc_rr computed above
                 # الأولوية: المخزّن > المحسوب
                 try:
                     _stored_rr = float(_aj_risk_reward or 0)
@@ -3356,8 +3356,8 @@ def unified_predictions():
                             if _sr and _sr['rsi']:
                                 rsi_v = float(_sr['rsi'])
                             _sc.close()
-                except Exception:
-                    pass
+                except Exception as _mr_e:
+                    import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
                 # change_percent: من current_price vs original_entry_price
                 # (AGILE-PHASE3-036): نستخدم سعر الدخول الأصلي علشان العميل يشوف
@@ -4073,8 +4073,8 @@ def live_refresh_analyses():
     if SKIP_STORED_ANALYSES_WRITE:
         try:
             _logger.info('[SINGLE-WRITER] Skipping live_refresh_analyses stored_analyses writes — use daily_predictor.py')
-        except Exception:
-            pass
+        except Exception as _mr_e:
+            import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
         return jsonify({
             'success': True,
             'skipped': True,
@@ -4149,8 +4149,8 @@ def live_refresh_analyses():
                             )
                             if _s_row and _s_row.get('current_price'):
                                 _live_price = float(_s_row['current_price'])
-                        except Exception:
-                            pass
+                        except Exception as _mr_e:
+                            import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
                         # حساب نسبة الحركة
                         _price_moved_pct = 1.0  # default: skip-safe
@@ -4228,8 +4228,8 @@ def live_refresh_analyses():
                     if db:
                         try:
                             db.save_cached_analysis(ticker, ad, today)
-                        except Exception:
-                            pass
+                        except Exception as _mr_e:
+                            import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
                 except Exception as _e:
                     _logger.warning(f"live_refresh: failed for {ticker}: {_e}")
@@ -4242,8 +4242,8 @@ def live_refresh_analyses():
                 try:
                     if _scan_sleep > 0:
                         time.sleep(_scan_sleep)
-                except Exception:
-                    pass
+                except Exception as _mr_e:
+                    import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
             _logger.info(f"live_refresh: updated {updated_count} stocks in stored_analyses")
 
