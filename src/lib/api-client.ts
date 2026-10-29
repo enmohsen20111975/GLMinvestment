@@ -38,7 +38,7 @@ export interface ApiResult<T = unknown> {
 }
 
 /** Default timeout for API calls (30s — generous for Python proxy calls). */
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 60_000; // FIX: was 30s — /api/stocks with 500 stocks needs more time
 
 /** Transient status codes that warrant a retry. */
 const RETRYABLE_STATUS = new Set([502, 503, 504]);

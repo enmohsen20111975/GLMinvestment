@@ -1091,6 +1091,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
         });
       })
       .catch((err) => {
+        // FIX: abort errors are expected when switching markets quickly or
+        // when the request takes too long. Don't clear stocks on abort —
+        // keep showing the existing ones.
+        if (err?.message?.includes('aborted') || err?.name === 'AbortError') {
+          console.warn('[Store] loadStocks aborted (keeping existing stocks)');
+          set({ isLoading: false, isRefreshing: false });
+          return;
+        }
         console.error('[Store] Failed to load stocks from API:', err);
         set({
           stocks: [],
