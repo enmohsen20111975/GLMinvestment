@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     expiresAt.setDate(expiresAt.getDate() + planInfo.duration_days);
 
     if (userId) {
-      await db.subscription.upsert({
+      await (db as any).subscription.upsert({
         where: { userId },
         create: {
           userId,
@@ -156,7 +156,7 @@ async function verifyWithGooglePlay(productId: string, purchaseToken: string): P
 // Simulated verification for testing
 function simulateVerification(productId: string, purchaseToken: string): { valid: boolean; data?: any } {
   // For testing purposes, accept any token that looks valid
-  const isValid = purchaseToken && purchaseToken.length > 10;
+  const isValid = !!(purchaseToken && purchaseToken.length > 10);
 
   return {
     valid: isValid,

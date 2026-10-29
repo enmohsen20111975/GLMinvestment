@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         total_invested
       FROM portfolio_assets 
       WHERE user_id = ? AND type = 'stock' AND stock_ticker IS NOT NULL
-    `).all(userId) as PortfolioStock[];
+    `).all(userId) as unknown as PortfolioStock[];
     
     if (portfolioStocks.length === 0) {
       return NextResponse.json({
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         last_update
       FROM stocks 
       WHERE ticker IN (${placeholders})
-    `).all(...tickers) as StockPrice[];
+    `).all(...tickers) as unknown as StockPrice[];
     
     const priceMap = new Map(stockPrices.map(s => [s.ticker, s]));
     

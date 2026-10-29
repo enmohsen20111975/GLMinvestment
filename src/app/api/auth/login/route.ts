@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
             id: randomUUID(),
             user_id: user.id,
             token,
-            expires_at: expiresAt,
+            expires_at: expiresAt as any,
           },
         });
       } catch (fallbackError) {

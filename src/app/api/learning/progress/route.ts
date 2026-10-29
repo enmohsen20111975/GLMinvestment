@@ -19,7 +19,7 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
     }
 
-    const record = await db.post.findFirst({
+    const record = await (db as any).post.findFirst({
       where: {
         authorId: userId,
         title: LEARNING_PROGRESS_TITLE,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const progress = body?.progress ?? body;
     const content = JSON.stringify(progress);
 
-    const existing = await db.post.findFirst({
+    const existing = await (db as any).post.findFirst({
       where: {
         authorId: userId,
         title: LEARNING_PROGRESS_TITLE,
@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
     });
 
     const record = existing
-      ? await db.post.update({
+      ? await (db as any).post.update({
           where: { id: existing.id },
           data: { content },
         })
-      : await db.post.create({
+      : await (db as any).post.create({
           data: {
             authorId: userId,
             title: LEARNING_PROGRESS_TITLE,

@@ -38,11 +38,8 @@ const SCRIPT_PATH = path.join(process.cwd(), 'scripts', 'sync_market_indices_liv
 export async function POST(req: NextRequest) {
   // P0-11-AUTH: admin only — script writes to stocks.db
   const auth = await requireAdminAsync(req);
-  if (!auth.ok) {
-    return NextResponse.json(
-      { success: false, error: 'unauthorized', message: auth.error || 'Admin access required' },
-      { status: 401 }
-    );
+  if (auth) {
+    return auth;
   }
 
   try {

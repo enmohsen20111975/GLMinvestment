@@ -85,7 +85,7 @@ async function fetchFromEgxpy(): Promise<{
     const quotes = await fetchBatchQuotes(allTickers);
     if (quotes.length === 0) return null;
 
-    const stocks = quotes.map(egxpyQuoteToLiveStock);
+    const stocks = quotes.map(egxpyQuoteToLiveStock) as LiveStock[];
     return {
       stocks,
       source: 'egxpy',

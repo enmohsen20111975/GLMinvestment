@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[GET /api/admin/promo-codes] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'internal_error' || 'فشل في جلب أكواد الخصم' },
+      { success: false, error: 'internal_error' },
       { status: 500 }
     );
   }
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[POST /api/admin/promo-codes] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'internal_error' || 'حدث خطأ أثناء إنشاء كود الخصم' },
+      { success: false, error: 'internal_error' },
       { status: 500 }
     );
   }

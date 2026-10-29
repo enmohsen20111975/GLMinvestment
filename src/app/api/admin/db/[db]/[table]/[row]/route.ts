@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = "force-dynamic";
 
 import { updateRow, deleteRow, listTables } from '@/lib/sqlite-admin'
@@ -10,7 +10,7 @@ interface Params {
 
 // PUT /api/admin/db/[db]/[table]/[row] — تحديث صف
 // row هنا هو قيمة الـ primary key
-export async function PUT(req: Request, { params }: Params) {
+export async function PUT(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {
@@ -55,7 +55,7 @@ export async function PUT(req: Request, { params }: Params) {
 }
 
 // DELETE /api/admin/db/[db]/[table]/[row] — مسح صف
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {

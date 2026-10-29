@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
       const assetsByType = rows.reduce((acc, row) => {
         const type = (row.type as string) || 'other';
-        acc[type] = (acc[type] || 0) + (Number(row.current_value) || 0);
+        acc[type] = ((acc[type] as number) || 0) + (Number(row.current_value) || 0);
         return acc;
       }, {} as Record<string, number>);
 

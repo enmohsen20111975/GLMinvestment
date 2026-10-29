@@ -28,7 +28,7 @@ export const runtime = 'nodejs';
 
 import { getSessionUserId } from '@/lib/auth-helper';
 import { db } from '@/lib/db';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/auth-client';
 
 function unauthorized() {
   return NextResponse.json(

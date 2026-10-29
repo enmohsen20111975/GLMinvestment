@@ -107,7 +107,7 @@ async function fetchCryptoPrices(): Promise<Record<string, number>> {
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
-    let userId = url.searchParams.get('user_id');
+    let userId: string | undefined = url.searchParams.get('user_id') || undefined;
     if (!userId) {
       try {
         const session = await getSessionUserId();

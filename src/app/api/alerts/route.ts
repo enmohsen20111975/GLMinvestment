@@ -180,7 +180,7 @@ export async function GET(req: NextRequest) {
           WHERE user_id = ?
           ORDER BY created_at DESC, id DESC
           LIMIT ?
-        `).all(userId, limit) as NotificationRow[];
+        `).all(userId, limit) as unknown as NotificationRow[];
       } else {
         notifRows = db.prepare(`
           SELECT id, user_id, type, title, message, severity, payload, ticker, read, created_at
@@ -188,7 +188,7 @@ export async function GET(req: NextRequest) {
           WHERE user_id = ? AND read = 0
           ORDER BY created_at DESC, id DESC
           LIMIT ?
-        `).all(userId, limit) as NotificationRow[];
+        `).all(userId, limit) as unknown as NotificationRow[];
       }
     } catch (e) {
       console.warn('[alerts] user_notifications query failed:', e);
@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
                OR w.alert_price_below IS NOT NULL
                OR w.alert_change_percent IS NOT NULL)
         ORDER BY w.added_at DESC
-      `).all(userId) as WatchlistAlertRow[];
+      `).all(userId) as unknown as WatchlistAlertRow[];
     } catch (e) {
       console.warn('[alerts] user_stock_watchlists query failed:', e);
     }

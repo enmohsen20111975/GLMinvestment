@@ -159,7 +159,7 @@ async function fetchPricesAfter(
         high: r.h != null ? num(r.h) : num(r.c),
         low: r.l != null ? num(r.l) : num(r.c),
       }));
-      const sourceLabel = `${src.dbPath.split('/').pop()}::${src.table}`;
+      const sourceLabel = `${(src as any).dbPath?.split('/').pop() ?? src.dbFile.split('/').pop()}::${src.table}`;
       db.close();
       return { prices, source: sourceLabel };
     } catch (e) {

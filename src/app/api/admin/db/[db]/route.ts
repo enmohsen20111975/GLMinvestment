@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = "force-dynamic";
 
 import { listTables, deleteDatabase, vacuumDatabase, executeRawSql } from '@/lib/sqlite-admin'
@@ -9,7 +9,7 @@ interface Params {
 }
 
 // GET /api/admin/db/[db] — قائمة الجداول في قاعدة البيانات
-export async function GET(req: Request, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {
@@ -50,7 +50,7 @@ export async function GET(req: Request, { params }: Params) {
 }
 
 // DELETE /api/admin/db/[db] — مسح قاعدة بيانات كاملة (مع backup)
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {

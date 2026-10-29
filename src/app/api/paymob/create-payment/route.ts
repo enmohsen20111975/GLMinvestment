@@ -171,14 +171,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id && !session?.user?.email) {
+    if (!(session?.user as any)?.id && !session?.user?.email) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id || 'user';
+    const userId = (session.user as any).id || 'user';
     const body = await request.json();
     const { plan_id, billing_period = 'monthly', payment_method = 'card' } = body;
 
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[POST /api/paymob/create-payment] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'internal_error' || 'حدث خطأ أثناء إنشاء عملية الدفع' },
+      { success: false, error: 'حدث خطأ أثناء إنشاء عملية الدفع' },
       { status: 500 }
     );
   }

@@ -37,8 +37,8 @@ export async function GET(
         updated_at: true,
         _count: {
           select: {
-            portfolioPositions: { where: { is_active: true } },
-            apiTokens: true,
+            
+            api_tokens: true as any,
           },
         },
       },
@@ -66,9 +66,9 @@ export async function GET(
         createdAt: user.created_at,
         updatedAt: user.updated_at,
         lastLoginAt: user.last_login,
-        loginCount: user._count?.apiTokens || 0,
+        loginCount: (user as any)._count?.apiTokens || 0,
         _count: {
-          portfolio: user._count?.portfolioPositions || 0,
+          portfolio: (user as any)._count?.portfolioPositions || 0,
         },
       },
     });

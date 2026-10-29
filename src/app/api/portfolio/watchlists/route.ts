@@ -42,7 +42,7 @@ async function tryPythonWatchlists(userId: string | undefined): Promise<any | nu
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    let userId = url.searchParams.get('user_id');
+    let userId: string | undefined = url.searchParams.get('user_id') || undefined;
     if (!userId) {
       try {
         const session = await getSessionUserId();

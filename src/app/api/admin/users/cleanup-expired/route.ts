@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
       const tier = (u.subscription_tier || 'free').toLowerCase();
       const isPaid = PAID_TIERS.has(tier);
       if (!isPaid) {
-        const created = new Date(u.created_at as string);
-        const trialEndsAt = u.trial_ends_at ? new Date(u.trial_ends_at as string) : new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const created = new Date(u.created_at as unknown as string);
+        const trialEndsAt = u.trial_ends_at ? new Date(u.trial_ends_at as unknown as string) : new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
         const warningEndsAt = new Date(trialEndsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
         if (now >= warningEndsAt) {
           usersToDelete.push({ id: u.id, email: u.email });
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
       });
 
       for (const u of allFree) {
-        const created = new Date(u.created_at as string);
-        const trialEndsAt = u.trial_ends_at ? new Date(u.trial_ends_at as string) : new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const created = new Date(u.created_at as unknown as string);
+        const trialEndsAt = u.trial_ends_at ? new Date(u.trial_ends_at as unknown as string) : new Date(created.getTime() + 30 * 24 * 60 * 60 * 1000);
         const warningEndsAt = new Date(trialEndsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
         if (now >= warningEndsAt) {
           usersToDelete.push({ id: u.id, email: u.email });

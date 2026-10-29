@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
  * GET /api/admin/close-predictions
  * Returns current prediction status distribution (for the admin UI badge).
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {

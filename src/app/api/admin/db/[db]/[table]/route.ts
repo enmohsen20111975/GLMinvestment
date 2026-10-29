@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = "force-dynamic";
 
 import { queryTable, insertRow, listTables } from '@/lib/sqlite-admin'
@@ -9,7 +9,7 @@ interface Params {
 }
 
 // GET /api/admin/db/[db]/[table] — استعلام عن جدول مع فلتر/ترتيب/تقسيم
-export async function GET(req: Request, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {
@@ -70,7 +70,7 @@ export async function GET(req: Request, { params }: Params) {
 }
 
 // POST /api/admin/db/[db]/[table] — إدراج صف جديد
-export async function POST(req: Request, { params }: Params) {
+export async function POST(req: NextRequest, { params }: Params) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {

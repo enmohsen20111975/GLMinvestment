@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   try {
     await mkdir(DATA_DIR, { recursive: true });
     const files = await readdir(DATA_DIR);
-    const codeBackups = [];
+    const codeBackups: any[] = [];
 
     for (const file of files) {
       if (file.startsWith('code_backup_') && file.endsWith('.zip')) {

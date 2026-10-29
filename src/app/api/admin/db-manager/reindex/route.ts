@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'db is required' }, { status: 400 });
     }
     const result = reindexAll(db);
-    return NextResponse.json({ success: result.success, ...result });
+    return NextResponse.json({ success: result.success, ...(result as any) });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: String((error as Error)?.message || error) },

@@ -27,6 +27,7 @@ import {
   type OpenPosition,
 } from '@/lib/paper-trading-v2-db';
 import { getSelfBaseUrl } from '@/lib/server-url';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 export const dynamic = 'force-dynamic';
 

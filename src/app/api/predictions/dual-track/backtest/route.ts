@@ -70,7 +70,7 @@ function parseBacktestOutput(stdout: string): BacktestResult[] {
     const marketMatch = line.match(/^Market:\s+(\w+)/);
     if (marketMatch) {
       if (currentResult && currentMarket) {
-        results.push({ market: currentMarket, ...(currentResult as BacktestResult) });
+        results.push({ ...(currentResult as BacktestResult), market: currentMarket });
       }
       currentMarket = marketMatch[1];
       currentResult = { market: currentMarket };
@@ -109,7 +109,7 @@ function parseBacktestOutput(stdout: string): BacktestResult[] {
     }
   }
   if (currentResult && currentMarket) {
-    results.push({ market: currentMarket, ...(currentResult as BacktestResult) });
+    results.push({ ...(currentResult as BacktestResult), market: currentMarket });
   }
 
   return results;

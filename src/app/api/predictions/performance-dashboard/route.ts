@@ -141,7 +141,7 @@ function computeByMarket(rows: PredictionRow[]) {
 function computeBySignal(rows: PredictionRow[]) {
   const map = new Map<string, { total: number; wins: number; losses: number; expired: number; returnsSum: number; returnsCount: number }>();
   for (const r of rows) {
-    const sig = String(r.signal || r.signal_type || 'unknown');
+    const sig = String((r as any).signal || (r as any).signal_type || 'unknown');
     const entry = map.get(sig) || { total: 0, wins: 0, losses: 0, expired: 0, returnsSum: 0, returnsCount: 0 };
     entry.total++;
     const status = String(r.status || '').trim();

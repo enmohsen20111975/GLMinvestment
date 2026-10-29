@@ -23,7 +23,7 @@ export default async function AdminLayout({
   let isAdmin = false;
 
   // DEV: سمح بكل حاجة على لو كنت في localhost أو في وضع التطوير
-  const headersList = (await import('next/headers')).headers();
+  const headersList = (await (await import('next/headers')).headers()) as any;
   const host =
     headersList.get('x-forwarded-host') ||
     headersList.get('host') ||
@@ -37,7 +37,7 @@ export default async function AdminLayout({
     process.env.NODE_ENV === 'development';
 
   // Check admin_session cookie (password / dev login)
-  const cookieStore = (await import('next/headers')).cookies();
+  const cookieStore = (await (await import('next/headers')).cookies()) as any;
   const adminCookie = cookieStore.get('admin_session')?.value;
   const adminSessionToken = process.env.ADMIN_SESSION_TOKEN;
   if (adminCookie && adminSessionToken && adminCookie === adminSessionToken) {

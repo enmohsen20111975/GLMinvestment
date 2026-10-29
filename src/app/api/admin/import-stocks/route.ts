@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
   // Preview data
   try {
     const lines = preview.trim().split('\n');
-    const previewData = [];
+    const previewData: any[] = [];
 
     for (let i = 0; i < Math.min(lines.length, 10); i++) {
       const columns = lines[i].split('\t').map(col => col.trim());

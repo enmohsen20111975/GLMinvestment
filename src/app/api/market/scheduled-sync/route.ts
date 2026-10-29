@@ -201,7 +201,7 @@ async function processStockForSync(
       try {
         const heavyTx = heavyDb.transaction(() => {
           // تحديث جدول stocks
-          const updateStmt = heavyDb.prepare(`
+          const updateStmt = heavyDb!.prepare(`
             UPDATE stocks
             SET previous_close = ?,
                 current_price = ?,
@@ -226,7 +226,7 @@ async function processStockForSync(
 
           // إدراج البيانات التاريخية
           for (const price of historicalPrices) {
-            const { inserted } = upsertPriceHistory(heavyDb, stockId, price.date, {
+            const { inserted } = upsertPriceHistory(heavyDb as any, stockId, price.date, {
               open_price: price.open,
               high_price: price.high,
               low_price: price.low,
@@ -239,7 +239,7 @@ async function processStockForSync(
 
           // إدراج بيانات اليوم إذا لم تكن موجودة
           if (historicalPrices.length === 0) {
-            const { inserted } = upsertPriceHistory(heavyDb, stockId, today, {
+            const { inserted } = upsertPriceHistory(heavyDb as any, stockId, today, {
               open_price: stockData.open_price,
               high_price: stockData.high_price,
               low_price: stockData.low_price,
@@ -260,7 +260,7 @@ async function processStockForSync(
     // === تحديث قاعدة البيانات الخفيفة ===
     try {
       const lightTx = lightDb.transaction(() => {
-        const updateStmt = lightDb.prepare(`
+        const updateStmt = lightDb!.prepare(`
           UPDATE stocks
           SET previous_close = ?,
               current_price = ?,

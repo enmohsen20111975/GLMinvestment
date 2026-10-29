@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
             device_id: deviceId,
             registered_at: new Date().toISOString(),
           }),
-          expires_at: expiresAt,
+          expires_at: expiresAt as any,
         },
       });
     } catch (persistErr) {

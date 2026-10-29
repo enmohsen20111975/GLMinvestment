@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId } = await getSessionUserId(req as any);
+    const { userId } = await getSessionUserId();
     if (!userId) {
       return NextResponse.json({ success: false, error: 'يجب تسجيل الدخول' }, { status: 401 });
     }

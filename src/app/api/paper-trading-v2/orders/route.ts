@@ -16,6 +16,7 @@ import {
   getAllOrders,
   getPaperTradingUserId,
 } from '@/lib/paper-trading-v2-db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 export const dynamic = 'force-dynamic';
 

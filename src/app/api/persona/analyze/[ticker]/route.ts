@@ -141,12 +141,10 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      ticker,
-      analysis: placeholder,
       ...placeholder,
       origin: 'placeholder',
       message_en: 'No stored or live persona analysis available — returning a neutral placeholder.',
-    });
+    } as any);
   } catch (error) {
     return NextResponse.json(
       {

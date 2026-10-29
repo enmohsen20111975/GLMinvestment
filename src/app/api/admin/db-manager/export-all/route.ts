@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 // P0-14-ASYNC fix (2026-09-27): replaced sync fs.existsSync/fs.statSync/
 // fs.readFileSync with async fs/promises equivalents so the GET handler never
 // blocks the event loop while streaming the export ZIP.
@@ -23,12 +23,12 @@ async function pathExists(p: string): Promise<boolean> {
  * GET /api/admin/db-manager/export-all?file=NAME.zip
  * Streams the ZIP file for download.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {
     const result = exportAllDbs();
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, ...(result as any) });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: String((error as Error)?.message || error) },
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {

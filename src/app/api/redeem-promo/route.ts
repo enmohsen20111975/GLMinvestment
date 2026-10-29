@@ -101,8 +101,8 @@ async function resolveUser(request: NextRequest): Promise<RedeemableUser | null>
         });
 
         const isNotExpired =
-          !apiToken.expires_at ||
-          new Date(apiToken.expires_at).getTime() > Date.now();
+          !apiToken?.expires_at ||
+          new Date(apiToken?.expires_at as any).getTime() > Date.now();
 
         if (apiToken && isNotExpired && apiToken.User?.is_active) {
           return apiToken.User;

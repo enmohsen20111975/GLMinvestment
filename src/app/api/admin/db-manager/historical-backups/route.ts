@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  * Body: { backupId }
  * Deletes a historical backup directory.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {

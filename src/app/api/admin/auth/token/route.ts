@@ -11,7 +11,7 @@ import { generateAdminToken, getAdminSessionToken } from '@/lib/admin-auth-serve
 // ---------------------------------------------------------------------------
 export async function GET() {
   const { cookies } = await import('next/headers');
-  const sessionCookie = cookies().get('admin_session')?.value;
+  const sessionCookie = (await (cookies() as any)).get('admin_session')?.value;
   const expectedToken = getAdminSessionToken();
 
   // 1. Direct admin_session cookie check

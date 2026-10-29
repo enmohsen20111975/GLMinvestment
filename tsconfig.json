@@ -34,8 +34,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
@@ -43,6 +42,10 @@
     "vps-service",
     "telegram-events",
     "mini-services",
-    "scripts"
+    "scripts",
+    ".next/dev/types",
+    "src/__tests__",
+    "src/**/*.test.*",
+    "src/**/*.spec.*"
   ]
 }

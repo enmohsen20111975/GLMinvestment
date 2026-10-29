@@ -65,8 +65,7 @@ export async function GET() {
       if (row) {
         return NextResponse.json({ success: true, rate: row.indicator_value, source: row.source, date: row.recorded_at });
       }
-    } catch { /* table might not exist */ }
-    console.error('[finance:inflation]', e);
+    } catch (e) { /* table might not exist */ console.error('[finance:inflation]', e); }
     return NextResponse.json({ success: true, rate: 0, source: 'none', date: null });
   } catch (e) {
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });

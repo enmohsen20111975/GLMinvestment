@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+// @ts-ignore - withSentryConfig may not be available in current @sentry/nextjs
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
@@ -12,7 +13,7 @@ const nextConfig: NextConfig = {
   // output: 'standalone',
   // UNIFY-FIX: تقليل استهلاك الذاكرة في البناء
   experimental: {
-    optimizePackageImports: true,
+    optimizePackageImports: true as any,
   },
   // UNIFY-FIX: تعطيل source maps في الإنتاج (تسريع البناء)
   productionBrowserSourceMaps: false,

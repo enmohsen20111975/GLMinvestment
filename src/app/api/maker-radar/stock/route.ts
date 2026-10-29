@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
     // 4. tracking info
     const tracking = await loadTracking();
     const tracked = tracking[ticker];
-    let trackingInfo = null;
+    let trackingInfo: any = null;
     if (tracked) {
       const changeSinceTracking = tracked.entryPrice > 0
         ? ((lastClose - tracked.entryPrice) / tracked.entryPrice) * 100

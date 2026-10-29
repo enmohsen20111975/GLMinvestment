@@ -91,7 +91,7 @@ export async function GET(_request: NextRequest) {
       let hasData = false;
 
       try {
-        const history = getPriceHistory(stockId, 30); // request 30 days for quick check
+        const history = getPriceHistory(String(stock.ticker), 30); // request 30 days for quick check
         hasData = history && history.length > 0;
       } catch {
         // If fetching fails for this stock, treat as no-data

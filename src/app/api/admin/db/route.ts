@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = "force-dynamic";
 
 import { listDatabases, integrityCheck } from '@/lib/sqlite-admin'
 import { requireAdminAsync } from '@/lib/admin-auth-server'
 
 // GET /api/admin/db — قائمة قواعد البيانات
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 }
 
 // POST /api/admin/db — فحص سلامة قاعدة بيانات
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const authError = await requireAdminAsync(req);
   if (authError) return authError;
   try {

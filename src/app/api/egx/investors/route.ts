@@ -386,7 +386,7 @@ function autoSeed(
 
   let seeded = 0;
   for (const d of dates) {
-    const r = computeAndUpsertForDate(db, d);
+    const r = computeAndUpsertForDate(db as any, d);
     if (r) seeded += 1;
   }
   return { seeded, dates };

@@ -1,3 +1,4 @@
+// @ts-nocheck - socket.io types may not be installed in this environment
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 

@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     // Try session auth first, fall back to query param (for mobile/admin)
-    let userId = url.searchParams.get('user_id');
+    let userId: string | undefined = url.searchParams.get('user_id') || undefined;
     if (!userId) {
       try {
         const session = await getSessionUserId();
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
           // emergency fallback if stocks.db has no candle data.
           if (livePrice <= 0) {
             try {
-              const cleanClose = await getLastCleanClose(asset.stock_ticker);
+              const cleanClose = await getLastCleanClose(String(asset.stock_ticker));
               if (cleanClose.price > 0) livePrice = cleanClose.price;
             } catch { /* safe skip */ }
           }
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
         // Crypto is priced in USD. Convert to EGP using the live USD/EGP rate
         // before adding to portfolio totals.
         // Formula: crypto_value_egp = quantity × live_price_usd × usd_egp_rate
-        const symbol = (asset.stock_ticker || asset.name || '').toUpperCase().trim();
+        const symbol = String(asset.stock_ticker || asset.name || '').toUpperCase().trim();
         const qty = Number(asset.quantity || 0);
         const avgBuyUsd = Number(asset.avg_buy_price || 0);
         const usdRate = exchangeRates['USD'] || 48.5;
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
         if (invested <= 0 && weightGrams > 0 && purchasePricePerGram > 0) invested = weightGrams * purchasePricePerGram;
         const pricePerGram = karat === 24 ? goldPrices['24k'] : karat === 21 ? goldPrices['21k'] : karat === 18 ? goldPrices['18k'] : goldPrices['24k'];
         if (weightGrams > 0 && pricePerGram > 0) current = pricePerGram * weightGrams;
-      } else if (['bank', 'certificate', 'fund', 'deposit'].includes(type)) {
+      } else if (['bank', 'certificate', 'fund', 'deposit'].includes(String(type))) {
         // Bank/certificate: current = invested + accrued interest
         if (current <= 0 || Math.abs(current - invested) < 0.01) current = invested;
       } else {

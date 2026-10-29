@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     const isRunning = activeJobs.includes('historical-5years');
 
     // Also check the historical status file
-    let historicalStatus = null;
+    let historicalStatus: any = null;
     try {
       const fs = await import('fs/promises');
       const path = await import('path');

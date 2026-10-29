@@ -464,7 +464,7 @@ export async function GET(request: NextRequest) {
     console.error('[News] Error:', error);
     return NextResponse.json({
       success: false,
-      error: ('internal_error' as any) || 'خطأ في جلب الأخبار',
+      error: 'خطأ في جلب الأخبار',
       news: []
     }, { status: 500 });
   }

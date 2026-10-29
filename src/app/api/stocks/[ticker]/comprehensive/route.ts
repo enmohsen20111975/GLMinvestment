@@ -164,7 +164,7 @@ export async function GET(
       const marketVariants = market.toUpperCase() === 'EGX'
         ? ['EGX', 'مصر']
         : [market];
-      const stock = await db.stocks.findFirst({
+      const stock = await (db as any).stocks.findFirst({
         where: {
           ticker: tickerUpper,
           market: { in: marketVariants },

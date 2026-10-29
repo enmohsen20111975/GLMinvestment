@@ -18,6 +18,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -144,7 +145,7 @@ export async function GET(_req: NextRequest) {
     const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const sdb = openRo(stocksDbPath);
 
-    const holdings: EnrichedHolding[] = items.map((it: Prisma.PortfolioItemGetPayload<{ include: never }>) => {
+    const holdings: EnrichedHolding[] = items.map((it: any) => {
       const ticker = (it.symbol || '').toUpperCase();
       const meta = it.asset_type === 'stock' && ticker
         ? fetchStockMeta(sdb, ticker)

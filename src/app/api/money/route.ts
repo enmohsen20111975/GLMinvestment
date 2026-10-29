@@ -92,8 +92,8 @@ export async function GET(request: NextRequest) {
 
       let totalInvested = 0, totalCurrent = 0;
       for (const a of portfolio) {
-        totalInvested += a.total_invested || 0;
-        totalCurrent += a.current_value || 0;
+        totalInvested += (a.total_invested as number) || 0;
+        totalCurrent += (a.current_value as number) || 0;
       }
 
       db.close();

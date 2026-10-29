@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const tickerParam = url.searchParams.get('ticker');
-    let userId = url.searchParams.get('user_id');
+    let userId: string | undefined = url.searchParams.get('user_id') || undefined;
     if (!userId) {
       try {
         const session = await getSessionUserId();
@@ -197,6 +197,7 @@ export async function GET(req: NextRequest) {
 
     // Generate recommendation based on drawdown depth + holding period
     const pnlPct = target.pnl_percent;
+    const holdingDays = target.holding_days;
     const drawdownFromHigh = target.high_52w > 0 && target.current_price > 0
       ? ((target.current_price - target.high_52w) / target.high_52w) * 100
       : 0;

@@ -87,7 +87,7 @@ async function main() {
   ];
 
   for (const plan of plans) {
-    await db.subscriptionPlan.create({ data: plan });
+    await db.subscriptionPlan.create({ data: plan as any });
     console.log(`✓ Created plan: ${plan.name_ar} (${plan.name}) - ${plan.price} ج.م/شهر`);
   }
 

@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
         FROM stock_price_history sph
         JOIN stocks s ON s.id = sph.stock_id
         ORDER BY s.ticker ASC, sph.date DESC
-      `).all() as PriceHistoryRow[];
+      `).all() as unknown as PriceHistoryRow[];
     } catch {
       // Price history table may not exist
       console.log('[export-data] Price history table not available, skipping...');

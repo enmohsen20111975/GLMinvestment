@@ -741,10 +741,10 @@ export async function GET(request: NextRequest) {
     // الفحوصات: stop≥entry, target≤entry, daily return anomaly, exit_type consistency, dedup
     const { filterValidPredictions, deduplicatePredictions } = await import('@/lib/prediction-validator');
     const beforeValidation = predictions.length;
-    predictions = deduplicatePredictions(predictions);
+    predictions = deduplicatePredictions(predictions as any) as any;
     const afterDedup = predictions.length;
     const validationResult = filterValidPredictions(predictions);
-    predictions = validationResult.valid;
+    predictions = validationResult.valid as any;
     const invalidCount = validationResult.invalid.length;
 
     const total = predictions.length;

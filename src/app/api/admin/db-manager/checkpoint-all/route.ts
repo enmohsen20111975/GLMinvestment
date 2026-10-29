@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { checkpointAllDbs } from '@/lib/admin-db-manager';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
@@ -10,12 +10,12 @@ export const runtime = 'nodejs';
  * Runs WAL checkpoint (TRUNCATE) on all databases.
  * Essential before downloading or backing up databases.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {
     const result = checkpointAllDbs();
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, ...(result as any) });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: String((error as Error)?.message || error) },

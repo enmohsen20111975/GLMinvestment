@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
       items: enrichedItems,
       total: enrichedItems.length,
     });
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     console.error('[/api/mobile/watchlist] Error:', error);
     return NextResponse.json({
       success: true,
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
         'SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1'
       ).get(ticker) as Record<string, unknown>;
       if (row) {
-        stockId = row.id;
+        stockId = row.id as number;
       }
     } catch {}
 
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       id: result.lastInsertRowid,
       message: 'تمت الإضافة لقائمة المراقبة',
     });
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     console.error('[/api/mobile/watchlist POST] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في الإضافة' },
@@ -296,7 +296,7 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'تم الحذف من قائمة المراقبة',
     });
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     console.error('[/api/mobile/watchlist DELETE] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في الحذف' },
