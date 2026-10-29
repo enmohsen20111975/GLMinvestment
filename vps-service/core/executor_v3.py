@@ -129,7 +129,47 @@ def execute_v3(plan, prices=None, volumes=None, ticker=None, market='EGX'):
     if not ok:
         result.warnings.append(f'Conflict: {conflict_reason}')
         result.confidence = min(result.confidence, 40)
-    
+
+    # ── CRITICAL FIX (2026-10-29): حوّل signal_score لـ final_signal ──
+    # قبل كده: final_signal كان بيفضل 'NO_TRADE' دايمًا → مفيش توقعات بـ تتحفظ!
+    # دلوقتي: signal_score (-100..+100) → BUY / SELL / NO_TRADE
+    #
+    # Thresholds (مبنية على الـ regime من الـ plan):
+    #   DEFENSIVE:  buy ≥ 35, strong_buy ≥ 55
+    #   NORMAL:     buy ≥ 30, strong_buy ≥ 50
+    #   AGGRESSIVE: buy ≥ 25, strong_buy ≥ 45
+    _regime = getattr(plan, 'market_regime', 'NORMAL').upper()
+    if 'DEFENSIVE' in _regime:
+        _buy_thresh, _strong_thresh, _sell_thresh = 35, 55, -35
+    elif 'AGGRESSIVE' in _regime:
+        _buy_thresh, _strong_thresh, _sell_thresh = 25, 45, -25
+    else:
+        _buy_thresh, _strong_thresh, _sell_thresh = 30, 50, -30
+
+    if signal_score >= _strong_thresh:
+        result.final_signal = 'STRONG_BUY'
+    elif signal_score >= _buy_thresh:
+        result.final_signal = 'BUY'
+    elif signal_score <= _sell_thresh:
+        result.final_signal = 'SELL'
+    else:
+        result.final_signal = 'NO_TRADE'
+        result.no_trade_reason = f'signal_score {signal_score:.1f} in neutral zone ({_sell_thresh}..{_buy_thresh})'
+
+    # Position size من final_position_size (موحد)
+    try:
+        import sys as _ps_sys
+        _ps_sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from utils.shared_liquidity import final_position_size
+        _base = 0.02  # 2% base
+        result.position_size_pct = final_position_size(
+            _base,
+            flow_score=signal_score + 50,  # normalize -100..100 → 0..100
+            regime=_regime
+        ) * 100  # → percentage
+    except Exception:
+        result.position_size_pct = 2.0  # fallback 2%
+
     result.complete = True
     result.completed_at = datetime.now().isoformat()
     return result
