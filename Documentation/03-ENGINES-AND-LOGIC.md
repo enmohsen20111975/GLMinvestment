@@ -1,8 +1,9 @@
 # 03 — المحركات والمنطق الاستثماري (تفاصيل كاملة)
 
-> **آخر تحديث:** 2026-10-29 | **Commit:** `94e612c`
+> **آخر تحديث:** 2026-10-29 | **BRAVO-DATA-LAYER (`data_engine/data_layer.py`)**
 > **V3 هو النظام الإنتاجي الوحيد. V40.2 deprecated (مش في crontab).**
 > **كل معادلة + كل threshold + كل branch logic موثّق من الكود الفعلي.**
+> **V3 دلوقتي بـ يقرا كل بياناته عبر `data_engine.data_layer` — مفيش أي قراءة مباشرة لـ stocks.db.**
 
 ---
 
@@ -22,6 +23,7 @@
 12. [المؤشرات الفنية Canonical](#12-المؤشرات-الفنية)
 13. [المسار الإنتاجي الفعلي](#13-المسار-الإنتاجي)
 14. [قواعد المخاطر المعتمدة](#14-قواعد-المخاطر)
+15. [نتائج الاختبار على بيانات EGX حقيقية](#15-نتائج-الاختبار-على-بيانات-egx-حقيقية)
 
 ---
 
@@ -51,28 +53,33 @@
 
 | الخاصية | القيمة |
 |---|---|
-| **الملف** | `vps-service/jobs/new_daily_predictor.py` (505 سطر) |
+| **الملف** | `vps-service/jobs/new_daily_predictor.py` (~660 سطر) |
 | **الـ cron** | ✅ في crontab (صباح 03:00 UTC + مساء 15:00 UTC) |
 | **المنسّق** | `vps-service/core/orchestrator_v3.py` (13,196 bytes) |
 | **المنفّذ** | `vps-service/core/executor_v3.py` (10,037 bytes) |
 | **الـ DB** | `predictions.db` → جدول `predictions` (نفس الـ table بتاع V40.2) |
 | **الـ persona** | `v3_smart` |
+| **مصدر البيانات** | **`data_engine/data_layer.py`** — مفيش أي قراءة مباشرة لـ stocks.db |
 
 ### المسار
 
 ```
 new_daily_predictor.py
-  → get_active_tickers(market)
+  → get_active_tickers(market) ← data_layer.get_market_snapshots(market)
   → filter_stale_predictions() — شيل الأسهم اللي ليه توقع valid
+                                    (current prices من data_layer)
   → filter_dead_stocks() — شيل الأسهم الميتة (price=0 أو flat history)
+                            (snapshots من data_layer)
   → فلتر الإجازات — skip جمعة/سبت/أعياد
   → لكل ticker:
-      → get_price_history() — اقرأ آخر 20+ يوم (closes, volumes, highs, lows, opens)
-      → اقرأ market_cap + free_float من stocks.db
+      → get_price_history() ← data_layer.get_history_lists(ticker, days, market)
+          (historical_data + egksco_price_history + tv_snapshot merged)
+      → اقرأ market_cap من data_layer.get_snapshot(ticker)
       → orchestrator_v3.create_v3_plan() — حدد الحالة (S1-S11) + الأوزان
       → executor_v3.execute_v3() — شغّل 7 عائلات + conflict + confidence + signal
       → STAGE-5: Ranking — رتّب الإشارات واختار أعلى max_picks
       → save_prediction() — احفظ في predictions.db (persona='v3_smart')
+          (entry_price من data_layer.get_snapshot)
 ```
 
 ### CLI
@@ -88,26 +95,36 @@ python3 vps-service/jobs/new_daily_predictor.py --market EGX --dry-run --max-tic
 1. **فلتر الإجازات** — skip جمعة/سبت/أعياد
 2. **فلتر الأسهم الميتة** — price=0 فقط (volume=0 مش سبب للرفض — ممكن يوم هادي)
 3. **فلتر التوقعات القديمة** — skip لو فيه توقع valid أقل من N أيام
-4. **فلتر الأسهم الـ flat** — skip لو ≤2 قيمة مختلفة في 30 يوم
+4. **فلتر الأسهم الـ flat** — skip لو ≤1 قيمة مختلفة في 30 يوم (STAGE-FIX: خُفّض من ≤2)
 5. **minimum 20 يوم بيانات** — V3 محتاج 20+ يوم للتحليل (كان 50 — خُفّض)
 
-### get_price_history (تفاصيل التنفيذ)
+### get_price_history (BRAVO-DATA-LAYER)
 
 ```python
-# بـ تستخدم raw sqlite3 (readonly) مش db_manager
-# بـ يجرب أسماء أعمدة مختلفة:
-#   1. close, volume, high, low, open
-#   2. close_price, volume, high_price, low_price, open_price (fallback)
-# بـ يرجع: (closes, volumes, highs, lows, opens) — كلهم list[float]
+# BRAVO-DATA-LAYER (2026-10-29): بـ يقرا عبر data_engine.data_layer
+# مش بـ يفتح stocks.db مباشرة (تم حذف كل قراءات sqlite3 المباشرة)
+#
+# data_layer.get_history_lists(ticker, days, market) بـ يرجع:
+#   (closes, volumes, highs, lows, opens) — كلهم list[float]
+#
+# الـ data layer بـ يدمج 3 مصادر:
+#   1. historical_data (data_engine.db) — daily OHLCV نظيف من 2021-2026
+#   2. egksco_price_history (data_engine.db) — EGX daily + buy/sell pressure
+#   3. tv_snapshot (data_engine.db) — اليوم الطازج (لو مش موجود في historical_data)
+#
+# النتيجة: تاريخ صناعي نظيف، non-flat، ينتهي بالسعر اللحظي الطازج.
+# مفيش حاجة لـ "synthetic day" أو "flat-data workaround" — الـ data layer بـ يحلها.
 ```
 
-### filter_dead_stocks (تفاصيل التنفيذ)
+### filter_dead_stocks (BRAVO-DATA-LAYER)
 
 ```python
 # فلتر 1: price = 0 → ميت فعلاً
-# فلتر 2: أسعار flat (≤2 قيمة مختلفة في 30 يوم) → ميت تاريخياً
+# فلتر 2: أسعار flat (≤1 قيمة مختلفة في 30 يوم) → ميت تاريخياً
 # ملاحظة: volume=0 مش سبب للرفض (يوم هادي مش سهم ميت)
 # ملاحظة: change_percent مش مستخدم (كان بيقتل 126/127 سهم غلط!)
+#
+# البيانات بـ تيجي من data_layer.get_market_snapshots(market) + get_price_history()
 ```
 
 ---
@@ -628,17 +645,25 @@ rank_score = (
 ## 13. المسار الإنتاجي الفعلي
 
 ```
-1. tradingview_scanner_live.py → أسعار + مؤشرات من TV → stocks.db
-2. fetch_tv_indices.py → مؤشرات رسمية → market_indices
+1. tradingview_scanner_live.py
+   → TradingView Scanner API → data_engine.db (عبر data_layer)
+   → tv_snapshot (snapshot) + tv_indicators (RSI/SMA/MACD/ATR) + historical_data (daily OHLCV)
+   → السكرابر بـ يحط market slug صراحةً (EGX/TADAWUL/...) — مش بـ يعتمد على الـ API
+
+2. fetch_tv_indices.py → مؤشرات رسمية → stocks.db.market_indices (legacy — لم يُهاجر بعد)
+
 3. new_daily_predictor.py (V3):
-   a. get_active_tickers(market)
+   a. get_active_tickers(market) ← data_layer.get_market_snapshots(market)
+      (tickers من tv_snapshot، مش stocks.db)
    b. filter_stale_predictions() — شيل الأسهم اللي ليه توقع valid
+      (current prices من data_layer.get_market_snapshots)
    c. filter_dead_stocks() — شيل الأسهم الميتة (price=0 أو flat history)
+      (snapshots + history من data_layer)
    d. فلتر الإجازات — skip جمعة/سبت/أعياد
    e. لكل ticker:
-      - get_price_history() — اقرأ آخر 20+ يوم (closes, volumes, highs, lows, opens)
-        (raw sqlite3 readonly + flexible column names)
-      - اقرأ market_cap + free_float من stocks.db
+      - get_price_history() ← data_layer.get_history_lists(ticker, days, market)
+        (historical_data + egksco_price_history + tv_snapshot merged — نظيف non-flat)
+      - اقرأ market_cap من data_layer.get_snapshot(ticker)
       - orchestrator_v3.create_v3_plan():
         * حدد stock_state (S1-S11) — بـ يستخدم SMA20 + SMA50 + ROC5 + ROC20 + vol_ratio_5d
         * حدد market_regime (DEFENSIVE/NORMAL/AGGRESSIVE)
@@ -660,35 +685,55 @@ rank_score = (
         * S8 (سيولة ضعيفة) → position cap 1%
       - STAGE-5: Ranking — رتّب الإشارات (score×0.45 + conf×0.25 + intensity×0.15)
       - save_prediction() → predictions.db (persona='v3_smart')
+        (entry_price من data_layer.get_snapshot — مطابق للسعر اللحظي 0.000%)
+
 4. daily_closer.py → 9 exit rules → يقفل
 5. Next.js API + UI → يعرض
 ```
 
-### نتائج اختبار V3 على بيانات EGX حقيقية (2026-10-29)
+### بنية البيانات الجديدة (BRAVO-DATA-LAYER)
 
 ```
-EGX: 127 أسهم نشطة → 6 عدّوا الفلتر → 5 اتحللوا
-
-EHDR: NO_TRADE (S8, score=-4.8, conf=33 < 58)
-  engine_scores: TREND=-29.6, MOM=-40.4, MR=2.8, BRK=10.0, FLOW=0.0
-  engine_signals: TREND=HOLD, MOM=SELL, MR=HOLD, BRK=HOLD, FLOW=HOLD
-  warnings: S8 (weak liquidity) → position capped at 1%
-
-UASG: NO_TRADE (S9, score=-23.9, conf=33 < 58)
-  TREND=REJECTED_LIQUIDITY, MOM=SELL
-
-ESAC: NO_TRADE (S8, score=-8.2, conf=20 < 58)
-  TREND=REJECTED_LIQUIDITY, MOM=BUY
-
-DIFC: NO_TRADE (S3, score=-8.3, conf=17 < 58)
-  TREND=HOLD, MOM=HOLD
-
-HCFI: NO_TRADE (S9, score=-26.7, conf=33 < 58)
-  TREND=REJECTED_LIQUIDITY, MOM=SELL
+┌─────────────────────────────────────────────────────────────────────┐
+│              TradingView Scanner (مصدر خارجي)                       │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │ POST scanner.tradingview.com/{market}/scan
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  data_engine/scrapers/tradingview_scanner_live.py                   │
+│  (بـ يحط market slug صراحة: EGX/TADAWUL/KSE/QSE/US/crypto)         │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │ upsert_snapshot() + upsert_indicators()
+                             │ + append_daily_prices()
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│            data_engine/data_layer.py (طبقة البيانات الموحدة)        │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │  data_engine.db (المصدر الوحيد — 531 MB)                   │    │
+│  │  • tv_snapshot (702 rows: EGX 295 + TADAWUL 407)           │    │
+│  │  • tv_indicators (702 rows — RSI/SMA/MACD/ATR time-series) │    │
+│  │  • historical_data (198K rows — daily OHLCV 2021-2026)     │    │
+│  │  • egksco_price_history (60K rows — EGX + buy/sell)        │    │
+│  │  • tab_* (fundamentals)                                    │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│  API:                                                               │
+│    get_snapshot(ticker) → price + RSI + SMA + ATR + market_cap      │
+│    get_history(ticker, days) → merged OHLCV (oldest→newest)         │
+│    get_indicators(ticker) → RSI/MACD/SMA/ATR                        │
+│    get_market_stocks(market) → [tickers]                            │
+│    get_market_snapshots(market) → [snapshots]                       │
+│    normalize_market(alias) → canonical slug                         │
+│      (egypt/مصر/EGX → 'EGX', ksa/السعودية/TADAWUL → 'TADAWUL', ...) │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │ قراءة موحدة (engines مش بـ تفتح DB مباشرة)
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  V3 Predictor (new_daily_predictor.py)                              │
+│  → كل قراءات البيانات عبر data_layer (0 قراءات مباشرة لـ stocks.db)│
+│  → orchestrator_v3 + executor_v3 → 7 عائلات تحليل                   │
+│  → save_prediction() → predictions.db                               │
+└─────────────────────────────────────────────────────────────────────┘
 ```
-
-> كل النتائج NO_TRADE — صحيح لأن الأسهم دي ضعيفة (S8/S9) والـ confidence منخفضة.
-> V3 بيشتغل كما هو مصمم: لا يصدر إشارة إلا لو فيه confidence ≥ 58 + لا تعارض.
 
 ---
 
@@ -706,11 +751,102 @@ HCFI: NO_TRADE (S9, score=-26.7, conf=33 < 58)
 
 ---
 
+## 15. نتائج الاختبار على بيانات EGX حقيقية
+
+### 15.1 اختبار BRAVO-DATA-LAYER (2026-10-29 10:05)
+
+**التشغيل:** `python3 new_daily_predictor.py --today-only --max-tickers 50 --market EGX`
+
+```
+EGX: 295 سهم نشط في tv_snapshot → 50 عدّوا الفلتر → كلهم اتحللوا
+
+✅ 18 توقع SELL محفوظة في predictions.db
+   - 0 errors
+   - 32 NO_TRADE
+   - متوسط الثقة: 60.6%
+```
+
+### 15.2 أعلى التوقعات (مرتبة بالثقة)
+
+| ticker | signal | entry | target | stop | score | conf | RSI |
+|--------|--------|-------|--------|------|-------|------|-----|
+| **MEPA** | SELL | 1.29 | 1.23 | 1.33 | -52.4 | 80% | 31.8 |
+| **ETEL** | SELL | 122.60 | 116.47 | 126.28 | -46.3 | 80% | 38.9 |
+| CERA | SELL | 1.06 | 1.01 | 1.09 | -59.8 | 60% | 37.4 |
+| AMII | SELL | 7.75 | 7.36 | 7.98 | -59.0 | 60% | 36.7 |
+| ELEC | SELL | 1.51 | 1.43 | 1.56 | -58.9 | 60% | 36.8 |
+| LUTS | SELL | 0.65 | 0.62 | 0.67 | -57.3 | 60% | — |
+| EGCH | SELL | 10.71 | 10.17 | 11.03 | -56.7 | 60% | — |
+| ISPH | SELL | 9.89 | 9.40 | 10.19 | -55.3 | 60% | — |
+| POUL | SELL | 9.50 | 9.03 | 9.79 | -54.6 | 60% | — |
+| PHDC | SELL | 11.65 | 11.07 | 12.00 | -50.2 | 60% | — |
+
+### 15.3 التحقق من جودة التوقعات (Spot-Check)
+
+تم التحقق من أعلى 5 توقعات عبر `data_layer.get_snapshot()` + `data_layer.get_history()`:
+
+| الاختبار | النتيجة |
+|----------|---------|
+| `entry_price` = `live price` | ✅ 5/5 (0.000% diff) |
+| منطق SELL صحيح (`target < entry < stop`) | ✅ 5/5 |
+| RSI < 40 (oversold — منطقي على downtrend) | ✅ 5/5 |
+| التاريخ non-flat (≥2 قيمة مختلفة في 10 أيام) | ✅ 5/5 |
+
+### 15.4 اختبار TADAWUL (slug normalization)
+
+**التشغيل:** `python3 new_daily_predictor.py --today-only --max-tickers 10 --market TADAWUL --dry-run`
+
+```
+TADAWUL: 407 سهم نشط في tv_snapshot → 10 اتحللوا
+
+✅ 4 إشارات SELL (7010, 1150, 1120, 1180)
+   - 0 errors
+   - slug normalization شغّال: 'ksa' → 'TADAWUL' → data_layer
+```
+
+### 15.5 اختبار Idempotency (Scanner)
+
+تشغيل السكرابر مرتين متتاليتين على نفس السوق:
+
+| المقياس | قبل | بعد | التغيير |
+|---------|-----|------|---------|
+| `tv_snapshot` rows | 295 | 295 | 0 (upsert، مش duplicate) |
+| `tv_indicators` rows | 295 | 295 | 0 |
+| `historical_data` rows | 197,718 | 197,718 | 0 |
+| COMI price | 120.5 | 120.15 | تحديث (السوق شغال) |
+
+✅ السكرابر idempotent — مفيش duplicate أو data corruption.
+
+### 15.6 حالة الـ data_engine.db بعد الاختبار
+
+| الجدول | rows | max_date | المصدر |
+|--------|------|----------|--------|
+| `tv_snapshot` | 702 | 2026-10-29 10:07 | TV Scanner (EGX 295 + TADAWUL 407) |
+| `tv_indicators` | 702 | 2026-10-29 | TV Scanner |
+| `historical_data` | 198,125 | 2026-10-29 | TV Scanner + historical (merged) |
+| `egksco_price_history` | 60,097 | — | EGKSCO scraper |
+| `stocks` (legacy) | 1,098 | — | fallback فقط |
+
+### 15.7 مقارنة قبل/بعد BRAVO-DATA-LAYER
+
+| المقياس | قبل (V3 يقرا stocks.db) | بعد (V3 يقرا data_layer) |
+|---------|-------------------------|--------------------------|
+| أسهم EGX قابلة للتحليل | 5/127 (4%) | 50/295 (17%) |
+| إشارات حقيقية | 0 (كلهم NO_TRADE) | 18 SELL |
+| `entry_price` vs `live` | mismatch (snapshot قديم) | 0.000% diff |
+| أخطاء قراءة بيانات | متكررة (flat data) | 0 |
+| market slug | 'EGX' فقط (كسر TADAWUL) | normalized (11 alias → 6 canonical) |
+| مصدر البيانات | stocks.db (متفرق) | data_engine.db (موحد) |
+
+---
+
 ## المراجع
 
 | الملف | الدور | السطور | الحالة |
 |------|------|--------|--------|
-| **`vps-service/jobs/new_daily_predictor.py`** | **V3 predictor (إنتاجي)** | **505** | ✅ نشط |
+| **`data_engine/data_layer.py`** | **طبقة البيانات الموحدة (BRAVO-DATA-LAYER)** | **~450** | ✅ نشط |
+| **`data_engine/scrapers/tradingview_scanner_live.py`** | **TV Scanner — بـ يكتب لـ data_engine.db عبر data_layer** | **~780** | ✅ نشط |
+| **`vps-service/jobs/new_daily_predictor.py`** | **V3 predictor (إنتاجي) — بـ يقرا عبر data_layer** | **~660** | ✅ نشط |
 | **`vps-service/core/orchestrator_v3.py`** | **المنسّق V3** | — | ✅ نشط |
 | **`vps-service/core/executor_v3.py`** | **المنفّذ V3** | — | ✅ نشط |
 | `vps-service/utils/shared_liquidity.py` | نظام السيولة + الرادار | 1,200+ | ✅ نشط |
@@ -719,6 +855,8 @@ HCFI: NO_TRADE (S9, score=-26.7, conf=33 < 58)
 | `vps-service/jobs/daily_closer.py` | الإغلاق اليومي | 3,789 | ✅ نشط |
 | `vps-service/analyzers/market_regime_engine.py` | MarketRegimeEngine | — | ✅ نشط |
 | `vps-service/analyzers/indicators/` | المؤشرات Canonical | — | ✅ نشط |
+| `scripts/create_tv_tables.py` | إنشاء tv_snapshot + tv_indicators | — | ✅ نشط |
+| `scripts/run_all_bravo_commands.sh` | سكربت تشغيل كامل لكل المراحل | — | ✅ نشط |
 | `vps-service/jobs/daily_predictor.py` | V40.2 predictor | 4,744 | ❌ DEPRECATED |
 | `vps-service/engines/backtest_engine.py` | V38BacktestEngine | 2,373 | ❌ DEPRECATED |
 | `vps-service/core/orchestrator.py` | orchestrator قديم | 127 | ❌ DEPRECATED |
