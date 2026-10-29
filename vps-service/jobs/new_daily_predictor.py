@@ -515,12 +515,20 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
                 _intensity = (_turnover / _mc * 100) if _mc and _mc > 0 and _turnover > 0 else 0
                 _intensity_norm = min(100, _intensity / 0.5 * 100)  # 0.5% = 100
                 
+                # STAGE-5 FIX: شيل التكرار — استخدم RS + flow_quality حقيقيين
+                _rs_score = 50  # default neutral
+                try:
+                    _sma20 = sum(_prices[-20:]) / 20 if len(_prices) >= 20 else last_price
+                    _rs_score = max(0, min(100, ((last_price - _sma20) / _sma20 * 100 + 5) * 10))
+                except: pass
+                _flow_quality = _conf_norm  # proxy: confidence = agreement = flow quality
+                
                 sig['rank_score'] = (
-                    _score_norm * 0.45 +
-                    _conf_norm * 0.25 +
-                    _intensity_norm * 0.15 +
-                    _score_norm * 0.10 +  # rs_score proxy
-                    _conf_norm * 0.05     # flow_quality proxy
+                    _score_norm * 0.45 +        # signal score
+                    _conf_norm * 0.25 +          # confidence
+                    _intensity_norm * 0.15 +     # liquidity intensity
+                    _rs_score * 0.10 +           # RS (سعر vs SMA20)
+                    _flow_quality * 0.05          # flow quality (confidence proxy)
                 )
             
             # رتّب تنازليًا

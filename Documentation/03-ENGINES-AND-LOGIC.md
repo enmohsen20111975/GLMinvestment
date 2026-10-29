@@ -580,7 +580,7 @@ rank_score = (
 
 > **Rule 67:** `analyzers/indicators/` هو المصدر الوحيد للمؤشرات.
 
-> **ملاحظة:** MOM بـ يستخدم Wilder's RSI من analyzers/indicators/rsi.py (STAGE-1.1 FIX — كان بدائي).
+> **ملاحظة:** MOM بـ يستخدم Wilder's RSI من analyzers/indicators/rsi.py (STAGE-1.1 FIX — تم الإصلاح).
 
 ---
 
