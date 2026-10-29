@@ -594,7 +594,7 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
           const val = sourceResult[field];
           // ادمج لو الحقل مش موجود في candidate أو null.
           if (val != null && (candidate[field as keyof IncubatorCandidate] == null)) {
-            (candidate as Record<string, unknown>)[field] = val;
+            (candidate as unknown as Record<string, unknown>)[field] = val;
           }
         }
       }
@@ -619,7 +619,7 @@ export function getIncubatorData(market: string = 'EGX'): IncubatorData {
         for (const field of INTELLIGENCE_FIELDS) {
           const val = sourceResult[field];
           if (val != null && (candidate[field as keyof IncubatorCandidate] == null)) {
-            (candidate as Record<string, unknown>)[field] = val;
+            (candidate as unknown as Record<string, unknown>)[field] = val;
           }
         }
       }

@@ -20,7 +20,7 @@ export interface DateTextProps {
   value: string | Date | null | undefined;
   format?: 'date' | 'time' | 'datetime' | 'relative';
   locale?: string;
-  className?: className;
+  className?: string;
 }
 
 function relativeTime(date: Date): string {

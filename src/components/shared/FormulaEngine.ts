@@ -58,7 +58,7 @@ const _parser = new Parser({
 const _parserError: string | null = null;
 
 function getParser(): { parse: (expr: string) => { evaluate: (scope: Record<string, unknown>) => unknown } } | null {
- return _parser;
+ return _parser as any;
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────

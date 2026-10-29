@@ -64,9 +64,7 @@ const PHASE_MAP: Record<string, { label: string; tone: 'whale' | 'profit' | 'los
  'D_explosive_surge': { label: 'انفجار سيولي', tone: 'profit' },
  'E_early_break': { label: 'اختراق مبكر', tone: 'profit' },
  // entry_gate phases
- 'DOWNTREND': { label: 'اتجاه هابط', tone: 'loss' },
  'PULLBACK': { label: 'ارتداد', tone: 'warning' },
- 'UPTREND': { label: 'اتجاه صاعد', tone: 'profit' },
  'BULLISH_RECOVERY': { label: 'تعافٍ صعودي', tone: 'profit' },
  'TRANSITIONAL': { label: 'انتقالي', tone: 'muted' },
 };

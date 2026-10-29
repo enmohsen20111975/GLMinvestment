@@ -341,7 +341,7 @@ export function ShareButton({
  </Button>
  )}
  </DropdownMenuTrigger>
- <DropdownMenuContent align="end" className="w-56" dir="rtl">
+ <DropdownMenuContent align="end" className="w-56" {...({ dir: "rtl" } as any)}>
  <DropdownMenuLabel>مشاركة على</DropdownMenuLabel>
  <DropdownMenuSeparator />
  

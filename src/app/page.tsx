@@ -60,7 +60,7 @@ const EnhancedWatchlistView = withErrorBoundary(
   'قائمة المتابعة',
 );
 const MarketAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/market-analysis/components/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
+  dynamicImport(() => import('@/modules/market-analysis/components/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }) as any,
   'التحليل',
 );
 // فلاتر الأسهم — شاشة موحّدة (فلاتر متقدمة + أعلى الأرباح/الخسائر) — Python screener via proxy
@@ -205,7 +205,7 @@ const PredictionTrackingView = withErrorBoundary(
 );
 // PicksManagementView removed 2026-09-28 (file deleted in Task 7-A — features merged into PredictionTrackingView)
 const DualTrackPredictionsView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/predictions/components/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
+  dynamicImport(() => import('@/modules/predictions/components/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }) as any,
   'التوقعات المزدوجة',
 );
 const V82DecisionPanel = withErrorBoundary(
@@ -640,7 +640,7 @@ function AppShell() {
           </div>
         );
       case 'incubator': {
-        const normalizedMarket = currentMarket === 'SAUDI' || currentMarket === 'KSA' ? 'TADAWUL' : currentMarket;
+        const normalizedMarket = (currentMarket as any) === 'SAUDI' || (currentMarket as any) === 'KSA' ? 'TADAWUL' : currentMarket;
         return (
           <div className="min-h-screen flex flex-col bg-background">
             <Header title="الفحص الحي للأسهم" subtitle={`أسهم تحت المراقبة والفحص المستمر — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`} />

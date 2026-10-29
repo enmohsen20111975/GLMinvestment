@@ -460,7 +460,7 @@ export default function AdminEducationalCardsPage() {
  return;
  }
 
- const rawList = data.lessons || data.data?.items || data.data || (Array.isArray(data) ? data : []);
+ const rawList = data.lessons || (data.data as any)?.items || data.data || (Array.isArray(data) ? data : []);
  const list: LessonItem[] = Array.isArray(rawList) ? rawList : [];
  setLessons(list);
  // Auto-select first lesson if available and none selected
@@ -1030,13 +1030,13 @@ export default function AdminEducationalCardsPage() {
  ==================================================================== */}
  <section>
  <WidgetCard
- 	title="إنشاء كروت تعليمية جديدة"
- 	icon={Sparkles}
- 	iconColor="text-warning"
- 	iconSize="w-5 h-5"
- 	titleClassName="text-base"
- 	className="border-warning/20 from-warning/5 to-profit/5 dark:from-warning/5 dark:to-profit/5"
- 	contentClassName="space-y-6"
+        title="إنشاء كروت تعليمية جديدة"
+        icon={Sparkles}
+        iconColor="text-warning"
+        iconSize="w-5 h-5"
+        titleClassName="text-base"
+        className="border-warning/20 from-warning/5 to-profit/5 dark:from-warning/5 dark:to-profit/5"
+        contentClassName="space-y-6"
  >
 
 {/* Category filter */}

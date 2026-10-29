@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       total: enrichedItems.length,
       enhanced: true,
     });
-  } catch (error: Record<string, unknown>) {
+  } catch (error: unknown) {
     console.error('[/api/watchlist-enhanced] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في جلب قائمة المراقبة المحسّنة', items: [], total: 0 },

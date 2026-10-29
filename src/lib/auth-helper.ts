@@ -197,7 +197,7 @@ export async function getSessionUserId(): Promise<{ userId: string | null; isAdm
                     (session.user as Record<string, unknown>).username as string || '');
     // session.user.id is set by the JWT callback in [...nextauth]/route.ts
     const token = session.user as Record<string, unknown>;
-    const userId = (session.user.id || token.id) as string | undefined ?? null;
+    const userId = ((session.user as any).id || token.id) as string | undefined ?? null;
     logger.debug('session auth ok', { userId, isAdmin });
     // ANALYTICS-FIX: bump last_active_at (throttled fire-and-forget)
     if (userId) updateLastActive(userId);

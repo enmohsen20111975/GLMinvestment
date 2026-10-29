@@ -19,7 +19,7 @@ export async function GET(
 
     const { id } = await params;
     
-    const post = await db.userPost.findUnique({
+    const post = await (db as any).userPost.findUnique({
       where: { id },
       include: {
         User: {
@@ -44,7 +44,7 @@ export async function GET(
     }
 
     // زيادة عدد المشاهدات
-    await db.userPost.update({
+    await (db as any).userPost.update({
       where: { id },
       data: { views: { increment: 1 } }
     });
@@ -80,7 +80,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'forbidden' }, { status: 403 });
     }
 
-    const post = await db.userPost.findUnique({ where: { id } });
+    const post = await (db as any).userPost.findUnique({ where: { id } });
     if (!post) {
       return NextResponse.json({ error: 'المنشور غير موجود' }, { status: 404 });
     }
@@ -89,7 +89,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'غير مصرح لك بحذف هذا المنشور' }, { status: 403 });
     }
 
-    await db.userPost.delete({ where: { id } });
+    await (db as any).userPost.delete({ where: { id } });
 
     return NextResponse.json({ message: 'تم حذف المنشور بنجاح' });
   } catch (error) {

@@ -26,14 +26,14 @@ export async function POST(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id as string;
+    const userId = (session.user as any).id as string;
     const body   = await request.json();
     const { plan_id, billing_period = 'monthly', payment_type = 'card' } = body;
 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amount = billing_period === 'yearly' ? plan.price_yearly : plan.price;
+    const amount = billing_period === 'yearly' ? (plan.price_yearly ?? 0) : (plan.price ?? 0);
 
     // Generate JWT payment token for m2y.net central gateway
     const token = generatePaymentToken({

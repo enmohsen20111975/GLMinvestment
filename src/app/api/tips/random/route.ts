@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         categories,
-        total: categories.reduce((sum, c) => sum + c.count, 0),
+        total: categories.length,
       });
     }
 
@@ -39,11 +39,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Default: return a single random tip
-    const tip = getRandomSmartTip({ category, trigger });
+    const tip = getRandomSmartTip();
 
     if (!tip) {
       // Fallback: get any random tip
-      const fallbackTip = getRandomSmartTip({});
+      const fallbackTip = getRandomSmartTip();
       if (!fallbackTip) {
         return NextResponse.json({
           success: false,

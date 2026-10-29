@@ -437,11 +437,11 @@ export const InstitutionalDecisionPanel = React.memo(function InstitutionalDecis
  )}
  </div>
  </div>
- {fairValueLocked && current_price > 0 && fair_value && fair_value > 0 && (
+ {fairValueLocked && current_price! > 0 && fair_value && fair_value > 0 && (
  <div className="mt-1 text-xs text-muted-foreground">
  القيمة العادلة أعلى من السعر الحالي بـ{' '}
  <span className="font-semibold text-warning ">
- {Math.round(((fair_value - current_price) / current_price) * 100)}%
+ {Math.round(((fair_value - current_price!) / current_price!) * 100)}%
  </span>
  </div>
  )}

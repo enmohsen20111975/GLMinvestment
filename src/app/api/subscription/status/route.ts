@@ -20,7 +20,7 @@ import { isServerAdmin } from '@/lib/admin-identities';
  */
 export async function GET(req: NextRequest) {
   try {
-    const { userId, isAdmin } = await getSessionUserId(req as any);
+    const { userId, isAdmin } = await getSessionUserId();
 
     // ─── ADMIN-BYPASS (Task SUBSCRIPTION-FIX-2026-10-07) ────────────────
     // الأدمن/المالك لازم يبقى عنده وصول كامل بدون أي قيود trial.

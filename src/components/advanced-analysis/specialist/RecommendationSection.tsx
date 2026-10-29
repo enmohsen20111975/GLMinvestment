@@ -67,7 +67,7 @@ export function RecommendationSection({ info }: { info: StockInfo }) {
           <p className="text-xs text-muted-foreground">منطقة الدخول</p>
           <p className="text-lg font-bold text-profit mt-1">
             {entryLow != null && entryHigh != null
-              ? `${(entryLow ?? 0).toFixed(2)} — ${(entryHigh ?? 0).toFixed(2)}`
+              ? `${(entryLow as any as number).toFixed(2)} — ${(entryHigh as any as number).toFixed(2)}`
               : '—'}
           </p>
         </div>

@@ -79,7 +79,7 @@ export function ActionMenu({
  </Button>
  )}
  </DropdownMenuTrigger>
- <DropdownMenuContent align={align} dir="rtl">
+ <DropdownMenuContent align={align} {...({ dir: "rtl" } as any)}>
  {items.map((item, idx) => {
  const Icon = item.icon;
  return (

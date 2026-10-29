@@ -50,7 +50,7 @@ export function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData
     );
   }
 
-  const phase = safeStr(maestro?.phase) ?? safeStr(maestro?.regime_phase);
+  const phase = safeStr((maestro as any)?.phase) ?? safeStr((maestro as any)?.regime_phase);
   const phaseMeta: Record<string, { ar: string; cls: string }> = {
     accumulation: { ar: 'تراكم', cls: 'bg-profit/10 text-profit border border-profit/20 ' },
     markup: { ar: 'تصعيد', cls: 'bg-profit/10 text-profit border border-profit/20 ' },

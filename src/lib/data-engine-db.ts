@@ -980,10 +980,10 @@ export async function getUserFavoriteMarket(userId: string): Promise<string> {
   try {
     const user = await authDb.user.findUnique({
       where: { id: userId },
-      select: { favorite_market: true, country: true }
+      select: { favorite_market: true, country: true } as any
     });
-    
-    return user?.favorite_market || 'EGX';
+
+    return (user as any)?.favorite_market || 'EGX';
   } catch (err) {
     console.warn('[data-engine-db] getUserFavoriteMarket error:', err);
     return 'EGX';

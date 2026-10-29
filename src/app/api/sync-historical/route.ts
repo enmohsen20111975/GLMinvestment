@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     
     // Ensure price_history table exists
     try {
-      historyDb.exec(`
+      (historyDb as any).exec(`
         CREATE TABLE IF NOT EXISTS price_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ticker TEXT NOT NULL,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
           UNIQUE(ticker, date)
         )
       `);
-      historyDb.exec('CREATE INDEX IF NOT EXISTS idx_price_history_ticker_date ON price_history(ticker, date)');
+      (historyDb as any).exec('CREATE INDEX IF NOT EXISTS idx_price_history_ticker_date ON price_history(ticker, date)');
     } catch (err) {
       logger.warn('sync-historical table create skipped', { err: String(err) });
     }

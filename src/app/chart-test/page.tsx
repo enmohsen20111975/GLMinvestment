@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 // بيانات تجريبية للشارت — شموع عشوائية بتتحرك
 function generateMockOhlcv(days: number = 90) {
-  const data = [];
+  const data: any[] = [];
   let price = 12.5;
   const now = Math.floor(Date.now() / 1000);
   for (let i = days; i > 0; i--) {

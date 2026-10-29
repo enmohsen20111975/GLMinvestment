@@ -160,11 +160,11 @@ export function TradingMemoryView() {
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {/* Pattern Stats */}
  <WidgetCard
- 	title="إحصائيات الأنماط"
- 	icon={BarChart3}
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
- 	className="md:col-span-2"
+        title="إحصائيات الأنماط"
+        icon={BarChart3}
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
+        className="md:col-span-2"
  >
 
  <div className="space-y-2">
@@ -194,7 +194,7 @@ export function TradingMemoryView() {
  </span>
  )}
  <Badge
- variant={(p.win_rate ?? 0) >= 50 ? 'success' : 'destructive'}
+ variant={((p.win_rate ?? 0) >= 50 ? 'success' : 'destructive') as any}
  >
  {(p.win_rate ?? 0).toFixed(0)}%
  </Badge>
@@ -207,9 +207,9 @@ export function TradingMemoryView() {
 
  {/* Summary */}
  <WidgetCard
- 	title="ملخص"
- 	titleClassName="text-base"
- 	contentClassName="space-y-4"
+        title="ملخص"
+        titleClassName="text-base"
+        contentClassName="space-y-4"
  >
 
  <div className="text-center py-4">
@@ -234,11 +234,11 @@ export function TradingMemoryView() {
 
  {/* Top Tickers */}
  <WidgetCard
- 	title="أفضل الأسهم"
- 	icon={Trophy}
- 	iconColor="text-warning"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
+        title="أفضل الأسهم"
+        icon={Trophy}
+        iconColor="text-warning"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
  >
 
  <div className="space-y-2">
@@ -257,7 +257,7 @@ export function TradingMemoryView() {
  <TrendingUp className="h-4 w-4 text-success" />
  <span className="font-medium">{t.ticker}</span>
  </div>
- <Badge variant="success" className="text-xs">
+ <Badge variant={('success' as any)} className="text-xs">
  {(t.win_rate ?? 0).toFixed(0)}%
  </Badge>
  </div>
@@ -268,11 +268,11 @@ export function TradingMemoryView() {
 
  {/* Worst Tickers */}
  <WidgetCard
- 	title="أسوأ الأسهم"
- 	icon={AlertTriangle}
- 	iconColor="text-loss"
- 	iconSize="h-4 w-4"
- 	titleClassName="text-base"
+        title="أسوأ الأسهم"
+        icon={AlertTriangle}
+        iconColor="text-loss"
+        iconSize="h-4 w-4"
+        titleClassName="text-base"
  >
 
  <div className="space-y-2">

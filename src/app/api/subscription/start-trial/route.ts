@@ -20,14 +20,14 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id as string;
+    const userId = (session.user as any).id as string;
 
     // Check if user already has a subscription
     const existing = await db.userSubscription.findUnique({
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         plan_id: freePlan.id,
         status: 'active',
-        trial_started_at: now,
-        trial_ends_at: trialEndsAt,
+        trial_started_at: now.toISOString(),
+        trial_ends_at: trialEndsAt.toISOString(),
       },
     });
 

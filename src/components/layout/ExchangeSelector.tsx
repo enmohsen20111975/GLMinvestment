@@ -54,7 +54,7 @@ export function ExchangeSelector({ compact = false, className }: ExchangeSelecto
  <ChevronDown className="w-4 h-4 mr-auto" />
  </Button>
  </DropdownMenuTrigger>
- <DropdownMenuContent align="start" className="min-w-[180px]" dir="rtl">
+ <DropdownMenuContent align="start" className="min-w-[180px]" {...({ dir: "rtl" } as any)}>
  {markets.map((market) => (
  <DropdownMenuItem
  key={market}

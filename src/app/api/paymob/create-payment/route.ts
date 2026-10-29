@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id || 'user';
+    const userId = (session?.user as any)?.id || 'user';
     const body = await request.json();
     const { plan_id, billing_period = 'monthly', payment_method = 'card' } = body;
 
@@ -198,8 +198,8 @@ export async function POST(request: NextRequest) {
       console.warn('[Paymob DB Lookup Warning]', dbErr);
     }
 
-    const email = user?.email || session.user.email || 'user@invist.m2y.net';
-    const nameParts = (user?.name || session.user.name || 'User Subscriber').trim().split(' ');
+    const email = user?.email || (session?.user as any)?.email || 'user@invist.m2y.net';
+    const nameParts = (user?.name || (session?.user as any)?.name || 'User Subscriber').trim().split(' ');
     const firstName = nameParts[0] || 'User';
     const lastName = nameParts.slice(1).join(' ') || 'Subscriber';
     const phone = user?.phone || '+201000000000';

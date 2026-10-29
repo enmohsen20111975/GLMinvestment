@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'internal_error' || 'Internal server error',
+        error: error?.message || 'internal_error',
         error_ar: 'حدث خطأ في الاتصال بخدمة تليجرام'
       },
       { status: 500 }
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'internal_error' || 'Internal server error'
+        error: error?.message || 'internal_error'
       },
       { status: 500 }
     );

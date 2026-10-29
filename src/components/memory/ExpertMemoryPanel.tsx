@@ -181,7 +181,7 @@ export function ExpertMemoryPanel({
  <Brain className="h-4 w-4 text-primary" />
  ذاكرتك مع {ticker}
  </span>
- <Badge variant={(insight.win_rate ?? 0) >= 50 ? 'success' : 'destructive'}>
+ <Badge variant={((insight.win_rate ?? 0) >= 50 ? 'success' : 'destructive') as any}>
  {(insight.win_rate ?? 0).toFixed(0)}% نجاح
  </Badge>
  </CardTitle>
@@ -252,7 +252,7 @@ export function ExpertMemoryPanel({
  <CheckCircle2 className="h-4 w-4 text-success" />
  <span className="text-sm">{insight.best_pattern}</span>
  </div>
- <Badge variant="success" className="text-xs">
+ <Badge variant={('success' as any)} className="text-xs">
  {(insight.best_pattern_win_rate ?? 0).toFixed(0)}%
  </Badge>
  </div>
@@ -361,7 +361,7 @@ export function ExpertMemoryBadge({ ticker }: { ticker: string }) {
 
  return (
  <Badge
- variant={(insight.win_rate ?? 0) >= 50 ? 'success' : 'secondary'}
+ variant={((insight.win_rate ?? 0) >= 50 ? 'success' : 'secondary') as any}
  className="text-xs gap-1"
  >
  <Brain className="h-3 w-3" />

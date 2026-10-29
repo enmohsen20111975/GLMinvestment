@@ -91,7 +91,7 @@ export const PremiumChart = React.memo(function PremiumChart({
         background: { type: ColorType.Solid, color: chartTheme.background },
         textColor: chartTheme.textColor,
         fontFamily: 'inherit',
-        direction: 'rtl',
+        ...( { direction: 'rtl' } as any ),
       },
       grid: {
         vertLines: { color: chartTheme.gridColor },

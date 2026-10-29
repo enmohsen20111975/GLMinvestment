@@ -1,6 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Search } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // TextFilterContent — extracted (Phase 3)
 
@@ -68,4 +70,4 @@ function TextFilterContent({
  );
 }
 
-export default UnifiedTable;
+export default TextFilterContent;

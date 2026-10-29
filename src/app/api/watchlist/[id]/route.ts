@@ -28,7 +28,7 @@ async function getSessionUserId(): Promise<{ userId: string | null; isAdmin: boo
     }
     const isAdmin = isServerAdmin(session.user.email);
     const token = session.user as Record<string, unknown>;
-    const userId = (session.user.id || token.id) as string | undefined ?? null;
+    const userId = ((session.user as any).id || token.id) as string | undefined ?? null;
     return { userId, isAdmin };
   } catch {
     return { userId: null, isAdmin: false };

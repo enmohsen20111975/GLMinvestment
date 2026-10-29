@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
           started_at: new Date().toISOString(),
           expires_at: expiresAt,
         },
-        include: { plan: true },
+        include: { plan: true } as any,
       });
     } catch (dbErr) {
       console.error('[POST /api/subscription/subscribe] Upsert subscription error:', dbErr);

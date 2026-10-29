@@ -23,7 +23,7 @@ import {
  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppStore } from '@/lib/store';
-const PERSONAS = [{
+export const PERSONAS = [{
   id: 'balanced',
   name: 'المتوازن',
   emoji: '⚖️',

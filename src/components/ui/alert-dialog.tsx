@@ -6,12 +6,9 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
-const AlertDialog = React.forwardRef<
- React.ComponentRef<typeof AlertDialogPrimitive.Root>,
- React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>
->(({ ...props }, ref) => (
- <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} ref={ref} />
-))
+const AlertDialog = ((props: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>) => (
+ <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+)) as unknown as React.FC<React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>>
 AlertDialog.displayName = "AlertDialog"
 
 const AlertDialogTrigger = React.forwardRef<
@@ -22,12 +19,9 @@ const AlertDialogTrigger = React.forwardRef<
 ))
 AlertDialogTrigger.displayName = "AlertDialogTrigger"
 
-const AlertDialogPortal = React.forwardRef<
- React.ComponentRef<typeof AlertDialogPrimitive.Portal>,
- React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Portal>
->(({ ...props }, ref) => (
- <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} ref={ref} />
-))
+const AlertDialogPortal = ((props: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Portal>) => (
+ <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+)) as unknown as React.FC<React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Portal>>
 AlertDialogPortal.displayName = "AlertDialogPortal"
 
 const AlertDialogOverlay = React.forwardRef<

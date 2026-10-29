@@ -1170,7 +1170,7 @@ export async function refreshStockData(
           const db = getWritableDatabase();
 
           for (const point of historical) {
-            upsertPriceHistory(db, stockId, point.date, {
+            upsertPriceHistory(db as unknown as Record<string, unknown>, stockId, point.date, {
               open_price: point.open,
               high_price: point.high,
               low_price: point.low,

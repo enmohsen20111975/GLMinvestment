@@ -152,7 +152,7 @@ async function getExpectedAmountCents(tier: string, market: string, billingCycle
     },
   });
   if (pricing && pricing.is_active) {
-    return Math.round(pricing.price_egp * 100);
+    return Math.round(pricing.price_egp! * 100);
   }
   // Fallback to market='all'
   const fallback = await authDb.marketPricing.findUnique({
@@ -161,14 +161,14 @@ async function getExpectedAmountCents(tier: string, market: string, billingCycle
     },
   });
   if (fallback && fallback.is_active) {
-    return Math.round(fallback.price_egp * 100);
+    return Math.round(fallback.price_egp! * 100);
   }
   return 0;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await getSessionUserId(req as any);
+    const { userId } = await getSessionUserId();
     if (!userId) {
       return NextResponse.json({ success: false, error: 'يجب تسجيل الدخول' }, { status: 401 });
     }

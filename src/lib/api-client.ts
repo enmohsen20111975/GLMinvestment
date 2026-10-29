@@ -143,10 +143,10 @@ export async function apiFetch<T = unknown>(
         return {
           success: false,
           error: errorMsg,
-          data: null,
+          data: undefined as unknown as T,
           status: res.status,
           errorBody: lastErrorBody || undefined,
-        };
+        } as ApiResponse<T>;
       }
 
       // Canonical response shape: { success, source, data, meta }
@@ -169,11 +169,11 @@ export async function apiFetch<T = unknown>(
         await sleep(300 * Math.pow(2, attempt));
         continue;
       }
-      return { success: false, error: msg, data: null, status: 0 };
+      return { success: false, error: msg, data: undefined as unknown as T, status: 0 } as ApiResponse<T>;
     }
   }
 
-  return { success: false, error: lastError || 'max retries exceeded', data: null, status: lastStatus };
+  return { success: false, error: lastError || 'max retries exceeded', data: undefined as unknown as T, status: lastStatus } as ApiResponse<T>;
 }
 
 /** Convenience: GET request. */

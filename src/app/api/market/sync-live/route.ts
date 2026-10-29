@@ -102,7 +102,7 @@ async function fetchFromEgxpy(): Promise<{
       return null;
     }
 
-    const stocks = allQuotes.map(egxpyQuoteToLiveStock) as LiveStock[];
+    const stocks = allQuotes.map(egxpyQuoteToLiveStock) as unknown as LiveStock[];
     logger.info('sync-live egxpy returned stocks from TradingView', { count: stocks.length });
 
     return {

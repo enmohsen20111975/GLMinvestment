@@ -1,4 +1,5 @@
 // UnifiedTable helpers — extracted (Phase 3)
+import React from 'react';
 
 function getCellValue<T>(row: T, key: keyof T | string): unknown {
  if (typeof key === 'string' && key.includes('.')) {

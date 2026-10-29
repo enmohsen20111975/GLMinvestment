@@ -78,7 +78,7 @@ export function ExportDropdown({
           {t('screener.advanced.buttons.export')}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48" dir="rtl">
+      <DropdownMenuContent align="end" className="w-48" {...({ dir: "rtl" } as any)}>
         <DropdownMenuLabel>{t('screener.advanced.share.exportResults')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleCopyText} className="gap-2 cursor-pointer">

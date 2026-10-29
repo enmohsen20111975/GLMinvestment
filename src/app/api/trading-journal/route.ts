@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
     }
 
     // حساب الربح/الخسارة إذا كان سعر الخروج موجود
-    let profit_loss = null;
-    let profit_loss_pct = null;
+    let profit_loss: number | null = null;
+    let profit_loss_pct: number | null = null;
     let result = 'OPEN';
 
     if (data.exit_price && data.exit_price > 0) {
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       const exitValue = data.quantity * data.exit_price;
       profit_loss = exitValue - entryValue;
       profit_loss_pct = ((data.exit_price - data.entry_price) / data.entry_price) * 100;
-      result = profit_loss_pct >= 0 ? 'WIN' : 'LOSS';
+      result = profit_loss_pct! >= 0 ? 'WIN' : 'LOSS';
     }
 
     const trade = await (db as any).tradingJournal.create({

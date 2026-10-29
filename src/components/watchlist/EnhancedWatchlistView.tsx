@@ -104,6 +104,7 @@ function abbreviateNumber(value: number): string {
 
 function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
  const t = useTranslation();
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [query, setQuery] = useState('');
  const [results, setResults] = useState<StockSearchResult[]>([]);
  const [searching, setSearching] = useState(false);
@@ -415,6 +416,7 @@ function EditStockDialog({
  onSaved: () => void;
 }) {
  const t = useTranslation();
+ const currentMarket = useAppStore((s) => s.currentMarket);
  const [purchasePrice, setPurchasePrice] = useState('');
  const [quantity, setQuantity] = useState('');
  const [alertPriceAbove, setAlertPriceAbove] = useState('');

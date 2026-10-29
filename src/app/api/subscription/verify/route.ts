@@ -195,7 +195,7 @@ async function activateSubscription(userId: string, planId: string): Promise<any
         started_at: new Date().toISOString(),
         expires_at: expiresAt,
       },
-      include: { plan: true },
+      include: { plan: true } as any,
     });
   } catch (err) {
     console.error('[subscription/verify] subscription upsert error:', err);

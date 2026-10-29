@@ -215,7 +215,7 @@ export function useLiveMonitorData(): UseLiveMonitorDataResult {
  }, [triggering, refetch]);
 
  return {
-   data: data ?? null,
+   data: (data as any) ?? null,
    loading,
    refreshing,
    error,

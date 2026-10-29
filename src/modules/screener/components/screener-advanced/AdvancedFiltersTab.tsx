@@ -514,7 +514,7 @@ export function AdvancedFiltersTab({ initialMarket }: AdvancedFiltersTabProps) {
                 <DropdownMenuContent
                   align="end"
                   className="max-h-[60vh] overflow-y-auto overflow-x-hidden w-56"
-                  dir="rtl"
+                  {...({ dir: "rtl" } as any)}
                 >
                   <DropdownMenuLabel>
                     {t('screener.advanced.collapsible.readyFilters')}
@@ -901,6 +901,7 @@ export function AdvancedFiltersTab({ initialMarket }: AdvancedFiltersTabProps) {
               publishTitle={t('screener.advanced.share.filterTitleProfessional')}
               publishFilename={`screener-${new Date().toISOString().slice(0, 10)}`}
               publishHashtags={t('screener.advanced.share.hashtags').split(',')}
+              {...({} as any)}
             />
             {/* PAYWALL Gate 5: lock CTA — free users see first 5 only */}
             {screenerLocked && hiddenResultsCount > 0 && (

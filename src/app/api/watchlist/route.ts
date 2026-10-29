@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     let stockId: number | null = null;
     try {
       const row = stocksDb.prepare('SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1').get(ticker) as { id?: number } | undefined;
-      if (row) stockId = row.id;
+      if (row) stockId = row.id ?? null;
     } catch {}
 
     const result = stocksDb.prepare(`
