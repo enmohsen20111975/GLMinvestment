@@ -204,17 +204,58 @@ V3Plan(
 
 #### 4.1 TREND (MasterAnalyzer — محرك حقيقي)
 
+| الخاصية | القيمة |
+|---|---|
+| **الملف** | `vps-service/analyzers/master_analyzer.py` (5,424 سطر) |
+| **الـ class** | `MasterAnalyzer` |
+| **المدخلات** | `ticker, prices[], volumes[], market_pulse, history` |
+| **المخرجات** | `MasterAnalysis(signal, master_score 0-100, confidence, risk_profile)` |
+
+**MasterAnalyzer مش V38** — محرك مستقل بـ 10 طبقات موزونة:
+
+```python
+master_score = (
+    technical_score * 0.042 +        # SMA/EMA (LAGGING — -30%)
+    fundamental_score * 0.40 +       # الأساسيات (قلب القرار)
+    timing_score * 0.015 +           # توقيت الجلسة
+    ai_pattern_score * 0.06 +        # Pattern recognition
+    sentiment_score * 0.04 +         # News sentiment
+    market_regime_score * 0.05 +     # حالة السوق
+    sector_relative_score * 0.05 +   # السهم vs القطاع
+    enhanced_indicators_score * 0.024 + # MACD/RSI/Bollinger (LAGGING — -40%)
+    multi_timeframe_score * 0.03 +   # Daily/weekly/monthly
+    volume_profile_score * 0.043 +   # VWAP/OBV/Volume Nodes (LEADING +43%)
+)
+# + SMC BLEND: ادمج SMC (Order Blocks) بـ نسبة 60% كأولوية قصوى
+# = master_score (0-100)
+```
+
+**عتبات الإشارة** (من `canonical_signal.py` — SSOT):
+- `STRONG_BUY` ≥ 78
+- `BUY` ≥ 65
+- `ACCUMULATE` ≥ 55
+- `REDUCE` ≥ 40
+- `STRONG_SELL` < 25
+
+**Confluence 8-layer** (طبقة إضافية فوق الـ master_score):
+1. **Macro** — اتجاه السوق العام
+2. **SMA50** — السعر فوق/تحت SMA50
+3. **RSI** — تشبع بيعي/شرائي
+4. **Volume** — تأكيد الحجم
+5. **Bollinger** — ضغط/توسع النطاق
+6. **MACD** — تقاطع صاعد/هابط
+7. **Candlestick** — أنماط الشموع
+8. **Fibonacci** — مستويات الفيبو
+
+**في V3:** `_run_trend` بـ يستدعي `MasterAnalyzer.analyze()` وبياخد `master_score` (0-100) ويحوّله لـ norm (-100..+100) بـ `(score - 50) * 2`.
+
 ```python
 def _run_trend(plan, prices, volumes, ticker, market):
-    # MasterAnalyzer (5,424 سطر) — محرك مستقل بـ 8 طبقات:
-    # Macro + SMA50 + RSI + Volume + Bollinger + MACD + Candlestick + Fibonacci
-    # مش V38 — محرك مستقل تمامًا
     a = MasterAnalyzer()
     r = a.analyze(ticker, prices=prices, volumes=volumes)
-    score = r.master_score  # 0-100 (STRONG_BUY ≥ 78, BUY ≥ 65)
+    score = r.master_score  # 0-100
     signal = r.signal       # HOLD/BUY/SELL/etc
-    # Normalize to -100..+100 (master_score 0-100, neutral=50)
-    norm = (score - 50) * 2
+    norm = (score - 50) * 2  # -100..+100
     return norm, signal
 ```
 
