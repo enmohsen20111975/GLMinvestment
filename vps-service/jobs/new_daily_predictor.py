@@ -100,34 +100,43 @@ def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str],
     """فلتر الأسهم الميتة عبر DAL.
     
     فلترين:
-      1. change% بين -3% و +0.5% (سهم واقف/خسران النهاردة)
+      1. الأسهم اللي price = 0 أو volume = 0 (ميتة فعلاً)
       2. الأسعار التاريخية flat (نفس السعر كل الأيام = ميت تاريخياً)
+    
+    STAGE-FIX (2026-10-29): قبل كده كان بيرفض أي سهم change بين -3% و +0.5%
+    ده غلط — سهم طالع 0.3% أو نازل 1% مش ميت. ده بيقتل 126 سهم من 127!
     """
     if not tickers:
         return [], 0
     try:
-        from core.db_manager import db_manager, get_price_history
+        from core.db_manager import db_manager
         placeholders = ','.join(['?'] * len(tickers))
         rows = db_manager.query('stocks',
-            f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
+            f"SELECT ticker, current_price, volume, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
             (*tickers, market_code)
         )
         alive = []
         dead_count = 0
         for r in rows:
-            change = r.get('change_percent')
-            if change is None:
-                continue
-            change = float(change)
-            if -3.0 <= change <= 0.5:
+            ticker = r.get('ticker', '')
+            price = float(r.get('current_price') or 0)
+            vol = float(r.get('volume') or 0)
+            
+            # فلتر 1: سهم ميت فعلاً (price = 0 أو volume = 0)
+            if price <= 0 or vol <= 0:
                 dead_count += 1
                 continue
+            
             # فلتر 2: اتأكد إن الأسعار التاريخية مش flat
-            prices, _ = get_price_history(r['ticker'], market_code, 30)
-            if prices and len(set(prices)) <= 2:
-                dead_count += 1
-                continue
-            alive.append(r['ticker'])
+            try:
+                prices, vols, _, _, _ = get_price_history(ticker, market_code, 30)
+                if prices and len(set(prices)) <= 2:
+                    dead_count += 1
+                    continue
+            except Exception:
+                pass  # لو مفيش بيانات → خليه يعدي (يتم فحصه في V3)
+            
+            alive.append(ticker)
         return alive, dead_count
     except Exception:
         return tickers, 0
