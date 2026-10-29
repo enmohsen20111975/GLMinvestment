@@ -64,12 +64,15 @@
 new_daily_predictor.py
   → get_active_tickers(market)
   → filter_stale_predictions() — شيل الأسهم اللي ليه توقع valid
-  → filter_dead_stocks() — شيل الأسهم الميتة
+  → filter_dead_stocks() — شيل الأسهم الميتة (price=0 أو flat history)
+  → فلتر الإجازات — skip جمعة/سبت/أعياد
   → لكل ticker:
-      → get_price_history() — اقرأ آخر 50+ يوم
-      → orchestrator_v3.create_v3_plan() — حدد الحالة + الأوزان
-      → executor_v3.execute_v3() — شغّل 7 عائلات
-      → save_prediction() — احفظ في predictions.db
+      → get_price_history() — اقرأ آخر 20+ يوم (closes, volumes, highs, lows, opens)
+      → اقرأ market_cap + free_float من stocks.db
+      → orchestrator_v3.create_v3_plan() — حدد الحالة (S1-S11) + الأوزان
+      → executor_v3.execute_v3() — شغّل 7 عائلات + conflict + confidence + signal
+      → STAGE-5: Ranking — رتّب الإشارات واختار أعلى max_picks
+      → save_prediction() — احفظ في predictions.db (persona='v3_smart')
 ```
 
 ### CLI
@@ -83,10 +86,29 @@ python3 vps-service/jobs/new_daily_predictor.py --market EGX --dry-run --max-tic
 ### Smart Filters (مدمجة في V3)
 
 1. **فلتر الإجازات** — skip جمعة/سبت/أعياد
-2. **فلتر الأسهم الميتة** — volume=0 أو price=0
+2. **فلتر الأسهم الميتة** — price=0 فقط (volume=0 مش سبب للرفض — ممكن يوم هادي)
 3. **فلتر التوقعات القديمة** — skip لو فيه توقع valid أقل من N أيام
-4. **فلتر الأسهم الـ flat** — skip لو range 10d < 2%
-5. **minimum 50 يوم بيانات** — V3 محتاج 50+ يوم للتحليل
+4. **فلتر الأسهم الـ flat** — skip لو ≤2 قيمة مختلفة في 30 يوم
+5. **minimum 20 يوم بيانات** — V3 محتاج 20+ يوم للتحليل (كان 50 — خُفّض)
+
+### get_price_history (تفاصيل التنفيذ)
+
+```python
+# بـ تستخدم raw sqlite3 (readonly) مش db_manager
+# بـ يجرب أسماء أعمدة مختلفة:
+#   1. close, volume, high, low, open
+#   2. close_price, volume, high_price, low_price, open_price (fallback)
+# بـ يرجع: (closes, volumes, highs, lows, opens) — كلهم list[float]
+```
+
+### filter_dead_stocks (تفاصيل التنفيذ)
+
+```python
+# فلتر 1: price = 0 → ميت فعلاً
+# فلتر 2: أسعار flat (≤2 قيمة مختلفة في 30 يوم) → ميت تاريخياً
+# ملاحظة: volume=0 مش سبب للرفض (يوم هادي مش سهم ميت)
+# ملاحظة: change_percent مش مستخدم (كان بيقتل 126/127 سهم غلط!)
+```
 
 ---
 
@@ -558,7 +580,7 @@ rank_score = (
 
 > **Rule 67:** `analyzers/indicators/` هو المصدر الوحيد للمؤشرات.
 
-> **ملاحظة:** V3's `_run_momentum()` بـ يستخدم RSI بدائي (مش Wilder's). ده نقطة ضعف معروفة — محتاج إصلاح لاستخدام `calc_rsi` من `analyzers/indicators/rsi.py`.
+> **ملاحظة:** MOM بـ يستخدم Wilder's RSI من analyzers/indicators/rsi.py (STAGE-1.1 FIX — كان بدائي).
 
 ---
 
@@ -570,30 +592,62 @@ rank_score = (
 3. new_daily_predictor.py (V3):
    a. get_active_tickers(market)
    b. filter_stale_predictions() — شيل الأسهم اللي ليه توقع valid
-   c. filter_dead_stocks() — شيل الأسهم الميتة
+   c. filter_dead_stocks() — شيل الأسهم الميتة (price=0 أو flat history)
    d. فلتر الإجازات — skip جمعة/سبت/أعياد
    e. لكل ticker:
-      - get_price_history() — اقرأ آخر 50+ يوم
+      - get_price_history() — اقرأ آخر 20+ يوم (closes, volumes, highs, lows, opens)
+        (raw sqlite3 readonly + flexible column names)
+      - اقرأ market_cap + free_float من stocks.db
       - orchestrator_v3.create_v3_plan():
-        * حدد stock_state (S1-S10)
+        * حدد stock_state (S1-S11) — بـ يستخدم SMA20 + SMA50 + ROC5 + ROC20 + vol_ratio_5d
         * حدد market_regime (DEFENSIVE/NORMAL/AGGRESSIVE)
-        * اختار المحركات + الأوزان
+        * اختار المحركات + الأوزان (مع إعادة تطبيع لو FUND/EVENT مش متاح)
       - executor_v3.execute_v3():
-        * شغّل TREND (MasterAnalyzer)
-        * شغّل MOM (RSI)
-        * شغّل MR (price vs SMA20)
-        * شغّل BRK (price vs 20-day high/low)
-        * شغّل FLOW (volume_ratio)
-        * شغّل FUND (placeholder: 0, HOLD)
-        * شغّل EVENT (placeholder: 0, HOLD)
+        * شغّل TREND (MasterAnalyzer — 8 طبقات confluence)
+        * شغّل MOM (Wilder's RSI من analyzers/indicators/rsi.py)
+        * شغّل MR (ATR-based mean reversion — 1.8× ATR threshold)
+        * شغّل BRK (real breakout — close > high_20 + vol ≥ 1.4× + body ≥ 50%)
+        * شغّل FLOW (compute_money_flow — 6 طبقات: CLV + CMF + vol + trend + dead + SMA)
+        * شغّل FUND (placeholder: وزن=0 + إعادة تطبيع)
+        * شغّل EVENT (placeholder: وزن=0 + إعادة تطبيع)
         * احسب signal_score (weighted -100..+100)
-        * احسب confidence (agreement)
-        * فحص conflict
-        * حوّل signal_score → final_signal (regime-aware)
-      - save_prediction() → predictions.db
+        * احسب confidence (agreement between engines)
+        * فحص conflict (6 قواعد: TREND+MOM, BRK+FLOW, MR+TREND, FLOW+TREND, MOM+MR, all-weak)
+        * Confidence Gate: BUY يحتاج confidence ≥ 58
+        * حوّل signal_score → final_signal (regime-aware thresholds)
+        * احسب position_size (final_position_size: flow + intensity + free_float + regime)
+        * S8 (سيولة ضعيفة) → position cap 1%
+      - STAGE-5: Ranking — رتّب الإشارات (score×0.45 + conf×0.25 + intensity×0.15)
+      - save_prediction() → predictions.db (persona='v3_smart')
 4. daily_closer.py → 9 exit rules → يقفل
 5. Next.js API + UI → يعرض
 ```
+
+### نتائج اختبار V3 على بيانات EGX حقيقية (2026-10-29)
+
+```
+EGX: 127 أسهم نشطة → 6 عدّوا الفلتر → 5 اتحللوا
+
+EHDR: NO_TRADE (S8, score=-4.8, conf=33 < 58)
+  engine_scores: TREND=-29.6, MOM=-40.4, MR=2.8, BRK=10.0, FLOW=0.0
+  engine_signals: TREND=HOLD, MOM=SELL, MR=HOLD, BRK=HOLD, FLOW=HOLD
+  warnings: S8 (weak liquidity) → position capped at 1%
+
+UASG: NO_TRADE (S9, score=-23.9, conf=33 < 58)
+  TREND=REJECTED_LIQUIDITY, MOM=SELL
+
+ESAC: NO_TRADE (S8, score=-8.2, conf=20 < 58)
+  TREND=REJECTED_LIQUIDITY, MOM=BUY
+
+DIFC: NO_TRADE (S3, score=-8.3, conf=17 < 58)
+  TREND=HOLD, MOM=HOLD
+
+HCFI: NO_TRADE (S9, score=-26.7, conf=33 < 58)
+  TREND=REJECTED_LIQUIDITY, MOM=SELL
+```
+
+> كل النتائج NO_TRADE — صحيح لأن الأسهم دي ضعيفة (S8/S9) والـ confidence منخفضة.
+> V3 بيشتغل كما هو مصمم: لا يصدر إشارة إلا لو فيه confidence ≥ 58 + لا تعارض.
 
 ---
 
