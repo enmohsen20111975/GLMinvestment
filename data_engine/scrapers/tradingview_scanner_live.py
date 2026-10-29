@@ -753,15 +753,15 @@ def main() -> int:
             log(f"  ⚠️ 0 stocks returned")
 
         if not args.dry_run and rows:
-            # BRAVO-DATA-LAYER: write to data_engine.db via data layer
+            # BRAVO-DATA-LAYER: write to data_engine.db via data layer (EXISTING tables only)
             # The scanner sets market=DB slug explicitly (DB_MARKET_MAP in fetch_market).
             # Owner: "انت الى تحط اسم السوق مش البيانات هاتيجى بأسم السوق بتاعها"
             saved = _data_layer.upsert_snapshot(rows)
-            log(f"  💾 upserted {saved}/{len(rows)} to tv_snapshot (data_engine.db)")
+            log(f"  💾 upserted {saved}/{len(rows)} to stocks table (data_engine.db)")
             persisted = _data_layer.append_daily_prices(rows)
             log(f"  📅 appended {persisted} to historical_data (daily OHLCV)")
             indicators_saved = _data_layer.upsert_indicators(rows)
-            log(f"  📊 upserted {indicators_saved} to tv_indicators (TV indicators)")
+            log(f"  📊 upserted {indicators_saved} indicators to historical_data (RSI/SMA/MACD/ATR)")
 
     print()
     print("=" * 70)
