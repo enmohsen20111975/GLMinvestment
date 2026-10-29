@@ -149,7 +149,9 @@ export function DashboardView() {
 
  useEffect(() => {
  loadDashboard();
- }, [loadDashboard]);
+ // FIX: لازم نعيد تحميل الداتا لما المستخدم يغيّر السوق (currentMarket).
+ // قبل كده الكود كان بيشيل currentMarket من الـ deps → الداتا كانت بتفضي مصر.
+ }, [loadDashboard, currentMarket]);
 
  const handleExportPDF = async () => {
  setExporting(true);
