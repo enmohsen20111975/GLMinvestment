@@ -631,15 +631,14 @@ class LiquidityFilter:
     MIN_VOLUME_CLOSED = 50_000        # 50K shares (نص الحد الأصلي)
     MIN_TURNOVER_CLOSED = 500_000     # LEGACY — overriden by dynamic per-price threshold
 
-    # P24-DYNAMIC-LIQUIDITY (Aug 2026): حدود السيولة الديناميكية.
-    # بدل حد ثابت واحد، بنحسب الحد الأدنى للـ turnover حسب سياق السهم والسوق.
-    # لو السهم عنده volume_spike > 2.5 → نقبل السيولة لو فوق 300K (الزخم يبرر).
-    # لو السوق كله ميّت (turnover اليوم < 70% من المتوسط) → نرفع الحد لـ 700K
-    # عشان نتجنب أسهم تربية الدجاج في سوق راكد.
+    # AUDIT-FIX (2026-10-29): Dead market detection معدّل.
+    # قبل كده: رقم ثابت 700K للسوق كله → قاسي على الأسهم المتوسطة.
+    # دلوقتي: ارفع الـ threshold بنسبة 35% بس (مش قفزة لـ 700K).
+    # + النسبة من 70% لـ 60% (أكثر حساسية للسوق الهادي).
     DYNAMIC_TURNOVER_VOLUME_SPIKE_THRESHOLD = 2.5   # × المتوسط
     DYNAMIC_TURNOVER_SPIKE_FLOOR = 300_000          # 300K EGP لو فيه spike
-    DYNAMIC_TURNOVER_DEAD_MARKET_RATIO = 0.7        # < 70% من المتوسط = سوق ميت
-    DYNAMIC_TURNOVER_DEAD_MARKET_CEILING = 700_000  # 700K EGP لو السوق ميت
+    DYNAMIC_TURNOVER_DEAD_MARKET_RATIO = 0.6        # AUDIT-FIX: < 60% = سوق هادي
+    DYNAMIC_TURNOVER_DEAD_MARKET_CEILING = 0        # AUDIT-FIX: مش مستخدم (بنرفع بنسبة 35% بس)
 
     # Penny Stock Threshold
     MIN_STOCK_PRICE = 1.00        # EGX: Stocks under 1 EGP are penny stocks

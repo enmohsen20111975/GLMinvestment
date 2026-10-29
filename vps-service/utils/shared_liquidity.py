@@ -96,6 +96,61 @@ def liquidity_intensity(turnover: float, market_cap: float) -> float:
     return (turnover / market_cap) * 100
 
 
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# AUDIT-FIX (2026-10-29): Data cleaning helpers
+# ═══════════════════════════════════════════════════════════════════════
+
+def clean_series(values, min_valid_ratio=0.75):
+    """نظّف سلسلة من القيم الصفرية/None.
+
+    Returns:
+        list من القيم الصالحة (فقط > 0) أو None لو البيانات متقطعة كتير.
+    """
+    if not values:
+        return None
+    valid = [v for v in values if v is not None and v > 0]
+    if len(valid) < len(values) * min_valid_ratio:
+        return None
+    return valid
+
+
+def robust_avg(vols):
+    """متوسط محمي من الـ outliers وأيام الصفر.
+
+    - بيشيل القيم الصفرية
+    - لو فيه قيم قليلة أوي → None
+    - بيقص أعلى وأقل قيمة (outlier trim)
+    """
+    if not vols:
+        return None
+    cleaned = [v for v in vols if v is not None and v > 0]
+    if len(cleaned) < len(vols) * 0.7:
+        return None  # بيانات متقطعة كتير
+    if len(cleaned) >= 5:
+        cleaned = sorted(cleaned)[1:-1]  # اقطع أعلى وأقل
+    return sum(cleaned) / len(cleaned) if cleaned else None
+
+
+def is_buy_day(o, h, l, c, v, avg_v):
+    """AUDIT-FIX: يوم شراء حقيقي — لازم شمعة خضراء + body + volume.
+
+    قبل كده: close ≥ 75% من range بس → شمعة حمراء بـ تسجل "شراء" غلط.
+    دلوقتي: لازم شمعة خضراء + body ≥ 45% من range + volume ≥ 80% avg.
+    """
+    if c <= o:
+        return False  # لازم شمعة خضراء
+    body = c - o
+    full_range = h - l
+    if full_range <= 0:
+        return False
+    close_loc = (c - l) / full_range
+    body_ratio = body / full_range
+    vol_ok = v >= avg_v * 0.8 if avg_v and avg_v > 0 else True
+    return close_loc >= 0.70 and body_ratio >= 0.45 and vol_ok
+
+
 def classify_price_bucket(price: float) -> str:
     """تصنيف سعر السهم لـ bucket."""
     if price <= 0:
@@ -551,13 +606,18 @@ def detect_quiet_accumulation(
         last_10_highs = [max(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
         last_10_lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
 
+    # AUDIT-FIX (2026-10-29): استخدم is_buy_day بدل close_pct بس
+    # قبل كده: شمعة حمراء بـ تسجل "شراء" غلط (لو قفلت في أعلى 25% من مداها)
+    # دلوقتي: لازم شمعة خضراء + body ≥ 45% + volume ≥ 80% avg
     buy_pressure_days = 0
+    avg_vol_20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 1)
     for i in range(10):
         h, l, c = last_10_highs[i], last_10_lows[i], last_10_closes[i]
-        if h > l:
-            close_pct = (c - l) / (h - l) * 100
-            if close_pct >= QUIET_ACCUM_CLOSE_TO_HIGH_PCT:
-                buy_pressure_days += 1
+        v = last_10_volumes[i]
+        # proxy open = الشمعة السابقة close
+        o = last_10_closes[i-1] if i > 0 else c
+        if is_buy_day(o, h, l, c, v, avg_vol_20):
+            buy_pressure_days += 1
     buy_pressure_req = QUIET_ACCUM_BUY_PRESSURE_DAYS  # AUDIT-FIX: لا تخفيض في DEFENSIVE
     signal2 = buy_pressure_days >= buy_pressure_req
     details['buy_pressure_days'] = buy_pressure_days
@@ -706,14 +766,30 @@ def detect_pre_surge(
         last_10_highs = [max(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
         last_10_lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
 
-    # 1. الحجم بيزيد تدريج (volume gradient)
+    # 1. الحجم بيزيد تدريج (volume gradient) — AUDIT-FIX (2026-10-29)
+    # قبل كده: early_5_vol صغير → gradient وهمي عالي
+    # دلوقتي: حماية من القسمة على صغير + شرط baseline أطول
     early_5_vol = sum(last_10_volumes[:5]) / 5
     late_5_vol = sum(last_10_volumes[5:]) / 5
-    if early_5_vol > 0:
-        vol_gradient = (late_5_vol - early_5_vol) / early_5_vol
+    # baseline أطول (20 يوم قبل الـ 5 الأخيرة)
+    base_vol = sum(volumes[-(PRE_SURGE_LOOKBACK + 20):-PRE_SURGE_LOOKBACK]) / 20 if len(volumes) >= 30 else early_5_vol
+    # لو البداية ضعيفة جدًا → ارفض (ميت قبل كده)
+    if early_5_vol < base_vol * 0.4:
+        signal1 = False
+        details['signals_failed'].append(f'1.volume_gradient(early={early_5_vol:.0f} < base×0.4={base_vol*0.4:.0f})')
     else:
-        vol_gradient = 0
-    signal1 = vol_gradient >= PRE_SURGE_VOLUME_GRADIENT_MIN
+        # gradient محمي: اقسم على max(early, base×0.5)
+        safe_divisor = max(early_5_vol, base_vol * 0.5)
+        vol_gradient = (late_5_vol - early_5_vol) / safe_divisor
+        # شرط إضافي: late لازم يكون ≥ 1.3× base
+        late_above_base = late_5_vol >= base_vol * 1.3
+        signal1 = vol_gradient >= 0.25 and late_above_base  # AUDIT-FIX: 0.25 (was 0.15)
+        details['volume_gradient'] = round(vol_gradient * 100, 1)
+        details['late_above_base'] = late_above_base
+        if signal1:
+            details['signals_met'].append(f'1.volume_gradient(+{vol_gradient*100:.1f}%≥25% + late≥1.3×base)')
+        else:
+            details['signals_failed'].append(f'1.volume_gradient(+{vol_gradient*100:.1f}%<25% or late<1.3×base)')
     details['volume_gradient'] = round(vol_gradient * 100, 1)
     if signal1:
         details['signals_met'].append(f'1.volume_gradient(+{vol_gradient*100:.1f}%≥{PRE_SURGE_VOLUME_GRADIENT_MIN*100}%)')
@@ -1183,6 +1259,49 @@ def check_kill_switch(
     return False, ''
 
 
+
+def final_position_size(base_size: float, flow_score: float = 0,
+                         liquidity_intensity: float = None,
+                         free_float: float = None,
+                         regime: str = 'NORMAL') -> float:
+    """AUDIT-FIX (2026-10-29): دالة موحدة لحجم المركز النهائي.
+
+    قبل كده: كل مسار بـ يحسب position size لوحده → متناقض.
+    دلوقتي: دالة واحدة بـ تأخذ كل العوامل + سقف صارم 2.5%.
+    """
+    size = base_size
+
+    # Flow score adjustment
+    if flow_score >= 80:
+        size *= 1.15
+    elif flow_score < 60:
+        size *= 0.7
+
+    # Liquidity intensity adjustment
+    if liquidity_intensity is not None:
+        if liquidity_intensity < 0.08:
+            size *= 0.5
+        elif liquidity_intensity < 0.15:
+            size *= 0.75
+
+    # Free float adjustment
+    if free_float is not None and free_float > 0:
+        if free_float < 5.0:
+            size *= 0.2   # خطير جداً
+        elif free_float < 15.0:
+            size *= 0.5   # مخاطرة عالية
+
+    # Regime adjustment
+    if regime == 'DEFENSIVE':
+        size *= 0.5
+    elif regime == 'AGGRESSIVE':
+        size *= 1.3
+
+    # سقف صارم 2.5%
+    return min(size, 0.025)
+
+
+
 __all__ = [
     'DYNAMIC_TURNOVER_THRESHOLDS',
     'PUMP_AND_DUMP_TURNOVER_FLOOR',
@@ -1213,4 +1332,9 @@ __all__ = [
     'is_explosive_surge',
     'should_reject_by_liquidity',
     'position_size_for_liquidity_bypass',
+    'clean_series',
+    'robust_avg',
+    'is_buy_day',
+    'liquidity_intensity',
+    'final_position_size',
 ]
