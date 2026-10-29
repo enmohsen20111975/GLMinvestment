@@ -140,3 +140,17 @@
 
 # يوم 1 من كل شهر 05:00 UTC — ضبط استراتيجيات الخروج والأهداف (Exit Optimizer)
 0 5 1 * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/exit_policy_optimizer.py >> /tmp/exit_optimizer.log 2>&1
+
+# ============================================================================
+# ─── المرحلة 7: مهام برافو الإضافية (Indices + Sync + Quality) ──────────────
+# ============================================================================
+# هذه المهام أضافها برافو لضمان جودة البيانات + المؤشرات الرسمية
+
+# كل 15 دقيقة — سحب المؤشرات الرسمية من TradingView (EGX30/TASI/S&P500/...)
+*/15 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/fetch_tv_indices.py >> /tmp/fetch_tv_indices.log 2>&1
+
+# 13:00 UTC (15:00 القاهرة) — نسخ الأسعار الناقصة من data_engine.db لـ stocks.db
+0 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/sync_missing_prices.py >> /tmp/sync_missing_prices.log 2>&1
+
+# السبت 03:30 UTC — فحص جودة البيانات أسبوعياً (flat stocks + volume)
+30 3 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/check_data_quality.py >> /tmp/data_quality_weekly.log 2>&1

@@ -137,7 +137,7 @@ def ensure_audit_table(db_path: Optional[str] = None) -> str:
         Path to the DB where the table lives.
     """
     db_path = str(db_path or DEFAULT_SHADOW_DB)
-    conn = sqlite3.connect(db_path, timeout=30)
+    conn = _bs_dbm.connection(db_path, writable=False).__enter__()
     try:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS shadow_canonical_state_audit (
@@ -203,7 +203,7 @@ def fetch_canonical_state_for_ticker(
         stocks_db_path = _stocks_db_override or _get_stocks_db_path()
 
     try:
-        conn = sqlite3.connect(f'file:{stocks_db_path}?mode=ro', uri=True, timeout=10)
+        conn = _bs_dbm.connection(stocks_db_path, writable=False).__enter__()
         try:
             row = conn.execute("""
                 SELECT canonical_state, confidence, prev_state, transition_type,
@@ -284,7 +284,7 @@ def _shadow_record_prediction(self, *args, **kwargs) -> int:
 
     # 6. Insert audit record (fail-safe)
     try:
-        conn = sqlite3.connect(str(DEFAULT_SHADOW_DB), timeout=10)
+        conn = _bs_dbm.connection(str(DEFAULT_SHADOW_DB), writable=True).__enter__()
         try:
             conn.execute("""
                 INSERT INTO shadow_canonical_state_audit
@@ -412,7 +412,7 @@ def get_shadow_audits(
     """
     db_path = str(db_path or DEFAULT_SHADOW_DB)
     try:
-        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True, timeout=10)
+        conn = _bs_dbm.connection(db_path, writable=False).__enter__()
         try:
             query = "SELECT * FROM shadow_canonical_state_audit WHERE 1=1"
             params: List[Any] = []
@@ -450,7 +450,7 @@ def get_shadow_summary(db_path: Optional[str] = None) -> Dict[str, Any]:
     """
     db_path = str(db_path or DEFAULT_SHADOW_DB)
     try:
-        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True, timeout=10)
+        conn = _bs_dbm.connection(db_path, writable=False).__enter__()
         try:
             total = conn.execute(
                 "SELECT COUNT(*) FROM shadow_canonical_state_audit"
