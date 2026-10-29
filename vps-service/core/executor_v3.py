@@ -278,38 +278,110 @@ def _run_family_engine(family, plan, prices, volumes, ticker, market,
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# TREND — MasterAnalyzer (محرك حقيقي، 8 طبقات confluence)
+# TREND — محرك مستقل بـ المؤشرات الـ canonical (لا MasterAnalyzer)
 # ═══════════════════════════════════════════════════════════════════════
 def _run_trend(plan, prices, volumes, ticker, market):
-    """TREND family — uses MasterAnalyzer's technical output.
+    """TREND family — تحليل الاتجاه بـ المؤشرات الـ canonical.
 
-    MasterAnalyzer (5,424 سطر) محرك مستقل بـ 8 طبقات confluence.
+    STAGE-FIX (2026-10-29): شيلنا MasterAnalyzer خالص — كان صندوق أسود
+    بـ يقرا من stocks.db بنفسه + بـ ينشئ LiquidityFilter جواه.
+    دلوقتي: بـ نستخدم المؤشرات من analyzers/indicators/ بس.
+    لا DB reads. لا LiquidityFilter. لا background_analyzer.
 
-    STAGE-FIX (2026-10-29): لو MasterAnalyzer رفض بالسيولة (REJECTED_LIQUIDITY)
-    → ارجع None (تخطّي TREND) بدل -100. ده لأن MasterAnalyzer بـ يقرا
-    السيولة من stocks.db (snapshot) مش من الـ prices اللي بنبعتها.
-    لو السوق مقفول أو volume=0 في snapshot → بيرفض بالغلط.
+    المؤشرات المستخدمة:
+      1. SMA alignment (price vs SMA20 vs SMA50)
+      2. ADX (قوة الاتجاه)
+      3. RSI (زخم)
+      4. Bollinger (ضغط/توسع)
+      5. MACD (اتجاه)
+
+    Score: -100..+100 (weighted combination)
     """
     if not prices or len(prices) < 20:
         return None, None
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-        from analyzers.master_analyzer import MasterAnalyzer
-        a = MasterAnalyzer()
-        r = a.analyze(ticker or plan.ticker, prices=prices, volumes=volumes or [])
-        if not r:
-            return None, None
-        score = getattr(r, 'master_score', 50)
-        signal = getattr(r, 'signal', 'HOLD')
+        from analyzers.indicators.rsi import calc_rsi
+        from analyzers.indicators.ma import sma, macd
+        from analyzers.indicators.atr import calc_atr
+        from analyzers.indicators.adx import calc_adx
+        from analyzers.indicators.bollinger import calc_bollinger
 
-        # STAGE-FIX: لو MasterAnalyzer رفض بالسيولة → تخطّي (ارجع None)
-        # بدل ما -100 يفسد الـ weighted score
-        if signal in ('REJECTED_LIQUIDITY', 'EXCLUDED') or score == 0:
-            logger.info(f'TREND: MasterAnalyzer rejected {ticker} ({signal}, score={score}) → skipping TREND')
-            return None, None
+        last = prices[-1]
+        sma20 = sma(prices, 20) or sum(prices[-20:]) / 20
+        sma50 = sma(prices, 50) if len(prices) >= 50 else sma20
 
-        # Normalize to -100..+100 (master_score 0-100, neutral=50)
-        norm = (score - 50) * 2
+        # 1. SMA alignment (40%)
+        _align_score = 0
+        if last > sma20: _align_score += 25
+        else: _align_score -= 25
+        if last > sma50: _align_score += 15
+        else: _align_score -= 15
+        if sma20 > sma50: _align_score += 10
+        else: _align_score -= 10
+
+        # 2. ADX — قوة الاتجاه (25%)
+        _adx_score = 0
+        if len(prices) >= 15:
+            _highs = [prices[i] + abs(prices[i] - prices[i-1]) if i > 0 else prices[i] for i in range(len(prices))]
+            _lows = [prices[i] - abs(prices[i] - prices[i-1]) if i > 0 else prices[i] for i in range(len(prices))]
+            try:
+                _adx_result = calc_adx(_highs[-15:], _lows[-15:], prices[-15:], 14)
+                _adx_val = _adx_result.get('adx', 25) if isinstance(_adx_result, dict) else 25
+                _plus_di = _adx_result.get('plus_di', 20) if isinstance(_adx_result, dict) else 20
+                _minus_di = _adx_result.get('minus_di', 20) if isinstance(_adx_result, dict) else 20
+                if _adx_val > 25:  # trend strong
+                    if _plus_di > _minus_di: _adx_score = 25  # bullish trend
+                    else: _adx_score = -25  # bearish trend
+                elif _adx_val > 20:
+                    if _plus_di > _minus_di: _adx_score = 10
+                    else: _adx_score = -10
+            except: pass
+
+        # 3. RSI (15%)
+        _rsi_score = 0
+        _rsi = calc_rsi(prices, 14)
+        if _rsi is not None:
+            if _rsi > 55: _rsi_score = 15
+            elif _rsi > 45: _rsi_score = 5
+            elif _rsi < 35: _rsi_score = -10  # oversold — might bounce
+            elif _rsi < 45: _rsi_score = -5
+            else: _rsi_score = 0
+
+        # 4. Bollinger (10%)
+        _bb_score = 0
+        try:
+            _bb = calc_bollinger(prices, 20)
+            if _bb and isinstance(_bb, dict):
+                _pct_b = _bb.get('percent_b', 50)
+                if _pct_b > 80: _bb_score = 10  # upper band — strong
+                elif _pct_b > 50: _bb_score = 5
+                elif _pct_b < 20: _bb_score = -10  # lower band — weak
+                elif _pct_b < 50: _bb_score = -5
+        except: pass
+
+        # 5. MACD (10%)
+        _macd_score = 0
+        try:
+            _macd_result = macd(prices)
+            if _macd_result and isinstance(_macd_result, dict):
+                _macd_val = _macd_result.get('macd', 0)
+                _signal_val = _macd_result.get('signal', 0)
+                if _macd_val and _signal_val:
+                    if _macd_val > _signal_val: _macd_score = 10  # bullish crossover
+                    else: _macd_score = -10  # bearish
+        except: pass
+
+        # Weighted combination
+        norm = max(-100, min(100,
+            _align_score * 1.0 +   # already -50..+50
+            _adx_score * 1.0 +     # -25..+25
+            _rsi_score * 1.0 +     # -10..+15
+            _bb_score * 1.0 +      # -10..+10
+            _macd_score * 1.0      # -10..+10
+        ))
+
+        signal = 'BUY' if norm > 20 else 'SELL' if norm < -20 else 'HOLD'
         return norm, signal
     except Exception as e:
         logger.warning(f'TREND engine failed: {e}')
