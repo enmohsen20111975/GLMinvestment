@@ -201,6 +201,12 @@ def get_unified_trader_levels(
     """
     المصدر الحسابي الموحد (Single Source of Truth) لكافة الشاشات والبوت والتطبيقات.
     يحسب المستويات الهيكلية بدقة ويقوم بمزامنتها في predictions.db لضمان عدم وجود أي تضارب.
+
+    BRAVO-SIGNAL-AWARE (2026-10-29):
+    - بـ يـ check الـ signal من التوقع الموجود قبل ما يـ update
+    - لو SELL → بـ يحسب stop أعلى من entry + target أقل من entry (منطق SELL صحيح)
+    - لو BUY → بـ يحسب stop أقل من entry + target أعلى من entry (منطق BUY)
+    - ده بـ يمنع الـ overwrite اللي بـ يحول SELL predictions لـ BUY levels
     """
     sym = ticker.upper().strip()
     levels = calculate_precise_trader_levels(sym, current_price=current_price)
@@ -211,27 +217,55 @@ def get_unified_trader_levels(
             try:
                 import json
                 from datetime import datetime
-                # Phase 7.1: migrated to db_manager (writable=False)
                 from core.db_manager import db_manager
-                # FIX (BRAVO-DISASTER 2026-10-28): was writable=False but does UPDATE predictions SET entry_price_min + commit
                 conn = db_manager.get_connection(str(pred_db_path), writable=True)
                 cur = conn.cursor()
-                # التحقق من وجود توقع نشط لتحديثه بنفس القيم الموحدة
+                # BRAVO-SIGNAL-AWARE: نجيب الـ signal من التوقع الموجود
                 row = cur.execute(
-                    "SELECT id, analysis_json FROM predictions WHERE ticker = ? ORDER BY id DESC LIMIT 1",
+                    "SELECT id, signal, analysis_json FROM predictions WHERE ticker = ? ORDER BY id DESC LIMIT 1",
                     (sym,)
                 ).fetchone()
 
                 today_str = datetime.now().strftime('%Y-%m-%d')
                 if row:
                     pred_id = row[0]
-                    raw_json = row[1]
+                    existing_signal = str(row[1] or '').upper() if row[1] else ''
+                    raw_json = row[2]
                     try:
                         aj = json.loads(raw_json) if raw_json else {}
                     except Exception:
                         aj = {}
                     aj['trader_levels'] = levels
                     aj['unified_source'] = 'trader_levels_engine_v1'
+
+                    # BRAVO-SIGNAL-AWARE: لو SELL → اعكس الـ stop/target
+                    is_sell = 'SELL' in existing_signal
+                    if is_sell:
+                        # SELL logic: stop > entry > target
+                        # الـ levels من calculate_precise_trader_levels كلها BUY (stop<entry, target>entry)
+                        # لازم نعكسها للـ SELL
+                        entry_price = float(current_price) if current_price else levels.get('current_price', 0)
+                        if entry_price <= 0:
+                            entry_price = levels.get('current_price', 0)
+                        # stop = entry + (entry - original_stop) = mirror above entry
+                        original_stop = levels['stop_loss']
+                        stop_distance = entry_price - original_stop  # المسافة من entry لـ stop (موجبة)
+                        sell_stop = entry_price + stop_distance  # stop أعلى من entry
+                        # target = entry - (original_target - entry) = mirror below entry
+                        original_target = levels['target_1']
+                        target_distance = original_target - entry_price  # المسافة من entry لـ target (موجبة)
+                        sell_target_1 = entry_price - target_distance  # target أقل من entry
+                        original_target_2 = levels['target_2']
+                        target2_distance = original_target_2 - entry_price
+                        sell_target_2 = entry_price - target2_distance
+
+                        levels['stop_loss'] = round(sell_stop, 2)
+                        levels['target_1'] = round(sell_target_1, 2)
+                        levels['target_2'] = round(sell_target_2, 2)
+                        # entry_min/entry_max للـ SELL: نفس entry (مش بنستخدم buy zone)
+                        levels['entry_min'] = entry_price
+                        levels['entry_max'] = entry_price
+                        # risk_reward يفضل نفسه (المسافات متناظرة)
 
                     cur.execute("""
                         UPDATE predictions
