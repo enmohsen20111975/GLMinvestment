@@ -511,8 +511,12 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
         _notes = str(f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}")
 
         # retry على 'database is locked' (3x مع backoff)
+        # BRAVO-PERSONA-FIX: persona='balanced' (مش 'v3_smart') عشان الـ frontend
+        # بـ يـ filter بـ WHERE persona='balanced' → لو حطينا 'v3_smart' مش هيتشاف.
+        _persona_val = 'balanced'
         max_retries = 3
         last_err = None
+        _saved_to_predictions = False
         for attempt in range(max_retries):
             try:
                 conn.execute("""
@@ -523,10 +527,10 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                 """, (
                     _pred_id, _ticker, _market, _signal, _signal_type,
                     _scan_date, _entry_price, _target_price, _stop_loss,
-                    _score, _confidence, 'v3_smart', _created_at, _notes
+                    _score, _confidence, _persona_val, _created_at, _notes
                 ))
-                logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db (id={_pred_id})')
-                return True
+                _saved_to_predictions = True
+                break  # success → exit retry loop
             except _sql.OperationalError as oe:
                 if 'locked' in str(oe).lower() and attempt < max_retries - 1:
                     _time.sleep(0.5 * (attempt + 1))  # 0.5s, 1s, 1.5s
@@ -546,18 +550,58 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                         """, (
                             _pred_id, _ticker, _market, _signal, _signal_type,
                             _scan_date, _entry_price, _target_price, _stop_loss,
-                            _score, _confidence, 'v3_smart', _created_at, _notes
+                            _score, _confidence, _persona_val, _created_at, _notes
                         ))
-                        logger.info(f'  {result["ticker"]}: ✓ saved with CAST (id={_pred_id})')
-                        return True
+                        _saved_to_predictions = True
+                        break
                     except Exception as e2:
                         logger.error(f'  {result["ticker"]}: ✗ CAST retry failed — {e2}')
                         return False
                 raise
-        # لو وصلنا هنا → كل الـ retries فشلت
-        if last_err:
-            raise last_err
-        return False
+
+        if not _saved_to_predictions:
+            if last_err:
+                raise last_err
+            return False
+
+        logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db (id={_pred_id})')
+
+        # BRAVO-STORED-ANALYSES: احفظ نسخة في stored_analyses (الـ frontend بـ يقرا منها أساساً)
+        # لو مش موجودين → الـ frontend بـ يـ show "محرك المتوازن يبحث عن فرص" (فاضي).
+        # الـ stored_analyses table لها schema مختلفة:
+        #   - recommendation بدل signal
+        #   - maestro_score بدل master_score
+        # بنكتب بس الأعمدة الموجودة (idempotent + defensive).
+        try:
+            sa_cols = {r[1] for r in conn.execute("PRAGMA table_info(stored_analyses)").fetchall()}
+            if sa_cols:
+                sa_vals = {}
+                if 'ticker' in sa_cols: sa_vals['ticker'] = _ticker
+                if 'market' in sa_cols: sa_vals['market'] = _market
+                if 'maestro_score' in sa_cols: sa_vals['maestro_score'] = _score
+                if 'recommendation' in sa_cols:
+                    sa_vals['recommendation'] = _signal.lower() if _signal in ('BUY','STRONG_BUY','SELL','STRONG_SELL','HOLD') else 'hold'
+                if 'confidence' in sa_cols: sa_vals['confidence'] = _confidence
+                if 'entry_price' in sa_cols: sa_vals['entry_price'] = _entry_price
+                if 'target_price' in sa_cols: sa_vals['target_price'] = _target_price
+                if 'stop_loss' in sa_cols: sa_vals['stop_loss'] = _stop_loss
+                if 'risk_reward' in sa_cols and _stop_loss and _entry_price and _stop_loss != _entry_price:
+                    sa_vals['risk_reward'] = abs(_target_price - _entry_price) / abs(_stop_loss - _entry_price)
+                if 'regime' in sa_cols: sa_vals['regime'] = str(result.get('market_regime', ''))
+                if 'analysis_json' in sa_cols: sa_vals['analysis_json'] = _notes
+                if 'updated_at' in sa_cols: sa_vals['updated_at'] = _created_at
+                # build INSERT (id has default lower(hex(randomblob(16))))
+                sa_col_list = list(sa_vals.keys())
+                sa_placeholders = ', '.join(['?'] * len(sa_col_list))
+                sa_col_str = ', '.join('"' + c + '"' for c in sa_col_list)
+                sa_sql = f'INSERT INTO stored_analyses ({sa_col_str}) VALUES ({sa_placeholders})'
+                conn.execute(sa_sql, tuple(sa_vals[c] for c in sa_col_list))
+                logger.info(f'  {result["ticker"]}: ✓ also saved to stored_analyses')
+        except Exception as sa_e:
+            # مش fatal — الـ prediction اتـ save في predictions table بالفعل
+            logger.warning(f'  {result["ticker"]}: stored_analyses insert skipped: {sa_e}')
+
+        return True
     except Exception as e:
         logger.error(f'  {result["ticker"]}: ✗ save failed — {e}')
         return False
