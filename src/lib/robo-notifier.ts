@@ -90,7 +90,7 @@ function fireNotification(title: string, body: string, direction: 'up' | 'down' 
       const icon = '/icon-192.png';
       if (navigator.serviceWorker?.controller) {
         navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(title, { body, icon, tag: 'robo-advisor', renotify: true, badge: icon }).catch(() => {
+          reg.showNotification(title, { body, icon, tag: 'robo-advisor', renotify: true, badge: icon } as any).catch(() => {
             new Notification(title, { body, icon });
           });
         });

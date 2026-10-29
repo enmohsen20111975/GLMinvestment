@@ -508,7 +508,7 @@ export function UserManagementPanel() {
  <StatBox label="إجمالي المستخدمين" value={stats.total} icon={<Users className="w-4 h-4 text-sky-500" />} />
  <StatBox label="نشط" value={stats.active} icon={<CheckCircle2 className="w-4 h-4 text-profit" />} />
  <StatBox label="مميزين + أدمن" value={stats.premium} icon={<Crown className="w-4 h-4 text-warning" />} />
- <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)`} icon={<Ticket className="w-4 h-4 text-primary" />} />
+ <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)` as any} icon={<Ticket className="w-4 h-4 text-primary" />} />
  <StatBox label="أدمن" value={stats.admins} icon={<ShieldCheck className="w-4 h-4 text-loss" />} />
  </div>
 

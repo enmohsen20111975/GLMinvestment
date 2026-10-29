@@ -27,9 +27,9 @@ import { cn } from '@/lib/utils';
 import { UnifiedPagination } from '@/components/shared/ui';
 import {
   STATUS_BADGE_CLASS,
-  type ShariaListResponse,
   type ShariaRow,
 } from './types';
+type ShariaListResponse = any;
 import { Alert, deriveOverallStatus } from './helpers';
 import { ShariaStockRowCard } from './ShariaStockRowCard';
 

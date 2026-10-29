@@ -177,7 +177,7 @@ export function UsersManagement() {
   const handleOpenPromoModal = (user: UserDetails) => {
     setPromoTargetUser(user);
     setSelectedPromoCode(user.promoCode?.code || '');
-    setCustomPromoTier(user.promoCode?.plan_tier || 'all');
+    setCustomPromoTier((user.promoCode?.plan_tier || 'all') as any);
     setCustomPromoDays(user.promoCode?.premium_days || 30);
     setCustomPromoCodeInput('');
     setShowPromoModal(true);

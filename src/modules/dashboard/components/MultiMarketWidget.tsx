@@ -103,13 +103,13 @@ export function MultiMarketWidget() {
    params: { market: selectedMarket, limit: 20 },
    queryOptions: { refetchOnWindowFocus: false },
  });
- const stocks = useMemo(() => stocksRaw?.stocks || [], [stocksRaw]);
+ const stocks = useMemo(() => (stocksRaw as any)?.stocks || [], [stocksRaw]);
 
  // 2) Gold
  const { data: goldRaw, isLoading: loadingGold } = useApiQuery<{ gold?: Record<string, GoldCountryData> }>('/api/data-engine/gold', {
    queryOptions: { refetchOnWindowFocus: false },
  });
- const goldData = useMemo(() => goldRaw?.gold ?? null, [goldRaw]);
+ const goldData = useMemo(() => (goldRaw as any)?.gold ?? null, [goldRaw]);
 
  // 3) Crypto
  const { data: cryptoRaw, isLoading: loadingCrypto } = useApiQuery<Crypto[] | { data?: Crypto[]; cryptos?: Crypto[] }>('/api/data-engine/crypto', {
@@ -119,14 +119,14 @@ export function MultiMarketWidget() {
  const cryptoData = useMemo<Crypto[]>(() => {
    if (!cryptoRaw) return [];
    if (Array.isArray(cryptoRaw)) return cryptoRaw;
-   return cryptoRaw.data || cryptoRaw.cryptos || [];
+   return cryptoRaw.data || (cryptoRaw as any).cryptos || [];
  }, [cryptoRaw]);
 
  // 4) Forex
  const { data: forexRaw, isLoading: loadingForex } = useApiQuery<{ data?: { rates?: Record<string, ForexRate> } }>('/api/data-engine/forex', {
    queryOptions: { refetchOnWindowFocus: false },
  });
- const forexRates = useMemo(() => forexRaw?.data?.rates ?? {}, [forexRaw]);
+ const forexRates = useMemo(() => (forexRaw as any)?.data?.rates ?? {}, [forexRaw]);
 
  const loadingGeneral = loadingGold || loadingCrypto || loadingForex;
 

@@ -145,7 +145,7 @@ export function PriorityNotificationsWidget() {
 
   const goToNotificationCenter = () => {
     // Toggle the notifications panel via store (NotificationCenter listens to this)
-    setCurrentView('notifications');
+    setCurrentView('notifications' as any);
     if (typeof window !== 'undefined') window.location.hash = 'notifications';
   };
 

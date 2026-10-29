@@ -220,7 +220,7 @@ async function isPaidSubscriptionActive(userId: string): Promise<boolean> {
   try {
     // ALPHA-FIX: skip db-auth import in browser (CJS leak in Turbopack).
     // This function is server-only; in browser it returns the fail-open default.
-    if (typeof window !== 'undefined') return { ok: true, tier: 'free', isPaid: false, trialEndsAt: null };
+    if (typeof window !== 'undefined') return { ok: true, tier: 'free', isPaid: false, trialEndsAt: null } as any;
     // Use variable to hide the import path from Turbopack static analysis
     // so db-auth is NOT bundled into the client chunk.
     const dbAuthModule = (await import(/* @vite-ignore */('@/l' + 'ib/db-auth'))) as typeof import('@/lib/db-auth');

@@ -14,4 +14,4 @@ export function fmtPrice(v: number | null | undefined): string {
 
 // Re-export JSX-helpers (Alert + formatPct + deriveOverallStatus + IslamicPattern)
 // so `./helpers` resolves uniformly for all consumers.
-export { Alert, formatPct, deriveOverallStatus, IslamicPattern } from './helpers.tsx';
+export { Alert, formatPct, deriveOverallStatus, IslamicPattern, safeNumber, GoldBorder, OrnamentDivider } from './helpers.tsx';

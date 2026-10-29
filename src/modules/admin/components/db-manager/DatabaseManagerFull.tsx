@@ -77,7 +77,7 @@ export function DatabaseManagerFull() {
           importResult={a.importResult}
           onImportFileChange={(f) => {
             a.setImportFile(f);
-            a.setImportResult(null);
+            (a as any).setImportResult(null);
           }}
           onCheckpointAll={a.handleCheckpointAll}
           onExportAll={a.handleExportAll}
@@ -304,7 +304,7 @@ export function DatabaseManagerFull() {
         <ConfirmDialog
           confirm={a.confirm}
           busy={a.confirmBusy}
-          onClose={() => a.setConfirm(null)}
+          onClose={() => (a as any).setConfirm(null)}
           onConfirm={a.handleConfirmAction}
         />
 

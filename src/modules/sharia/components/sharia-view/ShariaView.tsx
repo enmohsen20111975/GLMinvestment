@@ -39,7 +39,8 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { GoldBorder, IslamicPattern, OrnamentDivider } from './helpers';
+import * as _helpers from './helpers';
+const { GoldBorder, IslamicPattern, OrnamentDivider } = _helpers as any;
 import { ShariaStocksListTab } from './ShariaStocksListTab';
 import { SingleTradePurificationCalculator } from './SingleTradePurificationCalculator';
 import { PortfolioPurificationCalculator } from './PortfolioPurificationCalculator';

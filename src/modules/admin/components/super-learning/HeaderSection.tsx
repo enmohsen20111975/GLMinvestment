@@ -1,3 +1,4 @@
+type TrendingUp = Record<string, unknown>;
 /**
  * super-learning/HeaderSection.tsx
  * ================================
@@ -48,7 +49,7 @@ const PERSONA_BUTTONS = [
   { id: 'gambler', icon: Flame, label: 'المضارب', risk: 'high' },
   { id: 'smart', icon: Brain, label: 'الذكي', risk: 'medium' },
   { id: 'scalper', icon: Zap, label: 'السريع', risk: 'high' },
-  { id: 'trend_follower', icon: TrendingUp, label: 'المتتبع', risk: 'medium' },
+  { id: 'trend_follower', icon: StockIcon, label: 'المتتبع', risk: 'medium' },
   { id: 'contrarian', icon: RotateCcw, label: 'العكسي', risk: 'high' },
 ];
 

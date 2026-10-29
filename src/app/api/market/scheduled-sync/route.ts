@@ -226,7 +226,7 @@ async function processStockForSync(
 
           // إدراج البيانات التاريخية
           for (const price of historicalPrices) {
-            const { inserted } = upsertPriceHistory(heavyDb as any, stockId, String(price.date), {
+            const { inserted } = upsertPriceHistory(heavyDb as any, String(stockId), String(price.date), {
               open_price: price.open,
               high_price: price.high,
               low_price: price.low,
@@ -239,7 +239,7 @@ async function processStockForSync(
 
           // إدراج بيانات اليوم إذا لم تكن موجودة
           if (historicalPrices.length === 0) {
-            const { inserted } = upsertPriceHistory(heavyDb as any, stockId, String(today), {
+            const { inserted } = upsertPriceHistory(heavyDb as any, String(stockId), String(today), {
               open_price: stockData.open_price,
               high_price: stockData.high_price,
               low_price: stockData.low_price,

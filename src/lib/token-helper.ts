@@ -50,7 +50,7 @@ export async function validateToken(token: string): Promise<{ userId: string } |
     
     console.log('[Token Helper] Prisma query result:', apiToken ? 'FOUND' : 'NOT FOUND');
     
-    if (apiToken && apiToken.expires_at > new Date()) {
+    if (apiToken && new Date(apiToken.expires_at) > new Date()) {
       console.log('[Token Helper] Token valid, userId:', apiToken.user_id);
       return { userId: apiToken.user_id };
     }
@@ -124,7 +124,7 @@ export async function validateTokenWithUser(token: string): Promise<{
     });
     
     if (!apiToken) return null;
-    if (apiToken.expires_at < new Date()) return null;
+    if (apiToken && new Date(apiToken.expires_at) < new Date()) return null;
     if (!apiToken.User?.is_active) return null;
     
     return {
@@ -138,7 +138,7 @@ export async function validateTokenWithUser(token: string): Promise<{
         subscription_tier: apiToken.User.subscription_tier || 'free',
         is_active: apiToken.User.is_active,
       },
-    };
+    } as any;
   } catch (prismaError) {
     // Handle corrupted date fields
     if (prismaError instanceof Prisma.PrismaClientKnownRequestError && 

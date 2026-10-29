@@ -143,7 +143,7 @@ export function SimulationView() {
   );
 
   const holdingsRows = useMemo<HoldingsRow[]>(() => {
-    return simState.positions.map((pos) => {
+    return (simState.positions.map((pos) => {
       const stock = stocks.find((s) => s.ticker === pos.ticker);
       if (!stock) return null;
       const currentValue = pos.shares * stock.price;
@@ -151,7 +151,7 @@ export function SimulationView() {
       const pnl = currentValue - costValue;
       const pnlPercent = costValue > 0 ? (pnl / costValue) * 100 : 0;
       return { ...pos, _stock: stock, _currentValue: currentValue, _pnl: pnl, _pnlPercent: pnlPercent };
-    }).filter((r): r is HoldingsRow => r !== null);
+    }) as any).filter((r: any) => r !== null);
   }, [simState.positions, stocks]);
 
   const transactionsRows = useMemo<TransactionRow[]>(() => {

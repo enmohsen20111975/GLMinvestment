@@ -146,7 +146,7 @@ async function safeUserFind<T extends Record<string, unknown>>(
   // Attempt 1: Prisma
   try {
     return (await db.user.findUnique({
-      where,
+      where: where as any,
       select,
     })) as T | null;
   } catch (err: unknown) {
@@ -166,7 +166,7 @@ async function safeUserFind<T extends Record<string, unknown>>(
     // Attempt 2: retry Prisma after repair
     try {
       return (await db.user.findUnique({
-        where,
+        where: where as any,
         select,
       })) as T | null;
     } catch (retryErr) {

@@ -52,7 +52,7 @@ export function SeasonalitySignalsWidget() {
 
  // Derive signals + summary from cached query data (memoized — no recomputation on re-render).
  const { signals, summary } = useMemo(() => {
-   const rawSignals = rawData?.signals;
+   const rawSignals = (rawData as any)?.signals;
    if (!rawSignals || !Array.isArray(rawSignals) || rawSignals.length === 0) {
      return { signals: [] as SeasonalitySignal[], summary: null };
    }

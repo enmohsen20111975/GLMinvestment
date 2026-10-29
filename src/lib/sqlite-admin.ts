@@ -508,7 +508,7 @@ export function executeRawSql(
   }
 
   try {
-    const db = new Database(dbPath, { readonly, fileMustExist: true })
+    const db = new Database(dbPath, { readOnly, fileMustExist: true })
 
     // منع أووامر خطرة لو مش read-only
     if (!readOnly) {

@@ -185,7 +185,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
  </div>
  <div className="text-lg font-bold text-warning">
  {activeStatus.filter((s) => {
- const progress = s.progress_percent || 0;
+ const progress = (s as any).progress_percent || 0;
  return progress >= 70 && progress < 100;
  }).length}
  </div>
@@ -213,7 +213,7 @@ export function LiveTrackingTab({ market }: { market: MarketType }) {
  </TabsTrigger>
  </TabsList>
  </Tabs>
- <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+ <Button variant="outline" size="sm" onClick={fetchData as any} disabled={loading}>
  <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
  تحديث
  </Button>
@@ -335,7 +335,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
 
  {/* Action buttons */}
  <div className="flex items-center justify-end gap-2">
- <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+ <Button variant="outline" size="sm" onClick={fetchData as any} disabled={loading}>
  <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
  تحديث
  </Button>

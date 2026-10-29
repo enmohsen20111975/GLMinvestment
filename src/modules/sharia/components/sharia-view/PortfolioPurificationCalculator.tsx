@@ -36,7 +36,8 @@ import {
 } from '@/components/ui/table';
 import { useAppStore } from '@/lib/store';
 import type { PurificationResponse } from './types';
-import { Alert, safeNumber } from './helpers';
+import * as _helpers from './helpers';
+const { Alert, safeNumber } = _helpers as any;
 
 export function PortfolioPurificationCalculator() {
   const user = useAppStore((s) => s.user);

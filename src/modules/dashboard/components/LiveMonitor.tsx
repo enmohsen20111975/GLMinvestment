@@ -1246,19 +1246,19 @@ export function LiveMonitor() {
  </div>
 
  {/* 1. Market status banner */}
- <MarketStatusBanner data={data} clockStr={clockStr} dateStr={dateStr} />
+ <MarketStatusBanner data={data as any} clockStr={clockStr} dateStr={dateStr} />
 
  {/* 2. System health cards */}
- <SystemHealthCards data={data} />
+ <SystemHealthCards data={data as any} />
 
  {/* 2.5. Data sources info */}
  {data.data_sources && <DataSourcesCard sources={data.data_sources} />}
 
  {/* 3. Portfolio live monitor */}
- <PortfolioMonitor data={data} />
+ <PortfolioMonitor data={data as any} />
 
  {/* 4. Market movers */}
- <MarketMovers data={data} />
+ <MarketMovers data={data as any} />
 
  {/* Footer */}
  <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground dark:text-muted-foreground">

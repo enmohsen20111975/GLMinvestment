@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
     const userId = (session.user as any).id as string;
     const body   = await request.json();
     const { plan_id, billing_period = 'monthly', payment_type = 'card' } = body;

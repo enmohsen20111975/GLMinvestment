@@ -95,8 +95,8 @@ export function RealtimeTicker() {
  // Derive static stocks from cached query data (fallback only)
  const staticStocks: TickerItem[] = React.useMemo(() => {
    if (isConnected && stockPrices.length > 0) return [];
-   if (!stocksData?.stocks?.length) return [];
-   return stocksData.stocks.map((s) => ({
+   if (!(stocksData as any)?.stocks?.length) return [];
+   return (stocksData as any).stocks.map((s) => ({
      ticker: String(s.ticker || ''),
      name_ar: String(s.name || s.name_ar || ''),
      current_price: Number(s.current_price) || 0,
@@ -108,7 +108,7 @@ export function RealtimeTicker() {
 
  // Use WebSocket data if connected, otherwise use static data
  const validStockPrices = isConnected && stockPrices.length > 0
- ? stockPrices.filter((item): item is TickerItem => item != null && item.ticker)
+ ? stockPrices.filter((item): item is TickerItem => item != null && Boolean(item.ticker))
  : staticStocks;
 
  // Auto-scroll the ticker

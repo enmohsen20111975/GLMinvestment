@@ -377,7 +377,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
             atr_at_entry: null,
             analysis_json: sa.analysis_json || null,
             status: 'stored_analysis_fallback',
-          } as PredictionRow;
+          } as unknown as PredictionRow;
         }
       } catch (e) {
         // stored_analyses table might not exist — silent fallback
@@ -614,7 +614,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
         volume_ratio: volumeRatioFresh,
         // technical_score: REMOVED (Rule 20 — لا حساب مالي في TS-side)
         // master_score يأتي فقط من predictions.db (Python V40.2)
-        technical_score: null,
+        technical_score: 0,
         price_history_points: closes.length,
       },
     },

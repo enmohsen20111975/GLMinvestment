@@ -63,7 +63,7 @@ export function WhaleRadarSection({ picks }: WhaleRadarSectionProps) {
           const target = Number(p.target_price || 0);
           const stop = Number(p.stop_loss || 0);
           const rr = stop > 0 && entry > 0 ? (target - entry) / (entry - stop) : 0;
-          const notes = String(p.notes || '');
+          const notes = String((p as any).notes || '');
           // Parse the technical reason from notes (after "WHALE_RADAR | ")
           const techReason = notes.includes('WHALE_RADAR |')
             ? notes.split('WHALE_RADAR |')[1]

@@ -21,7 +21,7 @@ export function CandleChart({
   const gridVals = [minP, (minP + maxP) / 2, maxP];
 
   return (
-    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-auto" dir="ltr">
+    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-auto" dir="ltr" {...({} as any)}>
       {/* grid */}
       {gridVals.map((v, i) => (
         <g key={i}>

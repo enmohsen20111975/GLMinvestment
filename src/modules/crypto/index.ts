@@ -7,4 +7,4 @@
 // serves CRYPTO market via the unified MarketSelector.
 
 export { CryptoPortfolioView } from './components/CryptoPortfolioView';
-export { CryptoPredictionTrackingView } from './components/CryptoPredictionTrackingView';
+export { default as CryptoPredictionTrackingView } from './components/CryptoPredictionTrackingView';

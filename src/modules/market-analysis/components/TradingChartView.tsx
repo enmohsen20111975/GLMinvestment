@@ -974,7 +974,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
     ohlcv={data.ohlcv}
     indicators={data.indicators}
     tradePlan={stableTradePlan}
-    smcData={data.smc_data}
+    smcData={data.smc_data as any}
     livePrice={livePrice}
     currencyLabel={currencyLabel}
     height={isMaximized ? 600 : 500}
@@ -1004,7 +1004,7 @@ function TickerChartCard({ initialTicker }: { initialTicker: string }) {
  {data?.institutional_decision && !isCrypto && (
  <div className="border-t border-border">
  <InstitutionalDecisionPanel
- decision={data.institutional_decision}
+ decision={data.institutional_decision as any}
  ticker={ticker}
  currencyLabel={currencyLabel}
  />

@@ -1139,7 +1139,7 @@ import {
   IntelligenceBadges,
   PRICE_ACTION_AR, PARTICIPANT_FLOW_AR, CONTINUATION_AR, DATA_QUALITY_AR,
   dataQualityColor,
-  type IntelligenceProps,
+  type IntelligenceProps as ExternalIntelligenceProps,
 } from '@/components/shared/IntelligenceBadges';
 
 

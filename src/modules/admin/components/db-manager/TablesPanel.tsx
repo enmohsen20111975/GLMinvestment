@@ -274,8 +274,8 @@ export function TablesPanel(props: TablesPanelProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => props.onPageChange(Math.min(props.tableRows.totalPages, props.page + 1))}
-                      disabled={props.page >= props.tableRows.totalPages}
+                      onClick={() => props.onPageChange(Math.min((props.tableRows as any).totalPages, props.page + 1))}
+                      disabled={props.page >= (props.tableRows as any).totalPages}
                     >
                       التالي
                       <ChevronLeft className="w-3.5 h-3.5" />
@@ -313,7 +313,7 @@ export function TablesPanel(props: TablesPanelProps) {
                       variant="ghost"
                       size="sm"
                       className="h-8 text-xs"
-                      onClick={() => props.onSort(props.sortBy)}
+                      onClick={() => props.onSort(props.sortBy as any)}
                     >
                       {props.sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                       {props.sortDir === 'asc' ? 'تصاعدي' : 'تنازلي'}

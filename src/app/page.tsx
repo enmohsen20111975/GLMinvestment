@@ -205,7 +205,7 @@ const PredictionTrackingView = withErrorBoundary(
 );
 // PicksManagementView removed 2026-09-28 (file deleted in Task 7-A — features merged into PredictionTrackingView)
 const DualTrackPredictionsView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/predictions/components/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }) as any,
+  dynamicImport((() => import('@/modules/predictions/components/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView }))) as any, { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
   'التوقعات المزدوجة',
 );
 const V82DecisionPanel = withErrorBoundary(

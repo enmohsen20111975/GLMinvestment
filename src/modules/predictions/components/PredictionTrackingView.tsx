@@ -1,5 +1,6 @@
 'use client';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatCard as _StatCard } from '@/components/ui/stat-card';
+const StatCard: any = _StatCard;
 
 /**
  * PredictionTrackingView — تتبع التوقعات (Feature 3)

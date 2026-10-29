@@ -246,11 +246,11 @@ export function SimulationTabs(props: TabBundleProps) {
         {/* Chart + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <WidgetCard
-          	title="أداء المحفظة"
-          	icon={ArrowUpRight}
-          	iconSize="h-4 w-4"
-          	titleClassName="text-base"
-          	className="lg:col-span-2"
+                title="أداء المحفظة"
+                icon={ArrowUpRight}
+                iconSize="h-4 w-4"
+                titleClassName="text-base"
+                className="lg:col-span-2"
           >
 
               {chartData.length > 1 ? (
@@ -261,7 +261,7 @@ export function SimulationTabs(props: TabBundleProps) {
                       color: 'hsl(160, 84%, 39%)',
                       theme: { light: 'hsl(160, 84%, 39%)', dark: 'hsl(160, 84%, 52%)' },
                     },
-                  }}
+                  } as any}
                   className="h-[280px] w-full"
                 >
                   <LineChart data={chartData}>
@@ -448,12 +448,12 @@ export function SimulationTabs(props: TabBundleProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Holdings */}
           <WidgetCard
-          	title="الأصول المحتفظ بها"
-          	icon={Wallet}
-          	iconSize="h-4 w-4"
-          	titleClassName="text-base"
-          	className="lg:col-span-2"
-          	contentClassName="p-0"
+                title="الأصول المحتفظ بها"
+                icon={Wallet}
+                iconSize="h-4 w-4"
+                titleClassName="text-base"
+                className="lg:col-span-2"
+                contentClassName="p-0"
           >
 
               {positions.length === 0 ? (
@@ -697,11 +697,11 @@ export function SimulationTabs(props: TabBundleProps) {
 
         {/* Add from search */}
         <WidgetCard
-        	title="إضافة أسهم لقائمة الرغبات"
-        	icon={Plus}
-        	iconSize="h-4 w-4"
-        	titleClassName="text-base"
-        	contentClassName="space-y-4"
+                title="إضافة أسهم لقائمة الرغبات"
+                icon={Plus}
+                iconSize="h-4 w-4"
+                titleClassName="text-base"
+                contentClassName="space-y-4"
         >
 
             <div className="relative">

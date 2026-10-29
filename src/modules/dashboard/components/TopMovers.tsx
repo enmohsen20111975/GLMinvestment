@@ -81,7 +81,7 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
 
 function MoverList({ stocks, type }: { stocks: StockMini[]; type: 'gainer' | 'loser' }) {
  // Filter out null/undefined stocks and ensure unique keys
- const validStocks = stocks?.filter((stock): stock is StockMini => stock != null && stock.ticker) || [];
+ const validStocks = stocks?.filter((stock): stock is StockMini => stock != null && Boolean(stock.ticker)) || [] as any;
  
  // Deduplicate by ticker to prevent React key warnings
  const uniqueStocks = validStocks.filter((stock, index, self) => 

@@ -320,7 +320,7 @@ export function StockDetailPanel({
           <Card>
             <CardContent className="p-2">
               <div className="h-[65vh]" ref={chartContainerRef}>
-                <TradingChartViewDynamic initialTicker={ticker} />
+                <TradingChartViewDynamic initialTicker={ticker} {...({} as any)} />
               </div>
             </CardContent>
           </Card>

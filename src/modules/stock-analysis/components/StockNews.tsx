@@ -605,7 +605,7 @@ export function StockNews() {
  )}
 
  {/* Fetched timestamp */}
- {stockNews && stockNews.fetched_at && (
+ {stockNews && Boolean(stockNews.fetched_at) && (
  <p className="text-xs text-muted-foreground text-center pt-2">
  آخر تحديث: {getRelativeTime(stockNews.fetched_at as string)}
  </p>

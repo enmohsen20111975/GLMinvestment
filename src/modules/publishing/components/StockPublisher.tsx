@@ -156,7 +156,7 @@ const RECOMMENDATION_META: Record<
  'bg-loss/10 text-loss border border-loss/20 border-loss/20 /60',
  icon: <TrendingDown className="h-3.5 w-3.5" />,
  },
-};
+} as any;
 
 // (MARKET_REGIME_AR is imported from @/modules/publishing/lib/stock-publish-text above)
 

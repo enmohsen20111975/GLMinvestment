@@ -265,7 +265,7 @@ export const CanonicalWhoIsBuyingBanner = React.memo(function CanonicalWhoIsBuyi
  <LevelCell label="الهدف 2" value={tp2} currencyLabel={currencyLabel} color="text-profit" />
  <LevelCell label="الهدف 3" value={tp3} currencyLabel={currencyLabel} color="text-profit" />
  <LevelCell label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-loss" icon={<ShieldAlert className="w-3 h-3" />} />
- <LevelCell label="R:R" value={rr !== null ? `${(rr ?? 0).toFixed(2)}R` : null} currencyLabel="" color="text-foreground" icon={<Gauge className="w-3 h-3" />} />
+ <LevelCell label="R:R" value={(rr !== null ? `${(rr ?? 0).toFixed(2)}R` : null) as any} currencyLabel="" color="text-foreground" icon={<Gauge className="w-3 h-3" />} />
  </div>
  {confidence !== null && (
  <div className="mt-2 text-xs text-muted-foreground">

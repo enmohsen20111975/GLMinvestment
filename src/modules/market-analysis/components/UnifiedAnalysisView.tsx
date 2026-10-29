@@ -268,7 +268,7 @@ export default function UnifiedAnalysisView() {
  {markets.map(m => (
  <button
  key={m.code}
- onClick={() => setSelectedMarket(m.code)}
+ onClick={() => setSelectedMarket(m.code as any)}
  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
  selectedMarket === m.code
  ? 'bg-whale text-white'

@@ -1,6 +1,8 @@
+type ExpertRecommendationsPanel = Record<string, unknown>;
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 // PriceCell component — extracted (Phase 3)
 

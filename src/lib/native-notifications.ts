@@ -89,7 +89,7 @@ export function dispatchWhatsAppAlert(payload: AlertNotificationPayload): void {
         renotify: true,
         vibrate: [200, 100, 200],
         data: { url: payload.url || '/' },
-      };
+      } as any;
 
       // إذا كان الـ Service Worker مسجلاً ونشطاً، استخدمه
       if (navigator.serviceWorker?.controller) {

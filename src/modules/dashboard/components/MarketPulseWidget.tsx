@@ -686,9 +686,9 @@ export function MarketPulseWidget() {
 
  const pulse = data.pulse;
  const div = data.divergence;
- const divStyle = divergenceStyle(div?.regime);
+ const divStyle = divergenceStyle(div?.regime as any);
  const DivIcon = divStyle.icon;
- const bread = data.bread;
+ const bread = (data as any).bread;
  const top = data.top_sector;
  const isOpen = data.market_status === 'OPEN';
 
@@ -781,7 +781,7 @@ export function MarketPulseWidget() {
  <span
  className={cn(
  'font-mono text-2xl font-bold tabular-nums leading-none',
- pulseColorClasses(pulse?.color),
+ pulseColorClasses(pulse?.color as any),
  )}
  dir="ltr"
  >
@@ -797,7 +797,7 @@ export function MarketPulseWidget() {
  <div
  className={cn(
  'text-xl font-bold leading-tight transition-colors',
- pulseColorClasses(pulse?.color),
+ pulseColorClasses(pulse?.color as any),
  )}
  >
  {pulse?.label ?? '—'}

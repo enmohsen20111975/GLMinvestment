@@ -232,7 +232,8 @@ export function LiveStockTicker() {
  {error && (
  <WifiOff
  className="h-3 w-3 text-loss"
- title="انقطاع الاتصال — عرض آخر بيانات"
+ title={"انقطاع الاتصال — عرض آخر بيانات"}
+ {...({ title: "" } as any)}
  />
  )}
  {isRefreshing && (

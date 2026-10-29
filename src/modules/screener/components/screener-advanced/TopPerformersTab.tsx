@@ -134,7 +134,7 @@ export function TopPerformersTab() {
           </FilterField>
 
           <FilterField label={t('screener.advanced.performers.filters.market')}>
-            <Select value={market} onValueChange={setMarket}>
+            <Select value={market} onValueChange={(v: string) => setMarket(v as any)}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="EGX">{t('screener.advanced.filters.egx')}</SelectItem>

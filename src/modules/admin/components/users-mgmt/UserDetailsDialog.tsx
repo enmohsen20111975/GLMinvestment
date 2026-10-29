@@ -79,8 +79,8 @@ export function UserDetailsDialog({
               </AvatarFallback>
             </Avatar>
             {user.name || user.username}
-            {getRoleBadge(user.role)}
-            {getStatusBadge(user.status)}
+            {getRoleBadge(user.role as any)}
+            {getStatusBadge(user.status as any)}
           </DialogTitle>
         </DialogHeader>
 
@@ -109,7 +109,7 @@ export function UserDetailsDialog({
               <Label className="text-muted-foreground">تاريخ التسجيل</Label>
               <p className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                {formatDate(user.createdAt)}
+                {formatDate(user.createdAt as any)}
               </p>
             </div>
 
@@ -190,7 +190,7 @@ export function UserDetailsDialog({
                 <div className="bg-background/60 p-2.5 rounded-lg border border-border/60 space-y-1">
                   <span className="text-muted-foreground block text-xs">تاريخ التفعيل</span>
                   <span className="text-foreground block">
-                    {formatDate(user.promoCode.redeemed_at)}
+                    {formatDate(user.promoCode.redeemed_at as any)}
                   </span>
                 </div>
 

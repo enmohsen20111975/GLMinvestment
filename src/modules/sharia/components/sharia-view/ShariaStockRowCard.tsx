@@ -33,7 +33,7 @@ export function ShariaStockRowCard({ row, onOpenDetail }: StockCardProps) {
   return (
     <Card
       className="relative overflow-hidden border border-border hover:border-profit dark:hover:border-profit transition-colors cursor-pointer group"
-      onClick={() => onOpenDetail(row.symbol)}
+      onClick={() => onOpenDetail(row.symbol as any)}
     >
       <IslamicPattern />
       <CardContent className="relative p-3 sm:p-4">

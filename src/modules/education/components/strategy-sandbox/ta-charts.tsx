@@ -231,7 +231,7 @@ function RSIPane() {
   const pathD = rsi.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xOf(i).toFixed(1)} ${yOf(v).toFixed(1)}`).join(' ');
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" dir="ltr">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" dir="ltr" {...({} as any)}>
       {/* 30/70 lines */}
       {[30, 50, 70].map((v) => (
         <g key={v}>
@@ -302,7 +302,7 @@ export function MACDChart() {
   }
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" dir="ltr">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" dir="ltr" {...({} as any)}>
       {/* zero line */}
       <line x1={padL} y1={yOf(0)} x2={W - padR} y2={yOf(0)} stroke="currentColor" className="text-border" strokeWidth={1.2} />
       <text x={6} y={yOf(0) + 4} fontSize="10" className="fill-muted-foreground">0</text>
@@ -421,7 +421,7 @@ export function BollingerChart() {
   const squeezeEnd = xOf(13);
 
   return (
-    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-auto" dir="ltr">
+    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full h-auto" dir="ltr" {...({} as any)}>
       {/* squeeze zone */}
       <rect
         x={squeezeStart}

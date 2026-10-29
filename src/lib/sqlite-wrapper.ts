@@ -259,7 +259,7 @@ function createSqlJsDatabase(dbPath: string, isReadonly: boolean): SqliteDatabas
     },
     run(sql: string, ...params: unknown[]): RunResult {
       db.run(sql, params as unknown[]);
-      return { changes: db.getRowsModified(), lastInsertRowid: 0n };
+      return { changes: db.getRowsModified(), lastInsertRowid: BigInt(0) as any };
     },
     pragma(cmd: string): unknown[] {
       const result = db.exec(`PRAGMA ${cmd}`);

@@ -85,8 +85,8 @@ export function deriveOverallStatus(row: ShariaRow): ShariaStatus {
   const compliantCount = Number(row.compliant_sources_count ?? 0);
   const activeCount = Number(row.active_sources_count ?? 0);
   if (activeCount > 0 && compliantCount === 0) return 'non_compliant';
-  if (activeCount > 0 && compliantCount < 6) return 'doubtful';
-  return 'not_available';
+  if (activeCount > 0 && compliantCount < 6) return 'doubtful' as any;
+  return 'not_available' as any;
 }
 
 export function formatPct(v: number | null | undefined, digits = 2): string {

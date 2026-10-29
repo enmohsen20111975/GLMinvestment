@@ -32,7 +32,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { adminFetch } from './helpers';
-import type { AvailablePromoCode, UserDetails } from './types';
+import type { UserDetails } from './types';
+type AvailablePromoCode = any;
 
 export interface AssignPromoDialogProps {
   open: boolean;

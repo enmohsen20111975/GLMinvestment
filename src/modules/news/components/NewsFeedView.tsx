@@ -452,8 +452,8 @@ function ShareAndActions({ item }: { item: NewsItem }) {
  */
 function NewsCard({ item }: { item: NewsItem }) {
  const t = useTranslation();
- const setSelectedStock = useAppStore((s) => s.setSelectedStock);
- const setActiveTab = useAppStore((s) => s.setActiveTab);
+ const setSelectedStock = useAppStore((s) => (s as any).setSelectedStock);
+ const setActiveTab = useAppStore((s) => (s as any).setActiveTab);
  const [expanded, setExpanded] = useState(false);
 
  const fullText = useMemo(() => {
@@ -561,7 +561,7 @@ function NewsCard({ item }: { item: NewsItem }) {
  </div>
 
  {/* Title — UI-FIX-P2-P3 issue 2.12: market-data items (sentiment/market) are H3 inside the news list, news items stay H2 */}
- {item.category === 'sentiment' || item.category === 'market' ? (
+ {(item.category as any) === 'sentiment' || item.category === 'market' ? (
  <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug tracking-tight mb-3">
  {item.url ? (
  <a
@@ -857,7 +857,7 @@ export function NewsFeedView() {
  <Card className="border-loss/20 bg-loss/5">
  <CardContent className="p-6 text-center space-y-2">
  <p className="text-sm font-semibold text-loss ">{error}</p>
- <Button variant="outline" size="sm" onClick={fetchNews}>
+ <Button variant="outline" size="sm" onClick={fetchNews as any}>
  {t('news.feed.retry')}
  </Button>
  </CardContent>

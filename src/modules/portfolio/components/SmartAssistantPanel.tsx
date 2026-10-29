@@ -295,7 +295,7 @@ export function SmartAssistantPanel() {
  <div className="space-y-2">
  {allAlerts.slice(0, 5).map((item, i) => (
  <div key={i} className="text-sm p-2 bg-white rounded border">
- <span className="font-medium">{item.ticker || item.name}:</span>{' '}
+ <span className="font-medium">{(item as any).ticker || (item as any).name}:</span>{' '}
  <span className="text-muted-foreground">{item.alert}</span>
  </div>
  ))}
@@ -525,7 +525,7 @@ export function SmartAssistantPanel() {
  <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
  <div className="bg-muted/50 p-2 rounded">
  <div className="text-muted-foreground">سعر الشراء/جرام</div>
- <div className="font-medium">{gold.purchase_price_per_gram?.toLocaleString('ar-EG')}</div>
+ <div className="font-medium">{(gold as any).purchase_price_per_gram?.toLocaleString('ar-EG')}</div>
  </div>
  <div className="bg-muted/50 p-2 rounded">
  <div className="text-muted-foreground">السعر الحالى/جرام</div>

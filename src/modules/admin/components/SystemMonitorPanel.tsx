@@ -677,7 +677,7 @@ export function SystemMonitorPanel() {
 function CpuCard({ data, loading }: { data: SystemResources | null; loading: boolean }) {
  if (loading && !data) return <Skeleton className="h-28 w-full rounded-xl" />;
  const pct = data?.cpu?.percent;
- const tone = pct! === null ? 'neutral' : pct! < 60 ? 'success' : pct < 85 ? 'warning' : 'danger';
+ const tone = pct! == null ? 'neutral' : (pct as number) < 60 ? 'success' : (pct as number) < 85 ? 'warning' : 'danger';
  return (
  <Card className="border-border/60">
  <CardContent className="p-3.5">

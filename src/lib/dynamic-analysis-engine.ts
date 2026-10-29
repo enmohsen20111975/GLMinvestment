@@ -813,7 +813,7 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
     targets = calculateStructuralTargets({
       entry: input.close,
       atr: input.atr,
-      signal: input.currentSignal === 'BUY' || input.currentSignal === 'STRONG_BUY' ? 'BUY' : 'SELL',
+      signal: (input.currentSignal === 'BUY' || input.currentSignal === ('STRONG_BUY' as any)) ? 'BUY' : 'SELL',
       support: input.support,
       resistance: input.resistance,
       farSupport: input.farSupport,
@@ -912,8 +912,8 @@ function targetSourceLabelAr(source: string): string {
     atr_multiple: 'مضاعف ATR',
     atr_floor: 'حد أدنى ATR',
     swing_support: 'دعم هيكلي',
-    atr_multiple: 'مضاعف ATR',
-    atr_floor: 'حد أدنى ATR',
+    atr_multiple_label: 'مضاعف ATR',
+    atr_floor_label: 'حد أدنى ATR',
   };
   return labels[source] || source;
 }

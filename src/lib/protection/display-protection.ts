@@ -69,7 +69,7 @@ export function getProtectionConfig(): ProtectionConfig {
     const parsed = JSON.parse(raw);
     cachedConfig = { ...DEFAULT_CONFIG, ...parsed };
     cacheTime = now;
-    return cachedConfig;
+    return cachedConfig as any;
   } catch {
     // On any error, default to 'off' (no filtering — safe fallback)
     cachedConfig = { ...DEFAULT_CONFIG };
@@ -126,7 +126,7 @@ export function applyProtectionFilter<T extends ProtectablePrediction>(
   if (cfg.mode === 'morning_bell') {
     return predictions.filter((p) => {
       const mb = p.morning_bell;
-      return mb === true || mb === 1 || mb === '1';
+      return mb === true || mb === 1 || (mb as any) === '1';
     });
   }
 

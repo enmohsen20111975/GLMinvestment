@@ -579,10 +579,10 @@ export function vpsQuotesToLiveStocks(quotes: VpsStockQuote[]): LiveStock[] {
       ticker: q.ticker.toUpperCase(),
       name_ar: q.name_ar || q.name || q.ticker,
       current_price: q.current_price,
-      change: q.change ?? q.price_change ?? 0,
-      change_percent: q.change_percent ?? q.price_change_percent ?? 0,
+      change: q.change ?? (q as any).price_change ?? 0,
+      change_percent: q.change_percent ?? (q as any).price_change_percent ?? 0,
       volume: q.volume ?? 0,
-      last_updated: q.last_updated || q.last_update || now,
+      last_updated: q.last_updated || (q as any).last_update || now,
     }));
 }
 
@@ -745,7 +745,7 @@ export async function fetchAllStocks(
         page: 1,
         page_size: results.length,
         total_pages: 1,
-        data: results,
+        data: results as any,
       },
       source: 'vps-search',
       fetched_at: new Date().toISOString(),

@@ -66,6 +66,7 @@ const CATEGORY_LABELS: Record<LessonContent['category'], string> = {
  smc: 'SMC / ICT',
  risk: 'إدارة المخاطر',
  psychology: 'سيكولوجية التداول',
+ islamic: 'التداول الإسلامي',
 };
 
 const LEVEL_LABELS: Record<LessonContent['level'], string> = {

@@ -139,8 +139,8 @@ export function ResultsTab({ viewMode, results, iterations, trades, targetWinRat
                       التحسينات المطبقة
                     </h4>
                     <div className="space-y-1">
-                      {iterations[iterations.length - 1].analysis?.improvements_made.length > 0 ? (
-                        iterations[iterations.length - 1].analysis?.improvements_made.map((improvement, idx) => (
+                      {(iterations[iterations.length - 1] as any)?.analysis?.improvements_made.length > 0 ? (
+                        (iterations[iterations.length - 1] as any)?.analysis?.improvements_made.map((improvement, idx) => (
                           <div key={idx} className="text-sm p-2 bg-success/10 rounded border border-success dark:border-success">
                             {improvement}
                           </div>

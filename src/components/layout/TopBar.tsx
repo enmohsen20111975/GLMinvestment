@@ -106,7 +106,7 @@ export function TopBar() {
  const storeUser = useAppStore((s) => s.user);
  const storeAuth = useAppStore((s) => s.isAuthenticated);
  const isAuthenticated = (status === 'authenticated' && !!session?.user) || storeAuth || !!storeUser;
- const userDisplayName = ((session?.user as any)?.name as string) || ((session?.user as any)?.email as string) || storeUser?.name || storeUser?.email || storeUser?.username || null;
+ const userDisplayName = ((session?.user as any)?.name as string) || ((session?.user as any)?.email as string) || (storeUser as any)?.name || storeUser?.email || storeUser?.username || null;
  const userInitial = userDisplayName ? userDisplayName.charAt(0).toUpperCase() : '?';
 
  const uEmail = ((session?.user?.email as string) || storeUser?.email || '').toLowerCase();

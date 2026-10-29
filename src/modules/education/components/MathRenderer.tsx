@@ -55,11 +55,11 @@ export function MathText({ text, className = '' }: { text: string; className?: s
  const parts: Array<{ type: 'text' | 'inline' | 'block'; content: string }> = [];
 
  // الأول: $$...$$ (block)
- const blockParts = text.split(/\$\$(.+?)\$\$/gs);
+ const blockParts = text.split(/\$\$([\s\S]+?)\$\$/g);
  for (let i = 0; i < blockParts.length; i++) {
  if (i % 2 === 0) {
  // نص عادي - ممكن فيه $...$ inline
- const inlineParts = blockParts[i].split(/\$(.+?)\$/gs);
+ const inlineParts = blockParts[i].split(/\$([\s\S]+?)\$/g);
  for (let j = 0; j < inlineParts.length; j++) {
  if (j % 2 === 0) {
  if (inlineParts[j]) {

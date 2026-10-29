@@ -89,7 +89,7 @@ export async function GET() {
     console.error('[Mobile Gold API] Error:', error);
     return NextResponse.json({
       success: false,
-      error: 'internal_error' || 'خطأ في جلب بيانات الذهب',
+      error: 'خطأ في جلب بيانات الذهب',
     }, { status: 500 });
   }
 }

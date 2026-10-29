@@ -131,7 +131,7 @@ const topTickerColumns: Column<Record<string, unknown>>[] = [
  align: 'center',
  sortable: true,
  render: (t) => (
- <span className="text-xs text-center font-semibold inline-block w-full">{t.hit_rate}%</span>
+ <span className="text-xs text-center font-semibold inline-block w-full">{t.hit_rate as any}%</span>
  ),
  },
  {

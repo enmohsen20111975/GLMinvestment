@@ -1033,7 +1033,7 @@ export function getTopMovers(limit: number = 10): TopMoversResult {
 
     const gainers = enriched.filter((s) => Number(s.price_change) > 0).sort((a, b) => Number(b.price_change) - Number(a.price_change)).slice(0, limit)
     const losers = enriched.filter((s) => Number(s.price_change) < 0).sort((a, b) => Number(a.price_change) - Number(b.price_change)).slice(0, limit)
-    const most_active = [...enriched].sort((a, b) => Number(b.volume) - Number(a.volume)).slice(0, limit)
+    const most_active = [...enriched].sort((a, b) => Number((b as any).volume) - Number((a as any).volume)).slice(0, limit)
 
     const result = { gainers, losers, most_active }
     setCache('top_movers', result)

@@ -99,8 +99,8 @@ export function IntradayPressurePanel() {
     );
   }
 
-  const cp = data?.cumulative_pressure;
-  const stocks = data?.top_stocks || [];
+  const cp = (data as any)?.cumulative_pressure;
+  const stocks = (data as any)?.top_stocks || [];
   const dirInfo = directionMeta(cp?.direction);
 
   return (
@@ -157,7 +157,7 @@ export function IntradayPressurePanel() {
         </div>
       ) : (
         <div className="text-xs text-muted-foreground text-center py-4">
-          {data?.message || 'مفيش بيانات ضغط متاحة حالياً'}
+          {(data as any)?.message || 'مفيش بيانات ضغط متاحة حالياً'}
         </div>
       )}
 

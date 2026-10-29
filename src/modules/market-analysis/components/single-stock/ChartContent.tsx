@@ -15,7 +15,8 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
-import type { ChartEngine, FullAnalysisResponse, OHLCVCandle } from './types';
+import type { ChartEngine, FullAnalysisResponse } from './types';
+type OHLCVCandle = any;
 
 export interface ChartContentProps {
   ticker: string;

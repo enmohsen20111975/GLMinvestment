@@ -27,6 +27,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
     const userId = (session.user as any).id as string;
 
     // Check if user already has a subscription
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
         status: 'active',
         trial_started_at: now.toISOString(),
         trial_ends_at: trialEndsAt.toISOString(),
-      },
+      } as any,
     });
 
     return NextResponse.json({

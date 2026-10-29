@@ -51,7 +51,7 @@ export function useSession() {
         data: {
           user: {
             id: user.id,
-            name: user.username || user.name || user.email?.split('@')[0],
+            name: user.username || (user as any).name || user.email?.split('@')[0],
             email: user.email,
             image: (user as any).image || null,
             is_admin: user.is_admin,
@@ -122,7 +122,7 @@ export async function getSession() {
     return {
       user: {
         id: store.user.id,
-        name: store.user.username || store.user.name || store.user.email?.split('@')[0],
+        name: store.user.username || (store.user as any).name || store.user.email?.split('@')[0],
         email: store.user.email,
         image: (store.user as any).image || null,
         is_admin: store.user.is_admin,

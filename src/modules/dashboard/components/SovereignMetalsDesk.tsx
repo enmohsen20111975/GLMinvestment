@@ -91,8 +91,8 @@ export function SovereignMetalsDesk() {
     );
   }
 
-  const gold = data?.gold;
-  const fx = data?.forex;
+  const gold = (data as any)?.gold;
+  const fx = (data as any)?.forex;
 
   return (
     <WidgetCard
@@ -124,7 +124,7 @@ export function SovereignMetalsDesk() {
         {/* Empty state */}
         {!gold && !fx && (
           <p className="text-xs text-muted-foreground text-center py-4">
-            {data?.message || 'مفيش بيانات ذهب أو عملات متاحة حالياً'}
+            {(data as any)?.message || 'مفيش بيانات ذهب أو عملات متاحة حالياً'}
           </p>
         )}
 

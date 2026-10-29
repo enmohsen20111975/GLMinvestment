@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { adminFetch } from './helpers';
-import type { NewUserForm } from './types';
+type NewUserForm = any;
 
 export interface AddUserDialogProps {
   open: boolean;

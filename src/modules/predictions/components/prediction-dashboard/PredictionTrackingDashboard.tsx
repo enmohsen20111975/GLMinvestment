@@ -61,7 +61,7 @@ export function PredictionTrackingDashboard({
 
  // A4 FIX: Market regime — إذا كان السوق هابط/دفاعي وكلش مفيش فرص، اعرض NO_TRADE
  const predictions = s.filteredPredictions ?? [];
- const isBearMarket = session?.market_regime === 'DEFENSIVE' || session?.market_regime === 'BEAR';
+ const isBearMarket = (session as any)?.market_regime === 'DEFENSIVE' || (session as any)?.market_regime === 'BEAR';
  const hasNoPredictions = predictions.length === 0;
  const showNoTradeBanner = isBearMarket && hasNoPredictions;
 

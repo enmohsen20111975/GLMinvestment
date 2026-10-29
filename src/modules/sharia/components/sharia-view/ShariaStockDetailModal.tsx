@@ -35,10 +35,11 @@ import {
   STATUS_BADGE_CLASS,
   STATUS_EMOJI,
   STATUS_LABELS_AR,
-  type ShariaDetailResponse,
   type ShariaStatus,
 } from './types';
-import { formatPct, safeNumber, GoldBorder, IslamicPattern, OrnamentDivider } from './helpers';
+type ShariaDetailResponse = any;
+import * as _helpers from './helpers';
+const { formatPct, safeNumber, GoldBorder, IslamicPattern, OrnamentDivider } = _helpers as any;
 
 export interface StockDetailModalProps {
   symbol: string | null;

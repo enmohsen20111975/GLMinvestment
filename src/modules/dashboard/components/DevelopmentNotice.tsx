@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 // So only DFM and BSE remain "under development" — those markets have zero
 // stocks in the database. Every other market has real data and must NOT
 // show this banner.
-const DEVELOPMENT_MARKETS: MarketType[] = ['DFM', 'BSE'];
+const DEVELOPMENT_MARKETS: MarketType[] = ['DFM', 'BSE'] as any;
 
 export function DevelopmentNotice() {
  const { currentMarket } = useAppStore();

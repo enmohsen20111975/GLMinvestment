@@ -12,7 +12,7 @@ let _registered = false;
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
   if (_registered) {
-    return navigator.serviceWorker.getRegistration().catch(() => null);
+    return navigator.serviceWorker.getRegistration().catch(() => null) as any;
   }
   try {
     const reg = await navigator.serviceWorker.register(SW_PATH, { scope: '/' });
@@ -64,7 +64,7 @@ export async function showPushNotification(
         tag: options?.tag || 'robo-advisor',
         renotify: true,
         badge: '/icon-192.png',
-      });
+      } as any);
     } else if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         body,
