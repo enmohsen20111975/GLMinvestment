@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 sys.path.insert(0, str(VPS))
@@ -21,6 +22,8 @@ sys.path.insert(0, str(VPS / 'camp'))
 sys.path.insert(0, str(VPS / 'analyzers'))
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 RESULTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'results'
 
 
@@ -167,8 +170,8 @@ def run_daily_assessment(tickers: List[str] = None, assessment_date: str = None,
     if assessment_date is None:
         assessment_date = datetime.now().strftime('%Y-%m-%d')
 
-    conn_ph = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
-    conn_st = sqlite3.connect(str(DB_DIR / 'stocks.db'), timeout=30)
+    conn_ph = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
+    conn_st = _bs_dbm.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
 
     # Ensure columns exist
     ensure_state_columns(conn_st)
@@ -257,7 +260,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.timeline:
-        conn = sqlite3.connect(str(DB_DIR / 'stocks.db'), timeout=30)
+        conn = _bs_dbm.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
         tl = get_state_timeline(conn, args.timeline, 30)
         print(f"\nState timeline for {args.timeline}:")
         for t in tl:

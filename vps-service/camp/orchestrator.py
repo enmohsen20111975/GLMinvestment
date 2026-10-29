@@ -22,6 +22,7 @@ try:
 except ImportError:
     yaml = None  # will fall back to JSON
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 CAMP_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,8 @@ sys.path.insert(0, str(VPS))
 sys.path.insert(0, str(VPS / 'analyzers'))
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 CANONICAL_INDICES = VPS / 'data' / 'canonical_indices.json'
 # Use complete_markets_indices_and_weights.json — same source as
 # scripts/apply_master_stock_cleansing_and_indices.py (the production script).
@@ -77,7 +80,7 @@ def compute_egx30_historical(start_date: str, end_date: str,
     # Total weight (for normalization — same as apply_master line 159)
     total_weight = sum(s['weight_percentage'] for s in constituents)
 
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
 
     # Get all trading dates in range
     dates = [r[0] for r in conn.execute("""
@@ -183,7 +186,7 @@ def compute_egx70_historical(start_date: str, end_date: str,
                                base_date: str = None) -> Dict[str, float]:
     """EGX70 EWI — equal-weighted avg of change% of 70 non-EGX30 stocks.
     Uses same logic as apply_master line 192-198."""
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
     dates = [r[0] for r in conn.execute("""
         SELECT DISTINCT date FROM price_history
         WHERE date >= ? AND date <= ?

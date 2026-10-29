@@ -13,13 +13,16 @@ from typing import Any, Dict
 import sqlite3
 from pathlib import Path
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 
 
 def compute(ticker: str, date: str, price_data: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+        conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
         row = conn.execute("""
             SELECT buy_volume, sell_volume, delta_volume, delta_pct, pressure
             FROM price_history WHERE ticker=? AND date=? AND close_price>0

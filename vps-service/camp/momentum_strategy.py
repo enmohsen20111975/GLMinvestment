@@ -17,12 +17,15 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 sys.path.insert(0, str(VPS))
 sys.path.insert(0, str(VPS / 'camp'))
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 RESULTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'results'
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -228,7 +231,7 @@ def main():
     print(f'Exit: mom_20 < {MOM_EXIT}% OR close < SMA50 OR {MAX_HOLDING}d OR stop {STOP_LOSS_PCT}%')
     print(f'Position size: {POSITION_SIZE*100}% per trade')
 
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
     dev = run_backtest('DEV', DEV_START, DEV_END, conn)
     val = run_backtest('VAL', VAL_START, VAL_END, conn)
     hold = run_backtest('HOLDOUT', HOLDOUT_START, HOLDOUT_END, conn)

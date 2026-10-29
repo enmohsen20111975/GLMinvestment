@@ -12,8 +12,11 @@ from typing import Any, Dict
 import sqlite3
 from pathlib import Path
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 
 # Module-level cache: date → (breadth, above, total)
 _BREADTH_CACHE: Dict[str, Any] = {}
@@ -25,7 +28,7 @@ def compute(ticker: str, date: str, price_data: Dict[str, Any]) -> Dict[str, Any
         breadth, above, total = _BREADTH_CACHE[date]
     else:
         try:
-            conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+            conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
             rows = conn.execute("""
                 SELECT ticker, close_price FROM price_history
                 WHERE date=? AND ticker NOT LIKE '%.%' AND close_price>0
@@ -36,7 +39,7 @@ def compute(ticker: str, date: str, price_data: Dict[str, Any]) -> Dict[str, Any
                         'reason': 'لا بيانات لهذا اليوم', 'metadata': {}}
             above = 0
             total = 0
-            conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+            conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
             for t, close in rows:
                 prev = conn.execute("""
                     SELECT close_price FROM price_history

@@ -5,7 +5,6 @@ Score: rank 1-3 → 1.0, rank 4-6 → 0.6, rank 7+ → 0.2
 """
 from __future__ import annotations
 from typing import Any, Dict
-import sqlite3
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -22,7 +21,11 @@ def compute(ticker: str, date: str, price_data: Dict[str, Any]) -> Dict[str, Any
         sector_rank, sector, total_sectors, my_ret = _SECTOR_CACHE[cache_key]
     else:
         try:
-            conn = sqlite3.connect(str(DB_DIR / 'stocks.db'), timeout=30)
+            # DAL migration: use db_manager instead of raw sqlite3.connect
+            import sys
+            sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+            from core.db_manager import db_manager
+            conn = db_manager.connection(str(DB_DIR / 'stocks.db'), writable=False).__enter__()
             row = conn.execute("SELECT sector FROM stocks WHERE ticker=?", (ticker,)).fetchone()
             if not row or not row[0]:
                 conn.close()

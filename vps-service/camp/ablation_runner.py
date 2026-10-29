@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 # Path setup
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 sys.path.insert(0, str(VPS))
@@ -36,6 +37,8 @@ from orchestrator import (
 )
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 RESULTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'results'
 REPORTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'reports'
 UNIVERSE_FILE = PROJECT_ROOT / 'scripts' / 'camp' / 'universe_250.json'
@@ -527,7 +530,7 @@ def main():
     tickers = all_tickers[:50]  # cap for sandbox memory limits
     print(f'\nUniverse: {len(tickers)} tickers (capped from {len(all_tickers)} for sandbox 4GB RAM)')
 
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
     ctx = {}
     logger = DecisionLogger(str(RESULTS_DIR / 'decisions_log.jsonl'))
 

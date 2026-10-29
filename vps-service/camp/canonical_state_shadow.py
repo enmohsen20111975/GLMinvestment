@@ -89,6 +89,7 @@ from typing import Any, Dict, List, Optional
 _original_record_prediction = None
 _patched = False
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SHADOW_DB = PROJECT_ROOT / 'db' / 'predictions.db'
 DEFAULT_STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'

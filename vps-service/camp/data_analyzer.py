@@ -24,6 +24,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 sys.path.insert(0, str(VPS))
@@ -35,6 +36,8 @@ sys.path.insert(0, str(VPS / 'utils'))
 sys.path.insert(0, str(PROJECT_ROOT / 'scripts'))
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 RESULTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'results'
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -753,7 +756,7 @@ def main():
     print(f'  Period: {ANALYSIS_START} → {ANALYSIS_END}')
     print('=' * 70)
 
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
 
     # Phase A
     phase_a = phase_a_ticker_clustering(conn)

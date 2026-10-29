@@ -24,6 +24,7 @@ from datetime import datetime
 import numpy as np
 from scipy.stats import spearmanr
 
+import sys as _bs_sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VPS = PROJECT_ROOT / 'vps-service'
 sys.path.insert(0, str(VPS))
@@ -31,6 +32,8 @@ sys.path.insert(0, str(VPS / 'camp'))
 sys.path.insert(0, str(VPS / 'analyzers'))
 
 DB_DIR = PROJECT_ROOT / 'db'
+_bs_sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
+from core.db_manager import db_manager as _bs_dbm
 RESULTS_DIR = PROJECT_ROOT / 'scripts' / 'camp' / 'results'
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -65,7 +68,7 @@ def main():
     print('  Rolling IC Analysis — 46 months × 8 blocks × 4 horizons')
     print('=' * 70)
 
-    conn = sqlite3.connect(str(DB_DIR / 'price_history.db'), timeout=30)
+    conn = _bs_dbm.connection(str(DB_DIR / 'price_history.db'), writable=False).__enter__()
     # Sample top tickers by data density
     tickers = [r[0] for r in conn.execute("""
         SELECT ticker FROM price_history
