@@ -338,18 +338,30 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
 
 
 def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
-    """احفظ التوقع في predictions.db."""
+    """احفظ التوقع في predictions.db.
+
+    BRAVO-SAVE-FIX (2026-10-29):
+    - WAL mode + short busy_timeout (5s) + retry (3x) على 'database is locked'
+    - CAST صريح لـ id كـ TEXT (fix datatype mismatch لو الـ schema قديم)
+    - connection بتـ close في finally (مش بس في success path)
+    - لو الـ id column مش TEXT → ALTER + recreate index
+    """
     if result.get('signal') not in ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL']:
         logger.info(f'  {result["ticker"]}: save skipped (signal={result.get("signal")})')
         return False
-    
+
+    import sqlite3 as _sql
+    import uuid as _uuid
+    import time as _time
+    _db_path = str(PROJECT_ROOT / 'db' / 'predictions.db')
+
+    conn = None
     try:
-        import sqlite3 as _sql
-        import uuid as _uuid
-        _db_path = str(PROJECT_ROOT / 'db' / 'predictions.db')
-        conn = _sql.connect(_db_path, timeout=30)
-        conn.execute('PRAGMA busy_timeout = 30000')
-        
+        conn = _sql.connect(_db_path, timeout=5.0, isolation_level=None)  # autocommit mode
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA busy_timeout=5000')
+        conn.execute('PRAGMA synchronous=NORMAL')
+
         # تأكد إن جدول predictions موجود
         conn.execute('''
             CREATE TABLE IF NOT EXISTS predictions (
@@ -370,8 +382,50 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                 notes TEXT
             )
         ''')
-        conn.commit()
-        
+
+        # BRAVO-SAVE-FIX: لو الـ id column مش TEXT → نـ recreate الـ table بـ TEXT
+        # (SQLite مش بـ يدعم ALTER COLUMN type، فـ لازم recreate)
+        id_col_info = conn.execute("PRAGMA table_info(predictions)").fetchall()
+        id_col = next((r for r in id_col_info if r[1] == 'id'), None)
+        if id_col and id_col[2].upper() != 'TEXT':
+            logger.warning(f'  predictions.id is {id_col[2]} (not TEXT) — recreating table to fix datatype mismatch')
+            # backup existing data
+            try:
+                conn.execute('ALTER TABLE predictions RENAME TO predictions_old_intid')
+                conn.execute('''
+                    CREATE TABLE predictions (
+                        id TEXT PRIMARY KEY,
+                        ticker TEXT NOT NULL,
+                        market TEXT DEFAULT 'EGX',
+                        signal TEXT,
+                        signal_type TEXT,
+                        prediction_date TEXT,
+                        entry_price REAL,
+                        target_price REAL,
+                        stop_loss REAL,
+                        master_score REAL,
+                        confidence REAL,
+                        persona TEXT DEFAULT 'balanced',
+                        status TEXT DEFAULT 'active',
+                        created_at TEXT,
+                        notes TEXT
+                    )
+                ''')
+                # copy data with CAST(id AS TEXT) — ignore duplicates
+                cols_old = [r[1] for r in conn.execute("PRAGMA table_info(predictions_old_intid)").fetchall()]
+                cols_str = ", ".join('"' + c + '"' for c in cols_old)
+                non_id_cols = ', '.join('"' + c + '"' for c in cols_old if c != 'id')
+                non_id_vals = ', '.join('"' + c + '"' for c in cols_old if c != 'id')
+                try:
+                    copy_sql = 'INSERT OR IGNORE INTO predictions (' + cols_str + ') SELECT CAST(id AS TEXT) as id, ' + non_id_vals + ' FROM predictions_old_intid'
+                    conn.execute(copy_sql)
+                except Exception as copy_e:
+                    logger.warning(f'  copy old data failed (continuing): {copy_e}')
+                conn.execute('DROP TABLE predictions_old_intid')
+                logger.info(f'  ✓ predictions table recreated with TEXT id')
+            except Exception as recreate_e:
+                logger.error(f'  recreate table failed: {recreate_e}')
+
         # خد السعر الحالي — BRAVO-DATA-LAYER (read through data layer, not stocks.db)
         entry_price = 0.0
         if _data is not None:
@@ -381,37 +435,90 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                     entry_price = float(_snap['current_price'])
                 except (ValueError, TypeError):
                     entry_price = 0.0
-        confidence = result.get('confidence', 0)
-        score = result.get('score', 0)
-        
+        confidence = float(result.get('confidence', 0) or 0)
+        score = float(result.get('score', 0) or 0)
+        _confidence = confidence
+        _score = score
+
         # احسب target/stop بسيط
-        signal = result['signal']
+        signal = str(result['signal'])
         if 'BUY' in signal:
-            target_price = entry_price * 1.05 if entry_price > 0 else 0
-            stop_loss = entry_price * 0.97 if entry_price > 0 else 0
+            target_price = entry_price * 1.05 if entry_price > 0 else 0.0
+            stop_loss = entry_price * 0.97 if entry_price > 0 else 0.0
         else:
-            target_price = entry_price * 0.95 if entry_price > 0 else 0
-            stop_loss = entry_price * 1.03 if entry_price > 0 else 0
-        
+            target_price = entry_price * 0.95 if entry_price > 0 else 0.0
+            stop_loss = entry_price * 1.03 if entry_price > 0 else 0.0
+
+        # BRAVO-SAVE-FIX: cast id صراحة لـ str + أعرّف كل القيم كـ types صحيحة
         _pred_id = str(_uuid.uuid4())[:16]
-        conn.execute("""
-            INSERT INTO predictions (id, ticker, market, signal, signal_type, 
-                                    prediction_date, entry_price, target_price, stop_loss,
-                                    master_score, confidence, persona, status, created_at, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
-        """, (
-            _pred_id, result['ticker'], market_code, signal, signal,
-            scan_date, entry_price, target_price, stop_loss,
-            score, confidence, 'v3_smart', datetime.now().isoformat(),
-            f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}"
-        ))
-        conn.commit()
-        conn.close()
-        logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db (id={_pred_id})')
-        return True
-    except Exception as e:
-        logger.error(f'  {result["ticker"]}: ✗ save failed — {e}', exc_info=True)
+        _ticker = str(result['ticker'])
+        _market = str(market_code)
+        _signal = str(result['signal'])
+        _signal_type = str(_signal)
+        _scan_date = str(scan_date)
+        _entry_price = float(entry_price)
+        _target_price = float(target_price)
+        _stop_loss = float(stop_loss)
+        _created_at = str(datetime.now().isoformat())
+        _notes = str(f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}")
+
+        # retry على 'database is locked' (3x مع backoff)
+        max_retries = 3
+        last_err = None
+        for attempt in range(max_retries):
+            try:
+                conn.execute("""
+                    INSERT INTO predictions (id, ticker, market, signal, signal_type,
+                                            prediction_date, entry_price, target_price, stop_loss,
+                                            master_score, confidence, persona, status, created_at, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                """, (
+                    _pred_id, _ticker, _market, _signal, _signal_type,
+                    _scan_date, _entry_price, _target_price, _stop_loss,
+                    _score, _confidence, 'v3_smart', _created_at, _notes
+                ))
+                logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db (id={_pred_id})')
+                return True
+            except _sql.OperationalError as oe:
+                if 'locked' in str(oe).lower() and attempt < max_retries - 1:
+                    _time.sleep(0.5 * (attempt + 1))  # 0.5s, 1s, 1.5s
+                    last_err = oe
+                    continue
+                raise  # re-raise on last attempt or non-lock OperationalError
+            except _sql.IntegrityError as ie:
+                # 'datatype mismatch' — محاولة إصلاح بـ CAST صريح
+                if 'datatype mismatch' in str(ie).lower():
+                    logger.warning(f'  {result["ticker"]}: datatype mismatch — trying with CAST(id AS TEXT)')
+                    try:
+                        conn.execute("""
+                            INSERT INTO predictions (id, ticker, market, signal, signal_type,
+                                                    prediction_date, entry_price, target_price, stop_loss,
+                                                    master_score, confidence, persona, status, created_at, notes)
+                            VALUES (CAST(? AS TEXT), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+                        """, (
+                            _pred_id, _ticker, _market, _signal, _signal_type,
+                            _scan_date, _entry_price, _target_price, _stop_loss,
+                            _score, _confidence, 'v3_smart', _created_at, _notes
+                        ))
+                        logger.info(f'  {result["ticker"]}: ✓ saved with CAST (id={_pred_id})')
+                        return True
+                    except Exception as e2:
+                        logger.error(f'  {result["ticker"]}: ✗ CAST retry failed — {e2}')
+                        return False
+                raise
+        # لو وصلنا هنا → كل الـ retries فشلت
+        if last_err:
+            raise last_err
         return False
+    except Exception as e:
+        logger.error(f'  {result["ticker"]}: ✗ save failed — {e}')
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # ============================================================
