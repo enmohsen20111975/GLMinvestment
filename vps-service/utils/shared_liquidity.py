@@ -66,13 +66,34 @@ DEAD_MARKET_CEILING = 700_000
 #   3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
 # النتيجة: سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0)
 # Position size: 2% فقط (أقل من الـ bypass العادي 2.5%)
-EXPLOSIVE_SURGE_VOLUME_RATIO = 1.7      # BRAVO-EXPLOSIVE-MULTIDAY: 1.7× (was 2.0×) + max(last 3d) بدل avg(last 5d)
+EXPLOSIVE_SURGE_VOLUME_RATIO = 2.8      # AUDIT-FIX: 2.8× (كان 1.7 — مش انفجار حقيقي)
 EXPLOSIVE_SURGE_LOOKBACK = 5            # آخر 5 شموع للـ surge
 EXPLOSIVE_SURGE_BASE = 20               # متوسط 20 شموع
 EXPLOSIVE_SURGE_SMA_PERIOD = 20         # SMA20 للسعر
-EXPLOSIVE_SURGE_RANGE_MAX_PCT = 18.0    # range 20 يوم < 18% (انضغاط)
+EXPLOSIVE_SURGE_RANGE_MAX_PCT = 11.0    # AUDIT-FIX: 11% (كان 18 — مش ضغط حقيقي)
 EXPLOSIVE_SURGE_RANGE_WINDOW = 20       # عدد شموع الـ range (قبل الـ surge)
 EXPLOSIVE_SURGE_POSITION_SIZE = 0.02    # 2% فقط (أقل من bypass العادي)
+
+
+
+def liquidity_intensity(turnover: float, market_cap: float) -> float:
+    """AUDIT-FIX (2026-10-29): Liquidity Intensity = turnover / market_cap × 100.
+
+    مش كل الأسهم بتتداول بنفس السيولة النسبية. سهم كابيتال 400M بيتداول 300K
+    مش زي سهم كابيتال 12B بيتداول 300K. ده بـ يفرّق.
+
+    Thresholds لـ EGX:
+      ≥ 0.45%  → سيولة عالية
+      0.15-0.45% → مقبولة
+      0.05-0.15% → ضعيفة (position size أقل)
+      < 0.05%  → ارفض إلا لو explosive حقيقي
+
+    Returns:
+        float (نسبة مئوية) أو None لو market_cap غير متاح.
+    """
+    if market_cap is None or market_cap <= 0:
+        return None
+    return (turnover / market_cap) * 100
 
 
 def classify_price_bucket(price: float) -> str:
@@ -392,16 +413,16 @@ def position_size_for_liquidity_bypass(bypass_activated: bool, default_pct: floa
 # ─── العتبات (مبنية على إشارات الميكرز) ──────────────────────────────────
 # 1. حجم أعلى من المتوسط بشكل متكرر (مش يوم واحد)
 QUIET_ACCUM_LOOKBACK = 10            # فحص آخر 10 أيام
-QUIET_ACCUM_VOLUME_DAYS_HIGH = 3     # تخفيف: على الأقل 3 من 10 أيام (كان 4)
-QUIET_ACCUM_VOLUME_RATIO_MIN = 1.1   # تخفيف: volume > 1.1× avg_20d (كان 1.2)
+QUIET_ACCUM_VOLUME_DAYS_HIGH = 4     # AUDIT-FIX: 4 من 10 (كان 3 — ضوضاء)
+QUIET_ACCUM_VOLUME_RATIO_MIN = 1.35  # AUDIT-FIX: 1.35× (كان 1.1 — ضوضاء)
 
 # 2. ضغط شراء متكرر: الـ close قريب من الـ high
-QUIET_ACCUM_BUY_PRESSURE_DAYS = 4    # تخفيف: على الأقل 4 من 10 (كان 5)
+QUIET_ACCUM_BUY_PRESSURE_DAYS = 5    # AUDIT-FIX: 5 من 10 (كان 4)
 QUIET_ACCUM_CLOSE_TO_HIGH_PCT = 75.0 # تخفيف: close >= 75% (كان 80%)
 
 # 3. العرض بيختفي: الـ range ضيق والحجم مش واطي
-QUIET_ACCUM_RANGE_MAX_PCT = 14.0     # تخفيف: range 10d < 14% (كان 12%)
-QUIET_ACCUM_AVG_VOL_RATIO_MIN = 0.7  # تخفيف: avg_10d >= 70% من avg_20d (كان 80%)
+QUIET_ACCUM_RANGE_MAX_PCT = 9.0      # AUDIT-FIX: 9% (كان 14 — واسع أوه في EGX)
+QUIET_ACCUM_AVG_VOL_RATIO_MIN = 0.85 # AUDIT-FIX: 85% (كان 70 — سهل)
 
 # 4. السعر لسه مش طالع بقوة (مش انفجار)
 QUIET_ACCUM_ROC_10D_MAX = 12.0      # تخفيف: ROC 10d < 12% (كان 10%)
@@ -511,7 +532,7 @@ def detect_quiet_accumulation(
     avg_10_vol = sum(last_10_volumes) / 10
 
     # 1. حجم أعلى من المتوسط بشكل متكرر
-    vol_days_high_req = 2 if is_defensive else QUIET_ACCUM_VOLUME_DAYS_HIGH
+    vol_days_high_req = QUIET_ACCUM_VOLUME_DAYS_HIGH  # AUDIT-FIX: لا تخفيض في DEFENSIVE
     if avg_20_vol > 0:
         days_high_vol = sum(1 for v in last_10_volumes if v >= avg_20_vol * QUIET_ACCUM_VOLUME_RATIO_MIN)
         signal1 = days_high_vol >= vol_days_high_req
@@ -537,7 +558,7 @@ def detect_quiet_accumulation(
             close_pct = (c - l) / (h - l) * 100
             if close_pct >= QUIET_ACCUM_CLOSE_TO_HIGH_PCT:
                 buy_pressure_days += 1
-    buy_pressure_req = 2 if is_defensive else QUIET_ACCUM_BUY_PRESSURE_DAYS
+    buy_pressure_req = QUIET_ACCUM_BUY_PRESSURE_DAYS  # AUDIT-FIX: لا تخفيض في DEFENSIVE
     signal2 = buy_pressure_days >= buy_pressure_req
     details['buy_pressure_days'] = buy_pressure_days
     if signal2:
@@ -903,30 +924,22 @@ def compute_money_flow(
 
     is_today_strong_up = (last_close > closes[-2]) if len(closes) >= 2 else False
 
-    # لو جلسة اليوم صاعدة وبحجم تداول قوي (Breakout Surge / Buying Pressure):
-    # نعتمد على ضغط تداول شمعة اليوم المباشرة (Pine Script: CLV + Body Pressure)
-    if is_today_strong_up and vol_ratio >= 1.0:
+    # AUDIT-FIX (2026-10-29): امسحنا الـ branch اللي بـ يعطي 60% وزن لشمعة اليوم.
+    # كان غلط: شمعة خضراء واحدة تقدر ترفع buy_pct لفوق 75% حتى لو CMF سلبي + trend هابط.
+    # الحل: استخدم دايمًا المعادلة الموزونة + شمعة اليوم وزنها 15% بس.
+    _today_clv_score = 50.0  # default neutral
+    if len(closes) >= 2:
         _body_range = max(last_high - last_low, 0.0001)
-        _body_pressure = (abs(last_close - last_open) / _body_range) * (1.0 if last_close >= last_open else -1.0)
-        _body_score = ((_body_pressure + 1) / 2) * 100
         _today_clv = ((last_close - last_low) - (last_high - last_close)) / _body_range
         _today_clv_score = ((_today_clv + 1) / 2) * 100
-        raw_buy_pct = (_today_clv_score * 0.60) + (_body_score * 0.40)
-        # اليوم فيه طلب حقيقي وحجم تداول مساوي أو أكبر من المتوسط — لا نطبق trend penalty
-        trend_penalty = max(0, trend_penalty)
-    elif _USE_PINE_FORMULA:
-        _body_range = max(last_high - last_low, 0.0001)
-        _body_pressure = (abs(last_close - last_open) / _body_range) * (1.0 if last_close >= last_open else -1.0)
-        _body_score = ((_body_pressure + 1) / 2) * 100
-        raw_buy_pct = (clv_score * 0.65 + _body_score * 0.35)
-    else:
-        # legacy formula (fallback للأسهم الهادئة العادية)
-        raw_buy_pct = (
-            clv_score * 0.35 +
-            cmf_score * 0.30 +
-            vol_score * 0.20 +
-            sma_score * 0.15
-        )
+
+    raw_buy_pct = (
+        clv_score * 0.25 +          # CLV 5-day weighted
+        cmf_score * 0.30 +          # CMF 20-day (الأهم)
+        vol_score * 0.20 +          # volume confirmation
+        sma_score * 0.10 +          # SMA alignment
+        _today_clv_score * 0.15     # شمعة اليوم (15% بس، مش 60%)
+    )
 
     # تطبيق trend penalty
     buy_pct = max(0, min(100, raw_buy_pct + trend_penalty))
@@ -937,13 +950,13 @@ def compute_money_flow(
     # ده غلط — السهم النازل > 10% لازم sell > 55%.
     if roc_20d < -10.0 and not (is_today_strong_up and vol_ratio >= 1.0):
         if roc_20d < -15.0:
-            buy_pct = min(buy_pct, 35.0)  # نازل بشدة → sell=65%
+            buy_pct = min(buy_pct, 32.0)  # AUDIT-FIX: نازل بشدة → sell=68%
         else:
-            buy_pct = min(buy_pct, 45.0)  # نازل → sell=55%
+            buy_pct = min(buy_pct, 42.0)  # AUDIT-FIX: نازل → sell=58%
 
     # لو ميت سريري → cap عند 40%
     if is_dead:
-        buy_pct = min(buy_pct, 40.0)
+        buy_pct = min(buy_pct, 38.0)  # AUDIT-FIX: كان 40
 
     # FIX (2026-10-29): السهم الـ flat (range 10d < 2%) → متوازن (50/50)
     # قبل كده CLV بـ يعطي قيم عشوائية للسهم الـ flat → sell > 50% غلط.
@@ -1137,10 +1150,14 @@ def check_limit_up_trap(
     if daily_change <= 9.5:
         return False
     # لو السهم منفذ تداول عالي وسيولة حقيقية نشطة → ده انفجار شراء وزخم حقيقي مش مصيدة حبس
-    if volumes and len(volumes) >= 1:
+    if volumes and len(volumes) >= 2:
         last_vol = volumes[-1]
-        avg_vol = sum(volumes[-10:]) / len(volumes[-10:]) if len(volumes) >= 2 else last_vol
-        if last_vol > 1_000_000 or (avg_vol > 0 and (last_vol / avg_vol) >= 1.0):
+        avg_vol_10d = sum(volumes[-10:]) / len(volumes[-10:]) if len(volumes) >= 10 else (sum(volumes) / len(volumes))
+        vol_ratio = last_vol / avg_vol_10d if avg_vol_10d > 0 else 1.0
+        # AUDIT-FIX: لازم الحجم يكون ضعيف جدًا + السعر قريب من الحد الأقصى
+        # قبل كده: volume ≥ 1× avg → مش فخ (سهل أوي)
+        # دلوقتي: volume ≥ 0.6× avg AND change < 9.7% → مش فخ
+        if vol_ratio >= 0.6 and daily_change < 9.7:
             return False  # سيولة حقيقية نشطة
     return True
 

@@ -831,14 +831,20 @@ class FlowSystemEngine:
         #              target = stop_dist × 1.8 (R/R ≥ 1.8 — Rule 18).
         #              لو مفيش ATR → stop=min_pct (5%) + target=5%×1.8=9%.
         # القيم الثابتة القديمة (-3/-5/+8/+12) اتمسحت — كانت بتخالف Rule 8 + Rule 18.
-        if total_score >= 75:
+        # AUDIT-FIX (2026-10-29): position sizing كان معكوس — SPARK (2.5%) > FIRE (2%).
+        # الحل: كل ما الـ score أعلى → position أكبر.
+        if total_score >= 80:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
-            position = 2  # أقصى حجم مركز 2% (Rule 19)
+            position = 2.5  # AUDIT-FIX: كان 2 → 2.5 (الأعلى)
+        elif total_score >= 70:
+            label, label_en, color = "نار", "FIRE", "red"
+            action, action_en = "دخول قوي", "STRONG_ENTRY"
+            position = 2.0  # AUDIT-FIX: كان 2 → 2.0
         elif total_score >= 60:
             label, label_en, color = "شرارة", "SPARK", "orange"
             action, action_en = "دخول حذر", "CAUTIOUS_ENTRY"
-            position = 2.5  # أقصى حجم مركز 2.5% (Rule 19 cap — BRAVO-JIMMY task)
+            position = 1.5  # AUDIT-FIX: كان 2.5 → 1.5 (الأقل)
         elif total_score >= 40:
             label, label_en, color = "رماد", "ASH", "gray"
             action, action_en = "استنى", "WAIT"

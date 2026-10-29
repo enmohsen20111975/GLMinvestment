@@ -448,31 +448,35 @@ def evaluate_kill_filters(
     else:
         kill_details['data_bars'] = {'passed': True, 'value': data_bars_count}
 
-    # Filter 5: القوة النسبية — PHASE-1-RS-BYPASS (2026-09-04)
-    # قرار المالك: الأسهم الانفجارية بتيجي ضعيفة عن السوق قبل ما تنفجر (الـ RS سلبي).
-    # لو الـ EXPLOSIVE_SURGE path اشتغل (vol ≥ 2.5× + فوق SMA20 + range منضغط)
-    # → نشيل الرفض ونحوله لـ penalty (warning) + position size 2%.
-    # غير كده → nسيب الـ kill زي ما هو.
+    # Filter 5: القوة النسبية — AUDIT-FIX (2026-10-29)
+    # قبل كده: (stock_roc - benchmark) < -2.0 من غير ما تحدد الـ lookback
+    # دلوقتي: استخدم RS على 10 أيام (الـ stock_roc + benchmark_change اللي بيوصلوا
+    # من الـ caller كـ ROC 10d) + thresholds أوضح.
+    # RS bypass للـ EXPLOSIVE_SURGE لسه شغال.
     if benchmark_change != 0 or stock_roc != 0:
         relative_strength = stock_roc - benchmark_change
-        if relative_strength < _min_rs:
+        # AUDIT-FIX: thresholds أوضح
+        rs_10_exclude = -3.5    # لو RS_10 < -3.5% → EXCLUDED
+        rs_10_warning = -2.0    # لو RS_10 < -2.0% → warning (بس مش kill لو فيه explosive)
+
+        if relative_strength < rs_10_exclude:
             # لو فيه explosive_surge → bypass الرفض
             if _liquidity_explosive:
                 kill_details['relative_strength'] = {
-                    'passed': True,  # bypass — مش kill
+                    'passed': True,
                     'value': round(relative_strength, 2),
-                    'threshold': _min_rs,
+                    'threshold': rs_10_exclude,
                     'bypassed_by_explosive_surge': True,
                     'note': f'RS={relative_strength:+.2f}% ضعيف، بس EXPLOSIVE_SURGE بـ يبرر الدخول بـ position size 2%',
                 }
             else:
                 kill_reasons.append(
-                    f'🚨 ضعف نسبي واضح — RS={relative_strength:+.2f}% < {_min_rs}% مقابل المؤشر'
+                    f'🚨 ضعف نسبي واضح — RS={relative_strength:+.2f}% < {rs_10_exclude}% مقابل المؤشر'
                 )
                 kill_details['relative_strength'] = {
                     'passed': False,
                     'value': round(relative_strength, 2),
-                    'threshold': _min_rs,
+                    'threshold': rs_10_exclude,
                 }
         else:
             kill_details['relative_strength'] = {
