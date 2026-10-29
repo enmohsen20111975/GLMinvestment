@@ -122,8 +122,8 @@ def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str],
             price = float(r.get('current_price') or 0)
             vol = float(r.get('volume') or 0)
             
-            # فلتر 1: سهم ميت فعلاً (price = 0 أو volume = 0)
-            if price <= 0 or vol <= 0:
+            # فلتر 1: سهم ميت فعلاً (price = 0 فقط — volume ممكن يكون 0 يوم واحد)
+            if price <= 0:
                 dead_count += 1
                 continue
             
