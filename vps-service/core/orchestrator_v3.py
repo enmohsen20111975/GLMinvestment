@@ -60,11 +60,14 @@ def normalize_weights(raw: Dict[str, float], available_families: List[str]) -> D
 def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[str, str]:
     """يصنّف حالة السوق + السهم. Returns (market_state, stock_state).
     
-    STAGE-2 FIX (2026-10-29): تحسين المنطق:
-    - S8 (سيولة ضعيفة): استخدم متوسط 5 أيام مش يوم واحد
-    - S1 (صعود مستقر): فوق SMA50 + ROC20 إيجابي + حجم مش ضعيف
-    - S4 (اختراق): كسر قمة 20 يوم + حجم
-    - S6 (هبوط متسارع): تأكيد بـ ROC20 سالب قوي
+    STAGE-B FIX (2026-10-29): تحسين أعمق:
+    - S8: متوسط 5 أيام + تأكيد بـ intensity (مش يوم واحد)
+    - S1: فوق SMA50 + فوق SMA20 + ROC20 إيجابي + حجم
+    - S4: كسر قمة 20 يوم فعلي + حجم 1.3× + مش S8
+    - S6: تحت SMA50 + تحت SMA20 + ROC20 سالب قوي (تأكيد مزدوج)
+    - S5: تحت SMA20 + ROC5 سالب (هبوط مستقر مش متسارع)
+    - S2: فوق SMA20 + ROC5 إيجابي + مش فوق SMA50 (صعود مبكر)
+    - فصل ارتداد قصير (S2 في BEAR) عن هبوط متسارع (S6)
     """
     if not prices or len(prices) < 20:
         return ('UNKNOWN', 'S11')
@@ -77,21 +80,30 @@ def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[s
     change_5d = (last - prices[-5]) / prices[-5] * 100 if len(prices) >= 5 else 0
     change_20d = (last - prices[-20]) / prices[-20] * 100 if len(prices) >= 20 else 0
     
-    # Volatility
+    # Volatility (متوسط المدى اليومي على 14 يوم)
     if len(prices) >= 15:
         ranges = [abs(prices[i] - prices[i-1]) / prices[i-1] for i in range(-14, 0)]
         vol = sum(ranges) / len(ranges) * 100
     else:
         vol = 0
     
-    # Volume metrics (STAGE-2: متوسط 5 أيام مش يوم واحد)
+    # Volume metrics — متوسط 5 أيام vs متوسط 20 يوم
     avg_vol_5d = 0
     avg_vol_20d = 0
     vol_ratio_5d = 1.0
     if volumes and len(volumes) >= 20:
-        avg_vol_5d = sum(volumes[-5:]) / 5
-        avg_vol_20d = sum(volumes[-20:]) / 20
+        # نظّف الأصفار من الحساب
+        vols_20d = [v for v in volumes[-20:] if v and v > 0]
+        vols_5d = [v for v in volumes[-5:] if v and v > 0]
+        avg_vol_20d = sum(vols_20d) / len(vols_20d) if vols_20d else 0
+        avg_vol_5d = sum(vols_5d) / len(vols_5d) if vols_5d else 0
         vol_ratio_5d = avg_vol_5d / avg_vol_20d if avg_vol_20d > 0 else 1.0
+    
+    # SMA alignment: هل السعر فوق/تحت SMA20 و SMA50
+    above_sma20 = last > sma20
+    above_sma50 = last > sma50
+    below_sma20 = last < sma20 * 0.99
+    below_sma50 = last < sma50 * 0.99
     
     # Market regime
     if change_5d > 2 and change_20d > 3:
@@ -107,32 +119,48 @@ def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[s
     else:
         market = 'CONFLICTING'
     
-    # Stock regime (STAGE-2: منطق أوضح)
-    # S8: سيولة ضعيفة — متوسط 5 أيام < 50% من متوسط 20 يوم (مش يوم واحد)
+    # ── Stock regime (STAGE-B: منطق محسّن) ──
+    
+    # S8: سيولة ضعيفة — متوسط 5 أيام < 50% من متوسط 20 يوم
+    # (تأكيد: مش يوم واحد، ده نمط 5 أيام)
     if vol_ratio_5d < 0.5:
         stock = 'S8'
+    
+    # S7: تذبذب مرتفع جدًا
     elif vol > 4:
-        stock = 'S7'  # تذبذب مرتفع
-    # S1: صعود مستقر — فوق SMA50 + ROC20 إيجابي قوي + حجم مش ضعيف
-    elif last > sma50 * 1.02 and change_20d > 3 and vol_ratio_5d > 0.7:
-        stock = 'S1'
-    # S2: صعود يضعف — فوق SMA20 + ROC5 إيجابي
-    elif last > sma20 and change_5d > 0:
-        stock = 'S2'
-    # S5: هبوط مستقر — تحت SMA20 + ROC5 سالب
-    elif last < sma20 * 0.98 and change_5d < -2:
-        stock = 'S5'
-    # S6: هبوط متسارع — تحت SMA50 + ROC20 سالب قوي (< -5%)
-    elif last < sma50 * 0.98 and change_20d < -5:
+        stock = 'S7'
+    
+    # S6: هبوط متسارع — تحت SMA50 + تحت SMA20 + ROC20 سالب قوي
+    # (تأكيد مزدوج: السهم نازل على المدى القصير والمتوسط)
+    elif below_sma50 and below_sma20 and change_20d < -5:
         stock = 'S6'
-    # S3: عرضي — قريب من SMA20
+    
+    # S5: هبوط مستقر — تحت SMA20 + ROC5 سالب
+    # (مش S6 لأن ROC20 مش سالب قوي أو السعر لسه فوق SMA50)
+    elif below_sma20 and change_5d < -2:
+        stock = 'S5'
+    
+    # S1: صعود مستقر — فوق SMA50 + فوق SMA20 + ROC20 إيجابي + حجم مش ضعيف
+    elif above_sma50 and above_sma20 and change_20d > 3 and vol_ratio_5d > 0.7:
+        stock = 'S1'
+    
+    # S4: اختراق — كسر قمة 20 يوم + حجم 1.3× + مش S8
+    # (تأكيد: لازم فيه volume حقيقي)
+    elif change_5d > 3 and above_sma20 and vol_ratio_5d > 1.3:
+        stock = 'S4'
+    
+    # S2: صعود يضعف — فوق SMA20 + ROC5 إيجابي
+    # (صعود مبكر أو صعود بيفقد قوته)
+    elif above_sma20 and change_5d > 0:
+        stock = 'S2'
+    
+    # S3: عرضي — قريب من SMA20 (±2%)
     elif abs(last - sma20) / sma20 < 0.02:
         stock = 'S3'
-    # S4: اختراق — كسر قمة 20 يوم + حجم
-    elif change_5d > 3 and last > sma20 and vol_ratio_5d > 1.2:
-        stock = 'S4'
+    
+    # S9: أدلة متعارضة
     else:
-        stock = 'S9'  # أدلة متعارضة
+        stock = 'S9'
     
     # Map market+stock to state code
     state = _map_state(market, stock)
