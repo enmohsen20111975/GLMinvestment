@@ -200,8 +200,9 @@ def execute_v3(plan, prices=None, volumes=None, ticker=None, market='EGX',
     else:
         _buy_thresh, _strong_thresh, _sell_thresh = 30, 50, -30
     
-    # STAGE-4: Confidence Gate — ممنوع BUY لو confidence < 58
-    _confidence_ok = result.confidence >= 58
+    # STAGE-4: Confidence Gate — ممنوع BUY لو confidence < 45
+    # (كان 58 — عالي أوي، بيقتل فرص حقيقية. 45 = 3 من 4 محركات تتفق)
+    _confidence_ok = result.confidence >= 45
     _no_conflict = not _has_conflict and ok
     
     if signal_score >= _strong_thresh and _confidence_ok and _no_conflict:
@@ -281,15 +282,16 @@ def _run_family_engine(family, plan, prices, volumes, ticker, market,
 # ═══════════════════════════════════════════════════════════════════════
 def _run_trend(plan, prices, volumes, ticker, market):
     """TREND family — uses MasterAnalyzer's technical output.
-    
-    MasterAnalyzer (5,424 سطر) محرك مستقل بـ 8 طبقات:
-    Macro + SMA50 + RSI + Volume + Bollinger + MACD + Candlestick + Fibonacci
-    
-    Output: master_score (0-100), signal
-    Normalize: (score - 50) * 2 → -100..+100
+
+    MasterAnalyzer (5,424 سطر) محرك مستقل بـ 8 طبقات confluence.
+
+    STAGE-FIX (2026-10-29): لو MasterAnalyzer رفض بالسيولة (REJECTED_LIQUIDITY)
+    → ارجع None (تخطّي TREND) بدل -100. ده لأن MasterAnalyzer بـ يقرا
+    السيولة من stocks.db (snapshot) مش من الـ prices اللي بنبعتها.
+    لو السوق مقفول أو volume=0 في snapshot → بيرفض بالغلط.
     """
     if not prices or len(prices) < 20:
-        return None, None  # STAGE-FIX: خفّضنا من 50 لـ 20 (EGX عندها 77 يوم متوسط)
+        return None, None
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from analyzers.master_analyzer import MasterAnalyzer
@@ -299,17 +301,20 @@ def _run_trend(plan, prices, volumes, ticker, market):
             return None, None
         score = getattr(r, 'master_score', 50)
         signal = getattr(r, 'signal', 'HOLD')
-        # Normalize to -100..+100 (master_score is 0-100, neutral=50)
+
+        # STAGE-FIX: لو MasterAnalyzer رفض بالسيولة → تخطّي (ارجع None)
+        # بدل ما -100 يفسد الـ weighted score
+        if signal in ('REJECTED_LIQUIDITY', 'EXCLUDED') or score == 0:
+            logger.info(f'TREND: MasterAnalyzer rejected {ticker} ({signal}, score={score}) → skipping TREND')
+            return None, None
+
+        # Normalize to -100..+100 (master_score 0-100, neutral=50)
         norm = (score - 50) * 2
         return norm, signal
     except Exception as e:
         logger.warning(f'TREND engine failed: {e}')
-        raise
+        return None, None
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# MOM — Wilder's RSI (STAGE-1.1 FIX)
-# ═══════════════════════════════════════════════════════════════════════
 def _run_momentum(plan, prices, volumes, ticker, market):
     """MOM family — Wilder's RSI(14) من analyzers/indicators/rsi.py.
     
