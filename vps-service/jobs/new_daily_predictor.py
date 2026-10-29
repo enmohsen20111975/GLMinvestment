@@ -184,37 +184,45 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
 
 def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list, list, list, list, list]:
     """
-    جيب آخر N يوم من الأسعار والأحجام + OHLC.
-    بتستخدم الـ DAL الموحد (db_manager.get_price_history) اللي بيقرا من:
-      1. data_engine.db.egksco_price_history (EGX رسمي)
-      2. data_engine.db.historical_data (كل الأسواق)
-      3. stocks.db.stock_daily_prices (fallback)
+    جيب آخر N يوم من الأسعار والأحجام + OHLC من stock_daily_prices.
     
     Returns:
         (closes, volumes, highs, lows, opens) — كلهم list[float]
     """
     try:
-        from core.db_manager import db_manager
         import sqlite3 as _sql
         _db_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
-        conn = db_manager.connection(_db_path, writable=False).__enter__()
-        rows = conn.execute("""
-            SELECT close, volume, high, low, open
-            FROM stock_daily_prices
-            WHERE ticker = ? AND close > 0
-            ORDER BY price_date DESC LIMIT ?
-        """, (ticker, days)).fetchall()
+        conn = _sql.connect(f'file:{_db_path}?mode=ro', uri=True, timeout=10)
+        # جرب أسماء أعمدة مختلفة (الـ schema بيختلف بين النسخ)
+        try:
+            rows = conn.execute("""
+                SELECT close, volume, high, low, open
+                FROM stock_daily_prices
+                WHERE ticker = ? AND close > 0
+                ORDER BY price_date DESC LIMIT ?
+            """, (ticker, days)).fetchall()
+        except Exception:
+            try:
+                rows = conn.execute("""
+                    SELECT close_price as close, volume, high_price as high, low_price as low, open_price as open
+                    FROM stock_daily_prices
+                    WHERE ticker = ? AND close_price > 0
+                    ORDER BY price_date DESC LIMIT ?
+                """, (ticker, days)).fetchall()
+            except Exception:
+                rows = []
         conn.close()
         if not rows:
             return [], [], [], [], []
         rows = list(reversed(rows))  # أقدم → أحدث
-        closes = [float(r['close'] or 0) for r in rows]
-        volumes = [float(r['volume'] or 0) for r in rows]
-        highs = [float(r['high'] or r['close'] or 0) for r in rows]
-        lows = [float(r['low'] or r['close'] or 0) for r in rows]
-        opens = [float(r['open'] or r['close'] or 0) for r in rows]
+        closes = [float(r[0] or 0) for r in rows]
+        volumes = [float(r[1] or 0) for r in rows]
+        highs = [float(r[2] or r[0] or 0) for r in rows]
+        lows = [float(r[3] or r[0] or 0) for r in rows]
+        opens = [float(r[4] or r[0] or 0) for r in rows]
         return closes, volumes, highs, lows, opens
-    except Exception:
+    except Exception as e:
+        logger.warning(f'get_price_history failed for {ticker}: {e}')
         return [], [], [], [], []
 
 
