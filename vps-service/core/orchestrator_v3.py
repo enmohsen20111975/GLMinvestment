@@ -58,14 +58,24 @@ def normalize_weights(raw: Dict[str, float], available_families: List[str]) -> D
 # حالات السوق والسهم (من جدول المالك)
 # ============================================================================
 def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[str, str]:
-    """يصنّف حالة السوق + السهم. Returns (market_state, stock_state)."""
+    """يصنّف حالة السوق + السهم. Returns (market_state, stock_state).
+    
+    STAGE-2 FIX (2026-10-29): تحسين المنطق:
+    - S8 (سيولة ضعيفة): استخدم متوسط 5 أيام مش يوم واحد
+    - S1 (صعود مستقر): فوق SMA50 + ROC20 إيجابي + حجم مش ضعيف
+    - S4 (اختراق): كسر قمة 20 يوم + حجم
+    - S6 (هبوط متسارع): تأكيد بـ ROC20 سالب قوي
+    """
     if not prices or len(prices) < 20:
         return ('UNKNOWN', 'S11')
     
-    # Market state
-    change_5d = (prices[-1] - prices[-5]) / prices[-5] * 100 if len(prices) >= 5 else 0
-    change_20d = (prices[-1] - prices[-20]) / prices[-20] * 100 if len(prices) >= 20 else 0
+    last = prices[-1]
     sma20 = sum(prices[-20:]) / 20
+    sma50 = sum(prices[-50:]) / 50 if len(prices) >= 50 else sma20
+    
+    # ROC
+    change_5d = (last - prices[-5]) / prices[-5] * 100 if len(prices) >= 5 else 0
+    change_20d = (last - prices[-20]) / prices[-20] * 100 if len(prices) >= 20 else 0
     
     # Volatility
     if len(prices) >= 15:
@@ -73,6 +83,15 @@ def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[s
         vol = sum(ranges) / len(ranges) * 100
     else:
         vol = 0
+    
+    # Volume metrics (STAGE-2: متوسط 5 أيام مش يوم واحد)
+    avg_vol_5d = 0
+    avg_vol_20d = 0
+    vol_ratio_5d = 1.0
+    if volumes and len(volumes) >= 20:
+        avg_vol_5d = sum(volumes[-5:]) / 5
+        avg_vol_20d = sum(volumes[-20:]) / 20
+        vol_ratio_5d = avg_vol_5d / avg_vol_20d if avg_vol_20d > 0 else 1.0
     
     # Market regime
     if change_5d > 2 and change_20d > 3:
@@ -88,30 +107,32 @@ def classify_regime(prices: List[float], volumes: List[float] = None) -> Tuple[s
     else:
         market = 'CONFLICTING'
     
-    # Stock regime
-    if vol > 4:
-        stock = 'S7'  # high volatility
-    elif market == 'BEAR_ACC' and prices[-1] > prices[-5]:
-        stock = 'S6'  # bounce in bear
-    elif prices[-1] > sma20 * 1.02 and change_5d > 2:
-        stock = 'S1'  # strong uptrend
-    elif prices[-1] > sma20 and change_5d > 0:
-        stock = 'S2'  # uptrend weakening
-    elif prices[-1] < sma20 * 0.98 and change_5d < -2:
-        stock = 'S5'  # downtrend (S3 in table = bear+stock_down → mapped to S5)
-    elif abs(prices[-1] - sma20) / sma20 < 0.02:
-        stock = 'S3'  # sideways/range
-    elif change_5d > 3 and prices[-1] > sma20:
-        stock = 'S4'  # breakout from range
+    # Stock regime (STAGE-2: منطق أوضح)
+    # S8: سيولة ضعيفة — متوسط 5 أيام < 50% من متوسط 20 يوم (مش يوم واحد)
+    if vol_ratio_5d < 0.5:
+        stock = 'S8'
+    elif vol > 4:
+        stock = 'S7'  # تذبذب مرتفع
+    # S1: صعود مستقر — فوق SMA50 + ROC20 إيجابي قوي + حجم مش ضعيف
+    elif last > sma50 * 1.02 and change_20d > 3 and vol_ratio_5d > 0.7:
+        stock = 'S1'
+    # S2: صعود يضعف — فوق SMA20 + ROC5 إيجابي
+    elif last > sma20 and change_5d > 0:
+        stock = 'S2'
+    # S5: هبوط مستقر — تحت SMA20 + ROC5 سالب
+    elif last < sma20 * 0.98 and change_5d < -2:
+        stock = 'S5'
+    # S6: هبوط متسارع — تحت SMA50 + ROC20 سالب قوي (< -5%)
+    elif last < sma50 * 0.98 and change_20d < -5:
+        stock = 'S6'
+    # S3: عرضي — قريب من SMA20
+    elif abs(last - sma20) / sma20 < 0.02:
+        stock = 'S3'
+    # S4: اختراق — كسر قمة 20 يوم + حجم
+    elif change_5d > 3 and last > sma20 and vol_ratio_5d > 1.2:
+        stock = 'S4'
     else:
-        stock = 'S9'  # conflicting
-    
-    # Check liquidity (S8)
-    if volumes and len(volumes) >= 20:
-        avg_vol = sum(volumes[-20:]) / 20
-        recent_vol = sum(volumes[-5:]) / 5
-        if recent_vol < avg_vol * 0.3:  # very low volume
-            stock = 'S8'
+        stock = 'S9'  # أدلة متعارضة
     
     # Map market+stock to state code
     state = _map_state(market, stock)
