@@ -23,7 +23,18 @@ import {
  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppStore } from '@/lib/store';
-const PERSONAS = [{id:'balanced',name:'المتوازن',emoji:'⚖️'}]; const getPersonaConfig = (id:string) => PERSONAS[0]; const shouldShowWarningPopup = () => false; const getWarningMessage = () => '';
+const PERSONAS = [{
+  id: 'balanced',
+  name: 'المتوازن',
+  emoji: '⚖️',
+  // FIX (FIX-TSC-BATCH-3): properties read by this file.
+  buyThreshold: 70,
+  description: 'مستثمر متوازن بين العوائد والمخاطر',
+  cryptoAllowed: true,
+  color: 'text-success',
+  // Stubs consumed by callers (no longer shown since only one persona).
+  gamblerDisclaimer: '',
+}]; const getPersonaConfig = (_id?: string) => PERSONAS[0]; const shouldShowWarningPopup = (_id?: string) => false; const getWarningMessage = (_id?: string) => '';
 
 import type { PersonaType } from '@/types/v2';
 

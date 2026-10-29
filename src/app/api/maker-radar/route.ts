@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
   // Load live prices from stocks.db so radar items ALWAYS reflect the active session
   // FIX (Task DEEP-MARKET-SEPARATION): فلترة بـ market عشان ميبقاش في تداخل بين أسواق
-  const liveMap = new Map<string, { current_price: number; change_percent: number; volume?: number; name_ar?: string }>();
+  const liveMap = new Map<string, Record<string, any>>();
   try {
     const db = openDb('stocks.db');
     if (db) {

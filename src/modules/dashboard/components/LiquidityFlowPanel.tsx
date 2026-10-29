@@ -233,10 +233,10 @@ export function LiquidityFlowPanel() {
  });
 
  // Derive data + error from query result (handle both success=false + network error)
- const data = raw && raw.success ? raw : null;
+ const data = raw && raw.success ? (raw as any) : null;
  const error = queryError
    ? 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.'
-   : (raw && !raw.success ? (raw.note || 'تعذّر جلب البيانات') : null);
+   : (raw && !raw.success ? ((raw as any).note || 'تعذّر جلب البيانات') : null);
 
  const marketNameAr = MARKET_NAMES_AR[currentMarket];
  const currencyLabel = MARKET_CURRENCY_LABEL[currentMarket];

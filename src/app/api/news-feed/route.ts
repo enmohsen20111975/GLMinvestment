@@ -116,7 +116,7 @@ function fetchNewsSignals(limit = 50, market?: CanonicalMarket): NewsItem[] {
           continue;
         }
 
-        const rawAnalysis = safeParseJson(row.raw_analysis, {});
+        const rawAnalysis: any = safeParseJson(row.raw_analysis, {});
         const hasValidReasoning = Boolean(
           rawAnalysis.reasoning &&
           typeof rawAnalysis.reasoning === 'string' &&
@@ -464,7 +464,7 @@ export async function GET(request: NextRequest) {
     console.error('[News] Error:', error);
     return NextResponse.json({
       success: false,
-      error: 'internal_error' || 'خطأ في جلب الأخبار',
+      error: ('internal_error' as any) || 'خطأ في جلب الأخبار',
       news: []
     }, { status: 500 });
   }

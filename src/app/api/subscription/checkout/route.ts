@@ -28,7 +28,7 @@ interface CheckoutBody {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await getSessionUserId(req as any);
+    const { userId } = await getSessionUserId();
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'يجب تسجيل الدخول أولاً' },
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
       developer: 'b2b_starter',
     };
     const tier = TIER_ALIASES[rawTier] || rawTier;
+    const billingCycle = String(body.billingCycle || 'monthly');
 
     // تحقق من الباقة
     const validTiers = ['premium', 'pro', 'vip_pass', 'b2b_starter', 'b2b_pro', 'b2b_enterprise'];

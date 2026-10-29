@@ -335,7 +335,7 @@ export async function getStocksByMarket(market: string, limit: number = 50): Pro
     const marketName = marketCodeToArabic(market);
 
     try {
-        return db.prepare('SELECT * FROM stocks WHERE market = ? ORDER BY volume DESC LIMIT ?').all(marketName, limit) as DataEngineStock[];
+        return db.prepare('SELECT * FROM stocks WHERE market = ? ORDER BY volume DESC LIMIT ?').all(marketName, limit) as unknown as DataEngineStock[];
     } catch (err) {
         console.warn('[data-engine-db/sqljs] getStocksByMarket error:', err);
         return [];
@@ -349,9 +349,9 @@ export async function getTopMovers(market?: string, limit: number = 10): Promise
     try {
         let stocks: DataEngineStock[];
         if (marketName) {
-            stocks = db.prepare('SELECT * FROM stocks WHERE change_percent IS NOT NULL AND market = ?').all(marketName) as DataEngineStock[];
+            stocks = db.prepare('SELECT * FROM stocks WHERE change_percent IS NOT NULL AND market = ?').all(marketName) as unknown as DataEngineStock[];
         } else {
-            stocks = db.prepare('SELECT * FROM stocks WHERE change_percent IS NOT NULL').all() as DataEngineStock[];
+            stocks = db.prepare('SELECT * FROM stocks WHERE change_percent IS NOT NULL').all() as unknown as DataEngineStock[];
         }
 
         return {
@@ -390,28 +390,28 @@ export async function getMarketBreakdown(): Promise<MarketBreakdown[]> {
 export async function getLatestGoldPrices(): Promise<DataEngineGoldPrice[]> {
     const db = await _ensureDataEngineCompat();
     try {
-        return db.prepare('SELECT * FROM gold_prices WHERE timestamp = (SELECT MAX(timestamp) FROM gold_prices) ORDER BY country, karat').all() as DataEngineGoldPrice[];
+        return db.prepare('SELECT * FROM gold_prices WHERE timestamp = (SELECT MAX(timestamp) FROM gold_prices) ORDER BY country, karat').all() as unknown as DataEngineGoldPrice[];
     } catch { return []; }
 }
 
 export async function getLatestCryptoPrices(limit: number = 50): Promise<DataEngineCrypto[]> {
     const db = await _ensureDataEngineCompat();
     try {
-        return db.prepare('SELECT * FROM crypto_prices WHERE timestamp = (SELECT MAX(timestamp) FROM crypto_prices) ORDER BY rank ASC LIMIT ?').all(limit) as DataEngineCrypto[];
+        return db.prepare('SELECT * FROM crypto_prices WHERE timestamp = (SELECT MAX(timestamp) FROM crypto_prices) ORDER BY rank ASC LIMIT ?').all(limit) as unknown as DataEngineCrypto[];
     } catch { return []; }
 }
 
 export async function getLatestExchangeRates(): Promise<DataEngineExchangeRate[]> {
     const db = await _ensureDataEngineCompat();
     try {
-        return db.prepare('SELECT * FROM exchange_rates WHERE timestamp = (SELECT MAX(timestamp) FROM exchange_rates) ORDER BY currency').all() as DataEngineExchangeRate[];
+        return db.prepare('SELECT * FROM exchange_rates WHERE timestamp = (SELECT MAX(timestamp) FROM exchange_rates) ORDER BY currency').all() as unknown as DataEngineExchangeRate[];
     } catch { return []; }
 }
 
 export async function getLatestSilverPrices(): Promise<DataEngineSilverPrice[]> {
     const db = await _ensureDataEngineCompat();
     try {
-        return db.prepare('SELECT * FROM silver_prices WHERE timestamp = (SELECT MAX(timestamp) FROM silver_prices) ORDER BY country').all() as DataEngineSilverPrice[];
+        return db.prepare('SELECT * FROM silver_prices WHERE timestamp = (SELECT MAX(timestamp) FROM silver_prices) ORDER BY country').all() as unknown as DataEngineSilverPrice[];
     } catch { return []; }
 }
 
@@ -436,7 +436,7 @@ export async function getHistoricalData(symbol: string, limit: number = 100): Pr
             WHERE symbol = ?
             ORDER BY price_date DESC
             LIMIT ?
-        `).all(symbol, limit) as PriceHistoryRecord[];
+        `).all(symbol, limit) as unknown as PriceHistoryRecord[];
     } catch { return []; }
 }
 /**

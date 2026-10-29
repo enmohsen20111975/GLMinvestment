@@ -21,7 +21,7 @@ function getPredictionsDbPath() {
   return 'predictions.db';
 }
 
-function safeParseJson<T>(val: Record<string, unknown>, fallback: T): T {
+function safeParseJson<T>(val: any, fallback: T): T {
   if (!val) return fallback;
   if (typeof val !== 'string') return val as T;
   try {
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       sources: sourceRows,
     });
-  } catch (err: Record<string, unknown>) {
+  } catch (err: unknown) {
     console.error('[Admin News GET] error:', err);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }
@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
       insertedId: result.lastInsertRowid,
       message: 'تمت إضافة الخبر بنجاح',
     });
-  } catch (err: Record<string, unknown>) {
+  } catch (err: unknown) {
     console.error('[Admin News POST] error:', err);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }
@@ -344,7 +344,7 @@ export async function PUT(request: NextRequest) {
       updated: result.changes > 0,
       message: 'تم تعديل وتحديث الخبر بنجاح',
     });
-  } catch (err: Record<string, unknown>) {
+  } catch (err: unknown) {
     console.error('[Admin News PUT] error:', err);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }
@@ -436,7 +436,7 @@ export async function DELETE(request: NextRequest) {
       deletedCount,
       message: `تم حذف ${deletedCount} خبر بنجاح`,
     });
-  } catch (err: Record<string, unknown>) {
+  } catch (err: unknown) {
     console.error('[Admin News DELETE] error:', err);
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }

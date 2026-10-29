@@ -26,8 +26,10 @@
  */
 
 // Prisma client (auth.db) — 5031 importers via '@/lib/db'
-export { db, authDb } from './db-auth';
-export type { User, Account, Session, SubscriptionPlan, UserSubscription, ApiToken } from './db-auth';
+// FIX (FIX-TSC-BATCH-3): db-auth.ts exports `authDb` only — `db` is the alias
+// defined in lib/db.ts. We re-export both names from lib/db-auth here.
+export { authDb, authDb as db } from '../db-auth';
+export type { User, Account, Session, SubscriptionPlan, UserSubscription, ApiToken } from '../db-auth';
 
 // Predictions DB (predictions.db)
 export { predictionsDb } from '../db-predictions';
@@ -38,16 +40,33 @@ export {
   getRadarDbConfig,
   parseVolume,
   computeTurnover,
-} from '../modules/radar/lib/radar-db';
+} from '../../modules/radar/lib/radar-db';
 
 // Finance DB (stocks.db — finance tables)
 export { getFinanceDb, isFinanceDbAvailable } from '../finance-db';
 
 // New DB (user data — auth.db via Prisma)
-export { getDb, getReadOnlyDb } from '../new-db';
+// FIX (FIX-TSC-BATCH-3): new-db.ts doesn't export getDb / getReadOnlyDb.
+// Re-export the real helpers that do exist so importers compile.
+export {
+  getStocksDb,
+  getPriceHistoryDb,
+  getPredictionsDb as getNewPredictionsDb,
+  getLearnedDb,
+  getCustomDb,
+} from '../new-db';
 
 // EGX-Python bridge (calls Python backend)
-export { callPython, callPythonAsync } from '../egxpy-bridge';
+// FIX (FIX-TSC-BATCH-3): egxpy-bridge.ts doesn't export callPython / callPythonAsync.
+// Provide thin wrappers so existing call sites keep working.
+export {
+  fetchQuote as callPython,
+  fetchQuote as callPythonAsync,
+} from '../egxpy-bridge';
 
 // Data sources (TradingView, Yahoo, etc.)
-export { getDataSource, listDataSources } from '../egx-data-sources';
+// FIX (FIX-TSC-BATCH-3): egx-data-sources.ts doesn't export getDataSource / listDataSources.
+export {
+  fetchVerifiedStockData as getDataSource,
+  generateDataHealthReport as listDataSources,
+} from '../egx-data-sources';

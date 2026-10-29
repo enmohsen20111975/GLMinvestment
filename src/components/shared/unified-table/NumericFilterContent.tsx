@@ -1,8 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 // NumericFilterContent — extracted (Phase 3)
+
+interface RangeFilter {
+ min?: number | string | null;
+ max?: number | string | null;
+ [key: string]: unknown;
+}
 
 interface NumericFilterContentProps {
  colKey: string;
@@ -144,3 +155,4 @@ function NumericFilterContent({
  );
 }
 
+export default NumericFilterContent;

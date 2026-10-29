@@ -28,6 +28,22 @@ import { motion } from 'framer-motion';
 import { Lightbulb, AlertTriangle, Key, BookOpen, CheckCircle2, XCircle, TrendingUp, TrendingDown, ClipboardCheck, Zap, NotebookPen, ShieldCheck, Database, Signal, Lock, Send, FileText, RefreshCw, Layers, ArrowUp, ArrowDown, Scale, PieChart, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// FIX (FIX-TSC-BATCH-3): re-import the visual components moved out during the
+// ALPHA-FRONTEND-DECOMPOSITION so the local JSX in this file resolves correctly.
+import {
+  RSIGauge,
+  MACDVisual,
+  SupportResistanceVisual,
+  MovingAveragesVisual,
+  BollingerBandsVisual,
+} from './indicators-visuals';
+import {
+  PERatioVisual,
+  DCFFlowVisual,
+  ROEDuPontVisual,
+  DCAStrategyVisual,
+} from './financial-visuals';
+
 /* ============================================================
  LEARNING VISUAL COMPONENTS
  مكونات رسوم توضيحية تفاعلية للجزء التعليمي

@@ -213,15 +213,15 @@ function StockDnaCard({ dna, ticker }: { dna: StockDNA; ticker: string }) {
             <span
               className={cn(
                 'font-bold font-mono text-[11px]',
-                dna.annual_return === null
+                dna.annual_return == null
                   ? 'text-muted-foreground'
-                  : dna.annual_return >= 0
+                  : (dna.annual_return ?? 0) >= 0
                     ? 'text-profit'
                     : 'text-loss',
               )}
             >
-              {dna.annual_return !== null
-                ? `${dna.annual_return >= 0 ? '+' : ''}${(dna.annual_return ?? 0).toFixed(1)}%`
+              {dna.annual_return != null
+                ? `${(dna.annual_return ?? 0) >= 0 ? '+' : ''}${(dna.annual_return ?? 0).toFixed(1)}%`
                 : '—'}
             </span>
           </div>
@@ -314,7 +314,7 @@ function StockDnaCard({ dna, ticker }: { dna: StockDNA; ticker: string }) {
                 variant="outline"
                 className="text-[9px] font-semibold border-border bg-muted/40 text-foreground/80"
               >
-                #{tag}
+                #{String(tag?.tag_ar || tag?.tag || tag)}
               </Badge>
             ))}
           </div>
@@ -322,7 +322,7 @@ function StockDnaCard({ dna, ticker }: { dna: StockDNA; ticker: string }) {
 
         {dna.dividend_timing && (
           <div className="text-[10px] text-muted-foreground p-1.5 rounded bg-muted/30 border border-border/30">
-            💰 <strong className="text-foreground">توقيت التوزيعات:</strong> {dna.dividend_timing}
+            💰 <strong className="text-foreground">توقيت التوزيعات:</strong> {String(dna.dividend_timing)}
           </div>
         )}
 

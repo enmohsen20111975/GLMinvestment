@@ -11,3 +11,7 @@ export function fmtPrice(v: number | null | undefined): string {
   if (v == null || isNaN(v)) return '—';
   return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
 }
+
+// Re-export JSX-helpers (Alert + formatPct + deriveOverallStatus + IslamicPattern)
+// so `./helpers` resolves uniformly for all consumers.
+export { Alert, formatPct, deriveOverallStatus, IslamicPattern } from './helpers.tsx';

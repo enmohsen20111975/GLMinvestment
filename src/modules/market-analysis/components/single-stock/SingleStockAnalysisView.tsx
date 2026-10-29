@@ -228,7 +228,7 @@ export function SingleStockAnalysisView({
 
       {/* ════ CANONICAL BANNER: محرك القرار المؤسسي V60.2 — WHO IS BUYING? ════ */}
       {canonical && canonical.success && (
-        <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
+        <CanonicalWhoIsBuyingBanner data={canonical as any} currencyLabel={currencyLabel} />
       )}
       {canonicalLoading && (
         <div className="mb-3 p-3 rounded-lg border border-profit/20 bg-profit/10 dark:bg-profit/10 flex items-center gap-2 text-xs text-muted-foreground">
@@ -356,7 +356,7 @@ export function SingleStockAnalysisView({
             {/* Institutional Decision Panel */}
             {data.institutional_decision && (
               <InstitutionalDecisionPanel
-                decision={data.institutional_decision}
+                decision={data.institutional_decision as any}
                 ticker={ticker}
                 currencyLabel={currencyLabel}
                 onPositionUpdate={(price, qty) => {

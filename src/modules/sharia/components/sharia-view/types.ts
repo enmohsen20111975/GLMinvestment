@@ -6,11 +6,27 @@ export interface ShariaRow {
   sector: string;
   status: ShariaStatus;
   purification_rate: number | null;
+  // Runtime fields surfaced by the API/derived shapes:
+  symbol?: string;
+  compliant_sources_count?: number;
+  active_sources_count?: number;
+  sp_haram_earning_pct?: number | null;
+  is_halal_consensus?: number | null;
+  category_ar?: string | null;
 }
 export interface PurificationResponse {
   success: boolean;
   purification_rate: number;
   purified_amount: number;
+  // Extra runtime fields surfaced by the calculator response shape:
+  error?: string;
+  detail?: string;
+  purification_amount?: number;
+  purification_rate_pct?: number;
+  dividends?: number;
+  realized_capital_gain?: number;
+  method?: string;
+  primary_method?: string;
 }
 
 export const STATUS_BADGE_CLASS: Record<string, string> = {

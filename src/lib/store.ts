@@ -13,6 +13,7 @@ import type {
   AiInsights,
   WatchlistItem,
   StockListResponse,
+  StockStatusItem,
 } from '@/types';
 import type { RecommendResponse, PersonaType } from '@/types/v2';
 import { apiClient } from '@/lib/api-client';
@@ -728,6 +729,7 @@ interface AppStore {
   stocksPage: number;
   searchQuery: string;
   selectedStock: Stock | null;
+  stockDetail: Record<string, unknown> | null;
   stockHistory: PriceHistoryResponse | null;
   deepAnalysis: DeepAnalysis | null;
   professionalAnalysis: Record<string, unknown> | null;
@@ -744,6 +746,7 @@ interface AppStore {
   persona: PersonaType;
   egxPilotNews: Array<{ title?: string; summary?: string; timestamp?: number }> | null;
   egxPilotNewsLoading: boolean;
+  portfolio: Array<Record<string, unknown>>;
 
   // Actions
   setSearchQuery: (query: string) => void;
@@ -986,6 +989,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   stocksPage: 1,
   searchQuery: '',
   selectedStock: null,
+  stockDetail: null,
   stockHistory: null,
   deepAnalysis: null,
   professionalAnalysis: null,
@@ -1002,6 +1006,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   persona: 'balanced' as PersonaType,
   egxPilotNews: null,
   egxPilotNewsLoading: false,
+  portfolio: [],
 
   // Actions
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -1067,7 +1072,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
 
     apiClient.getStocks(params as Parameters<typeof apiClient.getStocks>[0])
-      .then((response: StockListResponse) => {
+      .then((response: any) => {
         // Filter out null/undefined items and items without ticker
         const list = Array.isArray(response.stocks)
           ? response.stocks
@@ -1170,7 +1175,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   loadProfessionalAnalysis: (ticker) => {
     const upperTicker = ticker.toUpperCase();
     apiClient.getProfessionalAnalysis(upperTicker)
-      .then((data) => {
+      .then((data: any) => {
         set({ professionalAnalysis: data });
       })
       .catch(() => {
@@ -1218,12 +1223,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
             low_price: 0,
             volume: 0,
             market_cap: 0,
+            pe_ratio: 0,
+            pb_ratio: 0,
+            dividend_yield: 0,
+            eps: 0,
+            roe: 0,
+            debt_to_equity: 0,
+            support_level: 0,
+            resistance_level: 0,
+            ma_50: 0,
+            ma_200: 0,
+            rsi: 0,
             sector: '',
             industry: '',
+            egx30_member: false,
+            egx70_member: false,
+            egx100_member: false,
             is_active: true,
             is_egx: true,
             last_update: new Date().toISOString(),
-          };
+          } as Stock;
         }
 
         // Get history
@@ -1233,7 +1252,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
         // Get analysis/recommendation
         const analysis = recRaw
-          ? adaptDeepAnalysis(recRaw as unknown as Record<string, unknown>, stock)
+          ? adaptDeepAnalysis(recRaw as unknown as Record<string, unknown>, stock as Stock)
           : null;
 
         set({
@@ -1347,7 +1366,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         // Filter out null/undefined stock_statuses without ticker
         if (insights && insights.stock_statuses) {
           insights.stock_statuses = insights.stock_statuses.filter(
-            (s): s is NonNullable<typeof s> => s != null && s.ticker
+            (s): s is NonNullable<typeof s> => Boolean(s != null && s.ticker)
           );
         }
         set({ aiInsights: insights, isLoading: false, isRefreshing: false });
@@ -1378,7 +1397,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // Watchlist CRUD actions
   addToWatchlist: async (stockIdOrTicker: number | string, extras?: { alert_price_above?: number | null; alert_price_below?: number | null; alert_change_percent?: number | null; notes?: string | null }) => {
     try {
-      const body = typeof stockIdOrTicker === 'number'
+      const body: Record<string, unknown> = typeof stockIdOrTicker === 'number'
         ? { stock_id: stockIdOrTicker }
         : { ticker: stockIdOrTicker };
       if (extras) {
@@ -1487,7 +1506,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ stockNewsLoading: true, stockNews: null });
 
     apiClient.getStockNews(ticker.toUpperCase(), limit)
-      .then((data) => {
+      .then((data: any) => {
         set({ stockNews: data, stockNewsLoading: false });
       })
       .catch((err) => {
@@ -1517,7 +1536,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       .then((data: RecommendResponse) => {
         // Filter out null/undefined stocks and stocks without ticker
         if (data && data.stocks) {
-          data.stocks = data.stocks.filter((s): s is NonNullable<typeof s> => s != null && s.ticker);
+          data.stocks = data.stocks.filter((s): s is NonNullable<typeof s> => Boolean(s != null && s.ticker));
         }
         set({ v2Data: data, v2Loading: false, v2Error: null, v2RetryCount: 0, persona });
       })
@@ -1536,7 +1555,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ egxPilotNewsLoading: true });
 
     apiClient.getEgxPilotNews(limit)
-      .then((data) => {
+      .then((data: any) => {
         if (data.success && data.news) {
           set({ egxPilotNews: data.news, egxPilotNewsLoading: false });
         } else {

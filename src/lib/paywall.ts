@@ -2,6 +2,13 @@ import { verifyAdminRequest } from './admin-auth-server';
 import { isAdmin } from './admin-auth';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import type { NextRequest } from 'next/server';
+
+type PaywallUser = {
+  is_premium: boolean;
+  subscription_tier: string;
+  user_id: string | null;
+};
 
 export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
   // default: free user
@@ -37,7 +44,7 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
           return {
             is_premium: true,
             subscription_tier: 'admin',
-            user_id: session.user.id || 'admin',
+            user_id: (session.user as Record<string, unknown>).id as string || 'admin',
           };
         }
 
@@ -46,7 +53,7 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
         return {
           is_premium: isPremiumTier,
           subscription_tier: isPremiumTier ? 'premium' : tier,
-          user_id: session.user.id || null,
+          user_id: ((session.user as Record<string, unknown>).id as string) || null,
         };
       }
     } catch {

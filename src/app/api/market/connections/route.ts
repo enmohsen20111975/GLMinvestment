@@ -16,6 +16,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
+  let primarySource: string = 'database';
+  let anyLiveSource: boolean = false;
   const results: Record<string, {
     available: boolean;
     message: string;
@@ -183,9 +185,9 @@ export async function GET() {
   }
 
   // ---- 4. Summary ----
-  const primarySource = results['vps_python']?.available ? 'vps_python'
+  primarySource = results['vps_python']?.available ? 'vps_python'
     : (!isProductionHostinger && results['egxpy_local']?.available ? 'egxpy_local' : 'database');
-  const anyLiveSource = results['vps_python']?.available || results['egxpy_local']?.available;
+  anyLiveSource = results['vps_python']?.available || results['egxpy_local']?.available;
 
   const summary = anyLiveSource
     ? `LIVE data via ${isProductionHostinger ? 'VPS Python service' : (results['vps_python']?.available ? 'VPS' : 'local egxpy')}`

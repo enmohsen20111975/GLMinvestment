@@ -22,8 +22,8 @@ export function MonthlyResultsTemplate({ data }: MonthlyResultsTemplateProps) {
   const { period_start, stats } = data;
   const monthLabel = (() => {
     try {
-      const d = new Date(period_start);
-      if (Number.isNaN(d.getTime())) return period_start;
+      const d = new Date(period_start ?? '');
+      if (Number.isNaN(d.getTime())) return period_start ?? '';
       return d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
     } catch {
       return period_start;
@@ -135,8 +135,8 @@ export function MonthlyResultsTemplate({ data }: MonthlyResultsTemplateProps) {
             <KpiCard
               icon="🎯"
               label="نسبة النجاح"
-              value={fmt(stats.success_rate, 1) + '%'}
-              sublabel={stats.success_rate >= 60 ? 'أداء ممتاز' : 'أداء جيد'}
+              value={fmt(stats.success_rate ?? 0, 1) + '%'}
+              sublabel={(stats.success_rate ?? 0) >= 60 ? 'أداء ممتاز' : 'أداء جيد'}
               accent="emerald"
               size="lg"
             />
@@ -199,7 +199,7 @@ export function MonthlyResultsTemplate({ data }: MonthlyResultsTemplateProps) {
               </div>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <TradeTable trades={stats.top_trades.slice(0, 5)} />
+              <TradeTable trades={(stats.top_trades ?? []).slice(0, 5)} />
             </div>
           </div>
         </>

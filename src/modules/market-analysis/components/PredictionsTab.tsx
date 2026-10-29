@@ -199,16 +199,17 @@ function ProofPredictionsTableView({
  const stocksMap = React.useMemo(() => {
  const map = new Map<string, any>();
  storeStocks.forEach((s) => {
- if (s.ticker) {
- const clean = s.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
+ const ss = s as any;
+ if (ss.ticker) {
+ const clean = String(ss.ticker).replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
  map.set(clean, s);
- map.set(s.ticker.toUpperCase(), s);
+ map.set(String(ss.ticker).toUpperCase(), s);
  }
  });
  return map;
  }, [storeStocks]);
 
- const loadStockDetail = useAnalysisStore((state) => state.loadStockDetail);
+ const loadStockDetail = useAnalysisStore((state) => (state as any).loadStockDetail);
 
  if (stocks.length === 0) {
  return (
@@ -565,10 +566,11 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  const stocksMap = React.useMemo(() => {
  const map = new Map<string, any>();
  storeStocks.forEach((s) => {
- if (s.ticker) {
- const clean = s.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
+ const ss = s as any;
+ if (ss.ticker) {
+ const clean = String(ss.ticker).replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
  map.set(clean, s);
- map.set(s.ticker.toUpperCase(), s);
+ map.set(String(ss.ticker).toUpperCase(), s);
  }
  });
  return map;
@@ -671,7 +673,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  <CardContent className="p-4 text-center">
  <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
  <p className="text-destructive mb-2">{error}</p>
- <Button variant="outline" size="sm" onClick={fetchPredictions}>
+ <Button variant="outline" size="sm" onClick={() => fetchPredictions()}>
  <RefreshCw className="h-4 w-4 ml-2" />
  إعادة المحاولة
  </Button>
@@ -696,7 +698,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  توثيق تلقائي مباشر للنتائج والأرباح المحققة لكافة الصفقات والتوقعات الصادرة عن المنصة
  </p>
  </div>
- <Button variant="outline" size="sm" onClick={fetchPredictions} className="gap-1.5 border-whale text-whale ">
+ <Button variant="outline" size="sm" onClick={() => fetchPredictions()} className="gap-1.5 border-whale text-whale ">
  <RefreshCw className="h-3.5 w-3.5" />
  تحديث النتائج المباشرة
  </Button>
@@ -841,7 +843,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
  <PredictionsImageCard
  ref={ref}
  market={market}
- stocks={filteredCombinedStocks}
+ stocks={filteredCombinedStocks as any}
  winRate={dynamicWinRate}
  avgPnl={dynamicAvgPnl}
  hits={dynamicHits}

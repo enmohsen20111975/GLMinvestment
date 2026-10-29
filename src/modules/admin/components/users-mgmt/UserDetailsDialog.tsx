@@ -73,7 +73,7 @@ export function UserDetailsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.image} />
+              <AvatarImage src={user.image ?? undefined} />
               <AvatarFallback>
                 {getInitials(user.name || '', user.email)}
               </AvatarFallback>

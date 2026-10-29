@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { feature, ticker } = body;
 
     // Get session if available
-    let session = null;
+    let session: any = null;
     try {
       session = await getServerSession(authOptions);
     } catch (e) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to get user data for registration date check
-    let userRecord = null;
+    let userRecord: any = null;
     try {
       userRecord = await db.user.findUnique({
         where: { id: userId },
@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to get user subscription
-    let subscription = null;
+    let subscription: any = null;
     try {
       subscription = await db.userSubscription.findUnique({
         where: { user_id: userId },
-        include: { plan: true },
+        include: { plan: true } as any,
       });
     } catch (dbError) {
       console.warn('[check-access] DB error:', dbError);

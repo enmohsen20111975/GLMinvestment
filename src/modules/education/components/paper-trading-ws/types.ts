@@ -17,6 +17,14 @@ export interface PaperOrder {
   closed_at: string | null;
   pnl: number | null;
   pnl_pct: number | null;
+  // Runtime-computed extras for OPEN positions (paper-trading-ws):
+  order_type?: 'BUY' | 'SELL';
+  asset_type?: AssetType;
+  current_price?: number;
+  market_value?: number;
+  unrealized_pnl?: number;
+  unrealized_pnl_pct?: number;
+  take_profit?: number | null;
 }
 
 export interface ClosedOrder extends PaperOrder {
@@ -29,7 +37,7 @@ export interface ClosedOrder extends PaperOrder {
 }
 
 export interface EquityHistoryPoint {
-  date: string;
+  time: string;
   equity: number;
 }
 
@@ -58,11 +66,18 @@ export const HISTORY_PAGE_SIZE = 20;
 export const LIVE_PRICE_POLL_MS = 5000;
 export const POLL_INTERVAL_MS = 10000;
 export type OrderType = 'BUY' | 'SELL';
-export type AutoClosedEntry = PaperOrder & { status: 'CLOSED' };
+export type AutoClosedEntry = { order: PaperOrder; reason: string } & { status: 'CLOSED' };
 export type OpenPosition = PaperOrder & { status: 'OPEN' };
 export interface PaperTradingAccount {
   id: string;
   cash: number;
   initial_capital: number;
   created_at: string;
+  // Extended fields used by AccountHeaderBar
+  virtual_balance?: number;
+  total_equity?: number;
+  total_pnl?: number;
+  win_rate?: number;
+  total_trades?: number;
+  [key: string]: unknown;
 }

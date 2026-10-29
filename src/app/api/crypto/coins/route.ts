@@ -22,7 +22,7 @@ import { getLatestCryptoPrices } from '@/lib/data-engine-db';
 export const dynamic = 'force-dynamic';
 
 // 60-second in-memory cache
-const cache: { data: unknown; ts: number } | null = { data: null, ts: 0 };
+const cache: { data: unknown; ts: number } = { data: null, ts: 0 };
 const CACHE_MS = 60_000;
 
 export async function GET(request: Request) {

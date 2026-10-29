@@ -243,7 +243,7 @@ export function insertPriceHistory(
     volume: number;
   }
 ): number {
-  const insertStmt = db.prepare(`
+  const insertStmt = (db as any).prepare(`
     INSERT INTO stock_price_history (ticker, date, open_price, high_price, low_price, close_price, volume, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `) as { run: (...args: unknown[]) => { changes: number; lastInsertRowid: number } };
@@ -277,7 +277,7 @@ export function priceHistoryExists(
   ticker: string,
   date: string
 ): boolean {
-  const stmt = db.prepare(
+  const stmt = (db as any).prepare(
     'SELECT 1 FROM stock_price_history WHERE ticker = ? AND date = ? LIMIT 1'
   ) as { get: (...args: unknown[]) => unknown };
   const row = stmt.get(ticker.toUpperCase(), date);
@@ -300,7 +300,7 @@ export function upsertPriceHistory(
     volume: number;
   }
 ): { inserted: boolean; id: number } {
-  const insertStmt = db.prepare(`
+  const insertStmt = (db as any).prepare(`
     INSERT OR IGNORE INTO stock_price_history (ticker, date, open_price, high_price, low_price, close_price, volume, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `) as { run: (...args: unknown[]) => { changes: number; lastInsertRowid: number } };
@@ -344,7 +344,7 @@ export async function fetchStockDataFromMubasher(ticker: string): Promise<{
 
   for (const url of urls) {
     try {
-      const result = await zai.functions.invoke('page_reader', { url }) as Record<string, unknown>;
+      const result = await zai.functions.invoke('page_reader', { url }) as unknown as Record<string, unknown>;
       const data = result?.data as Record<string, unknown> | undefined;
       const html = String(data?.html || data?.content || result?.html || result?.content || '');
       const text = String(data?.text || data?.textContent || '');
@@ -555,16 +555,17 @@ function extractQuoteFromJson(
   const quote = find(data);
   if (!quote) return null;
 
+  const quoteAny = quote as any;
   const price = parseNumber(
-    quote.price || quote.close || quote.lastPrice || quote.last || quote.current_price
+    quoteAny.price || quoteAny.close || quoteAny.lastPrice || quoteAny.last || quoteAny.current_price
   );
-  const open = parseNumber(quote.open || quote.open_price || quote.openPrice);
-  const high = parseNumber(quote.high || quote.high_price || quote.highPrice || quote.dayHigh);
-  const low = parseNumber(quote.low || quote.low_price || quote.lowPrice || quote.dayLow);
-  const vol = parseVolume(quote.volume || quote.vol || quote.turnover);
-  const chg = parseNumber(quote.change || quote.changeAmount || quote.diff || quote.priceChange);
-  const chgPct = parseNumber(quote.changePercent || quote.changePct || quote.pctChange || quote.perChange);
-  const prev = parseNumber(quote.prevClose || quote.previousClose || quote.yesterdayClose);
+  const open = parseNumber(quoteAny.open || quoteAny.open_price || quoteAny.openPrice);
+  const high = parseNumber(quoteAny.high || quoteAny.high_price || quoteAny.highPrice || quoteAny.dayHigh);
+  const low = parseNumber(quoteAny.low || quoteAny.low_price || quoteAny.lowPrice || quoteAny.dayLow);
+  const vol = parseVolume(quoteAny.volume || quoteAny.vol || quoteAny.turnover);
+  const chg = parseNumber(quoteAny.change || quoteAny.changeAmount || quoteAny.diff || quoteAny.priceChange);
+  const chgPct = parseNumber(quoteAny.changePercent || quoteAny.changePct || quoteAny.pctChange || quoteAny.perChange);
+  const prev = parseNumber(quoteAny.prevClose || quoteAny.previousClose || quoteAny.yesterdayClose);
 
   if (price <= 0) return null;
 
@@ -632,7 +633,7 @@ export async function fetchHistoricalPrices(ticker: string): Promise<{
           // Try to read the most promising result
           for (const r of results.slice(0, 2)) {
             if (r.url.includes('mubasher.info')) {
-              const pageResult = await zai.functions.invoke('web_reader', { url: r.url }) as Record<string, unknown>;
+              const pageResult = await (zai.functions.invoke as any)('web_reader', { url: r.url }) as unknown as Record<string, unknown>;
               const data = pageResult?.data as Record<string, unknown> | undefined;
               const html = String(data?.html || data?.content || pageResult?.html || '');
               if (html) {
@@ -818,16 +819,17 @@ function extractHistoricalPoint(
   item: Record<string, unknown>,
   ticker: string
 ): ParsedStockPrice | null {
-  const date = normalizeDate(String(item.date || item.time || item.timestamp || item.x || ''));
+  const itemAny = item as any;
+  const date = normalizeDate(String(itemAny.date || itemAny.time || itemAny.timestamp || itemAny.x || ''));
   if (!date) return null;
 
-  const close = parseNumber(item.close || item.price || item.y || item.value);
+  const close = parseNumber(itemAny.close || itemAny.price || itemAny.y || itemAny.value);
   if (close <= 0) return null;
 
-  const open = parseNumber(item.open || item.open_price || open);
-  const high = parseNumber(item.high || item.high_price || item.h);
-  const low = parseNumber(item.low || item.low_price || item.l);
-  const volume = parseVolume(item.volume || item.vol || item.v);
+  const open = parseNumber(itemAny.open || itemAny.open_price || itemAny.openPrice);
+  const high = parseNumber(itemAny.high || itemAny.high_price || itemAny.h);
+  const low = parseNumber(itemAny.low || itemAny.low_price || itemAny.l);
+  const volume = parseVolume(itemAny.volume || itemAny.vol || itemAny.v);
 
   return {
     ticker: ticker.toUpperCase(),

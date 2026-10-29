@@ -164,14 +164,14 @@ export function usePortfolioData(
   // (the /api/portfolio/accounts route now requires auth — F1.2 fix)
   const sessionQ = useApiQuery<SessionResp>('/api/auth/session', {
     queryOptions: { staleTime: 5 * 60 * 1000 }, // 5 min — session rarely changes
-  });
+  }) as any;
   const userId = sessionQ.data?.user?.id;
 
   // ── Portfolio accounts (portfoliosMap — depends on session.user.id) ──
   const accountsQ = useApiQuery<PortfolioAccountsResp>('/api/portfolio/accounts', {
     params: userId ? { user_id: userId } : undefined,
     queryOptions: { enabled: !!userId },
-  });
+  }) as any;
 
   // ── Primary data: calculate-values + obligations ──
   // B-1 FIX: Only fetch assets + obligations. Crypto is ALREADY returned by
@@ -180,10 +180,10 @@ export function usePortfolioData(
   // (2) treat USD prices as EGP — both inflating the total.
   const calcQ = useApiQuery<CalcValuesResp>('/api/finance/calculate-values', {
     params: portfolioParams,
-  });
+  }) as any;
   const obligationsQ = useApiQuery<ObligationsResp>('/api/finance/obligations', {
     params: { status: 'active' },
-  });
+  }) as any;
 
   // ── Fallback: /api/finance/assets only fires if calculate-values fails ──
   // Preserves the original fallback branch (legacy API support).
@@ -191,7 +191,7 @@ export function usePortfolioData(
   const fallbackAssetsQ = useApiQuery<AssetsFallbackResp>('/api/finance/assets', {
     params: portfolioParams,
     queryOptions: { enabled: calcFailed },
-  });
+  }) as any;
 
   // ── Build portfoliosMap from accounts ──
   useEffect(() => {

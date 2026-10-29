@@ -26,6 +26,8 @@ interface SyncResult {
   count: number;
   error?: string;
   source?: string;
+  note?: string;
+  [key: string]: unknown;
 }
 
 /**

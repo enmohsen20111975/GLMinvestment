@@ -765,7 +765,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <span className="font-bold tabular-nums text-profit">{formatPrice(numVal(t.support))}</span>
  </div>
  <Separator className="my-2" />
- {t.resistance && t.support && current > 0 && (
+ {t.resistance != null && t.support != null && current > 0 && (
  <div className="text-xs text-muted-foreground">
  المدى: {formatPct(((numOr(t.resistance, 0) - numOr(t.support, 0)) / numOr(t.support, 1)) * 100)} من الدعم للمقاومة
  </div>
@@ -788,7 +788,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
  <span className="text-sm">أدنى 52 أسبوع</span>
  <span className="font-bold tabular-nums text-loss">{formatPrice(numVal(t.low_52w))}</span>
  </div>
- {t.high_52w && t.low_52w && current > 0 && (
+ {t.high_52w != null && t.low_52w != null && current > 0 && (
  <>
  <div className="relative h-2 from-loss via-warning to-profit rounded-full mt-2">
  <div
@@ -866,7 +866,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
         titleClassName="text-sm"
         contentClassName="space-y-2"
  >
- {m.pe_ratio && (
+ {m.pe_ratio != null && (
  <ValuationRow
  label="P/E"
  value={numOr(m.pe_ratio, 0)}
@@ -876,7 +876,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  highLabel="غالي"
  />
  )}
- {m.pb_ratio && (
+ {m.pb_ratio != null && (
  <ValuationRow
  label="P/B"
  value={numOr(m.pb_ratio, 0)}
@@ -886,7 +886,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  highLabel="غالي"
  />
  )}
- {m.roe && (
+ {m.roe != null && (
  <ValuationRow
  label="ROE"
  value={numOr(m.roe, 0)}
@@ -897,7 +897,7 @@ function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> |
  reverse
  />
  )}
- {m.debt_to_equity && (
+ {m.debt_to_equity != null && (
  <ValuationRow
  label="دين/حقوق ملكية"
  value={numOr(m.debt_to_equity, 0)}
@@ -938,7 +938,7 @@ function ValuationRow({ label, value, low, high, lowLabel, highLabel, reverse }:
 // ============================================================================
 
 function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknown> | null | undefined; hunter: Record<string, unknown> | null | undefined; board: Record<string, unknown> | null | undefined }) {
- const m = maestro?.maestroAnalysis || maestro || {};
+ const m: any = maestro?.maestroAnalysis || maestro || {};
 
  return (
  <div className="space-y-4">
@@ -1075,13 +1075,13 @@ function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknow
 }
 
 function PhaseCard({ title, phase }: { title: string; phase: Record<string, unknown> | null | undefined }) {
- const score = phase?.score || 0;
+ const score = numOr(phase?.score, 0);
  return (
  <div className="p-3 rounded-lg bg-muted/30">
  <div className="text-xs text-muted-foreground mb-1">{title}</div>
  <div className={cn('text-lg font-bold', scoreColor(score))}>{Math.round(score)}</div>
- {phase?.phase && (
- <div className="text-xs text-muted-foreground mt-0.5">{phase.phase}</div>
+ {phase?.phase != null && (
+ <div className="text-xs text-muted-foreground mt-0.5">{String(phase.phase)}</div>
  )}
  </div>
  );
@@ -1108,10 +1108,10 @@ function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, 
  <WidgetCard title="السعر مع الدعم والمقاومة" titleClassName="text-sm">
  <PriceWithMAChart
  history={priceHistory}
- ma50={tech.ma_50}
- ma200={tech.ma_200}
- support={tech.support}
- resistance={tech.resistance}
+ ma50={numOr(tech?.ma_50, 0)}
+ ma200={numOr(tech?.ma_200, 0)}
+ support={numOr(tech?.support, 0)}
+ resistance={numOr(tech?.resistance, 0)}
  />
  </WidgetCard>
 
@@ -1127,7 +1127,7 @@ function PriceWithMAChart({ history, ma50, ma200, support, resistance }: {
  history: Array<Record<string, unknown>>; ma50: number; ma200: number; support: number; resistance: number;
 }) {
  const data = history.map((h) => ({
- date: shortDate(h.date || h.price_date || ''),
+ date: shortDate(strVal(h.date || h.price_date)),
  close: Number(h.close || h.close_price || 0),
  volume: Number(h.volume || 0),
  }));
@@ -1191,7 +1191,7 @@ function PriceWithMAChart({ history, ma50, ma200, support, resistance }: {
 
 function VolumeChart({ history }: { history: Array<Record<string, unknown>> }) {
  const data = history.map((h) => ({
- date: shortDate(h.date || h.price_date || ''),
+ date: shortDate(strVal(h.date || h.price_date)),
  volume: Number(h.volume || 0),
  }));
 
@@ -1228,19 +1228,19 @@ function NewsTab({ news }: { news: Array<Record<string, unknown>> }) {
 
  return (
  <div className="space-y-3">
- {news.map((item, i) => (
+ {news.map((item: any, i) => (
  <Card key={i}>
  <CardContent className="p-3">
  <div className="flex items-start gap-3">
  <Newspaper className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
  <div className="flex-1 min-w-0">
- <h4 className="text-sm font-semibold mb-1">{item.title || item.title_ar || 'بدون عنوان'}</h4>
+ <h4 className="text-sm font-semibold mb-1">{String(item.title || item.title_ar || 'بدون عنوان')}</h4>
  {item.summary && (
- <p className="text-xs text-muted-foreground line-clamp-2">{item.summary}</p>
+ <p className="text-xs text-muted-foreground line-clamp-2">{String(item.summary)}</p>
  )}
  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
- {item.source && <Badge variant="outline" className="text-xs">{item.source}</Badge>}
- {item.timestamp && <span>{shortDate(item.timestamp)}</span>}
+ {item.source && <Badge variant="outline" className="text-xs">{String(item.source)}</Badge>}
+ {item.timestamp && <span>{shortDate(String(item.timestamp))}</span>}
  {item.sentiment && (
  <Badge variant="outline" className={cn(
  'text-xs',
@@ -1284,23 +1284,23 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
  >
  <ScrollArea className="max-h-96">
  <div className="space-y-2">
- {predictions.map((pred, i) => {
+ {predictions.map((pred: any, i) => {
  const outcome = pred.outcome || pred.status || 'PENDING';
  const return_ = pred.actual_return || pred.profit_loss_percent;
  return (
  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
  <div className="flex items-center gap-3">
- <Badge className={signalBadge(pred.signal || pred.signal_type || '').className}>
- {pred.signal || pred.signal_type || '—'}
+ <Badge className={signalBadge(String(pred.signal || pred.signal_type || '')).className}>
+ {String(pred.signal || pred.signal_type || '—')}
  </Badge>
  <div>
  <div className="text-xs font-semibold">
- {shortDate(pred.prediction_date || pred.created_at || '')}
+ {shortDate(strVal(pred.prediction_date || pred.created_at))}
  </div>
  {pred.entry_price && (
  <div className="text-xs text-muted-foreground">
- دخول: {formatPrice(pred.entry_price)}
- {pred.target_price && ` → هدف: ${formatPrice(pred.target_price)}`}
+ دخول: {formatPrice(Number(pred.entry_price))}
+ {pred.target_price && ` → هدف: ${formatPrice(Number(pred.target_price))}`}
  </div>
  )}
  </div>
@@ -1335,7 +1335,7 @@ function PredictionsTab({ predictions }: { predictions: Array<Record<string, unk
 // AI Tab
 // ============================================================================
 
-function AITab({ professional, ticker }: { professional: Record<string, unknown> | null | undefined; ticker: string }) {
+function AITab({ professional, ticker }: { professional: any; ticker: string }) {
  if (!professional) {
  return (
  <Card>
@@ -1361,21 +1361,21 @@ function AITab({ professional, ticker }: { professional: Record<string, unknown>
  {professional.recommendation && (
  <div className="flex items-center gap-2">
  <span className="text-xs text-muted-foreground">التوقع:</span>
- <Badge className={signalBadge(professional.recommendation).className}>
- {professional.recommendation_ar || professional.recommendation}
+ <Badge className={signalBadge(String(professional.recommendation)).className}>
+ {String(professional.recommendation_ar || professional.recommendation)}
  </Badge>
  </div>
  )}
  {professional.analysis && (
  <div>
  <span className="text-xs text-muted-foreground">التحليل:</span>
- <p className="text-sm mt-1 whitespace-pre-wrap">{professional.analysis}</p>
+ <p className="text-sm mt-1 whitespace-pre-wrap">{String(professional.analysis)}</p>
  </div>
  )}
  {professional.summary && (
  <div>
  <span className="text-xs text-muted-foreground">الملخص:</span>
- <p className="text-sm mt-1">{professional.summary}</p>
+ <p className="text-sm mt-1">{String(professional.summary)}</p>
  </div>
  )}
  {professional.target_price ? (

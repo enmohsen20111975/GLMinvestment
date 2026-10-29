@@ -55,8 +55,8 @@ export interface Stock extends StockMini {
   id?: number;
   previous_close: number;
   open_price: number;
-  high_price: number;
-  low_price: number;
+  high_price: number | null;
+  low_price: number | null;
   volume: number;
   volume_int?: number;
   volume_week?: number | null;

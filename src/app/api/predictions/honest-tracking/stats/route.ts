@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
       }
 
       // By market (existing logic, preserved)
-      const m = inferMarket(r.ticker, r.market);
+      const m = inferMarket(String(r.ticker || ''), (r.market as string | null) || null);
       if (!byMarketMap[m]) byMarketMap[m] = { total: 0, wins: 0, losses: 0, closed: 0, active: 0, pending: 0, win_rate: 0, net_pl: 0, sr_adoption: 0, avg_return: null };
       if (!returnsByMarket[m]) returnsByMarket[m] = [];
       byMarketMap[m].total++;
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
         byMarketMap[m].active++;
         byMarketMap[m].pending++;
       }
-      if (r.notes && (r.notes.includes('support=') || r.notes.includes('resistance='))) {
+      if (r.notes && (String(r.notes).includes('support=') || String(r.notes).includes('resistance='))) {
         byMarketMap[m].sr_adoption++;
       }
     }
@@ -393,21 +393,21 @@ export async function GET(request: NextRequest) {
       : cumulative_returns;
 
     // Filter by market if specified
-    let filteredTotal = overall.total;
-    let filteredClosed = overall.closed;
-    let filteredWins = overall.wins;
+    let filteredTotal = Number(overall.total ?? 0);
+    let filteredClosed = Number(overall.closed ?? 0);
+    let filteredWins = Number(overall.wins ?? 0);
     if (marketFilter !== 'all') {
       const m = marketFilter.toUpperCase();
       const marketData = byMarket.find((x) => x.market === m);
       if (marketData) {
-        filteredTotal = marketData.total;
-        filteredClosed = marketData.closed;
-        filteredWins = marketData.wins;
+        filteredTotal = Number(marketData.total ?? 0);
+        filteredClosed = Number(marketData.closed ?? 0);
+        filteredWins = Number(marketData.wins ?? 0);
       }
     }
 
     const winRate = filteredClosed > 0
-      ? Math.round((Number(filteredWins) / filteredClosed) * 1000) / 10
+      ? Math.round((Number(filteredWins) / Number(filteredClosed)) * 1000) / 10
       : 0;
 
     // KPI-AUDIT: compute audit fields (gold-standard alignment)
@@ -441,7 +441,7 @@ export async function GET(request: NextRequest) {
         profit_taken: overall.profit_taken,
         expired: overall.expired,
         wins: filteredWins,
-        losses: filteredClosed - filteredWins,
+        losses: Number(filteredClosed) - Number(filteredWins),
         buy_signals: overall.buys,
         sell_signals: overall.sells,
         real_win_rate: winRate,

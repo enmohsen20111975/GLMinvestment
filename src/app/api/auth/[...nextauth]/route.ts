@@ -9,7 +9,7 @@ import { getServerAdminEmails, getServerAdminUsernames, isServerAdmin } from '@/
 
 const isHttps = Boolean(process.env.NEXTAUTH_URL?.startsWith('https://') && !process.env.NEXTAUTH_URL?.includes('localhost'));
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   useSecureCookies: isHttps,
   cookies: {
     sessionToken: {
@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         console.log('[Auth Debug] Received credentials keys:', Object.keys(credentials || {}));
-        const rawIdentifier = (credentials?.username_or_email || credentials?.username || credentials?.email || '') as string;
+        const rawIdentifier = ((credentials as any)?.username_or_email || (credentials as any)?.username || (credentials as any)?.email || '') as string;
         console.log('[Auth Debug] Raw identifier:', rawIdentifier, 'password len:', (credentials?.password || '').length);
         if (!rawIdentifier || !credentials?.password) {
           console.log('[Auth Debug] Missing identifier or password');
@@ -119,7 +119,7 @@ export const authOptions: NextAuthOptions = {
 
           if (userMatches && passMatches) {
             // Resolve (or lazily provision) the admin identity in the DB
-            let adminUser = null;
+            let adminUser: any = null;
             try {
               adminUser = await db.user.findFirst({
                 where: {
@@ -156,10 +156,10 @@ export const authOptions: NextAuthOptions = {
             }
 
             return {
-              id: adminUser.id,
-              email: adminUser.email,
-              name: adminUser.name || 'System Admin',
-              image: adminUser.image || null,
+              id: adminUser?.id,
+              email: adminUser?.email,
+              name: adminUser?.name || 'System Admin',
+              image: adminUser?.image || null,
             };
           }
           // If credentials don't match env-admin, fall through to the standard
@@ -168,7 +168,7 @@ export const authOptions: NextAuthOptions = {
 
         // ---- Standard authentication path (DB + bcrypt) ----
         // Find user by email or username
-        let user = null;
+        let user: any = null;
         try {
           user = await db.user.findFirst({
             where: {
@@ -370,7 +370,7 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user && token) {
-        session.user.id = token.id as string;
+        (session.user as any).id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.image = token.image as string | null;
@@ -427,7 +427,7 @@ export const authOptions: NextAuthOptions = {
             isServerAdmin(userEmail, username);
 
           if (freshUser) {
-            session.user.id = freshUser.id; // Override with database CUID
+            (session.user as any).id = freshUser.id; // Override with database CUID
             (session.user as Record<string, unknown>).subscription_tier = isUserAdmin ? 'admin' : (freshUser.subscription_tier || 'free');
             (session.user as Record<string, unknown>).default_risk_tolerance = freshUser.default_risk_tolerance;
             (session.user as Record<string, unknown>).username = freshUser.username;
@@ -484,7 +484,7 @@ export const authOptions: NextAuthOptions = {
   // construct the correct callback URL automatically.
   // Local: http://localhost:8100/api/auth/callback/google
   // Production: https://invist.m2y.net/api/auth/callback/google
-};
+} as NextAuthOptions;
 
 const handler = NextAuth({
   ...authOptions,

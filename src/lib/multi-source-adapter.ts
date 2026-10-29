@@ -109,6 +109,12 @@ export interface CurrencyRate {
   name_ar?: string;
   source: string;
   fetched_at: string;
+  // Extended fields used by sync route
+  code?: string;
+  buy_rate?: number;
+  sell_rate?: number;
+  is_major?: boolean;
+  [key: string]: unknown;
 }
 
 export interface HistoricalPrice {
@@ -304,7 +310,7 @@ async function fetchVpsQuote(ticker: string): Promise<StockQuote | null> {
     return null;
   }
 
-  const stock = data.data || data;
+  const stock: any = data.data || data;
   if (!stock || !stock.current_price) {
     markFailure('VPS', 'No data');
     return null;
@@ -352,7 +358,7 @@ async function fetchVpsAllStocks(): Promise<StockQuote[]> {
 
   return stocks.map(s => ({
     ticker: s.symbol,
-    current_price: s.current_price || s.price,
+    current_price: s.current_price || s.price || 0,
     change: s.change || s.change_amount || 0,
     change_percent: s.change_percent || 0,
     open: s.open || s.open_price,
@@ -639,7 +645,7 @@ async function fetchTwelveDataQuote(ticker: string): Promise<StockQuote | null> 
 
   markSuccess('TWELVE_DATA');
 
-  const prevClose = parseFloat(data.previous_close) || close;
+  const prevClose = parseFloat(data.previous_close || '0') || close;
   const change = close - prevClose;
   const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
 
@@ -649,11 +655,11 @@ async function fetchTwelveDataQuote(ticker: string): Promise<StockQuote | null> 
     current_price: close,
     change: round3(change),
     change_percent: round2(changePercent),
-    open: parseFloat(data.open) || undefined,
-    high: parseFloat(data.high) || undefined,
-    low: parseFloat(data.low) || undefined,
+    open: parseFloat(data.open || '0') || undefined,
+    high: parseFloat(data.high || '0') || undefined,
+    low: parseFloat(data.low || '0') || undefined,
     previous_close: prevClose,
-    volume: parseInt(data.volume) || 0,
+    volume: parseInt(data.volume || '0') || 0,
     source: 'twelvedata',
     fetched_at: new Date().toISOString(),
   };
@@ -765,7 +771,7 @@ async function fetchMarketstackQuote(ticker: string): Promise<StockQuote | null>
   const { data, error } = await fetchWithTimeout<MarketstackEodResponse>(url, {}, 8000);
 
   if (error || !data || !data.data || data.data.length === 0) {
-    logger.warn('marketstack fetch error', { ticker, err: error instanceof Error ? error.message : String(error) });
+    logger.warn('marketstack fetch error', { ticker, err: String(error) });
     markFailure('MARKETSTACK', error);
     return null;
   }

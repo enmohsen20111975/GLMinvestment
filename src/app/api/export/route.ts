@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let data: Record<string, unknown>;
+    let data: Record<string, unknown> = {};
     let csvResult: string | null = null;
 
     switch (type) {
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
             s.egx70_member,
             s.egx100_member,
           ]);
-          csvResult = generateCSV(headers, rows);
+          csvResult = generateCSV(headers, rows as any);
         }
         break;
       }
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
           const trend = a.trend as Record<string, unknown> | undefined;
           const exec = a.execution_plan as Record<string, unknown> | undefined;
           const probabilities = a.probabilities as Record<string, unknown> | undefined;
-          const adminOverride = a.insights_payload
+          const adminOverride: any = a.insights_payload
             ? (() => {
                 try {
                   const payload =
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
             r.news_impact,
             r.notes,
           ]);
-          csvResult = generateCSV(headers, rows);
+          csvResult = generateCSV(headers, rows as any);
         }
         break;
       }
@@ -346,7 +346,7 @@ export async function GET(request: NextRequest) {
             r.risk_score,
             r.trend,
           ]);
-          csvResult = generateCSV(headers, rows);
+          csvResult = generateCSV(headers, rows as any);
         }
         break;
       }

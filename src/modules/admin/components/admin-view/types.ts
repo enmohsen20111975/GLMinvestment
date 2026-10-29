@@ -121,7 +121,13 @@ export type AdminTab =
  // Task 31-B (Engine Monitor Battalion) — unified engine control room.
  | 'engine-control-room'
  // (ALPHA-SYSTEM-TOPOLOGY): خريطة النظام الحية — رسم هندسي تفاعلي + حالة كل node.
- | 'system-topology';
+ | 'system-topology'
+ // Legacy tab aliases referenced by older code paths.
+ | 'engine-control'
+ | 'performance'
+ | 'subscriptions'
+ | 'news'
+ | 'quality';
 
 // Stream C: 6 Core Admin Hubs — consolidates the flat tabs into 6 logical sectors.
 export type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';

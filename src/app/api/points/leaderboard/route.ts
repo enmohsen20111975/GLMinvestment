@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 // GET - لوحة المتصدرين
 export async function GET(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       orderBy = { posts_points: 'desc' };
     }
 
-    const leaderboard = await db.userPoints.findMany({
+    const leaderboard = await (db as any).userPoints.findMany({
       take: limit,
       orderBy,
       include: {
@@ -43,10 +44,10 @@ export async function GET(request: NextRequest) {
     if (type === 'accuracy') {
       const usersWithAccuracy = await Promise.all(
         leaderboard.map(async (up) => {
-          const wins = await db.userPost.count({
+          const wins = await (db as any).userPost.count({
             where: { user_id: up.user_id, outcome: 'win' }
           });
-          const losses = await db.userPost.count({
+          const losses = await (db as any).userPost.count({
             where: { user_id: up.user_id, outcome: 'loss' }
           });
           const total = wins + losses;

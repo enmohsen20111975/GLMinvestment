@@ -445,19 +445,23 @@ export function DashboardView() {
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
  {opportunities.map((stock) => {
- const entry = stock.entryPrice || stock.currentPrice;
- const stop = stock.exitStrategy?.stopLoss || 0;
- const target = stock.exitStrategy?.targetPrice || 0;
- const target2 = stock.exitStrategy?.targetPrice2 || 0;
+ const stockAny = stock as any;
+ const entry = stockAny.entryPrice || stockAny.currentPrice;
+ const stop = stockAny.exitStrategy?.stopLoss || 0;
+ const target = stockAny.exitStrategy?.targetPrice || 0;
+ const target2 = stockAny.exitStrategy?.targetPrice2 || 0;
  // UNIFY-FIX (Rule 20): R:R من Python (stock.rrRatio) — لا حساب client-side
- const rr = (stock as Record<string, unknown>).rrRatio as number | undefined;
+ const rr = stockAny.rrRatio as number | undefined;
  const rrDisplay = rr != null ? rr.toFixed(2) : '—';
- const isStrong = stock.recommendation === 'Strong Buy';
+ const isStrong = stockAny.recommendation === 'Strong Buy';
  return (
  <Card
  key={stock.ticker}
  className={`border-r-4 ${isStrong ? 'border-r-profit' : 'border-r-primary/60'} cursor-pointer hover:shadow-md transition-shadow`}
- onClick={() => useAppStore.getState().setCurrentView('stock-detail') || useAppStore.getState().setSelectedTicker(stock.ticker)}
+ onClick={() => {
+   useAppStore.getState().setCurrentView('stock-detail');
+   useAppStore.getState().setSelectedTicker(stock.ticker);
+ }}
  >
  <CardContent className="p-3 space-y-2">
  {/* Header: ticker + signal */}
@@ -503,7 +507,7 @@ export function DashboardView() {
  📊 حالة السوق (one sentence — owner directive)
  ═══════════════════════════════════════════════════════════════ */}
  {v2Data?.market && (() => {
- const regime = v2Data.market.regime;
+ const regime = v2Data.market.regime as any;
  // UNIFY-FIX (Rule 20): isDefensive من regime.trend فقط (لا regimeMultiplier client-side)
  const isDefensive = regime?.trend === 'bear' || regime?.trend === 'distribution';
  const regimeText = regime?.regimeAr || regime?.trend || 'محايد';

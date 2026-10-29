@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       getPython(`/api/confluence/analyze/${encodeURIComponent(ticker)}`),
     ]);
     // MAESTRO-CANCER-1: removed /api/maestro/persona call (contradictory recs). Canonical = confluence.
-    const dualPersona = null;
+    const dualPersona: any = null;
 
     // ---- Build the unified analysis object ----
     const boardConsensus = confluence?.board_consensus || confluence?.consensus || confluence;

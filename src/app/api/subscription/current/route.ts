@@ -13,7 +13,7 @@ import { PAID_TIERS } from '@/lib/subscription-gate';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       // Return default free tier for unauthenticated users
       return NextResponse.json({
         success: true,
@@ -23,7 +23,7 @@ export async function GET() {
       });
     }
 
-    const userId = session.user.id as string;
+    const userId = ((session?.user as any) ?? {}).id as string;
 
     // Fetch user record for registration date & tier
     let dbUser: any = null;
@@ -54,9 +54,9 @@ export async function GET() {
 
     // Try to get the user's subscription with plan details
     try {
-      const subscription = await db.userSubscription.findUnique({
+      const subscription: any = await db.userSubscription.findUnique({
         where: { user_id: userId },
-        include: { plan: true },
+        include: { plan: true } as any,
       });
 
       if (subscription) {
@@ -111,7 +111,7 @@ export async function GET() {
       console.warn('[GET /api/subscription/current] DB error:', dbError);
     }
 
-    const tier = dbUser?.subscription_tier || session.subscription_tier || 'free';
+    const tier = dbUser?.subscription_tier || (session as any).subscription_tier || 'free';
     const isPaidUser = PAID_TIERS.has(tier.toLowerCase());
 
     // Return default free tier info with calculated trial details

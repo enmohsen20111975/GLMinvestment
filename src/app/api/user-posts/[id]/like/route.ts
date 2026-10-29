@@ -26,13 +26,13 @@ export async function POST(
     }
 
     // التحقق من وجود المنشور
-    const post = await db.userPost.findUnique({ where: { id } });
+    const post = await (db as any).userPost.findUnique({ where: { id } });
     if (!post) {
       return NextResponse.json({ error: 'المنشور غير موجود' }, { status: 404 });
     }
 
     // التحقق من وجود إعجاب سابق
-    const existingLike = await db.postLike.findUnique({
+    const existingLike = await (db as any).postLike.findUnique({
       where: {
         post_id_user_id: { post_id: id, user_id }
       }
@@ -40,18 +40,18 @@ export async function POST(
 
     if (existingLike) {
       // إزالة الإعجاب
-      await db.postLike.delete({ where: { id: existingLike.id } });
-      await db.userPost.update({
+      await (db as any).postLike.delete({ where: { id: existingLike.id } });
+      await (db as any).userPost.update({
         where: { id },
         data: { likes: { decrement: 1 } }
       });
       return NextResponse.json({ liked: false, message: 'تم إزالة الإعجاب' });
     } else {
       // إضافة إعجاب
-      await db.postLike.create({
+      await (db as any).postLike.create({
         data: { post_id: id, user_id }
       });
-      await db.userPost.update({
+      await (db as any).userPost.update({
         where: { id },
         data: { likes: { increment: 1 } }
       });

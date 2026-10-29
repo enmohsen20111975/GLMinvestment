@@ -193,46 +193,47 @@ export async function POST(req: NextRequest) {
         }
 
         const results = data.results.map((item: Record<string, unknown>) => {
-          const adj = item.persona_adjusted || {}
-          const entryPrice = item.entry_price || item.current_price || 0
+          const adj: any = item.persona_adjusted || {}
+          const itemAny = item as any;
+          const entryPrice: number = itemAny.entry_price || itemAny.current_price || 0
           
           return {
             ticker: item.ticker,
             market: item.market || market,
             persona,
-            signal: adj.adjusted_signal || item.signal || 'HOLD',
+            signal: adj.adjusted_signal || itemAny.signal || 'HOLD',
             signal_ar: adj.adjusted_signal === 'BUY' ? 'شراء' : adj.adjusted_signal === 'STRONG_BUY' ? 'شراء قوي' : adj.adjusted_signal === 'SELL' ? 'بيع' : 'احتفاظ',
-            score: adj.adjusted_score || item.master_score || 50,
-            confidence: item.confidence || 75,
+            score: adj.adjusted_score || itemAny.master_score || 50,
+            confidence: itemAny.confidence || 75,
             current_price: entryPrice,
             entry_price: entryPrice,
-            stop_loss: item.stop_loss || 0,
-            stop_loss_pct: (item.stop_loss && entryPrice) ? (((entryPrice - item.stop_loss) / entryPrice) * 100).toFixed(1) : '0.0',
-            target_1: item.target_price || 0,
-            target_pct: (item.target_price && entryPrice) ? (((item.target_price - entryPrice) / entryPrice) * 100).toFixed(1) : '0.0',
-            risk_reward: (item.risk_reward || item.risk_reward_ratio || 0).toFixed(2),
-            rsi: item.technical_score || 50,
-            market_regime: item.session_phase || 'NEUTRAL',
+            stop_loss: itemAny.stop_loss || 0,
+            stop_loss_pct: (itemAny.stop_loss && entryPrice) ? (((entryPrice - itemAny.stop_loss) / entryPrice) * 100).toFixed(1) : '0.0',
+            target_1: itemAny.target_price || 0,
+            target_pct: (itemAny.target_price && entryPrice) ? (((itemAny.target_price - entryPrice) / entryPrice) * 100).toFixed(1) : '0.0',
+            risk_reward: Number(itemAny.risk_reward || itemAny.risk_reward_ratio || 0).toFixed(2),
+            rsi: itemAny.technical_score || 50,
+            market_regime: itemAny.session_phase || 'NEUTRAL',
             rsi_override: false,
-            rr_valid: item.rr_valid || false,
+            rr_valid: itemAny.rr_valid || false,
             rejection_reason: null,
-            warnings: item.liquidity_warning ? [item.liquidity_warning] : [],
-            technical_score: item.technical_score || 50,
-            volume_score: item.timing_score || 50,
-            candle_score: item.pattern_score || 50,
-            buy_reasons: item.technical_summary ? [item.technical_summary] : [],
-            sell_reasons: item.fundamental_summary ? [item.fundamental_summary] : []
+            warnings: itemAny.liquidity_warning ? [itemAny.liquidity_warning] : [],
+            technical_score: itemAny.technical_score || 50,
+            volume_score: itemAny.timing_score || 50,
+            candle_score: itemAny.pattern_score || 50,
+            buy_reasons: itemAny.technical_summary ? [itemAny.technical_summary] : [],
+            sell_reasons: itemAny.fundamental_summary ? [itemAny.fundamental_summary] : []
           }
         })
 
-        results.sort((a: Record<string, unknown>, b: Record<string, unknown>) => b.score - a.score)
+        results.sort((a: any, b: any) => b.score - a.score)
 
         const stats = {
-          strong_buy: results.filter((r: Record<string, unknown>) => r.signal === 'STRONG_BUY').length,
-          buy: results.filter((r: Record<string, unknown>) => r.signal === 'BUY' || r.signal === 'STRONG_BUY').length,
-          accumulate: results.filter((r: Record<string, unknown>) => r.signal === 'ACCUMULATE').length,
-          hold: results.filter((r: Record<string, unknown>) => r.signal === 'HOLD').length,
-          avg_score: results.length > 0 ? results.reduce((a: Record<string, unknown>, b: Record<string, unknown>) => a + b.score, 0) / results.length : 0,
+          strong_buy: results.filter((r: any) => r.signal === 'STRONG_BUY').length,
+          buy: results.filter((r: any) => r.signal === 'BUY' || r.signal === 'STRONG_BUY').length,
+          accumulate: results.filter((r: any) => r.signal === 'ACCUMULATE').length,
+          hold: results.filter((r: any) => r.signal === 'HOLD').length,
+          avg_score: results.length > 0 ? results.reduce((a: any, b: any) => a + b.score, 0) / results.length : 0,
           avg_rr: 0
         }
 

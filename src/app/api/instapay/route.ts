@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const user_id = searchParams.get('user_id');
 
     // جلب حزم النقاط
-    let packages = await db.pointsPackage.findMany({
+    let packages = await (db as any).pointsPackage.findMany({
       where: { is_active: 1 },
       orderBy: { display_order: 'asc' }
     });
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // جلب مدفوعات المستخدم المعلقة
     let pendingPayments: unknown[] = [];
     if (user_id) {
-      pendingPayments = await db.instaPayPayment.findMany({
+      pendingPayments = await (db as any).instaPayPayment.findMany({
         where: { user_id, status: 'pending' },
         orderBy: { created_at: 'desc' }
       });
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     let bonus_points = 0;
 
     if (package_id) {
-      const pkg = await db.pointsPackage.findUnique({ where: { id: package_id } });
+      const pkg = await (db as any).pointsPackage.findUnique({ where: { id: package_id } });
       if (pkg) {
         amount = pkg.price_egp;
         points = pkg.points;
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (custom_amount && custom_amount >= 10) {
       // حساب النقاط بناءً على المبلغ
-      const settings = await db.pointsSettings.findFirst();
+      const settings = await (db as any).pointsSettings.findFirst();
       const rate = settings?.egp_per_100_points || 10; // 100 نقطة = 10 جنيه
       points = Math.floor((custom_amount / rate) * 100);
       amount = custom_amount;
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // إنشاء طلب الدفع
-    const payment = await db.instaPayPayment.create({
+    const payment = await (db as any).instaPayPayment.create({
       data: {
         user_id,
         amount,

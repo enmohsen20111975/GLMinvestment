@@ -100,7 +100,7 @@ export function TradingPlanSection({ detail, radarStock }: { detail: StockDetail
  const vol_ratio = avg_20_vol > 0 ? last_volume / avg_20_vol : 0;
 
  // Range 10d % = (max_high - min_low) / min_low * 100
- const range_10d_pct = support_1 > 0 ? ((resistance_1 - support_1) / support_1) * 100 : 0;
+ const range_10d_pct = (support_1 ?? 0) > 0 ? (((resistance_1 ?? 0) - (support_1 ?? 0)) / (support_1 ?? 1)) * 100 : 0;
 
  // ─── RADAR-QUICK-WINS (Priority 1): Smart Entry Card inputs ───────────────
  // Path description (emoji + plain Arabic) — falls back to "تحت الميكروسكوب"
@@ -119,7 +119,7 @@ export function TradingPlanSection({ detail, radarStock }: { detail: StockDetail
  const maxSignals = resolveMaxSignals(path);
 
  // Entry zone from SSOT (or support_1 → lastClose)
- const entryZoneLow = pred?.entry_price_min || Math.min(support_1, lastClose);
+ const entryZoneLow = pred?.entry_price_min || Math.min(support_1 ?? lastClose, lastClose);
  const entryZoneHigh = pred?.entry_price_max || lastClose;
 
  // Build dynamic Arabic analysis — changes based on real data, not a fixed string
@@ -153,7 +153,7 @@ export function TradingPlanSection({ detail, radarStock }: { detail: StockDetail
  // كان الكود يحسب قرار تداول من above_ma10 + vol_ratio (client-side — مخالف Rule 20).
  // الآن: recommendation تأتي ONLY من prediction.signal_ar (Python V40.2).
  // لو لا توقع → "راجع التوصية الرسمية" (لا fabrication).
- const recommendation = pred?.signal_ar || 'راجع التوقع الفني من المحرك';
+ const recommendation = (pred as any)?.signal_ar || 'راجع التوقع الفني من المحرك';
 
  // Gain / loss percentages — only if prediction values exist (no fabrication)
  const t1Gain = (entry_price && target_1) ? ((target_1 - entry_price) / entry_price) * 100 : null;

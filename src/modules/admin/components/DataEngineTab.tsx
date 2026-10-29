@@ -117,7 +117,7 @@ export function DataEngineTab() {
  }
  }
 
- const formatTime = (dateStr: string | null) => {
+ const formatTime = (dateStr: string | null | undefined) => {
  if (!dateStr) return '--:--:--'
  try {
  return new Date(dateStr).toLocaleTimeString('en-GB', {
@@ -308,7 +308,7 @@ export function DataEngineTab() {
  )}
  
  {/* Historical Summary */}
- {counts?.historical_records > 0 && (
+ {((counts?.historical_records as any) ?? 0) > 0 && (
  <div className="bg-white rounded-xl p-4 border border-purple-200 shadow-sm">
  <div 
  className="text-base text-muted-foreground mb-3 font-bold flex items-center justify-between cursor-pointer"
@@ -316,7 +316,7 @@ export function DataEngineTab() {
  >
  <span className="flex items-center gap-2">
  <History className="w-5 h-5 text-primary" />
- HISTORICAL DATA: {counts.historical_symbols} symbols
+ HISTORICAL DATA: {(counts as any)?.historical_symbols ?? 0} symbols
  </span>
  {showHistorical ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
  </div>

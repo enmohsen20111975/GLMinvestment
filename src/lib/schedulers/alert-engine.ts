@@ -295,12 +295,12 @@ export async function runStockAlertsCheck(userId?: string): Promise<number> {
            FROM user_stock_watchlists w
            WHERE w.user_id = ?
              AND (w.alert_price_above IS NOT NULL OR w.alert_price_below IS NOT NULL)`
-        ).all(userId) as WatchlistRow[])
+        ).all(userId) as unknown as WatchlistRow[])
       : (db.prepare(
           `SELECT w.user_id, w.stock_id, w.alert_price_above, w.alert_price_below, w.alert_change_percent
            FROM user_stock_watchlists w
            WHERE (w.alert_price_above IS NOT NULL OR w.alert_price_below IS NOT NULL)`
-        ).all() as WatchlistRow[]);
+        ).all() as unknown as WatchlistRow[]);
 
     if (wlRows.length === 0) return 0;
 
@@ -395,12 +395,12 @@ export async function runGoldAlertsCheck(userId?: string): Promise<number> {
           `SELECT id, user_id, karat, condition, threshold_price, is_active
            FROM gold_alerts
            WHERE user_id = ? AND is_active = 1`
-        ).all(userId) as GoldAlertRow[])
+        ).all(userId) as unknown as GoldAlertRow[])
       : (db.prepare(
           `SELECT id, user_id, karat, condition, threshold_price, is_active
            FROM gold_alerts
            WHERE is_active = 1`
-        ).all() as GoldAlertRow[]);
+        ).all() as unknown as GoldAlertRow[]);
 
     if (rows.length === 0) return 0;
 
@@ -477,12 +477,12 @@ export async function runPortfolioPnLCheck(userId?: string): Promise<number> {
           `SELECT id, user_id, type, stock_ticker, quantity, avg_buy_price, total_invested, current_value
            FROM portfolio_assets
            WHERE user_id = ? AND type = 'stock' AND stock_ticker IS NOT NULL`
-        ).all(userId) as PortfolioAssetRow[])
+        ).all(userId) as unknown as PortfolioAssetRow[])
       : (db.prepare(
           `SELECT id, user_id, type, stock_ticker, quantity, avg_buy_price, total_invested, current_value
            FROM portfolio_assets
            WHERE type = 'stock' AND stock_ticker IS NOT NULL`
-        ).all() as PortfolioAssetRow[]);
+        ).all() as unknown as PortfolioAssetRow[]);
 
     if (assets.length === 0) return 0;
 

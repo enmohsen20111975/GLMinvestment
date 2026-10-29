@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
           default_risk_tolerance: true,
           is_active: true,
           email_verified: true,
-        });
+        } as any) as any;
         if (dbUser && dbUser.is_active) {
           const isAdmin = isAdminEmail(dbUser.email, dbUser.username) || dbUser.subscription_tier === 'admin' || tokenIsAdmin;
           const effectiveTier = isAdmin ? 'admin' : (dbUser.subscription_tier || 'free');
@@ -80,8 +80,8 @@ export async function GET(request: NextRequest) {
             user: {
               id: dbUser.id,
               email: dbUser.email,
-              username: dbUser.username || dbUser.name || '',
-              name: dbUser.name || dbUser.email || '',
+              username: String(dbUser.username || dbUser.name || ''),
+              name: String(dbUser.name || dbUser.email || ''),
               image: dbUser.image || null,
               subscription_tier: effectiveTier,
               default_risk_tolerance: dbUser.default_risk_tolerance || 'medium',
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
           default_risk_tolerance: true,
           is_active: true,
           email_verified: true,
-        });
+        } as any) as any;
 
         if (dbUser) {
           // SEC-01 HOTFIX (Phase A): username-based admin detection removed.
@@ -143,8 +143,8 @@ export async function GET(request: NextRequest) {
             user: {
               id: dbUser.id,
               email: dbUser.email,
-              username: dbUser.username || dbUser.name || '',
-              name: dbUser.name || dbUser.email || '',
+              username: String(dbUser.username || dbUser.name || ''),
+              name: String(dbUser.name || dbUser.email || ''),
               image: dbUser.image || null,
               subscription_tier: effectiveTier,
               default_risk_tolerance: dbUser.default_risk_tolerance || 'medium',

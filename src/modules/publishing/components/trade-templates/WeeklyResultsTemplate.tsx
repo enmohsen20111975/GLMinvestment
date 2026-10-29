@@ -122,7 +122,7 @@ export function WeeklyResultsTemplate({ data }: WeeklyResultsTemplateProps) {
             <KpiCard
               icon="🎯"
               label="نسبة النجاح"
-              value={fmt(stats.success_rate, 1) + '%'}
+              value={fmt(stats.success_rate ?? 0, 1) + '%'}
               accent="emerald"
               size="sm"
             />
@@ -185,7 +185,7 @@ export function WeeklyResultsTemplate({ data }: WeeklyResultsTemplateProps) {
             <span>أبرز الصفقات الرابحة</span>
           </div>
           {stats ? (
-            <TradeTable trades={stats.top_trades.slice(0, 5)} compact />
+            <TradeTable trades={(stats.top_trades ?? []).slice(0, 5)} compact />
           ) : (
             <div
               style={{

@@ -315,7 +315,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  <div className="text-xs text-muted-foreground mt-2">
  تأكد أن Python backend يعمل على port 8010 (المطلوب: <code className="font-mono">/api/sectors/tracking</code>)
  </div>
- <Button variant="outline" size="sm" onClick={fetchData} className="mt-3">
+ <Button variant="outline" size="sm" onClick={() => fetchData()} className="mt-3">
  <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> إعادة المحاولة
  </Button>
  </CardContent>
@@ -326,7 +326,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
 
  if (!data) return null;
 
- const ms = data.market_summary;
+ const ms: any = data.market_summary;
  const sectors = data.sectors || [];
  const rotation = data.rotation;
 
@@ -422,7 +422,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  width: 'w-40',
  render: (s) => s.leader_ticker ? (
  <button
- onClick={(e) => { e.stopPropagation(); loadStockDetail(s.leader_ticker); }}
+ onClick={(e) => { e.stopPropagation(); loadStockDetail((s.leader_ticker as string) || ''); }}
  className="flex items-center gap-1.5 text-xs hover:bg-muted/60 rounded px-1.5 py-0.5 transition-colors"
  title={`عرض تفاصيل ${s.leader_ticker}`}
  >
@@ -621,7 +621,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
  <RefreshCw className="w-3 h-3" />
  دوران السيولة
  </button>
- <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 h-8">
+ <Button variant="outline" size="sm" onClick={() => fetchData()} className="gap-1.5 h-8">
  <RefreshCw className="w-3.5 h-3.5" />
  تحديث
  </Button>

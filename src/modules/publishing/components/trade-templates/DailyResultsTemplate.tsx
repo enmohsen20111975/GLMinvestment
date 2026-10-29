@@ -126,8 +126,8 @@ export function DailyResultsTemplate({ data }: DailyResultsTemplateProps) {
             <KpiCard
               icon="🎯"
               label="نسبة النجاح"
-              value={fmt(stats.success_rate, 1) + '%'}
-              sublabel={stats.success_rate >= 60 ? 'أداء ممتاز' : 'أداء جيد'}
+              value={fmt(stats.success_rate ?? 0, 1) + '%'}
+              sublabel={(stats.success_rate ?? 0) >= 60 ? 'أداء ممتاز' : 'أداء جيد'}
               accent="emerald"
             />
             <KpiCard
@@ -176,7 +176,7 @@ export function DailyResultsTemplate({ data }: DailyResultsTemplateProps) {
               <span>الصفقات الرابحة</span>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <TradeTable trades={stats.top_trades.slice(0, 8)} />
+              <TradeTable trades={(stats.top_trades ?? []).slice(0, 8)} />
             </div>
           </div>
         </>

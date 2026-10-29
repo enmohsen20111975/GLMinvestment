@@ -44,7 +44,7 @@ export interface AccountHeaderBarProps {
 }
 
 export function AccountHeaderBar({ account, resetting, onReset }: AccountHeaderBarProps) {
-  const pnlIsProfit = account.total_pnl >= 0;
+  const pnlIsProfit = (account.total_pnl ?? 0) >= 0;
   return (
     <Card className="border-profit ">
       <CardContent className="pt-5 pb-4">

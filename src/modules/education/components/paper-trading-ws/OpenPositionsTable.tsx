@@ -120,7 +120,7 @@ export function OpenPositionsTable(props: OpenPositionsTableProps) {
               <tbody>
                 {positionsSorted.map((pos) => {
                   const isBuy = pos.order_type === 'BUY';
-                  const pnl = pos.unrealized_pnl;
+                  const pnl = pos.unrealized_pnl ?? 0;
                   const livePx = livePrices[pos.ticker] ?? pos.current_price;
                   return (
                     <tr key={pos.id} className={`border-b transition-colors ${rowBgClass(pnl)}`}>

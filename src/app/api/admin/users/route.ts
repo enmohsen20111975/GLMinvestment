@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
       console.warn('[GET /api/admin/users] PromoRedemption lookup failed (non-fatal):', promoErr);
     }
 
-    const transformedUsers = users.map(user => {
+    const transformedUsers = users.map((user: any) => {
       const tier = (user.subscription_tier as string) || 'free';
       const isPaid = PAID_TIERS.has(tier.toLowerCase());
       let trialStatus: any = null;
@@ -390,7 +390,7 @@ export async function GET(request: NextRequest) {
     // مش متاح.
     try {
       if (transformedUsers.length > 0) {
-        const ids = transformedUsers.map(u => u.id);
+        const ids = transformedUsers.map((u: any) => u.id);
         const placeholders = ids.map(() => '?').join(',');
 
         const fdb = await getFinanceDb();
@@ -405,12 +405,12 @@ export async function GET(request: NextRequest) {
           lastActiveById[r.user_id as string] = (r.last_active as string) || null;
         }
 
-        let sessions: Array<{ userId: string; expires: string }> = [];
+        let sessions: Array<{ userId: string; expires: any }> = [];
         try {
           sessions = await db.session.findMany({
             where: { userId: { in: ids } },
             select: { userId: true, expires: true },
-          });
+          }) as any;
         } catch {
           // ignore if sessions table is unavailable in degraded mode
         }
@@ -424,7 +424,7 @@ export async function GET(request: NextRequest) {
         }
 
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        response.users = transformedUsers.map(u => {
+        response.users = transformedUsers.map((u: any) => {
           // ANALYTICS-FIX (2026-10-01): prefer analytics_events last_active
           // (most granular) — but fall back to last_active_at / lastLoginAt
           // when analytics_events is empty (the common case for real users
@@ -470,7 +470,7 @@ export async function GET(request: NextRequest) {
     try {
       if (withUsage && transformedUsers.length > 0) {
         const fdb = await getFinanceDb();
-        const ids = transformedUsers.map(u => u.id);
+        const ids = transformedUsers.map((u: any) => u.id);
         const placeholders = ids.map(() => '?').join(',');
 
         let lastActiveById: Record<string, string | null> = {};
@@ -553,7 +553,7 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        response.users = transformedUsers.map(u => {
+        response.users = transformedUsers.map((u: any) => {
           const usage = usageById[u.id] || { totalEvents: 0, pageViews: 0, featureUses: 0, errors: 0, lastActive: null };
           const lastActive = usage.lastActive || lastActiveById[u.id] || null;
           const loginCount = loginCountById[u.id] || 0;

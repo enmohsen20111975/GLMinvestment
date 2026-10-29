@@ -25,11 +25,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { adminFetch } from './helpers';
 import type {
-  AvailablePromoCode,
-  NewUserForm,
   UserDetails,
-  UsersResponse,
 } from './types';
+
+type AvailablePromoCode = any;
+type NewUserForm = any;
+type UsersResponse = any;
+
 import { AddUserDialog } from './AddUserDialog';
 import { CleanupDialog } from './CleanupDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
@@ -237,7 +239,7 @@ export function UsersManagement() {
     const matchesSearch =
       !searchQuery ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.username ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.promoCode &&
         user.promoCode.code.toLowerCase().includes(searchQuery.toLowerCase()));

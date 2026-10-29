@@ -109,13 +109,13 @@ function buildCaption(data: ReportData | null, period: ReportPeriod): string {
  '',
  `🏆 الصفقات الناجحة: ${s.winning_closed} من ${s.total_closed}`,
  `🎯 نسبة النجاح: ${(s.success_rate ?? 0).toFixed(1)}%`,
- `📈 متوسط العائد: ${s.average_return >= 0 ? '+' : ''}${(s.average_return ?? 0).toFixed(2)}%`,
+ `📈 متوسط العائد: ${(s.average_return ?? 0) >= 0 ? '+' : ''}${(s.average_return ?? 0).toFixed(2)}%`,
  `📊 إجمالي الحركة: ${(s.total_price_movement ?? 0).toFixed(2)}%`,
  '',
  '⭐ أبرز الصفقات الرابحة:',
- ...s.top_trades.slice(0, 5).map((t, i) => {
+ ...(s.top_trades ?? []).slice(0, 5).map((t, i) => {
  const ret = t.realized_return_pct >= 0 ? `+${(t.realized_return_pct ?? 0).toFixed(2)}%` : `${(t.realized_return_pct ?? 0).toFixed(2)}%`;
- const badge = t.exit_price >= t.target_price ? ' 🎯 تجاوز الهدف' : '';
+ const badge = t.exit_price != null && t.exit_price >= t.target_price ? ' 🎯 تجاوز الهدف' : '';
  return `${i + 1}. ${t.ticker} — ${ret}${badge}`;
  }),
  '',
@@ -451,7 +451,7 @@ export function TradeResultsGenerator({
  )}
  {data?.stats && (
  <span className="inline-flex items-center gap-1 text-profit bg-profit/10 px-2 py-1 rounded border border-profit/20">
- ✓ {data.stats.winning_closed} صفقة ناجحة
+ ✓ {String(data.stats.winning_closed ?? 0)} صفقة ناجحة
  </span>
  )}
  </div>

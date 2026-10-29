@@ -75,12 +75,43 @@ interface RescueResult {
  journal_template?: string;
  // FIX (BRAVO-DISASTER 2026-10-28): fields used in render but missing from interface
  sparkline_data?: number[];
+ dist_from_high_pct?: number;
  technical?: {
    rsi?: number;
+   rsi_state?: string;
    macd?: string;
    trend?: string;
-   support?: number;
-   resistance?: number;
+   ma_50?: number;
+   ma_200?: number;
+   above_ma_50?: boolean;
+   above_ma_200?: boolean;
+   stage_ar?: string;
+   stage_hint?: string;
+   support?: number[];
+   resistance?: number[];
+   [key: string]: unknown;
+ };
+ fundamentals?: {
+   pe_ratio?: number;
+   pb_ratio?: number;
+   eps?: number;
+   roe?: number;
+   profit_margin_pct?: number;
+   sector?: string;
+   strength_verdict?: string;
+   sharia_compliant?: boolean | null;
+   sharia_sources?: number;
+   sharia_category?: string;
+   [key: string]: unknown;
+ };
+ scenarios?: Record<string, any>;
+ recommendation_deep?: {
+   breakeven_calc?: {
+     extra_qty_to_breakeven?: number;
+     new_avg_if_added?: number;
+     formula?: string;
+     [key: string]: unknown;
+   };
    [key: string]: unknown;
  };
  [key: string]: unknown;
@@ -141,7 +172,7 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  const [journalReason, setJournalReason] = useState('');
  // FIX (BRAVO-DISASTER 2026-10-28): journalSaved + activeTab were USED but NEVER DECLARED
  const [journalSaved, setJournalSaved] = useState(false);
- const [activeTab, setActiveTab] = useState<'overview' | 'technical' | 'fundamentals'>('overview');
+ const [activeTab, setActiveTab] = useState<string>('overview');
  // FIX (BRAVO-DISASTER 2026-10-28): showPortfolioList + showAllStocksSearch were
  // USED at lines 409-513 but NEVER DECLARED — caused ReferenceError crash that
  // broke the entire Portfolio panel + triggered React hydration errors #425/#422.
@@ -480,7 +511,7 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
              key={h.ticker}
              onClick={() => {
                setTicker(h.ticker);
-               setBuyPrice(h.avg_buy_price > 0 ? String(h.avg_buy_price) : '');
+               setBuyPrice((h.avg_buy_price ?? 0) > 0 ? String(h.avg_buy_price ?? 0) : '');
                setQuantity(String(h.quantity));
                setShowPortfolioList(false);
              }}
@@ -496,21 +527,21 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
                </div>
                <div className="text-left shrink-0">
                  <div className="font-mono text-[10px] text-muted-foreground">
-                   متوسط: {h.avg_buy_price > 0 ? h.avg_buy_price.toFixed(2) : '—'}
+                   متوسط: {(h.avg_buy_price ?? 0) > 0 ? (h.avg_buy_price ?? 0).toFixed(2) : '—'}
                  </div>
                  <div className="font-mono text-[10px] text-muted-foreground">
                    كمية: {h.quantity}
                  </div>
                </div>
              </div>
-             {h.current_price > 0 && (
+             {(h.current_price ?? 0) > 0 && (
                <div className="font-mono text-[10px] mt-0.5">
-                 السعر الحالي: <span className={cn('font-bold', h.current_price < h.avg_buy_price ? 'text-loss' : 'text-profit')}>
-                   {h.current_price.toFixed(2)}
+                 السعر الحالي: <span className={cn('font-bold', (h.current_price ?? 0) < (h.avg_buy_price ?? 0) ? 'text-loss' : 'text-profit')}>
+                   {(h.current_price ?? 0).toFixed(2)}
                  </span>
-                 {h.avg_buy_price > 0 && (
-                   <span className={cn('mr-1', h.current_price < h.avg_buy_price ? 'text-loss' : 'text-profit')}>
-                     ({h.current_price < h.avg_buy_price ? '↓' : '↑'}{Math.abs(((h.current_price - h.avg_buy_price) / h.avg_buy_price) * 100).toFixed(1)}%)
+                 {(h.avg_buy_price ?? 0) > 0 && (
+                   <span className={cn('mr-1', (h.current_price ?? 0) < (h.avg_buy_price ?? 0) ? 'text-loss' : 'text-profit')}>
+                     ({(h.current_price ?? 0) < (h.avg_buy_price ?? 0) ? '↓' : '↑'}{Math.abs((((h.current_price ?? 0) - (h.avg_buy_price ?? 0)) / (h.avg_buy_price ?? 0)) * 100).toFixed(1)}%)
                    </span>
                  )}
                </div>
@@ -748,7 +779,7 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
  <div className="p-2 rounded-md bg-muted/40">
  <div className="text-muted-foreground">RSI(14)</div>
- <div className={cn('font-bold', (result.technical.rsi < 30 || result.technical.rsi > 70) ? 'text-warning' : '')}>
+ <div className={cn('font-bold', ((result.technical.rsi ?? 0) < 30 || (result.technical.rsi ?? 0) > 70) ? 'text-warning' : '')}>
  {(result.technical.rsi ?? 0).toFixed(1)}
  </div>
  <div className="text-xs text-muted-foreground">{result.technical.rsi_state}</div>
@@ -782,13 +813,13 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  </div>
  <p className="text-xs text-muted-foreground leading-relaxed">{result.technical.stage_hint}</p>
  </div>
- {(result.technical.support.length > 0 || result.technical.resistance.length > 0) && (
+ {((result.technical.support?.length ?? 0) > 0 || (result.technical.resistance?.length ?? 0) > 0) && (
  <div className="grid grid-cols-2 gap-2 text-xs">
  <div className="p-2 rounded-md bg-profit/20 border border-profit ">
  <div className="text-muted-foreground mb-1">الدعوم القريبة</div>
  <div className="flex flex-wrap gap-1">
- {result.technical.support.length > 0
- ? result.technical.support.map((s, i) => (
+ {(result.technical.support?.length ?? 0) > 0
+ ? result.technical.support?.map((s, i) => (
  <Badge key={i} variant="outline" className="border-profit text-profit text-xs">
  {(s ?? 0).toFixed(2)}
  </Badge>
@@ -799,8 +830,8 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  <div className="p-2 rounded-md bg-loss/20 border border-loss ">
  <div className="text-muted-foreground mb-1">المقاومات القريبة</div>
  <div className="flex flex-wrap gap-1">
- {result.technical.resistance.length > 0
- ? result.technical.resistance.map((r, i) => (
+ {(result.technical.resistance?.length ?? 0) > 0
+ ? result.technical.resistance?.map((r, i) => (
  <Badge key={i} variant="outline" className="border-loss text-loss text-xs">
  {(r ?? 0).toFixed(2)}
  </Badge>
@@ -880,7 +911,7 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  >
  {result.fundamentals.sharia_compliant ? '✅ متوافق' : '❌ غير متوافق'}
  </Badge>
- {result.fundamentals.sharia_sources > 0 && (
+ {(result.fundamentals.sharia_sources ?? 0) > 0 && (
  <span className="text-xs text-muted-foreground">
  ({result.fundamentals.sharia_sources} مصدر موافق)
  </span>
@@ -1056,7 +1087,7 @@ export const BagHolderRescuePanel = React.memo(function BagHolderRescuePanel({
  حاسبة متوسط التكلفة
  </div>
  <p className="text-muted-foreground leading-relaxed">
- لو أضفت <span className="font-bold text-warning ">{AR_NUM.format(breakeven.extra_qty_to_breakeven)} سهم</span> عند السعر الحالي ({(result.current_price ?? 0).toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{(breakeven.new_avg_if_added ?? 0).toFixed(2)}</span>.
+ لو أضفت <span className="font-bold text-warning ">{AR_NUM.format(breakeven.extra_qty_to_breakeven ?? 0)} سهم</span> عند السعر الحالي ({(result.current_price ?? 0).toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{(breakeven.new_avg_if_added ?? 0).toFixed(2)}</span>.
  </p>
  <p className="text-xs text-muted-foreground italic">{breakeven.formula}</p>
  </div>

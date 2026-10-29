@@ -148,7 +148,7 @@ export function UsersListCard({
                 >
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={user.image} />
+                      <AvatarImage src={user.image ?? undefined} />
                       <AvatarFallback>
                         {getInitials(user.name || '', user.email)}
                       </AvatarFallback>
@@ -159,9 +159,9 @@ export function UsersListCard({
                         <span className="font-medium truncate">
                           {user.name || user.username}
                         </span>
-                        {getRoleBadge(user.role)}
-                        {getStatusBadge(user.status)}
-                        {getUserActivityBadge(user.isActive)}
+                        {getRoleBadge((user.role as string) || '')}
+                        {getStatusBadge((user.status as string) || '')}
+                        {getUserActivityBadge(Boolean(user.isActive))}
                         {getTrialBadge(user.trialStatus)}
                         {getPromoBadge(user.promoCode)}
                       </div>
@@ -179,7 +179,7 @@ export function UsersListCard({
                         {user.promoCode && (
                           <span className="flex items-center gap-1 text-xs text-primary font-mono">
                             <Ticket className="w-3 h-3" />
-                            تفعيل: {formatDate(user.promoCode.redeemed_at)}
+                            تفعيل: {formatDate((user.promoCode.redeemed_at as string | null) ?? null)}
                             {user.promoCode.expires_at &&
                               ` | انتهاء: ${formatDate(user.promoCode.expires_at)}`}
                           </span>
@@ -222,16 +222,16 @@ export function UsersListCard({
                               })}
                             </span>
                           )}
-                          {user.loginCount > 0 && (
+                          {(user.loginCount ?? 0) > 0 && (
                             <span className="flex items-center gap-1">
                               <Key className="w-3 h-3" />
-                              {user.loginCount} دخول
+                              {user.loginCount ?? 0} دخول
                             </span>
                           )}
-                          {user.lastActive && (
+                          {(user.lastActive as any) && (
                             <span className="flex items-center gap-1">
                               <Activity className="w-3 h-3" />
-                              {new Date(user.lastActive).toLocaleDateString('ar-EG', {
+                              {new Date(user.lastActive as string).toLocaleDateString('ar-EG', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
@@ -259,7 +259,7 @@ export function UsersListCard({
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="left">
+                      <DropdownMenuContent align="start">
                         <DropdownMenuLabel>إجراءات</DropdownMenuLabel>
                         <DropdownMenuSeparator />
 

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const user_id = sessionUserId;
 
     // جلب نقاط المستخدم
-    let userPoints = await db.userPoints.findUnique({
+    let userPoints = await (db as any).userPoints.findUnique({
       where: { user_id },
       include: {
         PointsHistory: {
@@ -28,36 +28,36 @@ export async function GET(request: NextRequest) {
 
     if (!userPoints) {
       // إنشاء سجل نقاط جديد
-      userPoints = await db.userPoints.create({
+      userPoints = await (db as any).userPoints.create({
         data: { user_id },
         include: { PointsHistory: true }
       });
     }
 
     // جلب إعدادات النقاط
-    let settings = await db.pointsSettings.findFirst();
+    let settings = await (db as any).pointsSettings.findFirst();
     if (!settings) {
-      settings = await db.pointsSettings.create({ data: {} });
+      settings = await (db as any).pointsSettings.create({ data: {} });
     }
 
     // جلب حزم النقاط المتاحة
-    const packages = await db.pointsPackage.findMany({
+    const packages = await (db as any).pointsPackage.findMany({
       where: { is_active: 1 },
       orderBy: { display_order: 'asc' }
     });
 
     // إحصائيات المستخدم
-    const stats = await db.userPost.aggregate({
+    const stats = await (db as any).userPost.aggregate({
       where: { user_id },
       _count: { id: true },
       _sum: { points_earned: true }
     });
 
-    const winsCount = await db.userPost.count({
+    const winsCount = await (db as any).userPost.count({
       where: { user_id, outcome: 'win' }
     });
 
-    const lossesCount = await db.userPost.count({
+    const lossesCount = await (db as any).userPost.count({
       where: { user_id, outcome: 'loss' }
     });
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
           ? Math.round((winsCount / (winsCount + lossesCount)) * 100) 
           : 0
       },
-      levelInfo: getLevelInfo(userPoints.level, settings)
+      levelInfo: getLevelInfo(userPoints.level as number, settings as any)
     });
   } catch (error) {
     console.error('[Points API] Error:', error);

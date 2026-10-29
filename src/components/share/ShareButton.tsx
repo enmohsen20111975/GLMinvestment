@@ -69,7 +69,7 @@ function ShareCard({
 
  return (
  <div
- ref={cardRef}
+ ref={cardRef as any}
  style={{
  width: '600px',
  padding: '32px',
@@ -513,7 +513,7 @@ export function ShareButton({
  {/* Options */}
  <div className="p-3 space-y-1.5">
  {/* Native Share (mobile) */}
- {typeof navigator !== 'undefined' && navigator.share && (
+ {typeof navigator !== 'undefined' && (navigator as any).share !== undefined && (
  <button
  onClick={handleNativeShare}
  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-muted transition-colors text-right"
@@ -573,13 +573,13 @@ export function ShareButton({
 
 // ─── Social Share Button ─────────────────────────────────────────────────────
 
-function SocialShareButton({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
+function SocialShareButton({ label, icon, children, onClick }: { label: string; icon?: React.ReactNode; children?: React.ReactNode; onClick: () => void }) {
  return (
  <button
  onClick={onClick}
  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-right"
  >
- {icon}
+ {icon ?? children}
  <span>{label}</span>
  </button>
  );

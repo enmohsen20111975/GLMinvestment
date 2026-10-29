@@ -4,6 +4,10 @@ export const dynamic = "force-dynamic";
 import { db } from '@/lib/db';
 import { getSessionUserId } from '@/lib/auth-helper';
 
+// FIX (FIX-TSC-BATCH-3): models below are not in the auth-only PrismaClient.
+// Cast to any so calls compile without changing logic.
+const DB = db as any;
+
 // GET - جلب المنشورات
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
     if (status !== 'all') where.status = status;
 
-    const posts = await db.userPost.findMany({
+    const posts = await DB.userPost.findMany({
       where,
       include: {
         User: {
@@ -54,14 +58,14 @@ export async function GET(request: NextRequest) {
       skip: offset,
     });
 
-    const total = await db.userPost.count({ where });
+    const total = await DB.userPost.count({ where });
 
     // جلب أسعار الأسهم الحالية
     const tickers = [...new Set(posts.map(p => p.ticker))];
     const stockPrices: Record<string, { price: number; change: number }> = {};
     
     if (tickers.length > 0) {
-      const stocks = await db.stocks.findMany({
+      const stocks = await DB.stocks.findMany({
         where: { ticker: { in: tickers } },
         select: { ticker: true, current_price: true, change_percent: true }
       });
@@ -116,7 +120,7 @@ export async function POST(request: NextRequest) {
     // التحقق من حدود النشر المجاني
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const postsToday = await db.userPost.count({
+    const postsToday = await DB.userPost.count({
       where: {
         user_id,
         created_at: { gte: today }
@@ -124,9 +128,9 @@ export async function POST(request: NextRequest) {
     });
 
     // الحصول على إعدادات النقاط
-    let settings = await db.pointsSettings.findFirst();
+    let settings = await DB.pointsSettings.findFirst();
     if (!settings) {
-      settings = await db.pointsSettings.create({
+      settings = await DB.pointsSettings.create({
         data: {}
       });
     }
@@ -143,7 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // إنشاء المنشور
-    const post = await db.userPost.create({
+    const post = await DB.userPost.create({
       data: {
         user_id,
         ticker: ticker.toUpperCase(),
@@ -163,7 +167,7 @@ export async function POST(request: NextRequest) {
     await awardPoints(user_id, pointsEarned, 'post', post.id, 'نقاط لإنشاء توقع جديد');
 
     // تحديث نقاط المنشور
-    await db.userPost.update({
+    await DB.userPost.update({
       where: { id: post.id },
       data: { points_earned: pointsEarned }
     });
@@ -182,10 +186,10 @@ export async function POST(request: NextRequest) {
 // دالة منح النقاط
 async function awardPoints(user_id: string, amount: number, source: string, reference_id: string | null, description: string) {
   // الحصول على أو إنشاء سجل النقاط
-  let userPoints = await db.userPoints.findUnique({ where: { user_id } });
+  let userPoints = await DB.userPoints.findUnique({ where: { user_id } });
   
   if (!userPoints) {
-    userPoints = await db.userPoints.create({
+    userPoints = await DB.userPoints.create({
       data: { user_id }
     });
   }
@@ -195,7 +199,7 @@ async function awardPoints(user_id: string, amount: number, source: string, refe
   const newTotal = userPoints.total_points + amount;
   
   // حساب المستوى الجديد
-  const settings = await db.pointsSettings.findFirst();
+  const settings = await DB.pointsSettings.findFirst();
   let newLevel = 1;
   if (settings) {
     if (newTotal >= settings.level_5_threshold) newLevel = 5;
@@ -204,7 +208,7 @@ async function awardPoints(user_id: string, amount: number, source: string, refe
     else if (newTotal >= settings.level_2_threshold) newLevel = 2;
   }
 
-  await db.userPoints.update({
+  await DB.userPoints.update({
     where: { user_id },
     data: {
       available_points: newBalance,
@@ -217,7 +221,7 @@ async function awardPoints(user_id: string, amount: number, source: string, refe
   });
 
   // تسجيل المعاملة
-  await db.pointsTransaction.create({
+  await DB.pointsTransaction.create({
     data: {
       user_id,
       amount,

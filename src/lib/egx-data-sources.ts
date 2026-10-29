@@ -149,7 +149,7 @@ export async function fetchFromMubasher(ticker: string): Promise<{
 
       for (const url of urls) {
         try {
-          const pageResult = await zai.functions.invoke('page_reader', { url }) as Record<string, unknown>;
+          const pageResult = await zai.functions.invoke('page_reader', { url }) as unknown as Record<string, unknown>;
           const data = pageResult?.data as Record<string, unknown> | undefined;
           const html = String(data?.html || data?.content || pageResult?.html || '');
           const text = String(data?.text || data?.textContent || '');
@@ -290,9 +290,9 @@ function parseMubasherResponse(html: string, text: string, ticker: string): Muba
     ticker: ticker.toUpperCase(),
     current_price: Math.round(currentPrice * 1000) / 1000,
     previous_close: previousClose > 0 ? Math.round(previousClose * 1000) / 1000 : 0,
-    open_price: openPrice > 0 ? Math.round(openPrice * 1000) / 1000 : current_price,
-    high_price: highPrice > 0 ? Math.round(highPrice * 1000) / 1000 : current_price,
-    low_price: lowPrice > 0 ? Math.round(lowPrice * 1000) / 1000 : current_price,
+    open_price: openPrice > 0 ? Math.round(openPrice * 1000) / 1000 : currentPrice,
+    high_price: highPrice > 0 ? Math.round(highPrice * 1000) / 1000 : currentPrice,
+    low_price: lowPrice > 0 ? Math.round(lowPrice * 1000) / 1000 : currentPrice,
     volume: Math.round(volume),
     change: Math.round(change * 1000) / 1000,
     change_percent: Math.round(changePercent * 100) / 100,
@@ -385,7 +385,7 @@ export async function fetchFromWebSearch(ticker: string): Promise<{
               sourcesChecked++;
               const pageData = await zai.functions.invoke('page_reader', {
                 url: result.url,
-              }) as Record<string, unknown>;
+              }) as unknown as Record<string, unknown>;
               const data = pageData?.data as Record<string, unknown> | undefined;
               const html = String(data?.html || data?.content || pageData?.html || '');
               const text = String(data?.text || data?.textContent || '');

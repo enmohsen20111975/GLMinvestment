@@ -110,7 +110,7 @@ export function getUserActivityBadge(isActive: boolean): React.ReactNode {
   return <Badge className="bg-slate-500/10 text-muted-foreground border-border gap-1"><XCircle className="w-3 h-3" />غير نشط</Badge>;
 }
 
-export function getPromoBadge(promo?: UserDetails['promoCode']): React.ReactNode {
+export function getPromoBadge(promo?: any): React.ReactNode {
   if (!promo) return null;
   const isVip = promo.plan_tier === 'all' || promo.plan_tier === 'developer';
   const isPremium = promo.plan_tier === 'premium';
@@ -141,7 +141,7 @@ export function getPromoBadge(promo?: UserDetails['promoCode']): React.ReactNode
   );
 }
 
-export function getTrialBadge(trialStatus: UserDetails['trialStatus']): React.ReactNode {
+export function getTrialBadge(trialStatus: any): React.ReactNode {
   if (!trialStatus) return null;
   if (trialStatus.isInTrial) {
     return <Badge className="bg-primary/10 text-primary border-primary gap-1">فترة تجريبية ({trialStatus.daysLeft} يوم)</Badge>;

@@ -81,7 +81,6 @@ export interface StockData {
  low_price?: number | null;
  horizon?: string | null;
  timeframe?: string | null;
- regime?: string | null;
  persona?: string | null;
  persona_type?: string | null;
  // FRONTCLEANUP-A-2: legacy/extra fields surfaced by stored-analysis + predictions pipelines
@@ -188,6 +187,11 @@ export interface PreviousPrediction {
  min_low_since_pred?: number | null;
  highest_price_reached?: number | null;
  lowest_price_reached?: number | null;
+ // FIX (FIX-TSC-BATCH-3): aliases used by PredictionsTab when the canonical
+ // historical fields are not present.
+ current_price?: number | null;
+ high_price?: number | null;
+ low_price?: number | null;
 }
 
 // ============================================================================
@@ -267,11 +271,6 @@ export interface PersonaData {
  momentum_accumulation?: boolean;
  momentum_strength?: number;
  momentum_reason?: string;
- rsi?: number;
- risk_reward?: number;
- perf_1w?: number;
- perf_1m?: number;
- perf_3m?: number;
  support_level?: number | null;
  resistance_level?: number | null;
  price_vs_sr?: string;
@@ -516,7 +515,7 @@ export interface MorningBellStock {
 // ============================================================================
 // Prediction Row (small tables)
 // ============================================================================
-export type PredictionRow = Record<string, unknown>;
+export type PredictionRowLite = Record<string, unknown>;
 
 // ============================================================================
 // Market Analysis View Props

@@ -356,9 +356,9 @@ export function MyStocksBriefing() {
  });
 
  // Derive briefing + newsTickers from cached watchData
- const briefing = watchData ?? null;
+ const briefing = watchData?.data ?? null;
  const newsTickers = useMemo(() => {
-   return (watchData?.stocks || [])
+   return (watchData?.data?.stocks || [])
      .map(s => s.ticker)
      .filter(Boolean)
      .slice(0, 30);
@@ -374,7 +374,7 @@ export function MyStocksBriefing() {
    },
  });
 
- const news = useMemo(() => (Array.isArray(newsData?.news) ? newsData!.news : []), [newsData]);
+ const news = useMemo(() => (Array.isArray(newsData?.data?.news) ? newsData!.data!.news : []), [newsData]);
  const loading = !isAuthenticated ? false : (loadingWatch || loadingNews);
  const refreshing = refreshingWatch;
  const error = !isAuthenticated ? null

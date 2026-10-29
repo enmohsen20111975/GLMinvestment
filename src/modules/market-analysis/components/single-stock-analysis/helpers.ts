@@ -5,10 +5,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 // InteractiveChart REMOVED — moved to archive. TradingViewChart is the sole chart.
 import { TradingViewChart } from '@/modules/stock-analysis/components/TradingViewChart';
-import ChartControls from './ChartControls';
-import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+import ChartControls from '../ChartControls';
+import { InstitutionalDecisionPanel } from '../InstitutionalDecisionPanel';
 // CANONICAL: بانر محرك القرار المؤسسي V60.2 — WHO IS BUYING (مطابق Pine Script)
-import { CanonicalWhoIsBuyingBanner } from './CanonicalWhoIsBuyingBanner';
+import { CanonicalWhoIsBuyingBanner } from '../CanonicalWhoIsBuyingBanner';
 import { DealAdvisorPanel } from '@/components/deal-advisor/DealAdvisorPanel';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -47,11 +47,11 @@ import { cn } from '@/lib/utils';
 import { useLiveTicker } from '@/lib/ws-client';
 import { useAlertsStore } from '@/lib/alerts-store';
 import { HeartbeatStatusBar, WhaleAlertListener } from '@/modules/market-analysis/components/LiveDashboard';
-import { AlertPanel } from './AlertPanel';
+import { AlertPanel } from '../AlertPanel';
 import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
-import type { PredictionContext } from './types';
+import type { PredictionContext } from '../types';
 
 interface OHLCVCandle {
  time: string;

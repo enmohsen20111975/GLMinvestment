@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     for (const asset of assets) {
       let invested = Number(asset.total_invested || 0);
       let current = Number(asset.current_value || 0);
-      const type = asset.type || 'other';
+      const type = String(asset.type || 'other');
 
       if (type === 'stock' && asset.stock_ticker) {
         try {
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
           // (4) avg_buy_price (purchase price — P&L = 0, not -100%)
           const stockRow = db.prepare(
             "SELECT current_price, previous_close FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1"
-          ).get(asset.stock_ticker) as { current_price?: number | string; previous_close?: number | string } | undefined;
+          ).get(String(asset.stock_ticker)) as { current_price?: number | string; previous_close?: number | string } | undefined;
 
           let livePrice = 0;
           let priceSource = 'none';
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
             try {
               const histRow = db.prepare(
                 "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY price_date DESC LIMIT 1"
-              ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
+              ).get(String(asset.stock_ticker)) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) {
                 livePrice = Number(histRow.close_price);
                 priceSource = 'stock_price_history';
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
           // Without this step, livePrice stays 0 and P&L shows 0% (or -100% if avg_buy used).
           if (livePrice <= 0) {
             try {
-              const cleanClose = await getLastCleanClose(asset.stock_ticker);
+              const cleanClose = await getLastCleanClose(String(asset.stock_ticker));
               if (cleanClose.price > 0) {
                 livePrice = cleanClose.price;
                 priceSource = `price_history.db (${cleanClose.source})`;
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
         // inflating the portfolio with unconverted dollars. Now we multiply the
         // live USD price by the live USD/EGP exchange rate before adding to totals.
         // Formula: crypto_value_egp = quantity × live_price_usd × exchange_rate_usd_egp
-        const symbol = (asset.stock_ticker || asset.name || '').toUpperCase().trim();
+        const symbol = String(asset.stock_ticker || asset.name || '').toUpperCase().trim();
         const qty = Number(asset.quantity || 0);
         const avgBuyUsd = Number(asset.avg_buy_price || 0); // USD per coin at purchase
         const usdRate = exchangeRates['USD'] || 48.5;
@@ -279,7 +279,7 @@ export async function GET(request: NextRequest) {
 
           // Prefer explicit purchase_date; fall back to added_at
           const dateStr = asset.purchase_date || asset.added_at;
-          let startDate = dateStr ? new Date(dateStr).getTime() : now.getTime();
+          let startDate = dateStr ? new Date(String(dateStr)).getTime() : now.getTime();
           if (isNaN(startDate)) startDate = now.getTime();
           const daysHeld = Math.max(0, Math.floor((now.getTime() - startDate) / (1000 * 60 * 60 * 24)));
           const accruedInterest = dailyInterest * daysHeld;
@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
           current = invested;
         }
       } else if (type === 'currency' || type === 'forex') {
-        const code = (asset.currency_code || asset.stock_ticker || asset.name || 'USD').toUpperCase();
+        const code = String(asset.currency_code || asset.stock_ticker || asset.name || 'USD').toUpperCase();
         const amount = Number(asset.quantity || asset.amount || 0);
         const purchaseRate = Number(asset.avg_buy_price || asset.purchase_rate || 0);
 
@@ -341,13 +341,13 @@ export async function GET(request: NextRequest) {
       totalInvested += invested;
       totalCurrentValue += current;
 
-      if (!byType[type]) {
-        byType[type] = { count: 0, invested: 0, current: 0, profit_loss: 0 };
+      if (!byType[type as string]) {
+        byType[type as string] = { count: 0, invested: 0, current: 0, profit_loss: 0 };
       }
-      byType[type].count++;
-      byType[type].invested += invested;
-      byType[type].current += current;
-      byType[type].profit_loss += profitLoss;
+      byType[type as string].count++;
+      byType[type as string].invested += invested;
+      byType[type as string].current += current;
+      byType[type as string].profit_loss += profitLoss;
     }
 
     // ── P34 TASK 3: DEBT DEDUCTION (Net Worth = Assets − Liabilities) ──

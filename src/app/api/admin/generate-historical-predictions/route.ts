@@ -35,6 +35,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import * as path from 'path';
+import Database from 'better-sqlite3';
 import {
   generateHistoricalPredictions,
   verifyPendingPredictions,
@@ -42,9 +44,22 @@ import {
   computeComprehensiveStats,
   DEFAULT_PARAMS,
   computeDynamicParams,
+  openPredictionsDb,
   type MaestroParams,
 } from '@/lib/honest-tracking/maestro';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+
+const CWD = process.cwd();
+const STOCKS_DB_PATH = path.join(CWD, 'db', 'stocks.db');
+const PRICE_DB_PATH = path.join(CWD, 'db', 'price_history.db');
+
+function openReadonly(p: string): Database.Database | null {
+  try {
+    return new Database(p, { readonly: true, timeout: 5000, fileMustExist: true });
+  } catch {
+    return null;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 // Long-running: generation can take 30-60s for large date ranges
@@ -113,7 +128,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ---- 2. VERIFY (close trades aggressively) ----
-  let verify = null;
+  let verify: any = null;
   try {
     verify = verifyPendingPredictions(10000);
   } catch (e) {

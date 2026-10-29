@@ -26,6 +26,7 @@ import {
 import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, computeRR, rrColor, scoreColor, fmtPrice, formatNumber } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import dynamic from 'next/dynamic';
@@ -103,8 +104,25 @@ import {
  _isEgxIntradayNow,
 } from './helpers';
 
+// FIX (FIX-TSC-BATCH-3): local helper used in ExpertPredictionsTab to navigate
+// to a stock detail page. Reads `loadStockDetail` from the analysis store if
+// present, otherwise falls back to router.push.
+function useExpertLoadStockDetail() {
+  const router = useRouter();
+  return (ticker: string) => {
+    try {
+      const storeAny = useAnalysisStore.getState() as any;
+      if (typeof storeAny.loadStockDetail === 'function') {
+        return storeAny.loadStockDetail(ticker);
+      }
+    } catch { /* ignore */ }
+    if (ticker) router.push(`/stocks/${encodeURIComponent(ticker)}`);
+  };
+}
+
 
 function ExpertPredictionsTableView({ stocks }: { stocks: StockData[] }) {
+ const loadStockDetail = useExpertLoadStockDetail();
  return (
  <div className="overflow-x-auto rounded-lg border border-border bg-card">
  <table className="w-full text-sm min-w-[700px]">
@@ -121,11 +139,11 @@ function ExpertPredictionsTableView({ stocks }: { stocks: StockData[] }) {
  </thead>
  <tbody>
  {stocks.map((s, i) => (
- <tr key={s.id || i} className="border-t border-border hover:bg-muted/40 transition-colors cursor-pointer" onClick={() => loadStockDetail(s.ticker)}>
+ <tr key={s.id || i} className="border-t border-border hover:bg-muted/40 transition-colors cursor-pointer" onClick={() => loadStockDetail && loadStockDetail(s.ticker)}>
  <td className="p-2 text-center font-mono text-xs">{i + 1}</td>
  <td className="p-2 font-medium">{s.name_ar || s.name}</td>
  <td className="p-2 font-mono">{s.ticker}</td>
- <td className="p-2 text-center font-mono">{fmtNum(s.current_price)}</td>
+ <td className="p-2 text-center font-mono">{fmtPrice(s.current_price)}</td>
  <td className={cn("p-2 text-center font-mono font-medium", (s.change_percent || 0) >= 0 ? "text-success" : "text-loss")}>
  {(s.change_percent || 0) >= 0 ? '+' : ''}{(s.change_percent || 0).toFixed(2)}%
  </td>
@@ -141,6 +159,7 @@ function ExpertPredictionsTableView({ stocks }: { stocks: StockData[] }) {
 
 
 export function ExpertPredictionsTab({ market }: { market: MarketType }) {
+ const loadStockDetail = useExpertLoadStockDetail();
  const [stocks, setStocks] = useState<StockData[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
@@ -156,7 +175,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
- const allStocks = cache.stocks;
+ const allStocks = (cache.stocks as any) as StockData[];
  const sorted = allStocks
  .filter((s: StockData) => s.current_price > 0)
  .sort((a: StockData, b: StockData) => (b.current_price || 0) - (a.current_price || 0));
@@ -167,7 +186,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  const res = await fetch(`/api/stocks?market=${marketCode}&limit=20`);
  if (res.ok) {
  const data = await res.json();
- const allStocks = data.stocks || [];
+ const allStocks = (data.stocks || []) as StockData[];
  // ترتيب حسب السعر
  const sorted = allStocks
  .filter((s: StockData) => s.current_price > 0)
@@ -188,7 +207,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
- const allStocks = cache.stocks;
+ const allStocks = (cache.stocks as any) as StockData[];
  const sorted = allStocks
  .filter((s: StockData) => s.current_price > 0)
  .sort((a: StockData, b: StockData) => (b.current_price || 0) - (a.current_price || 0));
@@ -336,7 +355,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  "mb-2 border-r-4 cursor-pointer hover:shadow-md transition-shadow",
  (stock.change_percent || 0) > 0 ? "border-r-green-500" : 
  (stock.change_percent || 0) < 0 ? "border-r-red-500" : "border-r-gray-500"
- )} onClick={() => loadStockDetail(stock.ticker)}>
+ )} onClick={() => loadStockDetail && loadStockDetail(stock.ticker)}>
  <CardContent className="p-3">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-2">
@@ -446,7 +465,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
  {stocks.map((stock, idx) => {
  const singleText = formatSingleExpertPredictionText(stock);
  return (
- <Card key={`txt-expert-${stock.ticker}-${idx}`} className="border border-border cursor-pointer hover:shadow-md transition-shadow" onClick={() => loadStockDetail(stock.ticker)}>
+ <Card key={`txt-expert-${stock.ticker}-${idx}`} className="border border-border cursor-pointer hover:shadow-md transition-shadow" onClick={() => loadStockDetail && loadStockDetail(stock.ticker)}>
  <CardContent className="p-3">
  <div className="flex items-center justify-between mb-2">
  <span className="font-bold">{stock.ticker} - {stock.name_ar || stock.name}</span>

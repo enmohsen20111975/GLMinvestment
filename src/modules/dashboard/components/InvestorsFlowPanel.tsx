@@ -106,6 +106,9 @@ interface InvestorsDataRow {
  total_buys_value: number | null;
  total_sells_value: number | null;
  number_of_trades: number | null;
+ // Aliases used by sanity-check display logic:
+ arab_buys_value?: number | null;
+ arab_sells_value?: number | null;
 }
 
 interface InvestorsApiResponse {
@@ -268,7 +271,7 @@ export function InvestorsFlowPanel() {
  } = useApiQuery<LiquidityFlowData>('/api/market/liquidity-flow', {
    params: { market: currentMarket, days },
    queryOptions: { refetchOnWindowFocus: false },
- });
+ }) as any;
  const data = useMemo(() => (flowRaw && flowRaw.success) ? flowRaw : null, [flowRaw]);
  const error = !!flowError || (flowRaw && !flowRaw.success);
 
@@ -276,7 +279,7 @@ export function InvestorsFlowPanel() {
  const { data: invRaw } = useApiQuery<InvestorsApiResponse>('/api/egx/investors', {
    params: { latest: 'false', days },
    queryOptions: { refetchOnWindowFocus: false },
- });
+ }) as any;
  const invData = useMemo(() => (invRaw?.success && invRaw.rows?.length) ? invRaw.rows : null, [invRaw]);
  const invSource = invRaw?.source ?? '';
  const invAutoSeeded = !!invRaw?.auto_seeded;

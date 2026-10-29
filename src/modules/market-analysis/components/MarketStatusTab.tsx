@@ -188,6 +188,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
 }
 
 export function MarketStatusTab({ market }: { market: MarketType }) {
+ const loadStockDetail = (_ticker: string) => { /* navigation handled at parent */ };
  const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
  const [stocks, setStocks] = useState<StockData[]>([]);
  const [loading, setLoading] = useState(true);
@@ -256,7 +257,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  const marketCode = MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
- setStocks(cache.stocks);
+ setStocks(cache.stocks as any);
  setLastUpdate(new Date().toLocaleString('ar-EG'));
  if (!silent) setLoading(false);
  return;
@@ -269,7 +270,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  if (stocksRes && stocksRes.ok) {
  const data = await stocksRes.json();
  const stocksList = data.stocks || [];
- setStocks(stocksList);
+ setStocks(stocksList as any);
  setLastUpdate(new Date().toLocaleString('ar-EG'));
  } else {
  setError('فشل في تحميل البيانات');
@@ -286,7 +287,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  const marketCode = MARKET_CODES[market];
  const cache = useAnalysisStore.getState();
  if (cache.stocks && cache.market === marketCode && Date.now() - cache.lastFetched < CACHE_TTL) {
- setStocks(cache.stocks);
+ setStocks(cache.stocks as any);
  setLastUpdate(new Date().toLocaleString('ar-EG'));
  setLoading(false);
  } else {
@@ -516,7 +517,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  <CardContent className="p-4 text-center">
  <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
  <p className="text-destructive mb-2">{error}</p>
- <Button variant="outline" size="sm" onClick={fetchData}>
+ <Button variant="outline" size="sm" onClick={() => fetchData()}>
  <RefreshCw className="h-4 w-4 ml-2" />
  إعادة المحاولة
  </Button>
@@ -588,7 +589,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
  {/* اتساع السوق (Breadth) — Donut */}
  <WidgetCard
         title="اتساع السوق (Breadth)"
-        icon={PieChart}
+        icon={PieChart as any}
         iconColor="text-profit"
         iconSize="h-4 w-4"
         titleClassName="text-sm"

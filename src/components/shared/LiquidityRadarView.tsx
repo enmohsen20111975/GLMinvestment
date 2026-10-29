@@ -430,7 +430,7 @@ export function LiquidityRadarView({
  market?: string;
  initialTab?: 'radar' | 'sectors';
 }) {
- const t = useTranslation('liquidityRadar');
+ const t = (useTranslation as any)('liquidityRadar');
  const storeMarket = useAppStore((s) => s.currentMarket);
  const storeStocks = useAppStore((s) => s.stocks);
  const user = useAppStore((s) => s.user);
@@ -553,7 +553,7 @@ export function LiquidityRadarView({
  // Use the canonical classification (NOT the phase-string heuristic).
  // The helper handles missing classification gracefully (defaults to
  // 'unclassified' — never 'dead_trap').
- let out = filterStocksByClassification(allScanned, bucketFilter);
+ let out = filterStocksByClassification(allScanned as any, bucketFilter);
  if (hideInactive) {
  // Opt-in filter — user can hide inactive stocks (turnover < 1.5M EGP).
  // Default is OFF (HARD CONSTRAINT #1: show ALL stocks the API sends).
@@ -567,7 +567,7 @@ export function LiquidityRadarView({
  }
  }
  if (turnover === 0) {
- turnover = Number(s.whale?.net_flow_egp ?? 0);
+ turnover = Number((s as any)?.whale?.net_flow_egp ?? 0);
  }
  return turnover >= 1500000; // 1.5M EGP minimum liquidity
  });
@@ -581,7 +581,7 @@ export function LiquidityRadarView({
  // HARD CONSTRAINT #3: counts come from REAL API data (the `results` array +
  // `summary` block). NO hardcoded numbers anywhere.
  const filterCounts = React.useMemo(() => {
- return buildRadarFilterCounts(allScanned, data?.summary ?? null);
+ return buildRadarFilterCounts(allScanned as any, data?.summary ?? null);
  }, [allScanned, data?.summary]);
 
  // Quick alias for the canonical scanned total (prefers summary.scanned_count).
@@ -826,7 +826,7 @@ export function LiquidityRadarView({
  sortValue: (row) => row.data_quality_status || row.data_quality || 'zzz',
  filterValue: (row) => DATA_QUALITY_AR[row.data_quality_status || ''] || row.data_quality_status || row.data_quality || '—',
  render: (row) => {
-   const dq = row.data_quality_status || row.data_quality;
+   const dq = (row.data_quality_status || row.data_quality) as string;
    if (!dq) return <span className="text-muted-foreground text-[10px]">—</span>;
    const label = DATA_QUALITY_AR[dq] || String(dq);
    const cls = (dq === 'FRESH' || dq === 'OK' || dq === 'fresh') ? 'border-profit/30 bg-profit/10 text-profit'
@@ -1082,12 +1082,12 @@ export function LiquidityRadarView({
  sortable: true,
  width: 'w-40',
  align: 'center',
- sortValue: (row) => describeRadarStatus(row),
- filterValue: (row) => describeRadarStatus(row),
+ sortValue: (row) => describeRadarStatus(row as any),
+ filterValue: (row) => describeRadarStatus(row as any),
  render: (row) => {
- const status = describeRadarStatus(row);
- const reasons = getRadarStatusReasons(row);
- const cls = isDataInvalidStock(row)
+ const status = describeRadarStatus(row as any);
+ const reasons = getRadarStatusReasons(row as any);
+ const cls = isDataInvalidStock(row as any)
  ? 'bg-warning/10 text-warning border-warning/20'
  : row.classification === 'dead_trap'
  ? 'bg-loss/10 text-loss border-loss/20'
@@ -1166,7 +1166,7 @@ export function LiquidityRadarView({
     غير مصنّفة: {data.summary?.unclassified_count ?? data.stocks.filter(s => s.classification === 'unclassified').length}
    </Badge>
    <Badge variant="outline" className="font-mono text-loss/70">
-    بيانات ناقصة: {data.summary?.data_error_count ?? data.stocks.filter(s => isDataInvalidStock(s)).length}
+    بيانات ناقصة: {data.summary?.data_error_count ?? data.stocks.filter(s => isDataInvalidStock(s as any)).length}
    </Badge>
   </div>
  )}
@@ -1260,7 +1260,7 @@ export function LiquidityRadarView({
  <div className="bg-card border border-border rounded-xl p-2 flex flex-wrap items-center gap-1.5">
  <UnifiedPublishButton
  content={`📊 رادار السيولة — ${market}\n\n${pagedStocks.slice(0, 10).map(s =>
- `🎯 ${s.ticker} — ${PHASE_LABELS[s.phase] || s.phase} | دخول: ${fmtPrice(s.entry_defense?.entry_level)} | وقف: ${fmtPrice(s.entry_defense?.defense_level)} | هدف: ${fmtPrice(s.entry_defense?.resistance_level)}`
+ `🎯 ${s.ticker} — ${PHASE_LABELS[(s as any).phase] || (s as any).phase} | دخول: ${fmtPrice((s as any)?.entry_defense?.entry_level)} | وقف: ${fmtPrice((s as any)?.entry_defense?.defense_level)} | هدف: ${fmtPrice((s as any)?.entry_defense?.resistance_level)}`
  ).join('\n')}\n\n${OFFICIAL_LINKS_BLOCK}`}
  title={`📊 رادار السيولة — ${market}`}
  filename={`liquidity-radar-${market}-${new Date().toISOString().slice(0, 10)}`}
@@ -1306,7 +1306,7 @@ export function LiquidityRadarView({
  {/* P-HIGHEST-CASH: زر تصفية الأعلى سيولة كاش (يطابق TradingView) */}
  <button
    onClick={() => {
-     if (bucketFilter !== 'highest_cash') {
+     if ((bucketFilter as string) !== 'highest_cash') {
        setBucketFilter('highest_cash' as RadarFilterKey);
      } else {
        setBucketFilter('all');
@@ -1314,7 +1314,7 @@ export function LiquidityRadarView({
    }}
    className={cn(
      'px-2 py-1 rounded-lg text-xs font-semibold transition-all border',
-     bucketFilter === 'highest_cash'
+     (bucketFilter as string) === 'highest_cash'
        ? 'bg-profit/15 text-profit border-profit/30 shadow-sm'
        : 'bg-muted/40 text-muted-foreground border-transparent hover:bg-muted'
    )}
@@ -1327,7 +1327,7 @@ export function LiquidityRadarView({
  {/* ─── UnifiedTable (paginated) ─── */}
  <UnifiedTable<RadarStock>
  columns={columns}
- data={pagedStocks}
+ data={pagedStocks as any}
  keyField="ticker"
  dense
  filterable
@@ -1370,7 +1370,7 @@ export function LiquidityRadarView({
 
  {/* ─── TAB 2: حركة القطاعات ─── */}
  <TabsContent value="sectors" className="space-y-4 mt-0">
- <SectorTrackingTab market={market} />
+ <SectorTrackingTab market={market as any} />
  </TabsContent>
  </Tabs>
 
@@ -1384,7 +1384,7 @@ export function LiquidityRadarView({
  <StockDetailDrawer
  ticker={selectedTicker}
  radarStock={((data?.stocks ?? []).find((s) => s.ticker === selectedTicker) || (storeStocks ?? []).find((s) => s.ticker === selectedTicker)) as any}
- sectorForTicker={(t) => (storeStocks ?? []).find((s) => s.ticker === t)?.sector || (data?.stocks ?? []).find((s) => s.ticker === t)?.sector || null}
+ sectorForTicker={((t: string) => (storeStocks ?? []).find((s) => s.ticker === t)?.sector || (data?.stocks ?? []).find((s) => s.ticker === t)?.sector || null) as any}
  sectorChangeForTicker={() => null}
  onClose={() => setSelectedTicker(null)}
  onTrackToggle={() => {}}

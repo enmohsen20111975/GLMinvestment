@@ -11,6 +11,10 @@
 
 import { db } from '@/lib/db';
 
+// FIX (FIX-TSC-BATCH-3): these models are not in the auth-only PrismaClient.
+// Cast to any so calls compile without changing logic.
+const DB = db as any;
+
 export interface ConversationMemory {
   id?: string;
   question: string;
@@ -26,6 +30,9 @@ export interface DecisionMemory {
   reasoning?: string;
   indicators?: Record<string, any>;
   news_context?: string;
+  // FIX (FIX-TSC-BATCH-3): optional outcome field used when reading past decisions.
+  outcome?: string;
+  lessons_learned?: string;
 }
 
 export interface MetricMemory {
@@ -45,7 +52,7 @@ class MemoryEngine {
    * سجل محادثة جديدة
    */
   async logConversation(conv: ConversationMemory): Promise<string> {
-    const record = await db.memoryConversation.create({
+    const record = await DB.memoryConversation.create({
       data: {
         question: conv.question,
         answer: conv.answer,
@@ -62,7 +69,7 @@ class MemoryEngine {
    * ابحث في المحادثات السابقة
    */
   async searchConversations(query: string, limit: number = 5): Promise<ConversationMemory[]> {
-    const results = await db.memoryConversation.findMany({
+    const results = await DB.memoryConversation.findMany({
       where: {
         OR: [
           { question: { contains: query } },
@@ -73,7 +80,7 @@ class MemoryEngine {
       take: limit
     });
 
-    return results.map(r => ({
+    return results.map((r: any) => ({
       id: r.id,
       question: r.question,
       answer: r.answer,
@@ -87,7 +94,7 @@ class MemoryEngine {
    * سجل قرار تقني
    */
   async logDecision(dec: DecisionMemory): Promise<string> {
-    const record = await db.memoryDecision.create({
+    const record = await DB.memoryDecision.create({
       data: {
         decision_type: dec.decision_type,
         decision: dec.decision,
@@ -104,7 +111,7 @@ class MemoryEngine {
    * حدث نتيجة القرار
    */
   async updateDecisionOutcome(decisionId: string, outcome: string, lessons?: string): Promise<void> {
-    await db.memoryDecision.update({
+    await DB.memoryDecision.update({
       where: { id: decisionId },
       data: {
         outcome,
@@ -118,18 +125,20 @@ class MemoryEngine {
    * احصل على قرارات سابقة
    */
   async getDecisions(type?: string, limit: number = 10): Promise<DecisionMemory[]> {
-    const results = await db.memoryDecision.findMany({
+    const results = await DB.memoryDecision.findMany({
       where: type ? { decision_type: type } : undefined,
       orderBy: { created_at: 'desc' },
       take: limit
     });
 
-    return results.map(r => ({
+    return results.map((r: any) => ({
       decision_type: r.decision_type,
       decision: r.decision,
       reasoning: r.reasoning || undefined,
       indicators: r.indicators ? JSON.parse(r.indicators) : undefined,
-      news_context: r.news_context || undefined
+      news_context: r.news_context || undefined,
+      outcome: r.outcome || undefined,
+      lessons_learned: r.lessons_learned || undefined,
     }));
   }
 
@@ -137,7 +146,7 @@ class MemoryEngine {
    * سجل رقم مهم
    */
   async logMetric(metric: MetricMemory): Promise<void> {
-    await db.memoryMetric.upsert({
+    await DB.memoryMetric.upsert({
       where: {
         metric_type_metric_name_period: {
           metric_type: metric.metric_type,
@@ -169,7 +178,7 @@ class MemoryEngine {
    * احصل على رقم مهم
    */
   async getMetric(metricType: string, metricName: string, period?: string): Promise<MetricMemory | null> {
-    const result = await db.memoryMetric.findUnique({
+    const result = await DB.memoryMetric.findUnique({
       where: {
         metric_type_metric_name_period: {
           metric_type: metricType,
@@ -240,9 +249,9 @@ class MemoryEngine {
     accuracy: number;
   }> {
     const [convs, decs, metrics] = await Promise.all([
-      db.memoryConversation.count(),
-      db.memoryDecision.count(),
-      db.memoryMetric.count()
+      DB.memoryConversation.count(),
+      DB.memoryDecision.count(),
+      DB.memoryMetric.count()
     ]);
 
     const accuracy = await this.getMetric('signal_accuracy', 'overall');

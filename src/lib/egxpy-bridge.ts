@@ -259,17 +259,17 @@ export async function fetchQuote(ticker: string): Promise<EgxpyQuote | null> {
         const quote: EgxpyQuote = {
           ticker: symbol,
           exchange: 'EGX',
-          current_price: data.price,
-          previous_close: data.open || (data.price != null && data.change != null ? data.price - data.change : undefined),
-          open_price: data.open || data.price,
-          high_price: data.high || data.price,
-          low_price: data.low || data.price,
+          current_price: data.price ?? 0,
+          previous_close: data.open || (data.price != null && data.change != null ? data.price - data.change : 0),
+          open_price: data.open || (data.price ?? 0),
+          high_price: data.high || (data.price ?? 0),
+          low_price: data.low || (data.price ?? 0),
           volume: data.volume || 0,
           price_change: data.change || 0,
           price_change_percent: data.change_percent || 0,
           last_update: data.timestamp || new Date().toISOString(),
           source: 'vps-api'
-        };
+        } as EgxpyQuote;
         setCache(cacheKey, quote);
         return quote;
       }
@@ -349,7 +349,7 @@ export async function fetchBatchQuotes(tickers: string[]): Promise<EgxpyQuote[]>
             price_change_percent: item.change_percent || 0,
             last_update: item.timestamp || new Date().toISOString(),
             source: 'vps-api'
-          }));
+          })) as EgxpyQuote[];
         setCache(cacheKey, quotes);
         return quotes;
       }
@@ -405,7 +405,7 @@ export async function fetchAllStocks(): Promise<EgxpyQuote[]> {
           price_change_percent: item.change_percent || 0,
           last_update: item.timestamp || new Date().toISOString(),
           source: 'vps-api'
-        }));
+        })) as EgxpyQuote[];
         setCache(cacheKey, quotes);
         return quotes;
       }
@@ -463,7 +463,7 @@ export async function fetchGoldPrices(): Promise<EgxpyQuote[]> {
           price_change_percent: item.change_percent || 0,
           last_update: item.timestamp || new Date().toISOString(),
           source: 'vps-api'
-        }));
+        })) as EgxpyQuote[];
         setCache(cacheKey, quotes);
         return quotes;
       }
