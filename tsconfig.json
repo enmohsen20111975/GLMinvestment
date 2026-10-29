@@ -34,8 +34,7 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules",
@@ -44,7 +43,7 @@
     "telegram-events",
     "mini-services",
     "scripts",
-    ".next/dev/types",
+    ".next",
     "src/__tests__",
     "src/**/*.test.*",
     "src/**/*.spec.*"
