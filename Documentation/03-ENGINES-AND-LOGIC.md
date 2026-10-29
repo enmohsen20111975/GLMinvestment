@@ -180,113 +180,147 @@ V3Plan(
 
 ### العائلات السبع (تفاصيل كاملة)
 
-#### 4.1 TREND (يستخدم MasterAnalyzer)
+#### 4.1 TREND (MasterAnalyzer — محرك حقيقي)
 
 ```python
 def _run_trend(plan, prices, volumes, ticker, market):
-    # يستدعي MasterAnalyzer.analyze() (المحرك المركزي القديم)
+    # MasterAnalyzer (5,424 سطر) — محرك مستقل بـ 8 طبقات:
+    # Macro + SMA50 + RSI + Volume + Bollinger + MACD + Candlestick + Fibonacci
+    # مش V38 — محرك مستقل تمامًا
     a = MasterAnalyzer()
     r = a.analyze(ticker, prices=prices, volumes=volumes)
-    score = r.master_score  # 0-100
+    score = r.master_score  # 0-100 (STRONG_BUY ≥ 78, BUY ≥ 65)
     signal = r.signal       # HOLD/BUY/SELL/etc
     # Normalize to -100..+100 (master_score 0-100, neutral=50)
     norm = (score - 50) * 2
     return norm, signal
 ```
 
-#### 4.2 MOM (RSI-based)
+#### 4.2 MOM — Wilder's RSI (STAGE-1.1 FIX)
 
 ```python
 def _run_momentum(plan, prices, volumes, ticker, market):
-    # RSI(14) — صيغة بدائية (مش Wilder's)
-    gains = [max(0, prices[i] - prices[i-1]) for i in range(1, 15)]
-    losses = [max(0, prices[i-1] - prices[i]) for i in range(1, 15)]
-    avg_gain = sum(gains) / len(gains)
-    avg_loss = sum(losses) / len(losses)
-    rsi = 100 - (100 / (1 + avg_gain / avg_loss)) if avg_loss > 0 else 100
-    # Normalize: RSI=50 → 0, RSI=70 → +40, RSI=30 → -40
-    norm = (rsi - 50) * 2
+    # STAGE-1.1: استخدم calc_rsi من analyzers/indicators/rsi.py (Wilder's)
+    # قبل كده: حساب بدائي (SMA RSI) — غلط
+    from analyzers.indicators.rsi import calc_rsi
+    rsi = calc_rsi(prices, period=14)  # Wilder's smoothing
+    # Normalize: RSI 50 → 0, RSI 70 → +40, RSI 30 → -40
+    norm = max(-80, min(80, (rsi - 50) * 2))
     signal = 'BUY' if rsi > 60 else 'SELL' if rsi < 40 else 'HOLD'
     return norm, signal
 ```
 
-#### 4.3 MR — Mean Reversion
+#### 4.3 MR — Mean Reversion (STAGE-1.4 FIX: ATR-based)
 
 ```python
-def _run_mean_reversion(plan, prices, volumes, ticker, market):
+def _run_mean_reversion(plan, prices, volumes, ticker, market, highs, lows):
+    # STAGE-1.4: لازم انحراف ≥ 1.8 × ATR(14) (مش 5% بس)
+    # قبل كده: SMA20 deviation بس — سهل الإثارة في EGX
+    from analyzers.indicators.atr import calc_atr
+    atr = calc_atr(highs[-15:], lows[-15:], prices[-15:], 14)
     sma20 = sum(prices[-20:]) / 20
-    last = prices[-1]
-    deviation = (last - sma20) / sma20 * 100
-    # If price below SMA → mean reversion buy signal
-    # price 5% below SMA → +40, price 5% above → -40
-    norm = max(-80, min(80, -deviation * 8))
-    signal = 'BUY' if deviation < -2 else 'SELL' if deviation > 2 else 'HOLD'
+    deviation_pct = (last - sma20) / sma20 * 100
+    atr_pct = (atr / last) * 100
+    threshold = 1.8 * atr_pct
+
+    if abs(deviation_pct) < threshold:
+        # الانحراف مش كافي → neutral
+        norm = max(-30, min(30, -deviation_pct * 3))
+        signal = 'HOLD'
+    else:
+        # انحراف كافي → mean reversion signal
+        strength = min(abs(deviation_pct) / threshold, 1.5)
+        norm = max(-80, min(80, -deviation_pct * 8 * strength / threshold))
+        signal = 'BUY' if deviation_pct < 0 else 'SELL'
     return norm, signal
 ```
 
-#### 4.4 BRK — Breakout
+#### 4.4 BRK — Breakout (STAGE-1.3 FIX: تشديد + volume + body)
 
 ```python
-def _run_breakout(plan, prices, volumes, ticker, market):
-    high_20 = max(prices[-20:])
-    low_20 = min(prices[-20:])
+def _run_breakout(plan, prices, volumes, ticker, market, highs, lows, opens):
+    # STAGE-1.3: اختراق حقيقي لازم 3 شروط
+    # قبل كده: 0.98 من القمة (ضعيف أوي)
+    # 1. high_20 = أعلى قمة 20 يوم BEFORE today (مش شامل اليوم)
+    high_20 = max(highs[-21:-1])  # excludes today
+    low_20 = min(lows[-21:-1])
     last = prices[-1]
-    if last >= high_20 * 0.98:
-        norm = 50   # near breakout
+
+    # 2. volume ≥ 1.4× متوسط 20 يوم
+    vol_ratio = last_vol / avg_vol_20
+    vol_confirmed = vol_ratio >= 1.4
+
+    # 3. body ≥ 50% من range
+    body_ratio = abs(last - last_open) / (high - low)
+    body_ok = body_ratio >= 0.50
+
+    # اختراق صاعد حقيقي
+    if last > high_20 and vol_confirmed and body_ok:
+        norm = min(75, 55 + (vol_ratio - 1.4) * 20)  # +55..+75
         signal = 'BUY'
-    elif last <= low_20 * 1.02:
-        norm = -50  # near breakdown
+    # كسر هابط حقيقي
+    elif last < low_20 and vol_confirmed and body_ok:
+        norm = max(-75, -55 - (vol_ratio - 1.4) * 20)  # -55..-75
         signal = 'SELL'
+    # غير كده: موقع السعر في الـ range
     else:
         pos = (last - low_20) / (high_20 - low_20)
-        norm = (pos - 0.5) * 40
+        norm = max(-40, min(40, (pos - 0.5) * 40))
         signal = 'HOLD'
     return norm, signal
 ```
 
-#### 4.5 FLOW — Volume Analysis
+#### 4.5 FLOW — compute_money_flow (STAGE-1.2 FIX)
 
 ```python
-def _run_flow(plan, prices, volumes, ticker, market):
-    avg_vol_20 = sum(volumes[-20:]) / 20
-    recent_vol = sum(volumes[-5:]) / 5
-    vol_ratio = recent_vol / avg_vol_20
-    price_change = (prices[-1] - prices[-5]) / prices[-5] * 100
-    if vol_ratio > 1.5 and price_change > 0:
-        norm = min(80, vol_ratio * 20)
-        signal = 'BUY'
-    elif vol_ratio > 1.5 and price_change < 0:
-        norm = min(-40, -vol_ratio * 15)
-        signal = 'SELL'
-    else:
-        norm = 0
-        signal = 'HOLD'
+def _run_flow(plan, prices, volumes, ticker, market, highs, lows):
+    # STAGE-1.2: استخدم compute_money_flow (6 طبقات) كمصدر وحيد
+    # قبل كده: volume_ratio ساذج — غلط
+    from utils.shared_liquidity import compute_money_flow
+    mf = compute_money_flow(prices, volumes, highs, lows)
+    # 6 طبقات: CLV + CMF + vol_confirmation + trend_penalty + dead_volume + SMA
+    buy_pct = mf.get('buy_pct', 50)  # 0-100
+    # Normalize: buy_pct 50 → 0, buy_pct 65 → +30, buy_pct 35 → -30
+    norm = max(-100, min(100, (buy_pct - 50) * 2))
+    signal = 'BUY' if buy_pct >= 65 else 'SELL' if buy_pct <= 35 else 'HOLD'
     return norm, signal
 ```
 
-#### 4.6 FUND — Placeholder ⚠️
+#### 4.6 FUND — وزن = 0 (STAGE-1.5 FIX)
 
 ```python
+# STAGE-1.5: مش بـ ترجع (0, HOLD) على وزن 5-15%
+# execute_v3 بـ يشيل FUND من الأوزان لو مش متاح
+# + بـ يعيد تطبيع باقي الأوزان لمجموع = 1.0
+# TODO: ربط بـ data_engine.db.tab_* (fundamentals)
 def _run_fundamental(plan, ticker, market):
-    # WITHOUT fundamental data, return neutral
-    return 0, 'HOLD'
+    return 0, 'HOLD'  # placeholder — لكن وزنها = 0
 ```
 
-#### 4.7 EVENT — Placeholder ⚠️
+#### 4.7 EVENT — وزن = 0 (STAGE-1.5 FIX)
 
 ```python
+# نفس منطق FUND — وزن = 0 + إعادة تطبيع
+# TODO: ربط بـ news.db + Ollama sentiment
 def _run_event(plan, ticker, market):
-    return 0, 'HOLD'
+    return 0, 'HOLD'  # placeholder — لكن وزنها = 0
 ```
 
-### الحساب النهائي (Signal Score)
+### الحساب النهائي (Signal Score + STAGE-3 Conflict + STAGE-4 Signal)
 
 ```python
-# Weighted average
+# ── STAGE-1.5: إعادة تطبيع الأوزان (شيل FUND/EVENT لو مش متاح) ──
+weights = dict(plan.normalized_weights)
+if 'FUND' not in available_families: weights.pop('FUND', None)
+if 'EVENT' not in available_families: weights.pop('EVENT', None)
+# إعادة تطبيع لمجموع = 1.0
+weights = {k: v / sum(weights.values()) for k, v in weights.items()}
+
+# ─ـ Weighted Signal Score ──
 signal_score = sum(family_scores[f] * weights[f] for f in family_scores) / total_weight
 # signal_score = -100..+100
 
-# Confidence (agreement between engines)
+# ── Confidence (agreement between engines) ──
 positive = count(scores > 20)
 negative = count(scores < -20)
 if positive > 0 and negative > 0:
@@ -299,23 +333,27 @@ else:
     confidence = 30  # كلهم neutral → low
 ```
 
-### Conflict Detection
+### STAGE-3: Conflict Detection (موسّع)
 
 ```python
-def resolve_conflict(family_signals):
-    # TREND positive + MOM negative → conflict
-    if trend > 30 and mom < -30:
-        return (False, 'TREND+MOM conflict')
-    # BRK positive + FLOW weak → conflict
-    if brk > 30 and flow < 10:
-        return (False, 'BRK+FLOW conflict — breakout not confirmed')
-    # MR positive in bear → conflict
-    if mr > 30 and trend < -20:
-        return (False, 'MR positive in downtrend — no auto-buy')
-    return (True, 'no conflict')
+# من orchestrator_v3.resolve_conflict:
+# 1. TREND positive + MOM negative → conflict
+# 2. BRK positive + FLOW weak → conflict
+# 3. MR positive in bear → conflict
+
+# إضافات executor_v3 (STAGE-3):
+# 4. FLOW قوي + TREND ضعيف/سلبي → conflict (confidence ≤ 45)
+# 5. MOM قوي + MR قوي في اتجاهين متعاكسين → conflict (confidence ≤ 45)
+# 6. كل العائلات |score| < 15 → confidence ≤ 25 (ضعف شامل)
+
+# Conflict reduces confidence:
+if not ok:
+    confidence = min(confidence, 40)
+if _has_conflict:
+    confidence = min(confidence, 45)
 ```
 
-### تحويل signal_score لـ final_signal (CRITICAL FIX)
+### STAGE-4: تحويل signal_score لـ final_signal + Confidence Gate
 
 ```python
 # Thresholds حسب الـ regime:
@@ -323,21 +361,46 @@ def resolve_conflict(family_signals):
 #   NORMAL:     buy ≥ 30, strong_buy ≥ 50, sell ≤ -30
 #   AGGRESSIVE: buy ≥ 25, strong_buy ≥ 45, sell ≤ -25
 
-if signal_score >= strong_thresh:
+# STAGE-4: Confidence Gate — ممنوع BUY لو confidence < 58
+_confidence_ok = confidence >= 58
+_no_conflict = not _has_conflict and ok
+
+if signal_score >= strong_thresh and _confidence_ok and _no_conflict:
     final_signal = 'STRONG_BUY'
-elif signal_score >= buy_thresh:
+elif signal_score >= buy_thresh and _confidence_ok:
     final_signal = 'BUY'
-elif signal_score <= sell_thresh:
+elif signal_score <= sell_thresh and confidence >= 50:
     final_signal = 'SELL'
 else:
     final_signal = 'NO_TRADE'
 
-# Position size من final_position_size (موحد)
+# Position size من final_position_size (موحد + كامل العوامل)
 position_size_pct = final_position_size(
     base_size=0.02,
     flow_score=signal_score + 50,  # normalize -100..100 → 0..100
+    liquidity_intensity=intensity,  # من market_cap
+    free_float=free_float,          # من stocks.db
     regime=market_regime
 ) * 100
+
+# S8 (سيولة ضعيفة) → position cap 1%
+if state_code == 'S8':
+    position_size_pct = min(position_size_pct, 1.0)
+```
+
+### STAGE-5: Ranking اليومي
+
+```python
+# لما عدد الإشارات يعدي max_picks:
+rank_score = (
+    signal_score_normalized * 0.45 +  # -100..100 → 0..100
+    confidence * 0.25 +               # 0..100
+    liquidity_intensity_norm * 0.15 + # turnover/market_cap
+    signal_score_normalized * 0.10 +  # rs proxy
+    confidence * 0.05                 # flow quality proxy
+)
+# رتّب تنازليًا → خد أعلى max_picks بس
+# الباقي → NO_TRADE
 ```
 
 ---
