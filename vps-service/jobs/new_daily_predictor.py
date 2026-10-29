@@ -448,8 +448,8 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
         _signals_today = []  # STAGE-5: للـ ranking
         for ticker in alive:
             prices, volumes, highs, lows, opens = get_price_history(ticker, canonical)
-            if len(prices) < 50:
-                continue  # V3 محتاج 50+ يوم
+            if len(prices) < 20:
+                continue  # V3 محتاج على الأقل 20 يوم (خفّضنا من 50)
             
             # STAGE-1: اقرأ market_cap + free_float من stocks.db
             _mc = None

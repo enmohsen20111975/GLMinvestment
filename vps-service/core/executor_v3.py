@@ -288,8 +288,8 @@ def _run_trend(plan, prices, volumes, ticker, market):
     Output: master_score (0-100), signal
     Normalize: (score - 50) * 2 → -100..+100
     """
-    if not prices or len(prices) < 50:
-        return None, None
+    if not prices or len(prices) < 20:
+        return None, None  # STAGE-FIX: خفّضنا من 50 لـ 20 (EGX عندها 77 يوم متوسط)
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
         from analyzers.master_analyzer import MasterAnalyzer
