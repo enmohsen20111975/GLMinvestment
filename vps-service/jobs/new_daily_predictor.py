@@ -325,22 +325,48 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
 
 
 def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
-    """احفظ التوقع في predictions.db عبر DAL."""
+    """احفظ التوقع في predictions.db."""
     if result.get('signal') not in ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL']:
         logger.info(f'  {result["ticker"]}: save skipped (signal={result.get("signal")})')
         return False
     
     try:
-        from core.db_manager import db_manager
-        logger.info(f'  {result["ticker"]}: saving prediction (signal={result.get("signal")}, score={result.get("score",0):.1f})...')
+        import sqlite3 as _sql
+        import uuid as _uuid
+        _db_path = str(PROJECT_ROOT / 'db' / 'predictions.db')
+        conn = _sql.connect(_db_path, timeout=30)
+        conn.execute('PRAGMA busy_timeout = 30000')
         
-        # خد السعر الحالي عبر DAL
-        price_row = db_manager.query_one('stocks',
-            "SELECT current_price FROM stocks WHERE ticker = ? AND market = ?",
-            (result['ticker'], market_code)
-        )
+        # تأكد إن جدول predictions موجود
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS predictions (
+                id TEXT PRIMARY KEY,
+                ticker TEXT NOT NULL,
+                market TEXT DEFAULT 'EGX',
+                signal TEXT,
+                signal_type TEXT,
+                prediction_date TEXT,
+                entry_price REAL,
+                target_price REAL,
+                stop_loss REAL,
+                master_score REAL,
+                confidence REAL,
+                persona TEXT DEFAULT 'balanced',
+                status TEXT DEFAULT 'active',
+                created_at TEXT,
+                notes TEXT
+            )
+        ''')
+        conn.commit()
         
-        entry_price = float(price_row['current_price']) if price_row and price_row.get('current_price') else 0
+        # خد السعر الحالي
+        import sqlite3 as _sql2
+        _stocks_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
+        sconn = _sql2.connect(f'file:{_stocks_path}?mode=ro', uri=True, timeout=10)
+        srow = sconn.execute("SELECT current_price FROM stocks WHERE ticker = ?", (result['ticker'],)).fetchone()
+        sconn.close()
+        
+        entry_price = float(srow[0]) if srow and srow[0] else 0
         confidence = result.get('confidence', 0)
         score = result.get('score', 0)
         
@@ -353,18 +379,21 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
             target_price = entry_price * 0.95 if entry_price > 0 else 0
             stop_loss = entry_price * 1.03 if entry_price > 0 else 0
         
-        db_manager.execute('predictions', """
-            INSERT INTO predictions (ticker, market, signal, signal_type, 
+        _pred_id = str(_uuid.uuid4())[:16]
+        conn.execute("""
+            INSERT INTO predictions (id, ticker, market, signal, signal_type, 
                                     prediction_date, entry_price, target_price, stop_loss,
                                     master_score, confidence, persona, status, created_at, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
         """, (
-            result['ticker'], market_code, signal, signal,
+            _pred_id, result['ticker'], market_code, signal, signal,
             scan_date, entry_price, target_price, stop_loss,
             score, confidence, 'v3_smart', datetime.now().isoformat(),
             f"state={result.get('state','?')} regime={result.get('market_regime','?')} engines={result.get('engines_ran',[])}"
         ))
-        logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db')
+        conn.commit()
+        conn.close()
+        logger.info(f'  {result["ticker"]}: ✓ saved to predictions.db (id={_pred_id})')
         return True
     except Exception as e:
         logger.error(f'  {result["ticker"]}: ✗ save failed — {e}', exc_info=True)
