@@ -49,6 +49,10 @@ from typing import Any, Dict, List, Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DB_PATH = REPO_ROOT / "db" / "stocks.db"
 
+# BRAVO-DATA-LAYER: ensure project root is on sys.path so we can import data_engine.data_layer
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 # Markets: (api_slug, arabic_label)
 # BRAVO-SCANNER-DBSLUG-FIX (2026-10-29): فصل API slug عن DB slug.
 # TradingView API بيستخدم lowercase (egypt/ksa/kuwait/qatar/america/crypto)
@@ -693,7 +697,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="TradingView Scanner Live — unified scraper")
     ap.add_argument("--market", default="all", help="market slug (egypt/saudi/kuwait/qatar/america/crypto) or 'all'")
     ap.add_argument("--dry-run", action="store_true", help="fetch only, no DB save")
-    ap.add_argument("--db", default=str(DB_PATH), help="DB path")
+    ap.add_argument("--db", default=str(DB_PATH), help="DB path (legacy, ignored — always writes to data_engine.db via data layer)")
     ap.add_argument("--force", action="store_true", help="force fetch even if market is closed (skip schedule check)")
     args = ap.parse_args()
 
@@ -702,22 +706,19 @@ def main() -> int:
         log(f"unknown market: {args.market}")
         return 1
 
+    # BRAVO-DATA-LAYER (2026-10-29): scanner writes to data_engine.db via data layer.
+    # Owner directive: "البيانات الى بتيجى من محرك البيانات تروح على data_engine.db مش stocks.db"
+    # No more direct sqlite3 to stocks.db. The data layer is the single write path.
+    from data_engine.data_layer import data as _data_layer
+
     print("=" * 70)
     print("TradingView Scanner Live — Unified Engine")
     print("=" * 70)
-    print(f"DB: {args.db}")
+    print(f"Target: data_engine.db (via data_layer)")
     print(f"Markets: {[m for m, _ in markets]}")
     print(f"Fields: {len(API_COLUMNS)}")
     print(f"Mode: {'DRY-RUN' if args.dry_run else 'LIVE'}")
     print()
-
-    conn = None
-    if not args.dry_run:
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(args.db)
-        added = _ensure_schema(conn)
-        if added:
-            log(f"📦 schema: added {added} new columns via ALTER")
 
     total_rows = 0
     total_time = 0.0
@@ -752,24 +753,22 @@ def main() -> int:
             log(f"  ⚠️ 0 stocks returned")
 
         if not args.dry_run and rows:
-            saved = save_to_db(conn, rows)
-            log(f"  💾 saved {saved}/{len(rows)} to stocks table")
-            # RADAR-FIX: persist to stock_daily_prices for radar history
-            persisted = persist_to_daily_prices(conn, rows)
-            log(f"  📅 persisted {persisted} to stock_daily_prices (radar history)")
-            # INDICATORS-FROM-TV: persist technical indicators (RSI, MACD, SMA, ATR)
-            indicators_saved = persist_indicators(conn, rows)
-            log(f"  📊 persisted {indicators_saved} to stock_indicators (TV indicators)")
-
-    if conn:
-        conn.close()
+            # BRAVO-DATA-LAYER: write to data_engine.db via data layer
+            # The scanner sets market=DB slug explicitly (DB_MARKET_MAP in fetch_market).
+            # Owner: "انت الى تحط اسم السوق مش البيانات هاتيجى بأسم السوق بتاعها"
+            saved = _data_layer.upsert_snapshot(rows)
+            log(f"  💾 upserted {saved}/{len(rows)} to tv_snapshot (data_engine.db)")
+            persisted = _data_layer.append_daily_prices(rows)
+            log(f"  📅 appended {persisted} to historical_data (daily OHLCV)")
+            indicators_saved = _data_layer.upsert_indicators(rows)
+            log(f"  📊 upserted {indicators_saved} to tv_indicators (TV indicators)")
 
     print()
     print("=" * 70)
     print(f"TOTAL: {total_rows} stocks across {len(markets)} markets in {total_time:.0f}ms")
     print(f"Average: {total_time/len(markets):.0f}ms per market")
     if not args.dry_run:
-        print(f"DB: {args.db}")
+        print(f"DB: data_engine.db (via data_layer)")
     print("=" * 70)
     return 0
 

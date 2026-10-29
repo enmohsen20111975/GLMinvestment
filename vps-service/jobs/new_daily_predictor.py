@@ -63,6 +63,19 @@ CANONICAL_MARKET = {
 STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
 
+# BRAVO-DATA-LAYER (2026-10-29): V3 reads through the unified data layer.
+# Owner directive: "لازم طبقة البيانات هى الى تكون شغالة مش كل ملف يقرأ ويكتب بمزاجة"
+# No more direct stocks.db reads for market data. The data layer reads from
+# data_engine.db (canonical source) and normalizes market slugs.
+import sys as _sys
+if str(PROJECT_ROOT) not in _sys.path:
+    _sys.path.insert(0, str(PROJECT_ROOT))
+try:
+    from data_engine.data_layer import data as _data
+except Exception as _e:
+    _data = None
+    print(f'WARN: data_layer unavailable: {_e}')
+
 
 def normalize_market(market_code: str) -> str:
     return CANONICAL_MARKET.get(market_code.strip().upper(), market_code.strip().upper())
@@ -88,10 +101,25 @@ def get_last_prediction_date(market_code: str) -> str | None:
 
 
 def get_active_tickers(market_code: str) -> list[str]:
-    """كل الأسهم النشطة في السوق عبر DAL."""
+    """كل الأسهم النشطة في السوق — BRAVO-DATA-LAYER (through data layer).
+
+    Reads from data_engine.db.tv_snapshot (canonical source) instead of
+    stocks.db.stocks. Returns tickers with current_price > 0.
+    """
+    if _data is None:
+        # fallback to DAL if data layer unavailable
+        try:
+            from core.db_manager import get_active_tickers as dal_active
+            return dal_active(market_code)
+        except Exception:
+            return []
     try:
-        from core.db_manager import get_active_tickers as dal_active
-        return dal_active(market_code)
+        snaps = _data.get_market_snapshots(market_code)
+        return [
+            s.get('ticker')
+            for s in snaps
+            if s.get('ticker') and s.get('current_price') and float(s['current_price']) > 0
+        ]
     except Exception:
         return []
 
@@ -109,18 +137,22 @@ def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str],
     if not tickers:
         return [], 0
     try:
-        from core.db_manager import db_manager
-        placeholders = ','.join(['?'] * len(tickers))
-        rows = db_manager.query('stocks',
-            f"SELECT ticker, current_price, volume, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
-            (*tickers, market_code)
-        )
+        # BRAVO-DATA-LAYER: read snapshots through the data layer (not db_manager/stocks.db)
+        # Owner: "لازم طبقة البيانات هى الى تكون شغالة"
+        if _data is not None:
+            all_snaps = _data.get_market_snapshots(market_code)
+            snap_by_ticker = {s.get('ticker'): s for s in all_snaps}
+        else:
+            snap_by_ticker = {}
         alive = []
         dead_count = 0
-        for r in rows:
-            ticker = r.get('ticker', '')
-            price = float(r.get('current_price') or 0)
-            vol = float(r.get('volume') or 0)
+        for ticker in tickers:
+            snap = snap_by_ticker.get(ticker)
+            if not snap:
+                # not in tv_snapshot for this market → skip
+                dead_count += 1
+                continue
+            price = float(snap.get('current_price') or 0)
             
             # فلتر 1: سهم ميت فعلاً (price = 0 فقط — volume ممكن يكون 0 يوم واحد)
             if price <= 0:
@@ -156,13 +188,12 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
                AND (outcome_date IS NULL OR exit_type IS NULL)""",
             (market_code, f"{scan_date}%")
         )
-        # الأسعار الحالية
-        placeholders = ','.join(['?'] * len(tickers))
-        stock_rows = db_manager.query('stocks',
-            f"SELECT ticker, current_price FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
-            (*tickers, market_code)
-        )
-        current_prices = {r['ticker']: r['current_price'] for r in stock_rows if r.get('current_price')}
+        # الأسعار الحالية — BRAVO-DATA-LAYER (read through data layer)
+        if _data is not None:
+            all_snaps = _data.get_market_snapshots(market_code)
+            current_prices = {s.get('ticker'): s.get('current_price') for s in all_snaps if s.get('current_price')}
+        else:
+            current_prices = {}
         existing_map = {r['ticker']: r['entry_price'] for r in existing_rows}
         to_reanalyze = []
         skipped_count = 0
@@ -186,100 +217,22 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
 def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list, list, list, list, list]:
     """جيب آخر N يوم من الأسعار والأحجام + OHLC.
 
-    STAGE-FIX (2026-10-29): stock_daily_prices فيها snapshot مكرر (نفس السعر كل يوم).
-    الحل: اقرا من stock_indicators (TV scanner بـ يحفظ RSI/SMA/ATR الحقيقية)
-    + استخدم stocks table للسعر اللحظي.
-    لو stock_indicators متاحة → استخدمها. لو مش متاحة → fallback لـ stock_daily_prices.
+    BRAVO-DATA-LAYER (2026-10-29): reads through the unified data layer.
+    Owner directive: "لازم طبقة البيانات هى الى تكون شغالة مش كل ملف يقرأ ويكتب بمزاجة"
+    The data layer merges historical_data + egksco_price_history + tv_snapshot
+    (today's fresh close) → clean, non-flat, time-series OHLCV.
+    No more direct stocks.db reads. No more flat-data workaround.
 
     Returns:
         (closes, volumes, highs, lows, opens) — كلهم list[float]
     """
+    if _data is None:
+        logger.warning(f'data_layer unavailable — get_price_history({ticker}) empty')
+        return [], [], [], [], []
     try:
-        import sqlite3 as _sql
-        _db_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
-        conn = _sql.connect(f'file:{_db_path}?mode=ro', uri=True, timeout=10)
-
-        # 1. اقرا snapshot اللحظي من stocks table
-        srow = conn.execute("""
-            SELECT current_price, volume, high_price, low_price, open_price,
-                   change_percent, rsi, sma20, sma50, sma200, atr
-            FROM stocks WHERE ticker = ? AND current_price > 0
-        """, (ticker,)).fetchone()
-
-        if not srow:
-            conn.close()
-            return [], [], [], [], []
-
-        current_price = float(srow[0] or 0)
-        current_vol = float(srow[1] or 0)
-        current_high = float(srow[2] or current_price)
-        current_low = float(srow[3] or current_price)
-        current_open = float(srow[4] or current_price)
-        change_pct = float(srow[5] or 0)
-        rsi_tv = srow[6]
-        sma20_tv = srow[7]
-        sma50_tv = srow[8]
-        atr_tv = srow[10]
-
-        # 2. اقرا تاريخ الأسعار من stock_daily_prices (حتى لو فيه تكرار)
-        try:
-            rows = conn.execute("""
-                SELECT close, volume, high, low, open
-                FROM stock_daily_prices
-                WHERE ticker = ? AND close > 0
-                ORDER BY price_date DESC LIMIT ?
-            """, (ticker, days)).fetchall()
-        except Exception:
-            try:
-                rows = conn.execute("""
-                    SELECT close_price as close, volume, high_price as high, low_price as low, open_price as open
-                    FROM stock_daily_prices
-                    WHERE ticker = ? AND close_price > 0
-                    ORDER BY price_date DESC LIMIT ?
-                """, (ticker, days)).fetchall()
-            except:
-                rows = []
-
-        conn.close()
-
-        if not rows:
-            # fallback: استخدم snapshot لحظي كـ يوم واحد
-            return [current_price], [current_vol], [current_high], [current_low], [current_open]
-
-        rows = list(reversed(rows))  # أقدم → أحدث
-
-        # 3. استبدل آخر يوم بـ snapshot اللحظي (أدق من الـ daily_prices المكرر)
-        closes = [float(r[0] or 0) for r in rows]
-        volumes = [float(r[1] or 0) for r in rows]
-        highs = [float(r[2] or r[0] or 0) for r in rows]
-        lows = [float(r[3] or r[0] or 0) for r in rows]
-        opens = [float(r[4] or r[0] or 0) for r in rows]
-
-        # استبدل آخر يوم بالسعر اللحظي
-        if closes:
-            closes[-1] = current_price
-            volumes[-1] = current_vol
-            highs[-1] = current_high
-            lows[-1] = current_low
-            opens[-1] = current_open
-
-        # STAGE-FIX: لو previous_close موجود ومختلف → ضعه كـ يوم قبل الأخير
-        # ده بـ يخلق تاريخ صناعي (أمس → اليوم) بدل التاريخ المكرر الفاسد
-        _prev_close = float(srow[5] or 0)  # change_percent
-        # previous_close مش في الـ query — نحسبها من change_percent
-        if current_price > 0 and change_pct != 0:
-            _prev = current_price / (1 + change_pct / 100)
-            if _prev > 0 and abs(_prev - current_price) > 0.001:
-                # ضع previous_close كـ يوم قبل الأخير لو التاريخ مكرر
-                if len(closes) >= 2 and closes[-2] == closes[-1]:
-                    closes[-2] = round(_prev, 4)
-                    opens[-2] = round(_prev, 4)
-                    highs[-2] = round(_prev * 1.01, 4)
-                    lows[-2] = round(_prev * 0.99, 4)
-                    # volume اليوم السابق ≈ نص اليوم (approximation)
-                    if current_vol > 0:
-                        volumes[-2] = current_vol * 0.5
-
+        closes, volumes, highs, lows, opens = _data.get_history_lists(
+            ticker, days=days, market=market_code
+        )
         return closes, volumes, highs, lows, opens
     except Exception as e:
         logger.warning(f'get_price_history failed for {ticker}: {e}')
@@ -419,14 +372,15 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
         ''')
         conn.commit()
         
-        # خد السعر الحالي
-        import sqlite3 as _sql2
-        _stocks_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
-        sconn = _sql2.connect(f'file:{_stocks_path}?mode=ro', uri=True, timeout=10)
-        srow = sconn.execute("SELECT current_price FROM stocks WHERE ticker = ?", (result['ticker'],)).fetchone()
-        sconn.close()
-        
-        entry_price = float(srow[0]) if srow and srow[0] else 0
+        # خد السعر الحالي — BRAVO-DATA-LAYER (read through data layer, not stocks.db)
+        entry_price = 0.0
+        if _data is not None:
+            _snap = _data.get_snapshot(result['ticker'])
+            if _snap and _snap.get('current_price'):
+                try:
+                    entry_price = float(_snap['current_price'])
+                except (ValueError, TypeError):
+                    entry_price = 0.0
         confidence = result.get('confidence', 0)
         score = result.get('score', 0)
         
@@ -548,17 +502,20 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
             if len(prices) < 20:
                 continue  # V3 محتاج على الأقل 20 يوم (خفّضنا من 50)
             
-            # STAGE-1: اقرأ market_cap + free_float من stocks.db
+            # STAGE-1: اقرأ market_cap + free_float — BRAVO-DATA-LAYER (through data layer)
             _mc = None
             _ff = None
             try:
-                from core.db_manager import db_manager
-                _row = db_manager.query_one('stocks',
-                    "SELECT market_cap, free_float_percentage FROM stocks WHERE ticker = ?",
-                    (ticker,))
-                if _row:
-                    _mc = float(_row.get('market_cap') or 0) or None
-                    _ff = float(_row.get('free_float_percentage') or 0) or None
+                if _data is not None:
+                    _snap = _data.get_snapshot(ticker)
+                    if _snap:
+                        _mc_val = _snap.get('market_cap')
+                        if _mc_val:
+                            try:
+                                _mc = float(_mc_val) or None
+                            except (ValueError, TypeError):
+                                _mc = None
+                        # free_float not in TV snapshot — leave None (V3 handles it)
             except Exception:
                 pass
             
