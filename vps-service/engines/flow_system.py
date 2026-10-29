@@ -378,7 +378,13 @@ class FlowSystemEngine:
     # ========================================================================
 
     def calculate_stock_flow(self, ticker: str) -> Dict:
-        """تدفق السهم الواحد"""
+        """تدفق السهم الواحد — AUDIT-FIX (2026-10-29): توحيد الـ flow.
+
+        قبل كده: كان بـ يحسب volume + RSI + support/resistance + momentum لوحده.
+        دلوقتي: بـ يستخدم compute_money_flow من shared_liquidity كالمصدر الوحيد
+        لـ buy/sell pressure. FlowSystemEngine بـ يفضل للـ macro + sector + cross
+        validation بس. ده بـ يمنع التضارب بين النظامين.
+        """
         conn = self._get_connection()
         cur = conn.cursor()
 
@@ -409,26 +415,81 @@ class FlowSystemEngine:
         vol_baseline = hist_avg_vol or avg_volume or volume
         volume_ratio = (volume / vol_baseline) if vol_baseline and vol_baseline > 0 else 1.0
 
+        # ── AUDIT-FIX: استخدم compute_money_flow من shared_liquidity ──
+        # ده المصدر الوحيد لـ buy/sell pressure على مستوى السهم.
+        money_flow = None
+        try:
+            import sys as _mf_sys
+            _mf_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            from utils.shared_liquidity import compute_money_flow
+            # اقرأ آخر 25 يوم من stock_daily_prices
+            rows = cur.execute("""
+                SELECT close, high, low, volume FROM stock_daily_prices
+                WHERE ticker = ? AND close > 0 AND volume > 0
+                ORDER BY price_date DESC LIMIT 25
+            """, (ticker,)).fetchall()
+            if rows and len(rows) >= 5:
+                rows = list(reversed(rows))  # أقدم → أحدث
+                closes = [self._safe_float(r['close']) or 0 for r in rows]
+                highs = [self._safe_float(r['high']) or 0 for r in rows]
+                lows = [self._safe_float(r['low']) or 0 for r in rows]
+                vols = [self._safe_float(r['volume']) or 0 for r in rows]
+                money_flow = compute_money_flow(closes, vols, highs, lows)
+        except Exception:
+            pass
+
         score = 50
         factors = {}
 
-        # Volume vs avg (25 points)
-        if volume_ratio and volume_ratio > 2.0:
-            score += 15
-            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (سيولة عالية جداً)"
-        elif volume_ratio and volume_ratio > 1.5:
-            score += 10
-            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (سيولة عالية)"
-        elif volume_ratio and volume_ratio > 1.0:
-            score += 5
-            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (فوق المتوسط)"
-        elif volume_ratio and volume_ratio < 0.3:
-            score -= 10
-            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (سيولة ضعيفة جداً)"
-        else:
-            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (عادي)"
+        # ─ـ AUDIT-FIX: buy/sell pressure من compute_money_flow بس ──
+        if money_flow:
+            buy_pct = money_flow.get('buy_pct', 50)
+            sell_pct = money_flow.get('sell_pct', 50)
+            mf_state = money_flow.get('money_flow_state', '')
+            vol_ratio_mf = money_flow.get('vol_ratio', 1.0)
 
-        # RSI (15 points)
+            # buy_pct → score adjustment (35 points max)
+            if buy_pct >= 70:
+                score += 18
+                factors['money_flow'] = f"buy={buy_pct:.0f}% ({mf_state})"
+            elif buy_pct >= 60:
+                score += 12
+                factors['money_flow'] = f"buy={buy_pct:.0f}% ({mf_state})"
+            elif buy_pct >= 55:
+                score += 6
+                factors['money_flow'] = f"buy={buy_pct:.0f}% ({mf_state})"
+            elif buy_pct <= 30:
+                score -= 18
+                factors['money_flow'] = f"sell={sell_pct:.0f}% ({mf_state})"
+            elif buy_pct <= 40:
+                score -= 10
+                factors['money_flow'] = f"sell={sell_pct:.0f}% ({mf_state})"
+            else:
+                factors['money_flow'] = f"متوازن (buy={buy_pct:.0f}%)"
+
+            # volume ratio من money_flow (مش محسوب لوحده)
+            if vol_ratio_mf and vol_ratio_mf > 2.0:
+                score += 7
+                factors['volume'] = f"{vol_ratio_mf:.1f}x المتوسط (سيولة عالية جداً)"
+            elif vol_ratio_mf and vol_ratio_mf > 1.5:
+                score += 4
+                factors['volume'] = f"{vol_ratio_mf:.1f}x المتوسط (سيولة عالية)"
+            elif vol_ratio_mf and vol_ratio_mf < 0.3:
+                score -= 5
+                factors['volume'] = f"{vol_ratio_mf:.1f}x المتوسط (سيولة ضعيفة جداً)"
+            else:
+                factors['volume'] = f"{vol_ratio_mf:.1f}x المتوسط (عادي)"
+        else:
+            # fallback لو money_flow مش متاح
+            if volume_ratio and volume_ratio > 2.0:
+                score += 10
+            elif volume_ratio and volume_ratio > 1.5:
+                score += 7
+            elif volume_ratio and volume_ratio < 0.3:
+                score -= 7
+            factors['volume'] = f"{volume_ratio:.1f}x المتوسط (fallback — money_flow unavailable)"
+
+        # RSI (15 points) — لسه من stocks.db
         if rsi is not None:
             if rsi < 30:
                 score += 10
@@ -482,6 +543,7 @@ class FlowSystemEngine:
             'rsi': round(rsi, 1) if rsi else None,
             'price': price,
             'change': change,
+            'money_flow': money_flow,  # AUDIT-FIX: رجّع تفاصيل money_flow
         }
 
     # ========================================================================

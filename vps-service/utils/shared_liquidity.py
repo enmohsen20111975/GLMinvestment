@@ -358,6 +358,7 @@ def should_reject_by_liquidity(
     volumes: List[float] = None,
     closes: List[float] = None,
     market_dead: bool = False,
+    market_cap: float = None,
 ) -> Tuple[bool, str, bool, float, bool]:
     """قرار الرفض/القبول بناءً على السيولة — DYNAMIC-LIQUIDITY-V2 + PHASE-1 EXPLOSIVE SURGE.
 
@@ -387,6 +388,22 @@ def should_reject_by_liquidity(
             0.0,
             False,
         )
+
+    # 1b. AUDIT-FIX: Liquidity Intensity reject — لو market_cap متاح
+    # لو intensity < 0.05% → ارفض إلا لو explosive surge حقيقي
+    if market_cap and market_cap > 0:
+        _intensity = liquidity_intensity(avg_turnover, market_cap)
+        if _intensity is not None and _intensity < 0.05:
+            # فحص explosive قبل الرفض
+            _exp, _, _ = is_explosive_surge(volumes, closes)
+            if not _exp:
+                return (
+                    True,
+                    f'🚨 liquidity intensity منخفضة — {_intensity:.3f}% < 0.05% (turnover/market_cap)',
+                    False,
+                    0.0,
+                    False,
+                )
 
     # 2. احسب الـ threshold الديناميكي
     threshold = dynamic_min_turnover(current_price, market_dead=market_dead)
