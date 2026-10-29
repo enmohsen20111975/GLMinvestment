@@ -473,8 +473,9 @@ def detect_quiet_accumulation(
 
     # ── Task IMPROVEMENT-21: فلتر الاتجاه العام (Trend Filter) ──
     # لو السهم نازل بشدة → مش تجميع، ده هبوط
-    if len(closes) >= 21 and closes[-21] > 0:
-        roc_20d = (closes[-1] - closes[-21]) / closes[-21] * 100
+    # FIX (2026-10-29): >= 21 → >= 20 (نفس الـ bug اللي في compute_money_flow)
+    if len(closes) >= 20 and closes[-20] > 0:
+        roc_20d = (closes[-1] - closes[-20]) / closes[-20] * 100
         if roc_20d < -12.0:
             details['signals_failed'].append(f'0.trend_filter(ROC20={roc_20d:.1f}% < -12% = هبوط قوي)')
             return False, f'هبوط قوي (ROC20={roc_20d:.1f}%) — مش تجميع', details
@@ -856,9 +857,12 @@ def compute_money_flow(
     vol_confirmation = max(0, min(1.0, (vol_ratio - 0.5) / 1.0))
 
     # ── الطبقة 4: فلتر الارتداد الوهمي ──
+    # FIX (2026-10-29): كان >= 21 (بيتطلب 21 يوم) → لو عندنا 20 يوم بس
+    # roc_20d بيفضل 0 → الـ trend filter مش بيشتغل → السهم النازل بيتعامل معاه
+    # كأنه سهم طالع. الحل: >= 20 + closes[-20].
     roc_20d = 0
-    if len(closes) >= 21 and closes[-21] > 0:
-        roc_20d = (closes[-1] - closes[-21]) / closes[-21] * 100
+    if len(closes) >= 20 and closes[-20] > 0:
+        roc_20d = (closes[-1] - closes[-20]) / closes[-20] * 100
 
     # لو السهم نازل بشدة → الخصم
     trend_penalty = 0
@@ -927,14 +931,30 @@ def compute_money_flow(
     # تطبيق trend penalty
     buy_pct = max(0, min(100, raw_buy_pct + trend_penalty))
 
-    # طبقة الحماية النهائية: لو السهم نازل > 10% → cap عند 50%
-    # شرط: لا يُطبق الكاب لو اليوم صاعد بحجم تداول (ارتداد/انفجار شراء حقيقي)
+    # طبقة الحماية النهائية: لو السهم نازل > 10% → sell > buy
+    # شرط: لا يُطبق لو اليوم صاعد بحجم تداول (ارتداد/انفجار شراء حقيقي)
+    # FIX (2026-10-29): قبل كده كان cap عند 50% بس → السهم النازل بـ buy=50/sell=50
+    # ده غلط — السهم النازل > 10% لازم sell > 55%.
     if roc_20d < -10.0 and not (is_today_strong_up and vol_ratio >= 1.0):
-        buy_pct = min(buy_pct, 50.0)
+        if roc_20d < -15.0:
+            buy_pct = min(buy_pct, 35.0)  # نازل بشدة → sell=65%
+        else:
+            buy_pct = min(buy_pct, 45.0)  # نازل → sell=55%
 
     # لو ميت سريري → cap عند 40%
     if is_dead:
         buy_pct = min(buy_pct, 40.0)
+
+    # FIX (2026-10-29): السهم الـ flat (range 10d < 2%) → متوازن (50/50)
+    # قبل كده CLV بـ يعطي قيم عشوائية للسهم الـ flat → sell > 50% غلط.
+    if len(closes) >= 10:
+        min_10 = min(closes[-10:])
+        max_10 = max(closes[-10:])
+        if min_10 > 0:
+            range_10d_pct = (max_10 - min_10) / min_10 * 100
+            if range_10d_pct < 2.0 and not is_today_strong_up:
+                # سهم flat → متوازن
+                buy_pct = 50.0
 
     sell_pct = 100 - buy_pct
 
