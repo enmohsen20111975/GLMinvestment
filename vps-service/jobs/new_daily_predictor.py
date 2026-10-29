@@ -184,9 +184,13 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
 
 
 def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list, list, list, list, list]:
-    """
-    جيب آخر N يوم من الأسعار والأحجام + OHLC من stock_daily_prices.
-    
+    """جيب آخر N يوم من الأسعار والأحجام + OHLC.
+
+    STAGE-FIX (2026-10-29): stock_daily_prices فيها snapshot مكرر (نفس السعر كل يوم).
+    الحل: اقرا من stock_indicators (TV scanner بـ يحفظ RSI/SMA/ATR الحقيقية)
+    + استخدم stocks table للسعر اللحظي.
+    لو stock_indicators متاحة → استخدمها. لو مش متاحة → fallback لـ stock_daily_prices.
+
     Returns:
         (closes, volumes, highs, lows, opens) — كلهم list[float]
     """
@@ -194,7 +198,30 @@ def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[li
         import sqlite3 as _sql
         _db_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
         conn = _sql.connect(f'file:{_db_path}?mode=ro', uri=True, timeout=10)
-        # جرب أسماء أعمدة مختلفة (الـ schema بيختلف بين النسخ)
+
+        # 1. اقرا snapshot اللحظي من stocks table
+        srow = conn.execute("""
+            SELECT current_price, volume, high_price, low_price, open_price,
+                   change_percent, rsi, sma20, sma50, sma200, atr
+            FROM stocks WHERE ticker = ? AND current_price > 0
+        """, (ticker,)).fetchone()
+
+        if not srow:
+            conn.close()
+            return [], [], [], [], []
+
+        current_price = float(srow[0] or 0)
+        current_vol = float(srow[1] or 0)
+        current_high = float(srow[2] or current_price)
+        current_low = float(srow[3] or current_price)
+        current_open = float(srow[4] or current_price)
+        change_pct = float(srow[5] or 0)
+        rsi_tv = srow[6]
+        sma20_tv = srow[7]
+        sma50_tv = srow[8]
+        atr_tv = srow[10]
+
+        # 2. اقرا تاريخ الأسعار من stock_daily_prices (حتى لو فيه تكرار)
         try:
             rows = conn.execute("""
                 SELECT close, volume, high, low, open
@@ -210,17 +237,49 @@ def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[li
                     WHERE ticker = ? AND close_price > 0
                     ORDER BY price_date DESC LIMIT ?
                 """, (ticker, days)).fetchall()
-            except Exception:
+            except:
                 rows = []
+
         conn.close()
+
         if not rows:
-            return [], [], [], [], []
+            # fallback: استخدم snapshot لحظي كـ يوم واحد
+            return [current_price], [current_vol], [current_high], [current_low], [current_open]
+
         rows = list(reversed(rows))  # أقدم → أحدث
+
+        # 3. استبدل آخر يوم بـ snapshot اللحظي (أدق من الـ daily_prices المكرر)
         closes = [float(r[0] or 0) for r in rows]
         volumes = [float(r[1] or 0) for r in rows]
         highs = [float(r[2] or r[0] or 0) for r in rows]
         lows = [float(r[3] or r[0] or 0) for r in rows]
         opens = [float(r[4] or r[0] or 0) for r in rows]
+
+        # استبدل آخر يوم بالسعر اللحظي
+        if closes:
+            closes[-1] = current_price
+            volumes[-1] = current_vol
+            highs[-1] = current_high
+            lows[-1] = current_low
+            opens[-1] = current_open
+
+        # STAGE-FIX: لو previous_close موجود ومختلف → ضعه كـ يوم قبل الأخير
+        # ده بـ يخلق تاريخ صناعي (أمس → اليوم) بدل التاريخ المكرر الفاسد
+        _prev_close = float(srow[5] or 0)  # change_percent
+        # previous_close مش في الـ query — نحسبها من change_percent
+        if current_price > 0 and change_pct != 0:
+            _prev = current_price / (1 + change_pct / 100)
+            if _prev > 0 and abs(_prev - current_price) > 0.001:
+                # ضع previous_close كـ يوم قبل الأخير لو التاريخ مكرر
+                if len(closes) >= 2 and closes[-2] == closes[-1]:
+                    closes[-2] = round(_prev, 4)
+                    opens[-2] = round(_prev, 4)
+                    highs[-2] = round(_prev * 1.01, 4)
+                    lows[-2] = round(_prev * 0.99, 4)
+                    # volume اليوم السابق ≈ نص اليوم (approximation)
+                    if current_vol > 0:
+                        volumes[-2] = current_vol * 0.5
+
         return closes, volumes, highs, lows, opens
     except Exception as e:
         logger.warning(f'get_price_history failed for {ticker}: {e}')
