@@ -376,11 +376,44 @@ class DataLayer:
 
         The scanner sets 'market' to the DB slug explicitly.
         Maps: ticker → symbol, current_price → price, last_updated → last_update
+
+        BRAVO-AUTO-ALTER: يعمل ALTER ADD COLUMN للأعمدة الناقصة أوتوماتيكياً
+        عشان السكرابر يقدر يكتب sma20/sma50/atr/macd حتى لو الـ DB قديم.
         """
         if not rows:
             return 0
         cur = _conn().cursor()
         db_cols = {r[1] for r in cur.execute("PRAGMA table_info(stocks)").fetchall()}
+
+        # BRAVO-AUTO-ALTER: ALTER ADD COLUMN للأعمدة الناقصة
+        # الأعمدة دي السكرابر بـ يحاول يكتبها، لو مش موجودة → ALTER يضيفها
+        required_tv_cols = {
+            'sma20': 'REAL', 'sma50': 'REAL', 'sma200': 'REAL', 'atr': 'REAL',
+            'macd': 'REAL', 'macd_signal': 'REAL',
+            'recommend_all': 'REAL', 'recommend_ma': 'REAL', 'recommend_other': 'REAL',
+            'volatility_daily': 'REAL', 'volatility_weekly': 'REAL',
+            'avg_volume_30d': 'REAL', 'avg_volume_10d': 'REAL', 'avg_volume_90d': 'REAL',
+            'relative_volume_10d': 'REAL', 'beta_1y': 'REAL',
+            'enterprise_value': 'REAL', 'ev_to_revenue': 'REAL', 'ev_to_ebitda': 'REAL',
+            'eps_diluted': 'REAL', 'payout_ratio': 'REAL',
+            'gross_margin': 'REAL', 'operating_margin': 'REAL', 'roic': 'REAL',
+            'total_assets': 'REAL', 'total_current_assets': 'REAL',
+            'cash_and_equivalents': 'REAL', 'total_liabilities': 'REAL',
+            'total_debt': 'REAL', 'total_equity': 'REAL', 'shares_outstanding': 'REAL',
+            'total_revenue': 'REAL', 'gross_profit': 'REAL', 'operating_income': 'REAL',
+            'net_income': 'REAL', 'cash_flow_operating': 'REAL',
+            'cash_flow_investing': 'REAL', 'cash_flow_financing': 'REAL',
+            'free_cash_flow': 'REAL', 'dps_ttm': 'REAL', 'logoid': 'TEXT',
+            'change_value': 'REAL', 'value_traded': 'REAL', 'turnover_egp': 'REAL',
+        }
+        for col, typ in required_tv_cols.items():
+            if col not in db_cols:
+                try:
+                    cur.execute(f'ALTER TABLE stocks ADD COLUMN "{col}" {typ}')
+                    db_cols.add(col)
+                except Exception:
+                    pass
+        _conn().commit()
 
         # Build column mapping: scanner row keys → stocks table columns
         # scanner uses: ticker, current_price, last_updated → stocks uses: symbol, price, last_update

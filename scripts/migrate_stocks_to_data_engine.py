@@ -260,6 +260,10 @@ def migrate_indicators(sconn, dconn, dry_run=False):
         log(f"[DRY-RUN] would merge {count} indicator rows")
         return 0
 
+    if not ind_data_cols:
+        log("no indicator columns to merge — skipping (stocks.db may not have stock_indicators table with matching columns)")
+        return 0
+
     set_clause = ", ".join(f'"{c}" = ?' for c in ind_data_cols)
     update_sql = f'UPDATE historical_data SET {set_clause} WHERE ticker = ? AND date = ?'
 
