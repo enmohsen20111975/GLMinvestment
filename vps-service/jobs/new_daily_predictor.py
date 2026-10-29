@@ -173,29 +173,56 @@ def filter_stale_predictions(tickers: list[str], market_code: str, scan_date: st
         return tickers, 0
 
 
-def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list[float], list[float]]:
+def get_price_history(ticker: str, market_code: str, days: int = 60) -> tuple[list, list, list, list, list]:
     """
-    جيب آخر N يوم من الأسعار والأحجام.
+    جيب آخر N يوم من الأسعار والأحجام + OHLC.
     بتستخدم الـ DAL الموحد (db_manager.get_price_history) اللي بيقرا من:
       1. data_engine.db.egksco_price_history (EGX رسمي)
       2. data_engine.db.historical_data (كل الأسواق)
       3. stocks.db.stock_daily_prices (fallback)
+    
+    Returns:
+        (closes, volumes, highs, lows, opens) — كلهم list[float]
     """
     try:
-        from core.db_manager import get_price_history as dal_get_prices
-        prices, volumes = dal_get_prices(ticker, market_code, days)
-        return prices, volumes
+        from core.db_manager import db_manager
+        import sqlite3 as _sql
+        _db_path = str(PROJECT_ROOT / 'db' / 'stocks.db')
+        conn = db_manager.connection(_db_path, writable=False).__enter__()
+        rows = conn.execute("""
+            SELECT close, volume, high, low, open
+            FROM stock_daily_prices
+            WHERE ticker = ? AND close > 0
+            ORDER BY price_date DESC LIMIT ?
+        """, (ticker, days)).fetchall()
+        conn.close()
+        if not rows:
+            return [], [], [], [], []
+        rows = list(reversed(rows))  # أقدم → أحدث
+        closes = [float(r['close'] or 0) for r in rows]
+        volumes = [float(r['volume'] or 0) for r in rows]
+        highs = [float(r['high'] or r['close'] or 0) for r in rows]
+        lows = [float(r['low'] or r['close'] or 0) for r in rows]
+        opens = [float(r['open'] or r['close'] or 0) for r in rows]
+        return closes, volumes, highs, lows, opens
     except Exception:
-        return [], []
+        return [], [], [], [], []
 
 
 # ============================================================
 # V3 Engine Runner
 # ============================================================
 
-def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes: list[float]) -> dict:
+def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes: list[float],
+                     highs: list[float] = None, lows: list[float] = None, opens: list[float] = None,
+                     market_cap: float = None, free_float: float = None) -> dict:
     """
     حلل سهم بـ النظام الذكي V3 (orchestrator + executor).
+    
+    Args:
+        highs/lows/opens: OHLC data للـ money_flow + breakout body
+        market_cap: القيمة السوقية للـ liquidity_intensity
+        free_float: النسبة الحرة للـ position sizing
     """
     logger.info(f'--- {ticker} ({market_code}) — V3 Analysis Start ---')
     logger.info(f'  input: {len(prices)} prices, {len(volumes)} volumes')
@@ -237,7 +264,9 @@ def analyze_with_v3(ticker: str, market_code: str, prices: list[float], volumes:
         
         # 2. المنفّذ: ينفذ الخطة
         logger.info(f'  [executor] executing plan (id={plan.plan_id[:8]})...')
-        result = execute_v3(plan, prices=prices, volumes=volumes, ticker=ticker, market=market_code)
+        result = execute_v3(plan, prices=prices, volumes=volumes, ticker=ticker, market=market_code,
+                            highs=highs, lows=lows, opens=opens,
+                            market_cap=market_cap, free_float=free_float)
         
         logger.info(f'  [executor] complete={result.complete}')
         logger.info(f'  [executor] final_signal={result.final_signal}')
@@ -408,11 +437,27 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
         
         # 5. حلل بـ V3
         for ticker in alive:
-            prices, volumes = get_price_history(ticker, canonical)
+            prices, volumes, highs, lows, opens = get_price_history(ticker, canonical)
             if len(prices) < 50:
                 continue  # V3 محتاج 50+ يوم
             
-            result = analyze_with_v3(ticker, canonical, prices, volumes)
+            # STAGE-1: اقرأ market_cap + free_float من stocks.db
+            _mc = None
+            _ff = None
+            try:
+                from core.db_manager import db_manager
+                _row = db_manager.query_one('stocks',
+                    "SELECT market_cap, free_float_percentage FROM stocks WHERE ticker = ?",
+                    (ticker,))
+                if _row:
+                    _mc = float(_row.get('market_cap') or 0) or None
+                    _ff = float(_row.get('free_float_percentage') or 0) or None
+            except Exception:
+                pass
+            
+            result = analyze_with_v3(ticker, canonical, prices, volumes,
+                                      highs=highs, lows=lows, opens=opens,
+                                      market_cap=_mc, free_float=_ff)
             total_analyzed += 1
             
             signal = result.get('signal', 'NO_TRADE')

@@ -425,8 +425,20 @@ def _run_breakout(plan, prices, volumes, ticker, market,
     if not prices or len(prices) < 20:
         return None, None
     
-    high_20 = max(prices[-20:])
-    low_20 = min(prices[-20:])
+    # STAGE-1.3 FIX: استخدم highs/lows الفعلية لو متاحة (مش closes)
+    # high_20 = أعلى قمة في آخر 20 يوم BEFORE today (مش شامل اليوم)
+    if highs and len(highs) >= 21:
+        high_20 = max(highs[-21:-1])
+    elif highs and len(highs) >= 20:
+        high_20 = max(highs[-20:-1]) if len(highs) > 20 else max(highs[:20])
+    else:
+        high_20 = max(prices[-21:-1]) if len(prices) > 20 else max(prices[-20:-1] if len(prices) > 20 else prices[:20])
+    if lows and len(lows) >= 21:
+        low_20 = min(lows[-21:-1])
+    elif lows and len(lows) >= 20:
+        low_20 = min(lows[-20:-1]) if len(lows) > 20 else min(lows[:20])
+    else:
+        low_20 = min(prices[-21:-1]) if len(prices) > 20 else min(prices[-20:-1] if len(prices) > 20 else prices[:20])
     last = prices[-1]
     
     # Volume confirmation
@@ -456,7 +468,7 @@ def _run_breakout(plan, prices, volumes, ticker, market,
     # غير كده: موقع السعر في الـ range
     else:
         pos = (last - low_20) / (high_20 - low_20) if high_20 > low_20 else 0.5
-        norm = (pos - 0.5) * 40
+        norm = max(-40, min(40, (pos - 0.5) * 40))
         signal = 'HOLD'
     
     return norm, signal
