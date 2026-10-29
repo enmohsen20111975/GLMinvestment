@@ -258,11 +258,11 @@ export async function GET(request: NextRequest) {
 
   // RL-FIX-10: فلترة الجودة — علشان الملخص ما يحسبش كل الـ 1554 توقع (3 personas ×
   // 518 سهم)، بس أفضل التوقعات بس. ده بيخلي الأرقام منطقية:
-  //   - minScore: أقل درجة ثقة (master_score) يقبلها. افتراضي 70 (قوي).
+  //   - minScore: أقل درجة ثقة (master_score) يقبلها. افتراضي 0.
+  // FIX (2026-10-29): كان 70 — بيـ filter كل توقعات V3 (اللي scores بين -100 و +100).
   //   - topPerDay: أقصى عدد توقعات لكل (يوم، شخصية). افتراضي 5.
-  // كده بدل 310 توقع في 7 أيام، بيبقى ~20-35 توقع (5/يوم × 3 personas تقريباً).
-  const minScoreRaw = parseInt(searchParams.get('minScore') || '70');
-  const minScore = isNaN(minScoreRaw) ? 70 : Math.max(0, Math.min(100, minScoreRaw));
+  const minScoreRaw = parseInt(searchParams.get('minScore') || '0');
+  const minScore = isNaN(minScoreRaw) ? 0 : Math.max(0, Math.min(100, minScoreRaw));
   const topPerDayRaw = parseInt(searchParams.get('topPerDay') || '5');
   const topPerDay = isNaN(topPerDayRaw) ? 5 : Math.max(0, Math.min(50, topPerDayRaw));
   // qualityMode: 'top_picks' (افتراضي) = يطبّق minScore + topPerDay | 'all' = بدون فلترة
@@ -446,13 +446,10 @@ export async function GET(request: NextRequest) {
   }
 
   // RL-FIX-8 / HONEST-V3: لو الـ DB المحلي فاضي أو فيه بيانات قليلة، نـ fallback للإنتاج.
-  // IMPORTANT FIX (المحور 3): الـ fallback الأعمى كان بـ يخفي الـ cleanup! لو بعد ما
-  // المالك حذف التوقعات الكارثية بقي العدد < 100، الـ API بـ يجيب نفس القائمة
-  // الإنتاجية القديمة → الواجهة تبدو "ثابتة مهما يعمل". الحل: الـ fallback بقت
-  // opt-in بـ query param `?fallback=1` أو لو الـ DB فاضي تماماً (0 صفوف).
-  // كمان بنضيف X-Local-Row-Count header علشان المطور يقدر يشوف العدد الحقيقي.
-  const noFallback = searchParams.get('fallback') === '0'
-    || searchParams.get('noFallback') === '1';
+  // FIX (2026-10-29): الـ fallback بيرجع بيانات قديمة من invist.m2y.net بدل ما
+  // يعرض التوقعات الجديدة (V3). المفروض يقرا محلي دايماً — الـ fallback بيتفعل لو
+  // الـ DB فاضي تماماً بس مش لو فيه توقعات قليلة.
+  const noFallback = true; // FIX: اعطل الـ production fallback نهائياً
   const totalLocal = allRows.length;
   const localIsEmpty = totalLocal === 0;
   if (!noFallback && localIsEmpty) {
