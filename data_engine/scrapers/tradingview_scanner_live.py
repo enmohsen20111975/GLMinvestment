@@ -49,7 +49,13 @@ from typing import Any, Dict, List, Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DB_PATH = REPO_ROOT / "db" / "stocks.db"
 
-# Markets: (slug, arabic_label)
+# Markets: (api_slug, arabic_label)
+# BRAVO-SCANNER-DBSLUG-FIX (2026-10-29): فصل API slug عن DB slug.
+# TradingView API بيستخدم lowercase (egypt/ksa/kuwait/qatar/america/crypto)
+# لكن كل الـ engines (V3 + orchestrator + executor) بتقرا uppercase (EGX/TADAWUL/...)
+# والـ history كله (23,866 row) تحت الـ uppercase. لو السكرابر حفظ lowercase،
+# الـ engines مش هتشوف البيانات الجديدة → V3 بيرجع NO_TRADE.
+# الحل: DB_MARKET_MAP بـ يحول API slug → DB slug عند الحفظ.
 MARKETS = [
     ("egypt", "مصر"),
     ("ksa", "السعودية"),
@@ -58,6 +64,17 @@ MARKETS = [
     ("america", "أمريكا"),
     ("crypto", "كريبتو"),  # BRAVO-SCANNER-EXPAND (2026-10-28)
 ]
+
+# API slug → DB slug (توحيد مع باقي الـ engines)
+# BRAVO-SCANNER-DBSLUG-FIX (2026-10-29)
+DB_MARKET_MAP: Dict[str, str] = {
+    "egypt": "EGX",
+    "ksa": "TADAWUL",
+    "kuwait": "KSE",
+    "qatar": "QSE",
+    "america": "US",
+    "crypto": "crypto",  # الكريبتو مش在内 Engines الأخرى حالياً
+}
 
 # Rate limiting: pause between market requests to avoid TradingView ban
 # Owner directive: "فاصل زمني 5 دقايق عشان الموقع مايعملناش حظر"
@@ -415,7 +432,7 @@ def fetch_market(market_slug: str) -> Tuple[List[Dict[str, Any]], float]:
             record["logo_url"] = LOGO_URL_TEMPLATE.format(logoid=logoid)
         else:
             record["logo_url"] = None
-        record["market"] = market_slug
+        record["market"] = DB_MARKET_MAP.get(market_slug, market_slug)  # BRAVO-SCANNER-DBSLUG-FIX: DB slug ≠ API slug
         # value_traded = turnover_egp (same thing, EGX cash value)
         if record.get("value_traded") is not None:
             record["turnover_egp"] = record["value_traded"]
@@ -490,7 +507,7 @@ def persist_to_daily_prices(conn: sqlite3.Connection, rows: List[Dict[str, Any]]
         high_p = row.get("high_price") or close
         low_p = row.get("low_price") or close
         change_pct = row.get("change_percent") or 0
-        market_slug = row.get("market", "egypt")
+        market_slug = row.get("market", "EGX")  # BRAVO-SCANNER-DBSLUG-FIX: default DB slug
         try:
             cur.execute(
                 "INSERT INTO stock_daily_prices (ticker, price_date, open, high, low, close, volume, change_percent, market, fetch_time) "
@@ -586,7 +603,7 @@ def persist_indicators(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> 
         ticker = row.get("symbol")
         if not ticker:
             continue
-        market_slug = row.get("market", "egypt")
+        market_slug = row.get("market", "EGX")  # BRAVO-SCANNER-DBSLUG-FIX: default DB slug
         # Build values dict for this row
         vals = {"ticker": ticker, "market": market_slug, "date": today, "fetch_time": now_str}
         for col in INDICATOR_COLUMNS:
@@ -615,7 +632,15 @@ def persist_indicators(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> 
 
 
 def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
-    """INSERT OR REPLACE rows into stocks table. Returns count saved."""
+    """INSERT OR REPLACE rows into stocks table. Returns count saved.
+
+    BRAVO-SCANNER-SYMBOL-FIX (2026-10-29): symbol بـ يتـ backfill لو كان NULL.
+    المشكلة: الـ update_set كان بـ يستثني symbol و ticker تماماً، فلو الـ row
+    القديم عنده symbol=NULL (من bug سابق)، بـ يفضل NULL للأبد. ده بيكسر أي
+    query بـ يستخدم WHERE symbol=...
+    الحل: symbol بـ يتـ update بـ COALESCE(stocks.symbol, excluded.symbol)
+    يعني لو القديم NULL، نـ استخدم الجديد. لو القديم موجود، نحتفظ بيه.
+    """
     if not rows:
         return 0
     cur = conn.cursor()
@@ -629,7 +654,19 @@ def save_to_db(conn: sqlite3.Connection, rows: List[Dict[str, Any]]) -> int:
     placeholders = ", ".join(["?"] * len(sample_keys))
     col_list = ", ".join(f'"{k}"' for k in sample_keys)
     conflict_col = "ticker" if "ticker" in db_cols_set else "symbol"
-    update_set = ", ".join(f'"{k}" = excluded."{k}"' for k in sample_keys if k not in ("symbol", "ticker", "id"))
+    # BRAVO-SCANNER-SYMBOL-FIX: symbol بـ يتـ backfill لو NULL، ticker بـ يفضل زي ما هو
+    update_parts = []
+    for k in sample_keys:
+        if k in ("id",):
+            continue
+        if k == "ticker":
+            continue  # conflict key — لا تتـ update
+        if k == "symbol":
+            # backfill: لو القديم NULL، استخدم الجديد
+            update_parts.append(f'"{k}" = COALESCE(stocks."{k}", excluded."{k}")')
+            continue
+        update_parts.append(f'"{k}" = excluded."{k}"')
+    update_set = ", ".join(update_parts)
 
     sql = f'''
         INSERT INTO stocks ({col_list})
