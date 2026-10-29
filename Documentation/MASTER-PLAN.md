@@ -255,13 +255,59 @@ return NextResponse.json({
 
 ---
 
-## 6. الأدوار
+## 6. الأدوار وتقسيم المهام
 
-| الدور | المسؤول عن |
-|-------|------------|
-| Alpha (Z.ai) | الكود + الـ fixes + الـ testing |
-| Owner | القرارات + الاختبار على اللاب توب + الـ deploy |
-| Bravo | مهام محددة (sync, scanner) — تحت إشراف Alpha |
+### مبدأ التقسيم
+- **Alpha** = الكود المعقد (TypeScript, Python logic, DAL, V3 engine)
+- **Bravo** = التشغيل والسكريبتات (scanner, sync, cron, monitoring)
+- **Owner** = القرارات + الاختبار على اللاب توب + الـ deploy
+
+### 6.1 تقسيم المرحلة 1 (إصلاح الـ Crashes — أسبوع 1)
+
+| المهمة | المسؤول | التفاصيل |
+|-------|----------|----------|
+| إصلاح tsc errors (TypeScript) | **Alpha** | 1,417 error في src/ — تعديل types + interfaces |
+| فحص كل شاشة بـ Agent Browser | **Alpha** | تأكد إن مفيش ReferenceError |
+| مسح dead code | **Alpha** | ملفات مش مستوردة + functions مش مستدعية |
+| تنظيف merge conflict markers | **Bravo** | `.zscripts/dev.pid` + أي ملف فيه `<<<<<<<` |
+| تشغيل `fetch_tv_indices.py` | **Bravo** | سحب المؤشرات الرسمية من TradingView |
+| فحص بصري للشاشات | **Owner** | افتح كل شاشة على اللاب توب وابلغ عن أي خطأ |
+
+### 6.2 تقسيم المرحلة 2 (DAL Migration — أسبوع 2)
+
+| المهمة | المسؤول | التفاصيل |
+|-------|----------|----------|
+| migrate الـ 179 ملف (raw sqlite3 → db_manager) | **Alpha** | 30 ملف/يوم — استبدال كل `sqlite3.connect` |
+| إصلاح `except: pass` (130 ملف) | **Alpha** | استبدال بـ `logger.error()` |
+| ربط FLOW engine بالـ DAL | **Alpha** | تأكد إن volumes بتيجي من data_engine.db |
+| تشغيل `check_raw_sqlite.py` يومياً | **Bravo** | مراقبة الـ violations بعد كل batch |
+| إصلاح ملفات الـ camp/ | **Bravo** | migrate الـ camp/*.py للـ DAL (15 ملف بسيط) |
+| تحديث `crontab.txt` | **Bravo** | تأكد إن الـ cron يستخدم `--smart` |
+
+### 6.3 تقسيم المرحلة 3 (البيانات + الـ Predictor — أسبوع 3)
+
+| المهمة | المسؤول | التفاصيل |
+|-------|----------|----------|
+| تشغيل الـ Scanner يومياً (cron) | **Bravo** | `tradingview_scanner_live.py --market all` |
+| تشغيل `sync_missing_prices.py` (cron) | **Bravo** | بعد إغلاق كل سوق |
+| تشغيل الـ V3 Predictor (cron) | **Bravo** | `new_daily_predictor.py --all-markets --yesterday-only` |
+| تشغيل `check_data_quality.py` (أسبوعياً) | **Bravo** | مراقبة الـ flat stocks |
+| tuning الـ V3 filters | **Alpha** | تعديل الـ dead-stock + stale-prediction thresholds |
+| ربط الـ fundamentals بالـ V3 | **Alpha** | تأكد إن FUND engine بيقرا من data_engine.db.tab_* |
+| إصلاح `resolve_conflict` | **Alpha** | تخفيف الصرامة (BRK+FLOW → SELL بدل NO_TRADE) |
+
+### 6.4 تقسيم المرحلة 4 (الاختبار + الإطلاق — أسبوع 4)
+
+| المهمة | المسؤول | التفاصيل |
+|-------|----------|----------|
+| اختبار كل API بـ curl | **Alpha** | كل route × كل سوق |
+| اختبار كل شاشة بـ Agent Browser | **Alpha** | كل view × كل سوق |
+| كتابة endpoint مراقبة | **Alpha** | `/api/health` يفحص كل الـ DBs |
+| تشغيل الـ scanner + predictor نهائي | **Bravo** | تأكد إن الـ cron شغال |
+| مراقبة الـ logs لـ 24 ساعة | **Bravo** | مراقبة `logs/v3_predictor_*.log` |
+| توثيق الـ cron jobs | **Bravo** | دليل تشغيل + جدول الـ cron |
+| اختبار على اللاب توب | **Owner** | الـ deploy النهائي + الاختبار |
+| كتابة دليل التثبيت | **Alpha** | خطوات التثبيت + الـ troubleshooting |
 
 ---
 
