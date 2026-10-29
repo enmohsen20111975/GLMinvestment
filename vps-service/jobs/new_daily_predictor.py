@@ -363,6 +363,9 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
         conn.execute('PRAGMA synchronous=NORMAL')
 
         # تأكد إن جدول predictions موجود
+        # BRAVO-API-COMPAT: schema كامل يطابق ما الـ Next.js API بـ يتوقعه
+        # (target_price_2, exit_price, actual_return, hit_target, hit_stop,
+        #  is_correct, holding_days, lifecycle_status, outcome_date, analysis_json, etc)
         conn.execute('''
             CREATE TABLE IF NOT EXISTS predictions (
                 id TEXT PRIMARY KEY,
@@ -373,15 +376,48 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                 prediction_date TEXT,
                 entry_price REAL,
                 target_price REAL,
+                target_price_2 REAL,
                 stop_loss REAL,
                 master_score REAL,
                 confidence REAL,
                 persona TEXT DEFAULT 'balanced',
                 status TEXT DEFAULT 'active',
+                outcome_date TEXT,
+                exit_price REAL,
+                actual_return REAL,
+                hit_target INTEGER DEFAULT 0,
+                hit_stop INTEGER DEFAULT 0,
+                is_correct INTEGER,
+                holding_days INTEGER,
+                lifecycle_status TEXT,
                 created_at TEXT,
-                notes TEXT
+                notes TEXT,
+                analysis_json TEXT
             )
         ''')
+
+        # BRAVO-API-COMPAT: ALTER لإضافة أي أعمدة ناقصة (للـ tables القديمة)
+        # ده idempotent — بـ يتخطى الأعمدة الموجودة
+        existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()}
+        required_extra_cols = {
+            'target_price_2': 'REAL',
+            'outcome_date': 'TEXT',
+            'exit_price': 'REAL',
+            'actual_return': 'REAL',
+            'hit_target': 'INTEGER DEFAULT 0',
+            'hit_stop': 'INTEGER DEFAULT 0',
+            'is_correct': 'INTEGER',
+            'holding_days': 'INTEGER',
+            'lifecycle_status': 'TEXT',
+            'analysis_json': 'TEXT',
+        }
+        for col, typ in required_extra_cols.items():
+            if col not in existing_cols:
+                try:
+                    conn.execute(f'ALTER TABLE predictions ADD COLUMN "{col}" {typ}')
+                    existing_cols.add(col)
+                except Exception:
+                    pass
 
         # BRAVO-SAVE-FIX: لو الـ id column مش TEXT → نـ recreate الـ table بـ TEXT
         # (SQLite مش بـ يدعم ALTER COLUMN type، فـ لازم recreate)
