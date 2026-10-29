@@ -411,16 +411,28 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
                         notes TEXT
                     )
                 ''')
-                # copy data with CAST(id AS TEXT) — ignore duplicates
+                # BRAVO-COPY-FIX: copy only columns that exist in BOTH tables (intersection)
+                # هذا يمنع فشل النسخ إذا كان الجدول القديم يحتوي على أعمدة إضافية (مثل technical_score)
                 cols_old = [r[1] for r in conn.execute("PRAGMA table_info(predictions_old_intid)").fetchall()]
-                cols_str = ", ".join('"' + c + '"' for c in cols_old)
-                non_id_cols = ', '.join('"' + c + '"' for c in cols_old if c != 'id')
-                non_id_vals = ', '.join('"' + c + '"' for c in cols_old if c != 'id')
-                try:
-                    copy_sql = 'INSERT OR IGNORE INTO predictions (' + cols_str + ') SELECT CAST(id AS TEXT) as id, ' + non_id_vals + ' FROM predictions_old_intid'
-                    conn.execute(copy_sql)
-                except Exception as copy_e:
-                    logger.warning(f'  copy old data failed (continuing): {copy_e}')
+                cols_new = [r[1] for r in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+                cols_new_set = set(cols_new)
+                # intersection: columns that exist in both old and new
+                common_cols = [c for c in cols_old if c in cols_new_set]
+                if common_cols:
+                    cols_str = ", ".join('"' + c + '"' for c in common_cols)
+                    non_id_select = ', '.join('"' + c + '"' for c in common_cols if c != 'id')
+                    select_clause = 'CAST("id" AS TEXT) as "id"'
+                    if non_id_select:
+                        select_clause += ', ' + non_id_select
+                    try:
+                        copy_sql = 'INSERT OR IGNORE INTO predictions (' + cols_str + ') SELECT ' + select_clause + ' FROM predictions_old_intid'
+                        cur_copy = conn.execute(copy_sql)
+                        copied = cur_copy.rowcount
+                        logger.info(f'  ✓ copied {copied} old predictions to new table')
+                    except Exception as copy_e:
+                        logger.warning(f'  copy old data failed (continuing): {copy_e}')
+                else:
+                    logger.warning(f'  no common columns between old and new predictions table — skipping copy')
                 conn.execute('DROP TABLE predictions_old_intid')
                 logger.info(f'  ✓ predictions table recreated with TEXT id')
             except Exception as recreate_e:
