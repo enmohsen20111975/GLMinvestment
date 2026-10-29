@@ -166,10 +166,13 @@ def create_v3_plan(ticker: str, prices: List[float], volumes: List[float] = None
                     event_available: bool = False) -> V3Plan:
     """ينشئ خطة وفق سياسة المالك المحددة."""
     
-    # P0: Data validation
-    if not prices or len(prices) < 50:
+    # P0: Data validation — FIX (2026-10-28): was 50, reduced to 20 to match
+    # available EGX data in egksco_price_history (~30-38 days per stock).
+    # The original 50-session requirement blocked ALL EGX stocks from analysis
+    # because egksco only has ~1 month of data per stock.
+    if not prices or len(prices) < 20:
         return V3Plan(ticker=ticker, market=market, decision_policy='no_trade',
-                     no_trade_reason='insufficient data (< 50 sessions)')
+                     no_trade_reason='insufficient data (< 20 sessions)')
     
     # P1-P2: Classify regime
     market_regime, state_code = classify_regime(prices, volumes)
