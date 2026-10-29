@@ -243,10 +243,10 @@ return NextResponse.json({
 
 | المؤشر | الحالي | الهدف |
 |--------|--------|-------|
-| tsc errors | 1,417 | < 50 |
-| raw sqlite3 violations | 179 | 0 |
+| tsc errors | **0** ✅ | < 50 |
+| raw sqlite3 violations | **0** ✅ | 0 |
 | flat stocks | 199 (16%) | < 100 (8%) |
-| runtime crashes | ~5 | 0 |
+| runtime crashes | **0** ✅ | 0 |
 | fake-data routes | 0 (اتصلّحت) | 0 |
 | توقعات BUY/SELL يومية | 0 | 5-20/يوم |
 | شاشات شغالة | ~70% | 100% |

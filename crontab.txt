@@ -36,8 +36,8 @@
 45 2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.market_regime_engine import MarketRegimeEngine; MarketRegimeEngine('EGX').update_regime()" >> /tmp/regime_engine.log 2>&1
 
 # 03:00 UTC (05:00 القاهرة) — توليد توقعات اليوم الصباحية بناءً على حالة السوق
-# SMART MODE (2026-10-28): فلتر الأسهم الميتة + أيام الإجازات + التوقعات اللي لسه valid
-0 3 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/new_daily_predictor.py --today-only --max-tickers 50 >> /tmp/v3_morning.log 2>&1
+# Phase 3 (2026-10-29): استخدم --all-markets لتوليد لكل الأسواق + --smart للفلاتر
+0 3 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/new_daily_predictor.py --all-markets --today-only >> /tmp/v3_morning.log 2>&1
 
 # 03:00 UTC (05:00 القاهرة) — مراجعة وتخفيض الاشتراكات المنتهية (Prisma/Bun)
 0 3 * * * cd /root/GLMinvestment && /root/GLMinvestment/node_modules/.bin/bun run scripts/downgrade-expired-subscriptions.ts >> /tmp/downgrade_expired_subs.log 2>&1
@@ -60,7 +60,12 @@
 */2 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/intraday_storage.py --stocks >> /tmp/intraday_storage.log 2>&1
 
 # كل 5 دقائق (08-12 UTC) — تحديث رادار السيولة والحاضنة لكل الأسواق
+# Phase 3 (2026-10-29): cron_radar.sh دلوقتي بيـ sync المؤشرات قبل الرادار
 */5 8-12 * * 0-4 cd /root/GLMinvestment && bash scripts/cron_radar.sh >> /tmp/radar_cron.log 2>&1
+
+# كل 30 دقيقة — تحديث مؤشرات الأسواق الرسمية (EGX30, TASI, S&P500, إلخ)
+# Phase 3 (2026-10-29): سحب القيم الرسمية من TradingView
+*/30 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/fetch_tv_indices.py >> /tmp/tv_indices.log 2>&1
 
 # كل 5 دقائق (08-12 UTC) — نبض لحظي جوه الجلسة (ALERT ONLY — مش توصية)
 */5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/intraday_pulse.py --json-only >> /tmp/intraday_pulse.log 2>&1
@@ -100,7 +105,8 @@
 30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/telegram_comprehensive_report.py --send >> /tmp/telegram_report.log 2>&1
 
 # 15:00 UTC (17:00 القاهرة) — توليد أولي لتوقعات الغد بعد استيعاب إغلاق اليوم
-0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/new_daily_predictor.py --yesterday-only --max-tickers 50 >> /tmp/v3_evening.log 2>&1
+# Phase 3 (2026-10-29): استخدم --all-markets لكل الأسواق
+0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/new_daily_predictor.py --all-markets --yesterday-only >> /tmp/v3_evening.log 2>&1
 
 
 # ============================================================================
