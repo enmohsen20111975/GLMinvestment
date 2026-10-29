@@ -582,12 +582,14 @@ def get_price_history(ticker: str, market: str = 'EGX', days: int = 60) -> tuple
     volumes = []
 
     # 1. egksco_price_history (EGX فقط)
+    # FIX (2026-10-28): egksco بيخزن الأسهم المصرية تحت market='مصر' (مش 'EGX').
+    # لازم نفلتر بـ market IN ('مصر', 'EGX') عشان نتجنب الأسهم الأمريكية اللي ليها نفس الـ symbol.
     if canonical == 'EGX':
         try:
             rows = db_manager.query('data_engine', '''
                 SELECT close_price, volume
                 FROM egksco_price_history
-                WHERE symbol = ?
+                WHERE symbol = ? AND market IN ('مصر', 'EGX')
                 ORDER BY price_date DESC
                 LIMIT ?
             ''', (ticker, days))
@@ -600,6 +602,9 @@ def get_price_history(ticker: str, market: str = 'EGX', days: int = 60) -> tuple
             pass
 
     # 2. historical_data (كل الأسواق)
+    # FIX (2026-10-28): historical_data بتخزن market كـ 'EGX', 'TADAWUL', 'KSE', 'QSE', 'US'
+    # (مش الأسماء العربية). عشان كده بنستخدم canonical مباشرة.
+    # بس لو فيه ticker موجود في أكتر من سوق بنفس الاسم (نادر)، الـ filter بيمنع التداخل.
     try:
         rows = db_manager.query('data_engine', '''
             SELECT close, volume
