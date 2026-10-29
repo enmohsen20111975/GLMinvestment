@@ -246,44 +246,22 @@ def get_news():
         category = request.args.get('category', '')
 
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            # Check if news table exists
-            if not db_manager.table_exists('news', 'news'):
-                init_news_db()
-            # Build query
-            sql = "SELECT * FROM news WHERE 1=1"
-            params = []
-            if ticker:
-                sql += " AND (ticker = ? OR ticker LIKE ?)"
-                params.extend([ticker, f'%{ticker}%'])
-            if category:
-                sql += " AND category = ?"
-                params.append(category)
-            sql += " ORDER BY COALESCE(published_at, created_at) DESC LIMIT ?"
-            params.append(limit)
-            rows = db_manager.query('news', sql, params)
-        except Exception:
-            # fallback: raw sqlite3.connect (backward compat)
-            conn = sqlite3.connect(get_db_path())
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='news'")
-            if not cursor.fetchone():
-                init_news_db()
-            query = "SELECT * FROM news WHERE 1=1"
-            params = []
-            if ticker:
-                query += " AND (ticker = ? OR ticker LIKE ?)"
-                params.extend([ticker, f'%{ticker}%'])
-            if category:
-                query += " AND category = ?"
-                params.append(category)
-            query += " ORDER BY COALESCE(published_at, created_at) DESC LIMIT ?"
-            params.append(limit)
-            cursor.execute(query, params)
-            rows = [dict(r) for r in cursor.fetchall()]
-            conn.close()
+        from core.db_manager import db_manager
+        # Check if news table exists
+        if not db_manager.table_exists('news', 'news'):
+            init_news_db()
+        # Build query
+        sql = "SELECT * FROM news WHERE 1=1"
+        params = []
+        if ticker:
+            sql += " AND (ticker = ? OR ticker LIKE ?)"
+            params.extend([ticker, f'%{ticker}%'])
+        if category:
+            sql += " AND category = ?"
+            params.append(category)
+        sql += " ORDER BY COALESCE(published_at, created_at) DESC LIMIT ?"
+        params.append(limit)
+        rows = db_manager.query('news', sql, params)
 
         news_list = []
         for row in rows:
@@ -342,55 +320,30 @@ def add_news():
             return jsonify({"success": False, "error": "title is required"}), 400
         
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            # Create table if not exists
-            init_news_db()
-            news_id = db_manager.execute('news', '''
-                INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data.get('title'),
-                data.get('title_ar'),
-                data.get('summary'),
-                data.get('summary_ar'),
-                data.get('source', 'EGX'),
-                data.get('url'),
-                data.get('category', 'market'),
-                data.get('ticker', '').upper(),
-                data.get('sentiment', 'neutral'),
-                data.get('importance', 5),
-                data.get('published_at', datetime.now().isoformat())
-            ))
-            # execute() بيرجّع rowcount، لازم نجيب lastrowid عبر connection منفصل
-            with db_manager.connection('news', writable=True) as conn:
-                cursor = conn.cursor()
-                cursor.execute('SELECT last_insert_rowid()')
-                news_id = cursor.fetchone()[0]
-        except Exception:
-            # fallback: raw sqlite3.connect (backward compat)
-            conn = sqlite3.connect(get_db_path())
+        from core.db_manager import db_manager
+        # Create table if not exists
+        init_news_db()
+        news_id = db_manager.execute('news', '''
+            INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            data.get('title'),
+            data.get('title_ar'),
+            data.get('summary'),
+            data.get('summary_ar'),
+            data.get('source', 'EGX'),
+            data.get('url'),
+            data.get('category', 'market'),
+            data.get('ticker', '').upper(),
+            data.get('sentiment', 'neutral'),
+            data.get('importance', 5),
+            data.get('published_at', datetime.now().isoformat())
+        ))
+        # execute() بيرجّع rowcount، لازم نجيب lastrowid عبر connection منفصل
+        with db_manager.connection('news', writable=True) as conn:
             cursor = conn.cursor()
-            init_news_db()
-            cursor.execute('''
-                INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                data.get('title'),
-                data.get('title_ar'),
-                data.get('summary'),
-                data.get('summary_ar'),
-                data.get('source', 'EGX'),
-                data.get('url'),
-                data.get('category', 'market'),
-                data.get('ticker', '').upper(),
-                data.get('sentiment', 'neutral'),
-                data.get('importance', 5),
-                data.get('published_at', datetime.now().isoformat())
-            ))
-            conn.commit()
-            news_id = cursor.lastrowid
-            conn.close()
+            cursor.execute('SELECT last_insert_rowid()')
+            news_id = cursor.fetchone()[0]
 
         return jsonify({
             "success": True,
@@ -413,17 +366,9 @@ def delete_news(news_id):
             return jsonify({"success": False, "error": "Unauthorized"}), 401
 
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            affected = db_manager.execute('news', "DELETE FROM news WHERE id = ?", (news_id,))
-            deleted = affected > 0
-        except Exception:
-            conn = sqlite3.connect(get_db_path())
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM news WHERE id = ?", (news_id,))
-            conn.commit()
-            deleted = cursor.rowcount > 0
-            conn.close()
+        from core.db_manager import db_manager
+        affected = db_manager.execute('news', "DELETE FROM news WHERE id = ?", (news_id,))
+        deleted = affected > 0
 
         if deleted:
             return jsonify({"success": True, "message": "تم حذف الخبر"})
@@ -441,42 +386,20 @@ def get_news_by_ticker(ticker):
     """
     try:
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            if not db_manager.table_exists('news', 'news'):
-                return jsonify({
-                    "success": True,
-                    "ticker": ticker.upper(),
-                    "count": 0,
-                    "news": []
-                })
-            rows = db_manager.query('news', '''
-                SELECT * FROM news
-                WHERE ticker = ? OR ticker LIKE ?
-                ORDER BY COALESCE(published_at, created_at) DESC
-                LIMIT 20
-            ''', (ticker.upper(), f'%{ticker.upper()}%'))
-        except Exception:
-            conn = sqlite3.connect(get_db_path())
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='news'")
-            if not cursor.fetchone():
-                conn.close()
-                return jsonify({
-                    "success": True,
-                    "ticker": ticker.upper(),
-                    "count": 0,
-                    "news": []
-                })
-            cursor.execute('''
-                SELECT * FROM news
-                WHERE ticker = ? OR ticker LIKE ?
-                ORDER BY COALESCE(published_at, created_at) DESC
-                LIMIT 20
-            ''', (ticker.upper(), f'%{ticker.upper()}%'))
-            rows = [dict(r) for r in cursor.fetchall()]
-            conn.close()
+        from core.db_manager import db_manager
+        if not db_manager.table_exists('news', 'news'):
+            return jsonify({
+                "success": True,
+                "ticker": ticker.upper(),
+                "count": 0,
+                "news": []
+            })
+        rows = db_manager.query('news', '''
+            SELECT * FROM news
+            WHERE ticker = ? OR ticker LIKE ?
+            ORDER BY COALESCE(published_at, created_at) DESC
+            LIMIT 20
+        ''', (ticker.upper(), f'%{ticker.upper()}%'))
 
         news_list = [{
             "id": row['id'],
@@ -519,57 +442,30 @@ def add_news_bulk():
             return jsonify({"success": False, "error": "news array is required"}), 400
 
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            init_news_db()
-            params_list = []
-            for item in incoming_news:
-                if item.get('title'):
-                    params_list.append((
-                        item.get('title'),
-                        item.get('title_ar'),
-                        item.get('summary'),
-                        item.get('summary_ar'),
-                        item.get('source', 'EGX'),
-                        item.get('url'),
-                        item.get('category', 'market'),
-                        item.get('ticker', '').upper(),
-                        item.get('sentiment', 'neutral'),
-                        item.get('importance', 5),
-                        item.get('published_at', datetime.now().isoformat())
-                    ))
-            if params_list:
-                db_manager.execute_many('news', '''
-                    INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', params_list)
-            added = len(params_list)
-        except Exception:
-            conn = sqlite3.connect(get_db_path())
-            cursor = conn.cursor()
-            init_news_db()
-            added = 0
-            for item in incoming_news:
-                if item.get('title'):
-                    cursor.execute('''
-                        INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        item.get('title'),
-                        item.get('title_ar'),
-                        item.get('summary'),
-                        item.get('summary_ar'),
-                        item.get('source', 'EGX'),
-                        item.get('url'),
-                        item.get('category', 'market'),
-                        item.get('ticker', '').upper(),
-                        item.get('sentiment', 'neutral'),
-                        item.get('importance', 5),
-                        item.get('published_at', datetime.now().isoformat())
-                    ))
-                    added += 1
-            conn.commit()
-            conn.close()
+        from core.db_manager import db_manager
+        init_news_db()
+        params_list = []
+        for item in incoming_news:
+            if item.get('title'):
+                params_list.append((
+                    item.get('title'),
+                    item.get('title_ar'),
+                    item.get('summary'),
+                    item.get('summary_ar'),
+                    item.get('source', 'EGX'),
+                    item.get('url'),
+                    item.get('category', 'market'),
+                    item.get('ticker', '').upper(),
+                    item.get('sentiment', 'neutral'),
+                    item.get('importance', 5),
+                    item.get('published_at', datetime.now().isoformat())
+                ))
+        if params_list:
+            db_manager.execute_many('news', '''
+                INSERT INTO news (title, title_ar, summary, summary_ar, source, url, category, ticker, sentiment, importance, published_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', params_list)
+        added = len(params_list)
 
         return jsonify({
             "success": True,
@@ -729,41 +625,23 @@ def receive_from_news_agent():
         init_news_agent_db()
 
         # Insert — Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            db_manager.execute('news', '''
-                INSERT INTO news_agent_articles (
-                    title, content, summary_ar, summary_en, source, source_type,
-                    url, tickers_json, importance, sentiment, impact_type, market,
-                    image_paths_json, ocr_text, raw_analysis_json, published_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+        from core.db_manager import db_manager
+        db_manager.execute('news', '''
+            INSERT INTO news_agent_articles (
                 title, content, summary_ar, summary_en, source, source_type,
                 url, tickers_json, importance, sentiment, impact_type, market,
                 image_paths_json, ocr_text, raw_analysis_json, published_at
-            ))
-            # get last_insert_rowid
-            with db_manager.connection('news', writable=True) as conn:
-                cursor = conn.cursor()
-                cursor.execute('SELECT last_insert_rowid()')
-                news_id = cursor.fetchone()[0]
-        except Exception:
-            conn = sqlite3.connect(NEWS_AGENT_DB)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            title, content, summary_ar, summary_en, source, source_type,
+            url, tickers_json, importance, sentiment, impact_type, market,
+            image_paths_json, ocr_text, raw_analysis_json, published_at
+        ))
+        # get last_insert_rowid
+        with db_manager.connection('news', writable=True) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO news_agent_articles (
-                    title, content, summary_ar, summary_en, source, source_type,
-                    url, tickers_json, importance, sentiment, impact_type, market,
-                    image_paths_json, ocr_text, raw_analysis_json, published_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                title, content, summary_ar, summary_en, source, source_type,
-                url, tickers_json, importance, sentiment, impact_type, market,
-                image_paths_json, ocr_text, raw_analysis_json, published_at
-            ))
-            conn.commit()
-            news_id = cursor.lastrowid
-            conn.close()
+            cursor.execute('SELECT last_insert_rowid()')
+            news_id = cursor.fetchone()[0]
 
         # Optional: trigger news impact analysis (if V40_2_NEWS_IMPACT=1)
         # This is done lazily by V40.2 when it next scans, not here.
@@ -795,44 +673,23 @@ def list_news_agent_articles():
 
         init_news_agent_db()
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            query_str = 'SELECT * FROM news_agent_articles'
-            params = []
-            conditions = []
-            if sentiment_filter:
-                conditions.append('sentiment = ?')
-                params.append(sentiment_filter)
-            if ticker_filter:
-                conditions.append('tickers_json LIKE ?')
-                params.append(f'%"{ticker_filter}"%')
-            if conditions:
-                query_str += ' WHERE ' + ' AND '.join(conditions)
-            query_str += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
-            params.extend([limit, offset])
-            rows = db_manager.query('news', query_str, params)
-            total_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles')
-            total = total_row['cnt'] if total_row else 0
-        except Exception:
-            conn = sqlite3.connect(NEWS_AGENT_DB)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            query = 'SELECT * FROM news_agent_articles'
-            params = []
-            conditions = []
-            if sentiment_filter:
-                conditions.append('sentiment = ?')
-                params.append(sentiment_filter)
-            if ticker_filter:
-                conditions.append('tickers_json LIKE ?')
-                params.append(f'%"{ticker_filter}"%')
-            if conditions:
-                query += ' WHERE ' + ' AND '.join(conditions)
-            query += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
-            params.extend([limit, offset])
-            rows = [dict(r) for r in cursor.execute(query, params).fetchall()]
-            total = cursor.execute('SELECT COUNT(*) FROM news_agent_articles').fetchone()[0]
-            conn.close()
+        from core.db_manager import db_manager
+        query_str = 'SELECT * FROM news_agent_articles'
+        params = []
+        conditions = []
+        if sentiment_filter:
+            conditions.append('sentiment = ?')
+            params.append(sentiment_filter)
+        if ticker_filter:
+            conditions.append('tickers_json LIKE ?')
+            params.append(f'%"{ticker_filter}"%')
+        if conditions:
+            query_str += ' WHERE ' + ' AND '.join(conditions)
+        query_str += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
+        params.extend([limit, offset])
+        rows = db_manager.query('news', query_str, params)
+        total_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles')
+        total = total_row['cnt'] if total_row else 0
 
         articles = []
         for row in rows:
@@ -872,37 +729,23 @@ def news_agent_stats():
     try:
         init_news_agent_db()
         # Rule 44 + Rule 54: استخدم db_manager مع news.db canonical
-        try:
-            from core.db_manager import db_manager
-            total_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles')
-            total = total_row['cnt'] if total_row else 0
-            by_sentiment_rows = db_manager.query('news', 'SELECT sentiment, COUNT(*) as cnt FROM news_agent_articles GROUP BY sentiment')
-            by_sentiment = {r['sentiment']: r['cnt'] for r in by_sentiment_rows}
-            by_source_type_rows = db_manager.query('news', 'SELECT source_type, COUNT(*) as cnt FROM news_agent_articles GROUP BY source_type')
-            by_source_type = {r['source_type']: r['cnt'] for r in by_source_type_rows}
-            by_market_rows = db_manager.query('news', 'SELECT market, COUNT(*) as cnt FROM news_agent_articles GROUP BY market')
-            by_market = {r['market']: r['cnt'] for r in by_market_rows}
-            avg_row = db_manager.query_one('news', 'SELECT AVG(importance) as avg FROM news_agent_articles')
-            avg_importance = avg_row['avg'] if avg_row and avg_row.get('avg') else 0
-            unproc_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles WHERE processed = 0')
-            unprocessed = unproc_row['cnt'] if unproc_row else 0
-            from datetime import datetime, timedelta
-            since = (datetime.now() - timedelta(hours=24)).isoformat()
-            last24_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles WHERE received_at > ?', (since,))
-            last_24h = last24_row['cnt'] if last24_row else 0
-        except Exception:
-            conn = sqlite3.connect(NEWS_AGENT_DB)
-            cursor = conn.cursor()
-            total = cursor.execute('SELECT COUNT(*) FROM news_agent_articles').fetchone()[0]
-            by_sentiment = dict(cursor.execute('SELECT sentiment, COUNT(*) FROM news_agent_articles GROUP BY sentiment').fetchall())
-            by_source_type = dict(cursor.execute('SELECT source_type, COUNT(*) FROM news_agent_articles GROUP BY source_type').fetchall())
-            by_market = dict(cursor.execute('SELECT market, COUNT(*) FROM news_agent_articles GROUP BY market').fetchall())
-            avg_importance = cursor.execute('SELECT AVG(importance) FROM news_agent_articles').fetchone()[0] or 0
-            unprocessed = cursor.execute('SELECT COUNT(*) FROM news_agent_articles WHERE processed = 0').fetchone()[0]
-            from datetime import datetime, timedelta
-            since = (datetime.now() - timedelta(hours=24)).isoformat()
-            last_24h = cursor.execute('SELECT COUNT(*) FROM news_agent_articles WHERE received_at > ?', (since,)).fetchone()[0]
-            conn.close()
+        from core.db_manager import db_manager
+        total_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles')
+        total = total_row['cnt'] if total_row else 0
+        by_sentiment_rows = db_manager.query('news', 'SELECT sentiment, COUNT(*) as cnt FROM news_agent_articles GROUP BY sentiment')
+        by_sentiment = {r['sentiment']: r['cnt'] for r in by_sentiment_rows}
+        by_source_type_rows = db_manager.query('news', 'SELECT source_type, COUNT(*) as cnt FROM news_agent_articles GROUP BY source_type')
+        by_source_type = {r['source_type']: r['cnt'] for r in by_source_type_rows}
+        by_market_rows = db_manager.query('news', 'SELECT market, COUNT(*) as cnt FROM news_agent_articles GROUP BY market')
+        by_market = {r['market']: r['cnt'] for r in by_market_rows}
+        avg_row = db_manager.query_one('news', 'SELECT AVG(importance) as avg FROM news_agent_articles')
+        avg_importance = avg_row['avg'] if avg_row and avg_row.get('avg') else 0
+        unproc_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles WHERE processed = 0')
+        unprocessed = unproc_row['cnt'] if unproc_row else 0
+        from datetime import datetime, timedelta
+        since = (datetime.now() - timedelta(hours=24)).isoformat()
+        last24_row = db_manager.query_one('news', 'SELECT COUNT(*) as cnt FROM news_agent_articles WHERE received_at > ?', (since,))
+        last_24h = last24_row['cnt'] if last24_row else 0
 
         return jsonify({
             "success": True,

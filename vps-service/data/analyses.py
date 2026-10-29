@@ -75,6 +75,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
+from core.db_manager import db_manager
+
 # Add parent directory to path so `from config import ...` and
 # `from utils.helpers import ...` work when this module is imported as
 # `data.analyses` (mirrors the sys.path setup in background_analyzer.py).
@@ -127,11 +129,7 @@ PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(PROJECT_ROOT / 'db' / 'pre
 
 def get_predictions_db():
     """Get predictions database connection."""
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+    conn = db_manager.get_connection('predictions', writable=True)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('PRAGMA busy_timeout=30000')
@@ -140,11 +138,7 @@ def get_predictions_db():
 
 def get_stocks_db():
     """Get stocks database connection."""
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('stocks', writable=True)
-    except Exception:
-        conn = sqlite3.connect(STOCKS_DB, timeout=30.0)
+    conn = db_manager.get_connection('stocks', writable=True)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('PRAGMA busy_timeout=30000')
@@ -186,11 +180,7 @@ def load_market_overrides() -> Dict[str, str]:
     overrides = {}
     try:
         if os.path.exists(_DATA_ENGINE_DB):
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('data_engine', writable=False)
-            except Exception:
-                conn = sqlite3.connect(f'file:{_DATA_ENGINE_DB}?mode=ro', uri=True, timeout=10)
+            conn = db_manager.get_connection('data_engine', writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             # egksco_stocks هو جدول موحد لكل الأسواق فيه symbol + market
@@ -288,11 +278,7 @@ def _load_stocks_fundamentals_for_persona() -> dict:
     try:
         if not os.path.exists(_STOCKS_DB_PATH):
             return result
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('stocks', writable=False)
-        except Exception:
-            conn = sqlite3.connect(_STOCKS_DB_PATH)
+        conn = db_manager.get_connection('stocks', writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 

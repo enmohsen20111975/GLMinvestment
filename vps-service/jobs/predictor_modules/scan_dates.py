@@ -12,8 +12,8 @@ Purpose:
       2. data_engine.db.egksco_price_history (FALLBACK — legacy)
       3. stocks.db.stock_daily_prices (FALLBACK — last resort)
 
-    All sqlite3.connect() calls inside `except` blocks are safety fallbacks
-    for when db_manager fails to import — CATEGORY A (WARNING), allowed.
+    All raw sqlite3 fallback calls inside `except` blocks have been removed;
+    db_manager (DAL) is now the SOLE DB gate (CATEGORY A — no silent bypass).
 """
 from __future__ import annotations
 
@@ -41,17 +41,9 @@ def get_scan_dates(start_date, end_date, scan_interval):
     # Legacy: egksco_price_history was PRIMARY — now fallback (was frozen/stale)
     # 1. PRIMARY: price_history.db.price_history (canonical — 1.4M rows, 2000-2026)
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
+        # Rule 54 / Phase 3: DAL is the SOLE DB gate
         _v402_gsd_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _v402_gsd_ctx = _dbm.connection(str(_db_dir / 'price_history.db'))
-                conn = _v402_gsd_dbm.get_connection(_ph_db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
-            _v402_gsd_ctx = None
+        conn = _dbm.get_connection(str(_db_dir / 'price_history.db'), writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT date AS price_date FROM price_history WHERE date >= ? AND date <= ? ORDER BY date ASC",
@@ -88,17 +80,9 @@ def get_scan_dates(start_date, end_date, scan_interval):
     
     # 3. FALLBACK 2: stocks.db (stock_daily_prices — آخر 30 يوم)
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
+        # Rule 54 / Phase 3: DAL is the SOLE DB gate
         _v402_gsd2_ctx = None
-        try:
-            if _V402_DBM_AVAILABLE:
-                _v402_gsd2_ctx = _dbm.connection(str(_db_dir / 'stocks.db'))
-                conn = _v402_gsd2_dbm.get_connection(_ph_db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
-            _v402_gsd2_ctx = None
+        conn = _dbm.get_connection(str(_db_dir / 'stocks.db'), writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT DISTINCT price_date FROM stock_daily_prices WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",

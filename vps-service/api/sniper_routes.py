@@ -13,6 +13,8 @@ from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, request, jsonify
 
+from core.db_manager import db_manager
+
 # v3.29.0: Holiday-aware prediction dates — prevents predictions on Fri/Sat/holidays
 try:
     from utils.trading_calendar import get_prediction_date_str, is_trading_day
@@ -63,11 +65,7 @@ def _is_ath_breakout(ticker: str) -> bool:
     stock_price_history VIEW) عشان يشتغل على الإنتاج والـ sandbox.
     """
     try:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('price_history', writable=False)
-        except Exception:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+        conn = db_manager.get_connection('price_history', writable=False)
         cur = conn.cursor()
         tabs = [r[0] for r in cur.execute(
             "SELECT name FROM sqlite_master WHERE type IN ('table','view') "
@@ -77,11 +75,7 @@ def _is_ath_breakout(ticker: str) -> bool:
         if not tabs:
             return False
         tbl = tabs[0]
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('price_history', writable=False)
-        except Exception:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+        conn = db_manager.get_connection('price_history', writable=False)
         cur = conn.cursor()
         row = cur.execute(
             f"SELECT close_price FROM {tbl} WHERE ticker=? ORDER BY date DESC LIMIT 1",
@@ -352,11 +346,7 @@ def _load_fundamentals_for_gate(ticker: str) -> dict:
         de_db = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
         if not os.path.exists(de_db):
             return fundamentals
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('data_engine', writable=False)
-        except Exception:
-            conn = sqlite3.connect(de_db, timeout=5.0)
+        conn = db_manager.get_connection('data_engine', writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             'SELECT pe_ratio, roe, debt_equity, dividend_yield FROM egx_fundamentals WHERE ticker = ?',
@@ -379,11 +369,7 @@ def _ensure_predictions_table():
     """Ensure the predictions table has all required columns."""
     db_path = PREDICTIONS_DB
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn = sqlite3.connect(db_path, timeout=15.0)
+    conn = db_manager.get_connection('predictions', writable=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -934,11 +920,7 @@ def get_lessons():
     
     try:
         import sqlite3
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('predictions', writable=False)
-        except Exception:
-            conn = sqlite3.connect(engine.predictions_db, timeout=15.0)
+        conn = db_manager.get_connection('predictions', writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
@@ -980,11 +962,7 @@ def get_performance():
     }
 
     try:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('predictions', writable=False)
-        except Exception:
-            conn = sqlite3.connect(PREDICTIONS_DB, timeout=15.0)
+        conn = db_manager.get_connection('predictions', writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 

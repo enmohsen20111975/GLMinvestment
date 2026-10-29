@@ -12,7 +12,7 @@ daily_predictor.py so callers see no behavior change.
     are the canonical truth.
 
     The dead code below the early-return is preserved for audit trail
-    (Rule 16 VERIFY-BEFORE-DELETE). The sqlite3.connect() call inside
+    (Rule 16 VERIFY-BEFORE-DELETE). The raw sqlite3 connection call inside
     the dead code path is unreachable but kept for reference.
 """
 from __future__ import annotations
@@ -62,16 +62,9 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
     except Exception:
         _V402_DBM_AVAILABLE = False
 
-    # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
+    # Rule 54 / Phase 3: DAL is the SOLE DB gate
     _v402_dov_ctx = None
-    try:
-        if _V402_DBM_AVAILABLE:
-            conn = _dbm.get_connection(PREDICTIONS_DB, writable=True)
-        else:
-            raise RuntimeError("db_manager unavailable")
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
-        _v402_dov_ctx = None
+    conn = _dbm.get_connection(PREDICTIONS_DB, writable=True)
     cur = conn.cursor()
     if start_date and end_date:
         cur.execute(

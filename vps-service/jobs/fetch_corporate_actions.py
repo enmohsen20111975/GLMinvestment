@@ -20,6 +20,8 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from core.db_manager import db_manager
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 
@@ -32,11 +34,7 @@ logger = logging.getLogger(__name__)
 
 def init_corporate_actions_table():
     """أنشئ جدول corporate_actions لو مش موجود."""
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB)
+    conn = db_manager.get_connection('predictions', writable=True)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS corporate_actions (
             id TEXT PRIMARY KEY,
@@ -62,11 +60,7 @@ def fetch_dividends():
         return 0
 
     conn_de = None
-    try:
-        from core.db_manager import db_manager
-        conn_de = db_manager.get_connection('data_engine', writable=False)
-    except Exception:
-        conn_de = sqlite3.connect(DATA_ENGINE_DB)
+    conn_de = db_manager.get_connection('data_engine', writable=False)
     # فحص الـ schema
     cols = [c[1] for c in conn_de.execute("PRAGMA table_info(tab_dividends)").fetchall()]
     if not cols:
@@ -82,11 +76,7 @@ def fetch_dividends():
     conn_de.close()
 
     # خزن في corporate_actions
-    try:
-        from core.db_manager import db_manager
-        conn_pred = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn_pred = sqlite3.connect(PREDICTIONS_DB)
+    conn_pred = db_manager.get_connection('predictions', writable=True)
     count = 0
     for row in rows:
         row_dict = dict(zip(col_names, row))
@@ -134,11 +124,7 @@ def fetch_ipo_news():
         logger.warning("ddgs مش موجود — تخطي أخبار الاكتتاب")
         return 0
 
-    try:
-        from core.db_manager import db_manager
-        conn_pred = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn_pred = sqlite3.connect(PREDICTIONS_DB)
+    conn_pred = db_manager.get_connection('predictions', writable=True)
     count = 0
 
     queries = [
@@ -192,11 +178,7 @@ def fetch_assembly_news():
         logger.warning("ddgs مش موجود — تخطي الجمعيات العمومية")
         return 0
 
-    try:
-        from core.db_manager import db_manager
-        conn_pred = db_manager.get_connection('predictions', writable=True)
-    except Exception:
-        conn_pred = sqlite3.connect(PREDICTIONS_DB)
+    conn_pred = db_manager.get_connection('predictions', writable=True)
     count = 0
 
     queries = [
@@ -244,11 +226,7 @@ def fetch_assembly_news():
 
 def get_upcoming_actions(ticker: str, days_ahead: int = 7) -> list:
     """ارجع Corporate Actions قادمة لسهم معين."""
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('predictions', writable=False)
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB)
+    conn = db_manager.get_connection('predictions', writable=False)
     today = datetime.now().strftime('%Y-%m-%d')
     future = (datetime.now() + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
 
@@ -291,11 +269,7 @@ def main():
     asm_count = fetch_assembly_news()
 
     # ملخص
-    try:
-        from core.db_manager import db_manager
-        conn = db_manager.get_connection('predictions', writable=False)
-    except Exception:
-        conn = sqlite3.connect(PREDICTIONS_DB)
+    conn = db_manager.get_connection('predictions', writable=False)
     total = conn.execute("SELECT COUNT(*) FROM corporate_actions").fetchone()[0]
     by_type = conn.execute("""
         SELECT action_type, COUNT(*) FROM corporate_actions GROUP BY action_type

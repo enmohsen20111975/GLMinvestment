@@ -110,11 +110,8 @@ class StockDNAAnalyzer:
     def _get_stock_info(self, ticker: str) -> Tuple[str, str]:
         """يرجع (name, sector) للسهم"""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             cur = conn.cursor()
             cur.execute(
                 "SELECT name, name_ar, sector FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1",
@@ -612,11 +609,8 @@ class StockDNAAnalyzer:
         # 1. جرّب price_history.db أولاً (الأرشيف الكامل)
         try:
             if os.path.exists(_PRICE_HISTORY_DB):
-                try:
-                    from core.db_manager import db_manager
-                    conn = db_manager.get_connection('price_history', writable=False)
-                except Exception:
-                    conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection('price_history', writable=False)
                 cur = conn.cursor()
                 cur.execute(
                     "SELECT date, open_price, high_price, low_price, close_price, volume "
@@ -650,11 +644,8 @@ class StockDNAAnalyzer:
         # 2. fallback لـ stock_daily_prices (لو price_history فاضي/ناقص)
         if len(history) < 20:
             try:
-                try:
-                    from core.db_manager import db_manager
-                    conn = db_manager.get_connection('stocks', writable=False)
-                except Exception:
-                    conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection('stocks', writable=False)
                 cur = conn.cursor()
                 cur.execute(
                     "SELECT price_date, open_price, high_price, low_price, close_price, volume, change_percent "
@@ -734,11 +725,8 @@ class StockDNAAnalyzer:
         crash_days_idx: List[int] = []
         try:
             if os.path.exists(_PRICE_HISTORY_DB):
-                try:
-                    from core.db_manager import db_manager
-                    conn = db_manager.get_connection('price_history', writable=False)
-                except Exception:
-                    conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
+                from core.db_manager import db_manager
+                conn = db_manager.get_connection('price_history', writable=False)
                 cur = conn.cursor()
                 # ابحث عن مؤشر EGX (EGX30, EGX100, أو أي ticker يبدأ بـ EGX ويحتوي رقم)
                 cur.execute(
@@ -750,11 +738,7 @@ class StockDNAAnalyzer:
                 conn.close()
                 if idx_tickers:
                     # خد أول مؤشر ونحسب أيام الأزمة
-                    try:
-                        from core.db_manager import db_manager
-                        conn = db_manager.get_connection('price_history', writable=False)
-                    except Exception:
-                        conn = sqlite3.connect(f'file:{_PRICE_HISTORY_DB}?mode=ro', uri=True, timeout=10)
+                    conn = db_manager.get_connection('price_history', writable=False)
                     cur = conn.cursor()
                     cur.execute(
                         "SELECT date, close_price FROM price_history "
@@ -961,11 +945,8 @@ class StockDNAAnalyzer:
         if not profile:
             return None
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.stocks_db, timeout=15)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=True)
             cur = conn.cursor()
             cur.execute(
                 """INSERT INTO stock_adaptive_profiles (
@@ -1026,11 +1007,8 @@ class StockDNAAnalyzer:
         """
         ticker = ticker.upper().strip()
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(f'file:{self.stocks_db}?mode=ro', uri=True, timeout=10)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             cur = conn.cursor()
             cur.execute("PRAGMA table_info(stock_adaptive_profiles)")
             if not cur.fetchall():

@@ -54,8 +54,9 @@ _ADMIN_DB_PATH = str(_ADMIN_PROJECT_ROOT / 'db' / 'stocks.db')
 #   - data.analyses.persist_analysis_with_persona → كتابة تحليل
 # ملاحظة: عمليات backup/integrity اللي بتحتاج conn.backup() أو PRAGMA writable
 # بتستثنى (db_manager readonly بتفعّل query_only=1). الباقي لازم عبر db_manager.
-# Phase 7.3 dedup: import canonical _open_db (aliased variant) + dbm from core.db_helpers
-from core.db_helpers import open_db_aliased as _open_db, dbm as _dbm, DBM_AVAILABLE as _ADMIN_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
+from core.db_helpers import open_db_aliased as _open_db  # retained: aliased helper (no fallback bypass)
 
 
 # ============================================================================
@@ -407,19 +408,9 @@ def system_topology():
         # ============================================================
         stocks_count = 0
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            try:
-                if _ADMIN_DBM_AVAILABLE:
-                    _sc_row = _dbm.query_one('stocks', "SELECT COUNT(*) as cnt FROM stocks WHERE ticker IS NOT NULL")
-                    stocks_count = _sc_row['cnt'] if _sc_row else 0
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(_ADMIN_DB_PATH, timeout=5)
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM stocks WHERE ticker IS NOT NULL")
-                stocks_count = cursor.fetchone()[0]
-                conn.close()
+            # DAL: db_manager.query_one (readonly + busy_timeout enforced)
+            _sc_row = db_manager.query_one('stocks', "SELECT COUNT(*) as cnt FROM stocks WHERE ticker IS NOT NULL")
+            stocks_count = _sc_row['cnt'] if _sc_row else 0
         except Exception as _ar_e:
             import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
 

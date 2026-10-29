@@ -98,16 +98,8 @@ def _ensure_portfolio_schema():
     if _schema_ready:
         return
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_es_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_portfolio_db_path())
-            _pr_es_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
         conn.executescript(_PORTFOLIO_SCHEMA_SQL)
         conn.commit()
         conn.close()
@@ -1677,16 +1669,8 @@ def _ensure_equity_schema():
     if _equity_schema_ready:
         return
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_eqs_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_portfolio_db_path())
-            _pr_eqs_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
         conn.executescript(_EQUITY_SCHEMA_SQL)
         conn.commit()
         conn.close()
@@ -2022,16 +2006,8 @@ def _get_portfolio_value_for_user(user_id: str) -> float:
         import logging as _ar_l; _ar_l.warning(f"silent: {_ar_e}")
     # fallback: لو portfolio_state فارغة، نحاول نجمع current_value من stocks.db
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_gpv_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                stocks_conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            stocks_conn = sqlite3.connect(_get_stocks_db_path())
-            _pr_gpv_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        stocks_conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
         stocks_conn.row_factory = sqlite3.Row
         row = stocks_conn.execute(
             "SELECT COALESCE(SUM(current_value), 0) AS total FROM portfolio_assets WHERE user_id=?",
@@ -2053,16 +2029,8 @@ def _get_stocks_db_path() -> str:
 def _get_existing_position_value(user_id: str, ticker: str) -> float:
     """قراءة قيمة المركز الحالي للسهم للمستخدم من stocks.db."""
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_epv_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_stocks_db_path())
-            _pr_epv_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT current_value FROM portfolio_assets WHERE user_id=? AND UPPER(stock_ticker)=UPPER(?) AND type='stock' LIMIT 1",
@@ -2079,16 +2047,8 @@ def _get_existing_position_value(user_id: str, ticker: str) -> float:
 def _get_total_exposure_value(user_id: str) -> float:
     """إجمالي التعرض للسوق (مجموع قيم كل المراكز المفتوحة)."""
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_tev_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_stocks_db_path())
-            _pr_tev_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_stocks_db_path(), writable=False)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
             "SELECT COALESCE(SUM(current_value), 0) AS total FROM portfolio_assets WHERE user_id=? AND type='stock'",
@@ -2375,16 +2335,8 @@ def _ensure_multi_portfolio_schema():
     _ensure_portfolio_schema()
     _ensure_equity_schema()
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_mps_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_portfolio_db_path())
-            _pr_mps_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
         conn.executescript(_MULTI_PORTFOLIO_SCHEMA_SQL)
         conn.commit()
 
@@ -2896,16 +2848,8 @@ def _ensure_watchlist_schema():
     if _watchlist_schema_ready:
         return
     try:
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _pr_wls_ctx = None
-        try:
-            if _PORT_ROUTES_DBM_AVAILABLE:
-                conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_get_portfolio_db_path())
-            _pr_wls_ctx = None
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        conn = _dbm.get_connection(_get_portfolio_db_path(), writable=True)
         conn.executescript(_WATCHLIST_SCHEMA_SQL)
         conn.commit()
         conn.close()

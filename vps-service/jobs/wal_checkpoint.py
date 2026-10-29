@@ -50,6 +50,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from core.db_manager import db_manager as _db_manager
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -128,10 +130,11 @@ def _checkpoint_one_db(db_name: str) -> Dict[str, Any]:
         else:
             result['wal_before_mb'] = 0.0
 
-        # افتح writable connection (الـ TRUNCATE لازم write access)
-        conn = sqlite3.connect(db_path, timeout=30.0)
+        # افتح writable connection عبر DAL (الـ TRUNCATE لازم write access).
+        # db_manager.get_connection() يفرض WAL + busy_timeout + synchronous=NORMAL.
+        conn = _db_manager.get_connection(db_name, writable=True)
         try:
-            # ضمانات الـ WAL mode
+            # ضمانات الـ WAL mode (مضمونة بالفعل من DAL، لكن نحافظ على التوافق)
             try:
                 conn.execute('PRAGMA journal_mode=WAL')
                 conn.execute('PRAGMA busy_timeout=30000')

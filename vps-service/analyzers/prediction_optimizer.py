@@ -39,8 +39,9 @@ from analyzers.indicators.adx import calc_adx as _canonical_adx
 from pathlib import Path
 from contextlib import contextmanager
 
-# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
-from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _PRED_OPT_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
+from core.db_helpers import _open_db  # retained: helper context manager (no fallback bypass)
 
 # Import fundamental data provider
 from analyzers.fundamental_data_provider import FundamentalDataProvider
@@ -243,17 +244,8 @@ class PredictionOptimizer:
     def _ensure_optimizer_table(self):
         """ينشئ جدول سجل التحسين لو مش موجود."""
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_eot_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_eot_ctx = _dbm.connection(self._get_db_path(), writable=True)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self._get_db_path())
-                _po_eot_ctx = None
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection(self._get_db_path(), writable=True)
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS optimizer_params_history (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -288,17 +280,8 @@ class PredictionOptimizer:
             'regime_specific': {},
         }
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_lop_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_lop_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self._get_db_path())
-                _po_lop_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self._get_db_path(), writable=False)
             conn.row_factory = sqlite3.Row
             row = conn.execute(
                 'SELECT * FROM optimizer_params_history ORDER BY id DESC LIMIT 1'
@@ -760,17 +743,8 @@ class PredictionOptimizer:
             'last_optimized': None,
         }
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_ro1_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_ro1_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self._get_db_path())
-                _po_ro1_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self._get_db_path(), writable=False)
             conn.row_factory = sqlite3.Row
 
             # جيب التوقعات المغلقة في آخر 90 يوم
@@ -861,17 +835,8 @@ class PredictionOptimizer:
             best_result['regime_specific'] = regime_params
 
             try:
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _po_ro2_ctx = None
-                try:
-                    if _PRED_OPT_DBM_AVAILABLE:
-                        _po_ro2_ctx = _dbm.connection(self._get_db_path(), writable=True)
-                        
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(self._get_db_path())
-                    _po_ro2_ctx = None
+                # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+                conn = db_manager.get_connection(self._get_db_path(), writable=True)
                 conn.execute(
                     '''INSERT INTO optimizer_params_history
                        (optimized_at, window_days, regime, total, win_rate, profit_factor, params_json)
@@ -947,16 +912,8 @@ class PredictionOptimizer:
         }
 
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_rso_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(db_path, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(db_path)
-                _po_rso_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(db_path, writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
 
@@ -1309,17 +1266,8 @@ class PredictionOptimizer:
             _root = Path(__file__).resolve().parent.parent.parent
 
             # 1. جيب sector بتاع السهم من stocks.db
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_sm1_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_sm1_ctx = _dbm.connection(str(_root / 'db' / 'stocks.db'), writable=False)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                s_conn = sqlite3.connect(str(_root / 'db' / 'stocks.db'))
-                _po_sm1_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            s_conn = db_manager.get_connection('stocks', writable=False)
             s_conn.row_factory = sqlite3.Row
             row = s_conn.execute(
                 "SELECT sector FROM stocks WHERE ticker = ?", (ticker,)
@@ -1331,17 +1279,8 @@ class PredictionOptimizer:
             sector = row['sector']
 
             # 2. جيب متوسط change_percent لكل أسهم نفس القطاع
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_sm2_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_sm2_ctx = _dbm.connection(str(_root / 'db' / 'stocks.db'), writable=False)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                s_conn = sqlite3.connect(str(_root / 'db' / 'stocks.db'))
-                _po_sm2_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            s_conn = db_manager.get_connection('stocks', writable=False)
             s_conn.row_factory = sqlite3.Row
             result = s_conn.execute("""
                 SELECT AVG(change_percent) as avg_change, COUNT(*) as cnt
@@ -1371,16 +1310,8 @@ class PredictionOptimizer:
             _root = Path(__file__).resolve().parent.parent.parent
             _db = str(_root / 'db' / 'predictions.db')
 
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_rwr_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(_db, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(_db)
-                _po_rwr_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(_db, writable=False)
             conn.row_factory = sqlite3.Row
 
             # جيب التوقعات المغلقة في آخر N يوم
@@ -1475,17 +1406,8 @@ class PredictionOptimizer:
             'best_params': {},
         }
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _po_gos_ctx = None
-            try:
-                if _PRED_OPT_DBM_AVAILABLE:
-                    _po_gos_ctx = _dbm.connection(self._get_db_path(), writable=False)
-                    
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self._get_db_path())
-                _po_gos_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self._get_db_path(), writable=False)
             conn.row_factory = sqlite3.Row
             row = conn.execute(
                 'SELECT * FROM optimizer_params_history ORDER BY id DESC LIMIT 1'

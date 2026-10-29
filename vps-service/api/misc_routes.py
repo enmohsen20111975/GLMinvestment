@@ -2439,7 +2439,7 @@ def _b4_read_regime_from_settings(market_key: str) -> dict:
     _stocks_db = str(_root / 'db' / 'stocks.db')
     settings_key = f"current_regime_{market_key}"
     try:
-        conn = _sqlite3.connect(_stocks_db, timeout=5.0)
+        conn = _dbm.get_connection('stocks', writable=True)
         conn.row_factory = _sqlite3.Row
         # Idempotent: ensure table exists (no-op if already present).
         try:
@@ -2697,20 +2697,11 @@ def unified_predictions():
         loss_count = 0
         pnl_sum = 0.0
 
-        # Rule 54 / Phase 3: استخدم db_manager.connection() — fallback sqlite3.connect.
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate.
         # ملاحظة: مش بنستخدم `with` عشان الـ function طويلة جداً وفيها early returns.
-        # الـ conn.close() اللي موجودة في الـ body بتشتغل على الاتنين (sqlite3.Connection
-        # هو الـ type الموحّد على المسارين).
-        _unified_ctx = None
-        try:
-            if _DBM_AVAILABLE:
-                conn = _dbm.get_connection('predictions')
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(_db)
-            conn.row_factory = sqlite3.Row
-            _unified_ctx = None
+        # الـ conn.close() اللي موجودة في الـ body بتشتغل على الـ sqlite3.Connection.
+        conn = _dbm.get_connection('predictions')
+        conn.row_factory = sqlite3.Row
 
         try:
             # فلترة حسب market لو موجود
@@ -3337,25 +3328,14 @@ def unified_predictions():
                 try:
                     _sdb = str(_root / 'db' / 'stocks.db')
                     if os.path.exists(_sdb):
-                        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                        try:
-                            if _DBM_AVAILABLE:
-                                _sr_row = _dbm.query_one(
-                                    'stocks',
-                                    'SELECT rsi FROM stocks WHERE ticker = ? LIMIT 1',
-                                    (ticker,),
-                                )
-                                if _sr_row and _sr_row.get('rsi'):
-                                    rsi_v = float(_sr_row['rsi'])
-                            else:
-                                raise RuntimeError("db_manager unavailable")
-                        except Exception:
-                            _sc = sqlite3.connect(_sdb)
-                            _sc.row_factory = sqlite3.Row
-                            _sr = _sc.execute('SELECT rsi FROM stocks WHERE ticker = ? LIMIT 1', (ticker,)).fetchone()
-                            if _sr and _sr['rsi']:
-                                rsi_v = float(_sr['rsi'])
-                            _sc.close()
+                        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+                        _sr_row = _dbm.query_one(
+                            'stocks',
+                            'SELECT rsi FROM stocks WHERE ticker = ? LIMIT 1',
+                            (ticker,),
+                        )
+                        if _sr_row and _sr_row.get('rsi'):
+                            rsi_v = float(_sr_row['rsi'])
                 except Exception as _mr_e:
                     import logging as _mr_l; _mr_l.warning(f"misc_routes silent: {_mr_e}")
 
@@ -4257,19 +4237,9 @@ def live_refresh_analyses():
 
     # حساب الإحصائيات الحالية لإرجاعها فوراً
     try:
-        _root2 = Path(__file__).resolve().parent.parent.parent
-        _pdb2 = str(_root2 / 'db' / 'predictions.db')
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        try:
-            if _DBM_AVAILABLE:
-                _count_row = _dbm.query_one('predictions', "SELECT COUNT(*) as cnt FROM stored_analyses")
-                count = _count_row['cnt'] if _count_row else 0
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn3 = sqlite3.connect(_pdb2)
-            count = conn3.execute("SELECT COUNT(*) FROM stored_analyses").fetchone()[0]
-            conn3.close()
+        # Rule 54 / Phase 3: db_manager is the SOLE DB gate
+        _count_row = _dbm.query_one('predictions', "SELECT COUNT(*) as cnt FROM stored_analyses")
+        count = _count_row['cnt'] if _count_row else 0
     except Exception:
         count = 0
 

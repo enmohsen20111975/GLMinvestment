@@ -36,8 +36,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from contextlib import contextmanager
 
-# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
-from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _BT_ENGINE_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
+from core.db_helpers import _open_db  # retained: helper context manager (no fallback bypass)
 
 # ---------------------------------------------------------------------------
 # Path setup — make `from analyzers.master_analyzer import MasterAnalyzer` work
@@ -166,16 +167,8 @@ class BacktestEngine:
         migration is attempted inside try/except (column may already exist).
         """
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_init_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db_path)
-                _bt_init_ctx = None
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection(self.predictions_db_path, writable=True)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS backtest_results (
@@ -250,16 +243,8 @@ class BacktestEngine:
         # ---- Source 1: price_history.db (preferred — 274K rows) ----
         try:
             if os.path.exists(self.price_history_db_path):
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _bt_ph1_ctx = None
-                try:
-                    if _BT_ENGINE_DBM_AVAILABLE:
-                        conn = _dbm.get_connection(self.price_history_db_path, writable=False)
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(self.price_history_db_path)
-                    _bt_ph1_ctx = None
+                # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                conn = db_manager.get_connection(self.price_history_db_path, writable=False)
                 cursor = conn.cursor()
                 try:
                     cursor.execute(
@@ -297,16 +282,8 @@ class BacktestEngine:
         # ---- Source 2 (fallback): stocks.db / stock_daily_prices ----
         if not dates:
             try:
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _bt_ph2_ctx = None
-                try:
-                    if _BT_ENGINE_DBM_AVAILABLE:
-                        conn = _dbm.get_connection(self.db_path, writable=False)
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(self.db_path)
-                    _bt_ph2_ctx = None
+                # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                conn = db_manager.get_connection(self.db_path, writable=False)
                 cursor = conn.cursor()
                 cursor.execute(
                     """
@@ -497,16 +474,8 @@ class BacktestEngine:
         self._current_ab_group) so we can later split results between
         'control' (no lessons) and 'treatment' (with lessons)."""
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_store_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db_path)
-                _bt_store_ctx = None
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection(self.predictions_db_path, writable=True)
             conn.execute(
                 """
                 INSERT INTO backtest_results (
@@ -553,16 +522,8 @@ class BacktestEngine:
         # ---- Source 1: price_history.db (preferred) ----
         try:
             if os.path.exists(self.price_history_db_path):
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _bt_tlt1_ctx = None
-                try:
-                    if _BT_ENGINE_DBM_AVAILABLE:
-                        conn = _dbm.get_connection(self.price_history_db_path, writable=False)
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(self.price_history_db_path)
-                    _bt_tlt1_ctx = None
+                # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                conn = db_manager.get_connection(self.price_history_db_path, writable=False)
                 cursor = conn.cursor()
                 try:
                     cursor.execute(
@@ -586,16 +547,8 @@ class BacktestEngine:
 
         # ---- Source 2 (fallback): stocks.db / stocks ----
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_tlt2_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
-                _bt_tlt2_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self.db_path, writable=False)
             cursor = conn.cursor()
             cursor.execute(
                 """
@@ -916,16 +869,8 @@ class BacktestEngine:
         """Delete ALL rows from backtest_results. Used by run_ab_test()
         when clear_existing=True so the A/B test starts fresh."""
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_clear_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.predictions_db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db_path)
-                _bt_clear_ctx = None
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection(self.predictions_db_path, writable=True)
             conn.execute("DELETE FROM backtest_results")
             conn.commit()
             conn.close()
@@ -1092,16 +1037,8 @@ class BacktestEngine:
     def get_results(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Read recent backtest_results rows (newest first)."""
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_gr_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.predictions_db_path, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db_path)
-                _bt_gr_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self.predictions_db_path, writable=False)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(
@@ -1125,16 +1062,8 @@ class BacktestEngine:
             total, by_outcome, win_rate_pct, avg_return_pct, avg_rr.
         """
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _bt_gs_ctx = None
-            try:
-                if _BT_ENGINE_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.predictions_db_path, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db_path)
-                _bt_gs_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(self.predictions_db_path, writable=False)
             cursor = conn.cursor()
 
             cursor.execute("SELECT COUNT(*) FROM backtest_results")

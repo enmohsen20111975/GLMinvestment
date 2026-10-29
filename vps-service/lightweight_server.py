@@ -10,6 +10,8 @@ import os
 import sys
 import json
 import sqlite3
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
 from collections import OrderedDict
 from datetime import datetime
 from typing import Dict, Any
@@ -213,7 +215,7 @@ def market_pulse():
 def _market_pulse_impl(now, cache_key):
     """P19-HOTFIX: implementation مفصولة للـ safe error handling."""
     cairo_now = _cairo_now()
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = db_manager.get_connection('stocks', writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -378,7 +380,7 @@ def _market_pulse_impl(now, cache_key):
 def live_monitor():
     """لوحة المراقبة الحية - نسخة خفيفة"""
     cairo_now = _cairo_now()
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = db_manager.get_connection('stocks', writable=False)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -771,7 +773,7 @@ def live_sniper_scan():
             except ValueError:
                 return 0.0
 
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = db_manager.get_connection('stocks', writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
@@ -970,7 +972,7 @@ def expert_recs_active():
 def eodhd_backfill_status():
     """حالة تعبئة البيانات التاريخية"""
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = db_manager.get_connection('stocks', writable=False)
         cur = conn.cursor()
         total_stocks = cur.execute("SELECT COUNT(*) FROM stocks WHERE is_active = 1").fetchone()[0]
         stocks_with_history = cur.execute("SELECT COUNT(DISTINCT ticker) FROM stock_daily_prices").fetchone()[0]
@@ -1032,7 +1034,7 @@ def eodhd_clear_and_rebuild():
         days = request.args.get('days', 730, type=int)
 
         # Step 1: Clear old data
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = db_manager.get_connection('stocks', writable=True)
         cur = conn.cursor()
         old_count = cur.execute("SELECT COUNT(*) FROM stock_daily_prices").fetchone()[0]
         cur.execute("DELETE FROM stock_daily_prices")
@@ -1715,7 +1717,7 @@ def crypto_watchlist():
         import sqlite3
         db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        conn = sqlite3.connect(db_path)
+        conn = db_manager.get_connection('crypto', writable=True)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS crypto_watchlist (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1756,7 +1758,7 @@ def crypto_portfolio():
         import sqlite3
         db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        conn = sqlite3.connect(db_path)
+        conn = db_manager.get_connection('crypto', writable=True)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS crypto_portfolio (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1793,7 +1795,7 @@ def crypto_simulation_portfolio():
     try:
         import sqlite3
         db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
-        conn = sqlite3.connect(db_path)
+        conn = db_manager.get_connection('crypto', writable=True)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS crypto_simulation (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1824,7 +1826,7 @@ def crypto_simulation_trade():
         if action not in ('BUY', 'SELL') or not symbol or quantity <= 0 or price <= 0:
             return jsonify({"success": False, "error": "action (BUY/SELL), symbol, quantity, price required"}), 400
         db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
-        conn = sqlite3.connect(db_path)
+        conn = db_manager.get_connection('crypto', writable=True)
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS crypto_simulation (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1860,7 +1862,7 @@ def crypto_events():
             # fallback: events من crypto_prices (أعلى تغيرات)
             import sqlite3
             de_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'data_engine.db')
-            conn = sqlite3.connect(de_db)
+            conn = db_manager.get_connection('data_engine', writable=False)
             c = conn.cursor()
             rows = c.execute("""
                 SELECT symbol, name, price_change_24h, price_usd, timestamp
@@ -1900,7 +1902,7 @@ def get_stock_state(ticker):
     """Get canonical stock state + timeline."""
     try:
         import json
-        _conn = sqlite3.connect(str(DATABASE_PATH), timeout=30)
+        _conn = db_manager.get_connection('stocks', writable=False)
         _cur = _conn.cursor()
         row = _cur.execute("""
             SELECT ticker, signal_date, canonical_state, prev_state, transition_type,

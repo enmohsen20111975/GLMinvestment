@@ -270,11 +270,8 @@ class FundamentalAnalyzer:
     def _get_stock_data(self, ticker: str) -> Dict:
         """Get stock fundamental data from database."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -720,11 +717,8 @@ class ConfluenceEngineV3:
         4. السهم طالع مع القطاع → زخم حقيقي
         """
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             
@@ -745,11 +739,8 @@ class ConfluenceEngineV3:
                 conn.close()
                 return None
             
-            try:
-                from core.db_manager import db_manager
-                de_conn = db_manager.get_connection('data_engine', writable=False)
-            except Exception:
-                de_conn = sqlite3.connect(data_engine_path)
+            from core.db_manager import db_manager
+            de_conn = db_manager.get_connection('data_engine', writable=False)
             de_cur = de_conn.cursor()
 
             # DATA-ENGINE-UNIFY-1 Stage 2b: tab_performance has no sector_name column
@@ -780,11 +771,8 @@ class ConfluenceEngineV3:
         Falls back to static weights if table is empty.
         """
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
@@ -1014,11 +1002,8 @@ class PaperTradingEngine:
     def _create_paper_trades_table(self):
         """Create paper_trades table if not exists."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=True)
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -1053,11 +1038,8 @@ class PaperTradingEngine:
     def record_signal(self, result: ConfluenceResultV3, entry_price: float):
         """Record a new paper trade signal."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=True)
             cursor = conn.cursor()
             
             cursor.execute('''
@@ -1090,11 +1072,8 @@ class PaperTradingEngine:
     def close_trade(self, trade_id: int, exit_price: float):
         """Close a paper trade and calculate results."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=True)
             cursor = conn.cursor()
             
             # Get trade info
@@ -1144,11 +1123,8 @@ class PaperTradingEngine:
     def get_accuracy_stats(self) -> Dict:
         """Get accuracy statistics for paper trading."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.db_path)
+            from core.db_manager import db_manager
+            conn = db_manager.get_connection('stocks', writable=False)
             cursor = conn.cursor()
             
             # Overall stats

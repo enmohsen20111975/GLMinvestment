@@ -1,28 +1,10 @@
 import sys
 import os
 
-# Apply SQLite WAL and timeout patches globally to prevent DB locks
-import sqlite3
-_original_connect = sqlite3.connect
-def _patched_connect(*args, **kwargs):
-    if len(args) > 1:
-        args = list(args)
-        args[1] = max(args[1], 30.0)
-        args = tuple(args)
-    else:
-        if 'timeout' not in kwargs:
-            kwargs['timeout'] = 30.0
-        else:
-            kwargs['timeout'] = max(kwargs['timeout'], 30.0)
-            
-    conn = _original_connect(*args, **kwargs)
-    try:
-        conn.execute('PRAGMA journal_mode=WAL')
-        conn.execute('PRAGMA busy_timeout=30000')
-    except Exception:
-        pass
-    return conn
-sqlite3.connect = _patched_connect
+# DAL-MIGRATE-2: removed the global monkey-patching of sqlite3.connect.
+# The db_manager (DAL) now enforces WAL + busy_timeout + synchronous=NORMAL
+# on every connection it opens, so the patch is redundant (and dangerous:
+# it affected ALL Python code in the process silently).
 
 from analyzers.master_analyzer import MasterAnalyzer
 

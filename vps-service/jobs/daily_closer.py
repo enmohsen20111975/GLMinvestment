@@ -79,19 +79,14 @@ def _is_egx_market_hours_now() -> bool:
 # 2. If the patch has a bug, ALL DB access breaks
 # 3. It makes debugging impossible (sqlite3.connect doesn't behave as documented)
 #
-# Replacement: explicit _safe_connect() helper that applies WAL + busy_timeout
-# to connections opened by daily_closer ONLY.
+# Replacement: DAL-MIGRATE-2 — delegate to db_manager.get_connection() which
+# already enforces WAL + busy_timeout + synchronous=NORMAL for every connection.
 import sqlite3
+from core.db_manager import db_manager as _db_manager
 
 def _safe_connect(db_path: str, timeout: float = 30.0) -> sqlite3.Connection:
-    """Open a DB connection with WAL + busy_timeout (replaces monkey-patch)."""
-    conn = sqlite3.connect(db_path, timeout=timeout)
-    try:
-        conn.execute('PRAGMA journal_mode=WAL')
-        conn.execute('PRAGMA busy_timeout=30000')
-    except Exception as e:
-        logger.warning(f"_safe_connect: PRAGMA setup failed for {db_path}: {e}")
-    return conn
+    """Open a DB connection via the central DAL (WAL + busy_timeout enforced)."""
+    return _db_manager.get_connection(db_path, writable=True)
 
 
 logger = logging.getLogger(__name__)

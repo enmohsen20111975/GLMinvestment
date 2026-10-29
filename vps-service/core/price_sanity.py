@@ -50,6 +50,8 @@ from datetime import datetime, date
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
+from core.db_manager import db_manager
+
 # ──────────────────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────────────────
@@ -238,7 +240,7 @@ def lookup_stock_identity(ticker: str, db_path: Optional[str] = None) -> Dict[st
     if not os.path.exists(path):
         return out
     try:
-        conn = sqlite3.connect(path)
+        conn = db_manager.get_connection(path, writable=False)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(
@@ -559,7 +561,7 @@ def _cli():
     ohlc = None
     latest_date = None
     if os.path.exists(args.ph_db):
-        conn = sqlite3.connect(args.ph_db)
+        conn = db_manager.get_connection(args.ph_db, writable=False)
         cur = conn.cursor()
         cur.execute(
             "SELECT date, open_price, high_price, low_price, close_price "
@@ -579,7 +581,8 @@ def _cli():
     # also pull current price from stocks.db
     cur_price = None
     if os.path.exists(args.db):
-        c2 = sqlite3.connect(args.db).cursor()
+        _c2_conn = db_manager.get_connection(args.db, writable=False)
+        c2 = _c2_conn.cursor()
         c2.execute("SELECT current_price, support, resistance FROM stocks WHERE ticker = ?", (args.ticker.upper(),))
         row = c2.fetchone()
         c2.connection.close()

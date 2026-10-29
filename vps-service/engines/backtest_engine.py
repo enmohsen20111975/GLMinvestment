@@ -45,8 +45,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 from contextlib import contextmanager
 
-# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
-from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _V38_BT_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
+from core.db_helpers import _open_db  # retained: helper context manager (no fallback bypass)
 
 # ---------------------------------------------------------------------------
 # Path setup
@@ -107,16 +108,8 @@ def _resolve_price_history_db():
     primary = str(PROJECT_ROOT / 'db' / 'data_engine.db')
     try:
         if os.path.exists(primary) and os.path.getsize(primary) > 1000:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _v38_rph_ctx = None
-            try:
-                if _V38_BT_DBM_AVAILABLE:
-                    db = _dbm.get_connection(primary, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                db = sqlite3.connect(f'file:{primary}?mode=ro', uri=True, timeout=3)
-                _v38_rph_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            db = db_manager.get_connection(primary, writable=False)
             tables = [r[0] for r in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()]
@@ -133,16 +126,8 @@ def _resolve_price_history_db():
     stocks_db = str(PROJECT_ROOT / 'db' / 'stocks.db')
     try:
         if os.path.exists(stocks_db) and os.path.getsize(stocks_db) > 1000:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _v38_rph2_ctx = None
-            try:
-                if _V38_BT_DBM_AVAILABLE:
-                    db = _dbm.get_connection(stocks_db, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                db = sqlite3.connect(f'file:{stocks_db}?mode=ro', uri=True, timeout=3)
-                _v38_rph2_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            db = db_manager.get_connection(stocks_db, writable=False)
             tables = [r[0] for r in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()]
@@ -1117,16 +1102,8 @@ class V38BacktestEngine:
                 # Get all tickers we need to score (from price_history or stocks.db)
                 ticker_set = set()
                 try:
-                    # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                    _v38_fs1_ctx = None
-                    try:
-                        if _V38_BT_DBM_AVAILABLE:
-                            conn = _dbm.get_connection(STOCKS_DB, writable=False)
-                        else:
-                            raise RuntimeError("db_manager unavailable")
-                    except Exception:
-                        conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
-                        _v38_fs1_ctx = None
+                    # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                    conn = db_manager.get_connection(STOCKS_DB, writable=False)
                     cur = conn.cursor()
                     # FUNDAMENTALS-FIX (2026-10-01): stocks.db uses `ticker` column (not `symbol`)
                     # The old code tried `SELECT symbol FROM stocks` which fails because the
@@ -1173,16 +1150,8 @@ class V38BacktestEngine:
 
         # ─── Fallback: stocks.db (legacy) ───
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _v38_fs2_ctx = None
-            try:
-                if _V38_BT_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
-                _v38_fs2_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             cur = conn.cursor()
             cur.execute("SELECT ticker, pe_ratio, roe FROM stocks WHERE pe_ratio IS NOT NULL OR roe IS NOT NULL")
             for row in cur.fetchall():
@@ -1255,16 +1224,8 @@ class V38BacktestEngine:
     def _load_sector_changes(self, date_str: str):
         """تحميل تغيرات القطاع — حساب من الأسهم في نفس القطاع"""
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _v38_sc_ctx = None
-            try:
-                if _V38_BT_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(STOCKS_DB, writable=False)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception:
-                conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
-                _v38_sc_ctx = None
+            # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+            conn = db_manager.get_connection(STOCKS_DB, writable=False)
             cur = conn.cursor()
             # Get sector average change
             cur.execute("""
@@ -1282,16 +1243,8 @@ class V38BacktestEngine:
     
     def get_tickers(self, min_days: int = 200) -> List[str]:
         """الحصول على قائمة الأسهم مع بيانات كافية"""
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _v38_gt_ctx = None
-        try:
-            if _V38_BT_DBM_AVAILABLE:
-                conn = _dbm.get_connection(PRICE_HISTORY_DB, writable=False)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=30.0)
-            _v38_gt_ctx = None
+        # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+        conn = db_manager.get_connection(PRICE_HISTORY_DB, writable=False)
         cur = conn.cursor()
         cur.execute("""
             SELECT symbol FROM egksco_price_history
@@ -1960,16 +1913,8 @@ class V38BacktestEngine:
             # Get sector change for this ticker
             sector_change = 0.0
             try:
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _v38_run_ctx = None
-                try:
-                    if _V38_BT_DBM_AVAILABLE:
-                        conn = _dbm.get_connection(STOCKS_DB, writable=False)
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception:
-                    conn = sqlite3.connect(STOCKS_DB, timeout=5.0)
-                    _v38_run_ctx = None
+                # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                conn = db_manager.get_connection(STOCKS_DB, writable=False)
                 cur = conn.cursor()
                 cur.execute("SELECT sector, change_percent FROM stocks WHERE ticker = ?", (ticker,))
                 row = cur.fetchone()

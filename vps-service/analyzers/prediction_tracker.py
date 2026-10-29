@@ -20,9 +20,9 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from contextlib import contextmanager
 
-# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
-# (docstring + behavior preserved in core/db_helpers.py)
-from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _PRED_TRACKER_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
+from core.db_helpers import _open_db  # retained: helper context manager (no fallback bypass)
 
 # v3.29.0: Holiday-aware prediction dates — prevents predictions on Fri/Sat/holidays
 try:
@@ -249,7 +249,7 @@ class PredictionTracker:
     
     def _init_table(self):
         """Initialize predictions table with auto-migration for missing columns."""
-        # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
+        # DAL: _open_db (db_manager-backed context manager; WAL + busy_timeout enforced)
         with _open_db(self.db_path, writable=True) as conn:
             cursor = conn.cursor()
 
@@ -563,7 +563,7 @@ class PredictionTracker:
 
         if not _BYPASS_CAP:
             try:
-                # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
+                # DAL: _open_db (db_manager-backed context manager; WAL + busy_timeout enforced)
                 with _open_db(self.db_path, writable=True) as _chk_conn:
                     _chk_cur = _chk_conn.cursor()
 
@@ -709,21 +709,8 @@ class PredictionTracker:
                 flush=True
             )
 
-        # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect.
-        # ملاحظة: بنفتح الـ connection بدون `with` عشان الـ function طويلة وفيها multiple
-        # cursor.execute/conn.commit/conn.close — استدعاء conn.close() في النهاية
-        # بيشتغل على المسارين (sqlite3.Connection.close() idempotent).
-        _rec_pred_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path, writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _rec_pred_ctx = None
+        # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=True)
         cursor = conn.cursor()
 
         # P2-CREATED_AT-FIX (v3.69.0): اكتب created_at كـ ISO timestamp حقيقي
@@ -851,18 +838,8 @@ class PredictionTracker:
         Returns:
             Dict: Updated prediction with results
         """
-        # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
-        _uo_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path, writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _uo_ctx = None
+        # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=True)
         cursor = conn.cursor()
         
         # Get original prediction
@@ -962,18 +939,8 @@ class PredictionTracker:
         exit_type=NULL. Now we write exit_type explicitly.
         """
         try:
-            # Rule 54 / Phase 3: استخدم db_manager.connection(writable=True) — fallback sqlite3.connect
-            _svo_ctx = None
-            try:
-                if _PRED_TRACKER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _pt_err:
-                import logging as _pt_log
-                _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
-                _svo_ctx = None
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection(self.db_path, writable=True)
             cursor = conn.cursor()
             cursor.execute('''
                 UPDATE predictions SET
@@ -1020,18 +987,8 @@ class PredictionTracker:
         Returns:
             List[Dict]: التوقعات المفتوحة
         """
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _gop_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _gop_ctx = None
+        # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1076,18 +1033,8 @@ class PredictionTracker:
         Returns:
             Dict: {status, momentum_status, extra_return, message}
         """
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _tm_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path, writable=True)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _tm_ctx = None
+        # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=True)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1191,18 +1138,8 @@ class PredictionTracker:
             except ImportError as ie:
                 return {'status': 'error', 'message': f'Cannot import lesson_store: {ie}'}
 
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _lff_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _lff_ctx = None
+        # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=False)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -1268,18 +1205,8 @@ class PredictionTracker:
         Returns:
             Dict: Accuracy statistics
         """
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _gas_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _gas_ctx = None
+        # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         since_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
@@ -1345,18 +1272,8 @@ class PredictionTracker:
     
     def get_pending_predictions(self) -> List[Prediction]:
         """Get predictions that haven't been evaluated yet."""
-        # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-        _gpp_ctx = None
-        try:
-            if _PRED_TRACKER_DBM_AVAILABLE:
-                conn = _dbm.get_connection(self.db_path)
-            else:
-                raise RuntimeError("db_manager unavailable")
-        except Exception as _pt_err:
-            import logging as _pt_log
-            _pt_log.warning(f"prediction_tracker: db_manager failed ({_pt_err}) — using direct sqlite3.connect")
-            conn = sqlite3.connect(self.db_path)
-            _gpp_ctx = None
+        # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+        conn = db_manager.get_connection(self.db_path, writable=False)
         cursor = conn.cursor()
         
         cursor.execute('''

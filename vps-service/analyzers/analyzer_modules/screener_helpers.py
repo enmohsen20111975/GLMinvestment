@@ -21,6 +21,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+from core.db_manager import db_manager
+
 # Constants (imported from master_analyzer)
 import os
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -45,7 +47,6 @@ def _check_screener_stale() -> bool:
         if not Path(DATA_ENGINE_DB).exists():
             return True
         try:
-            from core.db_manager import db_manager
             count_row = db_manager.query_one('data_engine', 'SELECT COUNT(*) as cnt FROM screener_lists')
             count = count_row['cnt'] if count_row else 0
             if count == 0:
@@ -59,8 +60,8 @@ def _check_screener_stale() -> bool:
             diff_hours = (now - last_dt).total_seconds() / 3600.0
             return diff_hours > 24.0
         except Exception:
-            # CATEGORY A fallback (safety)
-            conn = sqlite3.connect(DATA_ENGINE_DB, timeout=5.0)
+            # CATEGORY A fallback (safety) — direct DAL connection
+            conn = db_manager.get_connection('data_engine', writable=False)
             cursor = conn.cursor()
             try:
                 cursor.execute('SELECT COUNT(*) FROM screener_lists')

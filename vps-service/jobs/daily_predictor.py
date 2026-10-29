@@ -43,6 +43,8 @@ import json
 import gc
 import argparse
 import sqlite3
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
@@ -885,7 +887,7 @@ def _smart_get_last_prediction_date(market_code):
         _pred_db = str(_db_dir / 'predictions.db')
         if not os.path.exists(_pred_db):
             return None
-        conn = sqlite3.connect(_pred_db)
+        conn = db_manager.get_connection('predictions', writable=False)
         row = conn.execute(
             "SELECT MAX(prediction_date) FROM predictions WHERE market = ?",
             (market_code,)
@@ -909,7 +911,7 @@ def _smart_filter_dead_stocks(tickers, market_code):
     try:
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
         _stocks_db = str(_db_dir / 'stocks.db')
-        conn = sqlite3.connect(_stocks_db)
+        conn = db_manager.get_connection('stocks', writable=False)
         placeholders = ','.join(['?'] * len(tickers))
         rows = conn.execute(
             f"SELECT ticker, change_percent FROM stocks WHERE ticker IN ({placeholders}) AND market = ?",
@@ -945,8 +947,8 @@ def _smart_filter_stale_predictions(tickers, market_code, scan_date):
         _stocks_db = str(_db_dir / 'stocks.db')
         if not os.path.exists(_pred_db) or not os.path.exists(_stocks_db):
             return tickers, 0
-        conn_pred = sqlite3.connect(_pred_db)
-        conn_stocks = sqlite3.connect(_stocks_db)
+        conn_pred = db_manager.get_connection('predictions', writable=False)
+        conn_stocks = db_manager.get_connection('stocks', writable=False)
         existing = conn_pred.execute(
             """SELECT ticker, entry_price FROM predictions 
                WHERE market = ? AND prediction_date LIKE ? 

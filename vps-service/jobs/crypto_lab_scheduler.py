@@ -41,6 +41,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
+from core.db_manager import db_manager
+
 # Ensure vps-service is on sys.path (so `from analyzers...` works even when
 # the module is imported from outside the vps-service directory).
 _VPS_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -151,11 +153,7 @@ def _discover_coins_from_data_engine(data_engine_db: str) -> Dict[str, Dict[str,
     if not data_engine_db or not os.path.exists(data_engine_db):
         return {}
     try:
-        try:
-            from core.db_manager import db_manager
-            conn = db_manager.get_connection('data_engine', writable=False)
-        except Exception:
-            conn = sqlite3.connect(data_engine_db, timeout=10)
+        conn = db_manager.get_connection('data_engine', writable=False)
         cur = conn.cursor()
         # تحقق من وجود جدول crypto_prices
         row = cur.execute(
@@ -311,11 +309,7 @@ class CryptoLabScheduler:
         highest_price, actual_return, exited_at, remaining_pct) لو مش موجودة.
         """
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db, timeout=30)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.execute('PRAGMA busy_timeout = 30000')
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS crypto_predictions_log (
@@ -500,11 +494,7 @@ class CryptoLabScheduler:
         try:
             if not os.path.exists(self.data_engine_db):
                 return 0.0, 0.0, 0.0
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('data_engine', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.data_engine_db, timeout=30)
+            conn = db_manager.get_connection('data_engine', writable=False)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             # الـ schema ممكن يختلف بين production (symbol/price_usd/total_volume)
@@ -902,11 +892,7 @@ class CryptoLabScheduler:
     def log_prediction(self, prediction: Dict[str, Any]) -> bool:
         """يسجّل التوقع في جدول `crypto_predictions_log`."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db, timeout=30)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.execute('PRAGMA busy_timeout = 30000')
             cur = conn.cursor()
             cur.execute('''
@@ -969,11 +955,7 @@ class CryptoLabScheduler:
         try:
             if not os.path.exists(self.data_engine_db):
                 return 0.0
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('data_engine', writable=False)
-            except Exception:
-                conn = sqlite3.connect(f'file:{self.data_engine_db}?mode=ro', uri=True, timeout=5)
+            conn = db_manager.get_connection('data_engine', writable=False)
             rows = conn.execute(
                 "SELECT high_24h, low_24h, price_usd FROM crypto_prices "
                 "WHERE symbol = ? ORDER BY date DESC LIMIT ?",
@@ -1015,11 +997,7 @@ class CryptoLabScheduler:
         errors: List[str] = []
 
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db, timeout=30)
+            conn = db_manager.get_connection('predictions', writable=False)
             conn.execute('PRAGMA busy_timeout = 30000')
             # كل الصفقات المفتوحة (status open أو partial)
             open_rows = conn.execute(
@@ -1172,11 +1150,7 @@ class CryptoLabScheduler:
             return
         values.append(pos_id)
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db, timeout=30)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.execute('PRAGMA busy_timeout = 30000')
             conn.execute(
                 f"UPDATE crypto_predictions_log SET {', '.join(set_clauses)} WHERE id = ?",

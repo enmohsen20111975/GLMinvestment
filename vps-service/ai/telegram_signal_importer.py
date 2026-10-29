@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+from core.db_manager import db_manager
+
 logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -77,11 +79,7 @@ class TelegramSignalImporter:
         - telegram_signals: توصيات/لقلق (فريش، ادخل، هدف، وقف)
         """
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db)
+            conn = db_manager.get_connection('predictions', writable=True)
 
             # الـ table الرئيسي موجود (telegram_recommendations)
             # بس نضيف columns للـ evaluation لو مش موجودة
@@ -251,11 +249,7 @@ class TelegramSignalImporter:
         # 3. تخزين في DB
         if result['success']:
             try:
-                try:
-                    from core.db_manager import db_manager
-                    conn = db_manager.get_connection('predictions', writable=True)
-                except Exception:
-                    conn = sqlite3.connect(self.predictions_db)
+                conn = db_manager.get_connection('predictions', writable=True)
                 table = 'telegram_news' if result['type'] == 'news' else 'telegram_signals'
                 conn.execute(
                     f"""INSERT INTO {table} (ticker, message_text, sentiment, confidence, source_group, message_date)
@@ -281,11 +275,7 @@ class TelegramSignalImporter:
         cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
         result = {'news': [], 'picks': [], 'sentiment_score': 0.0}
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db)
+            conn = db_manager.get_connection('predictions', writable=False)
             conn.row_factory = sqlite3.Row
 
             news_rows = conn.execute(
@@ -409,11 +399,7 @@ class TelegramSignalImporter:
     def _validate_ticker(self, ticker: str) -> Optional[str]:
         """يتأكد إن الـ ticker موجود في stocks.db."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('stocks', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.stocks_db)
+            conn = db_manager.get_connection('stocks', writable=False)
             cursor = conn.cursor()
             cursor.execute("SELECT ticker FROM stocks WHERE ticker = ?", (ticker.upper(),))
             row = cursor.fetchone()
@@ -479,11 +465,7 @@ class TelegramSignalImporter:
     def store_signal(self, signal: TelegramSignal) -> int:
         """يخزن توصية في telegram_recommendations table (الموجودة)."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db)
+            conn = db_manager.get_connection('predictions', writable=True)
             cur = conn.cursor()
             # بنستخدم telegram_recommendations الموجودة + الـ columns الجديدة
             cur.execute("""
@@ -588,11 +570,7 @@ class TelegramSignalImporter:
         4. يحدّث outcome + actual_return
         """
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=True)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
 
             # التوصيات اللي لسه متقيّمة
@@ -695,11 +673,7 @@ class TelegramSignalImporter:
             _root = Path(__file__).resolve().parent.parent.parent
             _price_db = str(_root / 'db' / 'price_history.db')
 
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('price_history', writable=False)
-            except Exception:
-                conn = sqlite3.connect(_price_db)
+            conn = db_manager.get_connection('price_history', writable=False)
             conn.row_factory = sqlite3.Row
 
             # حوّل التاريخ لـ YYYY-MM-DD
@@ -735,11 +709,7 @@ class TelegramSignalImporter:
     def get_stats(self) -> Dict:
         """إحصائيات التوصيات المستوردة."""
         try:
-            try:
-                from core.db_manager import db_manager
-                conn = db_manager.get_connection('predictions', writable=False)
-            except Exception:
-                conn = sqlite3.connect(self.predictions_db)
+            conn = db_manager.get_connection('predictions', writable=False)
             conn.row_factory = sqlite3.Row
 
             total = conn.execute("SELECT COUNT(*) FROM telegram_recommendations").fetchone()[0]

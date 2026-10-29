@@ -43,8 +43,8 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
-# Phase 7.3 dedup: import canonical _open_db + dbm handle from core.db_helpers
-from core.db_helpers import _open_db, dbm as _dbm, DBM_AVAILABLE as _TRADE_RECORDER_DBM_AVAILABLE
+# Phase 8 / DAL-MIGRATE-1: استخدم db_manager مباشرة — بدون fallback
+from core.db_manager import db_manager
 
 # --- مسارات الـ DBs — نفس pattern بتاع live_ai_monitor.py ---
 _AI_DIR = Path(__file__).resolve().parent
@@ -93,17 +93,8 @@ class TradeRecorder:
         if self._schema_ready:
             return
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS user_trades (
@@ -203,17 +194,8 @@ class TradeRecorder:
             return {"success": False, "error": "invalid price/quantity"}
 
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             cur = conn.execute(
                 """INSERT INTO user_trades
                    (user_id, ticker, trade_type, price, quantity, trade_date, notes)
@@ -290,17 +272,8 @@ class TradeRecorder:
 
         # --- 1) تسجيل البيع في user_trades ---
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             cur = conn.execute(
                 """INSERT INTO user_trades
@@ -466,17 +439,8 @@ class TradeRecorder:
         """
         self._ensure_schema()
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """SELECT * FROM user_trades
@@ -510,17 +474,8 @@ class TradeRecorder:
         """
         self._ensure_schema()
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             if user_id:
                 rows = conn.execute(
@@ -564,17 +519,8 @@ class TradeRecorder:
         """
         self._ensure_schema()
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             if user_id:
                 rows = conn.execute(
@@ -694,17 +640,8 @@ class TradeRecorder:
         """
         self._ensure_schema()
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             if user_id:
                 rows = conn.execute(
@@ -857,17 +794,8 @@ class TradeRecorder:
         # الـ stored_analyses table ممكن ما تكونش موجودة في الـ DB اللي شغّال
         # (predictions.db حالياً فيه بس live_ai_signals). لازم نـ handle ده.
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
                 "SELECT name FROM sqlite_master "
@@ -920,17 +848,8 @@ class TradeRecorder:
         if not buy_date:
             return False
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
                 "SELECT name FROM sqlite_master "
@@ -982,17 +901,8 @@ class TradeRecorder:
 
         # 1) stored_analyses
         try:
-            # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-            _tr_ctx = None
-            try:
-                if _TRADE_RECORDER_DBM_AVAILABLE:
-                    conn = _dbm.get_connection(self.db_path, writable=True)
-                else:
-                    raise RuntimeError("db_manager unavailable")
-            except Exception as _tr_err:
-                import logging as _tr_log
-                _tr_log.warning(f"trade_recorder: db_manager failed ({_tr_err}) — using direct sqlite3.connect")
-                conn = sqlite3.connect(self.db_path)
+            # DAL: db_manager.get_connection (WAL + busy_timeout enforced)
+            conn = db_manager.get_connection('predictions', writable=True)
             conn.row_factory = sqlite3.Row
             tbl = conn.execute(
                 "SELECT name FROM sqlite_master "
@@ -1028,16 +938,8 @@ class TradeRecorder:
         # 2) price_history (آخر 20 يوم قبل buy_date)
         if buy_date:
             try:
-                # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
-                _ph_ctx = None
-                try:
-                    if _TRADE_RECORDER_DBM_AVAILABLE:
-                        conn = _dbm.get_connection(PRICE_HISTORY_DB)
-                    else:
-                        raise RuntimeError("db_manager unavailable")
-                except Exception as _tr_e:
-                    import logging as _tr_l; _tr_l.warning(f"trade_recorder: db_manager failed ({_tr_e}) — direct connect"); conn = sqlite3.connect(PRICE_HISTORY_DB)
-                    _ph_ctx = None
+                # DAL: db_manager.get_connection (readonly + busy_timeout enforced)
+                conn = db_manager.get_connection('price_history', writable=False)
                 conn.row_factory = sqlite3.Row
                 rows = conn.execute(
                     """SELECT date, close_price, volume, high_price
