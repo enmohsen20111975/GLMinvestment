@@ -187,14 +187,25 @@ class DataLayer:
 
         Returns list of dicts: {date, open, high, low, close, volume, ...}
         Also includes indicator columns (rsi, macd, sma*, atr) if available.
+
+        BRAVO-GRACEFUL: detects available columns dynamically so it works
+        even before the migration script has run (missing rsi/sma/atr columns
+        won't crash the query).
         """
         cur = _conn().cursor()
 
-        # 1. historical_data (canonical daily OHLCV + indicators)
+        # 1. historical_data (canonical daily OHLCV + indicators if available)
+        # Detect available indicator columns dynamically (graceful degradation)
+        hd_cols = {r[1] for r in cur.execute("PRAGMA table_info(historical_data)").fetchall()}
+        base_cols = ["date", "open", "high", "low", "close", "volume", "ticker", "market", "change_percent"]
+        ind_cols = ["rsi", "macd", "macd_signal", "sma20", "sma50", "sma200", "atr",
+                    "recommend_all", "recommend_ma", "recommend_other"]
+        available_ind = [c for c in ind_cols if c in hd_cols]
+        select_cols = base_cols + available_ind
+        select_list = ", ".join(f'"{c}"' for c in select_cols)
+
         rows = cur.execute(
-            """SELECT date, open, high, low, close, volume, ticker, market,
-                      change_percent, rsi, macd, macd_signal, sma20, sma50, sma200,
-                      atr, recommend_all, recommend_ma, recommend_other
+            f"""SELECT {select_list}
                FROM historical_data
                WHERE (ticker = ? OR symbol = ?) AND close IS NOT NULL AND close > 0
                ORDER BY date DESC LIMIT ?""",
@@ -212,14 +223,14 @@ class DataLayer:
                 "close": r["close"],
                 "volume": r["volume"],
                 "change_percent": r["change_percent"],
-                "rsi": r["rsi"] if "rsi" in r.keys() else None,
-                "macd": r["macd"] if "macd" in r.keys() else None,
-                "sma20": r["sma20"] if "sma20" in r.keys() else None,
-                "sma50": r["sma50"] if "sma50" in r.keys() else None,
-                "sma200": r["sma200"] if "sma200" in r.keys() else None,
-                "atr": r["atr"] if "atr" in r.keys() else None,
-                "source": "historical_data",
             }
+            # Add indicators if the column exists
+            for c in available_ind:
+                try:
+                    d[c] = r[c]
+                except (IndexError, KeyError):
+                    d[c] = None
+            d["source"] = "historical_data"
             history.append(d)
             seen_dates.add(r["date"])
 
@@ -308,45 +319,42 @@ class DataLayer:
         with fallback to `stocks` table (current snapshot).
         """
         cur = _conn().cursor()
-        if date:
-            row = cur.execute(
-                """SELECT rsi, macd, macd_signal, sma20, sma50, sma200, atr,
-                          recommend_all, recommend_ma, recommend_other,
-                          volatility_daily, volatility_weekly,
-                          avg_volume_30d, avg_volume_10d, avg_volume_90d,
-                          relative_volume_10d, high_52w, low_52w, beta_1y
-                   FROM historical_data
-                   WHERE ticker = ? AND date = ? LIMIT 1""",
-                (ticker, date),
-            ).fetchone()
-            if row:
-                return dict(row)
-        else:
-            # latest from historical_data
-            row = cur.execute(
-                """SELECT rsi, macd, macd_signal, sma20, sma50, sma200, atr,
-                          recommend_all, recommend_ma, recommend_other,
-                          volatility_daily, volatility_weekly,
-                          avg_volume_30d, avg_volume_10d, avg_volume_90d,
-                          relative_volume_10d, high_52w, low_52w, beta_1y
-                   FROM historical_data
-                   WHERE ticker = ? AND rsi IS NOT NULL
-                   ORDER BY date DESC LIMIT 1""",
-                (ticker,),
-            ).fetchone()
-            if row:
-                return dict(row)
+        # BRAVO-GRACEFUL: detect available indicator columns dynamically
+        hd_cols = {r[1] for r in cur.execute("PRAGMA table_info(historical_data)").fetchall()}
+        all_ind_cols = ["rsi", "macd", "macd_signal", "sma20", "sma50", "sma200", "atr",
+                        "recommend_all", "recommend_ma", "recommend_other",
+                        "volatility_daily", "volatility_weekly",
+                        "avg_volume_30d", "avg_volume_10d", "avg_volume_90d",
+                        "relative_volume_10d", "high_52w", "low_52w", "beta_1y"]
+        available_ind = [c for c in all_ind_cols if c in hd_cols]
+
+        if available_ind:
+            select_list = ", ".join(f'"{c}"' for c in available_ind)
+            if date:
+                row = cur.execute(
+                    f"""SELECT {select_list}
+                       FROM historical_data
+                       WHERE ticker = ? AND date = ? LIMIT 1""",
+                    (ticker, date),
+                ).fetchone()
+                if row:
+                    return dict(row)
+            else:
+                # latest from historical_data where the first indicator is not null
+                first_ind = available_ind[0]
+                row = cur.execute(
+                    f"""SELECT {select_list}
+                       FROM historical_data
+                       WHERE ticker = ? AND "{first_ind}" IS NOT NULL
+                       ORDER BY date DESC LIMIT 1""",
+                    (ticker,),
+                ).fetchone()
+                if row:
+                    return dict(row)
         # Fallback: current snapshot from stocks table
         snap = self.get_snapshot(ticker)
         if snap:
-            ind_keys = [
-                "rsi", "macd", "macd_signal", "sma20", "sma50", "sma200",
-                "atr", "recommend_all", "recommend_ma", "recommend_other",
-                "volatility_daily", "volatility_weekly", "avg_volume_30d",
-                "avg_volume_10d", "avg_volume_90d", "relative_volume_10d",
-                "high_52w", "low_52w", "beta_1y",
-            ]
-            return {k: snap.get(k) for k in ind_keys if k in snap}
+            return {k: snap.get(k) for k in all_ind_cols if k in snap}
         return None
 
     # ═══ READ: market cap + fundamentals ═══════════════════════════════════════
@@ -381,6 +389,23 @@ class DataLayer:
             "current_price": "price",
             "last_updated": "last_update",
         }
+        # Columns that should ALWAYS be overwritten (not COALESCE'd) — fresh data wins
+        force_overwrite = {"price", "change_percent", "volume", "high_price", "low_price",
+                          "open_price", "last_update", "value_traded", "turnover_egp",
+                          "rsi", "macd", "macd_signal", "sma20", "sma50", "sma200", "atr",
+                          "recommend_all", "recommend_ma", "recommend_other",
+                          "volatility_daily", "volatility_weekly",
+                          "avg_volume_30d", "avg_volume_10d", "avg_volume_90d",
+                          "relative_volume_10d", "high_52w", "low_52w", "beta_1y",
+                          "market_cap", "pe_ratio", "pb_ratio", "eps", "sector", "industry"}
+
+        # Ensure unique index on symbol (idempotent)
+        try:
+            cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_de_stocks_symbol ON stocks(symbol)')
+            _conn().commit()
+        except Exception:
+            pass
+
         saved = 0
         for row in rows:
             # Build the values dict with mapped keys
@@ -395,7 +420,14 @@ class DataLayer:
             placeholders = ", ".join(["?"] * len(cols))
             col_list = ", ".join(f'"{c}"' for c in cols)
             update_cols = [c for c in cols if c != "symbol" and c != "id"]
-            update_set = ", ".join(f'"{c}" = COALESCE(excluded."{c}", stocks."{c}")' for c in update_cols)
+            # Force-overwrite critical columns; COALESCE for the rest
+            update_parts = []
+            for c in update_cols:
+                if c in force_overwrite:
+                    update_parts.append(f'"{c}" = excluded."{c}"')
+                else:
+                    update_parts.append(f'"{c}" = COALESCE(excluded."{c}", stocks."{c}")')
+            update_set = ", ".join(update_parts)
             sql = f'''
                 INSERT INTO stocks ({col_list})
                 VALUES ({placeholders})
@@ -405,7 +437,7 @@ class DataLayer:
                 cur.execute(sql, tuple(vals[c] for c in cols))
                 saved += 1
             except Exception as e:
-                # Try without ON CONFLICT (if no unique index)
+                # Fallback: UPDATE then INSERT (if no unique index / ON CONFLICT unsupported)
                 try:
                     update_set2 = ", ".join(f'"{c}" = ?' for c in update_cols)
                     cur.execute(
@@ -414,7 +446,7 @@ class DataLayer:
                     )
                     if cur.rowcount == 0:
                         cur.execute(
-                            f'INSERT INTO stocks ({col_list}) VALUES ({placeholders})',
+                            f'INSERT OR IGNORE INTO stocks ({col_list}) VALUES ({placeholders})',
                             tuple(vals[c] for c in cols),
                         )
                     saved += 1
@@ -488,7 +520,20 @@ class DataLayer:
             placeholders = ", ".join(["?"] * len(cols))
             col_list = ", ".join(f'"{c}"' for c in cols)
             update_cols = [c for c in cols if c not in ("ticker", "date")]
-            update_set = ", ".join(f'"{c}" = COALESCE(excluded."{c}", historical_data."{c}")' for c in update_cols)
+            # Force-overwrite OHLCV + indicators (fresh data wins)
+            force_ow = {"open", "high", "low", "close", "volume", "change_percent",
+                       "last_fetch", "rsi", "macd", "macd_signal", "sma20", "sma50",
+                       "sma200", "atr", "recommend_all", "recommend_ma", "recommend_other",
+                       "volatility_daily", "volatility_weekly", "avg_volume_30d",
+                       "avg_volume_10d", "avg_volume_90d", "relative_volume_10d",
+                       "high_52w", "low_52w", "beta_1y"}
+            update_parts = []
+            for c in update_cols:
+                if c in force_ow:
+                    update_parts.append(f'"{c}" = excluded."{c}"')
+                else:
+                    update_parts.append(f'"{c}" = COALESCE(excluded."{c}", historical_data."{c}")')
+            update_set = ", ".join(update_parts)
 
             try:
                 cur.execute(
@@ -499,13 +544,18 @@ class DataLayer:
                 )
                 saved += 1
             except Exception as e:
-                # Fallback: INSERT OR REPLACE
+                # Fallback: UPDATE then INSERT (if no unique index / ON CONFLICT unsupported)
                 try:
+                    set_clause = ", ".join(f'"{c}" = ?' for c in update_cols)
                     cur.execute(
-                        f"""INSERT OR REPLACE INTO historical_data ({col_list})
-                            VALUES ({placeholders})""",
-                        tuple(vals[c] for c in cols),
+                        f'UPDATE historical_data SET {set_clause} WHERE ticker = ? AND date = ?',
+                        tuple(vals[c] for c in update_cols) + (ticker, today),
                     )
+                    if cur.rowcount == 0:
+                        cur.execute(
+                            f'INSERT OR IGNORE INTO historical_data ({col_list}) VALUES ({placeholders})',
+                            tuple(vals[c] for c in cols),
+                        )
                     saved += 1
                 except Exception as e2:
                     print(f"[data_layer] append_daily_prices error {ticker}: {e2}")
