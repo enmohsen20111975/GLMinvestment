@@ -436,6 +436,7 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
             alive = alive[:max_tickers]
         
         # 5. حلل بـ V3
+        _signals_today = []  # STAGE-5: للـ ranking
         for ticker in alive:
             prices, volumes, highs, lows, opens = get_price_history(ticker, canonical)
             if len(prices) < 50:
@@ -470,13 +471,63 @@ def run(market_code: str, start_date: str | None = None, end_date: str | None = 
                 total_errors += 1
                 print(f"    {ticker}: ERROR — {result.get('reason','?')[:80]}", flush=True)
             else:
-                # BUY / SELL
-                logger.info(f'  {ticker}: {signal} ✓ (state={state}, score={result.get("score",0):.1f}, conf={result.get("confidence",0):.1f})')
+                # BUY / SELL — جمع للـ ranking
+                _signals_today.append({
+                    'ticker': ticker,
+                    'result': result,
+                    'market_cap': _mc,
+                    'free_float': _ff,
+                    'score': result.get('score', 0),
+                    'confidence': result.get('confidence', 0),
+                })
+        
+        # STAGE-5: Ranking — رتّب الإشارات واختار أعلى max_picks
+        _max_picks = max_tickers or 50  # default 50 لو مش محدد
+        if _signals_today:
+            # احسب rank_score لكل إشارة
+            for sig in _signals_today:
+                _score_norm = max(0, min(100, (sig['score'] + 100) / 2))  # -100..100 → 0..100
+                _conf_norm = sig['confidence']  # 0..100
+                _mc = sig.get('market_cap') or 0
+                _vol = 0
+                try:
+                    _prices, _vols, _, _, _ = get_price_history(sig['ticker'], canonical, 5)
+                    _vol = _vols[-1] if _vols else 0
+                except: pass
+                _turnover = _vol * (_prices[-1] if _prices else 0)
+                _intensity = (_turnover / _mc * 100) if _mc and _mc > 0 and _turnover > 0 else 0
+                _intensity_norm = min(100, _intensity / 0.5 * 100)  # 0.5% = 100
+                
+                sig['rank_score'] = (
+                    _score_norm * 0.45 +
+                    _conf_norm * 0.25 +
+                    _intensity_norm * 0.15 +
+                    _score_norm * 0.10 +  # rs_score proxy
+                    _conf_norm * 0.05     # flow_quality proxy
+                )
+            
+            # رتّب تنازليًا
+            _signals_today.sort(key=lambda x: x['rank_score'], reverse=True)
+            
+            # خد أعلى max_picks بس
+            _selected = _signals_today[:_max_picks]
+            _rejected = _signals_today[_max_picks:]
+            
+            for sig in _selected:
+                ticker = sig['ticker']
+                result = sig['result']
+                state = result.get('state', '?')
+                logger.info(f'  {ticker}: {result["signal"]} ✓ (rank={sig["rank_score"]:.1f}, state={state}, score={result.get("score",0):.1f}, conf={result.get("confidence",0):.1f})')
                 if not dry_run:
                     saved = save_prediction(result, canonical, scan_date)
                     if saved:
                         total_saved += 1
-                print(f"    {ticker}: {signal} ✓ (state={state}, score={result.get('score',0):.1f}, conf={result.get('confidence',0):.1f})", flush=True)
+                print(f"    {ticker}: {result['signal']} ✓ (rank={sig['rank_score']:.1f}, state={state}, score={result.get('score',0):.1f}, conf={result.get('confidence',0):.1f})", flush=True)
+            
+            # الباقي → NO_TRADE
+            for sig in _rejected:
+                total_no_trade += 1
+                print(f"    {sig['ticker']}: NO_TRADE (rank={sig['rank_score']:.1f} — below max_picks={_max_picks})", flush=True)
     
     # 6. ملخص
     summary = {
