@@ -128,9 +128,10 @@ def filter_dead_stocks(tickers: list[str], market_code: str) -> tuple[list[str],
                 continue
             
             # فلتر 2: اتأكد إن الأسعار التاريخية مش flat
+            # STAGE-FIX: خفّض من <=2 لـ <=1 (لو فيه سعرين مختلفين → مش flat)
             try:
                 prices, vols, _, _, _ = get_price_history(ticker, market_code, 30)
-                if prices and len(set(prices)) <= 2:
+                if prices and len(set(prices)) <= 1:
                     dead_count += 1
                     continue
             except Exception:

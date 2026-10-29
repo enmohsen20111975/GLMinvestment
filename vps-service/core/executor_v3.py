@@ -215,7 +215,7 @@ def execute_v3(plan, prices=None, volumes=None, ticker=None, market='EGX',
         result.final_signal = 'NO_TRADE'
         _reason = f'signal_score {signal_score:.1f} '
         if not _confidence_ok:
-            _reason += f'+ confidence {result.confidence:.0f} < 58'
+            _reason += f'+ confidence {result.confidence:.0f} < 45'
         if _has_conflict:
             _reason += f' + conflict detected'
         result.no_trade_reason = _reason
