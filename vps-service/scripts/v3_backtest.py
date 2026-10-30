@@ -407,48 +407,51 @@ class TradeSimulator:
 
 
 # ============================================================
-# Database Writer — يكتب النتائج في predictions.db
+# Database Writer — يكتب النتائج في predictions.db (جدول predictions)
 # ============================================================
 
 class BacktestDatabaseWriter:
-    """بـ يكتب نتائج الـ backtest في predictions.db.
+    """بـ يكتب نتائج الـ backtest في جدول 'predictions' نفسه.
 
-    القاعدة: يمسح القديم قبل ما يبدأ (fresh start).
-    بـ يكتب في جدول 'backtest_trades' منفصل عن جدول الإنتاج 'predictions'.
+    القاعدة: مفيش schema جديدة — بـ نضيف column 'is_backtest' فقط.
+    كل صفوف الـ backtest بـ is_backtest=1.
+    صفوف الإنتاج (V3) بـ is_backtest=0 (أو NULL).
+
+    wipe_old_backtests() بـ يمسح بس الصفوف اللي is_backtest=1.
     """
 
-    SCHEMA_SQL = '''
-        CREATE TABLE IF NOT EXISTS backtest_trades (
+    # الـ schema بتاع جدول predictions (من src/lib/honest-tracking/maestro.ts)
+    ENSURE_TABLE_SQL = '''
+        CREATE TABLE IF NOT EXISTS predictions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ticker TEXT NOT NULL,
-            market TEXT NOT NULL,
-            signal_date TEXT NOT NULL,
-            signal TEXT NOT NULL,
+            market TEXT,
+            signal TEXT,
+            signal_type TEXT NOT NULL,
+            prediction_date TEXT NOT NULL,
             entry_price REAL NOT NULL,
             target_price REAL,
             stop_loss REAL,
             master_score REAL,
-            confidence REAL,
-            state_code TEXT,
+            technical_score REAL,
+            fundamental_score REAL,
+            ai_pattern_score REAL,
+            sentiment_score REAL,
+            risk_reward REAL,
+            atr_at_entry REAL,
+            highest_price_reached REAL,
+            outcome_date TEXT,
             exit_price REAL,
-            exit_date TEXT,
+            actual_return REAL,
             exit_reason TEXT,
-            pnl_pct REAL,
+            hit_target INTEGER DEFAULT 0,
+            hit_stop INTEGER DEFAULT 0,
+            is_correct INTEGER,
             holding_days INTEGER,
-            max_favorable_pct REAL,
-            max_adverse_pct REAL,
-            backtest_run_id TEXT NOT NULL,
+            notes TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         )
     '''
-
-    INDEXES_SQL = [
-        'CREATE INDEX IF NOT EXISTS idx_bt_ticker ON backtest_trades(ticker)',
-        'CREATE INDEX IF NOT EXISTS idx_bt_market ON backtest_trades(market)',
-        'CREATE INDEX IF NOT EXISTS idx_bt_signal_date ON backtest_trades(signal_date)',
-        'CREATE INDEX IF NOT EXISTS idx_bt_run_id ON backtest_trades(backtest_run_id)',
-        'CREATE INDEX IF NOT EXISTS idx_bt_exit_reason ON backtest_trades(exit_reason)',
-    ]
 
     def __init__(self, db_path: Path):
         self.db_path = db_path
@@ -456,48 +459,112 @@ class BacktestDatabaseWriter:
         self.run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     def connect(self):
-        """فتح الاتصال + إنشاء الجدول لو مش موجود."""
+        """فتح الاتصال + إنشاء الجدول لو مش موجود + إضافة column is_backtest."""
         self._conn = sqlite3.connect(str(self.db_path))
         cur = self._conn.cursor()
-        cur.execute(self.SCHEMA_SQL)
-        for idx_sql in self.INDEXES_SQL:
-            cur.execute(idx_sql)
+
+        # 1. إنشاء جدول predictions لو مش موجود
+        cur.execute(self.ENSURE_TABLE_SQL)
+
+        # 2. إضافة column is_backtest لو مش موجود
+        cols = [r[1] for r in cur.execute("PRAGMA table_info(predictions)").fetchall()]
+        if 'is_backtest' not in cols:
+            cur.execute('ALTER TABLE predictions ADD COLUMN is_backtest INTEGER DEFAULT 0')
+            logger.info("  ✓ Added column 'is_backtest' to predictions table")
+        if 'persona' not in cols:
+            cur.execute('ALTER TABLE predictions ADD COLUMN persona TEXT DEFAULT NULL')
+            logger.info("  ✓ Added column 'persona' to predictions table")
+
+        # 3. indexes
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_pred_is_backtest ON predictions(is_backtest)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_pred_ticker ON predictions(ticker)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_pred_market ON predictions(market)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_pred_date ON predictions(prediction_date)')
+
         self._conn.commit()
-        logger.info(f"✓ Connected to {self.db_path.name} (backtest_trades table ready)")
+        logger.info(f"✓ Connected to {self.db_path.name} (predictions table ready with is_backtest column)")
 
     def wipe_old_backtests(self):
-        """يمسح كل صفوف الـ backtest القديمة بلا رجعة.
+        """يمسح كل صفوف الـ backtest القديمة (is_backtest=1) بلا رجعة.
 
         القاعدة: 'الآن خلية يمسح الى موجود ويبدأ من جديد'
+        بـ يمسح بس الصفوف اللي is_backtest=1 — صفوف الإنتاج (is_backtest=0) بـ تفضل زي ما هي.
         """
         if not self._conn:
             self.connect()
         cur = self._conn.cursor()
-        cur.execute('DELETE FROM backtest_trades')
+        cur.execute('DELETE FROM predictions WHERE is_backtest = 1')
         deleted = cur.rowcount
         self._conn.commit()
-        logger.info(f"✓ Wiped {deleted} old backtest trades (fresh start)")
+        logger.info(f"✓ Wiped {deleted} old backtest trades (is_backtest=1 — production rows untouched)")
 
     def save_trade(self, trade: BacktestTrade):
-        """حفظ صفقة واحدة في الـ DB."""
+        """حفظ صفقة واحدة في جدول predictions بـ is_backtest=1.
+
+        mapping:
+          BacktestTrade → predictions columns
+          ticker → ticker
+          market → market
+          signal → signal + signal_type
+          signal_date → prediction_date
+          entry_price → entry_price
+          target_price → target_price
+          stop_loss → stop_loss
+          master_score → master_score
+          exit_price → exit_price
+          exit_date → outcome_date
+          exit_reason → exit_reason
+          pnl_pct → actual_return
+          holding_days → holding_days
+          hit_target (1 if target_hit) → hit_target
+          hit_stop (1 if stop_hit) → hit_stop
+          confidence + state_code + max_fav + max_adv + run_id → notes (JSON)
+          is_backtest = 1
+          persona = 'backtest'
+        """
         if not self._conn:
             self.connect()
         cur = self._conn.cursor()
+
+        # بناء notes كـ JSON (بيانات إضافية مش ليها columns مخصصة)
+        notes_json = json.dumps({
+            'confidence': trade.confidence,
+            'state_code': trade.state_code,
+            'max_favorable_pct': round(trade.max_favorable_pct, 2),
+            'max_adverse_pct': round(trade.max_adverse_pct, 2),
+            'backtest_run_id': self.run_id,
+        }, ensure_ascii=False)
+
+        # hit_target / hit_stop
+        hit_target = 1 if trade.exit_reason == 'target_hit' else 0
+        hit_stop = 1 if trade.exit_reason == 'stop_hit' else 0
+
         cur.execute('''
-            INSERT INTO backtest_trades
-                (ticker, market, signal_date, signal, entry_price, target_price,
-                 stop_loss, master_score, confidence, state_code, exit_price,
-                 exit_date, exit_reason, pnl_pct, holding_days,
-                 max_favorable_pct, max_adverse_pct, backtest_run_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO predictions
+                (ticker, market, signal, signal_type, prediction_date,
+                 entry_price, target_price, stop_loss, master_score,
+                 outcome_date, exit_price, actual_return, exit_reason,
+                 hit_target, hit_stop, holding_days, notes,
+                 is_backtest, persona, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'backtest', datetime('now'))
         ''', (
-            trade.ticker, trade.market, trade.signal_date, trade.signal,
-            trade.entry_price, trade.target_price, trade.stop_loss,
-            trade.master_score, trade.confidence, trade.state_code,
-            trade.exit_price, trade.exit_date, trade.exit_reason,
-            trade.pnl_pct, trade.holding_days,
-            trade.max_favorable_pct, trade.max_adverse_pct,
-            self.run_id,
+            trade.ticker,
+            trade.market,
+            trade.signal,
+            trade.signal,          # signal_type = signal (NOT NULL)
+            trade.signal_date,      # prediction_date
+            trade.entry_price,
+            trade.target_price,
+            trade.stop_loss,
+            trade.master_score,
+            trade.exit_date or None,    # outcome_date
+            trade.exit_price or 0,      # exit_price
+            trade.pnl_pct,              # actual_return
+            trade.exit_reason,          # exit_reason
+            hit_target,
+            hit_stop,
+            trade.holding_days,
+            notes_json,
         ))
 
     def save_all(self, trades: List[BacktestTrade]):
@@ -507,7 +574,7 @@ class BacktestDatabaseWriter:
         for trade in trades:
             self.save_trade(trade)
         self._conn.commit()
-        logger.info(f"✓ Saved {len(trades)} trades to DB (run_id={self.run_id})")
+        logger.info(f"✓ Saved {len(trades)} backtest trades to predictions table (is_backtest=1, run_id={self.run_id})")
 
     def close(self):
         if self._conn:
@@ -515,20 +582,26 @@ class BacktestDatabaseWriter:
             self._conn = None
 
     def get_stats(self) -> dict:
-        """جيب إحصائيات الـ backtest من الـ DB."""
+        """جيب إحصائيات الـ backtest من جدول predictions (is_backtest=1 فقط)."""
         if not self._conn:
             self.connect()
         cur = self._conn.cursor()
-        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+
+        cur.execute('SELECT COUNT(*) FROM predictions WHERE is_backtest = 1 AND notes LIKE ?', (f'%{self.run_id}%',))
         total = cur.fetchone()[0]
-        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ? AND exit_reason != "pending"', (self.run_id,))
+
+        cur.execute('SELECT COUNT(*) FROM predictions WHERE is_backtest = 1 AND notes LIKE ? AND exit_reason != "pending"', (f'%{self.run_id}%',))
         closed = cur.fetchone()[0]
-        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ? AND pnl_pct > 0', (self.run_id,))
+
+        cur.execute('SELECT COUNT(*) FROM predictions WHERE is_backtest = 1 AND notes LIKE ? AND actual_return > 0', (f'%{self.run_id}%',))
         wins = cur.fetchone()[0]
-        cur.execute('SELECT AVG(pnl_pct) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+
+        cur.execute('SELECT AVG(actual_return) FROM predictions WHERE is_backtest = 1 AND notes LIKE ?', (f'%{self.run_id}%',))
         avg_pnl = cur.fetchone()[0] or 0
-        cur.execute('SELECT SUM(pnl_pct) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+
+        cur.execute('SELECT SUM(actual_return) FROM predictions WHERE is_backtest = 1 AND notes LIKE ?', (f'%{self.run_id}%',))
         total_pnl = cur.fetchone()[0] or 0
+
         return {
             'run_id': self.run_id,
             'total_trades': total,
