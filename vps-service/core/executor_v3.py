@@ -270,10 +270,12 @@ def _calculate_dynamic_levels(signal, prices, volumes, plan, family_scores):
     # 4. حساب entry/target/stop
     if is_buy:
         # BUY: stop تحت الدخول، target فوقه
+        # stop = الأقرب من (ATR-based, support) — الحماية الأقرب أحسن
         stop_loss = min(
             entry - (atr * stop_mult),  # ATR-based
             support * 0.995  # أو تحت الدعم مباشرة
         )
+        # target = الأبعد من (ATR-based, resistance) — الطموح الأبعد أحسن
         target_price = max(
             entry + (atr * target_mult),  # ATR-based
             resistance * 1.005  # أو فوق المقاومة
@@ -281,17 +283,19 @@ def _calculate_dynamic_levels(signal, prices, volumes, plan, family_scores):
         target_2 = entry + (atr * target_mult * 1.5)  # هدف ثاني أبعد
     else:
         # SELL: stop فوق الدخول، target تحته
-        stop_loss = max(
+        # stop = الأقرب من (ATR-based, resistance) — الحماية الأقرب أحسن
+        stop_loss = min(
             entry + (atr * stop_mult),  # ATR-based
             resistance * 1.005  # أو فوق المقاومة مباشرة
         )
-        target_price = min(
+        # target = الأبعد من (ATR-based, support) — الطموح الأبعد أحسن
+        target_price = max(
             entry - (atr * target_mult),  # ATR-based
             support * 0.995  # أو تحت الدعم
         )
         target_2 = entry - (atr * target_mult * 1.5)  # هدف ثاني أبعد
     
-    # 5. فلتر: stop لازم يكون منطقي (مش قريب أوي)
+    # 5. فلتر: stop + target لازم يكونوا منطقيين
     min_stop_distance = atr * 0.5  # أقل نص ATR
     if is_buy:
         if (entry - stop_loss) < min_stop_distance:
@@ -299,6 +303,27 @@ def _calculate_dynamic_levels(signal, prices, volumes, plan, family_scores):
     else:
         if (stop_loss - entry) < min_stop_distance:
             stop_loss = entry + min_stop_distance
+    
+    # ALPHA-FIX: R/R minimum = 1.5
+    # المشكلة: target قريب أوي (0.5%) بينما stop بعيد (5-12%)
+    # الحل: target لازم يكون على الأقل 1.5× stop distance
+    stop_distance = abs(entry - stop_loss)
+    target_distance = abs(target_price - entry)
+    min_target = stop_distance * 1.5  # R/R = 1.5 على الأقل
+    
+    if target_distance < min_target:
+        # وسّع الـ target لـ يحقق R/R = 1.5 على الأقل
+        if is_buy:
+            target_price = entry + min_target
+        else:
+            target_price = entry - min_target
+        target_distance = min_target
+    
+    # كمان target_2 = 2× target_distance
+    if is_buy:
+        target_2 = entry + (target_distance * 2)
+    else:
+        target_2 = entry - (target_distance * 2)
     
     return {
         'entry_price': round(entry, 4),
