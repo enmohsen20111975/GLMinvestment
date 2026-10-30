@@ -304,20 +304,32 @@ def _calculate_dynamic_levels(signal, prices, volumes, plan, family_scores):
         if (stop_loss - entry) < min_stop_distance:
             stop_loss = entry + min_stop_distance
     
-    # ALPHA-FIX: R/R minimum = 1.5
-    # المشكلة: target قريب أوي (0.5%) بينما stop بعيد (5-12%)
-    # الحل: target لازم يكون على الأقل 1.5× stop distance
+    # ALPHA-FIX (2026-10-31): R/R check — لو أقل من 1.5 → اقتل الإشارة
+    # المشكلة: في S6 (هبوط)، الدعم قريب → target قريب → R/R ضعيف
+    # الحل الصحيح: مش نمد الهدف (ده تلفيق)، بل نرفض الإشارة
+    # القاعدة: R/R < 1.5 = NO_TRADE (إشارة ضعيفة)
     stop_distance = abs(entry - stop_loss)
     target_distance = abs(target_price - entry)
-    min_target = stop_distance * 1.5  # R/R = 1.5 على الأقل
+    actual_rr = target_distance / stop_distance if stop_distance > 0 else 0
     
-    if target_distance < min_target:
-        # وسّع الـ target لـ يحقق R/R = 1.5 على الأقل
-        if is_buy:
-            target_price = entry + min_target
-        else:
-            target_price = entry - min_target
-        target_distance = min_target
+    if actual_rr < 1.5:
+        # إشارة ضعيفة — R/R أقل من 1.5 → لا تتداول
+        return {
+            'entry_price': round(entry, 4),
+            'target_price': round(target_price, 4),
+            'stop_loss': round(stop_loss, 4),
+            'target_price_2': 0.0,
+            'atr': round(atr, 4),
+            'atr_pct': round(atr_pct, 2),
+            'support': round(support, 4),
+            'resistance': round(resistance, 4),
+            'state_code': state_code,
+            'stop_mult': stop_mult,
+            'target_mult': target_mult,
+            'rr': round(actual_rr, 2),
+            'method': 'ATR+support/resistance — R/R too low (rejected)',
+            'rejected': True,  # علامة إن الإشارة مرفوضة
+        }
     
     # كمان target_2 = 2× target_distance
     if is_buy:
