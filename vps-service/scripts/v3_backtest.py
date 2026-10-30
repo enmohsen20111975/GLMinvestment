@@ -79,6 +79,12 @@ class BacktestTrade:
     holding_days: int = 0
     max_favorable_pct: float = 0.0  # أعلى ربح وصل له
     max_adverse_pct: float = 0.0   # أكبر خسارة وصل لها
+    # ALPHA-DYNAMIC: بيانات إضافية من V3 risk_profile
+    atr: float = 0.0
+    atr_pct: float = 0.0
+    support: float = 0.0
+    resistance: float = 0.0
+    method: str = 'static'  # static / ATR+support/resistance (dynamic)
 
 
 @dataclass
@@ -291,14 +297,29 @@ class V3Simulator:
             if result.final_signal == 'NO_TRADE':
                 return None
 
+            # ALPHA-DYNAMIC (2026-10-31): استخدم risk_profile من V3 (مش نسب ثابتة)
+            risk_profile = getattr(result, 'risk_profile', {}) or {}
+            
+            if risk_profile and risk_profile.get('entry_price'):
+                # V3 بـ يـ emit risk_profile — استخدمه (الـ levels الديناميكية)
+                entry_price = float(risk_profile.get('entry_price', prices[-1]))
+                target_price = float(risk_profile.get('target_price', 0.0))
+                stop_loss = float(risk_profile.get('stop_loss', 0.0))
+            else:
+                # fallback: لو risk_profile مش موجود
+                entry_price = prices[-1]
+                target_price = prices[-1] * 1.05 if 'BUY' in result.final_signal else prices[-1] * 0.95
+                stop_loss = prices[-1] * 0.97 if 'BUY' in result.final_signal else prices[-1] * 1.03
+
             return {
                 'signal': result.final_signal,
-                'entry_price': prices[-1],
-                'target_price': prices[-1] * 1.05 if 'BUY' in result.final_signal else prices[-1] * 0.95,
-                'stop_loss': prices[-1] * 0.97 if 'BUY' in result.final_signal else prices[-1] * 1.03,
+                'entry_price': entry_price,
+                'target_price': target_price,
+                'stop_loss': stop_loss,
                 'master_score': result.signal_score,
                 'confidence': result.confidence,
                 'state_code': state_code,
+                'risk_profile': risk_profile,  # للحفظ في notes
             }
         except Exception as e:
             logger.debug(f"  {ticker}: analyze failed: {e}")
@@ -532,6 +553,11 @@ class BacktestDatabaseWriter:
             'state_code': trade.state_code,
             'max_favorable_pct': round(trade.max_favorable_pct, 2),
             'max_adverse_pct': round(trade.max_adverse_pct, 2),
+            'atr': round(trade.atr, 4),
+            'atr_pct': round(trade.atr_pct, 2),
+            'support': round(trade.support, 4),
+            'resistance': round(trade.resistance, 4),
+            'method': trade.method,
             'backtest_run_id': self.run_id,
         }, ensure_ascii=False)
 
@@ -700,6 +726,8 @@ class V3BacktestEngine:
                     continue
 
                 # سجل الصفقة
+                # ALPHA-DYNAMIC: استخراج بيانات risk_profile
+                _rp = analysis.get('risk_profile', {})
                 trade = BacktestTrade(
                     ticker=ticker,
                     market=self.market,
@@ -711,6 +739,12 @@ class V3BacktestEngine:
                     master_score=analysis['master_score'],
                     confidence=analysis['confidence'],
                     state_code=analysis['state_code'],
+                    # ALPHA-DYNAMIC: بيانات الـ risk_profile
+                    atr=float(_rp.get('atr', 0) or 0),
+                    atr_pct=float(_rp.get('atr_pct', 0) or 0),
+                    support=float(_rp.get('support', 0) or 0),
+                    resistance=float(_rp.get('resistance', 0) or 0),
+                    method=str(_rp.get('method', 'static')),
                 )
 
                 # جيب الأسعار المستقبلية

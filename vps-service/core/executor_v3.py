@@ -132,7 +132,146 @@ def execute_v3(plan, prices=None, volumes=None, ticker=None, market='EGX'):
     
     result.complete = True
     result.completed_at = datetime.now().isoformat()
+    
+    # ALPHA-DYNAMIC (2026-10-31): حساب entry/target/stop ديناميكي
+    # ماينفعش ثابت — كل سهم وكل سوق ليه منطق خاص
+    if result.final_signal != 'NO_TRADE':
+        result.risk_profile = _calculate_dynamic_levels(
+            result.final_signal, prices, volumes, plan, family_scores
+        )
+    
     return result
+
+
+def _calculate_dynamic_levels(signal, prices, volumes, plan, family_scores):
+    """حساب entry/target/stop ديناميكي لكل سهم.
+    
+    ALPHA-DYNAMIC (2026-10-31): كل سهم وكل سوق ليه منطق خاص.
+    ماينفعش نسبة ثابتة — لازم نحسب:
+      1. ATR (مدى تداول السهم) → لتحديد stop + target
+      2. recent swing low/high → support/resistance
+      3. market regime → ضبط المعاملات حسب حالة السوق
+      4. confidence → ضبط المسافات
+    
+    Returns:
+        dict: {
+            'entry_price': float,
+            'target_price': float,
+            'stop_loss': float,
+            'target_price_2': float,  # هدف ثاني
+            'atr': float,
+            'atr_pct': float,
+            'support': float,  # أقرب دعم
+            'resistance': float,  # أقرب مقاومة
+            'method': str,  # طريقة الحساب
+        }
+    """
+    if not prices or len(prices) < 5:
+        return {}
+    
+    entry = prices[-1]
+    is_buy = 'BUY' in str(signal).upper()
+    
+    # 1. حساب ATR (مدى تداول السهم)
+    atr = None
+    atr_pct = 0.0
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from analyzers.indicators.atr import calc_atr
+        # بناء highs/lows لو مش متاحين (proxy من prices)
+        _highs = []
+        _lows = []
+        for i in range(1, len(prices)):
+            _change = abs(prices[i] - prices[i-1])
+            _highs.append(max(prices[i], prices[i-1]) + _change * 0.3)
+            _lows.append(min(prices[i], prices[i-1]) - _change * 0.3)
+        if len(_highs) >= 14:
+            atr = calc_atr(_highs[-14:], _lows[-14:], prices[-14:], 14)
+        if atr is None or atr <= 0:
+            # fallback: متوسط المدى اليومي
+            if len(prices) >= 5:
+                ranges = [abs(prices[i] - prices[i-1]) for i in range(1, min(len(prices), 15))]
+                atr = sum(ranges) / len(ranges) if ranges else entry * 0.02
+            else:
+                atr = entry * 0.02  # fallback: 2% من السعر
+        atr_pct = (atr / entry * 100) if entry > 0 else 2.0
+    except Exception:
+        atr = entry * 0.02  # fallback: 2%
+        atr_pct = 2.0
+    
+    # 2. حساب support/resistance (recent swing low/high)
+    lookback = min(len(prices), 20)
+    recent_prices = prices[-lookback:]
+    support = min(recent_prices)  # أقل سعر في آخر 20 يوم
+    resistance = max(recent_prices)  # أعلى سعر في آخر 20 يوم
+    
+    # 3. ضبط المعاملات حسب market regime
+    state_code = getattr(plan, 'state_code', 'S9')
+    # في السوق الهابط: stop أوسع + target أقل (الحذر)
+    # في السوق الصاعد: stop أضيق + target أعلى (الثقة)
+    if state_code in ('S1', 'S2'):  # صاعد
+        stop_mult = 1.5   # 1.5 × ATR
+        target_mult = 3.0  # 3.0 × ATR
+    elif state_code in ('S5', 'S6'):  # هابط
+        stop_mult = 2.0   # 2.0 × ATR (أوسع — السوق متقلب)
+        target_mult = 2.0  # 2.0 × ATR (أقل — الحذر)
+    elif state_code == 'S7':  # تذبذب مرتفع
+        stop_mult = 2.5   # 2.5 × ATR (أوسع جداً)
+        target_mult = 2.5  # 2.5 × ATR
+    elif state_code == 'S8':  # سيولة ضعيفة
+        stop_mult = 2.0   # 2.0 × ATR
+        target_mult = 1.5  # 1.5 × ATR (أقل — صعب يطلع)
+    else:  # S3, S4, S9, S10 (عرضي/متعارض)
+        stop_mult = 1.8   # 1.8 × ATR
+        target_mult = 2.5  # 2.5 × ATR
+    
+    # 4. حساب entry/target/stop
+    if is_buy:
+        # BUY: stop تحت الدخول، target فوقه
+        stop_loss = min(
+            entry - (atr * stop_mult),  # ATR-based
+            support * 0.995  # أو تحت الدعم مباشرة
+        )
+        target_price = max(
+            entry + (atr * target_mult),  # ATR-based
+            resistance * 1.005  # أو فوق المقاومة
+        )
+        target_2 = entry + (atr * target_mult * 1.5)  # هدف ثاني أبعد
+    else:
+        # SELL: stop فوق الدخول، target تحته
+        stop_loss = max(
+            entry + (atr * stop_mult),  # ATR-based
+            resistance * 1.005  # أو فوق المقاومة مباشرة
+        )
+        target_price = min(
+            entry - (atr * target_mult),  # ATR-based
+            support * 0.995  # أو تحت الدعم
+        )
+        target_2 = entry - (atr * target_mult * 1.5)  # هدف ثاني أبعد
+    
+    # 5. فلتر: stop لازم يكون منطقي (مش قريب أوي)
+    min_stop_distance = atr * 0.5  # أقل نص ATR
+    if is_buy:
+        if (entry - stop_loss) < min_stop_distance:
+            stop_loss = entry - min_stop_distance
+    else:
+        if (stop_loss - entry) < min_stop_distance:
+            stop_loss = entry + min_stop_distance
+    
+    return {
+        'entry_price': round(entry, 4),
+        'target_price': round(target_price, 4),
+        'stop_loss': round(stop_loss, 4),
+        'target_price_2': round(target_2, 4),
+        'atr': round(atr, 4),
+        'atr_pct': round(atr_pct, 2),
+        'support': round(support, 4),
+        'resistance': round(resistance, 4),
+        'state_code': state_code,
+        'stop_mult': stop_mult,
+        'target_mult': target_mult,
+        'method': 'ATR+support/resistance (dynamic)',
+    }
 
 
 def _run_family_engine(family, plan, prices, volumes, ticker, market):
