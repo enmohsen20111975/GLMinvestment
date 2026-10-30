@@ -407,6 +407,140 @@ class TradeSimulator:
 
 
 # ============================================================
+# Database Writer — يكتب النتائج في predictions.db
+# ============================================================
+
+class BacktestDatabaseWriter:
+    """بـ يكتب نتائج الـ backtest في predictions.db.
+
+    القاعدة: يمسح القديم قبل ما يبدأ (fresh start).
+    بـ يكتب في جدول 'backtest_trades' منفصل عن جدول الإنتاج 'predictions'.
+    """
+
+    SCHEMA_SQL = '''
+        CREATE TABLE IF NOT EXISTS backtest_trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            market TEXT NOT NULL,
+            signal_date TEXT NOT NULL,
+            signal TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            target_price REAL,
+            stop_loss REAL,
+            master_score REAL,
+            confidence REAL,
+            state_code TEXT,
+            exit_price REAL,
+            exit_date TEXT,
+            exit_reason TEXT,
+            pnl_pct REAL,
+            holding_days INTEGER,
+            max_favorable_pct REAL,
+            max_adverse_pct REAL,
+            backtest_run_id TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    '''
+
+    INDEXES_SQL = [
+        'CREATE INDEX IF NOT EXISTS idx_bt_ticker ON backtest_trades(ticker)',
+        'CREATE INDEX IF NOT EXISTS idx_bt_market ON backtest_trades(market)',
+        'CREATE INDEX IF NOT EXISTS idx_bt_signal_date ON backtest_trades(signal_date)',
+        'CREATE INDEX IF NOT EXISTS idx_bt_run_id ON backtest_trades(backtest_run_id)',
+        'CREATE INDEX IF NOT EXISTS idx_bt_exit_reason ON backtest_trades(exit_reason)',
+    ]
+
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self._conn: Optional[sqlite3.Connection] = None
+        self.run_id = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    def connect(self):
+        """فتح الاتصال + إنشاء الجدول لو مش موجود."""
+        self._conn = sqlite3.connect(str(self.db_path))
+        cur = self._conn.cursor()
+        cur.execute(self.SCHEMA_SQL)
+        for idx_sql in self.INDEXES_SQL:
+            cur.execute(idx_sql)
+        self._conn.commit()
+        logger.info(f"✓ Connected to {self.db_path.name} (backtest_trades table ready)")
+
+    def wipe_old_backtests(self):
+        """يمسح كل صفوف الـ backtest القديمة بلا رجعة.
+
+        القاعدة: 'الآن خلية يمسح الى موجود ويبدأ من جديد'
+        """
+        if not self._conn:
+            self.connect()
+        cur = self._conn.cursor()
+        cur.execute('DELETE FROM backtest_trades')
+        deleted = cur.rowcount
+        self._conn.commit()
+        logger.info(f"✓ Wiped {deleted} old backtest trades (fresh start)")
+
+    def save_trade(self, trade: BacktestTrade):
+        """حفظ صفقة واحدة في الـ DB."""
+        if not self._conn:
+            self.connect()
+        cur = self._conn.cursor()
+        cur.execute('''
+            INSERT INTO backtest_trades
+                (ticker, market, signal_date, signal, entry_price, target_price,
+                 stop_loss, master_score, confidence, state_code, exit_price,
+                 exit_date, exit_reason, pnl_pct, holding_days,
+                 max_favorable_pct, max_adverse_pct, backtest_run_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            trade.ticker, trade.market, trade.signal_date, trade.signal,
+            trade.entry_price, trade.target_price, trade.stop_loss,
+            trade.master_score, trade.confidence, trade.state_code,
+            trade.exit_price, trade.exit_date, trade.exit_reason,
+            trade.pnl_pct, trade.holding_days,
+            trade.max_favorable_pct, trade.max_adverse_pct,
+            self.run_id,
+        ))
+
+    def save_all(self, trades: List[BacktestTrade]):
+        """حفظ كل الصفقات مرة واحدة."""
+        if not self._conn:
+            self.connect()
+        for trade in trades:
+            self.save_trade(trade)
+        self._conn.commit()
+        logger.info(f"✓ Saved {len(trades)} trades to DB (run_id={self.run_id})")
+
+    def close(self):
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def get_stats(self) -> dict:
+        """جيب إحصائيات الـ backtest من الـ DB."""
+        if not self._conn:
+            self.connect()
+        cur = self._conn.cursor()
+        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+        total = cur.fetchone()[0]
+        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ? AND exit_reason != "pending"', (self.run_id,))
+        closed = cur.fetchone()[0]
+        cur.execute('SELECT COUNT(*) FROM backtest_trades WHERE backtest_run_id = ? AND pnl_pct > 0', (self.run_id,))
+        wins = cur.fetchone()[0]
+        cur.execute('SELECT AVG(pnl_pct) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+        avg_pnl = cur.fetchone()[0] or 0
+        cur.execute('SELECT SUM(pnl_pct) FROM backtest_trades WHERE backtest_run_id = ?', (self.run_id,))
+        total_pnl = cur.fetchone()[0] or 0
+        return {
+            'run_id': self.run_id,
+            'total_trades': total,
+            'closed_trades': closed,
+            'wins': wins,
+            'win_rate': (wins / closed * 100) if closed > 0 else 0,
+            'avg_pnl_pct': avg_pnl,
+            'total_pnl_pct': total_pnl,
+        }
+
+
+# ============================================================
 # Main Backtest Engine
 # ============================================================
 
@@ -414,12 +548,14 @@ class V3BacktestEngine:
     """المحرك الرئيسي للـ backtest."""
 
     def __init__(self, market: str, start_date: str, end_date: str,
-                 max_tickers: int = 0, dry_run: bool = False):
+                 max_tickers: int = 0, dry_run: bool = False,
+                 db_writer: Optional[BacktestDatabaseWriter] = None):
         self.market = market
         self.start_date = start_date
         self.end_date = end_date
         self.max_tickers = max_tickers
         self.dry_run = dry_run
+        self.db_writer = db_writer
 
         self.loader = HistoricalDataLoader(STOCKS_DB, DATA_ENGINE_DB)
         self.simulator = V3Simulator()
@@ -439,6 +575,11 @@ class V3BacktestEngine:
         logger.info(f"  Max tickers: {self.max_tickers or 'ALL'}")
         logger.info(f"  Dry-run: {self.dry_run}")
         logger.info(f"{'='*60}")
+
+        # 0. لو فيه DB writer → امسح القديم قبل ما تبدأ
+        if self.db_writer and not self.dry_run:
+            self.db_writer.connect()
+            self.db_writer.wipe_old_backtests()
 
         # 1. جيب كل tickers
         tickers = self.loader.get_tickers(self.market)
@@ -658,12 +799,20 @@ def main():
                         help='تجربة جافة (بدون backtest فعلي)')
     parser.add_argument('--output-dir', default='backtest_results',
                         help='مجلد الإخراج')
+    parser.add_argument('--no-db', action='store_true',
+                        help='عدم الكتابة في predictions.db')
     args = parser.parse_args()
 
     # تحقق من الـ DBs
     if not STOCKS_DB.exists():
         logger.error(f"stocks.db not found at {STOCKS_DB}")
         sys.exit(1)
+
+    # إعداد الـ DB writer
+    db_writer = None
+    if not args.no_db and not args.dry_run:
+        PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
+        db_writer = BacktestDatabaseWriter(PREDICTIONS_DB)
 
     # تشغيل الـ backtest
     engine = V3BacktestEngine(
@@ -672,8 +821,20 @@ def main():
         end_date=args.end,
         max_tickers=args.max_tickers,
         dry_run=args.dry_run,
+        db_writer=db_writer,
     )
     result = engine.run()
+
+    # حفظ الصفقات في الـ DB
+    if db_writer and result.trades:
+        db_writer.save_all(result.trades)
+        db_stats = db_writer.get_stats()
+        print(f"\n  📊 DB Stats (run_id={db_stats['run_id']}):")
+        print(f"    trades in DB: {db_stats['total_trades']}")
+        print(f"    win rate: {db_stats['win_rate']:.2f}%")
+        print(f"    avg pnl: {db_stats['avg_pnl_pct']:.2f}%")
+        print(f"    total pnl: {db_stats['total_pnl_pct']:.2f}%")
+        db_writer.close()
 
     # طباعة الملخص
     print(f"\n{'='*60}")
@@ -689,7 +850,7 @@ def main():
     print(f"  Sharpe Ratio: {result.sharpe_ratio:.2f}")
     print(f"{'='*60}\n")
 
-    # حفظ التقرير
+    # حفظ التقرير (Markdown + JSON)
     if not args.dry_run:
         output_dir = PROJECT_ROOT / args.output_dir
         md_path, json_path = generate_report(result, output_dir)
