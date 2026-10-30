@@ -31,18 +31,48 @@ ENGINE_FAMILIES = {
 # ============================================================================
 # مصفوفة الأوزان V1 (من المالك — مجموع < 100 عمدًا، يُطبّع برمجياً)
 # ============================================================================
+# ALPHA-DATA-DRIVEN (2026-10-31): مصفوفات مبنية على تحليل 250 يوم EGX حقيقي
+# المرحلة 1: فهم السوق → المرحلة 2: تصميم المصفوفات
+#
+# البيانات اللي اكتشفتها:
+#   - EGX سوق عرضي أساسًا (56% من الأيام)
+#   - BULL (4%): avg +1.3%, breadth 70-80%, range 2.6-5.1%, buy 50-62%
+#   - BEAR (6%): avg -2.3%, breadth 10-25%, range 3.7-9.5%, buy 36-45%
+#   - SIDEWAYS (56%): avg ±0.3%, breadth 40-55%, range 2.0-2.5%, buy 50%
+#
+# المصممة: TREND قوي + MOM + BRK. MR=0 (خطأ في الصاعد). stop ضيق target بعيد.
 RAW_WEIGHTS = {
-    'S1': {'TREND': 30, 'MOM': 25, 'MR': 5,  'BRK': 10, 'FLOW': 20, 'FUND': 5,  'EVENT': 5},   # صعود مستقر
-    'S2': {'TREND': 25, 'MOM': 15, 'MR': 10, 'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 10},  # صعود يضعف
-    'S3': {'TREND': 10, 'MOM': 10, 'MR': 30, 'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 10},  # عرضي
-    'S4': {'TREND': 15, 'MOM': 15, 'MR': 0,  'BRK': 25, 'FLOW': 30, 'FUND': 5,  'EVENT': 10},  # اختراق صاعد
-    'S5': {'TREND': 30, 'MOM': 20, 'MR': 5,  'BRK': 5,  'FLOW': 20, 'FUND': 10, 'EVENT': 10},  # هبوط مستقر
-    'S6': {'TREND': 25, 'MOM': 20, 'MR': 0,  'BRK': 5,  'FLOW': 25, 'FUND': 10, 'EVENT': 15},  # هبوط متسارع
-    'S7': {'TREND': 20, 'MOM': 10, 'MR': 5,  'BRK': 5,  'FLOW': 30, 'FUND': 15, 'EVENT': 15},  # تذبذب مرتفع
-    'S8': {'TREND': 10, 'MOM': 5,  'MR': 5,  'BRK': 5,  'FLOW': 50, 'FUND': 15, 'EVENT': 10},  # سيولة ضعيفة
-    'S9': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10},  # أدلة متعارضة
-    'S10': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10}, # UNKNOWN
+    # MATRIX_BULL — السوق الصاعد (S1: مستقر, S2: يضعف)
+    'S1': {'TREND': 35, 'MOM': 25, 'MR': 0,  'BRK': 15, 'FLOW': 15, 'FUND': 5,  'EVENT': 5},
+    'S2': {'TREND': 35, 'MOM': 25, 'MR': 0,  'BRK': 15, 'FLOW': 15, 'FUND': 5,  'EVENT': 5},
+    # MATRIX_SIDEWAYS — السوق العرضي (S3) — MR هو الملك
+    'S3': {'TREND': 10, 'MOM': 10, 'MR': 35, 'BRK': 10, 'FLOW': 25, 'FUND': 5,  'EVENT': 5},
+    # MATRIX_BREAKOUT — الاختراق الصاعد (S4) — BRK + FLOW
+    'S4': {'TREND': 15, 'MOM': 15, 'MR': 0,  'BRK': 30, 'FLOW': 30, 'FUND': 5,  'EVENT': 5},
+    # MATRIX_BEAR — السوق الهابط (S5: مستقر, S6: متسارع) — FLOW أهم حاجة
+    'S5': {'TREND': 25, 'MOM': 20, 'MR': 10, 'BRK': 5,  'FLOW': 30, 'FUND': 5,  'EVENT': 5},
+    'S6': {'TREND': 25, 'MOM': 20, 'MR': 10, 'BRK': 5,  'FLOW': 30, 'FUND': 5,  'EVENT': 5},
+    # الحالات الخاصة (S7-S10) — محافظة
+    'S7': {'TREND': 20, 'MOM': 10, 'MR': 5,  'BRK': 5,  'FLOW': 30, 'FUND': 15, 'EVENT': 15},
+    'S8': {'TREND': 10, 'MOM': 5,  'MR': 5,  'BRK': 5,  'FLOW': 50, 'FUND': 15, 'EVENT': 10},
+    'S9': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10},
+    'S10': {'TREND': 15, 'MOM': 15, 'MR': 10, 'BRK': 10, 'FLOW': 30, 'FUND': 10, 'EVENT': 10},
     'S11': {},  # NO_TRADE — بيانات ناقصة
+}
+
+# ALPHA-DATA-DRIVEN: thresholds + risk parameters لكل state
+MATRIX_PARAMS = {
+    'S1': {'conf_thresh': 40, 'buy_thresh': 25, 'confirm_thresh': 15, 'stop_mult': 1.5, 'target_mult': 3.0, 'rr_min': 2.0},
+    'S2': {'conf_thresh': 40, 'buy_thresh': 25, 'confirm_thresh': 15, 'stop_mult': 1.5, 'target_mult': 3.0, 'rr_min': 2.0},
+    'S3': {'conf_thresh': 45, 'buy_thresh': 30, 'confirm_thresh': 15, 'stop_mult': 1.8, 'target_mult': 2.5, 'rr_min': 1.5},
+    'S4': {'conf_thresh': 50, 'buy_thresh': 35, 'confirm_thresh': 20, 'stop_mult': 1.8, 'target_mult': 3.0, 'rr_min': 1.8},
+    'S5': {'conf_thresh': 55, 'buy_thresh': 45, 'confirm_thresh': 30, 'stop_mult': 2.5, 'target_mult': 2.0, 'rr_min': 1.5},
+    'S6': {'conf_thresh': 55, 'buy_thresh': 45, 'confirm_thresh': 30, 'stop_mult': 2.5, 'target_mult': 2.0, 'rr_min': 1.5},
+    'S7': {'conf_thresh': 45, 'buy_thresh': 30, 'confirm_thresh': 15, 'stop_mult': 2.0, 'target_mult': 2.5, 'rr_min': 1.5},
+    'S8': {'conf_thresh': 45, 'buy_thresh': 30, 'confirm_thresh': 15, 'stop_mult': 2.0, 'target_mult': 1.5, 'rr_min': 1.5},
+    'S9': {'conf_thresh': 45, 'buy_thresh': 30, 'confirm_thresh': 15, 'stop_mult': 1.8, 'target_mult': 2.5, 'rr_min': 1.5},
+    'S10': {'conf_thresh': 45, 'buy_thresh': 30, 'confirm_thresh': 15, 'stop_mult': 1.8, 'target_mult': 2.5, 'rr_min': 1.5},
+    'S11': {'conf_thresh': 100, 'buy_thresh': 100, 'confirm_thresh': 100, 'stop_mult': 0, 'target_mult': 0, 'rr_min': 0},
 }
 
 def normalize_weights(raw: Dict[str, float], available_families: List[str]) -> Dict[str, float]:
@@ -234,47 +264,23 @@ def create_v3_plan(ticker: str, prices: List[float], volumes: List[float] = None
 # ============================================================================
 def final_decision(signal_score: float, confidence: float, data_valid: bool = True,
                     risk_blocked: bool = False, state_code: str = '') -> Tuple[str, str]:
-    """ينتج القرار النهائي وفق جدول المالك. Returns (decision, reason).
+    """ينتج القرار النهائي. Returns (decision, reason).
     
-    ALPHA-FIX (2026-10-31): threshold ديناميكي حسب حالة السوق.
-    قبل كده: confidence < 60 → NO_TRADE (ثابت — بيقتل كل الفرص)
-    دلوقتي: confidence threshold بيتغير حسب state_code:
-      - S1/S2 (صاعد): 35 (السوق صاعد → ثقة أعلى)
-      - S3/S4 (عرضي/اختراق): 40
-      - S5/S6 (هابط): 50 (السوق هابط → حذر أكبر)
-      - S7/S8 (تذبذب/سيولة): 45
-      - default: 45
+    ALPHA-DATA-DRIVEN (2026-10-31): thresholds من MATRIX_PARAMS.
+    بناءً على تحليل 250 يوم EGX حقيقي.
     """
     if not data_valid:
         return ('NO_TRADE', 'invalid data')
     if risk_blocked:
         return ('NO_TRADE', 'risk gate blocked')
     
-    # ALPHA-FIX: confidence threshold ديناميكي
-    if state_code in ('S1', 'S2'):
-        conf_threshold = 35   # صاعد → ثقة أقل كفاية
-    elif state_code in ('S3', 'S4'):
-        conf_threshold = 40   # عرضي/اختراق
-    elif state_code in ('S5', 'S6'):
-        conf_threshold = 50   # هابط → حذر
-    elif state_code in ('S7', 'S8'):
-        conf_threshold = 45   # تذبذب/سيولة
-    else:
-        conf_threshold = 45   # default
+    params = MATRIX_PARAMS.get(state_code, MATRIX_PARAMS.get('S9', {}))
+    conf_threshold = params.get('conf_thresh', 45)
+    buy_thresh = params.get('buy_thresh', 30)
+    confirm_thresh = params.get('confirm_thresh', 15)
     
     if confidence < conf_threshold:
-        return ('NO_TRADE', f'confidence {confidence:.0f} < {conf_threshold}')
-    
-    # ALPHA-FIX: score thresholds ديناميكية برضه
-    if state_code in ('S1', 'S2'):
-        buy_thresh = 20       # صاعد → أسهل تـ BUY
-        confirm_thresh = 10
-    elif state_code in ('S5', 'S6'):
-        buy_thresh = 40       # هابط → أصعب
-        confirm_thresh = 20
-    else:
-        buy_thresh = 30       # default
-        confirm_thresh = 15
+        return ('NO_TRADE', f'confidence {confidence:.0f} < {conf_threshold} (state={state_code})')
     
     if signal_score >= buy_thresh:
         return ('BUY_CANDIDATE', f'score={signal_score:.0f} conf={confidence:.0f} state={state_code}')
