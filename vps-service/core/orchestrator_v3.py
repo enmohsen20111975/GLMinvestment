@@ -233,26 +233,59 @@ def create_v3_plan(ticker: str, prices: List[float], volumes: List[float] = None
 # جدول القرار النهائي (من المالك)
 # ============================================================================
 def final_decision(signal_score: float, confidence: float, data_valid: bool = True,
-                    risk_blocked: bool = False) -> Tuple[str, str]:
-    """ينتج القرار النهائي وفق جدول المالك. Returns (decision, reason)."""
+                    risk_blocked: bool = False, state_code: str = '') -> Tuple[str, str]:
+    """ينتج القرار النهائي وفق جدول المالك. Returns (decision, reason).
+    
+    ALPHA-FIX (2026-10-31): threshold ديناميكي حسب حالة السوق.
+    قبل كده: confidence < 60 → NO_TRADE (ثابت — بيقتل كل الفرص)
+    دلوقتي: confidence threshold بيتغير حسب state_code:
+      - S1/S2 (صاعد): 35 (السوق صاعد → ثقة أعلى)
+      - S3/S4 (عرضي/اختراق): 40
+      - S5/S6 (هابط): 50 (السوق هابط → حذر أكبر)
+      - S7/S8 (تذبذب/سيولة): 45
+      - default: 45
+    """
     if not data_valid:
         return ('NO_TRADE', 'invalid data')
     if risk_blocked:
         return ('NO_TRADE', 'risk gate blocked')
     
-    if confidence < 60:
-        return ('NO_TRADE', f'confidence {confidence:.0f} < 60')
+    # ALPHA-FIX: confidence threshold ديناميكي
+    if state_code in ('S1', 'S2'):
+        conf_threshold = 35   # صاعد → ثقة أقل كفاية
+    elif state_code in ('S3', 'S4'):
+        conf_threshold = 40   # عرضي/اختراق
+    elif state_code in ('S5', 'S6'):
+        conf_threshold = 50   # هابط → حذر
+    elif state_code in ('S7', 'S8'):
+        conf_threshold = 45   # تذبذب/سيولة
+    else:
+        conf_threshold = 45   # default
     
-    if signal_score >= 60:
-        return ('BUY_CANDIDATE', f'score={signal_score:.0f} conf={confidence:.0f}')
-    elif signal_score >= 30:
-        return ('NEEDS_CONFIRMATION', f'score={signal_score:.0f} conf={confidence:.0f}')
+    if confidence < conf_threshold:
+        return ('NO_TRADE', f'confidence {confidence:.0f} < {conf_threshold}')
+    
+    # ALPHA-FIX: score thresholds ديناميكية برضه
+    if state_code in ('S1', 'S2'):
+        buy_thresh = 20       # صاعد → أسهل تـ BUY
+        confirm_thresh = 10
+    elif state_code in ('S5', 'S6'):
+        buy_thresh = 40       # هابط → أصعب
+        confirm_thresh = 20
+    else:
+        buy_thresh = 30       # default
+        confirm_thresh = 15
+    
+    if signal_score >= buy_thresh:
+        return ('BUY_CANDIDATE', f'score={signal_score:.0f} conf={confidence:.0f} state={state_code}')
+    elif signal_score >= confirm_thresh:
+        return ('NEEDS_CONFIRMATION', f'score={signal_score:.0f} conf={confidence:.0f} state={state_code}')
     elif signal_score > -30:
         return ('NO_TRADE', f'score={signal_score:.0f} in neutral zone')
     elif signal_score > -60:
-        return ('NEGATIVE_SIGNAL', f'score={signal_score:.0f} conf={confidence:.0f}')
+        return ('NEGATIVE_SIGNAL', f'score={signal_score:.0f} conf={confidence:.0f} state={state_code}')
     else:
-        return ('STRONG_NEGATIVE', f'score={signal_score:.0f} conf={confidence:.0f}')
+        return ('STRONG_NEGATIVE', f'score={signal_score:.0f} conf={confidence:.0f} state={state_code}')
 
 
 # ============================================================================

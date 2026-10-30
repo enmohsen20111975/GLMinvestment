@@ -126,19 +126,22 @@ class HistoricalDataLoader:
         self.data_engine_db = data_engine_db
         self._cache: Dict[str, List[dict]] = {}
 
-    def get_tickers(self, market: str) -> List[str]:
-        """جيب كل tickers لسوق معين."""
+    def get_tickers(self, market: str, min_days: int = 50) -> List[str]:
+        """جيب كل tickers لسوق معين (بـ حد أدنى من الأيام)."""
         conn = sqlite3.connect(str(self.stocks_db))
         cur = conn.cursor()
         if market == 'EGX':
             # egksco_price_history فيه بيانات EGX حقيقية
             conn2 = sqlite3.connect(str(self.data_engine_db))
             cur2 = conn2.cursor()
+            # ALPHA-FIX: فلتر بـ minimum days عشان V3 يـ يحتاج 50 يوم
             cur2.execute("""
-                SELECT DISTINCT symbol FROM egksco_price_history
+                SELECT symbol FROM egksco_price_history
                 WHERE close_price IS NOT NULL AND close_price > 0
+                GROUP BY symbol
+                HAVING COUNT(*) >= ?
                 ORDER BY symbol
-            """)
+            """, (min_days,))
             tickers = [r[0] for r in cur2.fetchall()]
             conn2.close()
         else:
@@ -288,10 +291,11 @@ class V3Simulator:
                 return None
 
             # 3. execute
+            # ALPHA-FIX: execute_v3 مش بـ يقبل highs/lows/opens كـ kwargs
+            # الـ engines بـ تحسبها جواها من prices
             result = self._execute_v3(
                 plan, prices=prices, volumes=volumes,
                 ticker=ticker, market=market,
-                highs=highs, lows=lows, opens=opens,
             )
 
             if result.final_signal == 'NO_TRADE':

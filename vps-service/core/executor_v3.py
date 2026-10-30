@@ -107,28 +107,70 @@ def execute_v3(plan, prices=None, volumes=None, ticker=None, market='EGX'):
     signal_score = sum(family_scores[f] * weights.get(f, 0) for f in family_scores) / total_weight
     result.signal_score = round(signal_score, 2)
     
-    # Calculate Confidence (agreement between engines)
+    # ALPHA-FIX (2026-10-31): Confidence حساب ذكي (مش cap عند 60%)
+    # المشكلة: لو فيه تعارض → confidence capped at 60% → مستحيل يوصل threshold 60
+    # الحل: confidence بـ يحسب من نسبة الاتفاق + قوة الإشارة
     positive = sum(1 for s in family_scores.values() if s > 20)
     negative = sum(1 for s in family_scores.values() if s < -20)
     neutral = len(family_scores) - positive - negative
+    total = len(family_scores)
     
-    if positive > 0 and negative > 0:
-        # Conflict reduces confidence
-        agreement = max(positive, negative) / len(family_scores)
-        result.confidence = round(agreement * 60, 1)  # max 60% if conflict
+    if total == 0:
+        result.confidence = 0.0
+    elif positive > 0 and negative > 0:
+        # تعارض — بس مش necessarily سيء
+        # confidence = نسبة الأغلبية + قوة إشارة الأغلبية
+        majority = max(positive, negative)
+        minority = min(positive, negative)
+        agreement_ratio = majority / total  # 0.4-0.8
+        # قوة الإشارة: متوسط |score| للـ engines المتفقة
+        if positive >= negative:
+            majority_scores = [s for s in family_scores.values() if s > 20]
+        else:
+            majority_scores = [s for s in family_scores.values() if s < -20]
+        avg_strength = sum(abs(s) for s in majority_scores) / len(majority_scores) if majority_scores else 0
+        strength_bonus = min(avg_strength / 100 * 30, 30)  # max +30 from strength
+        # confidence = base agreement (40-80) + strength bonus (0-30) - conflict penalty
+        conflict_penalty = minority / total * 20  # كل ما الأقلية أكبر → penalty أكبر
+        result.confidence = round(max(20, min(85, agreement_ratio * 70 + strength_bonus - conflict_penalty)), 1)
     elif positive > 0:
-        result.confidence = round(min(positive / len(family_scores) * 100, 90), 1)
+        # كلها موجبة (agreement كامل)
+        result.confidence = round(min(positive / total * 100, 90), 1)
     elif negative > 0:
-        result.confidence = round(min(negative / len(family_scores) * 100, 90), 1)
+        # كلها سالبة (agreement كامل على البيع)
+        result.confidence = round(min(negative / total * 100, 90), 1)
     else:
-        result.confidence = 30.0  # all neutral → low confidence
+        result.confidence = 30.0  # كلها neutral
     
-    # Conflict check
-    from core.orchestrator_v3 import resolve_conflict
+    # Conflict check — بس ما تقللش confidence أوي
+    from core.orchestrator_v3 import resolve_conflict, final_decision
     ok, conflict_reason = resolve_conflict(family_scores)
     if not ok:
         result.warnings.append(f'Conflict: {conflict_reason}')
-        result.confidence = min(result.confidence, 40)
+        result.confidence = max(20, result.confidence - 10)  # -10 بس (مش -20)
+    
+    # ALPHA-FIX (2026-10-31): الـ ROOT CAUSE!
+    # final_signal كان بـ يفضل 'NO_TRADE' دايماً — final_decision() ما اتـ استدعتش!
+    # دلوقتي: بنـ استدعى final_decision() بـ state_code عشان يـ emit signal حقيقي
+    _state_code = getattr(plan, 'state_code', '')
+    _decision, _reason = final_decision(
+        signal_score, result.confidence, 
+        data_valid=True, risk_blocked=False,
+        state_code=_state_code
+    )
+    
+    # تحويل الـ decision لـ signal
+    if _decision == 'BUY_CANDIDATE':
+        result.final_signal = 'BUY'
+    elif _decision == 'NEEDS_CONFIRMATION':
+        result.final_signal = 'BUY'  # ضعيف بس لسه BUY
+    elif _decision == 'NEGATIVE_SIGNAL':
+        result.final_signal = 'SELL'
+    elif _decision == 'STRONG_NEGATIVE':
+        result.final_signal = 'STRONG_SELL'
+    else:
+        result.final_signal = 'NO_TRADE'
+        result.no_trade_reason = _reason
     
     result.complete = True
     result.completed_at = datetime.now().isoformat()
