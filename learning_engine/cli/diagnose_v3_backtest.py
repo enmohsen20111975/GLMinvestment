@@ -47,7 +47,12 @@ def _load_backtest(json_path: Path) -> dict:
 def _get_market_features_at_entry(ticker: str, signal_date: str, db_path: Path) -> dict:
     """
     يحسب ATR٪, relative_volume_20d, distance_to_sma_20٪ وقت الدخول.
-    Reads from stocks.db.stock_daily_prices (read-only).
+    
+    STRICT EGX ONLY — يجرّب مصدرين EGX فقط:
+      1. stocks.db.stock_daily_prices (market='EGX')
+      2. data_engine.db.egksco_price_history (market='EGX' أو 'مصر')
+    
+    لا يقرأ أي بيانات من markets تانية (Saudi, US, etc.)
     """
     feats = {"atr_pct": None, "relative_volume_20d": None, "distance_to_sma_20_pct": None}
     if not db_path.exists():
@@ -56,7 +61,7 @@ def _get_market_features_at_entry(ticker: str, signal_date: str, db_path: Path) 
     try:
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
         cur = conn.cursor()
-        # جيب آخر 50 شمعة قبل أو يوم signal_date
+        # جيب آخر 50 شمعة قبل أو يوم signal_date (EGX فقط)
         cur.execute(
             """SELECT price_date, high, low, close, volume
                FROM stock_daily_prices
@@ -66,6 +71,23 @@ def _get_market_features_at_entry(ticker: str, signal_date: str, db_path: Path) 
         )
         rows = cur.fetchall()
         conn.close()
+
+        # fallback: data_engine.db.egksco_price_history (EGX فقط)
+        if len(rows) < 20:
+            data_engine_path = db_path.parent / "data_engine.db"
+            if data_engine_path.exists():
+                conn2 = sqlite3.connect(f"file:{data_engine_path}?mode=ro", uri=True)
+                cur2 = conn2.cursor()
+                # جرّب market='EGX' و market='مصر' (نفس السوق، ترميز مختلف)
+                cur2.execute(
+                    """SELECT price_date, high_price, low_price, close_price, volume
+                       FROM egksco_price_history
+                       WHERE symbol = ? AND market IN ('EGX', 'مصر') AND price_date <= ?
+                       ORDER BY price_date DESC LIMIT 50""",
+                    (ticker, signal_date)
+                )
+                rows = cur2.fetchall()
+                conn2.close()
 
         if len(rows) < 20:
             return feats
@@ -462,8 +484,16 @@ def _table_3_rr_diagnosis(trades: list) -> None:
 
 
 def _diagnose_ticker_resolution(trades: list, db_path: Path) -> None:
-    """يطبع diagnostic لـ ticker resolution قبل جدول 2."""
-    print(f"\n  ─── Pre-flight: فحص تطابق الـ tickers مع stocks.db ───")
+    """يطبع diagnostic لـ ticker resolution قبل جدول 2.
+    
+    STRICT EGX ONLY — لا يجرب أي market آخر.
+    يجرّب 3 مصادرEGX:
+      1. stocks.db.stock_daily_prices (market='EGX')
+      2. data_engine.db.egksco_price_history (market='EGX' أو 'مصر')
+    """
+    print(f"\n  ─── Pre-flight: فحص تطابق الـ tickers مع مصادر EGX فقط ───")
+    print(f"  🇪🇬 EGX ONLY — لا أسهم سعودية، لا أسهم أمريكية")
+    
     if not db_path.exists():
         print(f"  ⚠️  stocks.db غير موجود: {db_path}")
         return
@@ -472,72 +502,108 @@ def _diagnose_ticker_resolution(trades: list, db_path: Path) -> None:
     print(f"  عدد tickers فريدة في الـ backtest: {len(tickers)}")
     print(f"  أول 5 tickers: {tickers[:5]}")
 
+    # فتح الاتصالين: stocks.db + data_engine.db
+    data_engine_path = db_path.parent / "data_engine.db"
+    
     try:
         conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
         cur = conn.cursor()
 
-        # كم ticker موجود في stocks.db.stock_daily_prices
-        found_exact = 0
-        found_any_market = 0
-        not_found = []
+        conn2 = None
+        cur2 = None
+        if data_engine_path.exists():
+            conn2 = sqlite3.connect(f"file:{data_engine_path}?mode=ro", uri=True)
+            cur2 = conn2.cursor()
+
+        # تجميع النتائج
+        found_in_stocks_db = 0      # stocks.db.stock_daily_prices (market='EGX')
+        found_in_egksco_egx = 0     # data_engine.db.egksco_price_history (market='EGX')
+        found_in_egksco_misr = 0    # data_engine.db.egksco_price_history (market='مصر')
+        not_found_anywhere = 0
         sample_found = []
+        sample_missing = []
 
         for t in tickers:
-            # 1. ticker كما هو + market='EGX'
+            matched_source = None
+
+            # 1. stocks.db.stock_daily_prices (EGX فقط)
             cur.execute(
                 "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ? AND market = 'EGX'",
                 (t,)
             )
-            c1 = cur.fetchone()[0]
-            if c1 > 0:
-                found_exact += 1
+            if cur.fetchone()[0] > 0:
+                found_in_stocks_db += 1
+                matched_source = "stocks.db (EGX)"
                 if len(sample_found) < 3:
-                    sample_found.append(t)
+                    sample_found.append((t, matched_source))
                 continue
 
-            # 2. ticker كما هو (أي market)
-            cur.execute(
-                "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ?",
-                (t,)
-            )
-            c2 = cur.fetchone()[0]
-            if c2 > 0:
-                found_any_market += 1
-                continue
-
-            # 3. جرّب variant (إزالة suffix بعد _)
-            if "_" in t:
-                base = t.split("_")[0]
-                cur.execute(
-                    "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ?",
-                    (base,)
+            # 2. data_engine.db.egksco_price_history (market='EGX')
+            if cur2:
+                cur2.execute(
+                    "SELECT COUNT(*) FROM egksco_price_history WHERE symbol = ? AND market = 'EGX'",
+                    (t,)
                 )
-                c3 = cur.fetchone()[0]
-                if c3 > 0:
-                    found_any_market += 1
+                if cur2.fetchone()[0] > 0:
+                    found_in_egksco_egx += 1
+                    matched_source = "egksco (EGX)"
+                    if len(sample_found) < 3:
+                        sample_found.append((t, matched_source))
                     continue
 
-            not_found.append(t)
+                # 3. data_engine.db.egksco_price_history (market='مصر')
+                cur2.execute(
+                    "SELECT COUNT(*) FROM egksco_price_history WHERE symbol = ? AND market = 'مصر'",
+                    (t,)
+                )
+                if cur2.fetchone()[0] > 0:
+                    found_in_egksco_misr += 1
+                    matched_source = "egksco (مصر)"
+                    if len(sample_found) < 3:
+                        sample_found.append((t, matched_source))
+                    continue
+
+            # لم يتطابق مع أي مصدر EGX
+            not_found_anywhere += 1
+            if len(sample_missing) < 5:
+                sample_missing.append(t)
 
         conn.close()
+        if conn2:
+            conn2.close()
 
-        print(f"  ✅ موجودة (market='EGX'):  {found_exact} ticker")
-        print(f"  ✅ موجودة (أي market):     {found_any_market} ticker")
-        print(f"  ❌ غير موجودة:            {len(not_found)} ticker")
+        # طباعة النتائج
+        print(f"\n  📊 نتائج الفحص (EGX فقط):")
+        print(f"     ✅ stocks.db (market='EGX'):     {found_in_stocks_db} ticker")
+        print(f"     ✅ egksco_price_history (EGX):    {found_in_egksco_egx} ticker")
+        print(f"     ✅ egksco_price_history (مصر):    {found_in_egksco_misr} ticker")
+        print(f"     ❌ غير موجود في أي مصدر EGX:    {not_found_anywhere} ticker")
+
+        total_found = found_in_stocks_db + found_in_egksco_egx + found_in_egksco_misr
         if sample_found:
-            print(f"  أمثلة موجودة: {sample_found}")
-        if not_found[:3]:
-            print(f"  أمثلة مفقودة: {not_found[:3]}")
+            print(f"\n  أمثلة على تطابق ناجح:")
+            for t, src in sample_found:
+                print(f"     ✅ {t!r:12} → {src}")
 
-        if found_exact == 0 and found_any_market > 0:
-            print(f"  💡 المشكلة: الـ tickers موجودة لكن بـ market ≠ 'EGX'")
-            print(f"     السكربت هيتعامل مع ده تلقائياً (يجرّب كل markets)")
-        elif found_exact == 0 and found_any_market == 0:
-            print(f"  🔥 المشكلة: الـ tickers في الـ backtest مش موجودة في stocks.db نهائياً")
-            print(f"     محتاج نتأكد إن الـ backtest بـ يستخدم نفس ticker format")
+        if sample_missing:
+            print(f"\n  أمثلة على tickers غير موجودة في أي مصدر EGX:")
+            for t in sample_missing:
+                print(f"     ❌ {t!r}")
+
+        # التوصية
+        if total_found == 0:
+            print(f"\n  🔥 جميع الـ tickers مش موجودة في مصادر EGX!")
+            print(f"     محتاجين نتحقق: هل الـ backtest بيستخدم ticker format مختلف؟")
+            print(f"     جرّب: sqlite3 db/stocks.db \"SELECT DISTINCT ticker FROM stock_daily_prices WHERE market='EGX' LIMIT 10\"")
+        elif not_found_anywhere > len(tickers) * 0.3:
+            print(f"\n  ⚠️  {not_found_anywhere} ticker ({not_found_anywhere*100//len(tickers)}٪) غير موجود في مصادر EGX")
+            print(f"     جدول 2 هـيطلع ATR/Volume = N/A لـ {not_found_anywhere} صفقة تقريباً")
+        else:
+            print(f"\n  ✅ أغلب الـ tickers موجودة في مصادر EGX — جدول 2 هيشتغل صح")
 
     except Exception as e:
         print(f"  ⚠️  خطأ في الفحص: {e}")
+
 
 
 def main():
