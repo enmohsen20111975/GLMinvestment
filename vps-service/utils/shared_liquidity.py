@@ -1127,6 +1127,31 @@ def check_kill_switch(
     return False, ''
 
 
+def liquidity_intensity(turnover: float, market_cap: float) -> Optional[float]:
+    """Liquidity intensity: turnover as % of market capitalization.
+
+    كلما زادت النسبة، زادت شدة التداول (سيولة نشطة على السهم).
+    يستخدم كـ feature في learning_engine (feature_builder.py::liquidity_intensity).
+
+    Args:
+        turnover:   إجمالي قيمة التداول في الجلسة (volume × close).
+        market_cap: القيمة السوقية للسهم.
+
+    Returns:
+        النسبة المئوية (0..100) أو None لو المدخلات غير صالحة.
+    """
+    if turnover is None or market_cap is None:
+        return None
+    try:
+        t = float(turnover)
+        m = float(market_cap)
+    except (TypeError, ValueError):
+        return None
+    if m <= 0:
+        return None
+    return (t / m) * 100.0
+
+
 __all__ = [
     'DYNAMIC_TURNOVER_THRESHOLDS',
     'PUMP_AND_DUMP_TURNOVER_FLOOR',
@@ -1157,4 +1182,6 @@ __all__ = [
     'is_explosive_surge',
     'should_reject_by_liquidity',
     'position_size_for_liquidity_bypass',
+    # Liquidity intensity (feature for learning_engine)
+    'liquidity_intensity',
 ]

@@ -57,6 +57,7 @@ from utils.shared_liquidity import (  # noqa: E402
     is_explosive_surge,
     detect_quiet_accumulation,
     detect_pre_surge,
+    liquidity_intensity,
 )
 
 
