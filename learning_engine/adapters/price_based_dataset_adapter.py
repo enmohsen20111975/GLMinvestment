@@ -84,11 +84,18 @@ class PriceBasedDatasetBuilder:
         horizon: int = 5,
         min_history: int = 30,
         max_samples: int = 50000,
+        cost_threshold: float = 0.5,
     ) -> Tuple[List[Dict], List[float], Dict]:
         """
         يبني dataset من كل البيانات المتاحة.
         market='ALL' = استخدم كل الأسواق (EGX + US + أي مصدر متاح).
         Labels من حركة السعر الفعلية (مش synthetic signals).
+
+        Args:
+            cost_threshold: الحد الأدنى للعائد للتمييز بين up/down (٪).
+                            القيم أقل من هذا (مطلقاً) تـُعتبر neutral.
+                            افتراضي 0.5٪ (يغطي تكاليف التداول).
+                            جرب 0.3 أو 0.25 لو عايز تـقلل الـ neutrals.
         """
         # إذا كان ALL، نجمع من كل المصادر
         if market == "ALL":
@@ -100,7 +107,8 @@ class PriceBasedDatasetBuilder:
 
             for mkt in ["EGX", "US"]:
                 X_mkt, y_mkt, meta_mkt = self._build_for_single_market(
-                    mkt, horizon, min_history, max_samples - len(all_X)
+                    mkt, horizon, min_history, max_samples - len(all_X),
+                    cost_threshold=cost_threshold,
                 )
                 if X_mkt:
                     all_X.extend(X_mkt)
@@ -130,7 +138,10 @@ class PriceBasedDatasetBuilder:
 
             return all_X, all_y, metadata
 
-        return self._build_for_single_market(market, horizon, min_history, max_samples)
+        return self._build_for_single_market(
+            market, horizon, min_history, max_samples,
+            cost_threshold=cost_threshold,
+        )
 
     def _build_for_single_market(
         self,
@@ -138,10 +149,15 @@ class PriceBasedDatasetBuilder:
         horizon: int = 5,
         min_history: int = 30,
         max_samples: int = 500000,
+        cost_threshold: float = 0.5,
     ) -> Tuple[List[Dict], List[float], Dict]:
         """
         يبني dataset من الأسعار الحقيقية.
         Labels من حركة السعر الفعلية (مش synthetic signals).
+
+        Args:
+            cost_threshold: الحد الأدنى للعائد للتمييز بين up/down (٪).
+                            افتراضي 0.5٪. لو عايز تـقلل الـ neutrals، جرّب 0.3.
 
         Returns:
           X: list of feature dicts
@@ -216,8 +232,7 @@ class PriceBasedDatasetBuilder:
                 ret_10d = (float(future_bars[9].close) - entry_price) / entry_price * 100 if len(future_bars) >= 10 else 0
                 ret_20d = (float(future_bars[19].close) - entry_price) / entry_price * 100 if len(future_bars) >= 20 else 0
 
-                # Direction labels — مع منطقة محايدة (±0.5% لتغطية تكاليف التداول)
-                cost_threshold = 0.5  # % — العائد لازم يتجاوز تكاليف التداول
+                # Direction labels — مع منطقة محايدة (±cost_threshold لتغطية تكاليف التداول)
                 dir_5d = 1.0 if ret_5d > cost_threshold else (0.0 if ret_5d < -cost_threshold else 0.5)
                 dir_10d = 1.0 if ret_10d > cost_threshold else (0.0 if ret_10d < -cost_threshold else 0.5)
                 dir_20d = 1.0 if ret_20d > cost_threshold else (0.0 if ret_20d < -cost_threshold else 0.5)

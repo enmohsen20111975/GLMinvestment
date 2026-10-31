@@ -6,8 +6,18 @@ train_from_prices.py — يدرب Direction Model من الأسعار الحقي
 لا يحتاج synthetic predictions.
 يقرا OHLCV من data_engine.db + stocks.db (مصادر حقيقية).
 
+FIXES (2026-10-31):
+  - class_weight='balanced' افتراضياً (يعالج اختلال EGX 98% صعود)
+  - cost_threshold قابل للتمرير (--cost-threshold 0.3 / 0.25 / 0.2)
+  - Purged TimeSeriesSplit (يمنع leakage بين train/test للـ forward labels)
+  - Confusion matrix + precision/recall لكل كلاس في كل fold
+  - Baseline accuracy (always-predict-majority-class) للمقارنة
+  - تحذير صريح لو الـ imbalance شديد بعد الإصلاح
+
 Usage:
   python3 -m learning_engine.cli.train_from_prices --market EGX --horizon 5
+  python3 -m learning_engine.cli.train_from_prices --market ALL --horizon 5 \\
+      --cost-threshold 0.3 --max-samples 50000
 """
 from __future__ import annotations
 import sys
@@ -24,18 +34,102 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 from learning_engine.adapters.price_based_dataset_adapter import PriceBasedDatasetBuilder
 
 
+def _print_confusion_matrix(y_true, y_pred, label=""):
+    """يطبع confusion matrix بشكل واضح."""
+    try:
+        from sklearn.metrics import confusion_matrix
+        cm = confusion_matrix(y_true, y_pred, labels=[0.0, 1.0])
+        # cm = [[TN, FP], [FN, TP]]
+        tn, fp, fn, tp = cm.ravel()
+        total = tn + fp + fn + tp
+        print(f"      Confusion Matrix {label}:")
+        print(f"        TrueNeg (down=down):  {tn:4d}   FalsePos (up=down):   {fp:4d}")
+        print(f"        FalseNeg (down=up):   {fn:4d}   TruePos (up=up):      {tp:4d}")
+        # Precision/Recall per class
+        prec_up = tp / (tp + fp) if (tp + fp) > 0 else 0
+        rec_up = tp / (tp + fn) if (tp + fn) > 0 else 0
+        prec_dn = tn / (tn + fn) if (tn + fn) > 0 else 0
+        rec_dn = tn / (tn + fp) if (tn + fp) > 0 else 0
+        print(f"        Up:    prec={prec_up:.3f}  recall={rec_up:.3f}")
+        print(f"        Down:  prec={prec_dn:.3f}  recall={rec_dn:.3f}")
+    except Exception as e:
+        print(f"      (confusion matrix skipped: {e})")
+
+
+def _purged_time_series_split(n_samples, n_splits=5, purge_gap=5):
+    """
+    TimeSeriesSplit مع PURGING.
+    يفصل بين نهاية train وبداية test بـ purge_gap عينات.
+    ده ضروري عشان labels بتكون forward-looking (horizon أيام).
+    بدون purging، آخر عينة train بتحسب label على أساس سعر بعد horizon يوم،
+    واللي ممكن يكون داخل في test set → leakage.
+
+    Returns:
+      list of (train_idx, test_idx) tuples (numpy arrays)
+    """
+    fold_size = n_samples // (n_splits + 1)
+    if fold_size < 10:
+        # عينة صغيرة جداً — fallback لـ TimeSeriesSplit بدون purging
+        from sklearn.model_selection import TimeSeriesSplit
+        tscv = TimeSeriesSplit(n_splits=n_splits)
+        return [(np.array(tr), np.array(te)) for tr, te in tscv.split(np.zeros(n_samples))]
+
+    splits = []
+    for i in range(n_splits):
+        train_end = (i + 1) * fold_size
+        test_start = train_end + purge_gap  # purge_gap عينات skipped
+        test_end = test_start + fold_size
+        if test_end > n_samples:
+            test_end = n_samples
+        if test_start >= n_samples or test_start >= train_end + purge_gap + 1:
+            # fallback: ضمان إن test مش فاضي
+            test_start = min(train_end + 1, n_samples - 1)
+        if test_end <= test_start:
+            continue
+        train_idx = np.arange(0, train_end)
+        test_idx = np.arange(test_start, test_end)
+        if len(train_idx) > 0 and len(test_idx) > 0:
+            splits.append((train_idx, test_idx))
+    return splits
+
+
 def main():
     parser = argparse.ArgumentParser(description="Train Direction Model from real prices")
     parser.add_argument("--market", default="ALL", help="Market (EGX, US, ALL=all markets)")
     parser.add_argument("--horizon", type=int, default=5, help="Label horizon in days")
     parser.add_argument("--max-samples", type=int, default=50000, help="Max samples")
     parser.add_argument("--min-samples", type=int, default=50, help="Min samples to train")
+    parser.add_argument(
+        "--cost-threshold", type=float, default=0.5,
+        help="Min %% return to be labeled up/down (default 0.5). "
+             "Try 0.3 or 0.25 to reduce neutrals."
+    )
+    parser.add_argument(
+        "--class-weight", default="balanced",
+        help="LightGBM class_weight (default 'balanced'). Use 'none' for no balancing."
+    )
+    parser.add_argument(
+        "--purge-gap", type=int, default=None,
+        help="Purge gap (samples) between train/test in walk-forward. "
+             "Default = horizon (recommended for forward-looking labels)."
+    )
     args = parser.parse_args()
 
-    print(f"\n{'='*60}")
-    print(f"Learning Engine — Train from REAL PRICES")
-    print(f"Market: {args.market} | Horizon: {args.horizon}d")
-    print(f"{'='*60}")
+    # purge_gap افتراضي = horizon (anti-leakage)
+    purge_gap = args.purge_gap if args.purge_gap is not None else args.horizon
+
+    # class_weight للـ LightGBM
+    cw = 'balanced' if args.class_weight == 'balanced' else None
+
+    print(f"\n{'='*70}")
+    print(f"Learning Engine — Train from REAL PRICES (v2 — fixed imbalance)")
+    print(f"{'='*70}")
+    print(f"  Market:          {args.market}")
+    print(f"  Horizon:         {args.horizon}d")
+    print(f"  Cost threshold:  {args.cost_threshold}٪")
+    print(f"  Class weight:    {args.class_weight}")
+    print(f"  Purge gap:       {purge_gap} samples (anti-leakage)")
+    print(f"{'='*70}")
 
     # 1. بناء dataset من الأسعار الحقيقية
     print(f"\n[1/4] Building dataset from real prices...")
@@ -44,11 +138,13 @@ def main():
         market=args.market,
         horizon=args.horizon,
         max_samples=args.max_samples,
+        cost_threshold=args.cost_threshold,
     )
 
     if len(X_dicts) < args.min_samples:
         print(f"\n❌ Insufficient samples: {len(X_dicts)} < {args.min_samples}")
         print(f"   Try: --market US (more data) or --max-samples 1000")
+        print(f"   Or:  --cost-threshold 0.3 (recovers more samples by reducing neutrals)")
         sys.exit(1)
 
     # 2. تحويل لـ matrix
@@ -87,19 +183,35 @@ def main():
     y_arr = y_arr[non_neutral]
     y_arr = (y_arr >= 0.5).astype(np.float64)  # 1.0 or 0.0
 
-    print(f"  Features: {len(feature_names)}")
-    print(f"  Samples: {len(X_arr)}")
-    print(f"  Positive: {int(sum(y_arr))} ({int(sum(y_arr)*100/len(y_arr))}%)")
-    print(f"  Negative: {int(len(y_arr) - sum(y_arr))} ({int((len(y_arr) - sum(y_arr))*100/len(y_arr))}%)")
+    n_total = len(X_arr)
+    n_pos = int(sum(y_arr))
+    n_neg = n_total - n_pos
+    pos_pct = n_pos * 100 / n_total if n_total else 0
+    neg_pct = n_neg * 100 / n_total if n_total else 0
+
+    print(f"  Features:        {len(feature_names)}")
+    print(f"  Total samples:   {n_total}")
+    print(f"  Positive (up):   {n_pos} ({pos_pct:.1f}٪)")
+    print(f"  Negative (down): {n_neg} ({neg_pct:.1f}٪)")
     neutral_removed = len(y) - len(y_arr)
     if neutral_removed > 0:
         print(f"  Neutral (excluded): {neutral_removed}")
 
-    # 3. Walk-forward training
-    print(f"\n[3/4] Training LightGBM with walk-forward...")
+    # تحذير من الـ imbalance الشديد
+    if pos_pct > 80 or neg_pct > 80:
+        majority = "UP" if pos_pct > 80 else "DOWN"
+        print(f"\n  ⚠️  WARNING: Heavy class imbalance detected ({majority} = {max(pos_pct, neg_pct):.1f}٪)")
+        print(f"      class_weight='balanced' سيعوض جزئياً، لكن النموذج لا يزال محدوداً.")
+        print(f"     Baseline (predict majority class) = {max(pos_pct, neg_pct):.1f}٪ accuracy.")
+        print(f"      النموذج لازم يـتـفوق على الـ baseline ليكون مفيداً.")
+    else:
+        baseline_acc = max(pos_pct, neg_pct)
+        print(f"\n  Baseline (predict majority class) = {baseline_acc:.1f}٪ accuracy.")
+
+    # 3. Walk-forward training مع PURGING
+    print(f"\n[3/4] Training LightGBM with PURGED walk-forward (gap={purge_gap})...")
     try:
         import lightgbm as lgb
-        from sklearn.model_selection import TimeSeriesSplit
         from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
     except ImportError:
         print("❌ Install: pip install lightgbm scikit-learn")
@@ -107,19 +219,30 @@ def main():
 
     # ترتيب زمني
     dates = [d.get("_date", "") for d in X_dicts]
-    sorted_idx = sorted(range(len(X_arr)), key=lambda i: dates[i])
+    # لاحظ: dates هنا بـ ترتيب الـ original X_dicts (قبل non_neutral filter)
+    # لازم نطبق نفس الـ filter على dates قبل الفرز
+    non_neutral_dates = [d for d, keep in zip(dates, non_neutral) if keep]
+    sorted_idx = sorted(range(len(X_arr)), key=lambda i: non_neutral_dates[i])
     X_sorted = X_arr[sorted_idx]
     y_sorted = y_arr[sorted_idx]
 
-    tscv = TimeSeriesSplit(n_splits=5)
+    splits = _purged_time_series_split(len(X_sorted), n_splits=5, purge_gap=purge_gap)
+    print(f"  Total splits: {len(splits)}")
+
     fold_metrics = []
 
-    for fold, (train_idx, test_idx) in enumerate(tscv.split(X_sorted), 1):
+    for fold, (train_idx, test_idx) in enumerate(splits, 1):
         X_train, X_test = X_sorted[train_idx], X_sorted[test_idx]
         y_train, y_test = y_sorted[train_idx], y_sorted[test_idx]
 
+        # توزيع الكلاسات في train + test
+        n_tr_pos = int(sum(y_train))
+        n_tr_neg = len(y_train) - n_tr_pos
+        n_te_pos = int(sum(y_test))
+        n_te_neg = len(y_test) - n_te_pos
+
         if len(set(y_train)) < 2:
-            print(f"  Fold {fold}: SKIP (one class)")
+            print(f"  Fold {fold}: SKIP (one class in train) — train_pos={n_tr_pos} train_neg={n_tr_neg}")
             continue
 
         model = lgb.LGBMClassifier(
@@ -130,6 +253,7 @@ def main():
             colsample_bytree=0.8,
             reg_alpha=0.1,
             reg_lambda=1.0,
+            class_weight=cw,
             random_state=42,
             verbose=-1,
         )
@@ -145,21 +269,34 @@ def main():
 
         try:
             auc = roc_auc_score(y_test, y_proba) if len(set(y_test)) > 1 else 0.5
-        except:
+        except Exception:
             auc = 0.5
+
+        # Baseline لهذا الـ fold (predict majority class)
+        baseline_acc = max(n_te_pos, n_te_neg) * 100 / len(y_test) if len(y_test) else 0
+        # delta من baseline
+        delta = (acc * 100) - baseline_acc
 
         fold_metrics.append({
             "fold": fold,
             "train_size": len(X_train),
             "test_size": len(X_test),
+            "train_pos": n_tr_pos, "train_neg": n_tr_neg,
+            "test_pos": n_te_pos, "test_neg": n_te_neg,
+            "baseline_acc": round(baseline_acc / 100, 4),
             "accuracy": round(acc, 4),
+            "delta_vs_baseline_pct": round(delta, 2),
             "precision": round(prec, 4),
             "recall": round(rec, 4),
             "f1": round(f1, 4),
             "auc": round(auc, 4),
         })
 
-        print(f"  Fold {fold}: train={len(X_train)} test={len(X_test)} | acc={acc:.3f} f1={f1:.3f} auc={auc:.3f}")
+        print(f"\n  Fold {fold}: train={len(X_train)} (pos={n_tr_pos},neg={n_tr_neg}) "
+              f"test={len(X_test)} (pos={n_te_pos},neg={n_te_neg})")
+        print(f"    Baseline (majority): {baseline_acc:.1f}٪ | Model: {acc*100:.1f}٪ | Δ={delta:+.1f}pp")
+        print(f"    acc={acc:.3f} prec={prec:.3f} rec={rec:.3f} f1={f1:.3f} auc={auc:.3f}")
+        _print_confusion_matrix(y_test, y_pred, label=f"(fold {fold})")
 
     # 4. تدريب نهائي على كل البيانات
     print(f"\n[4/4] Final training on full dataset...")
@@ -171,6 +308,7 @@ def main():
         colsample_bytree=0.8,
         reg_alpha=0.1,
         reg_lambda=1.0,
+        class_weight=cw,
         random_state=42,
         verbose=-1,
     )
@@ -193,32 +331,79 @@ def main():
             "metadata": metadata,
             "fold_metrics": fold_metrics,
             "importance": importance,
+            "config": {
+                "cost_threshold": args.cost_threshold,
+                "class_weight": args.class_weight,
+                "purge_gap": purge_gap,
+                "horizon": args.horizon,
+                "market": args.market,
+            },
         }, f)
 
     # النتائج
-    print(f"\n{'='*60}")
+    print(f"\n{'='*70}")
     print(f"RESULTS")
-    print(f"{'='*60}")
-    print(f"Model ID: {model_id}")
-    print(f"Market: {args.market}")
-    print(f"Samples: {len(X)}")
-    print(f"Source: REAL PRICES (egksco + stock_daily_prices)")
+    print(f"{'='*70}")
+    print(f"  Model ID:        {model_id}")
+    print(f"  Market:          {args.market}")
+    print(f"  Total samples:  {n_total}")
+    print(f"  Cost threshold:  {args.cost_threshold}٪")
+    print(f"  Class weight:    {args.class_weight}")
+    print(f"  Source:          REAL PRICES (egksco + stock_daily_prices)")
 
     if fold_metrics:
         avg_acc = sum(m["accuracy"] for m in fold_metrics) / len(fold_metrics)
         avg_f1 = sum(m["f1"] for m in fold_metrics) / len(fold_metrics)
         avg_auc = sum(m["auc"] for m in fold_metrics) / len(fold_metrics)
-        print(f"\nWalk-forward metrics (avg {len(fold_metrics)} folds):")
-        print(f"  Accuracy: {avg_acc:.4f}")
-        print(f"  F1:       {avg_f1:.4f}")
-        print(f"  AUC:      {avg_auc:.4f}")
+        avg_baseline = sum(m["baseline_acc"] for m in fold_metrics) / len(fold_metrics)
+        avg_delta = sum(m["delta_vs_baseline_pct"] for m in fold_metrics) / len(fold_metrics)
 
-    print(f"\nTop 10 features:")
+        print(f"\n  Walk-forward metrics (avg {len(fold_metrics)} folds):")
+        print(f"    Baseline (majority class): {avg_baseline*100:.1f}٪")
+        print(f"    Model accuracy:            {avg_acc*100:.1f}٪  (Δ={avg_delta:+.1f}pp vs baseline)")
+        print(f"    F1:                        {avg_f1:.4f}")
+        print(f"    AUC:                       {avg_auc:.4f}")
+
+        # تقييم نهائي: هل النموذج يفوق الـ baseline؟
+        if avg_delta < 2:
+            print(f"\n  ⚠️  النموذج لا يفوق baseline بـ 2pp — ضعيف كـ filter.")
+        elif avg_delta < 5:
+            print(f"\n  🔶 النموذج يفوق baseline بـ {avg_delta:.1f}pp — acceptable كـ filter ضعيف.")
+        else:
+            print(f"\n  ✅ النموذج يفوق baseline بـ {avg_delta:.1f}pp — صالح كـ filter.")
+
+    print(f"\n  Top 10 features:")
     for i, (name, imp) in enumerate(list(importance.items())[:10]):
-        print(f"  {i+1}. {name}: {imp:.1f}")
+        print(f"    {i+1}. {name}: {imp:.1f}")
 
-    print(f"\nModel saved: {model_path}")
-    print(f"\n✅ Training complete — trained from REAL price data")
+    print(f"\n  Model saved: {model_path}")
+
+    # حفظ metrics في JSON لواحدها (للمقارنة بين التجارب)
+    metrics_path = registry_dir / f"{model_id}_metrics.json"
+    with open(metrics_path, "w") as f:
+        json.dump({
+            "model_id": model_id,
+            "fold_metrics": fold_metrics,
+            "config": {
+                "cost_threshold": args.cost_threshold,
+                "class_weight": args.class_weight,
+                "purge_gap": purge_gap,
+                "horizon": args.horizon,
+                "market": args.market,
+            },
+            "dataset_stats": {
+                "total_samples": n_total,
+                "positive_samples": n_pos,
+                "negative_samples": n_neg,
+                "positive_pct": pos_pct,
+                "negative_pct": neg_pct,
+                "neutral_excluded": neutral_removed,
+            },
+            "top_features": dict(list(importance.items())[:10]),
+        }, f, indent=2)
+    print(f"  Metrics JSON: {metrics_path}")
+
+    print(f"\n✅ Training complete — trained from REAL price data (v2 — imbalance-fixed)")
 
 
 if __name__ == "__main__":
