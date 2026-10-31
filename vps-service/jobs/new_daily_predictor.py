@@ -496,7 +496,26 @@ def save_prediction(result: dict, market_code: str, scan_date: str) -> bool:
         # الـ risk_profile بـ يجي من execute_v3 (محسوب بـ ATR + support/resistance)
         signal = str(result['signal'])
         risk_profile = result.get('risk_profile', {})
-        
+
+        # ─── ALPHA-FIX (2026-10-31): احترم بوابة R/R ≥ 1.5 ─────────────
+        # الـ executor بيحسب R/R وبيحط rejected=True لو أقل من 1.5.
+        # قبل الإصلاح ده، كنا بناخد القيم ونتجاهل الـ flag → صفقات بـ R/R مكسور
+        # بتسجل في DB. دلوقتي بـ نحترم الـ flag = متسجلش الصفقة.
+        if risk_profile and risk_profile.get('rejected') is True:
+            _rejected_reason = (
+                f"rejected by R/R gate "
+                f"(rr={risk_profile.get('rr','?')}, "
+                f"state={result.get('state','?')}, "
+                f"method={risk_profile.get('method','?')})"
+            )
+            logger.info(f"  ⛔ {result.get('ticker','?')}: {_rejected_reason}")
+            # أضف لـ stats عشان نعرف كم إشارة اتقتلت بـ R/R gate
+            if not hasattr(self, '_rr_rejected_count'):
+                self._rr_rejected_count = 0
+            self._rr_rejected_count += 1
+            return None  # ← متكتبش الصفقة في DB
+        # ──────────────────────────────────────────────────────────────
+
         if risk_profile and risk_profile.get('entry_price'):
             # V3 بـ يـ emit risk_profile — استخدمه
             entry_price = float(risk_profile.get('entry_price', entry_price))

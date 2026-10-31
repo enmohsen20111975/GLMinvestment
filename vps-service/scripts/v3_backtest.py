@@ -303,7 +303,16 @@ class V3Simulator:
 
             # ALPHA-DYNAMIC (2026-10-31): استخدم risk_profile من V3 (مش نسب ثابتة)
             risk_profile = getattr(result, 'risk_profile', {}) or {}
-            
+
+            # ─── ALPHA-FIX (2026-10-31): احترم بوابة R/R ≥ 1.5 ─────────────
+            # الـ executor بيحسب R/R وبيحط rejected=True لو أقل من 1.5.
+            # قبل الإصلاح ده، كنا بناخد القيم ونتجاهل الـ flag → 50.6٪ من الصفقات
+            # دخلت بـ R/R مكسور. دلوقتي بـ نحترم الـ flag = NO_TRADE.
+            if risk_profile and risk_profile.get('rejected') is True:
+                logger.debug(f"  {ticker}: signal rejected by R/R gate (rr={risk_profile.get('rr','?')})")
+                return None
+            # ──────────────────────────────────────────────────────────────
+
             if risk_profile and risk_profile.get('entry_price'):
                 # V3 بـ يـ emit risk_profile — استخدمه (الـ levels الديناميكية)
                 entry_price = float(risk_profile.get('entry_price', prices[-1]))
