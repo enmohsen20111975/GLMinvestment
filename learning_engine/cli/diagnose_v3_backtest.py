@@ -290,6 +290,256 @@ def _table_2_winner_vs_loser(trades: list, db_path: Path) -> None:
         print(f"  - ⚠️  أقل من 50٪ من الصفقات اتقدر حساب الـ ATR ليها — تأكد من إن الـ tickers موجودة في stocks.db")
 
 
+def _table_3_rr_diagnosis(trades: list) -> None:
+    """جدول 3: تشخيص R/R — يجاوب على 3 أسئلة محددة."""
+    print("\n" + "=" * 94)
+    print("جدول 3: تشخيص R/R (القاعدة الإلزامية: R/R ≥ 1.5)")
+    print("=" * 94)
+
+    # فلترة الصفقات المغلقة فقط (عشان نعرف رابح/خاسر بوضوح)
+    closed = [t for t in trades if t.get("exit_reason") in ("stop_hit", "target_hit")]
+    if not closed:
+        closed = trades
+
+    winners = [t for t in closed if (t.get("pnl_pct") or 0) > 0]
+    losers = [t for t in closed if (t.get("pnl_pct") or 0) <= 0]
+
+    # ─── السؤال 1: متوسط الربح في الصفقات الرابحة ──────────────────────
+    win_pnls = [t.get("pnl_pct", 0) or 0 for t in winners]
+    avg_win = _safe_mean(win_pnls)
+    med_win = _safe_median(win_pnls)
+
+    # ─── السؤال 2: متوسط الخسارة في الصفقات الخاسرة ──────────────────────
+    loss_pnls = [t.get("pnl_pct", 0) or 0 for t in losers]
+    avg_loss = _safe_mean(loss_pnls)
+    med_loss = _safe_median(loss_pnls)
+
+    # ─── السؤال 3: نسبة الصفقات اللي R/R المخطط ≥ 1.5 ────────────────────
+    # planned_rr = target_distance / stop_distance (موجب دايماً)
+    rr_ge_15 = 0
+    rr_lt_15 = 0
+    rr_invalid = 0
+    rr_values = []
+    rr_by_state = defaultdict(lambda: {"ge_15": 0, "lt_15": 0, "total": 0})
+
+    for t in closed:
+        entry = t.get("entry_price", 0) or 0
+        stop = t.get("stop_loss", 0) or 0
+        tgt = t.get("target_price", 0) or 0
+        state = t.get("state_code", "UNK")
+
+        if entry <= 0 or stop <= 0 or tgt <= 0:
+            rr_invalid += 1
+            continue
+
+        stop_dist = abs(entry - stop)
+        tgt_dist = abs(tgt - entry)
+        if stop_dist <= 0:
+            rr_invalid += 1
+            continue
+
+        planned_rr = tgt_dist / stop_dist
+        rr_values.append(planned_rr)
+        rr_by_state[state]["total"] += 1
+
+        if planned_rr >= 1.5:
+            rr_ge_15 += 1
+            rr_by_state[state]["ge_15"] += 1
+        else:
+            rr_lt_15 += 1
+            rr_by_state[state]["lt_15"] += 1
+
+    # ─── طباعة النتائج ──────────────────────────────────────────────────
+    print(f"\n  الصفقات المغلقة: {len(closed)} (winners={len(winners)}, losers={len(losers)})")
+
+    print(f"\n  ┌─────────────────────────────────────────────────────────────────┐")
+    print(f"  │  السؤال 1: متوسط الربح في الرابحين                              │")
+    print(f"  │    Avg Win   = {avg_win:+.2f}٪  (med = {med_win:+.2f}٪)                        │")
+    print(f"  │    (من {len(winners)} صفقة رابحة)                                       │")
+    print(f"  ├─────────────────────────────────────────────────────────────────┤")
+    print(f"  │  السؤال 2: متوسط الخسارة في الخاسرين                            │")
+    print(f"  │    Avg Loss  = {avg_loss:+.2f}٪  (med = {med_loss:+.2f}٪)                        │")
+    print(f"  │    (من {len(losers)} صفقة خاسرة)                                       │")
+    print(f"  ├─────────────────────────────────────────────────────────────────┤")
+
+    # R/R المحقق (realized) = avg_win / |avg_loss|
+    if avg_loss < 0:
+        realized_rr = avg_win / abs(avg_loss)
+        print(f"  │  R/R المحقق (realized) = Avg Win / |Avg Loss|                   │")
+        print(f"  │              = {avg_win:.2f} / {abs(avg_loss):.2f} = {realized_rr:.2f}                          │")
+        if realized_rr < 1.5:
+            print(f"  │    🔥 مكسور: المفروض ≥ 1.5، فعلي = {realized_rr:.2f}                    │")
+        else:
+            print(f"  │    ✅ سليم: ≥ 1.5                                              │")
+    print(f"  ├─────────────────────────────────────────────────────────────────┤")
+
+    # ─── السؤال 3: R/R المخطط ───────────────────────────────────────────
+    total_valid = rr_ge_15 + rr_lt_15
+    pct_ge = rr_ge_15 * 100 / total_valid if total_valid else 0
+    pct_lt = rr_lt_15 * 100 / total_valid if total_valid else 0
+
+    print(f"  │  السؤال 3: نسبة الصفقات حسب R/R المخطط                          │")
+    print(f"  │    R/R ≥ 1.5 (سليم):    {rr_ge_15:>4} صفقة = {pct_ge:5.1f}٪                        │")
+    print(f"  │    R/R < 1.5 (مكسور):   {rr_lt_15:>4} صفقة = {pct_lt:5.1f}٪                        │")
+    if rr_invalid:
+        print(f"  │    بيانات ناقصة:        {rr_invalid:>4} صفقة                                │")
+    print(f"  ├─────────────────────────────────────────────────────────────────┤")
+
+    avg_planned = _safe_mean(rr_values)
+    med_planned = _safe_median(rr_values)
+    print(f"  │  R/R المخطط (planned):                                         │")
+    print(f"  │    Avg  = {avg_planned:.2f}    Med = {med_planned:.2f}                              │")
+    if avg_planned < 1.5:
+        print(f"  │    🔥 متوسط R/R المخطط مكسور (< 1.5)                            │")
+    print(f"  └─────────────────────────────────────────────────────────────────┘")
+
+    # ─── تفصيل R/R المخطط حسب State ─────────────────────────────────────
+    print(f"\n  تفصيل R/R المخطط حسب State:")
+    print(f"  {'State':<8}{'#Total':>8}{'#RR≥1.5':>10}{'#RR<1.5':>10}{'٪RR≥1.5':>10}{'٪RR<1.5':>10}{'الحكم':>14}")
+    print("  " + "-" * 70)
+
+    for state in sorted(rr_by_state.keys()):
+        s = rr_by_state[state]
+        total = s["total"]
+        ge = s["ge_15"]
+        lt = s["lt_15"]
+        pct_ge_s = ge * 100 / total if total else 0
+        pct_lt_s = lt * 100 / total if total else 0
+        verdict = "✅ سليم" if lt == 0 else ("🔥 مكسور كلياً" if ge == 0 else "⚠️ مختلط")
+        print(f"  {state:<8}{total:>8}{ge:>10}{lt:>10}{pct_ge_s:>9.1f}٪{pct_lt_s:>9.1f}٪{verdict:>14}")
+
+    # ─── رابحين/خاسرين حسب R/R المخطط (إجابة جوهرية) ────────────────────
+    print(f"\n  ┌─────────────────────────────────────────────────────────────────┐")
+    print(f"  │  السؤال الجوهري: هل R/R المخطط بيفرق في النتيجة؟                │")
+    rr_ge_wins = 0
+    rr_ge_losses = 0
+    rr_lt_wins = 0
+    rr_lt_losses = 0
+    for t in closed:
+        entry = t.get("entry_price", 0) or 0
+        stop = t.get("stop_loss", 0) or 0
+        tgt = t.get("target_price", 0) or 0
+        if entry <= 0 or stop <= 0 or tgt <= 0:
+            continue
+        stop_dist = abs(entry - stop)
+        tgt_dist = abs(tgt - entry)
+        if stop_dist <= 0:
+            continue
+        planned_rr = tgt_dist / stop_dist
+        is_win = (t.get("pnl_pct") or 0) > 0
+        if planned_rr >= 1.5:
+            if is_win: rr_ge_wins += 1
+            else: rr_ge_losses += 1
+        else:
+            if is_win: rr_lt_wins += 1
+            else: rr_lt_losses += 1
+
+    ge_total = rr_ge_wins + rr_ge_losses
+    lt_total = rr_lt_wins + rr_lt_losses
+    ge_wr = rr_ge_wins * 100 / ge_total if ge_total else 0
+    lt_wr = rr_lt_wins * 100 / lt_total if lt_total else 0
+
+    print(f"  │  الصفقات بـ R/R ≥ 1.5: {ge_total:>3} صفقة  → Win rate = {ge_wr:.1f}٪              │")
+    print(f"  │  الصفقات بـ R/R < 1.5:  {lt_total:>3} صفقة  → Win rate = {lt_wr:.1f}٪              │")
+    print(f"  │                                                                 │")
+    if lt_total > ge_total:
+        print(f"  │  🔥 أغلب الصفقات دخلت بـ R/R مكسور — القاعدة اتكسرت في التنفيذ    │")
+    if lt_total > 0 and ge_total > 0:
+        if lt_wr > ge_wr:
+            print(f"  │  ⚠️  المفاجأة: الصفقات بـ R/R < 1.5 عندها win rate أعلى!        │")
+            print(f"  │     ده معناه إن stops الواسعة بتشتغل كـ accident protection        │")
+        else:
+            print(f"  │  ✅ الصفقات بـ R/R ≥ 1.5 أداءها أحسن (مثل المتوقع)               │")
+    print(f"  └─────────────────────────────────────────────────────────────────┘")
+
+    # ─── خلاصة ──────────────────────────────────────────────────────────
+    print(f"\n📌 خلاصة جدول 3:")
+    print(f"  - Avg Win = {avg_win:+.2f}٪  |  Avg Loss = {avg_loss:+.2f}٪  |  Realized R/R = {avg_win/abs(avg_loss) if avg_loss < 0 else 0:.2f}")
+    print(f"  - {pct_ge:.1f}٪ من الصفقات دخلت بـ R/R ≥ 1.5 (سليم)")
+    print(f"  - {pct_lt:.1f}٪ من الصفقات دخلت بـ R/R < 1.5 (مكسور — مخالفة للقاعدة)")
+    if pct_lt > 30:
+        print(f"  - 🔥 أكثر من 30٪ من الصفقات خالفت قاعدة R/R ≥ 1.5 — ده السبب الجذري للخسارة")
+
+
+def _diagnose_ticker_resolution(trades: list, db_path: Path) -> None:
+    """يطبع diagnostic لـ ticker resolution قبل جدول 2."""
+    print(f"\n  ─── Pre-flight: فحص تطابق الـ tickers مع stocks.db ───")
+    if not db_path.exists():
+        print(f"  ⚠️  stocks.db غير موجود: {db_path}")
+        return
+
+    tickers = list(set(t.get("ticker", "") for t in trades if t.get("ticker")))
+    print(f"  عدد tickers فريدة في الـ backtest: {len(tickers)}")
+    print(f"  أول 5 tickers: {tickers[:5]}")
+
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        cur = conn.cursor()
+
+        # كم ticker موجود في stocks.db.stock_daily_prices
+        found_exact = 0
+        found_any_market = 0
+        not_found = []
+        sample_found = []
+
+        for t in tickers:
+            # 1. ticker كما هو + market='EGX'
+            cur.execute(
+                "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ? AND market = 'EGX'",
+                (t,)
+            )
+            c1 = cur.fetchone()[0]
+            if c1 > 0:
+                found_exact += 1
+                if len(sample_found) < 3:
+                    sample_found.append(t)
+                continue
+
+            # 2. ticker كما هو (أي market)
+            cur.execute(
+                "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ?",
+                (t,)
+            )
+            c2 = cur.fetchone()[0]
+            if c2 > 0:
+                found_any_market += 1
+                continue
+
+            # 3. جرّب variant (إزالة suffix بعد _)
+            if "_" in t:
+                base = t.split("_")[0]
+                cur.execute(
+                    "SELECT COUNT(*) FROM stock_daily_prices WHERE ticker = ?",
+                    (base,)
+                )
+                c3 = cur.fetchone()[0]
+                if c3 > 0:
+                    found_any_market += 1
+                    continue
+
+            not_found.append(t)
+
+        conn.close()
+
+        print(f"  ✅ موجودة (market='EGX'):  {found_exact} ticker")
+        print(f"  ✅ موجودة (أي market):     {found_any_market} ticker")
+        print(f"  ❌ غير موجودة:            {len(not_found)} ticker")
+        if sample_found:
+            print(f"  أمثلة موجودة: {sample_found}")
+        if not_found[:3]:
+            print(f"  أمثلة مفقودة: {not_found[:3]}")
+
+        if found_exact == 0 and found_any_market > 0:
+            print(f"  💡 المشكلة: الـ tickers موجودة لكن بـ market ≠ 'EGX'")
+            print(f"     السكربت هيتعامل مع ده تلقائياً (يجرّب كل markets)")
+        elif found_exact == 0 and found_any_market == 0:
+            print(f"  🔥 المشكلة: الـ tickers في الـ backtest مش موجودة في stocks.db نهائياً")
+            print(f"     محتاج نتأكد إن الـ backtest بـ يستخدم نفس ticker format")
+
+    except Exception as e:
+        print(f"  ⚠️  خطأ في الفحص: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Diagnose V3 backtest disaster (last 3 months)")
     parser.add_argument("--json", type=str, help="Path to backtest JSON file")
@@ -338,8 +588,12 @@ def main():
     # جدول 1
     _table_1_loss_distribution(trades)
 
-    # جدول 2
+    # جدول 3 (R/R diagnosis — قبل جدول 2 لأنه لا يحتاج stocks.db)
+    _table_3_rr_diagnosis(trades)
+
+    # جدول 2 — مع pre-flight diagnostic
     db_path = _PROJECT_ROOT / args.db if not Path(args.db).is_absolute() else Path(args.db)
+    _diagnose_ticker_resolution(trades, db_path)
     _table_2_winner_vs_loser(trades, db_path)
 
     print("\n" + "=" * 94)
